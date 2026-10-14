@@ -5254,8 +5254,6 @@ type VerifiedSOStateCache struct {
 	CurrentConfig *sobject.SharedObjectConfig `protobuf:"bytes,5,opt,name=current_config,json=currentConfig,proto3" json:"currentConfig,omitempty"`
 	// PeerState is the last durably accepted peer snapshot, when present.
 	PeerState *sobject.SOState `protobuf:"bytes,6,opt,name=peer_state,json=peerState,proto3" json:"peerState,omitempty"`
-	// ConfigHistory retains authenticated transitions for peer catch-up.
-	ConfigHistory []*sobject.SOConfigChange `protobuf:"bytes,7,rep,name=config_history,json=configHistory,proto3" json:"configHistory,omitempty"`
 	// PendingPublication retains locally accepted work until cloud acknowledgment.
 	PendingPublication *PendingSOPublication `protobuf:"bytes,8,opt,name=pending_publication,json=pendingPublication,proto3" json:"pendingPublication,omitempty"`
 	// CloudState is the authenticated base for cloud deltas, separate from peers.
@@ -5308,13 +5306,6 @@ func (x *VerifiedSOStateCache) GetCurrentConfig() *sobject.SharedObjectConfig {
 func (x *VerifiedSOStateCache) GetPeerState() *sobject.SOState {
 	if x != nil {
 		return x.PeerState
-	}
-	return nil
-}
-
-func (x *VerifiedSOStateCache) GetConfigHistory() []*sobject.SOConfigChange {
-	if x != nil {
-		return x.ConfigHistory
 	}
 	return nil
 }
@@ -12321,7 +12312,6 @@ func (m *VerifiedSOStateCache) CloneVT() *VerifiedSOStateCache {
 	r.KeyEpochs = protobuf_go_lite.CloneVTSlice(m.KeyEpochs)
 	r.CurrentConfig = protobuf_go_lite.CloneVTValue(m.CurrentConfig)
 	r.PeerState = protobuf_go_lite.CloneVTValue(m.PeerState)
-	r.ConfigHistory = protobuf_go_lite.CloneVTSlice(m.ConfigHistory)
 	r.PendingPublication = protobuf_go_lite.CloneVTValue(m.PendingPublication)
 	r.CloudState = protobuf_go_lite.CloneVTValue(m.CloudState)
 	if len(m.unknownFields) > 0 {
@@ -18370,9 +18360,6 @@ func (this *VerifiedSOStateCache) EqualVT(that *VerifiedSOStateCache) bool {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.PeerState, that.PeerState) {
-		return false
-	}
-	if !protobuf_go_lite.EqualVTSliceImplicit(this.ConfigHistory, that.ConfigHistory, func() *sobject.SOConfigChange { return &sobject.SOConfigChange{} }) {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.PendingPublication, that.PendingPublication) {
@@ -29950,17 +29937,6 @@ func (x *VerifiedSOStateCache) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("peerState")
 		x.PeerState.MarshalProtoJSON(s.WithField("peerState"))
 	}
-	if len(x.ConfigHistory) > 0 || s.HasField("configHistory") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("configHistory")
-		s.WriteArrayStart()
-		var wroteElement bool
-		for _, element := range x.ConfigHistory {
-			s.WriteMoreIf(&wroteElement)
-			element.MarshalProtoJSON(s.WithField("configHistory"))
-		}
-		s.WriteArrayEnd()
-	}
 	if x.PendingPublication != nil || s.HasField("pendingPublication") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("pendingPublication")
@@ -30034,24 +30010,6 @@ func (x *VerifiedSOStateCache) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.PeerState = &sobject.SOState{}
 			x.PeerState.UnmarshalProtoJSON(s.WithField("peer_state", true))
-		case "config_history", "configHistory":
-			s.AddField("config_history")
-			if s.ReadNil() {
-				x.ConfigHistory = nil
-				return
-			}
-			s.ReadArray(func() {
-				if s.ReadNil() {
-					x.ConfigHistory = append(x.ConfigHistory, nil)
-					return
-				}
-				v := &sobject.SOConfigChange{}
-				v.UnmarshalProtoJSON(s.WithField("config_history", false))
-				if s.Err() != nil {
-					return
-				}
-				x.ConfigHistory = append(x.ConfigHistory, v)
-			})
 		case "pending_publication", "pendingPublication":
 			if s.ReadNil() {
 				x.PendingPublication = nil
@@ -44024,18 +43982,6 @@ func (m *VerifiedSOStateCache) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 		i--
 		dAtA[i] = 0x42
 	}
-	if len(m.ConfigHistory) > 0 {
-		for iNdEx := len(m.ConfigHistory) - 1; iNdEx >= 0; iNdEx-- {
-			size, err := m.ConfigHistory[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
-			i--
-			dAtA[i] = 0x3a
-		}
-	}
 	if m.PeerState != nil {
 		size, err := m.PeerState.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -52529,10 +52475,6 @@ func (m *VerifiedSOStateCache) SizeVT() (n int) {
 		l = m.PeerState.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
-	for _, e := range m.ConfigHistory {
-		l = e.SizeVT()
-		n += protobuf_go_lite.SizeMessage(1, l)
-	}
 	if m.PendingPublication != nil {
 		l = m.PendingPublication.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
@@ -57589,18 +57531,6 @@ func (x *VerifiedSOStateCache) MarshalProtoText() string {
 	if x.PeerState != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "peer_state")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.PeerState)
-	}
-	if len(x.ConfigHistory) > 0 {
-		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "config_history")
-		for i, v := range x.ConfigHistory {
-			protobuf_go_lite.TextWriteListSeparator(&sb, i)
-			if v == nil {
-				protobuf_go_lite.TextWriteTextMarshaler(&sb, &sobject.SOConfigChange{})
-			} else {
-				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
-			}
-		}
-		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	if x.PendingPublication != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "pending_publication")
@@ -69745,19 +69675,6 @@ func (m *VerifiedSOStateCache) UnmarshalVT(dAtA []byte) error {
 				m.PeerState = &sobject.SOState{}
 			}
 			if err := m.PeerState.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ConfigHistory", wireType)
-			}
-			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.ConfigHistory = append(m.ConfigHistory, &sobject.SOConfigChange{})
-			if err := m.ConfigHistory[len(m.ConfigHistory)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

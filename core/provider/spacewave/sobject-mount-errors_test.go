@@ -43,6 +43,7 @@ func TestEnsureInitialStateReturnsTerminalErrorAfterRejectedPull(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 	err := h.ensureInitialState(context.Background(), SeedReasonColdSeed)
 	if !errors.Is(err, errSharedObjectInitialStateRejected) {
@@ -63,27 +64,31 @@ func buildMountErrorGenesisState(t *testing.T) *sobject.SOState {
 	return state
 }
 
+// TestSobjectTrackerHoldTerminalMountError checks that a terminal mount error
+// fails waiters with closed health and holds the routine until canceled.
 func TestSobjectTrackerHoldTerminalMountError(t *testing.T) {
+	// Hold a terminal error on a bare tracker.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
 	tkr := &sobjectTracker{
 		sobjectProm: promise.NewPromiseContainer[*SharedObject](),
 		healthCtr:   ccontainer.NewCContainer[*sobject.SharedObjectHealth](nil),
 	}
 	wantErr := errors.Wrap(errSharedObjectInitialStateRejected, "terminal mount")
-
 	done := make(chan error, 1)
 	go func() {
 		done <- tkr.holdTerminalMountError(ctx, wantErr)
 	}()
 
+	// Waiters fail with the error.
 	waitCtx, waitCancel := context.WithTimeout(context.Background(), time.Second)
 	defer waitCancel()
 	_, err := tkr.sobjectProm.Await(waitCtx)
 	if !errors.Is(err, errSharedObjectInitialStateRejected) {
 		t.Fatalf("Await() = %v, want terminal shared object mount error", err)
 	}
+
+	// The health is closed with the rejection reason, hint, and detail.
 	health, err := tkr.healthCtr.WaitValue(waitCtx, nil)
 	if err != nil {
 		t.Fatalf("WaitValue() = %v", err)
@@ -101,6 +106,7 @@ func TestSobjectTrackerHoldTerminalMountError(t *testing.T) {
 		t.Fatalf("expected detail %q, got %q", wantErr.Error(), health.GetError())
 	}
 
+	// Canceling releases the routine.
 	cancel()
 	if err := <-done; !errors.Is(err, context.Canceled) {
 		t.Fatalf("holdTerminalMountError() = %v, want context canceled", err)

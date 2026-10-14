@@ -18,7 +18,6 @@ import {
   SharedObjectList,
   SOCheckpoint,
   SOConfigChainResponse,
-  SOConfigChange,
   SOControlMessage,
   SOEntityRecoveryEnvelope,
   SOInvite,
@@ -5657,12 +5656,6 @@ export interface VerifiedSOStateCache {
    */
   peerState?: SOState
   /**
-   * ConfigHistory retains authenticated transitions for peer catch-up.
-   *
-   * @generated from field: repeated sobject.SOConfigChange config_history = 7;
-   */
-  configHistory?: SOConfigChange[]
-  /**
    * PendingPublication retains locally accepted work until cloud acknowledgment.
    *
    * @generated from field: provider.spacewave.api.PendingSOPublication pending_publication = 8;
@@ -5713,13 +5706,6 @@ export const VerifiedSOStateCache: MessageType<VerifiedSOStateCache> =
         T: () => SharedObjectConfig,
       },
       { no: 6, name: 'peer_state', kind: 'message', T: () => SOState },
-      {
-        no: 7,
-        name: 'config_history',
-        kind: 'message',
-        T: () => SOConfigChange,
-        repeated: true,
-      },
       {
         no: 8,
         name: 'pending_publication',

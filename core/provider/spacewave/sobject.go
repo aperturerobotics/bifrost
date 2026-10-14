@@ -69,10 +69,13 @@ func (s *SharedObject) GetBackingVolume() volume.Volume {
 // AccessLocalStateStore accesses a kvtx ops for a local state store with the
 // given ID.
 func (s *SharedObject) AccessLocalStateStore(ctx context.Context, storeID string, released func()) (kvtx.Store, func(), error) {
+	// Scope the account store to this SharedObject and store ID.
 	if s.tkr.a.objStore == nil {
 		return nil, nil, errors.New("account object store not ready")
 	}
 	store := kvtx_prefixer.NewPrefixer(s.tkr.a.objStore, []byte("so-local/"+s.tkr.id+"/"+storeID+"/"))
+
+	// Call released when ctx ends, unless the caller releases first.
 	if released == nil {
 		return store, func() {}, nil
 	}
@@ -82,6 +85,7 @@ func (s *SharedObject) AccessLocalStateStore(ctx context.Context, storeID string
 
 // AccessPublicationRetention retains completion proofs for cloud-bound graphs.
 func (s *SharedObject) AccessPublicationRetention(ctx context.Context) (kvtx.Store, func(), error) {
+	// Lock the cloud block store's retention store for the caller.
 	store, ok := s.blkStore.(*BlockStore)
 	if !ok || store.retention == nil {
 		return nil, nil, errors.New("cloud block retention unavailable")
@@ -224,9 +228,9 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		}
 	}()
 
+	// Scope the mount to a cancelable context and a tagged logger.
 	ctx, ctxCancel := context.WithCancel(rctx)
 	defer ctxCancel()
-
 	le := t.a.le.WithField("sobject-id", t.id)
 	le.Debug("mounting sobject")
 
@@ -236,6 +240,7 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		return err
 	}
 
+	// Resolve the provider resource identifiers.
 	provRef := sobjectRef.GetProviderResourceRef()
 	providerID := provRef.GetProviderId()
 	providerAccountID := provRef.GetProviderAccountId()
@@ -260,9 +265,9 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		return err
 	}
 	defer blkStoreRef.Release()
-
 	le.Debug("mounted block store for sobject successfully")
 
+	// The cloud host syncs through the cloud block store.
 	cloudBlkStore, ok := blkStore.(*BlockStore)
 	if !ok {
 		return errors.New("unexpected block store type")
@@ -274,12 +279,13 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		return err
 	}
 
+	// Load the verified cache; a failed read starts the host cold.
 	verifiedCache, err := t.a.loadVerifiedSOStateCache(ctx, sharedObjectID)
 	if err != nil {
 		le.WithError(err).Warn("failed to load verified SO state cache")
 	}
 
-	// Create cloudSOHost.
+	// Create the host over the verified cache and its retained history.
 	host := newCloudSOHost(
 		le,
 		sessionCli,
@@ -290,17 +296,24 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 		sessionPeerID,
 		t.a.sfs,
 		verifiedCache,
-		func(ctx context.Context, cache *api.VerifiedSOStateCache) error {
-			return t.a.writeVerifiedSOStateCache(ctx, sharedObjectID, cache)
+		func(ctx context.Context, cache *api.VerifiedSOStateCache, changes []*sobject.SOConfigChange) error {
+			return t.a.writeVerifiedSOStateCache(ctx, sharedObjectID, cache, changes)
+		},
+		func(ctx context.Context, hash []byte) (*sobject.SOConfigChange, error) {
+			return t.a.readVerifiedSOHistoryEntry(ctx, sharedObjectID, hash)
 		},
 		cloudBlkStore.syncer,
 	)
+
+	// Wire the block store's manifest and publication to the host.
 	host.refreshBlockManifest = cloudBlkStore.RefreshRemote
+	host.blockManifestSequence = cloudBlkStore.RemoteSequence
 	if host.syncer != nil {
 		host.syncer.setPublication(host, host.pending)
 		defer host.syncer.setPublication(host, nil)
 	}
-	host.blockManifestSequence = cloudBlkStore.RemoteSequence
+
+	// Report each accepted checkpoint height to sync telemetry.
 	host.stateObserved = func(state *sobject.SOState) {
 		checkpoint, err := state.GetCheckpointInner()
 		if err != nil || checkpoint == nil {
@@ -312,6 +325,8 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 			checkpoint.GetHeight(),
 		)
 	}
+
+	// Run the host, publishing the SharedObject once its first state is ready.
 	so := &SharedObject{
 		tkr:      t,
 		blkStore: blkStore,
@@ -388,10 +403,10 @@ func (t *sobjectTracker) holdTerminalMountError(
 // MountSharedObject attempts to mount a SharedObject returning the sobject and
 // a release function.
 func (a *ProviderAccount) MountSharedObject(ctx context.Context, ref *sobject.SharedObjectRef, released func()) (sobject.SharedObject, func(), error) {
+	// Validate the ref and retain its tracker.
 	if err := ref.Validate(); err != nil {
 		return nil, nil, err
 	}
-
 	sobjectID := ref.GetProviderResourceRef().GetId()
 	tkrRef, tkr, _ := a.sobjects.AddKeyRef(sobjectID)
 
@@ -414,6 +429,7 @@ func (a *ProviderAccount) AccessSharedObjectHealth(
 	ref *sobject.SharedObjectRef,
 	released func(),
 ) (ccontainer.Watchable[*sobject.SharedObjectHealth], func(), error) {
+	// Retain the ref's tracker and return its health until released.
 	if err := ref.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -547,6 +563,7 @@ func (a *ProviderAccount) buildSharedObjectRef(id string) *sobject.SharedObjectR
 func (a *ProviderAccount) cacheSharedObjectListEntry(
 	entry *sobject.SharedObjectListEntry,
 ) {
+	// Ignore an entry without an ID.
 	if entry == nil || entry.GetRef() == nil || entry.GetRef().GetProviderResourceRef() == nil {
 		return
 	}
@@ -555,13 +572,16 @@ func (a *ProviderAccount) cacheSharedObjectListEntry(
 		return
 	}
 
+	// Update the cached entry in place or append it.
 	a.soListCtr.SwapValue(func(list *sobject.SharedObjectList) *sobject.SharedObjectList {
+		// Start a list for the first entry.
 		if list == nil {
 			return &sobject.SharedObjectList{
 				SharedObjects: []*sobject.SharedObjectListEntry{entry.CloneVT()},
 			}
 		}
 
+		// Merge into an existing entry with the same ID.
 		next := list.CloneVT()
 		for _, existing := range next.GetSharedObjects() {
 			if existing.GetRef().GetProviderResourceRef().GetId() == soID {
@@ -575,6 +595,7 @@ func (a *ProviderAccount) cacheSharedObjectListEntry(
 			}
 		}
 
+		// Otherwise append the entry.
 		next.SharedObjects = append(next.SharedObjects, entry.CloneVT())
 		return next
 	})
@@ -613,27 +634,19 @@ func (a *ProviderAccount) PatchSharedObjectListMetadata(
 func (a *ProviderAccount) RemoveSharedObjectListEntry(
 	soID string,
 ) {
+	// Drop the entry from the cached list.
 	if soID == "" {
 		return
 	}
+	match := func(entry *sobject.SharedObjectListEntry) bool {
+		return entry.GetRef().GetProviderResourceRef().GetId() == soID
+	}
 	a.soListCtr.SwapValue(func(list *sobject.SharedObjectList) *sobject.SharedObjectList {
-		if list == nil {
-			return nil
-		}
-		next := list.CloneVT()
-		out := next.SharedObjects[:0]
-		changed := false
-		for _, entry := range next.GetSharedObjects() {
-			if entry.GetRef().GetProviderResourceRef().GetId() == soID {
-				changed = true
-				continue
-			}
-			out = append(out, entry)
-		}
-		if !changed {
+		if !slices.ContainsFunc(list.GetSharedObjects(), match) {
 			return list
 		}
-		next.SharedObjects = out
+		next := list.CloneVT()
+		next.SharedObjects = slices.DeleteFunc(next.SharedObjects, match)
 		return next
 	})
 	a.refreshSelfEnrollmentSummary(context.Background())
@@ -691,6 +704,7 @@ func getSharedObjectDisplayName(meta *sobject.SharedObjectMeta) string {
 
 // DeleteSharedObject deletes the shared object with the given ID.
 func (a *ProviderAccount) DeleteSharedObject(ctx context.Context, id string) error {
+	// Delete the SharedObject in the cloud.
 	le := a.le.WithField("sobject-id", id)
 	cli, _, _, err := a.getReadySessionClient(ctx)
 	if err != nil {
@@ -705,6 +719,7 @@ func (a *ProviderAccount) DeleteSharedObject(ctx context.Context, id string) err
 		return errors.Wrap(err, "unmarshal delete shared object response")
 	}
 
+	// Drop the local metadata, list entry, mount, and GC references.
 	a.DeleteSharedObjectMetadata(id)
 	a.RemoveSharedObjectListEntry(id)
 	if a.sobjects != nil {
@@ -756,14 +771,11 @@ func (a *ProviderAccount) RefreshSharedObjectList(ctx context.Context) error {
 // HasCachedSharedObject returns true when the cached SO list already contains
 // the given shared object ID.
 func (a *ProviderAccount) HasCachedSharedObject(soID string) bool {
+	// Search the cached list for the ID.
 	if soID == "" {
 		return false
 	}
-	list := a.soListCtr.GetValue()
-	if list == nil {
-		return false
-	}
-	for _, entry := range list.GetSharedObjects() {
+	for _, entry := range a.soListCtr.GetValue().GetSharedObjects() {
 		if entry.GetRef().GetProviderResourceRef().GetId() == soID {
 			return true
 		}
@@ -774,6 +786,7 @@ func (a *ProviderAccount) HasCachedSharedObject(soID string) bool {
 // fetchSharedObjectList fetches the shared object list from the server and
 // updates the persistent container.
 func (a *ProviderAccount) fetchSharedObjectList(ctx context.Context) error {
+	// Fetch and decode the cloud list.
 	cli := a.currentSessionClient()
 	if cli == nil {
 		return errors.New("Session is not available to list shared objects")
@@ -782,12 +795,12 @@ func (a *ProviderAccount) fetchSharedObjectList(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	list, err := DecodeSharedObjectList(listData, a.p.info.GetProviderId())
 	if err != nil {
 		return err
 	}
 
+	// Store it, keeping created entries the snapshot does not list yet.
 	a.soListCtr.SetValue(mergeSharedObjectListSnapshot(list, a.soListCtr.GetValue()))
 	a.refreshSelfEnrollmentSummary(ctx)
 	return nil
@@ -812,10 +825,13 @@ func DecodeSharedObjectList(data []byte, providerID string) (*sobject.SharedObje
 	return list, nil
 }
 
+// mergeSharedObjectListSnapshot returns snapshot with the created entries of
+// cached that snapshot does not list yet.
 func mergeSharedObjectListSnapshot(
 	snapshot *sobject.SharedObjectList,
 	cached *sobject.SharedObjectList,
 ) *sobject.SharedObjectList {
+	// Copy the snapshot and index its IDs.
 	if cached == nil {
 		return snapshot
 	}
@@ -1073,9 +1089,12 @@ func currentEpochWithFallback(state *sobject.SOState, epochs []*sobject.SOKeyEpo
 	return current.CloneVT()
 }
 
+// configWithConfigChangeHash returns the config of entry stamped with the
+// entry's chain hash and seqno.
 func configWithConfigChangeHash(
 	entry *sobject.SOConfigChange,
 ) (*sobject.SharedObjectConfig, error) {
+	// Hash the entry and stamp a copy of its config.
 	if entry == nil || entry.GetConfig() == nil {
 		return nil, errors.New("config change entry is required")
 	}
@@ -1089,6 +1108,8 @@ func configWithConfigChangeHash(
 	return cfg, nil
 }
 
+// recoveryConfigSnapshot returns the config entry produces, or currentCfg
+// when entry is nil.
 func recoveryConfigSnapshot(
 	currentCfg *sobject.SharedObjectConfig,
 	entry *sobject.SOConfigChange,
@@ -1102,10 +1123,13 @@ func recoveryConfigSnapshot(
 	return configWithConfigChangeHash(entry)
 }
 
+// recoveryConfigWithoutEntity returns a copy of cfg without the participants
+// of entityID.
 func recoveryConfigWithoutEntity(
 	cfg *sobject.SharedObjectConfig,
 	entityID string,
 ) *sobject.SharedObjectConfig {
+	// Copy the config, keeping the other entities' participants.
 	if cfg == nil || entityID == "" {
 		return cfg
 	}
@@ -1194,21 +1218,25 @@ func mergeSOKeyEpochs(epochs []*sobject.SOKeyEpoch, next *sobject.SOKeyEpoch) []
 	return slices.Insert(cloned, i, next.CloneVT())
 }
 
+// loadLatestConfigState pulls the latest state and returns it with its config
+// stamped by the verified chain head and the verified key epochs.
 func (s *SharedObject) loadLatestConfigState(ctx context.Context) (*sobject.SOState, *sobject.SharedObjectConfig, []*sobject.SOKeyEpoch, error) {
+	// Pull and read the current state.
 	if err := s.host.pullState(ctx, SeedReasonReconnect); err != nil {
 		return nil, nil, nil, errors.Wrap(err, "pull latest SO state")
 	}
-
 	state, err := s.host.GetSOHost().GetHostState(ctx)
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "get current SO state")
 	}
 
+	// Copy the state's config.
 	currentCfg := &sobject.SharedObjectConfig{}
 	if cfg := state.GetConfig(); cfg != nil {
 		currentCfg = cfg.CloneVT()
 	}
 
+	// Snapshot the verified chain head and key epochs.
 	var lastHash []byte
 	var lastSeqno uint64
 	var epochs []*sobject.SOKeyEpoch
@@ -1218,6 +1246,7 @@ func (s *SharedObject) loadLatestConfigState(ctx context.Context) (*sobject.SOSt
 		epochs = cloneVTSlice(s.host.keyEpochs)
 	})
 
+	// Sync the chain when it is behind the state, then snapshot again.
 	currentHash := currentCfg.GetConfigChainHash()
 	currentSeqno := currentCfg.GetConfigChainSeqno()
 	if shouldSyncVerifiedConfigChain(currentHash, currentSeqno, lastHash, lastSeqno) {

@@ -116,6 +116,7 @@ func TestFillParticipantAccounts(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 	host.soHost.SetContext(t.Context())
 	if err := host.ensureInitialState(t.Context(), SeedReasonColdSeed); err != nil {

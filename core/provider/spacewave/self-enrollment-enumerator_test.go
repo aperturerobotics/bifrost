@@ -348,7 +348,7 @@ func writeSelfEnrollmentCache(
 	if grantPeerID != "" {
 		cache.KeyEpochs[0].Grants = []*sobject.SOGrant{{PeerId: grantPeerID}}
 	}
-	if err := acc.writeVerifiedSOStateCache(context.Background(), soID, cache); err != nil {
+	if err := acc.writeVerifiedSOStateCache(context.Background(), soID, cache, nil); err != nil {
 		t.Fatalf("write cache %s: %v", soID, err)
 	}
 }

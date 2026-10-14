@@ -41,7 +41,7 @@ func TestCloudHostHydrationRefreshesState(t *testing.T) {
 		&api.VerifiedSOStateCache{
 			PeerState: initial.CloneVT(), CloudState: initial.CloneVT(), CurrentConfig: initial.GetConfig().CloneVT(),
 			VerifiedConfigChainHash: initial.GetConfig().GetConfigChainHash(), VerifiedConfigChainSeqno: initial.GetConfig().GetConfigChainSeqno(),
-		}, nil, nil,
+		}, nil, nil, nil,
 	)
 	if host.stateCtr.GetValue() == nil {
 		t.Fatal("verified checkpoint was not hydrated")

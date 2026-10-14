@@ -34,24 +34,21 @@ func (h *cloudSOHost) peerImportLock(ctx context.Context, _ string) (sobject.SOS
 			return sobject.ErrConfigHistoryUnavailable
 		}
 
-		// Record the accepted config, chain lineage, and queued changes in the cache.
+		// Record the accepted config and chain lineage, and retain the new changes.
 		cache.CurrentConfig = next.GetConfig().CloneVT()
 		cache.VerifiedConfigChainHash = bytes.Clone(next.GetConfig().GetConfigChainHash())
 		cache.VerifiedConfigChainSeqno = next.GetConfig().GetConfigChainSeqno()
 		cache.PeerState = next.Clone()
-		cache.ConfigHistory = append(cache.ConfigHistory, cloneVTSlice(changes)...)
-		if err := h.persistVerifiedStateCache(ctx, cache); err != nil {
+		if err := h.persistVerifiedStateCache(ctx, cache, changes); err != nil {
 			return err
 		}
 
 		// Publish the committed cache fields and state under the broadcast lock.
 		h.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-			// Commit the accepted config, lineage, and index into the host state.
+			// Commit the accepted config and lineage into the host state.
 			h.verifiedConfig = cache.CurrentConfig
 			h.lastConfigChainHash = cache.VerifiedConfigChainHash
 			h.verifiedConfigChainSeqno = cache.VerifiedConfigChainSeqno
-			h.configHistory = cache.ConfigHistory
-			h.historyIndex = indexConfigHistory(cache.ConfigHistory)
 			h.peerState = cache.PeerState
 			h.stateCtr.SetValue(next)
 			broadcast()
@@ -61,26 +58,21 @@ func (h *cloudSOHost) peerImportLock(ctx context.Context, _ string) (sobject.SOS
 }
 
 // readConfigHistory resolves a bounded suffix from retained verified cloud history.
-func (h *cloudSOHost) readConfigHistory(ctx context.Context, _ string, base, target []byte) ([]*sobject.SOConfigChange, error) {
-	// The acceptance lock pins the index; traversal touches only the bounded suffix.
-	release, err := h.acceptMu.Lock(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-	return sobject.ReadConfigSuffix(ctx, base, target, func(_ context.Context, hash []byte) (*sobject.SOConfigChange, error) {
-		return h.historyIndex[string(hash)].CloneVT(), nil
+// Retained entries are immutable and written with the state that accepted
+// them, so the traversal reads them without the acceptance lock.
+func (h *cloudSOHost) readConfigHistory(ctx context.Context, soID string, base, target []byte) ([]*sobject.SOConfigChange, error) {
+	return sobject.ReadConfigSuffix(ctx, base, target, func(ctx context.Context, hash []byte) (*sobject.SOConfigChange, error) {
+		return h.readConfigEntry(ctx, soID, hash)
 	})
 }
 
-// readConfigEntry resolves one entry from retained verified cloud history.
+// readConfigEntry resolves one entry from retained verified cloud history,
+// returning nil when the entry is not retained.
 func (h *cloudSOHost) readConfigEntry(ctx context.Context, _ string, hash []byte) (*sobject.SOConfigChange, error) {
-	release, err := h.acceptMu.Lock(ctx)
-	if err != nil {
-		return nil, err
+	if h.readRetainedConfigChange == nil {
+		return nil, nil
 	}
-	defer release()
-	return h.historyIndex[string(hash)].CloneVT(), nil
+	return h.readRetainedConfigChange(ctx, hash)
 }
 
 // stateWithVerifiedConfig preserves the accepted checkpoint and operations
@@ -115,17 +107,4 @@ func (h *cloudSOHost) stateWithVerifiedConfig(state *sobject.SOState, config *so
 		})
 	}
 	return next
-}
-
-// indexConfigHistory builds a lookup at acceptance time, avoiding full-history scans
-// on peer requests. Corrupt retained entries remain unavailable for catch-up.
-func indexConfigHistory(entries []*sobject.SOConfigChange) map[string]*sobject.SOConfigChange {
-	index := make(map[string]*sobject.SOConfigChange, len(entries))
-	for _, entry := range entries {
-		hash, err := sobject.HashSOConfigChange(entry)
-		if err == nil {
-			index[string(hash)] = entry
-		}
-	}
-	return index
 }

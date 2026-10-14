@@ -19,7 +19,7 @@ import (
 // Budget: when a previously-unknown SO is mounted from a fresh session, HTTP
 // fan-out is bounded and classifiable. Counting middleware buckets requests
 // by the X-Alpha-Seed-Reason header and by URL path. Tighten the budget here
-// when an iteration removes an expected fetch; every tightening is
+// when a change removes an expected fetch; every tightening is
 // intentional.
 //
 // Per-SO cold mount (warm verified-state cache):
@@ -37,11 +37,12 @@ import (
 // pins only the guaranteed per-SO fetches the cloudSOHost cold mount path
 // issues on its own.
 func TestColdMountBudget(t *testing.T) {
+	// A warm verified cache pulls only /state.
 	t.Run("warm_per_so_mount", func(t *testing.T) {
+		// Serve a state at the cached head.
 		const soID = "so-warm"
 		priv, pid := generateTestKeypair(t)
 		warmHash := []byte("warm-config-chain-hash")
-
 		state := &sobject.SOState{
 			Config: &sobject.SharedObjectConfig{
 				ConfigChainHash:  append([]byte(nil), warmHash...),
@@ -49,7 +50,6 @@ func TestColdMountBudget(t *testing.T) {
 			},
 		}
 		stateJSON := mustMarshalSOStateMessageSnapshotJSON(t, state)
-
 		counter := newBudgetCounter()
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			counter.record(r)
@@ -64,6 +64,7 @@ func TestColdMountBudget(t *testing.T) {
 		}))
 		defer srv.Close()
 
+		// Pull through a host over the cache.
 		host := newCloudSOHost(
 			logrus.New().WithField("test", t.Name()),
 			NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String()),
@@ -79,22 +80,24 @@ func TestColdMountBudget(t *testing.T) {
 			},
 			nil,
 			nil,
+			nil,
 		)
-
 		if err := host.pullState(context.Background(), SeedReasonColdSeed); err != nil {
 			t.Fatalf("pullState: %v", err)
 		}
 
+		// Only the cold seed was fetched.
 		counter.assertPath(t, "/api/sobject/"+soID+"/state", 1)
 		counter.assertPath(t, "/api/sobject/"+soID+"/config-chain", 0)
 		counter.assertReason(t, SeedReasonColdSeed, 1)
 		counter.assertReason(t, SeedReasonConfigChainVerify, 0)
 	})
 
+	// A cold host pulls /state and then verifies /config-chain.
 	t.Run("cold_per_so_mount", func(t *testing.T) {
+		// Serve a state and an empty chain.
 		const soID = "so-cold"
 		priv, pid := generateTestKeypair(t)
-
 		state := &sobject.SOState{
 			Config: &sobject.SharedObjectConfig{
 				ConfigChainHash:  []byte("server-hash"),
@@ -102,7 +105,6 @@ func TestColdMountBudget(t *testing.T) {
 			},
 		}
 		stateJSON := mustMarshalSOStateMessageSnapshotJSON(t, state)
-
 		counter := newBudgetCounter()
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			counter.record(r)
@@ -119,6 +121,7 @@ func TestColdMountBudget(t *testing.T) {
 		}))
 		defer srv.Close()
 
+		// Pull through a host over the cache.
 		host := newCloudSOHost(
 			logrus.New().WithField("test", t.Name()),
 			NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String()),
@@ -131,8 +134,8 @@ func TestColdMountBudget(t *testing.T) {
 			nil,
 			nil,
 			nil,
+			nil,
 		)
-
 		if err := host.pullState(context.Background(), SeedReasonColdSeed); err != nil {
 			t.Fatalf("pullState: %v", err)
 		}
@@ -141,17 +144,19 @@ func TestColdMountBudget(t *testing.T) {
 		}
 		host.handleConfigChanged(context.Background())
 
+		// The seed and the verification were fetched once each.
 		counter.assertPath(t, "/api/sobject/"+soID+"/state", 1)
 		counter.assertPath(t, "/api/sobject/"+soID+"/config-chain", 1)
 		counter.assertReason(t, SeedReasonColdSeed, 1)
 		counter.assertReason(t, SeedReasonConfigChainVerify, 1)
 	})
 
+	// Execute cold-seeds a host with no state, subscribed before the fetch.
 	t.Run("execute_cold_seeds_when_state_missing", func(t *testing.T) {
+		// Expose the host's notification callback.
 		const soID = "so-execute-cold"
 		priv, pid := generateTestKeypair(t)
 		warmHash := []byte("warm-config-chain-hash")
-
 		state := &sobject.SOState{
 			Config: &sobject.SharedObjectConfig{
 				ConfigChainHash:  append([]byte(nil), warmHash...),
@@ -168,6 +173,7 @@ func TestColdMountBudget(t *testing.T) {
 			return callback
 		}
 
+		// Serve the state only after the subscription exists.
 		counter := newBudgetCounter()
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			counter.record(r)
@@ -185,6 +191,7 @@ func TestColdMountBudget(t *testing.T) {
 		}))
 		defer srv.Close()
 
+		// Pull through a host over the cache.
 		host := newCloudSOHost(
 			logrus.New().WithField("test", t.Name()),
 			NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String()),
@@ -200,14 +207,17 @@ func TestColdMountBudget(t *testing.T) {
 			},
 			nil,
 			nil,
+			nil,
 		)
 
+		// Execute, delivering a notification once the mount publishes.
 		execCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		errCh := make(chan error, 1)
 		ready := make(chan struct{})
 		go func() {
 			errCh <- host.execute(execCtx, func(context.Context) error {
+				// The mount publishes only with a state and a subscription.
 				if host.stateCtr.GetValue() == nil {
 					return errors.New("mount published before initial state")
 				}
@@ -226,6 +236,8 @@ func TestColdMountBudget(t *testing.T) {
 				return nil
 			})
 		}()
+
+		// The mount becomes ready and keeps the notification.
 		select {
 		case <-ready:
 		case err := <-errCh:
@@ -239,6 +251,7 @@ func TestColdMountBudget(t *testing.T) {
 			}
 		})
 
+		// Stop the host once its snapshot is published.
 		waitCtx, waitCancel := context.WithTimeout(context.Background(), time.Second)
 		defer waitCancel()
 		if _, err := host.snapCtr.WaitValue(waitCtx, nil); err != nil {
@@ -249,6 +262,7 @@ func TestColdMountBudget(t *testing.T) {
 			t.Fatalf("Execute() = %v, want context canceled", err)
 		}
 
+		// Only the cold seed was fetched.
 		counter.assertPath(t, "/api/sobject/"+soID+"/state", 1)
 		counter.assertPath(t, "/api/sobject/"+soID+"/config-chain", 0)
 		counter.assertReason(t, SeedReasonColdSeed, 1)
@@ -256,11 +270,12 @@ func TestColdMountBudget(t *testing.T) {
 		counter.assertReason(t, SeedReasonRejoin, 0)
 	})
 
+	// Execute reuses a state seeded by rejoin instead of seeding again.
 	t.Run("execute_reuses_rejoin_seed", func(t *testing.T) {
+		// Serve a state at the cached head.
 		const soID = "so-execute-rejoin"
 		priv, pid := generateTestKeypair(t)
 		warmHash := []byte("warm-config-chain-hash")
-
 		state := &sobject.SOState{
 			Config: &sobject.SharedObjectConfig{
 				ConfigChainHash:  append([]byte(nil), warmHash...),
@@ -268,7 +283,6 @@ func TestColdMountBudget(t *testing.T) {
 			},
 		}
 		stateJSON := mustMarshalSOStateMessageSnapshotJSON(t, state)
-
 		counter := newBudgetCounter()
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			counter.record(r)
@@ -283,6 +297,7 @@ func TestColdMountBudget(t *testing.T) {
 		}))
 		defer srv.Close()
 
+		// Pull through a host over the cache.
 		host := newCloudSOHost(
 			logrus.New().WithField("test", t.Name()),
 			NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String()),
@@ -298,18 +313,20 @@ func TestColdMountBudget(t *testing.T) {
 			},
 			nil,
 			nil,
+			nil,
 		)
 
+		// Seed through rejoin, then execute.
 		if err := host.ensureInitialState(context.Background(), SeedReasonRejoin); err != nil {
 			t.Fatalf("ensureInitialState(rejoin): %v", err)
 		}
-
 		execCtx, cancel := context.WithCancel(context.Background())
 		errCh := make(chan error, 1)
 		go func() {
 			errCh <- host.Execute(execCtx)
 		}()
 
+		// Stop the host once its snapshot is published.
 		waitCtx, waitCancel := context.WithTimeout(context.Background(), time.Second)
 		defer waitCancel()
 		if _, err := host.snapCtr.WaitValue(waitCtx, nil); err != nil {
@@ -320,6 +337,7 @@ func TestColdMountBudget(t *testing.T) {
 			t.Fatalf("Execute() = %v, want context canceled", err)
 		}
 
+		// Only the rejoin seed was fetched.
 		counter.assertPath(t, "/api/sobject/"+soID+"/state", 1)
 		counter.assertPath(t, "/api/sobject/"+soID+"/config-chain", 0)
 		counter.assertReason(t, SeedReasonRejoin, 1)
@@ -327,9 +345,10 @@ func TestColdMountBudget(t *testing.T) {
 		counter.assertReason(t, SeedReasonConfigChainVerify, 0)
 	})
 
+	// Listing SharedObjects fetches the list once.
 	t.Run("list_bootstrap", func(t *testing.T) {
+		// Serve only the list.
 		priv, pid := generateTestKeypair(t)
-
 		counter := newBudgetCounter()
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			counter.record(r)
@@ -340,11 +359,11 @@ func TestColdMountBudget(t *testing.T) {
 		}))
 		defer srv.Close()
 
+		// List once and count the request.
 		cli := NewSessionClient(http.DefaultClient, srv.URL, DefaultSigningEnvPrefix, priv, pid.String())
 		if _, err := cli.ListSharedObjects(context.Background()); err != nil {
 			t.Fatalf("ListSharedObjects: %v", err)
 		}
-
 		counter.assertPath(t, "/api/sobject/list", 1)
 		counter.assertReason(t, SeedReasonListBootstrap, 1)
 	})
@@ -353,11 +372,15 @@ func TestColdMountBudget(t *testing.T) {
 // budgetCounter buckets observed HTTP requests by X-Alpha-Seed-Reason header
 // and by URL path. Goroutine-safe.
 type budgetCounter struct {
-	mu       sync.Mutex
+	// mu guards byReason and byPath.
+	mu sync.Mutex
+	// byReason counts requests by seed reason.
 	byReason map[SeedReason]int
-	byPath   map[string]int
+	// byPath counts requests by URL path.
+	byPath map[string]int
 }
 
+// newBudgetCounter returns an empty budgetCounter.
 func newBudgetCounter() *budgetCounter {
 	return &budgetCounter{
 		byReason: make(map[SeedReason]int),
@@ -365,6 +388,7 @@ func newBudgetCounter() *budgetCounter {
 	}
 }
 
+// record counts r under its seed reason and path.
 func (b *budgetCounter) record(r *http.Request) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -372,7 +396,9 @@ func (b *budgetCounter) record(r *http.Request) {
 	b.byPath[r.URL.Path]++
 }
 
+// assertPath fails t unless path was requested want times.
 func (b *budgetCounter) assertPath(t *testing.T, path string, want int) {
+	// Read the count under the lock, then compare.
 	t.Helper()
 	b.mu.Lock()
 	got := b.byPath[path]
@@ -382,7 +408,9 @@ func (b *budgetCounter) assertPath(t *testing.T, path string, want int) {
 	}
 }
 
+// assertReason fails t unless reason was sent want times.
 func (b *budgetCounter) assertReason(t *testing.T, reason SeedReason, want int) {
+	// Read the count under the lock, then compare.
 	t.Helper()
 	b.mu.Lock()
 	got := b.byReason[reason]

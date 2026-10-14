@@ -1478,8 +1478,7 @@ message VerifiedSOStateCache {
   .sobject.SharedObjectConfig current_config = 5;
   // PeerState is the last durably accepted peer snapshot, when present.
   .sobject.SOState peer_state = 6;
-  // ConfigHistory retains authenticated transitions for peer catch-up.
-  repeated .sobject.SOConfigChange config_history = 7;
+  reserved 7;
   // PendingPublication retains locally accepted work until cloud acknowledgment.
   PendingSOPublication pending_publication = 8;
   // CloudState is the authenticated base for cloud deltas, separate from peers.

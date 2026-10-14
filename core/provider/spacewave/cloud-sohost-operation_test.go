@@ -60,11 +60,11 @@ func TestCloudPublicationSurvivesRestart(t *testing.T) {
 	// Hold a cache store that fails at first.
 	persistErr := errors.New("metadata unavailable")
 	failPersist := true
-	persist := func(ctx context.Context, cache *api.VerifiedSOStateCache) error {
+	persist := func(ctx context.Context, cache *api.VerifiedSOStateCache, changes []*sobject.SOConfigChange) error {
 		if failPersist {
 			return persistErr
 		}
-		return account.writeVerifiedSOStateCache(ctx, testSharedObjectID, cache)
+		return account.writeVerifiedSOStateCache(ctx, testSharedObjectID, cache, changes)
 	}
 	host := &cloudSOHost{
 		le: logrus.New().WithField("test", t.Name()), client: client,
@@ -157,6 +157,7 @@ func TestCloudPublicationSurvivesRestart(t *testing.T) {
 // TestCloudPublicationMissingBlockCannotPublish keeps checkpoint visibility behind the
 // complete dirty-block fence even when all state metadata is already durable.
 func TestCloudPublicationMissingBlockCannotPublish(t *testing.T) {
+	// Mark a block dirty that the store cannot supply.
 	syncer := newDirtySyncExecuteTestController(t, nil, nil)
 	ref, err := block.BuildBlockRef([]byte("unavailable dependency"), nil)
 	if err != nil {
@@ -165,6 +166,8 @@ func TestCloudPublicationMissingBlockCannotPublish(t *testing.T) {
 	if err := syncer.MarkDirty(t.Context(), []block_store_writeback.Mark{{Hash: ref.GetHash(), Size: 22}}); err != nil {
 		t.Fatal(err)
 	}
+
+	// A pending publication cannot flush past the missing block.
 	host := &cloudSOHost{pending: &api.PendingSOPublication{FirstPendingUnixMilli: 1}}
 	syncer.setPublication(host, host.pending)
 	if err := syncer.FlushNowUnordered(t.Context()); !errors.Is(err, block.ErrNotFound) {
@@ -204,8 +207,8 @@ func TestCloudPublicationConcurrentAcceptance(t *testing.T) {
 		le: logrus.New().WithField("test", t.Name()), client: newTestPublicationClient(server, key, peerID),
 		soID: testSharedObjectID, peerID: peerID, stateCtr: ccontainer.NewCContainer(initial),
 		verifiedConfig: initial.GetConfig(), lastConfigChainHash: initial.GetConfig().GetConfigChainHash(),
-		persistVerifiedStateCache: func(ctx context.Context, cache *api.VerifiedSOStateCache) error {
-			return account.writeVerifiedSOStateCache(ctx, testSharedObjectID, cache)
+		persistVerifiedStateCache: func(ctx context.Context, cache *api.VerifiedSOStateCache, changes []*sobject.SOConfigChange) error {
+			return account.writeVerifiedSOStateCache(ctx, testSharedObjectID, cache, changes)
 		},
 	}
 
