@@ -1040,10 +1040,15 @@ func (e *Engine) AccessWorldState(
 
 // holdRoot clones root and pins its blocks against collection until release.
 // The caller must hold bcast so root stays published until it is pinned.
+// Since every reader and writer waits for bcast, the pin does not wait for a
+// peer to connect: a root block no local store or connected peer holds fails
+// the hold with an error block.IsNotAvailable reports.
 // Cursor.Clone copies the bucket handle without taking a release func, so the
 // hold does not establish a cross-bucket lifetime across Engine.Close.
 func (e *Engine) holdRoot(ctx context.Context, root *bucket_lookup.Cursor) (*bucket_lookup.Cursor, func(), error) {
+	// Pin a clone of root without waiting for an absent peer.
 	held := root.Clone()
+	ctx, _ = block.WithoutPeerWait(ctx)
 	unpin, err := block.PinRoot(ctx, e.writeBlockStore, held.GetRef().GetRootRef())
 	if err != nil {
 		held.Release()
