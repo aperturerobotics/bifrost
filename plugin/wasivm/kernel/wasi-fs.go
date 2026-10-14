@@ -411,10 +411,13 @@ func (p *Process) wasiFDPwrite(mem engine.Memory, fd, iovsPtr, iovsLen uint32, o
 	// Write each buffer after the last.
 	pos := int64(offset)
 	return wasiTransfer(mem, iovsPtr, iovsLen, nwrittenPtr, func(base, length uint32) (uint32, uint32) {
-		// Write the buffer to the file.
+		// Write the buffer to the file if the seals allow it.
 		buf, ok := mem.Read(base, length)
 		if !ok {
 			return 0, wasiErrnoFault
+		}
+		if res := of.node.checkWrite(pos, len(buf)); res != 0 {
+			return 0, wasiErrnoFromResult(res)
 		}
 		n, res := p.kernel.writeNodeBytes(of, pos, buf)
 		if res != 0 {

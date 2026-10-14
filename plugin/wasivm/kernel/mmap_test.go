@@ -190,3 +190,55 @@ func TestMemfdCreateFlags(t *testing.T) {
 		t.Fatalf("memfd_create of a/b = %#x, want EINVAL", res)
 	}
 }
+
+// TestMemfdSeals checks a sealable memfd takes seals that refuse the changes
+// they name, that a writable shared mapping blocks sealWrite, and that a
+// memfd created without MFD_ALLOW_SEALING takes none.
+func TestMemfdSeals(t *testing.T) {
+	// A mapped file cannot be write-sealed.
+	p, mem := fsTestProcess()
+	fd := memfdTest(t, p, mem, "abcd")
+	of := p.fds[fd]
+	if res := p.sysFcntl(fd, fGET_SEALS, 0); res != 0 {
+		t.Fatalf("seals of a new memfd = %#x, want none", res)
+	}
+	p.sysMmap(mmapTestAddr, 4, guestProtWrite, guestMapShared, fd, 0)
+	if res := p.sysFcntl(fd, fADD_SEALS, sealWrite); res != negErrno(EBUSY) {
+		t.Fatalf("write seal while mapped = %#x, want EBUSY", res)
+	}
+	p.sysMunmap(mmapTestAddr, 4)
+
+	// Size seals refuse resizes and writes past the end.
+	if res := p.sysFcntl(fd, fADD_SEALS, sealShrink|sealGrow); res != 0 {
+		t.Fatalf("add size seals = %#x", res)
+	}
+	if res := p.wasiFDFileStatSetSize(fd, 2); res != wasiErrnoFromResult(negErrno(EPERM)) {
+		t.Fatalf("shrink = %d, want EPERM", res)
+	}
+	if res := p.wasiFDFileStatSetSize(fd, 8); res != wasiErrnoFromResult(negErrno(EPERM)) {
+		t.Fatalf("grow = %d, want EPERM", res)
+	}
+	of.offset = 2
+	if res := p.writeVFS(of, []byte("xy")); res != 2 {
+		t.Fatalf("write within the file = %#x, want 2", res)
+	}
+	if res := p.writeVFS(of, []byte("z")); res != negErrno(EPERM) {
+		t.Fatalf("write past the end = %#x, want EPERM", res)
+	}
+
+	// sealSeal refuses further seals.
+	p.sysFcntl(fd, fADD_SEALS, sealSeal)
+	if res := p.sysFcntl(fd, fADD_SEALS, sealWrite); res != negErrno(EPERM) {
+		t.Fatalf("seal after sealSeal = %#x, want EPERM", res)
+	}
+	if res := p.sysFcntl(fd, fGET_SEALS, 0); res != sealSeal|sealShrink|sealGrow {
+		t.Fatalf("seals = %#x", res)
+	}
+
+	// A memfd without MFD_ALLOW_SEALING holds sealSeal.
+	mem.writeCString(mmapTestName, "fixed")
+	fixed := uint32(p.sysMemfdCreate(mmapTestName, 0))
+	if res := p.sysFcntl(fixed, fADD_SEALS, sealGrow); res != negErrno(EPERM) {
+		t.Fatalf("seal of an unsealable memfd = %#x, want EPERM", res)
+	}
+}

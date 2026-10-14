@@ -13,8 +13,8 @@ const (
 	guestMapType   = 0x3
 )
 
-// The guest's memfd_create flags: close-on-exec and sealing, which the
-// kernel ignores, and the executable bits.
+// The guest's memfd_create flags: close-on-exec, which the kernel ignores,
+// sealing and the executable bits.
 const (
 	guestMfdCloexec      = 0x1
 	guestMfdAllowSealing = 0x2
@@ -47,8 +47,8 @@ func (m *mapping) overlaps(addr, length uint32) bool {
 }
 
 // sysMemfdCreate creates an anonymous in-memory file and returns its
-// descriptor. The name only labels the descriptor. File seals are not
-// stored, so F_ADD_SEALS fails.
+// descriptor. The name only labels the descriptor. MFD_ALLOW_SEALING leaves
+// the file unsealed, and MFD_NOEXEC_SEAL also seals it unexecutable.
 func (p *Process) sysMemfdCreate(namePtr, flags uint32) uint64 {
 	// Check the flags.
 	if flags&^(guestMfdCloexec|guestMfdAllowSealing|guestMfdNoexecSeal|guestMfdExec) != 0 {
@@ -59,8 +59,16 @@ func (p *Process) sysMemfdCreate(namePtr, flags uint32) uint64 {
 		return negErrno(EINVAL)
 	}
 
-	// Open a detached file.
-	return uint64(p.installFD(p.kernel.newMemfd(name)))
+	// Open a detached file, unsealed when the flags allow sealing.
+	of := p.kernel.newMemfd(name)
+	switch {
+	case flags&guestMfdNoexecSeal != 0:
+		of.node.mode &^= 0o111
+		of.node.seals = sealExec
+	case flags&guestMfdAllowSealing != 0:
+		of.node.seals = 0
+	}
+	return uint64(p.installFD(of))
 }
 
 // newMemfd opens a detached in-memory file named for memfd_create. The
@@ -86,6 +94,8 @@ func (p *Process) sysMmap(addr, length, prot, flags, fd uint32, off int64) uint6
 		return negErrno(EINVAL)
 	case of.flags&0o3 == oWRONLY || shared && of.flags&0o3 != oRDWR:
 		return negErrno(EACCES)
+	case shared && of.node.seals&(sealWrite|sealFutureWrite) != 0:
+		return negErrno(EPERM)
 	}
 
 	// Copy the file into the memory.

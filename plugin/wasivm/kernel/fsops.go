@@ -163,13 +163,18 @@ func (p *Process) lookup(resolved string, flags uint32) (*VNode, uint64) {
 }
 
 // chmodNode sets a node's permission bits, on the root filesystem too for a
-// host-backed file.
+// host-backed file. A file sealed with sealExec keeps its execute bits.
 func (p *Process) chmodNode(node *VNode, mode uint32) uint64 {
-	// Set the mode on the root filesystem, then the node.
-	if node.mode&sIFMT == sIFLNK {
-		return negErrno(EOPNOTSUPP)
-	}
+	// Refuse a symlink and a sealed change.
 	mode &= 0o7777
+	switch {
+	case node.mode&sIFMT == sIFLNK:
+		return negErrno(EOPNOTSUPP)
+	case node.seals&sealExec != 0 && (node.mode^mode)&0o111 != 0:
+		return negErrno(EPERM)
+	}
+
+	// Set the mode on the root filesystem, then the node.
 	if node.hostPath != "" {
 		if err := p.kernel.vfs.chmodHost(node.hostPath, mode); err != nil {
 			return negErrno(EIO)

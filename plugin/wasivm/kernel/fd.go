@@ -161,6 +161,10 @@ func (p *Process) sysFcntl(fd, cmd, arg uint32) uint64 {
 	case fSETFL:
 		of.flags = of.flags&^(oAPPEND|oNONBLOCK) | kernelStatusFlags(arg)
 		return 0
+	case fADD_SEALS:
+		return p.kernel.addSeals(of, arg)
+	case fGET_SEALS:
+		return getSeals(of)
 	}
 	return negErrno(EINVAL)
 }

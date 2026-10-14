@@ -43,6 +43,9 @@ const (
 	sigSetmask = 2
 )
 
+// guestSaSiginfo is the sigaction flag asking for a handler with siginfo.
+const guestSaSiginfo = 0x4
+
 // Signal dispositions below which a sigaction handler is a guest function.
 const (
 	// sigDfl selects the signal's default action.
@@ -120,6 +123,8 @@ const (
 	fGETFL         = 3
 	fSETFL         = 4
 	fDUPFD_CLOEXEC = 0x406
+	fADD_SEALS     = 0x409
+	fGET_SEALS     = 0x40a
 	fdCLOEXEC      = 1
 )
 

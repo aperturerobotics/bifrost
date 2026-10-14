@@ -506,7 +506,9 @@ func (p *Process) initIgnores(sig uint32) bool {
 }
 
 // sysRtSigaction writes signum's disposition to oldActPtr and installs the
-// one at actPtr, skipping either pointer that is null.
+// one at actPtr, skipping either pointer that is null. The signal trampoline
+// passes a handler the signal number alone, so it refuses SA_SIGINFO rather
+// than call a three-argument handler with one.
 func (p *Process) sysRtSigaction(signum, actPtr, oldActPtr uint32) uint64 {
 	// SIGKILL and SIGSTOP keep their default action.
 	if signum == 0 || signum >= 32 || signum == SIGKILL || signum == SIGSTOP {
@@ -522,6 +524,9 @@ func (p *Process) sysRtSigaction(signum, actPtr, oldActPtr uint32) uint64 {
 		flags, _ := mem.ReadUint32Le(actPtr + 4)
 		maskLo, _ := mem.ReadUint32Le(actPtr + 8)
 		maskHi, _ := mem.ReadUint32Le(actPtr + 12)
+		if flags&guestSaSiginfo != 0 {
+			return negErrno(EINVAL)
+		}
 		act = &sigAction{handler: handler, flags: flags, mask: uint64(maskLo) | uint64(maskHi)<<32}
 	}
 

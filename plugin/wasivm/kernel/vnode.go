@@ -37,6 +37,8 @@ type VNode struct {
 	atime time.Time
 	mtime time.Time
 	ctime time.Time
+	// seals holds the file seals of an in-memory regular file.
+	seals uint32
 }
 
 // setSymlink points a symlink at target.

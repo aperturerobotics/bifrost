@@ -186,7 +186,10 @@ func (p *Process) writeVFS(of *OpenFile, buf []byte) uint64 {
 		return negErrno(EIO)
 	}
 
-	// Write a regular file and advance the offset.
+	// Write a regular file the seals allow and advance the offset.
+	if errno := of.node.checkWrite(of.offset, len(buf)); errno != 0 {
+		return errno
+	}
 	n, errno := p.kernel.writeNodeBytes(of, of.offset, buf)
 	if errno != 0 {
 		return errno
@@ -218,8 +221,13 @@ func (p *Process) writeTerminal(ctx context.Context, of *OpenFile, buf []byte) u
 }
 
 // truncateNode resizes a file to size, zero-extending it or dropping its
-// tail. truncate and ftruncate share it.
+// tail, unless a seal forbids it. truncate and ftruncate share it.
 func (p *Process) truncateNode(node *VNode, size int64) uint64 {
+	// Refuse a sealed change.
+	if errno := node.checkTruncate(size); errno != 0 {
+		return errno
+	}
+
 	// Resize a host file.
 	if node.hostPath != "" {
 		if err := p.kernel.vfs.truncateHost(node.hostPath, size); err != nil {

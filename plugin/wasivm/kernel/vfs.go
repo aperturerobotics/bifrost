@@ -42,7 +42,7 @@ func (v *VFS) allocIno() uint64 {
 // newNode creates a detached node of mode with a fresh inode number.
 func (v *VFS) newNode(mode uint32) *VNode {
 	now := time.Now()
-	return &VNode{ino: v.allocIno(), mode: mode, nlink: 1, atime: now, mtime: now, ctime: now}
+	return &VNode{ino: v.allocIno(), mode: mode, nlink: 1, atime: now, mtime: now, ctime: now, seals: sealSeal}
 }
 
 // newDir creates a detached empty directory.
