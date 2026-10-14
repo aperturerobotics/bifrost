@@ -272,9 +272,11 @@ func (x *ChatRedaction) GetReason() string {
 // ChatStateChange replaces one channel state value while retaining its history.
 type ChatStateChange struct {
 	unknownFields []byte
-	// Type is an open protocol vocabulary identifying the state schema.
+	// Type is an open protocol vocabulary identifying the state schema, of at
+	// most 255 characters.
 	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	// StateKey is an external state identity within Type, not a World object key.
+	// StateKey is an external state identity within Type, not a World object key,
+	// of at most 255 characters.
 	StateKey string `protobuf:"bytes,2,opt,name=state_key,json=stateKey,proto3" json:"stateKey,omitempty"`
 	// ContentJson is a complete JSON object, bounded to 64 KiB.
 	// The producing protocol validates its schema and canonicalizes its encoding.

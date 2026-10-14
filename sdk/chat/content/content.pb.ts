@@ -260,13 +260,15 @@ export const ChatRedaction: MessageType<ChatRedaction> =
  */
 export interface ChatStateChange {
   /**
-   * Type is an open protocol vocabulary identifying the state schema.
+   * Type is an open protocol vocabulary identifying the state schema, of at
+   * most 255 characters.
    *
    * @generated from field: string type = 1;
    */
   type?: string
   /**
-   * StateKey is an external state identity within Type, not a World object key.
+   * StateKey is an external state identity within Type, not a World object key,
+   * of at most 255 characters.
    *
    * @generated from field: string state_key = 2;
    */

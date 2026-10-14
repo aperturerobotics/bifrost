@@ -10,8 +10,8 @@ import (
 
 // Validate checks the state identity and bounded external JSON object.
 func (s *ChatStateChange) Validate() error {
-	// NUL separates the two external identities in the current-state graph label.
-	if s.GetType() == "" || len(s.GetType()) > 255 || len(s.GetStateKey()) > 255 || strings.ContainsRune(s.GetType(), 0) || strings.ContainsRune(s.GetStateKey(), 0) || !utf8.ValidString(s.GetType()) || !utf8.ValidString(s.GetStateKey()) {
+	// Bound the two external identities of the current-state graph label.
+	if s.GetType() == "" || !validStateIdentity(s.GetType()) || !validStateIdentity(s.GetStateKey()) {
 		return errors.New("chat state requires a bounded type and state key")
 	}
 
@@ -27,4 +27,10 @@ func (s *ChatStateChange) Validate() error {
 		return errors.New("chat state content must be a JSON object")
 	}
 	return nil
+}
+
+// validStateIdentity reports whether a state type or key is UTF-8 of at most
+// 255 characters without NUL, which separates the two in the graph label.
+func validStateIdentity(identity string) bool {
+	return utf8.ValidString(identity) && utf8.RuneCountInString(identity) <= 255 && !strings.ContainsRune(identity, 0)
 }

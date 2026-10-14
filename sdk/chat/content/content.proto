@@ -79,9 +79,11 @@ message ChatRedaction {
 
 // ChatStateChange replaces one channel state value while retaining its history.
 message ChatStateChange {
-  // Type is an open protocol vocabulary identifying the state schema.
+  // Type is an open protocol vocabulary identifying the state schema, of at
+  // most 255 characters.
   string type = 1;
-  // StateKey is an external state identity within Type, not a World object key.
+  // StateKey is an external state identity within Type, not a World object key,
+  // of at most 255 characters.
   string state_key = 2;
   // ContentJson is a complete JSON object, bounded to 64 KiB.
   // The producing protocol validates its schema and canonicalizes its encoding.
