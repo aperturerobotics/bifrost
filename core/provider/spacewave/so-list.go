@@ -13,7 +13,7 @@ func (a *ProviderAccount) syncSharedObjectListAccess(
 ) {
 	// Record the access flag and take the invalidator when it changed.
 	allowed := hasSOListAccess(subStatus)
-	var invalidate func()
+	var invalidate func() bool
 	var changed bool
 	a.soListBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		// Store the flag and take the invalidator only on a change.
@@ -49,14 +49,13 @@ func (a *ProviderAccount) hasSharedObjectListAccess() bool {
 }
 
 // invalidateSharedObjectList restarts soListRc when a full snapshot is stale.
-func (a *ProviderAccount) invalidateSharedObjectList() {
-	var invalidate func()
+// It returns whether a refetch started.
+func (a *ProviderAccount) invalidateSharedObjectList() bool {
+	var invalidate func() bool
 	a.soListBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
 		invalidate = a.soListInvalidate
 	})
-	if invalidate != nil {
-		invalidate()
-	}
+	return invalidate != nil && invalidate()
 }
 
 // resolveSharedObjectList resolves the shared object list once for current subscribers.
@@ -64,13 +63,13 @@ func (a *ProviderAccount) resolveSharedObjectList(
 	ctx context.Context,
 	_ func(),
 ) (struct{}, func(), error) {
-	a.setSharedObjectListInvalidator(func() {
-		a.soListRc.Invalidate()
-	})
+	a.setSharedObjectListInvalidator(a.soListRc.Invalidate)
 
+	// Without list access no revisions arrive to reconcile metadata against.
 	if !a.hasSharedObjectListAccess() {
 		a.soListCtr.SetValue(&sobject.SharedObjectList{})
 		a.selfEnrollmentRefresh.Trigger()
+		a.InvalidateSharedObjectMetadataCache()
 		return struct{}{}, nil, nil
 	}
 	if err := a.fetchSharedObjectList(ctx); err != nil {
@@ -80,7 +79,7 @@ func (a *ProviderAccount) resolveSharedObjectList(
 }
 
 // setSharedObjectListInvalidator stores the active invalidation callback.
-func (a *ProviderAccount) setSharedObjectListInvalidator(invalidate func()) {
+func (a *ProviderAccount) setSharedObjectListInvalidator(invalidate func() bool) {
 	a.soListBcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		a.soListInvalidate = invalidate
 		broadcast()
