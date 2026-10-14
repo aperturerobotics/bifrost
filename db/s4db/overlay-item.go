@@ -28,6 +28,12 @@ func overlayProbe(key []byte) overlayItem {
 	return overlayItem{head: head(key), key: key}
 }
 
+// overlayDegree is the overlay tree's branching degree. Each commit
+// publishes the overlay to readers, so the next commit copies every node it
+// changes, and a random key copies a whole leaf. Nodes smaller than the
+// library default halve those copies, at a slightly deeper search.
+const overlayDegree = 8
+
 // newOverlay returns an empty overlay.
 func newOverlay() *btree.BTreeG[overlayItem] {
 	return btree.NewBTreeGOptions(func(a, b overlayItem) bool {
@@ -35,5 +41,5 @@ func newOverlay() *btree.BTreeG[overlayItem] {
 			return a.head < b.head
 		}
 		return bytes.Compare(a.key, b.key) < 0
-	}, btree.Options{NoLocks: true})
+	}, btree.Options{NoLocks: true, Degree: overlayDegree})
 }
