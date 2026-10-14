@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 	"unsafe"
 
 	provider_spacewave "github.com/s4wave/spacewave/core/provider/spacewave"
@@ -265,4 +266,35 @@ func generateEntityKey(t *testing.T) (bifrost_crypto.PrivKey, peer.ID, ed25519.P
 	}
 	std := priv.(interface{ GetStdKey() ed25519.PrivateKey }).GetStdKey()
 	return priv, pid, std
+}
+
+// TestBridgeStoreReadsUnlockBeforeStart checks that an unlock between seeding
+// the keypairs watch state and starting the key store bridge reaches the state.
+func TestBridgeStoreReadsUnlockBeforeStart(t *testing.T) {
+	// Seed the watch state from an empty key store, then unlock a key.
+	ctx := t.Context()
+	store := provider_spacewave.NewEntityKeyStore()
+	state := &entityKeypairsWatchState{unlockedPeers: store.GetUnlockedPeerIDs()}
+	priv, pid, _ := generateEntityKey(t)
+	store.Unlock(pid, priv)
+	go state.bridgeStore(ctx, store)
+
+	// Wait for the watch state to show the unlocked key.
+	timeout := time.After(5 * time.Second)
+	for {
+		var unlocked bool
+		var waitCh <-chan struct{}
+		state.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			unlocked = state.unlockedPeers[pid]
+			waitCh = getWaitCh()
+		})
+		if unlocked {
+			return
+		}
+		select {
+		case <-waitCh:
+		case <-timeout:
+			t.Fatal("watch state did not receive the unlocked key")
+		}
+	}
 }

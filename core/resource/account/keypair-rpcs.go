@@ -2,6 +2,8 @@ package resource_account
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
@@ -39,11 +41,11 @@ func (r *AccountResource) WatchEntityKeypairs(
 	}
 	ctx := strm.Context()
 	store := acc.GetEntityKeyStore()
-	state := &entityKeypairsWatchState{
-		keypairs:      acc.KeypairsSnapshot(),
-		valid:         acc.AccountStateSnapshot() != nil,
-		unlockedPeers: store.GetUnlockedPeerIDs(),
-	}
+	state := &entityKeypairsWatchState{unlockedPeers: store.GetUnlockedPeerIDs()}
+	acc.GetAccountBroadcast().HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		state.keypairs = acc.KeypairsSnapshot()
+		state.valid = acc.AccountStateSnapshot() != nil
+	})
 
 	// Forward account and key-store changes into the combined watch state.
 	bridgeCtx, cancelBridges := context.WithCancel(ctx)
@@ -61,10 +63,14 @@ func (r *AccountResource) WatchEntityKeypairs(
 // the watch never observes a stale wait channel paired with a fresh source
 // update.
 type entityKeypairsWatchState struct {
-	keypairs      []*session.EntityKeypair
-	valid         bool
+	// bcast guards the fields below.
+	bcast broadcast.Broadcast
+	// keypairs is the account's entity keypair list.
+	keypairs []*session.EntityKeypair
+	// valid reports whether the account state has loaded.
+	valid bool
+	// unlockedPeers is the set of entity keys unlocked in the key store.
 	unlockedPeers map[peer.ID]bool
-	bcast         broadcast.Broadcast
 }
 
 // bridgeAccount forwards account broadcast wakeups into the local broadcast,
@@ -75,22 +81,32 @@ func (s *entityKeypairsWatchState) bridgeAccount(
 ) {
 	accountBcast := acc.GetAccountBroadcast()
 	for {
+		// Read the account snapshot with the wait channel in one HoldLock.
+		var keypairs []*session.EntityKeypair
+		var valid bool
 		var waitCh <-chan struct{}
 		accountBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			keypairs = acc.KeypairsSnapshot()
+			valid = acc.AccountStateSnapshot() != nil
 			waitCh = getWaitCh()
 		})
+
+		// Publish the snapshot when it differs from the watch state.
+		s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			if valid == s.valid && slices.EqualFunc(s.keypairs, keypairs, (*session.EntityKeypair).EqualVT) {
+				return
+			}
+			s.keypairs = keypairs
+			s.valid = valid
+			broadcast()
+		})
+
+		// Wait for the next account change.
 		select {
 		case <-ctx.Done():
 			return
 		case <-waitCh:
 		}
-		keypairs := acc.KeypairsSnapshot()
-		valid := acc.AccountStateSnapshot() != nil
-		s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-			s.keypairs = keypairs
-			s.valid = valid
-			broadcast()
-		})
 	}
 }
 
@@ -102,20 +118,29 @@ func (s *entityKeypairsWatchState) bridgeStore(
 ) {
 	storeBcast := store.GetBroadcast()
 	for {
+		// Take the wait channel before reading the unlocked peers, so an
+		// unlock during the read wakes the next iteration.
 		var waitCh <-chan struct{}
 		storeBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
 			waitCh = getWaitCh()
 		})
+
+		// Publish the unlocked peers when they differ from the watch state.
+		unlockedPeers := store.GetUnlockedPeerIDs()
+		s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			if maps.Equal(s.unlockedPeers, unlockedPeers) {
+				return
+			}
+			s.unlockedPeers = unlockedPeers
+			broadcast()
+		})
+
+		// Wait for the next key store change.
 		select {
 		case <-ctx.Done():
 			return
 		case <-waitCh:
 		}
-		unlockedPeers := store.GetUnlockedPeerIDs()
-		s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-			s.unlockedPeers = unlockedPeers
-			broadcast()
-		})
 	}
 }
 
@@ -339,7 +364,8 @@ func (r *AccountResource) watchLocalEntityKeypairs(
 	if err != nil {
 		return err
 	}
-	settings, err := account_settings.ReadSnapshot(ctx, stateCtr.GetValue())
+	snapshot := stateCtr.GetValue()
+	settings, err := account_settings.ReadSnapshot(ctx, snapshot)
 	if err != nil {
 		return err
 	}
@@ -352,19 +378,19 @@ func (r *AccountResource) watchLocalEntityKeypairs(
 	// Bridge settings and key store changes into the watch loop.
 	bridgeCtx, cancelBridges := context.WithCancel(ctx)
 	defer cancelBridges()
-	go state.bridgeLocalAccountSettings(bridgeCtx, stateCtr)
+	go state.bridgeLocalAccountSettings(bridgeCtx, stateCtr, snapshot)
 	go state.bridgeStore(bridgeCtx, store)
 
 	return state.runWatchLoop(ctx, strm.Send)
 }
 
 // bridgeLocalAccountSettings publishes the entity keypairs of each settings
-// change.
+// change after current, the snapshot the watch state was seeded from.
 func (s *entityKeypairsWatchState) bridgeLocalAccountSettings(
 	ctx context.Context,
 	stateCtr ccontainer.Watchable[sobject.SharedObjectStateSnapshot],
+	current sobject.SharedObjectStateSnapshot,
 ) {
-	current := stateCtr.GetValue()
 	for {
 		next, err := stateCtr.WaitValueChange(ctx, current, nil)
 		if err != nil {

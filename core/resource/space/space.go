@@ -667,6 +667,9 @@ func (r *SpaceResource) contentsRuntimeConfig(ctx context.Context) *plugin_space
 
 // bridgeSharingMailbox copies the pending mailbox entries of soID into state on
 // every account change until ctx ends.
+//
+// The mailbox cache is updated before the account broadcast fires, so taking
+// the wait channel before reading the cache cannot miss a change.
 func bridgeSharingMailbox(
 	ctx context.Context,
 	state *sharingstate.State,
@@ -675,17 +678,22 @@ func bridgeSharingMailbox(
 ) {
 	accountBcast := swAcc.GetAccountBroadcast()
 	for {
+		// Take the wait channel before reading the mailbox cache.
 		var waitCh <-chan struct{}
 		accountBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
 			waitCh = getWaitCh()
 		})
+
+		// Copy the current entries into the sharing state.
+		entries, _ := swAcc.GetPendingMailboxEntriesSnapshot(soID)
+		state.SetMailboxEntries(sharingMailboxEntriesFromProto(entries))
+
+		// Wait for the next account change.
 		select {
 		case <-ctx.Done():
 			return
 		case <-waitCh:
 		}
-		entries, _ := swAcc.GetPendingMailboxEntriesSnapshot(soID)
-		state.SetMailboxEntries(sharingMailboxEntriesFromProto(entries))
 	}
 }
 
