@@ -2,143 +2,204 @@ package world_block
 
 import (
 	"context"
+	"slices"
 
-	"github.com/s4wave/spacewave/db/block"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/world"
 )
 
+// changeWatchHeads bounds the published heads the Engine retains so a change
+// watcher can compare a later head against the one it last saw.
+const changeWatchHeads = 128
+
+// changeWatchDiffLimit bounds the changed tree keys one head comparison lists
+// per tree before it reports an unknown ChangeSet.
+const changeWatchDiffLimit = 16384
+
+// watchedHead is a published head retained for change watchers.
+type watchedHead struct {
+	// seqno is the World seqno of the head.
+	seqno uint64
+	// root is the held root cursor.
+	root *bucket_lookup.Cursor
+	// release drops the root and its pin.
+	release func()
+}
+
 // WatchChanges calls cb with each later seqno and the changes since the
-// previous one, read from the World changelog. The ChangeSet is unknown when
-// the changelog is disabled, no longer holds every entry since the previous
-// seqno, or no longer continues from the entry it last reported. Each read
-// covers every entry since the previous call, so calls coalesce while cb runs.
+// previous one. The changes come from comparing the World trees of the head the
+// watcher last saw against the current head, so they need no changelog.
+//
+// The Engine retains the last changeWatchHeads heads it publishes after the
+// first watcher starts. The ChangeSet is unknown when the head at the previous
+// seqno is no longer retained or was published before retention started, when
+// two retained heads share that seqno, or when the change is too large to
+// list. Calls coalesce while cb runs.
 func (e *Engine) WatchChanges(
 	ctx context.Context,
 	afterSeqno uint64,
 	cb func(seqno uint64, changes *world.ChangeSet) error,
 ) error {
-	var base *ChangeLogEntry
+	if err := e.startWatchedHeads(ctx); err != nil {
+		return err
+	}
 	for {
 		// Wait for the head to pass the base seqno.
 		if _, err := e.WaitSeqno(ctx, afterSeqno+1); err != nil {
 			return err
 		}
 
-		// Read the changes since the base from one head snapshot.
-		var seqno uint64
-		var head *ChangeLogEntry
-		var changes *world.ChangeSet
-		err := e.AccessWorldState(ctx, nil, func(cursor *bucket_lookup.Cursor) error {
-			_, rootBcs := cursor.BuildTransaction(nil)
-			var err error
-			seqno, head, changes, err = readChangeSet(ctx, rootBcs, afterSeqno, base)
-			return err
-		})
+		// Hold the current head and the retained head at the base seqno.
+		head, base, err := e.holdWatchedHeads(ctx, afterSeqno)
 		if err != nil {
 			return err
 		}
+		if head.seqno <= afterSeqno {
+			head.release()
+			continue
+		}
+
+		// Compare the two heads outside the publication lock.
+		changes := world.NewUnknownChangeSet()
+		if base != nil {
+			changes, err = e.compareHeads(ctx, base.root, head.root)
+			base.release()
+		}
+		head.release()
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			e.le.WithError(err).Warn("world change comparison failed; reporting unknown changes")
+		}
 
 		// Report the changes and advance the base.
-		if err := cb(seqno, changes); err != nil {
+		if err := cb(head.seqno, changes); err != nil {
 			return err
 		}
-		afterSeqno, base = seqno, head
+		afterSeqno = head.seqno
 	}
 }
 
-// readChangeSet reads the head seqno, the head entry, and the changes after
-// afterSeqno from the World at rootBcs. base is the entry at afterSeqno when
-// known; the history must still contain it to report precise changes.
-func readChangeSet(
-	ctx context.Context,
-	rootBcs *block.Cursor,
-	afterSeqno uint64,
-	base *ChangeLogEntry,
-) (uint64, *ChangeLogEntry, *world.ChangeSet, error) {
-	// A disabled or regressed changelog cannot describe the changes.
-	root, err := UnmarshalWorld(ctx, rootBcs)
+// startWatchedHeads starts retaining published heads for change watchers.
+// The current head was published before retention, and a watcher at its seqno
+// may have seen another root with that seqno, so its seqno becomes the floor.
+func (e *Engine) startWatchedHeads(ctx context.Context) error {
+	// Leave retention running when it already started.
+	locked := e.bcast.Lock()
+	defer locked.Unlock()
+	if e.closed {
+		return ErrEngineClosed
+	}
+	if e.watchedHeads != nil {
+		return nil
+	}
+
+	// Start with an empty history above the current head.
+	seqno, err := e.headSeqnoLocked(ctx)
 	if err != nil {
-		return 0, nil, nil, err
+		return err
 	}
-	seqno := root.GetLastChange().GetSeqno()
-	if root.GetLastChangeDisable() || seqno <= afterSeqno {
-		return seqno, nil, world.NewUnknownChangeSet(), nil
-	}
+	e.watchedHeads = make([]*watchedHead, 0, changeWatchHeads)
+	e.watchedFloor = seqno
+	return nil
+}
 
-	// Read the entries after the base, and the base entry when it is known.
-	readAfter := afterSeqno
-	if base != nil {
-		readAfter--
+// holdWatchedHeads holds the current head and the retained head at
+// afterSeqno. base is nil when no single retained head has that seqno.
+func (e *Engine) holdWatchedHeads(ctx context.Context, afterSeqno uint64) (head, base *watchedHead, err error) {
+	// Hold the current head under the publication lock.
+	locked := e.bcast.Lock()
+	defer locked.Unlock()
+	if e.closed {
+		return nil, nil, ErrEngineClosed
 	}
-	entries, err := ReadChangeLogEntriesFromCursor(ctx, rootBcs, ChangeLogReadOptions{AfterSeqno: readAfter})
+	seqno, err := e.headSeqnoLocked(ctx)
 	if err != nil {
-		return 0, nil, nil, err
+		return nil, nil, err
 	}
-	if len(entries) == 0 {
-		return seqno, nil, world.NewUnknownChangeSet(), nil
-	}
-	head := entries[0]
-
-	// Require the history to continue from the base entry.
-	if base != nil {
-		last := entries[len(entries)-1]
-		if !sameChangeLogEntry(base, last) {
-			return seqno, head, world.NewUnknownChangeSet(), nil
-		}
-		entries = entries[:len(entries)-1]
+	head, err = e.holdWatchedHead(ctx, e.head.root, seqno)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// Require every entry after the base, then collect their keys and quads.
-	if uint64(len(entries)) != seqno-afterSeqno {
-		return seqno, head, world.NewUnknownChangeSet(), nil
+	// Find the one retained root at the base seqno.
+	if afterSeqno <= e.watchedFloor {
+		return head, nil, nil
 	}
-	changes := &world.ChangeSet{}
-	for _, entry := range entries {
-		if len(entry.Changes) == 0 {
-			return seqno, head, world.NewUnknownChangeSet(), nil
+	var found *watchedHead
+	for _, h := range e.watchedHeads {
+		if h.seqno != afterSeqno {
+			continue
 		}
-		for _, change := range entry.Changes {
-			if !addWorldChange(changes, change) {
-				return seqno, head, world.NewUnknownChangeSet(), nil
-			}
+		if found != nil && !found.root.GetRef().EqualsRef(h.root.GetRef()) {
+			return head, nil, nil
 		}
+		found = h
 	}
-	return seqno, head, changes, nil
+	if found == nil {
+		return head, nil, nil
+	}
+	base, err = e.holdWatchedHead(ctx, found.root, found.seqno)
+	if err != nil {
+		head.release()
+		return nil, nil, err
+	}
+	return head, base, nil
 }
 
-// addWorldChange adds the keys or quad of change to changes.
-// Returns false if the change does not name what it changed.
-func addWorldChange(changes *world.ChangeSet, change *WorldChange) bool {
-	switch change.GetChangeType() {
-	case WorldChangeType_WorldChange_GRAPH_SET, WorldChangeType_WorldChange_GRAPH_DELETE:
-		if change.GetQuad() == nil {
-			return false
-		}
-		changes.Quads = append(changes.Quads, change.GetQuad())
-	default:
-		if change.GetKey() == "" {
-			return false
-		}
-		changes.Keys = append(changes.Keys, change.GetKey())
-		if newKey := change.GetNewKey(); newKey != "" {
-			changes.Keys = append(changes.Keys, newKey)
-		}
+// recordWatchedHeadLocked retains a newly published head for change watchers
+// once retention has started. It returns the evicted oldest head for release
+// after the lock. A head that cannot be retained raises the floor instead, so
+// no watcher compares across it. The caller must hold bcast.
+func (e *Engine) recordWatchedHeadLocked(ctx context.Context, root *bucket_lookup.Cursor, seqno uint64) *watchedHead {
+	// Skip retention until the first watcher starts it.
+	if e.watchedHeads == nil {
+		return nil
 	}
-	return true
+
+	// Retain the head, or fence comparisons across it.
+	h, err := e.holdWatchedHead(ctx, root, seqno)
+	if err != nil {
+		e.le.WithError(err).Warn("world change watch cannot retain head; reporting unknown changes")
+		e.watchedFloor = max(e.watchedFloor, seqno)
+		return nil
+	}
+
+	// Evict the oldest head at capacity.
+	var evicted *watchedHead
+	if len(e.watchedHeads) == changeWatchHeads {
+		evicted = e.watchedHeads[0]
+		e.watchedFloor = max(e.watchedFloor, evicted.seqno)
+		e.watchedHeads = slices.Delete(e.watchedHeads, 0, 1)
+	}
+	e.watchedHeads = append(e.watchedHeads, h)
+	return evicted
 }
 
-// sameChangeLogEntry checks whether two entries hold the same changes.
-func sameChangeLogEntry(a, b *ChangeLogEntry) bool {
-	if a.Seqno != b.Seqno || a.ChangeType != b.ChangeType || len(a.Changes) != len(b.Changes) {
-		return false
+// headSeqnoLocked returns the seqno of the published head. The caller must
+// hold bcast.
+func (e *Engine) headSeqnoLocked(ctx context.Context) (uint64, error) {
+	if err := e.initializeHeadReadTx(ctx); err != nil {
+		return 0, err
 	}
-	for i, change := range a.Changes {
-		if !change.EqualVT(b.Changes[i]) {
-			return false
-		}
+	return e.head.readTx.state.GetSeqno(ctx)
+}
+
+// holdWatchedHead holds root with its seqno.
+func (e *Engine) holdWatchedHead(ctx context.Context, root *bucket_lookup.Cursor, seqno uint64) (*watchedHead, error) {
+	held, release, err := e.holdRoot(ctx, root)
+	if err != nil {
+		return nil, err
 	}
-	return true
+	return &watchedHead{seqno: seqno, root: held, release: release}, nil
+}
+
+// compareHeads lists the changes between two held World roots.
+func (e *Engine) compareHeads(ctx context.Context, before, after *bucket_lookup.Cursor) (*world.ChangeSet, error) {
+	_, beforeBcs := before.BuildTransactionWithStore(nil, e.writeBlockStore)
+	_, afterBcs := after.BuildTransactionWithStore(nil, e.writeBlockStore)
+	return WorldChanges(ctx, beforeBcs, afterBcs, changeWatchDiffLimit)
 }
 
 // _ is a type assertion

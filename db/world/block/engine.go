@@ -41,6 +41,8 @@ type engineRetirement struct {
 	writeTxRel func()
 	// session retires shared publication authority after its last user drains.
 	session *engineWriteSession
+	// watched are heads no longer retained for change watchers.
+	watched []*watchedHead
 }
 
 // empty reports whether there are no detached resources to drain.
@@ -50,7 +52,8 @@ func (r engineRetirement) empty() bool {
 		r.writeTx == nil &&
 		r.lease == nil &&
 		r.writeTxRel == nil &&
-		r.session == nil
+		r.session == nil &&
+		len(r.watched) == 0
 }
 
 // Engine publishes paired World roots and read snapshots.
@@ -135,6 +138,13 @@ type Engine struct {
 	keyWatch *engineKeyWatch
 	// keyWatches counts key watch goroutines that Close must join.
 	keyWatches int
+	// watchedHeads retains the recent published heads, oldest first, for
+	// change watchers. It is nil until the first watcher starts. Guarded by
+	// bcast.
+	watchedHeads []*watchedHead
+	// watchedFloor is the highest seqno at or below which no retained head
+	// identifies what a watcher saw. Guarded by bcast.
+	watchedFloor uint64
 	// closed rejects new operations while Close drains resources.
 	closed bool
 }
@@ -476,8 +486,20 @@ func (e *Engine) installRootRefLocked(ctx context.Context, ref *bucket.ObjectRef
 		return engineRetirement{}, err
 	}
 
+	// Retain the replacement for change watchers.
+	seqno, err := nextWorld.GetSeqno(ctx)
+	if err != nil {
+		nextWorld.Discard()
+		nextRoot.Release()
+		return engineRetirement{}, err
+	}
+	var watched []*watchedHead
+	if evicted := e.recordWatchedHeadLocked(ctx, nextRoot, seqno); evicted != nil {
+		watched = append(watched, evicted)
+	}
+
 	// Publish one complete head and detach its predecessor for post-unlock cleanup.
-	retirement := engineRetirement{head: e.head}
+	retirement := engineRetirement{head: e.head, watched: watched}
 	if invalidateWriter && e.writeTx != nil {
 		writeRetirement := e.writeTx.detachLocked()
 		retirement.readTx = writeRetirement.readTx
@@ -543,6 +565,9 @@ func (e *Engine) drainRetirement(ctx context.Context, retirement engineRetiremen
 	// Release the root authority only after every coupled transaction drains.
 	if retirement.head != nil && retirement.head.root != nil {
 		retirement.head.root.Release()
+	}
+	for _, h := range retirement.watched {
+		h.release()
 	}
 
 	// Release external serialization in coordinator-then-writer order.
@@ -1010,10 +1035,25 @@ func (e *Engine) AccessWorldState(
 	})
 }
 
-// accessStorage builds a writable bucket lookup cursor with an optional ref.
-// The root clone is made while bcast is held for the documented same-bucket
-// root path. Cursor.Clone copies the bucket handle without taking a release
-// func, so this does not establish a cross-bucket lifetime across Engine.Close.
+// holdRoot clones root and pins its blocks against collection until release.
+// The caller must hold bcast so root stays published until it is pinned.
+// Cursor.Clone copies the bucket handle without taking a release func, so the
+// hold does not establish a cross-bucket lifetime across Engine.Close.
+func (e *Engine) holdRoot(ctx context.Context, root *bucket_lookup.Cursor) (*bucket_lookup.Cursor, func(), error) {
+	held := root.Clone()
+	unpin, err := block.PinRoot(ctx, e.writeBlockStore, held.GetRef().GetRootRef())
+	if err != nil {
+		held.Release()
+		return nil, nil, err
+	}
+	return held, func() {
+		held.Release()
+		unpin()
+	}, nil
+}
+
+// accessStorage builds a writable bucket lookup cursor with an optional ref,
+// holding the current root for the callback.
 func (e *Engine) accessStorage(
 	ctx context.Context,
 	ref *bucket.ObjectRef,
@@ -1025,21 +1065,15 @@ func (e *Engine) accessStorage(
 		locked.Unlock()
 		return ErrEngineClosed
 	}
-	ncs := e.head.root.Clone()
-	release, err := block.PinRoot(ctx, e.writeBlockStore, ncs.GetRef().GetRootRef())
+	ncs, release, err := e.holdRoot(ctx, e.head.root)
+	locked.Unlock()
 	if err != nil {
-		locked.Unlock()
-		ncs.Release()
 		return err
 	}
 	defer release()
 	if ref != nil && e.stagedStore != nil {
 		ncs.SetTransactionStore(e.stagedStore)
 	}
-
-	// Release the engine lock and the cloned root after the callback.
-	locked.Unlock()
-	defer ncs.Release()
 
 	// Use the current root when no explicit reference was supplied.
 	if ref == nil {
@@ -1063,8 +1097,7 @@ func (e *Engine) accessStorage(
 // when the setting changes.
 //
 // Disabling drops the recorded history. Enabling starts the log at the current
-// seqno without history, so a change watcher reading across the switch sees
-// one unknown change set.
+// seqno without history.
 func (e *Engine) SetChangelogDisabled(ctx context.Context, disable bool) error {
 	// Open a write transaction.
 	engTx, err := e.NewBlockEngineTransaction(ctx, true)
@@ -1213,8 +1246,11 @@ func (e *Engine) Close() error {
 
 	// Detach every Engine-owned resource while publication is closed.
 	retirements := make([]engineRetirement, 0, len(e.snapshotTxs)+1)
-	retirement := engineRetirement{head: e.head}
+	retirement := engineRetirement{head: e.head, watched: e.watchedHeads}
 	e.head = nil
+	e.watchedHeads = nil
+
+	// Detach the write transaction with the head.
 	if e.writeTx != nil {
 		writeRetirement := e.writeTx.detachLocked()
 		retirement.readTx = writeRetirement.readTx

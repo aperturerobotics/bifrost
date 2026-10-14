@@ -59,8 +59,7 @@ func (t *WorldState) updateSeqno(r *World) {
 //
 // Changes queued before the switch are recorded under the previous setting.
 // Disabling drops the recorded history. Enabling starts the log at the current
-// seqno without history, so a change watcher reading across the switch sees
-// one unknown change set.
+// seqno without history.
 func (t *WorldState) SetChangelogDisabled(ctx context.Context, disable bool) (bool, error) {
 	// Reject a read-only state.
 	if !t.write {

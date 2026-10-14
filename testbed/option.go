@@ -14,8 +14,8 @@ func WithWorldVerbose(verbose bool) Option {
 
 type withChangelog struct{}
 
-// WithChangelog records the World changelog, so WatchChanges reports the keys
-// and quads each revision changed.
+// WithChangelog records the World changelog, the history of the keys and quads
+// each revision changed.
 func WithChangelog() Option {
 	return &withChangelog{}
 }

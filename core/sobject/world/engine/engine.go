@@ -392,6 +392,13 @@ func (e *soEngine) WaitObjectRev(ctx context.Context, key string, rev uint64, ig
 	return e.bengine.WaitObjectRev(ctx, key, rev, ignoreNotFound)
 }
 
+// WatchChanges calls cb with each later seqno and the changes since the
+// previous one. Replay publishes every World head through the block engine, so
+// its head comparison covers local commits and remote operations alike.
+func (e *soEngine) WatchChanges(ctx context.Context, afterSeqno uint64, cb func(seqno uint64, changes *world.ChangeSet) error) error {
+	return e.bengine.WatchChanges(ctx, afterSeqno, cb)
+}
+
 // advance replays snap, installs the World after its last placed operation
 // and reports this device's rejected edits. fork, when set, supplies the World
 // after a local write. When replay stops at an operation whose block is not
@@ -651,4 +658,7 @@ func holdWorldRoot(ctx context.Context, so sobject.SharedObject, name string, ro
 }
 
 // _ is a type assertion
-var _ Engine = (*soEngine)(nil)
+var (
+	_ Engine              = (*soEngine)(nil)
+	_ world.ChangeWatcher = (*soEngine)(nil)
+)
