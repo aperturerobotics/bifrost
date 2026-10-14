@@ -910,6 +910,22 @@ func (e *Engine) refreshReadHead(ctx context.Context) error {
 	return err
 }
 
+// refreshWaitHead refreshes the durable head before a wait unless the
+// coordinator head watch is healthy. A healthy watch subscribed before its
+// first read and adopts every durable head it learns of, including one
+// published before the wait, and each adoption wakes the waiters. A point
+// read has no later wakeup, so it refreshes through refreshReadHead.
+func (e *Engine) refreshWaitHead(ctx context.Context) error {
+	// Rely on the head watch while it runs without error.
+	locked := e.bcast.Lock()
+	healthy := e.headWatchDone != nil && e.headWatchErr == nil
+	locked.Unlock()
+	if healthy {
+		return nil
+	}
+	return e.refreshReadHead(ctx)
+}
+
 // applyDurableHeadLocked adopts a durable root without moving the revision backwards.
 func (e *Engine) applyDurableHeadLocked(
 	ctx context.Context,
@@ -1206,16 +1222,9 @@ func (e *Engine) GetSeqno(ctx context.Context) (uint64, error) {
 // Returns the seqno when the condition is reached.
 // If value == 0, this might return immediately unconditionally.
 func (e *Engine) WaitSeqno(ctx context.Context, value uint64) (uint64, error) {
-	// Discover durable commits that preceded this wait even if their advisory
-	// notification was lost. Subsequent events refresh the shared Engine head.
-	if e.writeHeadRefresh != nil {
-		seqno, err := e.GetSeqno(ctx)
-		if err != nil {
-			return 0, err
-		}
-		if seqno >= value {
-			return seqno, nil
-		}
+	// Discover durable commits that preceded this wait.
+	if err := e.refreshWaitHead(ctx); err != nil {
+		return 0, err
 	}
 
 	// Capture the head and its next publication event under the same lock.

@@ -17,7 +17,8 @@ import (
 )
 
 // TestEngineRevisionWaitersShareHeadWatch checks that external publication
-// reaches every waiter through one engine-owned coordinator subscription.
+// reaches every waiter through one engine-owned coordinator subscription, and
+// that the waiters read no durable head of their own.
 func TestEngineRevisionWaitersShareHeadWatch(t *testing.T) {
 	// Bound failures without using elapsed time to synchronize publication.
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
@@ -35,10 +36,15 @@ func TestEngineRevisionWaitersShareHeadWatch(t *testing.T) {
 	constructorCtx, constructorCancel := context.WithCancel(ctx)
 	t.Cleanup(constructorCancel)
 
-	// Open the reader engine and cancel its constructor.
+	// Open the reader engine, counting its durable head reads, and cancel its
+	// constructor.
+	var refreshes atomic.Int32
 	reader, err := NewEngine(constructorCtx, writer.le, root, world_mock.LookupMockOp, nil, false,
 		WithWriteCoordinator(coordinator, scope, nil,
-			func(context.Context) (*bucket.ObjectRef, error) { return writer.GetRootRef(), nil }),
+			func(context.Context) (*bucket.ObjectRef, error) {
+				refreshes.Add(1)
+				return writer.GetRootRef(), nil
+			}),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -95,6 +101,12 @@ func TestEngineRevisionWaitersShareHeadWatch(t *testing.T) {
 		if err := <-results; err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	// Only the head watch read the durable head: once at setup and once per
+	// coordinator event, never once per waiter.
+	if got := refreshes.Load(); got >= waiterCount {
+		t.Fatalf("durable head reads = %d, want fewer than the %d waiters", got, waiterCount)
 	}
 
 	// Subscription ownership ends with the engine, independently of waiter count.

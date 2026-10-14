@@ -55,9 +55,8 @@ type objectKeyWake struct {
 // revision. The change watch wakes the waiter only when a published head
 // changes the object's record, so unrelated commits cost the waiter nothing.
 func (e *Engine) WaitObjectRev(ctx context.Context, key string, rev uint64, ignoreNotFound bool) (uint64, error) {
-	// Discover durable commits that preceded this wait even if their advisory
-	// notification was lost. The coordinator head watch adopts later commits.
-	if err := e.refreshReadHead(ctx); err != nil {
+	// Discover durable commits that preceded this wait.
+	if err := e.refreshWaitHead(ctx); err != nil {
 		return 0, err
 	}
 
