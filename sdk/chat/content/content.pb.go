@@ -176,6 +176,10 @@ type ChatEnvelope struct {
 	// to 64 KiB. Redacting the message replaces Data with it and clears it; empty
 	// leaves no bytes.
 	RedactedData []byte `protobuf:"bytes,3,opt,name=redacted_data,json=redactedData,proto3" json:"redactedData,omitempty"`
+	// Prelude holds, in order, at most 16 events the protocol requires before this
+	// one, such as the sender's admission to the conversation. Each carries only
+	// its ID and data, and redaction leaves them unchanged.
+	Prelude []*ChatEnvelope `protobuf:"bytes,4,rep,name=prelude,proto3" json:"prelude,omitempty"`
 }
 
 func (x *ChatEnvelope) Reset() {
@@ -201,6 +205,13 @@ func (x *ChatEnvelope) GetData() []byte {
 func (x *ChatEnvelope) GetRedactedData() []byte {
 	if x != nil {
 		return x.RedactedData
+	}
+	return nil
+}
+
+func (x *ChatEnvelope) GetPrelude() []*ChatEnvelope {
+	if x != nil {
+		return x.Prelude
 	}
 	return nil
 }
@@ -493,6 +504,7 @@ func (m *ChatEnvelope) CloneVT() *ChatEnvelope {
 	r.Id = m.Id
 	r.Data = protobuf_go_lite.CloneBytes(m.Data)
 	r.RedactedData = protobuf_go_lite.CloneBytes(m.RedactedData)
+	r.Prelude = protobuf_go_lite.CloneVTSlice(m.Prelude)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -757,6 +769,9 @@ func (this *ChatEnvelope) EqualVT(that *ChatEnvelope) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualBytes(this.RedactedData, that.RedactedData) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Prelude, that.Prelude, func() *ChatEnvelope { return &ChatEnvelope{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1209,6 +1224,17 @@ func (x *ChatEnvelope) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("redactedData")
 		s.WriteBytes(x.RedactedData)
 	}
+	if len(x.Prelude) > 0 || s.HasField("prelude") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("prelude")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Prelude {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("prelude"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1235,6 +1261,24 @@ func (x *ChatEnvelope) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "redacted_data", "redactedData":
 			s.AddField("redacted_data")
 			x.RedactedData = s.ReadBytes()
+		case "prelude":
+			s.AddField("prelude")
+			if s.ReadNil() {
+				x.Prelude = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Prelude = append(x.Prelude, nil)
+					return
+				}
+				v := &ChatEnvelope{}
+				v.UnmarshalProtoJSON(s.WithField("prelude", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Prelude = append(x.Prelude, v)
+			})
 		}
 	})
 }
@@ -1721,6 +1765,18 @@ func (m *ChatEnvelope) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.Prelude) > 0 {
+		for iNdEx := len(m.Prelude) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Prelude[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
 	if len(m.RedactedData) > 0 {
 		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.RedactedData)
 		i--
@@ -2109,6 +2165,10 @@ func (m *ChatEnvelope) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Id)
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.Data)
 	n += protobuf_go_lite.SizeBytesNonEmpty(1, m.RedactedData)
+	for _, e := range m.Prelude {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -2348,6 +2408,18 @@ func (x *ChatEnvelope) MarshalProtoText() string {
 	if len(x.RedactedData) != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "redacted_data")
 		protobuf_go_lite.TextWriteBytes(&sb, x.RedactedData)
+	}
+	if len(x.Prelude) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "prelude")
+		for i, v := range x.Prelude {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &ChatEnvelope{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2778,6 +2850,19 @@ func (m *ChatEnvelope) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Prelude", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Prelude = append(m.Prelude, &ChatEnvelope{})
+			if err := m.Prelude[len(m.Prelude)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

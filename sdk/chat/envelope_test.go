@@ -85,7 +85,8 @@ func TestEnvelopeStoredOnce(t *testing.T) {
 }
 
 // TestAttachEnvelope checks that attaching sets an absent envelope once, refuses an ID
-// naming another message, and stores the redacted form on a redacted message.
+// naming another message, and stores the redacted form on a redacted message with
+// its prelude intact.
 func TestAttachEnvelope(t *testing.T) {
 	// Start a World testbed.
 	ctx := t.Context()
@@ -114,7 +115,7 @@ func TestAttachEnvelope(t *testing.T) {
 	}
 
 	// The first attachment stands; a second returns it.
-	first := &ChatEnvelope{Id: "$first", Data: []byte(`{"n":1}`), RedactedData: []byte(`{}`)}
+	first := &ChatEnvelope{Id: "$first", Data: []byte(`{"n":1}`), RedactedData: []byte(`{}`), Prelude: []*ChatEnvelope{{Id: "$join", Data: []byte(`{}`)}}}
 	attached, err := alice.AttachEnvelope(ctx, &chat_rpc.AttachEnvelopeRequest{MessageKey: plain.GetMessageKey(), Envelope: first})
 	if err != nil || !attached.GetEnvelope().EqualVT(first) {
 		t.Fatalf("first attachment: %v %v", attached, err)
@@ -143,12 +144,12 @@ func TestAttachEnvelope(t *testing.T) {
 	if _, err := alice.SendMessage(ctx, redact); err != nil {
 		t.Fatal(err)
 	}
-	late := &ChatEnvelope{Id: "$late", Data: []byte(`{"body":"hi"}`), RedactedData: []byte(`{}`)}
+	late := &ChatEnvelope{Id: "$late", Data: []byte(`{"body":"hi"}`), RedactedData: []byte(`{}`), Prelude: []*ChatEnvelope{{Id: "$admit", Data: []byte(`{}`)}}}
 	attached, err = alice.AttachEnvelope(ctx, &chat_rpc.AttachEnvelopeRequest{MessageKey: other.GetMessageKey(), Envelope: late})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := attached.GetEnvelope(); got.GetId() != late.GetId() || !bytes.Equal(got.GetData(), late.GetRedactedData()) || len(got.GetRedactedData()) != 0 {
+	if got := attached.GetEnvelope(); got.GetId() != late.GetId() || !bytes.Equal(got.GetData(), late.GetRedactedData()) || len(got.GetRedactedData()) != 0 || len(got.GetPrelude()) != 1 {
 		t.Fatalf("redacted attachment: %v", got)
 	}
 }

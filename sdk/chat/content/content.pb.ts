@@ -171,6 +171,14 @@ export interface ChatEnvelope {
    * @generated from field: bytes redacted_data = 3;
    */
   redactedData?: Uint8Array
+  /**
+   * Prelude holds, in order, at most 16 events the protocol requires before this
+   * one, such as the sender's admission to the conversation. Each carries only
+   * its ID and data, and redaction leaves them unchanged.
+   *
+   * @generated from field: repeated spacewave.chat.ChatEnvelope prelude = 4;
+   */
+  prelude?: ChatEnvelope[]
 }
 
 export const ChatEnvelope: MessageType<ChatEnvelope> =
@@ -180,6 +188,13 @@ export const ChatEnvelope: MessageType<ChatEnvelope> =
       { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
       { no: 3, name: 'redacted_data', kind: 'scalar', T: ScalarType.BYTES },
+      {
+        no: 4,
+        name: 'prelude',
+        kind: 'message',
+        T: () => ChatEnvelope,
+        repeated: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
   })
 

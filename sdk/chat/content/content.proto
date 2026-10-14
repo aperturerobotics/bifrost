@@ -53,6 +53,10 @@ message ChatEnvelope {
   // to 64 KiB. Redacting the message replaces Data with it and clears it; empty
   // leaves no bytes.
   bytes redacted_data = 3;
+  // Prelude holds, in order, at most 16 events the protocol requires before this
+  // one, such as the sender's admission to the conversation. Each carries only
+  // its ID and data, and redaction leaves them unchanged.
+  repeated ChatEnvelope prelude = 4;
 }
 
 // ChatRedaction removes the body of an earlier message by the same person.
