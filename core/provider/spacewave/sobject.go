@@ -599,7 +599,7 @@ func (a *ProviderAccount) cacheSharedObjectListEntry(
 		next.SharedObjects = append(next.SharedObjects, entry.CloneVT())
 		return next
 	})
-	a.refreshSelfEnrollmentSummary(context.Background())
+	a.selfEnrollmentRefresh.Trigger()
 }
 
 // PatchSharedObjectListMetadata updates cached list display metadata for an SO.
@@ -626,7 +626,7 @@ func (a *ProviderAccount) PatchSharedObjectListMetadata(
 		}
 		return list
 	})
-	a.refreshSelfEnrollmentSummary(context.Background())
+	a.selfEnrollmentRefresh.Trigger()
 }
 
 // RemoveSharedObjectListEntry removes a deleted shared object from the cached
@@ -649,7 +649,7 @@ func (a *ProviderAccount) RemoveSharedObjectListEntry(
 		next.SharedObjects = slices.DeleteFunc(next.SharedObjects, match)
 		return next
 	})
-	a.refreshSelfEnrollmentSummary(context.Background())
+	a.selfEnrollmentRefresh.Trigger()
 }
 
 // settleCreatedSharedObjectListEntry clears the created source of soID's
@@ -761,7 +761,7 @@ func (a *ProviderAccount) RefreshSharedObjectList(ctx context.Context) error {
 		}
 		if !a.hasSharedObjectListAccess() {
 			a.soListCtr.SetValue(&sobject.SharedObjectList{})
-			a.refreshSelfEnrollmentSummary(ctx)
+			a.selfEnrollmentRefresh.Trigger()
 			return nil
 		}
 	}
@@ -802,7 +802,7 @@ func (a *ProviderAccount) fetchSharedObjectList(ctx context.Context) error {
 
 	// Store it, keeping created entries the snapshot does not list yet.
 	a.soListCtr.SetValue(mergeSharedObjectListSnapshot(list, a.soListCtr.GetValue()))
-	a.refreshSelfEnrollmentSummary(ctx)
+	a.selfEnrollmentRefresh.Trigger()
 	return nil
 }
 

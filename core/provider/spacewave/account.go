@@ -114,6 +114,9 @@ type ProviderAccount struct {
 	presentationJobs *asyncCallbackJobs
 	// orgListJobs refetches the loaded organization list after a reconnect.
 	orgListJobs *asyncCallbackJobs
+	// selfEnrollmentRefresh recomputes the self-enrollment summary off the
+	// caller's path, coalescing triggers that arrive during a scan.
+	selfEnrollmentRefresh *coalescedTriggerRoutine
 	// recoveryKeypairs caches recovery entity keypair listings for every
 	// SessionClient of the account.
 	recoveryKeypairs recoveryKeypairCache
@@ -261,6 +264,13 @@ type accountState struct {
 	selfEnrollmentSummary *SelfEnrollmentSummary
 	// selfEnrollmentSkippedGenerationKey is the backend skip generation key.
 	selfEnrollmentSkippedGenerationKey string
+	// selfEnrollmentEntries memoizes the verified config and key epochs of
+	// each listed SharedObject by ID, so a summary scan reads the store only
+	// for SharedObjects absent here.
+	selfEnrollmentEntries map[string]*selfEnrollmentEntry
+	// selfEnrollmentEntriesRev increments when a verified cache write or delete
+	// invalidates an entry. A scan stores its loads only if it is unchanged.
+	selfEnrollmentEntriesRev uint64
 	// status is the current account status (READY, UNAUTHENTICATED, DELETED).
 	status provider.ProviderAccountStatus
 
@@ -441,6 +451,7 @@ func (t *providerAccountTracker) executeProviderAccountTracker(rctx context.Cont
 	})
 	acc.presentationJobs = newAsyncCallbackJobs(nil)
 	acc.orgListJobs = newAsyncCallbackJobs(acc.refreshOrganizationState)
+	acc.selfEnrollmentRefresh = newCoalescedTriggerRoutine(le, "self-enrollment-refresh", acc.refreshSelfEnrollmentSummary)
 
 	// Refetch account state when a checkout completes.
 	acc.checkoutWatcher = newCheckoutWatcher(
@@ -505,7 +516,7 @@ func (t *providerAccountTracker) executeProviderAccountTracker(rctx context.Cont
 	}
 	acc.wsTracker.onSOListUpdate = func(list *sobject.SharedObjectList) {
 		acc.soListCtr.SetValue(list)
-		acc.refreshSelfEnrollmentSummary(ctx)
+		acc.selfEnrollmentRefresh.Trigger()
 	}
 
 	// Resync after every authenticated connect.
@@ -708,13 +719,16 @@ func (t *providerAccountTracker) executeProviderAccountTracker(rctx context.Cont
 	acc.checkoutWatcher.SetContext(ctx)
 	defer acc.checkoutWatcher.ClearContext()
 
-	// Start the launcher recheck, presentation and organization list jobs.
+	// Start the launcher recheck, presentation, organization list and
+	// self-enrollment refresh jobs.
 	acc.launcherRecheckJobs.SetContext(ctx)
 	defer acc.launcherRecheckJobs.ClearContext()
 	acc.presentationJobs.SetContext(ctx)
 	defer acc.presentationJobs.ClearContext()
 	acc.orgListJobs.SetContext(ctx)
 	defer acc.orgListJobs.ClearContext()
+	acc.selfEnrollmentRefresh.SetContext(ctx)
+	defer acc.selfEnrollmentRefresh.ClearContext()
 
 	// Start the Session websocket and hold it for the account.
 	acc.wsTracker.SetContext(ctx)
@@ -794,7 +808,7 @@ func (a *ProviderAccount) ReplaceSessionClient(cli *SessionClient) {
 		a.sessionClientSessionID = ""
 		broadcast()
 	})
-	a.refreshSelfEnrollmentSummary(context.Background())
+	a.selfEnrollmentRefresh.Trigger()
 }
 
 // ReplaceEntityClient replaces the entity client used for registration flows.

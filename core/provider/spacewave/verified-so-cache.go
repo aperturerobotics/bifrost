@@ -80,7 +80,7 @@ func (a *ProviderAccount) writeVerifiedSOStateCache(
 	if err != nil {
 		return errors.Wrap(err, "write verified SO cache")
 	}
-	a.refreshSelfEnrollmentSummary(ctx)
+	a.invalidateSelfEnrollmentEntry(soID)
 	return nil
 }
 
@@ -190,7 +190,7 @@ func (a *ProviderAccount) deleteVerifiedSOStateCache(
 	if err != nil {
 		return errors.Wrap(err, "delete verified SO cache")
 	}
-	a.refreshSelfEnrollmentSummary(ctx)
+	a.invalidateSelfEnrollmentEntry(soID)
 	return nil
 }
 
