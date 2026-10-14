@@ -226,10 +226,11 @@ func benchmarkWorldSeededWrite(b *testing.B, op func(ctx context.Context, ws wor
 // setupWorldSeededBench opens a World Engine on the seeded World, seeding it
 // on first use.
 func setupWorldSeededBench(ctx context.Context, tb testing.TB) (*world_block.Engine, func()) {
-	// Seed the shared World once per process.
+	// Seed the shared World once per process, on a context that outlives the
+	// first caller.
 	tb.Helper()
 	worldSeed.once.Do(func() {
-		worldSeed.testbed, worldSeed.rootRef, worldSeed.err = seedWorld(ctx)
+		worldSeed.testbed, worldSeed.rootRef, worldSeed.err = seedWorld(context.WithoutCancel(ctx))
 	})
 	if worldSeed.err != nil {
 		tb.Fatal(worldSeed.err.Error())
