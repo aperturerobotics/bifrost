@@ -52,10 +52,10 @@ github.com/aperturerobotics/go-protoc-gen-prost v0.0.0-20261003014807-d46d22154f
 github.com/aperturerobotics/go-protoc-gen-prost v0.0.0-20261003014807-d46d22154f35/go.mod h1:OBb/beWmr/pDIZAUfi86j/4tBh2v5ctTxKMqSnh9c/4=
 github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260808023521-7b1595380c3f h1:UszdpmKBfQd0LdOZjypeRGrHz2tcPpmKpw6SV3DYyN0=
 github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260808023521-7b1595380c3f/go.mod h1:vEq8i7EKb32+KXGtIEZjjhNns+BdsL2dUMw4uhy3578=
-github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.2-0.20261006140529-7f1cdbf2ce7d h1:EYydk4ISaBoTWwPUBR37ayDCnD64cjnOexuL/OlbG4k=
-github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.2-0.20261006140529-7f1cdbf2ce7d/go.mod h1:tv9gTeRdrIQIsLeXQK+bsc7VrN5YHepfWsQ++/sALRQ=
-github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20261006140529-7f1cdbf2ce7d h1:nB2frR4n6z4V+BgN1EwdHiPRpWdDJb6Npft5p0CuKqk=
-github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20261006140529-7f1cdbf2ce7d/go.mod h1:YPUNAejo0sSHIFzZCnUbt0b3OR0Gw74cBxHIdv+yzkw=
+github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.2-0.20261014231848-67d2fa10e4a2 h1:iN4AsuQwhAmLeZwylT3cqE3QVi7khD2WjV9C2hVL65g=
+github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.2-0.20261014231848-67d2fa10e4a2/go.mod h1:tv9gTeRdrIQIsLeXQK+bsc7VrN5YHepfWsQ++/sALRQ=
+github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20261014231848-67d2fa10e4a2 h1:l2L14EjVkwr0IxFAPw7w5InXZTfZZ8f/QFv8HiZOTFw=
+github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20261014231848-67d2fa10e4a2/go.mod h1:YPUNAejo0sSHIFzZCnUbt0b3OR0Gw74cBxHIdv+yzkw=
 github.com/aperturerobotics/go-websocket v1.8.15-0.20260910142736-349504d079da h1:xRS+FY1PAhIfHHcCRlNDy7DbOwA1TygcD7xJqNlNxOA=
 github.com/aperturerobotics/go-websocket v1.8.15-0.20260910142736-349504d079da/go.mod h1:9KnSGuqxSXbdB/Oi0I6vvfPLkclfJwMGAQaDDGVgGow=
 github.com/aperturerobotics/go-winjob v0.0.0-20260705010911-656e088d1b05 h1:u7Wqib6RFTGKIWKERYoenApCoMKRuqPEjn3x+9qmfic=
@@ -84,6 +84,8 @@ github.com/aperturerobotics/util v1.34.10-0.20261006081936-7765b80f85f1 h1:3nz5D
 github.com/aperturerobotics/util v1.34.10-0.20261006081936-7765b80f85f1/go.mod h1:2uIQA8dHn5EQgEtRqcTS4zxJ51dEVehY9O++bJfU2hs=
 github.com/aperturerobotics/vitess v0.0.0-20261014224653-6c6d9725c46d h1:jp+f7QE/3m/BdAQ/E6zE/ul0yVDMWCfyT3zSWiOaC50=
 github.com/aperturerobotics/vitess v0.0.0-20261014224653-6c6d9725c46d/go.mod h1:BA7YZUS4BoNY+k1nl7A3TLJkLY4KfW4I0c+DbXblfis=
+github.com/aperturerobotics/wazero v0.0.0-20261014234543-50a353e1fd64 h1:WX6/1t4EzPe/JhP0LpRH2S0Pkj7mjxt2xCaD7MLtWnU=
+github.com/aperturerobotics/wazero v0.0.0-20261014234543-50a353e1fd64/go.mod h1:LvKtzl2RqO4gyF27BiXU+nKAjcV8f38U+kP/q2vgxh0=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/bwesterb/go-ristretto v1.2.4 h1:8HUl/bYdUaLakTdT2mfYomzPego+qjs5dOrYgAo3+J0=
@@ -301,8 +303,6 @@ github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXl
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
-github.com/tetratelabs/wazero v1.12.1-0.20260928190838-e234f6fe6ecd h1:kY+zXieTnwfsfkSo6xJ+EBYNvSAGccm3phfSsZVpEak=
-github.com/tetratelabs/wazero v1.12.1-0.20260928190838-e234f6fe6ecd/go.mod h1:LvKtzl2RqO4gyF27BiXU+nKAjcV8f38U+kP/q2vgxh0=
 github.com/tidwall/btree v1.8.2 h1:mTY5iM4UTh2e80TG7RHDQQmnAY3xGNQA/DbU0olkhkA=
 github.com/tidwall/btree v1.8.2/go.mod h1:jBbTdUWhSZClZWoDg54VnvV7/54modSOzDN7VXftj1A=
 github.com/tv42/httpunix v0.0.0-20191220191345-2ba4b9c3382c h1:u6SKchux2yDvFQnDHS3lPnIRmfVJ5Sxy3ao2SIdysLQ=

@@ -248,3 +248,61 @@ const (
 	popupConfigure = 0
 	popupDone      = 1
 )
+
+// zwlr_layer_shell_v1.
+const (
+	layerShellGetLayerSurface = 0
+	layerShellDestroy         = 1
+)
+
+// zwlr_layer_shell_v1 error codes.
+const (
+	layerShellErrRole         = 0
+	layerShellErrInvalidLayer = 1
+)
+
+// zwlr_layer_shell_v1 layers, bottom to top, and their count.
+const (
+	layerBackground = 0
+	layerBottom     = 1
+	layerTop        = 2
+	layerOverlay    = 3
+	layerCount      = 4
+)
+
+// zwlr_layer_surface_v1.
+const (
+	layerSurfaceSetSize                  = 0
+	layerSurfaceSetAnchor                = 1
+	layerSurfaceSetExclusiveZone         = 2
+	layerSurfaceSetMargin                = 3
+	layerSurfaceSetKeyboardInteractivity = 4
+	layerSurfaceGetPopup                 = 5
+	layerSurfaceDestroy                  = 7
+	layerSurfaceSetLayer                 = 8
+
+	layerSurfaceConfigure = 0
+)
+
+// zwlr_layer_surface_v1 error codes.
+const (
+	layerSurfaceErrInvalidSize                  = 1
+	layerSurfaceErrInvalidAnchor                = 2
+	layerSurfaceErrInvalidKeyboardInteractivity = 3
+)
+
+// zwlr_layer_surface_v1 anchors, as a mask.
+const (
+	anchorTop    = 1
+	anchorBottom = 2
+	anchorLeft   = 4
+	anchorRight  = 8
+)
+
+// zwlr_layer_surface_v1 keyboard interactivity: never focused, focused while
+// mapped, or focused by a press.
+const (
+	interactivityNone      = 0
+	interactivityExclusive = 1
+	interactivityOnDemand  = 2
+)

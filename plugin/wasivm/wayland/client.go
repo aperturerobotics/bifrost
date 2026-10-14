@@ -45,6 +45,7 @@ var globals = []global{
 	{"wl_output", 2, (*client).bindOutput},
 	{"wl_data_device_manager", 3, (*client).bindDataDeviceManager},
 	{"xdg_wm_base", 1, (*client).bindWmBase},
+	{"zwlr_layer_shell_v1", 4, (*client).bindLayerShell},
 }
 
 // client is one connection to the compositor. Its serve goroutine reads and
@@ -452,7 +453,7 @@ func (c *client) addKeyboard(k resource) error {
 	// Track it for input.
 	c.comp.update(func() {
 		c.keyboards = append(c.keyboards, k)
-		if s := c.comp.active; s != nil && s.c == c {
+		if s := c.comp.focus; s != nil && s.c == c {
 			c.comp.enterKeyboard(s, k)
 		}
 	})

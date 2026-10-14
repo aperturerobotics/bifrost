@@ -8,7 +8,9 @@
 // show over a plain background with their subsurfaces and popups. A press
 // raises and activates the window under the pointer, which then holds the
 // keyboard, and a client's move or resize request drags its window with the
-// pointer.
+// pointer. Layer shell clients draw the rest of the desktop, such as a
+// wallpaper, a panel or a launcher, below or above the windows, and an
+// exclusive zone keeps the windows off a panel's edge.
 package wayland
 
 import (
@@ -49,10 +51,19 @@ type Compositor struct {
 	serial uint32
 	// windows is the mapped toplevels, bottom to top.
 	windows []*surface
+	// layers is the mapped layer surfaces of each layer, bottom to top.
+	layers [layerCount][]*surface
+	// usable is the screen area the exclusive zones leave to the windows.
+	usable image.Rectangle
 	// placed counts the windows placed on the cascade.
 	placed int
-	// active is the window holding the keyboard focus, or nil.
+	// active is the activated window, or nil.
 	active *surface
+	// focus is the surface holding the keyboard focus, or nil: the active
+	// window, or a layer surface that takes the keyboard.
+	focus *surface
+	// layerFocus is the layer surface a press gave the keyboard, or nil.
+	layerFocus *surface
 	// hover is the surface holding the pointer focus, or nil.
 	hover *surface
 	// grab is the window move or resize in progress, or nil.
@@ -82,9 +93,11 @@ func Listen(k *kernel.Kernel, width, height int) (*Compositor, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "listen for wayland clients")
 	}
+	screen := image.Rect(0, 0, width, height)
 	return &Compositor{
 		listener: l,
-		screen:   image.Rect(0, 0, width, height),
+		screen:   screen,
+		usable:   screen,
 		start:    time.Now(),
 		keymap:   k.NewMemfd("keymap", append([]byte(keymap), 0)),
 		clients:  make(map[*client]struct{}),
@@ -214,14 +227,18 @@ func (c *Compositor) now() uint32 {
 	return uint32(time.Since(c.start).Milliseconds()) //nolint:gosec // wraps as Wayland timestamps do.
 }
 
-// remove forgets a disconnected client and unmaps its windows. The caller
-// holds the lock.
+// remove forgets a disconnected client and unmaps its windows and layer
+// surfaces. The caller holds the lock.
 func (c *Compositor) remove(cl *client) {
+	// Drop the client and the focus it held, then hide its surfaces.
 	delete(c.clients, cl)
 	if c.hover != nil && c.hover.c == cl {
 		c.hover = nil
 	}
-	for _, w := range slices.Clone(c.windows) {
+	if c.focus != nil && c.focus.c == cl {
+		c.focus = nil
+	}
+	for _, w := range c.roots() {
 		if w.c == cl {
 			c.unmap(w)
 		}

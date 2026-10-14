@@ -60,6 +60,9 @@ type toplevel struct {
 type popup struct {
 	// id is the xdg_popup's object id.
 	id uint32
+	// pos is the positioner's rules, kept to place a popup that gets its
+	// parent later.
+	pos positioner
 	// place is the popup's window geometry in the parent's window geometry
 	// coordinates. The compositor's lock guards it.
 	place image.Rectangle
@@ -178,7 +181,7 @@ func (c *client) bindWmBase(r resource) object {
 			switch {
 			case !ok:
 				return c.fail(r.id, wmBaseErrInvalidSurface, "bad surface")
-			case s.xdg != nil || s.sub != nil:
+			case s.xdg != nil || s.sub != nil || s.layer != nil:
 				return c.fail(r.id, wmBaseErrRole, "surface has a role")
 			}
 			x := &xdgSurface{s: s, id: id}
@@ -245,7 +248,7 @@ func (x *xdgSurface) request(op uint16, m *message) error {
 // xdg_surface parentID by positioner posID.
 func (x *xdgSurface) getPopup(id, parentID, posID uint32) error {
 	// Find the parent and the positioner. A popup without a parent stays
-	// hidden.
+	// hidden until a layer surface takes it.
 	c := x.s.c
 	if x.toplevel != nil || x.popup != nil {
 		return c.fail(x.id, wmBaseErrRole, "xdg_surface already has a role")
@@ -264,17 +267,21 @@ func (x *xdgSurface) getPopup(id, parentID, posID uint32) error {
 		return err
 	}
 	c.comp.update(func() {
-		// Place it relative to the parent's window geometry.
-		x.popup = &popup{id: id}
-		if parent == nil {
-			return
+		x.popup = &popup{id: id, pos: *pos}
+		if parent != nil {
+			x.attachPopup(parent.s)
 		}
-		at := parent.s.origin().Add(parent.geometry().Min)
-		x.popup.place = pos.place(at, c.comp.screen)
-		x.s.parent = parent.s
-		parent.s.popups = append(parent.s.popups, x.s)
 	})
 	return nil
+}
+
+// attachPopup places the popup on parent, relative to the parent's window
+// geometry, above its other popups. The caller holds the compositor's lock.
+func (x *xdgSurface) attachPopup(parent *surface) {
+	at := parent.origin().Add(parent.geometry().Min)
+	x.popup.place = x.popup.pos.place(at, x.s.c.comp.screen)
+	x.s.parent = parent
+	parent.popups = append(parent.popups, x.s)
 }
 
 // commit applies the pending geometry, sends a new role its first

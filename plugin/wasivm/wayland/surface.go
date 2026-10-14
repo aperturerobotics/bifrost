@@ -8,7 +8,8 @@ import (
 // surface is a wl_surface. Its pending state builds up until commit, which
 // copies the attached buffer's damaged pixels into the surface's image and
 // releases the buffer. A role places it on the screen: an xdg surface is a
-// window or a popup, and a subsurface is drawn on its parent.
+// window or a popup, a layer surface is part of the desktop, and a
+// subsurface is drawn on its parent.
 type surface struct {
 	// c is the client.
 	c *client
@@ -28,6 +29,8 @@ type surface struct {
 	xdg *xdgSurface
 	// sub is the surface's wl_subsurface role, or nil.
 	sub *subsurface
+	// layer is the surface's zwlr_layer_surface_v1 role, or nil.
+	layer *layerSurface
 
 	// The compositor's lock guards the fields below. The client's serve
 	// goroutine alone writes them, so it reads them without the lock.
@@ -107,6 +110,13 @@ func (s *surface) request(op uint16, m *message) error {
 
 // commit applies the pending state.
 func (s *surface) commit() error {
+	// Check the role's pending state.
+	if s.layer != nil {
+		if err := s.layer.check(); err != nil {
+			return err
+		}
+	}
+
 	// Read the attached buffer's damaged pixels, or all of them when its
 	// size changed, then release it.
 	buf := s.buffer
@@ -133,8 +143,8 @@ func (s *surface) commit() error {
 	// or the whole window when its layout moved.
 	comp := s.c.comp
 	comp.update(func() {
-		// Note where the window was.
-		w := comp.windowOf(s)
+		// Note where the surface's tree was.
+		w := comp.rootOf(s)
 		before := comp.bounds(w)
 
 		// Apply the image, the subsurfaces' positions and the role.
@@ -150,10 +160,13 @@ func (s *surface) commit() error {
 		if s.xdg != nil && s.xdg.commit() {
 			relayout = true
 		}
+		if s.layer != nil && s.layer.commit() {
+			relayout = true
+		}
 
-		// Redraw, unless the window mapped or unmapped, which redraws it.
+		// Redraw, unless the tree mapped or unmapped, which redraws it.
 		switch {
-		case w != comp.windowOf(s):
+		case w != comp.rootOf(s):
 		case relayout:
 			comp.damage(before.Union(comp.bounds(w)))
 			comp.refocusPointer()
@@ -199,30 +212,45 @@ func (s *surface) origin() image.Point {
 	switch {
 	case s.sub != nil && s.parent != nil:
 		return s.parent.origin().Add(s.sub.offset)
+	case s.layer != nil:
+		return s.layer.pos
 	case s.xdg == nil:
 		return image.Point{}
 	case s.xdg.toplevel != nil:
 		return s.xdg.toplevel.pos.Sub(s.xdg.geometry().Min)
 	case s.xdg.popup != nil && s.parent != nil:
-		at := s.parent.xdg.geometry().Min.Add(s.xdg.popup.place.Min)
+		at := s.parent.geometry().Min.Add(s.xdg.popup.place.Min)
 		return s.parent.origin().Add(at).Sub(s.xdg.geometry().Min)
 	}
 	return image.Point{}
 }
 
-// detach takes the destroyed surface off the screen: it leaves its parent,
-// its subsurfaces and popups lose theirs, and its window unmaps. The caller
-// holds the compositor's lock.
-func (s *surface) detach() {
-	// Redraw where the surface's window was.
-	comp := s.c.comp
-	w := comp.windowOf(s)
-	comp.damage(comp.bounds(w))
-
-	// Unmap the window, leave the parent and orphan the children.
-	if s.xdg != nil && s.xdg.toplevel != nil {
-		comp.unmap(s)
+// geometry returns the window geometry of an xdg surface, or the whole
+// surface for another role, in surface coordinates. The caller holds the
+// compositor's lock or is the client's serve goroutine.
+func (s *surface) geometry() image.Rectangle {
+	if s.xdg != nil {
+		return s.xdg.geometry()
 	}
+	return image.Rectangle{Max: s.size}
+}
+
+// mapped reports whether the surface shows as a window or in a layer. The
+// caller holds the compositor's lock.
+func (s *surface) mapped() bool {
+	return (s.xdg != nil && s.xdg.mapped) || (s.layer != nil && s.layer.mapped)
+}
+
+// detach takes the destroyed surface off the screen: it leaves its parent,
+// its subsurfaces and popups lose theirs, and it unmaps. The caller holds
+// the compositor's lock.
+func (s *surface) detach() {
+	// Redraw where the surface's tree was.
+	comp := s.c.comp
+	comp.damage(comp.bounds(comp.rootOf(s)))
+
+	// Unmap it, leave the parent and orphan the children.
+	comp.unmap(s)
 	s.unparent()
 	for _, t := range s.stack {
 		if t != s {
@@ -262,7 +290,7 @@ func (s *surface) ancestor(a *surface) bool {
 // parent's stack, as wl_subsurface id.
 func (c *client) getSubsurface(id uint32, s, parent *surface) error {
 	// Check the role and that the parent is not inside s.
-	if s.sub != nil || s.xdg != nil || parent.ancestor(s) {
+	if s.sub != nil || s.xdg != nil || s.layer != nil || parent.ancestor(s) {
 		return c.fail(id, subcompositorErrBadSurface, "bad subsurface")
 	}
 
@@ -288,9 +316,8 @@ func (s *surface) subsurfaceRequest(op uint16, m *message) error {
 		// Take the surface off its parent.
 		id := s.sub.id
 		s.c.comp.update(func() {
-			// Redraw where its window was, then remove it.
-			w := s.c.comp.windowOf(s)
-			s.c.comp.damage(s.c.comp.bounds(w))
+			// Redraw where its tree was, then remove it.
+			s.c.comp.damage(s.c.comp.bounds(s.c.comp.rootOf(s)))
 			s.unparent()
 			s.sub = nil
 			s.c.comp.refocusPointer()
@@ -314,7 +341,7 @@ func (s *surface) subsurfaceRequest(op uint16, m *message) error {
 
 		// Move the surface beside it.
 		s.c.comp.update(func() {
-			// Insert it above or below the sibling and redraw its window.
+			// Insert it above or below the sibling and redraw its tree.
 			p := s.parent
 			p.stack = slices.DeleteFunc(p.stack, func(t *surface) bool { return t == s })
 			at := slices.Index(p.stack, sibling)
@@ -322,7 +349,7 @@ func (s *surface) subsurfaceRequest(op uint16, m *message) error {
 				at++
 			}
 			p.stack = slices.Insert(p.stack, at, s)
-			s.c.comp.damage(s.c.comp.bounds(s.c.comp.windowOf(s)))
+			s.c.comp.damage(s.c.comp.bounds(s.c.comp.rootOf(s)))
 		})
 	}
 	return nil

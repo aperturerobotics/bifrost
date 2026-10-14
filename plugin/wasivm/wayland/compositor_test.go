@@ -24,6 +24,7 @@ const (
 	idWmBase        = 6
 	idSeat          = 7
 	idSubcompositor = 8
+	idLayerShell    = 9
 	firstFreeID     = 20
 )
 
@@ -162,6 +163,7 @@ func (tc *testCompositor) connect() *testClient {
 		{"xdg_wm_base", 1, idWmBase},
 		{"wl_seat", 5, idSeat},
 		{"wl_subcompositor", 1, idSubcompositor},
+		{"zwlr_layer_shell_v1", 4, idLayerShell},
 	} {
 		c.request(newEvent(idRegistry, registryBind).uint(names[g.iface]).string(g.iface).uint(g.version).uint(g.id))
 	}
@@ -289,6 +291,34 @@ func (c *testClient) window(width, height int, bgr [3]byte) testWindow {
 	c.request(newEvent(w.surface, surfaceCommit))
 	c.await(bid, bufferRelease)
 	return w
+}
+
+// layerSurface maps a layer surface of one opaque color in layer, held to
+// anchor, with the exclusive zone and keyboard interactivity given. A zero
+// side of size spans the screen between its anchors. It returns the
+// wl_surface id.
+func (c *testClient) layerSurface(layer, anchor uint32, size image.Point, zone int32, interactivity uint32, bgr [3]byte) uint32 {
+	// Make the layer surface.
+	c.t.Helper()
+	sid, lid := c.newID(), c.newID()
+	c.request(newEvent(idCompositor, compositorCreateSurface).uint(sid))
+	c.request(newEvent(idLayerShell, layerShellGetLayerSurface).uint(lid).uint(sid).uint(0).uint(layer).string("test"))
+
+	// Set its state and wait for its first configure.
+	c.request(newEvent(lid, layerSurfaceSetAnchor).uint(anchor))
+	c.request(newEvent(lid, layerSurfaceSetSize).uint(uint32(size.X)).uint(uint32(size.Y))) //nolint:gosec // small sizes.
+	c.request(newEvent(lid, layerSurfaceSetExclusiveZone).int(zone))
+	c.request(newEvent(lid, layerSurfaceSetKeyboardInteractivity).uint(interactivity))
+	c.request(newEvent(sid, surfaceCommit))
+	m := c.await(lid, layerSurfaceConfigure)
+	_, w, h := m.uint(), int(m.uint()), int(m.uint())
+
+	// Map it at the configured size.
+	bid := c.buffer(w, h, [4]byte{bgr[0], bgr[1], bgr[2], 0}, shmFormatXRGB8888)
+	c.request(newEvent(sid, surfaceAttach).uint(bid).int(0).int(0))
+	c.request(newEvent(sid, surfaceCommit))
+	c.await(bid, bufferRelease)
+	return sid
 }
 
 // The colors the tests draw, in RGBA.
@@ -433,4 +463,43 @@ func TestSubsurface(t *testing.T) {
 	// The gray adds to the blue scaled by the gray's transparency.
 	tc.awaitPixel(image.Pt(cascadeStep+4, cascadeStep+4), [4]byte{0x80, 0x80, 0xff, 0xff})
 	tc.awaitPixel(image.Pt(cascadeStep+3, cascadeStep+3), blue)
+}
+
+// TestLayerShell checks a panel's exclusive zone keeps the windows below it,
+// a maximized window fills the area left, an overlay draws above the windows
+// and an exclusive overlay takes the keyboard.
+func TestLayerShell(t *testing.T) {
+	// Map a 16 pixel panel across the top of the screen.
+	const panel = 16
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	c.layerSurface(layerTop, anchorTop|anchorLeft|anchorRight, image.Pt(0, panel), panel, interactivityNone, bufRed)
+	tc.awaitPixel(image.Pt(159, panel-1), red)
+
+	// A window cascades from below the panel and takes the keyboard.
+	keyboard := c.newID()
+	c.request(newEvent(idSeat, seatGetKeyboard).uint(keyboard))
+	w := c.window(16, 16, bufGreen)
+	tc.awaitPixel(image.Pt(cascadeStep, panel+cascadeStep), green)
+	m := c.await(keyboard, keyboardEnter)
+	if _, s := m.uint(), m.uint(); s != w.surface {
+		t.Fatalf("keyboard entered %d, want the window %d", s, w.surface)
+	}
+
+	// Maximized, it fills the screen below the panel.
+	c.request(newEvent(w.toplevel, toplevelSetMaximized))
+	if size, _ := c.awaitStates(w.toplevel); size != image.Pt(160, 120-panel) {
+		t.Fatalf("maximized to %v, want 160x%d", size, 120-panel)
+	}
+
+	// An overlay over the whole screen draws above the window and takes the
+	// keyboard from it.
+	overlay := c.layerSurface(layerOverlay, anchorTop|anchorBottom|anchorLeft|anchorRight, image.Point{}, -1, interactivityExclusive, bufBlue)
+	tc.awaitPixel(image.Pt(cascadeStep, panel+cascadeStep), blue)
+	tc.awaitPixel(image.Pt(0, 0), blue)
+	c.await(keyboard, keyboardLeave)
+	m = c.await(keyboard, keyboardEnter)
+	if _, s := m.uint(), m.uint(); s != overlay {
+		t.Fatalf("keyboard entered %d, want the overlay %d", s, overlay)
+	}
 }

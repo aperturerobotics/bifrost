@@ -33,31 +33,58 @@ func (c *Compositor) Input(in *s4wave_vm.WasiVmDisplayInput) {
 	})
 }
 
-// activate moves the keyboard focus to the window w, which may be nil, and
-// configures the windows losing and gaining it. The caller holds the lock.
+// activate makes w, which may be nil, the active window, configures the
+// windows losing and gaining it, and moves the keyboard focus to match. The
+// caller holds the lock.
 func (c *Compositor) activate(w *surface) {
-	// Leave the old window.
+	// Configure the windows losing and gaining the state, then move the
+	// keyboard.
 	old := c.active
 	if old == w {
 		return
 	}
 	c.active = w
+	if old != nil && old.xdg != nil && old.xdg.configured {
+		old.xdg.configure()
+	}
+	if w != nil {
+		w.xdg.configure()
+	}
+	c.refocusKeyboard()
+}
+
+// refocusKeyboard moves the keyboard focus to the surface that takes it: the
+// topmost layer surface holding the keyboard exclusively in the top or
+// overlay layer, else the layer surface a press focused, else the active
+// window. The caller holds the lock.
+func (c *Compositor) refocusKeyboard() {
+	// Find the surface.
+	to := c.active
+	if c.layerFocus != nil {
+		to = c.layerFocus
+	}
+	for _, s := range slices.Concat(c.layers[layerTop], c.layers[layerOverlay]) {
+		if s.layer.interactivity == interactivityExclusive {
+			to = s
+		}
+	}
+	if to == c.focus {
+		return
+	}
+
+	// Leave the old surface and enter the new one.
+	old := c.focus
+	c.focus = to
 	if old != nil {
 		serial := c.nextSerial()
 		for _, k := range old.c.keyboards {
 			old.c.send(newEvent(k.id, keyboardLeave).uint(serial).uint(old.id))
 		}
-		if old.xdg != nil && old.xdg.configured {
-			old.xdg.configure()
-		}
 	}
-
-	// Enter the new one.
-	if w != nil {
-		for _, k := range w.c.keyboards {
-			c.enterKeyboard(w, k)
+	if to != nil {
+		for _, k := range to.c.keyboards {
+			c.enterKeyboard(to, k)
 		}
-		w.xdg.configure()
 	}
 }
 
@@ -70,7 +97,7 @@ func (c *Compositor) refocusPointer() {
 	case c.grab != nil:
 	case c.buttons&buttonBits == 0:
 		c.setHover(c.surfaceAt(c.pointer))
-	case c.hover != nil && (c.windowOf(c.hover) == nil || c.hover.image == nil):
+	case c.hover != nil && (c.rootOf(c.hover) == nil || c.hover.image == nil):
 		c.setHover(nil)
 	}
 }
@@ -103,11 +130,18 @@ func (c *Compositor) setHover(s *surface) {
 // forget drops the destroyed surface s from the focus, the grab and the
 // popup grabs without telling its client. The caller holds the lock.
 func (c *Compositor) forget(s *surface) {
+	// Clear each reference to s.
 	if c.hover == s {
 		c.hover = nil
 	}
 	if c.active == s {
 		c.active = nil
+	}
+	if c.focus == s {
+		c.focus = nil
+	}
+	if c.layerFocus == s {
+		c.layerFocus = nil
 	}
 	if c.grab != nil && c.grab.w == s {
 		c.grab = nil
@@ -161,7 +195,7 @@ func (c *Compositor) pointerInput(ev *s4wave_vm.WasiVmPointerEvent) {
 	}
 
 	// Focus the surface under the pointer. A first press dismisses the
-	// popups outside it, then raises and activates its window.
+	// popups outside it, then focuses its window or layer surface.
 	if !held {
 		c.setHover(c.surfaceAt(c.pointer))
 		if c.buttons&changed&buttonBits != 0 {
@@ -176,9 +210,11 @@ func (c *Compositor) pointerInput(ev *s4wave_vm.WasiVmPointerEvent) {
 	}
 }
 
-// press dismisses the grabbing popups the hovered surface is outside of, then
-// raises and activates its window. The caller holds the lock.
+// press dismisses the grabbing popups the hovered surface is outside of.
+// Then it raises and activates the hovered window, or gives the keyboard to
+// a layer surface that takes it on a press. The caller holds the lock.
 func (c *Compositor) press() {
+	// Dismiss the popups.
 	for n := len(c.popupGrabs); n != 0; n-- {
 		top := c.popupGrabs[n-1]
 		if c.hover != nil && c.hover.ancestor(top) {
@@ -186,10 +222,18 @@ func (c *Compositor) press() {
 		}
 		c.dismiss(top, true)
 	}
-	if w := c.windowOf(c.hover); w != nil {
+
+	// Focus the window or the layer surface.
+	switch w := c.rootOf(c.hover); {
+	case w == nil:
+	case w.xdg != nil:
+		c.layerFocus = nil
 		c.raise(w)
 		c.activate(w)
+	case w.layer.interactivity == interactivityOnDemand:
+		c.layerFocus = w
 	}
+	c.refocusKeyboard()
 }
 
 // sendPointer sends the hovered surface's pointers the motion and the
@@ -233,7 +277,7 @@ func (c *Compositor) sendPointer(changed uint32) {
 func (c *Compositor) startGrab(s *surface, edges uint32) {
 	// Check the press and the window.
 	t := s.xdg.toplevel
-	if c.grab != nil || c.buttons&buttonBits == 0 || c.windowOf(c.hover) != s || t.maximized || t.fullscreen {
+	if c.grab != nil || c.buttons&buttonBits == 0 || c.rootOf(c.hover) != s || t.maximized || t.fullscreen {
 		return
 	}
 
@@ -253,13 +297,13 @@ func (c *Compositor) startGrab(s *surface, edges uint32) {
 // drag moves the grabbed window with the pointer, or configures it at the
 // size the pointer drags it to. The caller holds the lock.
 func (c *Compositor) drag() {
-	// Move the window, keeping its top on the screen.
+	// Move the window, keeping its top in the usable area.
 	g := c.grab
 	t, d := g.w.xdg.toplevel, c.pointer.Sub(g.pointer)
 	if g.edges == 0 {
 		before := c.bounds(g.w)
 		t.pos = g.rect.Min.Add(d)
-		t.pos.Y = max(t.pos.Y, c.screen.Min.Y)
+		t.pos.Y = max(t.pos.Y, c.usable.Min.Y)
 		c.damage(before.Union(c.bounds(g.w)))
 		return
 	}
@@ -328,8 +372,8 @@ func (c *Compositor) keyInput(ev *s4wave_vm.WasiVmKeyEvent) {
 		return
 	}
 
-	// Send the key and the new modifiers to the active window.
-	s := c.active
+	// Send the key and the new modifiers to the focused surface.
+	s := c.focus
 	if s == nil {
 		return
 	}

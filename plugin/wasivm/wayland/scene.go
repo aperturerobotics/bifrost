@@ -24,7 +24,7 @@ func (c *Compositor) mapWindow(s *surface) {
 	x, t := s.xdg, s.xdg.toplevel
 	if !t.placed {
 		t.placed = true
-		t.pos = c.screen.Min.Add(image.Pt(cascadeStep, cascadeStep).Mul(1 + c.placed%cascadeSlots))
+		t.pos = c.usable.Min.Add(image.Pt(cascadeStep, cascadeStep).Mul(1 + c.placed%cascadeSlots))
 		c.placed++
 	}
 
@@ -36,25 +36,50 @@ func (c *Compositor) mapWindow(s *surface) {
 	c.refocusPointer()
 }
 
-// unmap takes the toplevel s off the stack, dismisses its popups and
-// activates the window below. The client must configure it again before it
-// maps. The caller holds the lock.
+// mapLayer shows the layer surface s on top of its layer and rearranges the
+// layers around it. The caller holds the lock.
+func (c *Compositor) mapLayer(s *surface) {
+	// Show it, then place the layers and move the focus around it.
+	l := s.layer
+	l.mapped = true
+	c.layers[l.layer] = append(c.layers[l.layer], s)
+	c.arrange()
+	c.damage(c.bounds(s))
+	c.refocusKeyboard()
+	c.refocusPointer()
+}
+
+// unmap takes the window or layer surface s off the screen, dismisses its
+// popups and moves the focus it held. The client must configure it again
+// before it maps. The caller holds the lock.
 func (c *Compositor) unmap(s *surface) {
-	// Take it off the stack.
-	x := s.xdg
-	if !x.mapped {
+	// Hide it and its popups.
+	if !s.mapped() {
 		return
 	}
 	c.damage(c.bounds(s))
 	for _, p := range slices.Clone(s.popups) {
 		c.dismiss(p, true)
 	}
-	x.mapped, x.configured = false, false
-	c.windows = slices.DeleteFunc(c.windows, func(w *surface) bool { return w == s })
+
+	// Take a window off the stack, or a layer surface off its layer, making
+	// room for the windows.
+	if x := s.xdg; x != nil {
+		x.mapped, x.configured = false, false
+		c.windows = slices.DeleteFunc(c.windows, func(w *surface) bool { return w == s })
+	} else {
+		l := s.layer
+		l.mapped, l.configured = false, false
+		c.layers[l.layer] = slices.DeleteFunc(c.layers[l.layer], func(t *surface) bool { return t == s })
+		c.arrange()
+	}
 
 	// Move the focus.
 	if c.grab != nil && c.grab.w == s {
 		c.grab = nil
+	}
+	if c.layerFocus == s {
+		c.layerFocus = nil
 	}
 	if c.active == s {
 		c.activate(nil)
@@ -62,7 +87,54 @@ func (c *Compositor) unmap(s *surface) {
 			c.activate(c.windows[n-1])
 		}
 	}
+	c.refocusKeyboard()
 	c.refocusPointer()
+}
+
+// arrange places the mapped layer surfaces and gives the windows the area
+// the exclusive zones leave. The surfaces reserving an edge go first, from
+// the top layer down, each taking its edge from the area the ones before
+// left. Maximized windows then fill the new usable area. The caller holds
+// the lock.
+func (c *Compositor) arrange() {
+	// Place the surfaces reserving an edge.
+	usable := c.screen
+	for _, layer := range slices.Backward(c.layers[:]) {
+		for _, s := range layer {
+			if s.layer.exclusiveEdge() != 0 {
+				s.layer.place(usable)
+				usable = s.layer.reserve(usable)
+			}
+		}
+	}
+
+	// Place the rest in the usable area, or on the whole screen for a
+	// negative zone.
+	for _, layer := range c.layers {
+		for _, s := range layer {
+			switch l := s.layer; {
+			case l.exclusiveEdge() != 0:
+			case l.zone < 0:
+				l.place(c.screen)
+			default:
+				l.place(usable)
+			}
+		}
+	}
+
+	// Fit the maximized windows to a changed usable area.
+	if usable == c.usable {
+		return
+	}
+	c.usable = usable
+	for _, w := range c.windows {
+		if t := w.xdg.toplevel; t.maximized && !t.fullscreen {
+			before := c.bounds(w)
+			t.pos, t.size = usable.Min, usable.Size()
+			c.damage(before.Union(c.bounds(w)))
+			w.xdg.configure()
+		}
+	}
 }
 
 // raise moves the window w to the top of the stack. The caller holds the
@@ -76,8 +148,9 @@ func (c *Compositor) raise(w *surface) {
 	c.damage(c.bounds(w))
 }
 
-// setState maximizes, fills the screen with, or restores the window s, and
-// configures it at the new size. The caller holds the lock.
+// setState maximizes the window s to the usable area, fills the screen with
+// it, or restores it, and configures it at the new size. The caller holds
+// the lock.
 func (c *Compositor) setState(s *surface, maximized, fullscreen bool) {
 	// Remember the window's place before it first leaves it.
 	t := s.xdg.toplevel
@@ -87,10 +160,13 @@ func (c *Compositor) setState(s *surface, maximized, fullscreen bool) {
 	}
 	t.maximized, t.fullscreen = maximized, fullscreen
 
-	// Fill the screen, or go back to the remembered place.
+	// Fill the usable area or the screen, or go back to the remembered
+	// place.
 	switch {
-	case maximized || fullscreen:
+	case fullscreen:
 		t.pos, t.size = c.screen.Min, c.screen.Size()
+	case maximized:
+		t.pos, t.size = c.usable.Min, c.usable.Size()
 	case !wasNormal:
 		t.pos, t.size = t.restore.Min, t.restore.Size()
 	}
@@ -99,11 +175,10 @@ func (c *Compositor) setState(s *surface, maximized, fullscreen bool) {
 	}
 }
 
-// windowOf returns the mapped window whose tree holds s, or nil. The caller
-// holds the lock.
-func (c *Compositor) windowOf(s *surface) *surface {
-	// Find the root of the tree, which is the window when it is a mapped
-	// toplevel.
+// rootOf returns the mapped window or layer surface whose tree holds s, or
+// nil. The caller holds the lock.
+func (c *Compositor) rootOf(s *surface) *surface {
+	// Find the root of the tree and check it shows.
 	if s == nil {
 		return nil
 	}
@@ -111,10 +186,17 @@ func (c *Compositor) windowOf(s *surface) *surface {
 	for root.parent != nil {
 		root = root.parent
 	}
-	if root.xdg == nil || !root.xdg.mapped {
+	if !root.mapped() {
 		return nil
 	}
 	return root
+}
+
+// roots returns the mapped windows and layer surfaces bottom to top: the
+// background and bottom layers, the windows, then the top and overlay
+// layers. The caller holds the lock.
+func (c *Compositor) roots() []*surface {
+	return slices.Concat(c.layers[layerBackground], c.layers[layerBottom], c.windows, c.layers[layerTop], c.layers[layerOverlay])
 }
 
 // bounds returns the screen area of the tree of s, or nothing for nil. The
@@ -155,8 +237,8 @@ func (c *Compositor) walk(s *surface, at image.Point, fn func(t *surface, at ima
 // surfaceAt returns the topmost surface under the screen point pt, or nil.
 // The caller holds the lock.
 func (c *Compositor) surfaceAt(pt image.Point) *surface {
-	for _, w := range slices.Backward(c.windows) {
-		// Note the last surface of the window, the topmost, under pt.
+	for _, w := range slices.Backward(c.roots()) {
+		// Note the last surface of the tree, the topmost, under pt.
 		var hit *surface
 		c.walk(w, w.origin(), func(t *surface, at image.Point) bool {
 			if pt.In(image.Rectangle{Min: at, Max: at.Add(t.size)}) {
@@ -171,8 +253,8 @@ func (c *Compositor) surfaceAt(pt image.Point) *surface {
 	return nil
 }
 
-// readScreen composites the area r of the screen: the windows, bottom to
-// top, over the background. The caller holds the lock.
+// readScreen composites the area r of the screen: the windows and layer
+// surfaces, bottom to top, over the background. The caller holds the lock.
 func (c *Compositor) readScreen(r image.Rectangle) *s4wave_vm.WasiVmDisplayFrame {
 	// Fill the background.
 	pix := make([]byte, 4*r.Dx()*r.Dy())
@@ -180,8 +262,8 @@ func (c *Compositor) readScreen(r image.Rectangle) *s4wave_vm.WasiVmDisplayFrame
 		copy(pix[i:i+4], background[:])
 	}
 
-	// Draw each surface of each window.
-	for _, w := range c.windows {
+	// Draw each surface of each tree.
+	for _, w := range c.roots() {
 		c.walk(w, w.origin(), func(s *surface, at image.Point) bool {
 			blend(pix, r, s, at)
 			return false
@@ -258,7 +340,7 @@ func (c *Compositor) dismiss(s *surface, notify bool) {
 	}
 
 	// Take it off its parent.
-	c.damage(c.bounds(c.windowOf(s)))
+	c.damage(c.bounds(c.rootOf(s)))
 	s.unparent()
 	c.popupGrabs = slices.DeleteFunc(c.popupGrabs, func(p *surface) bool { return p == s })
 	if notify && s.xdg != nil && s.xdg.popup != nil {
