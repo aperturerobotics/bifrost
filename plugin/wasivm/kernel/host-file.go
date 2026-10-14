@@ -17,6 +17,18 @@ type File struct {
 	of *OpenFile
 }
 
+// NewMemfd creates an anonymous in-memory file holding data, as a guest's
+// memfd_create does, for host code to pass to the guest over a Unix socket.
+func (k *Kernel) NewMemfd(name string, data []byte) *File {
+	// Create the file and write data under the kernel lock.
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	of := k.newMemfd(name)
+	of.ref()
+	_, _ = k.writeNodeBytes(of, 0, data)
+	return &File{k: k, of: of}
+}
+
 // Close drops the reference.
 func (f *File) Close() error {
 	f.k.mu.Lock()

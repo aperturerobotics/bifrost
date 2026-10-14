@@ -60,9 +60,14 @@ func (p *Process) sysMemfdCreate(namePtr, flags uint32) uint64 {
 	}
 
 	// Open a detached file.
-	node := p.kernel.vfs.newNode(sIFREG | 0o777)
-	of := &OpenFile{node: node, path: "/memfd:" + name + " (deleted)", flags: oRDWR}
-	return uint64(p.installFD(of))
+	return uint64(p.installFD(p.kernel.newMemfd(name)))
+}
+
+// newMemfd opens a detached in-memory file named for memfd_create. The
+// caller holds the kernel lock and takes the first reference.
+func (k *Kernel) newMemfd(name string) *OpenFile {
+	node := k.vfs.newNode(sIFREG | 0o777)
+	return &OpenFile{node: node, path: "/memfd:" + name + " (deleted)", flags: oRDWR}
 }
 
 // sysMmap fills the length bytes at addr with the file of fd from off, as the
