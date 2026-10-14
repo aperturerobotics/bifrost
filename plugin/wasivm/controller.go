@@ -125,6 +125,9 @@ var blockTypes = map[string]blocktype.BlockType{
 	s4wave_vm.WasiVmImageTypeID: blocktype.NewBlockType(s4wave_vm.WasiVmImageTypeID, func() *s4wave_vm.WasiVmImage {
 		return &s4wave_vm.WasiVmImage{}
 	}),
+	s4wave_vm.WasiVmPackageTypeID: blocktype.NewBlockType(s4wave_vm.WasiVmPackageTypeID, func() *s4wave_vm.WasiVmPackage {
+		return &s4wave_vm.WasiVmPackage{}
+	}),
 }
 
 // register registers the WasiVM ObjectType, operations, viewers and wizard
@@ -165,6 +168,7 @@ func register(
 		s4wave_vm.CreateWasiVmOpId,
 		s4wave_vm.SetWasiVmStateOpId,
 		s4wave_vm.CreateWasiVmImageOpId,
+		s4wave_vm.CreateWasiVmPackageOpId,
 	} {
 		resp, err := woSvc.RegisterWorldOp(ctx, &s4wave_worldop_registry.RegisterWorldOpRequest{
 			OperationTypeId: opID,

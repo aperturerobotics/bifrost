@@ -194,6 +194,7 @@ func unmarshalOp(ctx context.Context, opTypeID string, data []byte) (world.Opera
 		s4wave_vm.LookupCreateWasiVmOp,
 		s4wave_vm.LookupSetWasiVmStateOp,
 		s4wave_vm.LookupCreateWasiVmImageOp,
+		s4wave_vm.LookupCreateWasiVmPackageOp,
 	}).LookupOp(ctx, opTypeID)
 	if err == nil && op == nil {
 		err = errors.New("unhandled operation type")

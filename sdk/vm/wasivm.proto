@@ -74,7 +74,9 @@ message WasiVmImage {
   // reads lazily. Unset when the image has its own wasivmimage/rootfs edge.
   VmImageCdnSource cdn_source = 6;
   // Links (via graph edges, not proto fields):
-  //   wasivmimage/rootfs -> UnixFS object (root filesystem)
+  //   wasivmimage/rootfs  -> UnixFS object (root filesystem)
+  //   wasivmimage/package -> WasiVmPackage (each package the image asks for;
+  //                          the rootfs holds their runtime closure)
 }
 
 // CreateWasiVmImageOp creates a new WasiVmImage world object. Its rootfs edge,
@@ -84,6 +86,39 @@ message CreateWasiVmImageOp {
   string object_key = 1;
   // Image carries the metadata of the new image. Name is required.
   WasiVmImage image = 2;
+  // Timestamp is the creation timestamp. Stored on the block as CreatedAt.
+  .google.protobuf.Timestamp timestamp = 3;
+}
+
+// WasiVmPackage is one version of a package built for WasiVMs. Its files are
+// two UnixFS layers: the runtime layer every install lays onto its root, and
+// the dev layer of headers, static libraries and build metadata that only
+// builds against the package need.
+message WasiVmPackage {
+  // Name is the package's category and name, such as app-editors/nano.
+  string name = 1;
+  // Version is the package version with its revision, such as 9.2-r1.
+  string version = 2;
+  // Description is a one-line description of the package.
+  string description = 3;
+  // License is the package's license expression, such as GPL-2+.
+  string license = 4;
+  // CreatedAt is the creation timestamp.
+  .google.protobuf.Timestamp created_at = 5;
+  // Links (via graph edges, not proto fields):
+  //   wasivmpkg/runtime -> UnixFS object (runtime files)
+  //   wasivmpkg/dev     -> UnixFS object (build-time files)
+  //   wasivmpkg/depends -> WasiVmPackage (each runtime dependency)
+}
+
+// CreateWasiVmPackageOp creates a new WasiVmPackage world object. Its layer and
+// dependency edges are set separately via SetGraphQuad.
+message CreateWasiVmPackageOp {
+  // ObjectKey is the key to create the package at.
+  string object_key = 1;
+  // Package carries the metadata of the new package. Name and version are
+  // required.
+  WasiVmPackage package = 2;
   // Timestamp is the creation timestamp. Stored on the block as CreatedAt.
   .google.protobuf.Timestamp timestamp = 3;
 }

@@ -302,6 +302,105 @@ func (x *CreateWasiVmImageOp) GetTimestamp() *timestamppb.Timestamp {
 	return nil
 }
 
+// WasiVmPackage is one version of a package built for WasiVMs. Its files are
+// two UnixFS layers: the runtime layer every install lays onto its root, and
+// the dev layer of headers, static libraries and build metadata that only
+// builds against the package need.
+type WasiVmPackage struct {
+	unknownFields []byte
+	// Name is the package's category and name, such as app-editors/nano.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Version is the package version with its revision, such as 9.2-r1.
+	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	// Description is a one-line description of the package.
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// License is the package's license expression, such as GPL-2+.
+	License string `protobuf:"bytes,4,opt,name=license,proto3" json:"license,omitempty"`
+	// CreatedAt is the creation timestamp.
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
+}
+
+func (x *WasiVmPackage) Reset() {
+	*x = WasiVmPackage{}
+}
+
+func (*WasiVmPackage) ProtoMessage() {}
+
+func (x *WasiVmPackage) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *WasiVmPackage) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *WasiVmPackage) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *WasiVmPackage) GetLicense() string {
+	if x != nil {
+		return x.License
+	}
+	return ""
+}
+
+func (x *WasiVmPackage) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+// CreateWasiVmPackageOp creates a new WasiVmPackage world object. Its layer and
+// dependency edges are set separately via SetGraphQuad.
+type CreateWasiVmPackageOp struct {
+	unknownFields []byte
+	// ObjectKey is the key to create the package at.
+	ObjectKey string `protobuf:"bytes,1,opt,name=object_key,json=objectKey,proto3" json:"objectKey,omitempty"`
+	// Package carries the metadata of the new package. Name and version are
+	// required.
+	Package *WasiVmPackage `protobuf:"bytes,2,opt,name=package,proto3" json:"package,omitempty"`
+	// Timestamp is the creation timestamp. Stored on the block as CreatedAt.
+	Timestamp *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+}
+
+func (x *CreateWasiVmPackageOp) Reset() {
+	*x = CreateWasiVmPackageOp{}
+}
+
+func (*CreateWasiVmPackageOp) ProtoMessage() {}
+
+func (x *CreateWasiVmPackageOp) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *CreateWasiVmPackageOp) GetPackage() *WasiVmPackage {
+	if x != nil {
+		return x.Package
+	}
+	return nil
+}
+
+func (x *CreateWasiVmPackageOp) GetTimestamp() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Timestamp
+	}
+	return nil
+}
+
 // SetWasiVmStateOp changes the desired state of an existing WasiVm object.
 type SetWasiVmStateOp struct {
 	unknownFields []byte
@@ -454,6 +553,44 @@ func (m *CreateWasiVmImageOp) CloneVT() *CreateWasiVmImageOp {
 }
 
 func (m *CreateWasiVmImageOp) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmPackage) CloneVT() *WasiVmPackage {
+	if m == nil {
+		return (*WasiVmPackage)(nil)
+	}
+	r := new(WasiVmPackage)
+	r.Name = m.Name
+	r.Version = m.Version
+	r.Description = m.Description
+	r.License = m.License
+	r.CreatedAt = protobuf_go_lite.CloneVTValue(m.CreatedAt)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmPackage) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *CreateWasiVmPackageOp) CloneVT() *CreateWasiVmPackageOp {
+	if m == nil {
+		return (*CreateWasiVmPackageOp)(nil)
+	}
+	r := new(CreateWasiVmPackageOp)
+	r.ObjectKey = m.ObjectKey
+	r.Package = protobuf_go_lite.CloneVTValue(m.Package)
+	r.Timestamp = protobuf_go_lite.CloneVTValue(m.Timestamp)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *CreateWasiVmPackageOp) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -628,6 +765,64 @@ func (this *CreateWasiVmImageOp) EqualVT(that *CreateWasiVmImageOp) bool {
 
 func (this *CreateWasiVmImageOp) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*CreateWasiVmImageOp)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmPackage) EqualVT(that *WasiVmPackage) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Name != that.Name {
+		return false
+	}
+	if this.Version != that.Version {
+		return false
+	}
+	if this.Description != that.Description {
+		return false
+	}
+	if this.License != that.License {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.CreatedAt, that.CreatedAt) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmPackage) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmPackage)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *CreateWasiVmPackageOp) EqualVT(that *CreateWasiVmPackageOp) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.ObjectKey != that.ObjectKey {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Package, that.Package) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Timestamp, that.Timestamp) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *CreateWasiVmPackageOp) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*CreateWasiVmPackageOp)
 	if !ok {
 		return false
 	}
@@ -1132,6 +1327,150 @@ func (x *CreateWasiVmImageOp) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the WasiVmPackage message to JSON.
+func (x *WasiVmPackage) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Name != "" || s.HasField("name") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("name")
+		s.WriteString(x.Name)
+	}
+	if x.Version != "" || s.HasField("version") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("version")
+		s.WriteString(x.Version)
+	}
+	if x.Description != "" || s.HasField("description") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("description")
+		s.WriteString(x.Description)
+	}
+	if x.License != "" || s.HasField("license") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("license")
+		s.WriteString(x.License)
+	}
+	if x.CreatedAt != nil || s.HasField("createdAt") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("createdAt")
+		x.CreatedAt.MarshalProtoJSON(s.WithField("createdAt"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmPackage to JSON.
+func (x *WasiVmPackage) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmPackage message from JSON.
+func (x *WasiVmPackage) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "name":
+			s.AddField("name")
+			x.Name = s.ReadString()
+		case "version":
+			s.AddField("version")
+			x.Version = s.ReadString()
+		case "description":
+			s.AddField("description")
+			x.Description = s.ReadString()
+		case "license":
+			s.AddField("license")
+			x.License = s.ReadString()
+		case "created_at", "createdAt":
+			if s.ReadNil() {
+				x.CreatedAt = nil
+				return
+			}
+			x.CreatedAt = &timestamppb.Timestamp{}
+			x.CreatedAt.UnmarshalProtoJSON(s.WithField("created_at", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmPackage from JSON.
+func (x *WasiVmPackage) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the CreateWasiVmPackageOp message to JSON.
+func (x *CreateWasiVmPackageOp) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.ObjectKey != "" || s.HasField("objectKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("objectKey")
+		s.WriteString(x.ObjectKey)
+	}
+	if x.Package != nil || s.HasField("package") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("package")
+		x.Package.MarshalProtoJSON(s.WithField("package"))
+	}
+	if x.Timestamp != nil || s.HasField("timestamp") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("timestamp")
+		x.Timestamp.MarshalProtoJSON(s.WithField("timestamp"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the CreateWasiVmPackageOp to JSON.
+func (x *CreateWasiVmPackageOp) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the CreateWasiVmPackageOp message from JSON.
+func (x *CreateWasiVmPackageOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "object_key", "objectKey":
+			s.AddField("object_key")
+			x.ObjectKey = s.ReadString()
+		case "package":
+			if s.ReadNil() {
+				x.Package = nil
+				return
+			}
+			x.Package = &WasiVmPackage{}
+			x.Package.UnmarshalProtoJSON(s.WithField("package", true))
+		case "timestamp":
+			if s.ReadNil() {
+				x.Timestamp = nil
+				return
+			}
+			x.Timestamp = &timestamppb.Timestamp{}
+			x.Timestamp.UnmarshalProtoJSON(s.WithField("timestamp", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the CreateWasiVmPackageOp from JSON.
+func (x *CreateWasiVmPackageOp) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the SetWasiVmStateOp message to JSON.
 func (x *SetWasiVmStateOp) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -1521,6 +1860,125 @@ func (m *CreateWasiVmImageOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *WasiVmPackage) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmPackage) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmPackage) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.CreatedAt != nil {
+		size, err := m.CreatedAt.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.License) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.License)
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Description) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Description)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Version) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Version)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Name)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateWasiVmPackageOp) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateWasiVmPackageOp) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *CreateWasiVmPackageOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Timestamp != nil {
+		size, err := m.Timestamp.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Package != nil {
+		size, err := m.Package.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ObjectKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ObjectKey)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *SetWasiVmStateOp) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -1657,6 +2115,43 @@ func (m *CreateWasiVmImageOp) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ObjectKey)
 	if m.Image != nil {
 		l = m.Image.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.Timestamp != nil {
+		l = m.Timestamp.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmPackage) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Name)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Version)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Description)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.License)
+	if m.CreatedAt != nil {
+		l = m.CreatedAt.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *CreateWasiVmPackageOp) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ObjectKey)
+	if m.Package != nil {
+		l = m.Package.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	if m.Timestamp != nil {
@@ -1859,6 +2354,58 @@ func (x *CreateWasiVmImageOp) MarshalProtoText() string {
 }
 
 func (x *CreateWasiVmImageOp) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmPackage) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmPackage")
+	if x.Name != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "name")
+		protobuf_go_lite.TextWriteString(&sb, x.Name)
+	}
+	if x.Version != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "version")
+		protobuf_go_lite.TextWriteString(&sb, x.Version)
+	}
+	if x.Description != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "description")
+		protobuf_go_lite.TextWriteString(&sb, x.Description)
+	}
+	if x.License != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "license")
+		protobuf_go_lite.TextWriteString(&sb, x.License)
+	}
+	if x.CreatedAt != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "created_at")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.CreatedAt)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmPackage) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *CreateWasiVmPackageOp) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "CreateWasiVmPackageOp")
+	if x.ObjectKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "object_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ObjectKey)
+	}
+	if x.Package != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "package")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Package)
+	}
+	if x.Timestamp != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "timestamp")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Timestamp)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *CreateWasiVmPackageOp) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -2377,6 +2924,187 @@ func (m *CreateWasiVmImageOp) UnmarshalVT(dAtA []byte) error {
 				m.Image = &WasiVmImage{}
 			}
 			if err := m.Image.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Timestamp == nil {
+				m.Timestamp = &timestamppb.Timestamp{}
+			}
+			if err := m.Timestamp.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmPackage) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmPackage: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmPackage: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Name = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Version = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Description = v
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field License", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.License = v
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAt", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.CreatedAt == nil {
+				m.CreatedAt = &timestamppb.Timestamp{}
+			}
+			if err := m.CreatedAt.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *CreateWasiVmPackageOp) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateWasiVmPackageOp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateWasiVmPackageOp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ObjectKey = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Package", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Package == nil {
+				m.Package = &WasiVmPackage{}
+			}
+			if err := m.Package.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

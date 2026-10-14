@@ -232,7 +232,9 @@ export interface WasiVmImage {
    * reads lazily. Unset when the image has its own wasivmimage/rootfs edge.
    *
    * Links (via graph edges, not proto fields):
-   *   wasivmimage/rootfs -> UnixFS object (root filesystem)
+   *   wasivmimage/rootfs  -> UnixFS object (root filesystem)
+   *   wasivmimage/package -> WasiVmPackage (each package the image asks for;
+   *                          the rootfs holds their runtime closure)
    *
    * @generated from field: s4wave.vm.VmImageCdnSource cdn_source = 6;
    */
@@ -291,6 +293,102 @@ export const CreateWasiVmImageOp: MessageType<CreateWasiVmImageOp> =
     fields: [
       { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
       { no: 2, name: 'image', kind: 'message', T: WasiVmImage },
+      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmPackage is one version of a package built for WasiVMs. Its files are
+ * two UnixFS layers: the runtime layer every install lays onto its root, and
+ * the dev layer of headers, static libraries and build metadata that only
+ * builds against the package need.
+ *
+ * @generated from message s4wave.vm.WasiVmPackage
+ */
+export interface WasiVmPackage {
+  /**
+   * Name is the package's category and name, such as app-editors/nano.
+   *
+   * @generated from field: string name = 1;
+   */
+  name?: string
+  /**
+   * Version is the package version with its revision, such as 9.2-r1.
+   *
+   * @generated from field: string version = 2;
+   */
+  version?: string
+  /**
+   * Description is a one-line description of the package.
+   *
+   * @generated from field: string description = 3;
+   */
+  description?: string
+  /**
+   * License is the package's license expression, such as GPL-2+.
+   *
+   * @generated from field: string license = 4;
+   */
+  license?: string
+  /**
+   * CreatedAt is the creation timestamp.
+   *
+   * Links (via graph edges, not proto fields):
+   *   wasivmpkg/runtime -> UnixFS object (runtime files)
+   *   wasivmpkg/dev     -> UnixFS object (build-time files)
+   *   wasivmpkg/depends -> WasiVmPackage (each runtime dependency)
+   *
+   * @generated from field: google.protobuf.Timestamp created_at = 5;
+   */
+  createdAt?: Date
+}
+
+export const WasiVmPackage: MessageType<WasiVmPackage> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmPackage',
+    fields: [
+      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'version', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'description', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'license', kind: 'scalar', T: ScalarType.STRING },
+      { no: 5, name: 'created_at', kind: 'message', T: () => Timestamp },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * CreateWasiVmPackageOp creates a new WasiVmPackage world object. Its layer and
+ * dependency edges are set separately via SetGraphQuad.
+ *
+ * @generated from message s4wave.vm.CreateWasiVmPackageOp
+ */
+export interface CreateWasiVmPackageOp {
+  /**
+   * ObjectKey is the key to create the package at.
+   *
+   * @generated from field: string object_key = 1;
+   */
+  objectKey?: string
+  /**
+   * Package carries the metadata of the new package. Name and version are
+   * required.
+   *
+   * @generated from field: s4wave.vm.WasiVmPackage package = 2;
+   */
+  package?: WasiVmPackage
+  /**
+   * Timestamp is the creation timestamp. Stored on the block as CreatedAt.
+   *
+   * @generated from field: google.protobuf.Timestamp timestamp = 3;
+   */
+  timestamp?: Date
+}
+
+export const CreateWasiVmPackageOp: MessageType<CreateWasiVmPackageOp> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.CreateWasiVmPackageOp',
+    fields: [
+      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'package', kind: 'message', T: WasiVmPackage },
       { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
     ] satisfies readonly PartialFieldInfo[],
   })
