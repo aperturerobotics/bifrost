@@ -8,6 +8,7 @@ import (
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/bucket"
+	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/tx"
 	"github.com/s4wave/spacewave/db/unixfs"
 	unixfs_block_fs "github.com/s4wave/spacewave/db/unixfs/block/fs"
@@ -18,7 +19,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// FSCursor allows attaching a cursor to a world object and watching for changes.
+// FSCursor attaches a cursor to a World object and watches it for changes.
+//
+// It supports these positions:
 //   - FSObject (with changelog)
 //   - FSNode (like inode)
 //   - File (raw file block graph)
@@ -183,115 +186,150 @@ func (f *FSCursor) GetCursorOps(ctx context.Context) (unixfs.FSCursorOps, error)
 // Releasing a child cursor does not release the parent, and vise-versa.
 // Return nil, ErrReleased if this FSCursor was released.
 func (f *FSCursor) GetProxyCursor(ctx context.Context) (unixfs.FSCursor, error) {
-	// Reject proxy resolution after FSCursor has been released.
+	// Reuse the root filesystem cursor while it is valid.
 	if f.CheckReleased() {
 		return nil, unixfs_errors.ErrReleased
 	}
-
-	// Collect the proxy cursor and resources needed to resolve this position.
-	relFns := make([]func(), 0, 3)
 	var fsc unixfs.FSCursor
-	var retErr error
-
-	// Resolve or reuse the root filesystem cursor under its state lock.
-	f.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
-		// check if the root fs cursor is valid & return it if so
-		if f.rootFSCursor != nil {
-			if f.rootFSCursor.CheckReleased() {
-				f.rootFSCursor = nil
-			} else {
-				fsc = f.rootFSCursor
-				return
-			}
-		}
-
-		// lookup the object state
-		objState, objFound, err := f.ws.GetObject(ctx, f.objKey)
-		defer world.ReleaseObjectState(objState)
-		if err == nil && !objFound {
-			err = unixfs_errors.ErrNotExist
-		}
-		if err != nil {
-			retErr = err
-			return
-		}
-
-		// Read the World object reference and revision for the root cursor.
-		objRef, objRev, err := objState.GetRootRef(ctx)
-		if err != nil {
-			retErr = err
-			return
-		}
-
-		// Stage the filesystem's writes until the writer publishes them.
-		stage, err := world.OpenWorldStorage(ctx, f.ws)
-		if err != nil {
-			retErr = err
-			return
-		}
-		relFns = append(relFns, stage.Release)
-
-		// Build the root cursor through the stage.
-		rootCursor, err := stage.BuildStorageCursor(ctx)
-		if err != nil {
-			retErr = err
-			return
-		}
-		relFns = append(relFns, rootCursor.Release)
-
-		// Follow the World object reference with the storage cursor.
-		locCursor, err := rootCursor.FollowRef(ctx, objRef)
-		if err != nil {
-			retErr = err
-			return
-		}
-		relFns = append(relFns, locCursor.Release)
-
-		// mark which revision we have & broadcast to wake waiters
-		if f.prevObjRev < objRev {
-			f.prevObjRev = objRev
-			broadcast()
-		}
-
-		// Construct the filesystem proxy for the current position type.
-		switch f.posType {
-		case FSType_FSType_FS_NODE:
-			nfs := unixfs_block_fs.NewFS(f.ctx, 0, locCursor, f.writer)
-			f.rootFSCursor = nfs
-			// dispatch goroutine to wait for changes
-			if f.watchChanges {
-				f.watchWg.Go(func() {
-					f.watchWorldChanges(nfs, objRef)
-				})
-			}
-			// add callback to release cursors when nfs is released
-			nfs.AddChangeCb(func(ch *unixfs.FSCursorChange) bool {
-				// Ignore changes other than the release.
-				if !ch.Released {
-					return true
-				}
-
-				// Release the cursors and the stage with the filesystem.
-				locCursor.Release()
-				rootCursor.Release()
-				stage.Release()
-				return false
-			})
-			fsc = nfs
-		default:
-			retErr = errors.Errorf("TODO support pos type: %s", f.posType.String())
-		}
+	f.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		fsc = f.lockedRootFSCursor()
 	})
-
-	// Release acquired storage cursors when proxy resolution fails.
-	if retErr != nil {
-		for _, rel := range relFns {
-			rel()
-		}
-		return nil, retErr
+	if fsc != nil {
+		return fsc, nil
+	}
+	if f.posType != FSType_FSType_FS_NODE {
+		return nil, errors.Errorf("TODO support pos type: %s", f.posType.String())
 	}
 
+	// Open the object's storage outside bcast, so revision waiters, change
+	// callbacks and Release do not wait on block reads.
+	root, err := f.openRoot(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Install the filesystem unless the cursor was released or another call
+	// installed one first.
+	var released, installed bool
+	f.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		// Keep the released state or the filesystem installed first.
+		if f.CheckReleased() {
+			released = true
+			return
+		}
+		if fsc = f.lockedRootFSCursor(); fsc != nil {
+			return
+		}
+
+		// Install the filesystem over the opened root.
+		installed = true
+		fsc = f.lockedInstallRoot(root)
+
+		// Mark the observed revision and wake its waiters.
+		if f.prevObjRev < root.rev {
+			f.prevObjRev = root.rev
+			broadcast()
+		}
+	})
+	if !installed {
+		root.release()
+	}
+	if released {
+		return nil, unixfs_errors.ErrReleased
+	}
 	return fsc, nil
+}
+
+// lockedRootFSCursor returns the root filesystem cursor if it is valid.
+// The caller holds bcast.
+func (f *FSCursor) lockedRootFSCursor() unixfs.FSCursor {
+	if f.rootFSCursor != nil && f.rootFSCursor.CheckReleased() {
+		f.rootFSCursor = nil
+	}
+	return f.rootFSCursor
+}
+
+// fsRoot is an opened World object root: its reference, revision, and the
+// storage cursor positioned at it.
+type fsRoot struct {
+	// ref is the World object reference.
+	ref *bucket.ObjectRef
+	// rev is the World object revision.
+	rev uint64
+	// cursor is the storage cursor following ref.
+	cursor *bucket_lookup.Cursor
+	// release releases cursor and the storage it reads.
+	release func()
+}
+
+// openRoot reads the World object and opens its storage cursor.
+func (f *FSCursor) openRoot(ctx context.Context) (*fsRoot, error) {
+	// Read the World object reference and revision.
+	objState, objFound, err := f.ws.GetObject(ctx, f.objKey)
+	defer world.ReleaseObjectState(objState)
+	if err == nil && !objFound {
+		err = unixfs_errors.ErrNotExist
+	}
+	if err != nil {
+		return nil, err
+	}
+	objRef, objRev, err := objState.GetRootRef(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Stage the filesystem's writes until the writer publishes them.
+	stage, err := world.OpenWorldStorage(ctx, f.ws)
+	if err != nil {
+		return nil, err
+	}
+
+	// Follow the World object reference through the stage.
+	rootCursor, err := stage.BuildStorageCursor(ctx)
+	if err != nil {
+		stage.Release()
+		return nil, err
+	}
+	locCursor, err := rootCursor.FollowRef(ctx, objRef)
+	if err != nil {
+		rootCursor.Release()
+		stage.Release()
+		return nil, err
+	}
+	return &fsRoot{
+		ref:    objRef,
+		rev:    objRev,
+		cursor: locCursor,
+		release: func() {
+			locCursor.Release()
+			rootCursor.Release()
+			stage.Release()
+		},
+	}, nil
+}
+
+// lockedInstallRoot builds the root filesystem over root and starts watching
+// the World object. The filesystem releases root when it is released.
+// The caller holds bcast.
+func (f *FSCursor) lockedInstallRoot(root *fsRoot) unixfs.FSCursor {
+	// Build the filesystem and follow the object's changes.
+	nfs := unixfs_block_fs.NewFS(f.ctx, 0, root.cursor, f.writer)
+	f.rootFSCursor = nfs
+	if f.watchChanges {
+		f.watchWg.Go(func() {
+			f.watchWorldChanges(nfs, root.ref)
+		})
+	}
+
+	// Release the root with the filesystem.
+	nfs.AddChangeCb(func(ch *unixfs.FSCursorChange) bool {
+		if !ch.Released {
+			return true
+		}
+		root.release()
+		return false
+	})
+	return nfs
 }
 
 // AddChangeCb adds a change callback to detect when the cursor has changed.
@@ -320,8 +358,8 @@ func (f *FSCursor) lockedAddChangeCb(cb unixfs.FSCursorChangeCb) bool {
 	return !released
 }
 
-// Release releases the filesystem cursor.
-// note: locks mtx. must NOT be locked when calling
+// Release releases the filesystem cursor and waits for its watchers.
+// The caller must not hold bcast.
 func (f *FSCursor) Release() {
 	f.release(true)
 }
