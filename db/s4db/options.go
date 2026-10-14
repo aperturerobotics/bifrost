@@ -13,8 +13,10 @@ type Options struct {
 	// 16 MiB.
 	CheckpointMin int64
 	// CheckpointMax is the overlay size that always starts a checkpoint,
-	// bounding the log replay at open. A commit waits for the running
-	// checkpoint while the overlay exceeds twice this. Zero selects 64 MiB.
+	// bounding the log replay at open. A log after the checkpoint of twice
+	// the limit also starts one, so rewrites of the same keys stay bounded.
+	// A commit waits for the running checkpoint while the overlay exceeds
+	// twice this or the log four times. Zero selects 64 MiB.
 	CheckpointMax int64
 	// RelocateBudget is the value bytes compaction may move after each
 	// commit. Zero selects 4 MiB; negative disables compaction.

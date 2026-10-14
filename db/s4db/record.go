@@ -171,5 +171,6 @@ func (r *record) seal(b []byte, prev uint32) []byte {
 	b[16] = r.kind
 	r.crc = chain(prev, b[8:])
 	binary.LittleEndian.PutUint32(b[4:], r.crc)
+	r.size = len(b)
 	return b
 }

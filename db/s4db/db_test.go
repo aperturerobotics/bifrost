@@ -227,6 +227,37 @@ func TestBulkOverlay(t *testing.T) {
 	}
 }
 
+// TestRewriteLog rewrites one key, which grows the log but not the overlay,
+// and checks that checkpoints keep the log an open replays bounded.
+func TestRewriteLog(t *testing.T) {
+	// Open a file with small checkpoints.
+	ctx := context.Background()
+	opts := Options{CheckpointMin: 16 << 10, CheckpointMax: 64 << 10}
+	db := openTest(t, filepath.Join(t.TempDir(), "rewrite.s4wave"), opts)
+	defer db.Close()
+
+	// Rewrite the key well past the bound, checking the log after each
+	// commit. A commit may land past the bound before it waits.
+	val := make([]byte, 400)
+	limit := 4*opts.CheckpointMax + 4<<10
+	for i := range 4000 {
+		val[0] = byte(i)
+		tx, err := db.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Set(ctx, []byte("key"), val); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if got := db.cur.Load().logBytes; got > limit {
+			t.Fatalf("commit %d: log holds %d bytes, over %d", i, got, limit)
+		}
+	}
+}
+
 // childEnv names the file a child process of TestTwoProcesses writes.
 const childEnv = "S4DB_TEST_CHILD"
 

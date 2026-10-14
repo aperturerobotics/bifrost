@@ -498,17 +498,24 @@ func (w *writer) startCheckpoint() {
 }
 
 // waitBuild waits while a background checkpoint runs and the published
-// overlay exceeds twice CheckpointMax, so a writer that outpaces
-// checkpoints holds bounded memory. The caller does not hold the writer
-// lock, which the build needs.
+// overlay exceeds twice CheckpointMax, or the log after the checkpoint four
+// times, so a writer that outpaces checkpoints holds bounded memory and
+// replay. The caller does not hold the writer lock, which the build needs.
 func (w *writer) waitBuild(ctx context.Context) error {
+	// Return at once while the state is within bounds.
 	db := w.db
 	limit := 2 * db.opts.CheckpointMax
-	if db.cur.Load().overlayBytes <= limit {
+	within := func() bool {
+		st := db.cur.Load()
+		return st.overlayBytes <= limit && st.logBytes <= 2*limit
+	}
+	if within() {
 		return nil
 	}
+
+	// Wait for the build to end or the state to come back within bounds.
 	return db.bcast.Wait(ctx, func(_ func(), _ func() <-chan struct{}) (bool, error) {
-		return !w.building.Load() || db.cur.Load().overlayBytes <= limit, nil
+		return !w.building.Load() || within(), nil
 	})
 }
 
@@ -761,7 +768,7 @@ func (w *writer) saveTree(ctx context.Context, t *tree) error {
 	}
 	t.fold(w.changed)
 	w.changed = nil
-	if err := db.publish(ctx, cur.onto(sb, t.carried)); err != nil {
+	if err := db.publish(ctx, cur.onto(sb, t.carried, cur.logBytes-st.logBytes)); err != nil {
 		return err
 	}
 	w.spGen = sb.gen
@@ -855,14 +862,15 @@ func (w *writer) relocate(ctx context.Context, budget int64, visits int) error {
 // writer lock.
 func (w *writer) afterCommit(ctx context.Context) error {
 	// Report a failed background checkpoint, and start one when the
-	// overlay has grown enough.
+	// overlay or the log after the last one has grown enough. Rewrites of
+	// the same keys grow the log but not the overlay.
 	db := w.db
 	if err := w.ckptErr; err != nil {
 		w.ckptErr = nil
 		return err
 	}
 	st := db.cur.Load()
-	if st.overlayBytes > db.opts.checkpointLimit(st.sb) {
+	if limit := db.opts.checkpointLimit(st.sb); st.overlayBytes > limit || st.logBytes > 2*limit {
 		w.startCheckpoint()
 	}
 

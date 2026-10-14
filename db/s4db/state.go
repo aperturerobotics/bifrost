@@ -25,6 +25,9 @@ type state struct {
 	filter *filter
 	// overlayBytes estimates the overlay's encoded size.
 	overlayBytes int64
+	// logBytes counts the log records after ckpt that this handle applied,
+	// which an open would replay.
+	logBytes int64
 	// pos is the offset of the next record.
 	pos uint64
 	// end is the end of the chunk holding pos.
@@ -54,19 +57,22 @@ func newState(sb superblock, limit int64) *state {
 }
 
 // rebase returns st moved onto the later checkpoint sb, keeping the overlay
-// entries after it.
+// entries after it. The sizes of the carried records are unknown, so the
+// log count restarts.
 func (st *state) rebase(sb superblock, limit int64) *state {
 	c := newCarried(sb.seq, limit)
 	st.overlay.Scan(c.add)
-	return st.onto(sb, c)
+	return st.onto(sb, c, 0)
 }
 
 // onto returns st moved onto the later checkpoint sb under the overlay
-// entries c carried over.
-func (st *state) onto(sb superblock, c *carried) *state {
+// entries c carried over, followed by logBytes of log records.
+func (st *state) onto(sb superblock, c *carried, logBytes int64) *state {
+	// Copy the state under the new tree and the carried changes.
 	next := *st
 	next.ckpt, next.gen, next.sb, next.root = sb.seq, sb.gen, sb, sb.root
 	next.overlay, next.filter, next.overlayBytes = c.overlay, c.filter, c.bytes
+	next.logBytes = logBytes
 	return &next
 }
 
@@ -119,6 +125,7 @@ func (st *state) apply(rs ...*record) {
 	es := make([]oentry, 0, n)
 	for _, r := range rs {
 		st.seq, st.crc = r.seq, r.crc
+		st.logBytes += int64(r.size)
 		if r.kind != kindCommit {
 			continue
 		}
