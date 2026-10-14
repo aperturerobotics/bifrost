@@ -362,6 +362,70 @@ func TestReplayResumesSavedReplay(t *testing.T) {
 	}
 }
 
+// TestReplayResumesSavedInit resumes a saved replay of a World that its first
+// operation initialized. The restored replay must hold the initialized World
+// after every position, so that an operation placed after the first position
+// applies instead of finding the World uninitialized.
+func TestReplayResumesSavedInit(t *testing.T) {
+	// Build the operations: A initializes the World and then writes to it.
+	privA, pidA := newReplayTestKey(t)
+	space := newReplayTestSpace(t, pidA)
+	initOp, err := NewInitWorldOp(nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	initData, err := (&SOWorldOp{Body: &SOWorldOp_InitWorld{InitWorld: initOp}}).MarshalVT()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	opInit := space.signOp("A init", privA, initData, &sobject.SOOperationLink{Nonce: 1})
+	opA := space.sign("A own", privA, "object-a", &sobject.SOOperationLink{Nonce: 2, PrevOpHash: opInit.Hash()})
+	opB := space.sign("A next", privA, "object-b", &sobject.SOOperationLink{Nonce: 3, PrevOpHash: opA.Hash()})
+
+	// Member A replays the initialization from an uninitialized checkpoint and
+	// saves the replay.
+	ctx := context.Background()
+	store := store_kvtx_inmem.NewStore()
+	memberA := space.member(pidA, false)
+	memberA.replayer.base = &InnerState{}
+	memberA.replayer.so.(*testSharedObject).localStore = store
+	saved := memberA.deliver(opInit, opA)
+	if err := memberA.replayer.save(ctx); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// A new replayer resumes it and places the next operation.
+	restored := &replayTestMember{
+		space: space,
+		set:   memberA.set,
+		snap:  memberA.snap,
+		replayer: &replayer{
+			c:  space.c,
+			so: &testSharedObject{peerID: pidA, blockStore: space.so.blockStore, localStore: store},
+		},
+	}
+	if err := restored.replayer.load(ctx); err != nil {
+		t.Fatal(err.Error())
+	}
+	if !slices.EqualFunc(restored.replayer.positions, memberA.replayer.positions, func(a, b replayPosition) bool {
+		return a.state.EqualVT(b.state)
+	}) {
+		t.Fatal("restored positions hold Worlds other than the saved replay's")
+	}
+	got := restored.deliver(opB)
+
+	// It matches a cold replay of all three.
+	cold := space.member(pidA, true)
+	cold.replayer.base = &InnerState{}
+	want := cold.deliver(opInit, opA, opB)
+	if !got.state.EqualVT(want.state) || !slices.Equal(got.outcomes, want.outcomes) {
+		t.Errorf("resumed replay %q after saving %q; want %q", got.outcomes, saved.outcomes, want.outcomes)
+	}
+	if got.state.GetHeadRef().GetRootRef().GetEmpty() {
+		t.Error("resumed replay did not apply the operation after the initialization")
+	}
+}
+
 // TestReplayRejectsAuthorOutsideConfig rejects an operation whose author
 // cannot write under the config it names, on every replaying device.
 func TestReplayRejectsAuthorOutsideConfig(t *testing.T) {

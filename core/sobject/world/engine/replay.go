@@ -312,12 +312,17 @@ func (r *replayer) load(ctx context.Context) error {
 
 // restoredState returns the World after the saved outcome of the operation
 // that followed prev. Every World after the base differs from head only in its
-// root and retained roots, which the outcome records.
+// root and retained roots, which the outcome records. An applied operation on
+// an uninitialized World that leaves head initialized is the operation that
+// initializes it: the initial World has no root block for the outcome to
+// differ by. An acknowledgment never takes that place, since it names the
+// operation that initialized the World and replays after it.
 func restoredState(prev, head *InnerState, outcome *ReplayCursorOutcome) *InnerState {
 	// Keep the reference to an unchanged World, or name a new World as head
 	// names its own.
 	ref := prev.GetHeadRef()
-	if !outcome.GetWorld().EqualsRef(ref.GetRootRef()) {
+	initializes := ref.GetEmpty() && outcome.GetReason() == "" && !head.GetHeadRef().GetEmpty()
+	if initializes || !outcome.GetWorld().EqualsRef(ref.GetRootRef()) {
 		ref = head.GetHeadRef().CloneVT()
 		ref.RootRef = outcome.GetWorld()
 	}
