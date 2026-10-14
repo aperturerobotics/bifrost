@@ -583,6 +583,144 @@ export const WaitSeqnoResponse: MessageType<WaitSeqnoResponse> =
   })
 
 /**
+ * WatchChangesRequest is the request type for WatchChanges.
+ *
+ * @generated from message s4wave.world.WatchChangesRequest
+ */
+export interface WatchChangesRequest {
+  /**
+   * AfterSeqno is the revision the stream starts after.
+   *
+   * @generated from field: uint64 after_seqno = 1;
+   */
+  afterSeqno?: bigint
+}
+
+export const WatchChangesRequest: MessageType<WatchChangesRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.world.WatchChangesRequest',
+    fields: [
+      { no: 1, name: 'after_seqno', kind: 'scalar', T: ScalarType.UINT64 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WorldChange lists what one or more coalesced commits changed.
+ *
+ * @generated from message s4wave.world.WorldChange
+ */
+export interface WorldChange {
+  /**
+   * Seqno is the World revision the change reaches.
+   *
+   * @generated from field: uint64 seqno = 1;
+   */
+  seqno?: bigint
+  /**
+   * Unknown is set when the changes could not be listed. Any read may have
+   * changed.
+   *
+   * @generated from field: bool unknown = 2;
+   */
+  unknown?: boolean
+  /**
+   * Keys are the object keys that were set, deleted, renamed or revised.
+   *
+   * @generated from field: repeated string keys = 3;
+   */
+  keys?: string[]
+  /**
+   * Quads are the graph quads that were set or deleted.
+   *
+   * @generated from field: repeated quad.Quad quads = 4;
+   */
+  quads?: Quad[]
+}
+
+export const WorldChange: MessageType<WorldChange> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.world.WorldChange',
+    fields: [
+      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 2, name: 'unknown', kind: 'scalar', T: ScalarType.BOOL },
+      {
+        no: 3,
+        name: 'keys',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      { no: 4, name: 'quads', kind: 'message', T: () => Quad, repeated: true },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WaitObjectRevRequest is the request type for WaitObjectRev.
+ *
+ * @generated from message s4wave.world.WaitObjectRevRequest
+ */
+export interface WaitObjectRevRequest {
+  /**
+   * Key is the object key to wait on.
+   *
+   * @generated from field: string key = 1;
+   */
+  key?: string
+  /**
+   * Rev is the minimum object revision to wait for.
+   *
+   * @generated from field: uint64 rev = 2;
+   */
+  rev?: bigint
+  /**
+   * IgnoreNotFound waits for a missing object to appear instead of failing.
+   *
+   * @generated from field: bool ignore_not_found = 3;
+   */
+  ignoreNotFound?: boolean
+}
+
+export const WaitObjectRevRequest: MessageType<WaitObjectRevRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.world.WaitObjectRevRequest',
+    fields: [
+      { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 3, name: 'ignore_not_found', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WaitObjectRevResponse is the response type for WaitObjectRev.
+ *
+ * @generated from message s4wave.world.WaitObjectRevResponse
+ */
+export interface WaitObjectRevResponse {
+  /**
+   * Rev is the object revision that satisfied the wait.
+   *
+   * @generated from field: uint64 rev = 1;
+   */
+  rev?: bigint
+  /**
+   * ErrorCode is WORLD_ERROR_CODE_OBJECT_NOT_FOUND when the object is missing
+   * and IgnoreNotFound is unset.
+   *
+   * @generated from field: s4wave.world.WorldErrorCode error_code = 2;
+   */
+  errorCode?: WorldErrorCode
+}
+
+export const WaitObjectRevResponse: MessageType<WaitObjectRevResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.world.WaitObjectRevResponse',
+    fields: [
+      { no: 1, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
+      { no: 2, name: 'error_code', kind: 'enum', T: WorldErrorCode_Enum },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * AccessWorldStateRequest is the request type for AccessWorldState.
  *
  * @generated from message s4wave.world.AccessWorldStateRequest

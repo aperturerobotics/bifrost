@@ -100,15 +100,19 @@ import {
   SyncResponse,
   ValidRequest,
   ValidResponse,
+  WaitObjectRevRequest,
+  WaitObjectRevResponse,
   WaitRevRequest,
   WaitRevResponse,
   WaitSeqnoRequest,
   WaitSeqnoResponse,
+  WatchChangesRequest,
   WatchTypedObjectRequest,
   WatchTypedObjectResponse,
   WatchWorldRootSnapshotsRequest,
   WatchWorldStateRequest,
   WatchWorldStateResponse,
+  WorldChange,
   WorldRootSnapshot,
 } from './world.pb.js'
 import { MethodKind } from '@aptre/protobuf-es-lite'
@@ -211,6 +215,30 @@ export const EngineResourceServiceDefinition = {
       name: 'WaitSeqno',
       I: WaitSeqnoRequest,
       O: WaitSeqnoResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * WatchChanges streams each later World revision with the objects and graph
+     * quads it changed since the previous message.
+     *
+     * @generated from rpc s4wave.world.EngineResourceService.WatchChanges
+     */
+    WatchChanges: {
+      name: 'WatchChanges',
+      I: WatchChangesRequest,
+      O: WorldChange,
+      kind: MethodKind.ServerStreaming,
+    },
+    /**
+     * WaitObjectRev waits until an object reaches a revision through the
+     * engine's key watch, which wakes only on commits that change the object.
+     *
+     * @generated from rpc s4wave.world.EngineResourceService.WaitObjectRev
+     */
+    WaitObjectRev: {
+      name: 'WaitObjectRev',
+      I: WaitObjectRevRequest,
+      O: WaitObjectRevResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -326,6 +354,28 @@ export interface EngineResourceService {
     request: WaitSeqnoRequest,
     abortSignal?: AbortSignal,
   ): Promise<WaitSeqnoResponse>
+
+  /**
+   * WatchChanges streams each later World revision with the objects and graph
+   * quads it changed since the previous message.
+   *
+   * @generated from rpc s4wave.world.EngineResourceService.WatchChanges
+   */
+  WatchChanges(
+    request: WatchChangesRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WorldChange>
+
+  /**
+   * WaitObjectRev waits until an object reaches a revision through the
+   * engine's key watch, which wakes only on commits that change the object.
+   *
+   * @generated from rpc s4wave.world.EngineResourceService.WaitObjectRev
+   */
+  WaitObjectRev(
+    request: WaitObjectRevRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<WaitObjectRevResponse>
 
   /**
    * @generated from rpc s4wave.world.EngineResourceService.BuildStorageCursor
@@ -449,6 +499,30 @@ export interface EngineResourceServiceHandler {
   ): Promise<WaitSeqnoResponse>
 
   /**
+   * WatchChanges streams each later World revision with the objects and graph
+   * quads it changed since the previous message.
+   *
+   * @generated from rpc s4wave.world.EngineResourceService.WatchChanges
+   */
+  WatchChanges(
+    request: WatchChangesRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<WorldChange>
+
+  /**
+   * WaitObjectRev waits until an object reaches a revision through the
+   * engine's key watch, which wakes only on commits that change the object.
+   *
+   * @generated from rpc s4wave.world.EngineResourceService.WaitObjectRev
+   */
+  WaitObjectRev(
+    request: WaitObjectRevRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<WaitObjectRevResponse>
+
+  /**
    * @generated from rpc s4wave.world.EngineResourceService.BuildStorageCursor
    */
   BuildStorageCursor(
@@ -498,6 +572,8 @@ export class EngineResourceServiceClient implements EngineResourceService {
     this.Sync = this.Sync.bind(this)
     this.GetSeqno = this.GetSeqno.bind(this)
     this.WaitSeqno = this.WaitSeqno.bind(this)
+    this.WatchChanges = this.WatchChanges.bind(this)
+    this.WaitObjectRev = this.WaitObjectRev.bind(this)
     this.BuildStorageCursor = this.BuildStorageCursor.bind(this)
     this.AccessWorldState = this.AccessWorldState.bind(this)
     this.StageWorldState = this.StageWorldState.bind(this)
@@ -660,6 +736,46 @@ export class EngineResourceServiceClient implements EngineResourceService {
       abortSignal || undefined,
     )
     return WaitSeqnoResponse.fromBinary(result)
+  }
+
+  /**
+   * WatchChanges streams each later World revision with the objects and graph
+   * quads it changed since the previous message.
+   *
+   * @generated from rpc s4wave.world.EngineResourceService.WatchChanges
+   */
+  WatchChanges(
+    request: WatchChangesRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WorldChange> {
+    const requestMsg = WatchChangesRequest.create(request)
+    const result = this.rpc.serverStreamingRequest(
+      this.service,
+      EngineResourceServiceDefinition.methods.WatchChanges.name,
+      WatchChangesRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(WorldChange)(result)
+  }
+
+  /**
+   * WaitObjectRev waits until an object reaches a revision through the
+   * engine's key watch, which wakes only on commits that change the object.
+   *
+   * @generated from rpc s4wave.world.EngineResourceService.WaitObjectRev
+   */
+  async WaitObjectRev(
+    request: WaitObjectRevRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<WaitObjectRevResponse> {
+    const requestMsg = WaitObjectRevRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      EngineResourceServiceDefinition.methods.WaitObjectRev.name,
+      WaitObjectRevRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return WaitObjectRevResponse.fromBinary(result)
   }
 
   /**
