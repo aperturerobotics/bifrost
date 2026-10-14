@@ -10,6 +10,7 @@ import {
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
 import { formatV86ImageLabel, readV86Image } from '@s4wave/app/vm/v86-images.js'
 import { SpaceContentsContext } from '@s4wave/web/contexts/contexts.js'
+import { useWorldQuery } from '@s4wave/web/hooks/useWorldQuery.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import type { SpaceContents } from '@s4wave/sdk/space/contents.js'
 import { SetV86StateOp, VmState, VmV86 } from '@s4wave/sdk/vm/v86.pb.js'
@@ -54,8 +55,9 @@ interface VmEdges {
 async function readVmEdges(
   world: IWorldState,
   objectKey: string,
-  signal: AbortSignal,
+  signal?: AbortSignal,
 ): Promise<VmEdges> {
+  // Look up the first object of each edge predicate.
   const subject = keyToIRI(objectKey)
   const lookup = async (predicate: string) => {
     const resp = await world.lookupGraphQuads(
@@ -83,20 +85,6 @@ async function readVmEdges(
     imageKey,
     imageLabel: image ? formatV86ImageLabel(image.image) : '',
     overrides: { kernel, rootfs, bios, wasm },
-  }
-}
-
-// watchVmEdges yields the edges of the VM at objectKey and again after each
-// world change.
-async function* watchVmEdges(
-  world: IWorldState,
-  objectKey: string,
-  signal: AbortSignal,
-): AsyncIterable<VmEdges> {
-  let seqno = (await world.getSeqno(signal)).seqno
-  for (;;) {
-    yield await readVmEdges(world, objectKey, signal)
-    seqno = (await world.waitSeqno(seqno + 1n, signal)).seqno
   }
 }
 
@@ -154,14 +142,10 @@ function useVmV86(
   )
 
   // Watch its edges, and read the UnixFS objects an override may name.
-  const edgesResource = useStreamingResource(
+  const edgesResource = useWorldQuery(
     worldState,
-    useCallback(
-      (world: IWorldState, signal: AbortSignal) =>
-        watchVmEdges(world, objectKey, signal),
-      [objectKey],
-    ),
-    [],
+    (world, signal) => readVmEdges(world, objectKey, signal),
+    [objectKey],
   )
   const unixfsResource = useResource(
     worldState,
@@ -170,6 +154,7 @@ function useVmV86(
     [],
   )
 
+  // Default every field that has not loaded yet.
   const vm = vmResource.value ?? VmV86.create()
   useObjectName(vm.name)
   const edges = edgesResource.value
@@ -197,6 +182,7 @@ export default function VmV86Viewer({
   worldState,
   spaceContents,
 }: ObjectViewerComponentProps) {
+  // Follow the VM, its Space contents and the request it is sending.
   const objectKey = getObjectKey(objectInfo)
   const contextContentsResource = SpaceContentsContext.useContext()
   const contents = useResourceValue(spaceContents ?? contextContentsResource)
@@ -233,6 +219,7 @@ export default function VmV86Viewer({
     )
   }
 
+  // A VM shows its screen from start until it stops or fails.
   const running =
     vm.state !== VmState.VmState_ERROR &&
     (vm.desired === VmState.VmState_RUNNING ||

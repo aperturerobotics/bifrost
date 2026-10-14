@@ -1,5 +1,16 @@
-import type { IWorldState } from "@s4wave/sdk/world/world-state.js";
-import type { IObjectState } from "@s4wave/sdk/world/object-state.js";
+import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
+import type { IObjectState } from '@s4wave/sdk/world/object-state.js'
+import { accessObjectRootWorldState } from '@s4wave/sdk/world/utils.js'
+
+/** readObjectBlockData reads the opaque Notes protobuf at the object root, or null when it is absent. */
+export async function readObjectBlockData(
+  objectState: IObjectState,
+  signal?: AbortSignal,
+): Promise<Uint8Array | null> {
+  using cursor = await accessObjectRootWorldState(objectState, signal)
+  const block = await cursor.getBlock({}, signal)
+  return block.found && block.data ? block.data : null
+}
 
 /**
  * setObjectBlockData replaces an opaque Notes protobuf through its existing bucket.
@@ -12,15 +23,15 @@ export async function setObjectBlockData(
   signal?: AbortSignal,
 ): Promise<void> {
   // Write bytes using the object's existing bucket and transform configuration.
-  const current = await objectState.getRootRef(signal);
-  using cursor = await objectState.accessWorldState(current.rootRef, signal);
-  const written = await cursor.putBlock({ data }, signal);
+  const current = await objectState.getRootRef(signal)
+  using cursor = await objectState.accessWorldState(current.rootRef, signal)
+  const written = await cursor.putBlock({ data }, signal)
 
   // Publish the reference only after the block is available in storage.
   await objectState.setRootRef(
     { ...current.rootRef, rootRef: written.ref },
     signal,
-  );
+  )
 }
 
 /** createObjectWithBlockData creates an opaque Notes block in the supplied World transaction. */
@@ -31,12 +42,12 @@ export async function createObjectWithBlockData(
   signal?: AbortSignal,
 ): Promise<void> {
   // Write the canonical protobuf through a stage held until the object exists.
-  using stage = await worldState.stageWorldState(signal);
-  using cursor = await stage.buildStorageCursor(signal);
+  using stage = await worldState.stageWorldState(signal)
+  using cursor = await stage.buildStorageCursor(signal)
   const [current, written] = await Promise.all([
     cursor.getRef(signal),
     cursor.putBlock({ data }, signal),
-  ]);
+  ])
 
   // The created object handle is local to this call; the World owns its root.
   using _object = await worldState.createObject(
@@ -46,5 +57,5 @@ export async function createObjectWithBlockData(
       rootRef: written.ref,
     },
     signal,
-  );
+  )
 }

@@ -25,8 +25,9 @@ export interface V86ImageEntry {
 export async function readV86Image(
   world: IWorldState,
   objectKey: string,
-  signal: AbortSignal,
+  signal?: AbortSignal,
 ): Promise<V86ImageEntry | undefined> {
+  // Unmarshal the image metadata at the object root.
   using obj = await world.getObject(objectKey, signal)
   if (!obj) return undefined
   using cursor = await obj.accessWorldState(undefined, signal)
