@@ -6,7 +6,8 @@ import { useWorldQuery } from './useWorldQuery.js'
 
 /**
  * useObjectMetadata follows the type and parent of one World object. The value
- * is null when the key is empty or no object has it.
+ * is null when the key is empty or no object has it. Hooks following the same
+ * object on one World share one watch.
  */
 export function useObjectMetadata(
   world: Resource<IWorldState>,
@@ -26,5 +27,6 @@ export function useObjectMetadata(
       return object?.objectKey === objectKey ? object : null
     },
     [objectKey],
+    { key: 'object-metadata:' + objectKey },
   )
 }

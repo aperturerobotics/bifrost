@@ -1,6 +1,7 @@
 import { ObjectRef } from '@go/github.com/s4wave/spacewave/db/bucket/bucket.pb.js'
 import { ClientResourceRef } from '@aptre/bldr-sdk/resource/client.js'
 import { Resource } from '@aptre/bldr-sdk/resource/resource.js'
+import { SharedStreams } from '@aptre/bldr-sdk/resource/shared-streams.js'
 import {
   EngineResourceService,
   EngineResourceServiceClient,
@@ -29,6 +30,8 @@ import {
 export class Engine extends Resource {
   private service: EngineResourceService
   private watchService: WatchWorldStateResourceService
+  // streams multicasts the keyed watches derived from this Engine.
+  private readonly streams = new SharedStreams()
 
   constructor(resourceRef: ClientResourceRef) {
     super(resourceRef)
@@ -173,5 +176,15 @@ export class Engine extends Resource {
         WorldStateResource,
       )
     }
+  }
+
+  // watchShared subscribes to the stream at key, opening it with open when no
+  // subscriber of this Engine holds it. Every message must be a full snapshot.
+  public watchShared<T>(
+    key: string,
+    open: (signal: AbortSignal) => AsyncIterable<T>,
+    abortSignal?: AbortSignal,
+  ): AsyncIterable<T> {
+    return this.streams.watch(key, open, abortSignal)
   }
 }
