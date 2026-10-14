@@ -69,7 +69,7 @@ type decodedBlockPool struct {
 	// cache holds decoded entries; nil when caching is disabled.
 	cache *ristretto.Cache[string, decodedBlockCacheEntry]
 	// maxCost is the configured budget.
-	maxCost int64
+	maxCost atomic.Int64
 	// nextScope allocates scope key prefixes.
 	nextScope atomic.Uint64
 }
@@ -88,7 +88,8 @@ var sharedDecodedBlockPool = sync.OnceValue(func() *decodedBlockPool {
 func newDecodedBlockPool(opts DecodedBlockCacheOptions) (*decodedBlockPool, error) {
 	// Normalize the decoded-cache budget and preserve disabled pools.
 	opts = opts.normalize()
-	pool := &decodedBlockPool{maxCost: opts.MaxCost}
+	pool := &decodedBlockPool{}
+	pool.maxCost.Store(opts.MaxCost)
 	if opts.Disabled {
 		return pool, nil
 	}
@@ -159,6 +160,19 @@ type decodedBlockCacheStoreToken struct {
 	ok     bool
 }
 
+// SetSharedDecodedBlockCacheMaxCost sets the budget of the process-wide pool
+// behind NewDecodedBlockCache. The default suits a desktop; a server with
+// memory to spare can hold a larger working set. Lowering the budget evicts
+// entries as the cache admits new ones. A non-positive budget is ignored.
+func SetSharedDecodedBlockCacheMaxCost(maxCost int64) {
+	pool := sharedDecodedBlockPool()
+	if maxCost <= 0 || pool.cache == nil {
+		return
+	}
+	pool.maxCost.Store(maxCost)
+	pool.cache.UpdateMaxCost(maxCost)
+}
+
 // NewDecodedBlockCache constructs a scope in the process-wide pool.
 func NewDecodedBlockCache() *DecodedBlockCache {
 	return newDecodedBlockCacheScope(sharedDecodedBlockPool(), false)
@@ -200,7 +214,7 @@ func (c *DecodedBlockCache) MaxCost() int64 {
 	if c == nil {
 		return 0
 	}
-	return c.pool.maxCost
+	return c.pool.maxCost.Load()
 }
 
 // Wait blocks until buffered pool writes have reached Ristretto.

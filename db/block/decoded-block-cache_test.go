@@ -164,3 +164,19 @@ func (b *decodedBlockCacheTestBlock) CloneBlock() (Block, error) {
 func (b *decodedBlockCacheTestBlock) SizeVT() int {
 	return len(b.data)
 }
+
+// TestSetSharedDecodedBlockCacheMaxCost resizes the process-wide pool.
+func TestSetSharedDecodedBlockCacheMaxCost(t *testing.T) {
+	// Raise the budget, restoring it afterward.
+	cache := NewDecodedBlockCache()
+	defer SetSharedDecodedBlockCacheMaxCost(cache.MaxCost())
+	SetSharedDecodedBlockCacheMaxCost(1 << 30)
+
+	// Expect every scope to report the new budget.
+	if got := cache.MaxCost(); got != 1<<30 {
+		t.Fatalf("max cost %d, want %d", got, 1<<30)
+	}
+	if got := cache.Snapshot().MaxCost; got != 1<<30 {
+		t.Fatalf("snapshot max cost %d, want %d", got, 1<<30)
+	}
+}
