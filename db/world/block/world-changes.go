@@ -47,10 +47,15 @@ func WorldChanges(ctx context.Context, before, after *block.Cursor, maxKeys int)
 // size of the World. complete is false when the change exceeds maxKeys or the
 // comparison bound; the caller must then treat every object as changed.
 func ChangedObjectKeys(ctx context.Context, before, after *block.Cursor, maxKeys int) ([]string, bool, error) {
-	// Decode both World roots so their object tree sub-blocks resolve.
+	// Decode both World roots so their object tree sub-blocks resolve. A
+	// missing root must fail rather than compare as an empty World.
 	for _, bcs := range []*block.Cursor{before, after} {
-		if _, err := UnmarshalWorld(ctx, bcs); err != nil {
+		w, err := UnmarshalWorld(ctx, bcs)
+		if err != nil {
 			return nil, false, err
+		}
+		if w == nil {
+			return nil, false, block.ErrNotFound
 		}
 	}
 

@@ -41,7 +41,7 @@ type engineRetirement struct {
 	writeTxRel func()
 	// session retires shared publication authority after its last user drains.
 	session *engineWriteSession
-	// watched are heads no longer retained for change watchers.
+	// watched are heads no longer recorded for change watchers.
 	watched []*watchedHead
 }
 
@@ -138,12 +138,11 @@ type Engine struct {
 	keyWatch *engineKeyWatch
 	// keyWatches counts key watch goroutines that Close must join.
 	keyWatches int
-	// watchedHeads retains the recent published heads, oldest first, for
-	// change watchers. It is nil until the first watcher starts. Guarded by
-	// bcast.
+	// watchedHeads records the recent published heads, oldest first, for
+	// change watchers. Guarded by bcast.
 	watchedHeads []*watchedHead
-	// watchedFloor is the highest seqno at or below which no retained head
-	// identifies what a watcher saw. Guarded by bcast.
+	// watchedFloor is the lowest seqno whose recorded heads identify what a
+	// watcher saw. Guarded by bcast.
 	watchedFloor uint64
 	// closed rejects new operations while Close drains resources.
 	closed bool
@@ -228,6 +227,7 @@ func NewEngine(
 		durableHeadRef: root.GetRef().Clone(),
 		verbose:        verbose,
 		snapshotTxs:    make(map[*EngineTx]struct{}),
+		watchedHeads:   make([]*watchedHead, 0, changeWatchHeads),
 	}
 	for _, opt := range opts {
 		if opt != nil {
@@ -263,6 +263,9 @@ func NewEngine(
 	taskCtx, subtask := trace.NewTask(ctx, "hydra/world-block/engine/new/initialize-head-read-tx")
 	err := e.initializeHeadReadTx(taskCtx)
 	subtask.End()
+	if err == nil {
+		err = e.recordInitialHead(ctx)
+	}
 	if err != nil {
 		// Close only releases local resources and cannot fail here.
 		_ = e.Close()
@@ -486,7 +489,7 @@ func (e *Engine) installRootRefLocked(ctx context.Context, ref *bucket.ObjectRef
 		return engineRetirement{}, err
 	}
 
-	// Retain the replacement for change watchers.
+	// Record the replacement for change watchers.
 	seqno, err := nextWorld.GetSeqno(ctx)
 	if err != nil {
 		nextWorld.Discard()
@@ -494,7 +497,7 @@ func (e *Engine) installRootRefLocked(ctx context.Context, ref *bucket.ObjectRef
 		return engineRetirement{}, err
 	}
 	var watched []*watchedHead
-	if evicted := e.recordWatchedHeadLocked(ctx, nextRoot, seqno); evicted != nil {
+	if evicted := e.recordWatchedHeadLocked(nextRoot, seqno); evicted != nil {
 		watched = append(watched, evicted)
 	}
 
@@ -567,7 +570,7 @@ func (e *Engine) drainRetirement(ctx context.Context, retirement engineRetiremen
 		retirement.head.root.Release()
 	}
 	for _, h := range retirement.watched {
-		h.release()
+		h.root.Release()
 	}
 
 	// Release external serialization in coordinator-then-writer order.

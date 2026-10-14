@@ -33,8 +33,8 @@ func TestWatchChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Start the feed and settle on a retained head.
-	after := settleWatch(t, ctx, e, ws)
+	// Watch from the current head.
+	after := headSeqno(t, ctx, e)
 
 	// Create and delete an object, and set and delete a quad, over several
 	// commits.
@@ -70,11 +70,10 @@ func TestWatchChanges(t *testing.T) {
 // Engine, as a SharedObject replay or a snapshot import installs it, yields a
 // precise ChangeSet.
 func TestWatchChangesImportedRoot(t *testing.T) {
-	// Start the feed and settle on a retained head.
+	// Watch from the head the Engine opens at.
 	ctx := t.Context()
 	e := newRetirementTestEngine(t, ctx)
-	ws := world.NewEngineWorldState(e, true)
-	after := settleWatch(t, ctx, e, ws)
+	after := headSeqno(t, ctx, e)
 
 	// Import a World with more operations than the head and install it.
 	stage, err := e.StageWorldState(ctx)
@@ -106,9 +105,8 @@ func TestWatchChangesImportedRoot(t *testing.T) {
 	if changes.Unknown {
 		t.Fatal("changes to an imported root are unknown")
 	}
-	want := slices.Sorted(slices.Values(append([]string{"watch/settle", "watch/start"}, keys...)))
-	if got := slices.Sorted(slices.Values(changes.Keys)); !slices.Equal(got, want) {
-		t.Fatalf("changed keys %q, want %q", got, want)
+	if got := slices.Sorted(slices.Values(changes.Keys)); !slices.Equal(got, keys) {
+		t.Fatalf("changed keys %q, want %q", got, keys)
 	}
 	checkQuads(t, changes.Quads, quads...)
 }
@@ -116,11 +114,11 @@ func TestWatchChangesImportedRoot(t *testing.T) {
 // TestWatchChangesEvicted checks that a watcher whose head the Engine no
 // longer retains sees unknown changes.
 func TestWatchChangesEvicted(t *testing.T) {
-	// Settle on a retained head, then publish past the retention bound.
+	// Watch from the current head, then publish past the retention bound.
 	ctx := t.Context()
 	e := newRetirementTestEngine(t, ctx)
 	ws := world.NewEngineWorldState(e, true)
-	after := settleWatch(t, ctx, e, ws)
+	after := headSeqno(t, ctx, e)
 	for i := range changeWatchHeads {
 		createKeyWatchTestObject(t, ctx, ws, "evict/"+strconv.Itoa(i))
 	}
@@ -131,29 +129,45 @@ func TestWatchChangesEvicted(t *testing.T) {
 	}
 }
 
-// settleWatch starts the change feed and returns a seqno whose head the
-// Engine retains. Heads published before the feed starts give unknown
-// changes.
-func settleWatch(t *testing.T, ctx context.Context, e *Engine, ws world.WorldState) uint64 {
-	// Start the feed at a head published before it.
+// TestWatchChangesCollectedBase checks that a watcher whose head the volume
+// collected sees unknown changes rather than a partial list.
+func TestWatchChangesCollectedBase(t *testing.T) {
+	// Commit an object and watch from that head.
+	f := newSessionFixture(t)
+	ctx := t.Context()
+	w := sessionWriter(t, f)
+	sessionObject(t, w, "collected/first")
+	if err := w.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	after := headSeqno(t, ctx, f.engine)
+	base := f.engine.GetRootRef().GetRootRef()
+
+	// Supersede the head and collect it.
+	w = sessionWriter(t, f)
+	sessionObject(t, w, "collected/second")
+	if err := w.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	f.collect(t)
+	if found, err := f.volume.GetBlockExists(ctx, base); err != nil || found {
+		t.Fatalf("superseded head retained: %v %v", found, err)
+	}
+
+	// Expect unknown changes since the collected head.
+	if _, changes := readChangeWindow(t, ctx, f.engine, after); !changes.Unknown {
+		t.Fatalf("changes since a collected head = %+v, want unknown", changes)
+	}
+}
+
+// headSeqno returns the seqno of the published head.
+func headSeqno(t *testing.T, ctx context.Context, e *Engine) uint64 {
 	t.Helper()
-	after, err := e.GetSeqno(ctx)
+	seqno, err := e.GetSeqno(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	createKeyWatchTestObject(t, ctx, ws, "watch/start")
-	after, changes := readChangeWindow(t, ctx, e, after)
-	if !changes.Unknown {
-		t.Fatalf("changes before the feed started = %+v, want unknown", changes)
-	}
-
-	// The head the feed started at is the floor, so its window is unknown.
-	createKeyWatchTestObject(t, ctx, ws, "watch/settle")
-	after, changes = readChangeWindow(t, ctx, e, after)
-	if !changes.Unknown {
-		t.Fatalf("changes since the floor = %+v, want unknown", changes)
-	}
-	return after
+	return seqno
 }
 
 // readChangeWindow reads the first change window after afterSeqno.

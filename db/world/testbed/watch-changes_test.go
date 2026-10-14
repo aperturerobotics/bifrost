@@ -15,22 +15,12 @@ var errWindowRead = errors.New("read one change window")
 // TestWatchChanges checks that a World without a changelog reports the
 // objects and quads of a batch commit through WatchChanges.
 func TestWatchChanges(t *testing.T) {
-	// Start a World and settle the feed on a retained head. Heads published
-	// before the feed starts report unknown changes.
+	// Start a World and watch from its current head.
 	ctx := t.Context()
 	tb := MustDefault(t, ctx)
-	ws := world.NewEngineWorldState(tb.Engine, true)
 	after, err := tb.Engine.GetSeqno(ctx)
 	if err != nil {
 		t.Fatal(err)
-	}
-	for _, key := range []string{"start", "settle"} {
-		obj, err := ws.CreateObject(ctx, key, nil)
-		world.ReleaseObjectState(obj)
-		if err != nil {
-			t.Fatal(err)
-		}
-		after, _ = readChangeWindow(t, tb.Engine, after)
 	}
 
 	// Open a write transaction.

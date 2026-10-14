@@ -16,17 +16,12 @@ var errWindowRead = errors.New("read one change window")
 // TestLocalWorldWatchChanges checks that a SharedObject World reports the keys
 // each commit changed, so watchers wake only for the reads a change touches.
 func TestLocalWorldWatchChanges(t *testing.T) {
-	// Start a World and settle the feed on a retained head. Heads published
-	// before the feed starts report unknown changes.
+	// Start a World and watch from its current head.
 	ctx := t.Context()
 	w := startLocalWorld(t, t.TempDir(), nil)
 	after, err := w.eng.GetSeqno(ctx)
 	if err != nil {
 		t.Fatal(err)
-	}
-	for _, key := range []string{"watch/start", "watch/settle"} {
-		w.create(t, key)
-		after, _ = readChangeWindow(t, w.eng, after)
 	}
 
 	// Commit one object and expect exactly its key.
