@@ -189,3 +189,31 @@ func TestTimerfd(t *testing.T) {
 		t.Fatalf("disarmed timer reported %v", got)
 	}
 }
+
+// TestEpollPwait checks a pending signal the call's mask unblocks ends the
+// wait with EINTR, caught, and the old mask returns after it.
+func TestEpollPwait(t *testing.T) {
+	// Hold SIGINT, which has a handler, pending behind the mask.
+	p, mem := fsTestProcess()
+	p.sigActions[SIGINT] = sigAction{handler: 0x1000}
+	p.setSigMask(sigSetmask, maskSet(SIGINT))
+	p.deliverSignal(SIGINT)
+	epfd := uint32(p.sysEpollCreate1(0))
+
+	// A wait keeping the mask times out with SIGINT still pending.
+	if n := p.sysEpollPwait(context.Background(), epfd, epollTestEvents, 8, 0, 0); n != 0 {
+		t.Fatalf("epoll_pwait with the mask kept = %#x, want 0", n)
+	}
+	if p.sigPending != sigBit(SIGINT) {
+		t.Fatalf("pending %#x, want SIGINT", p.sigPending)
+	}
+
+	// A wait with an empty mask catches it at once and restores the mask.
+	mem.Write(epollTestSpec, make([]byte, 8))
+	if n := p.sysEpollPwait(context.Background(), epfd, epollTestEvents, 8, -1, epollTestSpec); n != negErrno(EINTR) {
+		t.Fatalf("epoll_pwait with an empty mask = %#x, want EINTR", n)
+	}
+	if p.sigMask != sigBit(SIGINT) || p.sigCaught != sigBit(SIGINT) {
+		t.Fatalf("after the wait: mask %#x, caught %#x", p.sigMask, p.sigCaught)
+	}
+}

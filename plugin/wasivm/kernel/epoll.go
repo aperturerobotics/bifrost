@@ -131,6 +131,21 @@ func (p *Process) sysEpollWait(ctx context.Context, epfd, eventsPtr uint32, maxe
 	}
 }
 
+// sysEpollPwait runs epoll_wait with the signal set at maskPtr as the
+// signal mask, installed and restored with the wait as one step, so a signal
+// it unblocks ends the wait. A zero maskPtr keeps the mask.
+func (p *Process) sysEpollPwait(ctx context.Context, epfd, eventsPtr uint32, maxevents, timeout int32, maskPtr uint32) uint64 {
+	if maskPtr != 0 {
+		mask, ok := p.inst.Memory().ReadUint64Le(maskPtr)
+		if !ok {
+			return negErrno(EFAULT)
+		}
+		old, _ := p.swapSigMask(mask)
+		defer p.restoreSigMask(old)
+	}
+	return p.sysEpollWait(ctx, epfd, eventsPtr, maxevents, timeout)
+}
+
 // writeEpollEvents writes events to eventsPtr as struct epoll_event and
 // returns their count.
 func (p *Process) writeEpollEvents(eventsPtr uint32, events []epollEvent) uint64 {

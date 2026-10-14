@@ -422,15 +422,8 @@ func (p *Process) sysRtSigsuspend(ctx context.Context, maskPtr uint32) uint64 {
 // than holding it pending. It reads the delivery count and the wait channel
 // together under sigMu, so no delivery is missed.
 func (p *Process) suspendWithMask(ctx context.Context, newMask uint64) uint64 {
-	// Install the temporary mask and deliver the signals it unblocks.
-	p.sigMu.Lock()
-	old := p.sigMask
-	p.sigMask = newMask &^ sigKillStopMask
-	startCount := p.sigUnblockedDeliveries
-	p.sigMu.Unlock()
-	p.flushUnblockedPending()
-
-	// Wait for a delivery, then restore the mask.
+	// Install the temporary mask, waiting for a delivery, then restore it.
+	old, startCount := p.swapSigMask(newMask)
 	defer p.restoreSigMask(old)
 	for {
 		p.sigMu.Lock()
@@ -441,6 +434,21 @@ func (p *Process) suspendWithMask(ctx context.Context, newMask uint64) uint64 {
 			return negErrno(EINTR)
 		}
 	}
+}
+
+// swapSigMask installs mask, less SIGKILL and SIGSTOP, as the signal mask
+// and delivers the pending signals it unblocks. It returns the old mask and
+// the count of unblocked deliveries before the swap, read together.
+func (p *Process) swapSigMask(mask uint64) (old, deliveries uint64) {
+	// Swap the mask, reading the count under the same lock.
+	p.sigMu.Lock()
+	old, deliveries = p.sigMask, p.sigUnblockedDeliveries
+	p.sigMask = mask &^ sigKillStopMask
+	p.sigMu.Unlock()
+
+	// Deliver the signals the new mask lets through.
+	p.flushUnblockedPending()
+	return old, deliveries
 }
 
 // restoreSigMask sets the mask back to old and delivers any pending signal

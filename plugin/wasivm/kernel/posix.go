@@ -385,6 +385,9 @@ func posixFunctions() map[string]hostFunc {
 		"epoll_wait": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysEpollWait(ctx, uint32(a[0]), uint32(a[1]), int32(a[2]), int32(a[3])))
 		}},
+		"epoll_pwait": {"iiiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysEpollPwait(ctx, uint32(a[0]), uint32(a[1]), int32(a[2]), int32(a[3]), uint32(a[4])))
+		}},
 		"umask": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
 			old := p.umask
 			p.umask = uint32(a[0]) & 0o777
