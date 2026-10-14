@@ -439,10 +439,16 @@ func TestPublicationAdmittedBlocksLeaveWithFailedGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Verify a successor admitted after the failure fails in its own group.
+	// Verify a successor admitted after the failure is unreadable from
+	// admission and fails in its own group.
+	g = s.arm(t)
 	third := publicationFor(t, "world", "2", "3")
 	third.After = r2
-	if err := awaitPublication(t, submitPublication(t, v, third)); !errors.Is(err, block.ErrPublicationDependency) || !errors.Is(err, failure) {
+	r3 := submitPublication(t, v, third)
+	<-g.started
+	assertReadable(t, v, third, false)
+	g.unblock()
+	if err := awaitPublication(t, r3); !errors.Is(err, block.ErrPublicationDependency) || !errors.Is(err, failure) {
 		t.Fatal(err)
 	}
 

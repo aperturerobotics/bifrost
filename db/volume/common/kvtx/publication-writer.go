@@ -185,6 +185,7 @@ func (w *publicationWriter) submit(ctx context.Context, p *block.AtomicPublicati
 					ctx:         context.WithoutCancel(ctx),
 					publication: p,
 					entries:     entries,
+					failed:      w.afterFailedLocked(p.After),
 					receipt:     receipt,
 					bytes:       size,
 					rootOwner:   rootOwner,
@@ -295,6 +296,31 @@ func (w *publicationWriter) failDependentsLocked() {
 			failed[r.receipt] = struct{}{}
 		}
 	}
+}
+
+// afterFailedLocked reports whether the publication of after is known to
+// fail: it resolved with an error, or it is queued and marked failed. A
+// request after it is hidden from readers from admission, since it fails with
+// ErrPublicationDependency when its group runs. The caller holds bcast, under
+// which a request leaves the queue as its receipt resolves.
+func (w *publicationWriter) afterFailedLocked(after *block.PublicationReceipt) bool {
+	// A request without a predecessor depends on nothing.
+	if after == nil {
+		return false
+	}
+
+	// Check a resolved predecessor's result, else its queued request.
+	select {
+	case <-after.Done():
+		return after.Err() != nil
+	default:
+	}
+	for _, r := range w.queue {
+		if r.receipt == after {
+			return r.failed
+		}
+	}
+	return false
 }
 
 // run drains queued publications one physical group at a time until closing.
