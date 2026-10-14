@@ -258,6 +258,7 @@ func (db *DB) tail(st *state, verify bool) (*state, bool, error) {
 		if !ok {
 			break
 		}
+		r.own()
 		recs = append(recs, read{r: r, pos: lr.pos, end: lr.end})
 		durable = max(durable, r.durable)
 	}

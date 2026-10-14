@@ -8,12 +8,12 @@ type Options struct {
 	// CacheBytes bounds the memory of decoded index pages. Zero selects
 	// 128 MiB.
 	CacheBytes int
-	// CheckpointMin is the overlay size that always permits a checkpoint;
-	// above it a checkpoint starts at half the tree size. Zero selects
-	// 16 MiB.
+	// CheckpointMin is the overlay memory that always permits a
+	// checkpoint; above it a checkpoint starts at half the tree size. Zero
+	// selects 16 MiB.
 	CheckpointMin int64
-	// CheckpointMax is the overlay size that always starts a checkpoint,
-	// bounding the log replay at open. A log after the checkpoint of twice
+	// CheckpointMax is the overlay memory that always starts a checkpoint,
+	// bounding the memory and the log replay at open. A log after the checkpoint of twice
 	// the limit also starts one, so rewrites of the same keys stay bounded.
 	// A commit waits for the running checkpoint while the overlay exceeds
 	// twice this or the log four times. Zero selects 64 MiB.
@@ -45,7 +45,7 @@ func (o Options) withDefaults() Options {
 	return o
 }
 
-// checkpointLimit returns the overlay size that starts a checkpoint after
+// checkpointLimit returns the overlay memory that starts a checkpoint after
 // the checkpoint sb: half the tree, within the configured bounds.
 func (o Options) checkpointLimit(sb superblock) int64 {
 	return min(max(pageOff(sb.treePages)/2, o.CheckpointMin), o.CheckpointMax)

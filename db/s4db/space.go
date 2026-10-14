@@ -291,22 +291,32 @@ func (s *space) claim(r run) {
 	s.take(r)
 }
 
-// cut removes the pages of r from the runs in q.
+// cut removes the pages of r from the runs in q in place, keeping tag
+// order. Replay cuts once per claimed page, so it allocates only to split
+// a run.
 func cut(q []pending, r run) []pending {
-	out := make([]pending, 0, len(q)+1)
-	for _, x := range q {
+	for i := 0; i < len(q); i++ {
+		x := q[i]
 		if x.end() <= r.start || x.start >= r.end() {
-			out = append(out, x)
 			continue
 		}
-		if x.start < r.start {
-			out = append(out, pending{start: x.start, n: r.start - x.start, tag: x.tag})
-		}
-		if x.end() > r.end() {
-			out = append(out, pending{start: r.end(), n: x.end() - r.end(), tag: x.tag})
+		head := pending{start: x.start, n: r.start - x.start, tag: x.tag}
+		tail := pending{start: r.end(), n: x.end() - r.end(), tag: x.tag}
+		switch {
+		case x.start < r.start && x.end() > r.end():
+			q[i] = head
+			q = slices.Insert(q, i+1, tail)
+			i++
+		case x.start < r.start:
+			q[i] = head
+		case x.end() > r.end():
+			q[i] = tail
+		default:
+			q = slices.Delete(q, i, i+1)
+			i--
 		}
 	}
-	return out
+	return q
 }
 
 // freeValue drops n live bytes at off, freed by commit tag.

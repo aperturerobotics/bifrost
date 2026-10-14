@@ -23,7 +23,7 @@ type state struct {
 	// filter holds every key the overlay has held since ckpt, so lookups of
 	// other keys skip the overlay.
 	filter *filter
-	// overlayBytes estimates the overlay's encoded size.
+	// overlayBytes estimates the overlay's memory.
 	overlayBytes int64
 	// logBytes counts the log records after ckpt that this handle applied,
 	// which an open would replay.
@@ -85,7 +85,7 @@ type carried struct {
 	overlay *btree.BTreeG[overlayItem]
 	// filter holds their keys.
 	filter *filter
-	// bytes estimates their encoded size.
+	// bytes estimates their memory.
 	bytes int64
 }
 

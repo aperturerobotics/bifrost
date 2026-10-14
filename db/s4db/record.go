@@ -151,6 +151,31 @@ func (r *record) encode(prev uint32) []byte {
 	return r.seal(b, prev)
 }
 
+// own copies the keys and inline values of a decoded record out of the
+// log reader's window into one allocation, so the overlay entries a kept
+// record becomes do not pin every window replay read.
+func (r *record) own() {
+	// Size the copy.
+	n := 0
+	for _, o := range r.ops {
+		n += len(o.key) + len(o.val.inline)
+	}
+
+	// Copy each key and inline value, keeping a nil value nil.
+	b := make([]byte, 0, n)
+	for i := range r.ops {
+		o := &r.ops[i]
+		at := len(b)
+		b = append(b, o.key...)
+		o.key = b[at:len(b):len(b)]
+		if o.val.inline != nil {
+			at = len(b)
+			b = append(b, o.val.inline...)
+			o.val.inline = b[at:len(b):len(b)]
+		}
+	}
+}
+
 // bound returns an upper bound on the encoded length of a commit record,
 // counting its frees before the commit adds them.
 func (r *record) bound() int {

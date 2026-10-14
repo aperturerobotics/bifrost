@@ -20,10 +20,10 @@ type filter struct {
 	words []atomic.Uint64
 }
 
-// newFilter returns a filter sized for an overlay of about limit bytes, at
-// ten bits per entry of 32 bytes or more.
+// newFilter returns a filter sized for an overlay of about limit bytes of
+// memory, at ten bits per entry.
 func newFilter(limit int64) *filter {
-	return &filter{seed: maphash.MakeSeed(), words: make([]atomic.Uint64, max(1, limit*10/32/64))}
+	return &filter{seed: maphash.MakeSeed(), words: make([]atomic.Uint64, max(1, limit*10/entryOverhead/64))}
 }
 
 // probe returns the word for key and the bits key sets in it.
