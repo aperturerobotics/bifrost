@@ -50,6 +50,12 @@ func TestAccountReplicaMesh(t *testing.T) {
 	b, bSession := enrollMeshReplica(ctx, t, a, sessions[0], originals[1], sessions[1])
 	waitReplicaCopy(ctx, t, b, spaceRef)
 
+	// B holds A's final enrollment change before A goes offline; otherwise B
+	// extends an older head and A returns on a branch nobody shares.
+	for _, entry := range a.soListCtr.GetValue().GetSharedObjects() {
+		waitReplicaConfig(ctx, t, a, b, entry.GetRef())
+	}
+
 	// Recreate the receiver's workers while the original account is offline.
 	a.StopP2PSync()
 	a.StopSessionTransport()
@@ -108,22 +114,7 @@ func TestAccountReplicaMesh(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, ref := range []*sobject.SharedObjectRef{spaceRef, later} {
-		ownerState := getSOState(ctx, t, b, ref, ref.GetProviderResourceRef().GetId())
-		replicaSO, release, err := a.MountSharedObject(ctx, ref, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer release()
-		states, releaseStates, err := replicaSO.(*SharedObject).GetSOHost().GetSOStateCtr(ctx, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer releaseStates()
-		if _, err := states.WaitValueWithValidator(ctx, func(state *sobject.SOState) (bool, error) {
-			return bytes.Equal(state.GetConfig().GetConfigChainHash(), ownerState.GetConfig().GetConfigChainHash()), nil
-		}, nil); err != nil {
-			t.Fatalf("revocation did not converge to one configuration lineage: %v", err)
-		}
+		waitReplicaConfig(ctx, t, b, a, ref)
 	}
 }
 
@@ -212,6 +203,31 @@ func waitReplicaCopy(ctx context.Context, t *testing.T, account *ProviderAccount
 			t.Fatalf("replica copy did not complete: %v", progress)
 		case <-changed:
 		}
+	}
+}
+
+// waitReplicaConfig waits until replica holds the configuration head owner
+// holds for ref.
+func waitReplicaConfig(ctx context.Context, t *testing.T, owner, replica *ProviderAccount, ref *sobject.SharedObjectRef) {
+	// Read the owner's head and watch the replica's state.
+	t.Helper()
+	ownerState := getSOState(ctx, t, owner, ref, ref.GetProviderResourceRef().GetId())
+	replicaSO, release, err := replica.MountSharedObject(ctx, ref, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	states, releaseStates, err := replicaSO.(*SharedObject).GetSOHost().GetSOStateCtr(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer releaseStates()
+
+	// Wait for the replica to reach the same head.
+	if _, err := states.WaitValueWithValidator(ctx, func(state *sobject.SOState) (bool, error) {
+		return bytes.Equal(state.GetConfig().GetConfigChainHash(), ownerState.GetConfig().GetConfigChainHash()), nil
+	}, nil); err != nil {
+		t.Fatalf("replica did not reach the owner's configuration head: %v", err)
 	}
 }
 
