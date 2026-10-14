@@ -14,18 +14,34 @@ import (
 // reachChunk bounds the nodes whose forward records one prefetch loads.
 const reachChunk = 4096
 
-// Reachable returns every node reachable from root by forward edges, root
-// included: the nodes the mark phase of a complete collection keeps. The
-// unreferenced queue marks candidates and owns nothing, so its edges are not
-// followed. The walk reads one snapshot a level at a time, loading the index
-// pages of each chunk of the level's records together in key order, so a cold
-// store costs a batch of reads per chunk instead of one read per node.
-func (g *RefGraph) Reachable(ctx context.Context, root string) (map[string]struct{}, error) {
+// Reachable returns every node reachable by forward edges from the graph root
+// and the registered roots, the roots included: the nodes the mark phase of a
+// complete collection keeps. The unreferenced queue marks candidates and owns
+// nothing, so neither it nor its edges are included. The walk reads one
+// snapshot a level at a time, loading the index pages of each chunk of the
+// level's records together in key order, so a cold store costs a batch of
+// reads per chunk instead of one read per node.
+func (g *RefGraph) Reachable(ctx context.Context) (map[string]struct{}, error) {
 	var reached map[string]struct{}
 	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
-		reached = map[string]struct{}{root: {}}
-		for level := []string{root}; len(level) != 0; {
-			var err error
+		// Seed the first level with the graph root and the registered roots.
+		reached = map[string]struct{}{NodeGCRoot: {}}
+		level := []string{NodeGCRoot}
+		prefix := graphKey(kindRoot)
+		err := tx.ScanPrefixKeys(ctx, prefix, func(key []byte) error {
+			node := lastNode(prefix, key)
+			if _, ok := reached[node]; !ok && node != NodeUnreferenced {
+				reached[node] = struct{}{}
+				level = append(level, node)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		// Walk the levels until one adds no node.
+		for len(level) != 0 {
 			level, err = reachLevel(ctx, tx, level, reached)
 			if err != nil {
 				return err

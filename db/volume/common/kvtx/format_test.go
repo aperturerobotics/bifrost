@@ -505,10 +505,10 @@ func checkLegacyRefGraph(t *testing.T, store db_kvtx.Store) {
 }
 
 // TestCopyReachable copies a store whose graph root reaches blocks a and b
-// through a bucket, with b also left in the unreferenced queue, while c sits
-// only in the queue, d has no graph record and e belongs to a bucket nothing
-// reaches. The copy keeps a, b, their records and the key outside the graph,
-// and drops the rest.
+// through a bucket, with b also left in the unreferenced queue, and whose
+// registered root owns block f, while c sits only in the queue, d has no graph
+// record and e belongs to a bucket nothing reaches. The copy keeps a, b, f,
+// their records and the key outside the graph, and drops the rest.
 func TestCopyReachable(t *testing.T) {
 	t.Run("inmem", func(t *testing.T) {
 		testCopyReachable(t, store_kvtx_inmem.NewStore(), store_kvtx_inmem.NewStore())
@@ -540,7 +540,7 @@ func testCopyReachable(t *testing.T, src, dst db_kvtx.Store) {
 
 	// Write the blocks.
 	refs := make(map[string]*block.BlockRef)
-	for _, name := range []string{"a", "b", "c", "d", "e"} {
+	for _, name := range []string{"a", "b", "c", "d", "e", "f"} {
 		ref, err := block.BuildBlockRef([]byte(name), nil)
 		if err != nil {
 			t.Fatal(err)
@@ -568,13 +568,18 @@ func testCopyReachable(t *testing.T, src, dst db_kvtx.Store) {
 
 	// Write the graph.
 	iri := func(name string) string { return block_gc.BlockIRI(refs[name]) }
-	err = openRefGraph(src).ApplyRefBatch(ctx, []block_gc.RefEdge{
+	graph := openRefGraph(src)
+	if err := graph.AddRoot(ctx, block_gc.BucketIRI("pinned")); err != nil {
+		t.Fatal(err)
+	}
+	err = graph.ApplyRefBatch(ctx, []block_gc.RefEdge{
 		{Subject: block_gc.NodeGCRoot, Object: block_gc.BucketIRI("live")},
 		{Subject: block_gc.BucketIRI("live"), Object: iri("a")},
 		{Subject: iri("a"), Object: iri("b")},
 		{Subject: block_gc.NodeUnreferenced, Object: iri("b")},
 		{Subject: block_gc.NodeUnreferenced, Object: iri("c")},
 		{Subject: block_gc.BucketIRI("gone"), Object: iri("e")},
+		{Subject: block_gc.BucketIRI("pinned"), Object: iri("f")},
 	}, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -586,9 +591,10 @@ func testCopyReachable(t *testing.T, src, dst db_kvtx.Store) {
 		t.Fatal(err)
 	}
 
-	// Each edge is two records: the copy keeps the three reachable edges and
-	// drops the two queue marks and the unreachable bucket's edge.
-	want := CopyProgress{Keys: 9, DroppedBlocks: 3, UnownedBlocks: 1, DroppedRecords: 6}
+	// Each edge is two records, and a registered root has a node and a root
+	// record: the copy keeps the four reachable edges and the root's records,
+	// and drops the two queue marks and the unreachable bucket's edge.
+	want := CopyProgress{Keys: 14, DroppedBlocks: 3, UnownedBlocks: 1, DroppedRecords: 6}
 	last.Bytes, last.DroppedBytes = 0, 0
 	if last != want {
 		t.Fatalf("progress %+v, want %+v", last, want)
@@ -600,7 +606,7 @@ func testCopyReachable(t *testing.T, src, dst db_kvtx.Store) {
 		t.Fatal(err)
 	}
 	defer rtx.Discard()
-	for name, kept := range map[string]bool{"a": true, "b": true, "c": false, "d": false, "e": false} {
+	for name, kept := range map[string]bool{"a": true, "b": true, "c": false, "d": false, "e": false, "f": true} {
 		rm, err := refs[name].MarshalKey()
 		if err != nil {
 			t.Fatal(err)
@@ -615,11 +621,12 @@ func testCopyReachable(t *testing.T, src, dst db_kvtx.Store) {
 	}
 	rg := openRefGraph(dst)
 	for node, want := range map[string][]string{
-		block_gc.NodeGCRoot:        {block_gc.BucketIRI("live")},
-		block_gc.BucketIRI("live"): {iri("a")},
-		iri("a"):                   {iri("b")},
-		block_gc.NodeUnreferenced:  nil,
-		block_gc.BucketIRI("gone"): nil,
+		block_gc.NodeGCRoot:          {block_gc.BucketIRI("live")},
+		block_gc.BucketIRI("live"):   {iri("a")},
+		iri("a"):                     {iri("b")},
+		block_gc.NodeUnreferenced:    nil,
+		block_gc.BucketIRI("gone"):   nil,
+		block_gc.BucketIRI("pinned"): {iri("f")},
 	} {
 		got, err := rg.GetOutgoingRefs(ctx, node)
 		if err != nil {

@@ -100,7 +100,7 @@ func copyStore(
 	if reachable {
 		w.graph = openRefGraph(kvtx.NewTxStore(stx))
 		w.blockPrefix = keys.GetBlockFullPrefix()
-		w.live, err = w.graph.Reachable(ctx, block_gc.NodeGCRoot)
+		w.live, err = w.graph.Reachable(ctx)
 		if err != nil {
 			return fmt.Errorf("mark reachable nodes: %w", err)
 		}
