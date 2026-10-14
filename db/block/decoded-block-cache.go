@@ -311,16 +311,16 @@ func (c *DecodedBlockCache) Lookup(
 }
 
 // Store caches the decoded block under the key when the store token is
-// still current. With share the caller keeps blk unmutated, so the cache
-// retains blk itself instead of a clone.
+// still current. blk must decode stored bytes of length size that the caller
+// verified against the block ref. With share the caller keeps blk unmutated,
+// so the cache retains blk itself instead of a clone.
 func (c *DecodedBlockCache) Store(
 	ctx context.Context,
 	front *decodedBlockFrontCache,
 	token decodedBlockCacheStoreToken,
 	key decodedBlockCacheKey,
-	ref *BlockRef,
 	blk Block,
-	data []byte,
+	size int,
 	share bool,
 ) error {
 	// Require a block and a cache scope before retaining decoded content.
@@ -328,12 +328,6 @@ func (c *DecodedBlockCache) Store(
 		return nil
 	}
 	if c == nil && front == nil {
-		RecordDecodedBlockUncacheable(ctx)
-		return nil
-	}
-
-	// Require verified stored bytes before caching their decoded block.
-	if ref == nil || ref.VerifyData(data, false) != nil {
 		RecordDecodedBlockUncacheable(ctx)
 		return nil
 	}
@@ -371,7 +365,7 @@ func (c *DecodedBlockCache) Store(
 
 	// Compute the shared entry cost before cache admission.
 	cacheKey := c.cacheKey(key)
-	cost, ok := decodedBlockCacheCost(cacheKey, blk, data)
+	cost, ok := decodedBlockCacheCost(cacheKey, blk, size)
 	if !ok {
 		RecordDecodedBlockUncacheable(ctx)
 		return nil
@@ -530,12 +524,11 @@ func storeDecodedBlock(
 	ctx context.Context,
 	key decodedBlockCacheKey,
 	token decodedBlockCacheStoreToken,
-	ref *BlockRef,
 	blk Block,
-	data []byte,
+	size int,
 	share bool,
 ) error {
-	return decodedBlockCacheFromContext(ctx).Store(ctx, decodedBlockFrontCacheFromContext(ctx), token, key, ref, blk, data, share)
+	return decodedBlockCacheFromContext(ctx).Store(ctx, decodedBlockFrontCacheFromContext(ctx), token, key, blk, size, share)
 }
 
 // decodedBlockCacheContextKey is the context key of the attached cache.
@@ -564,10 +557,10 @@ func decodedBlockFrontCacheFromContext(ctx context.Context) *decodedBlockFrontCa
 
 // decodedBlockCacheCost computes the cost of a cached entry: its pool key, the
 // heap its decoded block retains, and a fixed charge for Ristretto's
-// bookkeeping. A block without DecodedBlockHeapSizer is charged its raw plus
-// encoded decoded size as a heap estimate. It returns false when the block
-// size is unknown.
-func decodedBlockCacheCost(cacheKey string, blk Block, data []byte) (int64, bool) {
+// bookkeeping. A block without DecodedBlockHeapSizer is charged its stored
+// size plus its encoded decoded size as a heap estimate. It returns false when
+// the block size is unknown.
+func decodedBlockCacheCost(cacheKey string, blk Block, size int) (int64, bool) {
 	// Charge the reported heap size when the block knows it.
 	keyCost := int64(len(cacheKey)) + decodedBlockCacheEntryOverheadCost
 	if sizer, ok := blk.(DecodedBlockHeapSizer); ok {
@@ -577,7 +570,7 @@ func decodedBlockCacheCost(cacheKey string, blk Block, data []byte) (int64, bool
 	}
 
 	// Otherwise estimate the heap from the raw and decoded sizes.
-	rawCost := int64(len(data))
+	rawCost := int64(size)
 	if rawCost <= 0 {
 		return 0, false
 	}

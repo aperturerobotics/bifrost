@@ -1,7 +1,6 @@
 package block
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"runtime/trace"
@@ -599,24 +598,28 @@ func (c *Cursor) ClearAllRefs() {
 // Returns nil, false, nil if the reference is empty.
 // Returns nil, false, ErrNotFound if not found (block unavailable).
 func (c *Cursor) Fetch(ctx context.Context) ([]byte, bool, error) {
-	data, _, found, err := c.fetch(ctx)
+	data, _, found, err := c.fetch(ctx, false)
 	return data, found, err
 }
 
-// fetch loads the raw and unmarshaled block data at the cursor position.
-func (c *Cursor) fetch(ctx context.Context) ([]byte, []byte, bool, error) {
+// fetch loads the decoded block data at the cursor position. With verify it
+// also checks the stored bytes against the ref before the transformer may
+// decode them in place, and returns their length when they match, so the
+// caller can cache the decoded block without copying the stored bytes.
+// Otherwise the returned length is zero.
+func (c *Cursor) fetch(ctx context.Context, verify bool) ([]byte, int, bool, error) {
 	// Skip a nil cursor or an empty ref.
 	if c == nil {
-		return nil, nil, false, nil
+		return nil, 0, false, nil
 	}
 	if c.pos.ref.GetEmpty() {
-		return nil, nil, false, nil
+		return nil, 0, false, nil
 	}
 
 	// Read the stored block, recording the read on the context.
 	bkt := c.readStore(ctx)
 	if bkt == nil {
-		return nil, nil, false, ErrBlockStoreUnavailable
+		return nil, 0, false, ErrBlockStoreUnavailable
 	}
 	data, found, err := bkt.GetBlock(withoutReadOperationStore(ctx), c.pos.ref)
 	if err == nil {
@@ -626,27 +629,30 @@ func (c *Cursor) fetch(ctx context.Context) ([]byte, []byte, bool, error) {
 		if err == nil {
 			err = ErrNotFound
 		}
-		return nil, nil, false, err
+		return nil, 0, false, err
 	}
 	recordAccessLog(ctx, c.pos.ref, len(data))
 
+	// Verify the stored bytes before decoding may overwrite them.
+	var stored int
+	if verify && c.pos.ref.VerifyData(data, false) == nil {
+		stored = len(data)
+	}
+
 	// Decode the stored data with the transformer, if any.
-	storedData := data
 	if xfrm := c.transformer(); xfrm != nil {
 		if trace.IsEnabled() {
 			_, task := trace.NewTask(ctx, "db/block/cursor/fetch/decode")
-			storedData = bytes.Clone(data)
 			data, err = xfrm.DecodeBlock(data)
 			task.End()
 		} else {
-			storedData = bytes.Clone(data)
 			data, err = xfrm.DecodeBlock(data)
 		}
 		if err != nil {
-			return nil, nil, false, err
+			return nil, 0, false, err
 		}
 	}
-	return data, storedData, true, nil
+	return data, stored, true, nil
 }
 
 // Unmarshal fetches and unmarshals the data to a block.
@@ -729,7 +735,7 @@ func (c *Cursor) Unmarshal(ctx context.Context, ctor func() Block) (Block, error
 
 	// returns nil, false, nil if reference was empty.
 	// returns nil, false, ErrNotFound if reference was not found.
-	dat, storedDat, datFound, err := c.fetch(ctx)
+	dat, stored, datFound, err := c.fetch(ctx, cacheable)
 	if err != nil {
 		return nil, err
 	}
@@ -743,9 +749,13 @@ func (c *Cursor) Unmarshal(ctx context.Context, ctor func() Block) (Block, error
 			return nil, err
 		}
 
-		// Cache the decoded block with its original stored bytes.
-		if cacheable {
-			if err := storeDecodedBlock(ctx, cacheKey, storeToken, c.pos.ref, b, storedDat, share); err != nil {
+		// Cache the decoded block of verified stored bytes.
+		switch {
+		case !cacheable:
+		case stored == 0:
+			RecordDecodedBlockUncacheable(ctx)
+		default:
+			if err := storeDecodedBlock(ctx, cacheKey, storeToken, b, stored, share); err != nil {
 				return nil, err
 			}
 		}
