@@ -8,6 +8,7 @@ import (
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/blocktype"
 	"github.com/s4wave/spacewave/db/world"
 	world_types "github.com/s4wave/spacewave/db/world/types"
 	"github.com/s4wave/spacewave/net/peer"
@@ -16,6 +17,12 @@ import (
 
 // WasiVmImageTypeID is the type identifier for WasiVmImage objects.
 const WasiVmImageTypeID = "vm/image/wasivm"
+
+// WasiVmImageBlockType constructs WasiVmImage blocks for typed cursor reads.
+var WasiVmImageBlockType = blocktype.NewBlockType(
+	WasiVmImageTypeID,
+	func() *WasiVmImage { return &WasiVmImage{} },
+)
 
 // PredWasiVmImageRootfs is the graph predicate linking a WasiVmImage to the
 // UnixFS object holding its root filesystem.

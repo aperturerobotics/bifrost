@@ -11,9 +11,10 @@ import (
 )
 
 // LookupBlockType looks up a core-owned block type by ID.
-// Returns nil if not found. Plugin-owned block types (such as the SQL cursor
-// blocks owned by the sql plugin) resolve through their plugin's
-// LookupBlockType directive handler, not here.
+// Returns nil if not found. VM images resolve here because the CDN catalog
+// Space that publishes them is mounted without plugins. Plugin-owned block
+// types (such as the SQL cursor blocks owned by the sql plugin) resolve
+// through their plugin's LookupBlockType directive handler, not here.
 func LookupBlockType(
 	ctx context.Context,
 	typeID string,
@@ -25,6 +26,8 @@ func LookupBlockType(
 		return s4wave_layout_world.ObjectLayoutBlockType, nil
 	case s4wave_vm.V86ImageTypeID:
 		return s4wave_vm.V86ImageBlockType, nil
+	case s4wave_vm.WasiVmImageTypeID:
+		return s4wave_vm.WasiVmImageBlockType, nil
 	case unixfs_world.FSNodeTypeID:
 		return blocktype.NewBlockType(typeID, unixfs_block.NewFSNodeBlock), nil
 	case unixfs_world.FSObjectTypeID:

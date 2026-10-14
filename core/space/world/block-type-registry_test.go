@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	space_world "github.com/s4wave/spacewave/core/space/world"
+	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
 
 // TestLookupBlockTypeSpaceSettings resolves persisted settings by their block ID.
@@ -43,6 +44,22 @@ func TestLookupBlockTypeExcludesSQL(t *testing.T) {
 		}
 		if got != nil {
 			t.Fatalf("LookupBlockType(%s) = %T, want nil", typeID, got)
+		}
+	}
+}
+
+// TestLookupBlockTypeVmImages checks that core resolves the published VM image
+// types. The CDN catalog Space that lists them is mounted without plugins, so
+// no plugin handler can answer for them there.
+func TestLookupBlockTypeVmImages(t *testing.T) {
+	ctx := context.Background()
+	for _, typeID := range []string{s4wave_vm.V86ImageTypeID, s4wave_vm.WasiVmImageTypeID} {
+		got, err := space_world.LookupBlockType(ctx, typeID)
+		if err != nil {
+			t.Fatalf("LookupBlockType(%s): %v", typeID, err)
+		}
+		if got == nil || got.GetBlockTypeID() != typeID {
+			t.Fatalf("LookupBlockType(%s) = %v, want its block type", typeID, got)
 		}
 	}
 }

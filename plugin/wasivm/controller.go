@@ -122,9 +122,7 @@ var blockTypes = map[string]blocktype.BlockType{
 	s4wave_vm.WasiVmTypeID: blocktype.NewBlockType(s4wave_vm.WasiVmTypeID, func() *s4wave_vm.WasiVm {
 		return &s4wave_vm.WasiVm{}
 	}),
-	s4wave_vm.WasiVmImageTypeID: blocktype.NewBlockType(s4wave_vm.WasiVmImageTypeID, func() *s4wave_vm.WasiVmImage {
-		return &s4wave_vm.WasiVmImage{}
-	}),
+	s4wave_vm.WasiVmImageTypeID: s4wave_vm.WasiVmImageBlockType,
 	s4wave_vm.WasiVmPackageTypeID: blocktype.NewBlockType(s4wave_vm.WasiVmPackageTypeID, func() *s4wave_vm.WasiVmPackage {
 		return &s4wave_vm.WasiVmPackage{}
 	}),
