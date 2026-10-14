@@ -40,12 +40,14 @@ func (k *Kernel) DialUnix(ctx context.Context, socketPath string) (net.Conn, err
 
 	// Wrap the host's end.
 	connCtx, cancel := context.WithCancel(context.Background())
-	return &unixConn{of: of, path: socketPath, ctx: connCtx, cancel: cancel}, nil
+	return &unixConn{k: k, of: of, path: socketPath, ctx: connCtx, cancel: cancel}, nil
 }
 
 // unixConn is the host's end of a connection to a guest Unix socket. Its open
 // file is never installed in a process, so only its pipes are shared.
 type unixConn struct {
+	// k is the kernel whose lock guards the open files in flight.
+	k *Kernel
 	// of holds the pipes the connection reads and writes.
 	of *OpenFile
 	// path is the address of the guest's socket.
@@ -56,10 +58,15 @@ type unixConn struct {
 	cancel context.CancelFunc
 }
 
-// Read reads from the guest, waiting for data. It returns io.EOF once the
-// guest closes its end.
+// Read reads from the guest, waiting for data, and closes any files the
+// guest sent with it. It returns io.EOF once the guest closes its end.
 func (c *unixConn) Read(b []byte) (int, error) {
-	n, eof := c.of.rx.read(c.ctx, b)
+	n, files, eof := c.of.rx.read(c.ctx, b)
+	if len(files) != 0 {
+		c.k.mu.Lock()
+		unrefFiles(files)
+		c.k.mu.Unlock()
+	}
 	switch {
 	case n != 0:
 		return n, nil
@@ -74,7 +81,7 @@ func (c *unixConn) Read(b []byte) (int, error) {
 // Write writes to the guest, waiting for room. It returns io.ErrClosedPipe
 // once the guest closes its end.
 func (c *unixConn) Write(b []byte) (int, error) {
-	n, ok := c.of.tx.write(c.ctx, b)
+	n, ok := c.of.tx.write(c.ctx, b, nil)
 	switch {
 	case !ok:
 		return 0, io.ErrClosedPipe
@@ -87,8 +94,12 @@ func (c *unixConn) Write(b []byte) (int, error) {
 // Close closes both directions, which the guest reads as end of file, and
 // ends a waiting read or write.
 func (c *unixConn) Close() error {
+	// End the waits, then release the pipes and the files in flight under
+	// the kernel lock.
 	c.cancel()
+	c.k.mu.Lock()
 	c.of.release()
+	c.k.mu.Unlock()
 	return nil
 }
 

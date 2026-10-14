@@ -347,9 +347,18 @@ func wasiResult(res uint64) (uint32, uint32) {
 
 // wasiFDRead reads a descriptor into the iovecs at iovsPtr.
 func (p *Process) wasiFDRead(ctx context.Context, mem engine.Memory, fd, iovsPtr, iovsLen, nreadPtr uint32) uint32 {
-	return wasiTransfer(mem, iovsPtr, iovsLen, nreadPtr, func(base, length uint32) (uint32, uint32) {
-		return wasiResult(p.sysRead(ctx, fd, base, length))
-	})
+	return wasiTransfer(mem, iovsPtr, iovsLen, nreadPtr, p.wasiReadMove(ctx, fd))
+}
+
+// wasiReadMove returns the move of a read of fd into iovecs. Only the first
+// buffer's read waits, so a read that fills one buffer returns what follows
+// it at once instead of waiting to fill the next.
+func (p *Process) wasiReadMove(ctx context.Context, fd uint32) func(base, length uint32) (uint32, uint32) {
+	return func(base, length uint32) (uint32, uint32) {
+		n, errno := wasiResult(p.sysRead(ctx, fd, base, length))
+		ctx = nonblocking(ctx)
+		return n, errno
+	}
 }
 
 // wasiFDWrite writes the iovecs at iovsPtr to a descriptor.

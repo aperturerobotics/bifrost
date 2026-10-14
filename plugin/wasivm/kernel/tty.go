@@ -248,7 +248,7 @@ func (t *tty) write(ctx context.Context, buf []byte, stderr bool) (int, bool) {
 
 	// Queue the processed output for the master.
 	out := t.processOutput(buf)
-	n, ok := t.pty.out.write(ctx, out)
+	n, ok := t.pty.out.write(ctx, out, nil)
 	return inputBytes(len(buf), n, len(out)), ok
 }
 
@@ -260,7 +260,7 @@ func (t *tty) echo(b []byte) {
 		_, _ = t.stdout.Write(b)
 		return
 	}
-	_, _ = t.pty.out.write(nonblocking(context.Background()), t.processOutput(b))
+	_, _ = t.pty.out.write(nonblocking(context.Background()), t.processOutput(b), nil)
 }
 
 // processOutput translates \n to \r\n when OPOST and ONLCR are set and the

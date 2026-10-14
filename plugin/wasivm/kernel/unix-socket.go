@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+
+	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
 )
 
 // The wasm32 struct sockaddr_un: a 16-bit family, then the path.
@@ -17,9 +19,20 @@ const (
 	msghdrNamelen    = 4
 	msghdrIov        = 8
 	msghdrIovlen     = 12
+	msghdrControl    = 16
 	msghdrControllen = 20
 	msghdrFlags      = 24
 )
+
+// cmsghdrSize is the size of the wasm32 struct cmsghdr: the message length,
+// level and type, each 32 bits. The message's data follows it.
+const cmsghdrSize = 12
+
+// scmMaxFD is the most files one send can carry, Linux's SCM_MAX_FD.
+const scmMaxFD = 253
+
+// uioMaxIov is the most iovecs one call takes, Linux's UIO_MAXIOV.
+const uioMaxIov = 1024
 
 // shutdown directions, which the guest's SHUT_RD and SHUT_WR share with the
 // WASI sdflags.
@@ -396,11 +409,13 @@ func (p *Process) sysSetsockopt(fd uint32) uint64 {
 }
 
 // msgContext returns the context of a send or receive with the guest's
-// message flags. MSG_DONTWAIT makes it nonblocking; MSG_WAITALL is accepted
-// and a short read returns what arrived. Peeking is unsupported.
+// message flags. MSG_DONTWAIT makes it nonblocking. MSG_WAITALL is accepted
+// and a short read returns what arrived; MSG_NOSIGNAL is the caller's, and
+// MSG_CMSG_CLOEXEC needs nothing, since the kernel has no close-on-exec flag.
+// Peeking is unsupported.
 func msgContext(ctx context.Context, flags uint32) (context.Context, uint64) {
 	switch {
-	case flags&^(guestMsgDontwait|guestMsgWaitall) != 0:
+	case flags&^(guestMsgDontwait|guestMsgWaitall|guestMsgNosignal|guestMsgCmsgCloexec) != 0:
 		return nil, negErrno(EOPNOTSUPP)
 	case flags&guestMsgDontwait != 0:
 		return nonblocking(ctx), 0
@@ -408,94 +423,310 @@ func msgContext(ctx context.Context, flags uint32) (context.Context, uint64) {
 	return ctx, 0
 }
 
+// sendSocket writes data to the connected socket of with files attached to
+// its first byte, taking over the caller's reference to each file.
+func (p *Process) sendSocket(ctx context.Context, of *OpenFile, data []byte, files []*OpenFile, flags uint32) uint64 {
+	ctx, errno := msgContext(ctx, flags)
+	switch {
+	case errno != 0:
+	case of.tx == nil:
+		errno = negErrno(ENOTCONN)
+	default:
+		return p.writePipe(ctx, of, data, files, flags&guestMsgNosignal != 0)
+	}
+	unrefFiles(files)
+	return errno
+}
+
+// recvSocket reads up to count bytes from the connected socket of, and the
+// files sent with the first byte read, whose references pass to the caller.
+// A caught signal interrupts a blocking receive.
+func (p *Process) recvSocket(ctx context.Context, of *OpenFile, count uint32, flags uint32) ([]byte, []*OpenFile, uint64) {
+	// Check the flags and the connection.
+	ctx, errno := msgContext(ctx, flags)
+	switch {
+	case errno != 0:
+		return nil, nil, errno
+	case of.rx == nil:
+		return nil, nil, negErrno(ENOTCONN)
+	case count == 0:
+		return nil, nil, 0
+	}
+
+	// Read, letting a caught signal end the wait.
+	ctx, release := p.interruptible(ctx)
+	defer release()
+	return p.readPipe(ctx, of, int(count))
+}
+
 // sysSendto writes count bytes at bufPtr to a connected socket. A connected
 // stream socket takes no destination address.
 func (p *Process) sysSendto(ctx context.Context, fd, bufPtr, count, flags, addrLen uint32) uint64 {
-	// Check the socket and the flags.
-	_, errno := p.socketFile(fd)
+	// Check the socket and the address.
+	of, errno := p.socketFile(fd)
 	switch {
 	case errno != 0:
 		return errno
 	case addrLen != 0:
 		return negErrno(EISCONN)
 	}
-	ctx, errno = msgContext(ctx, flags)
-	if errno != 0 {
-		return errno
-	}
 
 	// Write the data.
-	return p.sysWrite(ctx, fd, bufPtr, count)
+	data, ok := p.inst.Memory().Read(bufPtr, count)
+	if !ok {
+		return negErrno(EFAULT)
+	}
+	return p.sendSocket(ctx, of, data, nil, flags)
 }
 
 // sysRecvfrom reads up to count bytes from a connected socket to bufPtr. A
-// stream socket reports no source address.
+// stream socket reports no source address, and the read drops any files sent
+// with the data.
 func (p *Process) sysRecvfrom(ctx context.Context, fd, bufPtr, count, flags, lenPtr uint32) uint64 {
 	// Read the data.
-	_, errno := p.socketFile(fd)
+	of, errno := p.socketFile(fd)
 	if errno != 0 {
 		return errno
 	}
-	ctx, errno = msgContext(ctx, flags)
+	data, files, errno := p.recvSocket(ctx, of, count, flags)
+	unrefFiles(files)
 	if errno != 0 {
 		return errno
 	}
-	res := p.sysRead(ctx, fd, bufPtr, count)
 
-	// Report an empty address.
-	if !errnoFailed(res) && lenPtr != 0 && !p.inst.Memory().WriteUint32Le(lenPtr, 0) {
+	// Copy it out and report an empty address.
+	mem := p.inst.Memory()
+	if !mem.Write(bufPtr, data) || lenPtr != 0 && !mem.WriteUint32Le(lenPtr, 0) {
 		return negErrno(EFAULT)
 	}
-	return res
+	return uint64(len(data))
 }
 
-// sysMsg sends, when send is set, or receives the data of the msghdr at
-// msgPtr through a connected socket. Descriptor passing is unsupported, so
-// a send fails with control data and a receive returns none.
-func (p *Process) sysMsg(ctx context.Context, fd, msgPtr, flags uint32, send bool) uint64 {
+// sysSendmsg writes the iovecs of the msghdr at msgPtr to a connected socket
+// as one write, with the files of its SCM_RIGHTS messages attached to the
+// first byte. A send of no bytes sends no files.
+func (p *Process) sysSendmsg(ctx context.Context, fd, msgPtr, flags uint32) uint64 {
+	// Read the header and the data.
+	of, errno := p.socketFile(fd)
+	if errno != 0 {
+		return errno
+	}
+	hdr, errno := readMsghdr(p.inst.Memory(), msgPtr)
+	if errno != 0 {
+		return errno
+	}
+	data, errno := p.gatherIovecs(hdr.iovs)
+	if errno != 0 {
+		return errno
+	}
+
+	// Take the files and send.
+	files, errno := p.readRights(hdr.control, hdr.controlLen)
+	if errno != 0 {
+		return errno
+	}
+	return p.sendSocket(ctx, of, data, files, flags)
+}
+
+// sysRecvmsg reads a connected socket into the iovecs of the msghdr at
+// msgPtr, stopping before bytes that carry other files, and installs the
+// files sent with the first byte read as descriptors in an SCM_RIGHTS
+// message. Files that do not fit the control buffer close, and MSG_CTRUNC
+// reports them.
+func (p *Process) sysRecvmsg(ctx context.Context, fd, msgPtr, flags uint32) uint64 {
 	// Read the header.
-	if _, errno := p.socketFile(fd); errno != 0 {
+	of, errno := p.socketFile(fd)
+	if errno != 0 {
 		return errno
 	}
 	mem := p.inst.Memory()
-	iovsPtr, ok1 := mem.ReadUint32Le(msgPtr + msghdrIov)
-	iovsLen, ok2 := mem.ReadUint32Le(msgPtr + msghdrIovlen)
-	controlLen, ok3 := mem.ReadUint32Le(msgPtr + msghdrControllen)
-	switch {
-	case !ok1 || !ok2 || !ok3:
-		return negErrno(EFAULT)
-	case send && controlLen != 0:
-		return negErrno(EOPNOTSUPP)
-	}
-	ctx, errno := msgContext(ctx, flags)
+	hdr, errno := readMsghdr(mem, msgPtr)
 	if errno != 0 {
 		return errno
 	}
 
-	// Move the data, then report no address, control data or flags.
-	res := p.moveIovecs(ctx, fd, iovsPtr, iovsLen, send)
-	if send || errnoFailed(res) {
-		return res
+	// Read the data and the files sent with it.
+	var total uint32
+	for _, iov := range hdr.iovs {
+		total += iov.length
 	}
-	for _, off := range []uint32{msghdrNamelen, msghdrControllen, msghdrFlags} {
-		if !mem.WriteUint32Le(msgPtr+off, 0) {
+	data, files, errno := p.recvSocket(ctx, of, total, flags)
+	if errno != 0 {
+		return errno
+	}
+
+	// Scatter the data into the iovecs.
+	rest := data
+	for _, iov := range hdr.iovs {
+		n := min(int(iov.length), len(rest))
+		if !mem.Write(iov.base, rest[:n]) {
+			unrefFiles(files)
 			return negErrno(EFAULT)
 		}
+		rest = rest[n:]
 	}
-	return res
+
+	// Install the files, then report no address, the control length and
+	// the flags.
+	controlLen, msgFlags, errno := p.writeRights(files, hdr.control, hdr.controlLen)
+	if errno != 0 {
+		return errno
+	}
+	if !mem.WriteUint32Le(msgPtr+msghdrNamelen, 0) ||
+		!mem.WriteUint32Le(msgPtr+msghdrControllen, controlLen) ||
+		!mem.WriteUint32Le(msgPtr+msghdrFlags, msgFlags) {
+		return negErrno(EFAULT)
+	}
+	return uint64(len(data))
 }
 
-// moveIovecs writes the iovecs at iovsPtr to fd when send is set, or reads
-// fd into them, as writev and readv do.
-func (p *Process) moveIovecs(ctx context.Context, fd, iovsPtr, iovsLen uint32, send bool) uint64 {
-	total, errno := wasiMoveIovecs(p.inst.Memory(), iovsPtr, iovsLen, func(base, length uint32) (uint32, uint32) {
-		if send {
-			return wasiResult(p.sysWrite(ctx, fd, base, length))
+// gatherIovecs reads the data of iovecs into one buffer.
+func (p *Process) gatherIovecs(iovs []iovec) ([]byte, uint64) {
+	mem := p.inst.Memory()
+	var data []byte
+	for _, iov := range iovs {
+		buf, ok := mem.Read(iov.base, iov.length)
+		if !ok {
+			return nil, negErrno(EFAULT)
 		}
-		return wasiResult(p.sysRead(ctx, fd, base, length))
-	})
-	if errno != wasiErrnoSuccess {
-		return negErrno(linuxErrno(errno))
+		data = append(data, buf...)
 	}
-	return uint64(total)
+	return data, 0
+}
+
+// readRights reads the SCM_RIGHTS messages in the control buffer of length
+// bytes at ptr, and returns their open files with a reference taken on each.
+// Any other control message fails with EINVAL, as on a Linux Unix socket.
+func (p *Process) readRights(ptr, length uint32) ([]*OpenFile, uint64) {
+	// Read the control buffer.
+	if length == 0 {
+		return nil, 0
+	}
+	buf, ok := p.inst.Memory().Read(ptr, length)
+	if !ok {
+		return nil, negErrno(EFAULT)
+	}
+
+	// Find the file of each descriptor in each message.
+	var files []*OpenFile
+	for len(buf) >= cmsghdrSize {
+		msgLen := binary.LittleEndian.Uint32(buf)
+		level := binary.LittleEndian.Uint32(buf[4:])
+		typ := binary.LittleEndian.Uint32(buf[8:])
+		if msgLen < cmsghdrSize || msgLen > uint32(len(buf)) || level != guestSolSocket || typ != guestScmRights {
+			return nil, negErrno(EINVAL)
+		}
+		for fds := buf[cmsghdrSize:msgLen]; len(fds) >= 4; fds = fds[4:] {
+			of, ok := p.fds[binary.LittleEndian.Uint32(fds)]
+			if !ok {
+				return nil, negErrno(EBADF)
+			}
+			files = append(files, of)
+		}
+		buf = buf[min(cmsgAlign(msgLen), uint32(len(buf))):]
+	}
+
+	// Take a reference on each, up to Linux's limit per message.
+	if len(files) > scmMaxFD {
+		return nil, negErrno(EINVAL)
+	}
+	for _, of := range files {
+		of.ref()
+	}
+	return files, 0
+}
+
+// writeRights installs files as descriptors and writes them as an SCM_RIGHTS
+// message to the control buffer of capacity bytes at ptr. It returns the
+// control length and the message flags: MSG_CTRUNC when files did not fit,
+// which it releases. It takes over the references of files.
+func (p *Process) writeRights(files []*OpenFile, ptr, capacity uint32) (uint32, uint32, uint64) {
+	// Fit what the buffer holds and release the rest.
+	if len(files) == 0 {
+		return 0, 0, 0
+	}
+	defer unrefFiles(files)
+	fit := 0
+	if capacity >= cmsghdrSize {
+		fit = min(len(files), int(capacity-cmsghdrSize)/4)
+	}
+	var msgFlags uint32
+	if fit < len(files) {
+		msgFlags = guestMsgCtrunc
+	}
+	if fit == 0 {
+		return 0, msgFlags, 0
+	}
+
+	// Install the descriptors and build the message.
+	msgLen := cmsghdrSize + 4*uint32(fit)
+	msg := binary.LittleEndian.AppendUint32(nil, msgLen)
+	msg = binary.LittleEndian.AppendUint32(msg, guestSolSocket)
+	msg = binary.LittleEndian.AppendUint32(msg, guestScmRights)
+	fds := make([]uint32, 0, fit)
+	for _, of := range files[:fit] {
+		fd := p.installFD(of)
+		fds = append(fds, fd)
+		msg = binary.LittleEndian.AppendUint32(msg, fd)
+	}
+
+	// Write it, closing the descriptors when the buffer is out of bounds.
+	if !p.inst.Memory().Write(ptr, msg) {
+		for _, fd := range fds {
+			_ = p.sysClose(fd)
+		}
+		return 0, 0, negErrno(EFAULT)
+	}
+	return msgLen, msgFlags, 0
+}
+
+// iovec is a guest struct iovec: a buffer's address and length.
+type iovec struct {
+	// base is the buffer's address.
+	base uint32
+	// length is the buffer's length in bytes.
+	length uint32
+}
+
+// msghdr holds the fields of a guest struct msghdr the kernel uses.
+type msghdr struct {
+	// iovs are the data buffers.
+	iovs []iovec
+	// control is the address of the control buffer.
+	control uint32
+	// controlLen is the control buffer's length in bytes.
+	controlLen uint32
+}
+
+// readMsghdr reads the msghdr at ptr and its iovec array.
+func readMsghdr(mem engine.Memory, ptr uint32) (msghdr, uint64) {
+	// Read the header.
+	iovsPtr, ok1 := mem.ReadUint32Le(ptr + msghdrIov)
+	iovsLen, ok2 := mem.ReadUint32Le(ptr + msghdrIovlen)
+	control, ok3 := mem.ReadUint32Le(ptr + msghdrControl)
+	controlLen, ok4 := mem.ReadUint32Le(ptr + msghdrControllen)
+	switch {
+	case !ok1 || !ok2 || !ok3 || !ok4:
+		return msghdr{}, negErrno(EFAULT)
+	case iovsLen > uioMaxIov:
+		return msghdr{}, negErrno(EMSGSIZE)
+	}
+
+	// Read the iovecs.
+	hdr := msghdr{iovs: make([]iovec, 0, iovsLen), control: control, controlLen: controlLen}
+	for i := range iovsLen {
+		base, ok1 := mem.ReadUint32Le(iovsPtr + i*wasiIovecSize)
+		length, ok2 := mem.ReadUint32Le(iovsPtr + i*wasiIovecSize + 4)
+		if !ok1 || !ok2 {
+			return msghdr{}, negErrno(EFAULT)
+		}
+		hdr.iovs = append(hdr.iovs, iovec{base: base, length: length})
+	}
+	return hdr, 0
+}
+
+// cmsgAlign rounds a control message length up to the guest's alignment of
+// the next message, the size of a long.
+func cmsgAlign(n uint32) uint32 {
+	return (n + 3) &^ 3
 }

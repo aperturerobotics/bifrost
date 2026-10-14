@@ -497,10 +497,10 @@ func posixFunctions() map[string]hostFunc {
 			return p.posixResult(ctx, p.sysRecvfrom(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]), uint32(a[5])))
 		}},
 		"sendmsg": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
-			return p.posixResult(ctx, p.sysMsg(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), true))
+			return p.posixResult(ctx, p.sysSendmsg(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
 		"recvmsg": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
-			return p.posixResult(ctx, p.sysMsg(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), false))
+			return p.posixResult(ctx, p.sysRecvmsg(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
 		"getaddrinfo":  returns("iiiii", fail),
 		"freeaddrinfo": returns("vi", 0),

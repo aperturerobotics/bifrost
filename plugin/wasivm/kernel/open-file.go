@@ -110,6 +110,13 @@ func (of *OpenFile) ioContext(ctx context.Context) context.Context {
 	return nonblocking(ctx)
 }
 
+// unrefFiles drops one reference to each file, as a close of each would.
+func unrefFiles(files []*OpenFile) {
+	for _, of := range files {
+		of.unref()
+	}
+}
+
 // nonblocking returns a child of ctx that has already ended, so a read or
 // write under it takes what is ready and does not wait.
 func nonblocking(ctx context.Context) context.Context {

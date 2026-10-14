@@ -200,7 +200,7 @@ func TestPollOneoffWaitsForReadiness(t *testing.T) {
 	peer := p.fds[b].tx
 	go func() {
 		time.Sleep(10 * time.Millisecond)
-		_, _ = peer.write(ctx, []byte("x"))
+		_, _ = peer.write(ctx, []byte("x"), nil)
 	}()
 	if errno := p.wasiPollOneoff(ctx, mem, inPtr, outPtr, 1, neventsPtr); errno != wasiErrnoSuccess {
 		t.Fatalf("poll_oneoff for data = %d", errno)
@@ -216,5 +216,212 @@ func TestPollOneoffWaitsForReadiness(t *testing.T) {
 	}
 	if flags, _ := mem.Read(outPtr+24, 2); binary.LittleEndian.Uint16(flags) != wasiEventrwflagsHangup {
 		t.Fatalf("poll_oneoff after close reported flags %v, want hangup", flags)
+	}
+}
+
+// Guest memory addresses the descriptor passing tests use.
+const (
+	rightsTestMsg     = 4096
+	rightsTestIov     = 4160
+	rightsTestData    = 4200
+	rightsTestControl = 4400
+	rightsTestPipe    = 4600
+)
+
+// pairTest connects a socket pair and returns its descriptors.
+func pairTest(t *testing.T, p *Process, mem *memMemory) (uint32, uint32) {
+	// Connect the pair and read its descriptors.
+	t.Helper()
+	if res := p.sysSocketpair(guestAFUNIX, guestSockStream, 0, sockTestPair); res != 0 {
+		t.Fatalf("socketpair = %#x", res)
+	}
+	a, _ := mem.ReadUint32Le(sockTestPair)
+	b, _ := mem.ReadUint32Le(sockTestPair + 4)
+	return a, b
+}
+
+// pipeTest makes a pipe and returns its read and write descriptors.
+func pipeTest(t *testing.T, p *Process, mem *memMemory) (uint32, uint32) {
+	// Make the pipe and read its descriptors.
+	t.Helper()
+	if res := p.sysPipe2(rightsTestPipe, 0); res != 0 {
+		t.Fatalf("pipe2 = %#x", res)
+	}
+	r, _ := mem.ReadUint32Le(rightsTestPipe)
+	w, _ := mem.ReadUint32Le(rightsTestPipe + 4)
+	return r, w
+}
+
+// writeTestMsghdr writes a msghdr at rightsTestMsg with one iovec of length
+// dataLen at rightsTestData and a control buffer of controlLen bytes.
+func writeTestMsghdr(mem *memMemory, dataLen, controlLen uint32) {
+	// Point the header at one iovec and the control buffer.
+	mem.Write(rightsTestMsg, make([]byte, 28))
+	mem.WriteUint32Le(rightsTestIov, rightsTestData)
+	mem.WriteUint32Le(rightsTestIov+4, dataLen)
+	mem.WriteUint32Le(rightsTestMsg+msghdrIov, rightsTestIov)
+	mem.WriteUint32Le(rightsTestMsg+msghdrIovlen, 1)
+	mem.WriteUint32Le(rightsTestMsg+msghdrControl, rightsTestControl)
+	mem.WriteUint32Le(rightsTestMsg+msghdrControllen, controlLen)
+}
+
+// sendRightsTest sends data on fd with fds in one SCM_RIGHTS message.
+func sendRightsTest(t *testing.T, p *Process, mem *memMemory, fd uint32, data string, fds ...uint32) {
+	// Write the data and the control message.
+	t.Helper()
+	mem.Write(rightsTestData, []byte(data))
+	var control []byte
+	if len(fds) != 0 {
+		control = binary.LittleEndian.AppendUint32(nil, cmsghdrSize+4*uint32(len(fds)))
+		control = binary.LittleEndian.AppendUint32(control, guestSolSocket)
+		control = binary.LittleEndian.AppendUint32(control, guestScmRights)
+		for _, sent := range fds {
+			control = binary.LittleEndian.AppendUint32(control, sent)
+		}
+		mem.Write(rightsTestControl, control)
+	}
+	writeTestMsghdr(mem, uint32(len(data)), uint32(len(control)))
+
+	// Send them.
+	if res := p.sysSendmsg(context.Background(), fd, rightsTestMsg, 0); res != uint64(len(data)) {
+		t.Fatalf("sendmsg(%d, %q) = %#x", fd, data, res)
+	}
+}
+
+// recvRightsTest receives up to 64 bytes from fd with a control buffer of
+// controlLen bytes, and returns the data, the descriptors received and the
+// message flags.
+func recvRightsTest(t *testing.T, p *Process, mem *memMemory, fd, controlLen uint32) (string, []uint32, uint32) {
+	// Receive.
+	t.Helper()
+	writeTestMsghdr(mem, 64, controlLen)
+	res := p.sysRecvmsg(context.Background(), fd, rightsTestMsg, 0)
+	if errnoFailed(res) {
+		t.Fatalf("recvmsg(%d) = %#x", fd, res)
+	}
+	data, _ := mem.Read(rightsTestData, uint32(res))
+
+	// Read the descriptors of the control message.
+	var fds []uint32
+	n, _ := mem.ReadUint32Le(rightsTestMsg + msghdrControllen)
+	if n != 0 {
+		msgLen, _ := mem.ReadUint32Le(rightsTestControl)
+		if msgLen != n {
+			t.Fatalf("control message length %d, control length %d", msgLen, n)
+		}
+		for off := uint32(cmsghdrSize); off < n; off += 4 {
+			got, _ := mem.ReadUint32Le(rightsTestControl + off)
+			fds = append(fds, got)
+		}
+	}
+	flags, _ := mem.ReadUint32Le(rightsTestMsg + msghdrFlags)
+	return string(data), fds, flags
+}
+
+// TestUnixSocketRights checks descriptors sent with SCM_RIGHTS arrive with
+// the bytes they were sent with, after the sender closed its own, and that
+// a receive never crosses into a later send's descriptors.
+func TestUnixSocketRights(t *testing.T) {
+	// Send a pipe's ends after plain data, and close the sender's copies.
+	p, mem := fsTestProcess()
+	a, b := pairTest(t, p, mem)
+	r, w := pipeTest(t, p, mem)
+	sendTest(t, p, mem, a, "ab")
+	sendRightsTest(t, p, mem, a, "cd", r, w)
+	_ = p.sysClose(r)
+	_ = p.sysClose(w)
+
+	// The first receive stops before the descriptors.
+	data, fds, _ := recvRightsTest(t, p, mem, b, 64)
+	if data != "ab" || len(fds) != 0 {
+		t.Fatalf("first recvmsg = %q with %v, want ab alone", data, fds)
+	}
+	data, fds, flags := recvRightsTest(t, p, mem, b, 64)
+	if data != "cd" || len(fds) != 2 || flags != 0 {
+		t.Fatalf("second recvmsg = %q with %v and flags %#x, want cd with 2", data, fds, flags)
+	}
+
+	// The received ends are the pipe.
+	sendTest(t, p, mem, fds[1], "hi")
+	if _, got := recvTest(p, mem, fds[0]); got != "hi" {
+		t.Fatalf("pipe read %q, want hi", got)
+	}
+}
+
+// TestUnixSocketRightsDropped checks the files a receiver does not take are
+// released: by a plain read, beyond a short control buffer with MSG_CTRUNC,
+// and in flight when the receiving end closes.
+func TestUnixSocketRightsDropped(t *testing.T) {
+	// A plain read drops the pipe's write end, so the pipe ends.
+	p, mem := fsTestProcess()
+	a, b := pairTest(t, p, mem)
+	r, w := pipeTest(t, p, mem)
+	sendRightsTest(t, p, mem, a, "x", w)
+	_ = p.sysClose(w)
+	if _, got := recvTest(p, mem, b); got != "x" {
+		t.Fatalf("read %q, want x", got)
+	}
+	if res, _ := recvTest(p, mem, r); res != 0 {
+		t.Fatalf("pipe read after a dropped write end = %#x, want end of file", res)
+	}
+	_ = p.sysClose(r)
+
+	// A control buffer with room for one of two keeps the first.
+	r, w = pipeTest(t, p, mem)
+	sendRightsTest(t, p, mem, a, "y", w, r)
+	_ = p.sysClose(w)
+	_ = p.sysClose(r)
+	data, fds, flags := recvRightsTest(t, p, mem, b, cmsghdrSize+4)
+	if data != "y" || len(fds) != 1 || flags != guestMsgCtrunc {
+		t.Fatalf("short recvmsg = %q with %v and flags %#x, want y with 1 and MSG_CTRUNC", data, fds, flags)
+	}
+	if res := p.sysWrite(context.Background(), fds[0], sockTestBuf, 1); res != negErrno(EPIPE) {
+		t.Fatalf("write to the pipe without its read end = %#x, want EPIPE", res)
+	}
+	_ = p.sysClose(fds[0])
+
+	// A send of no bytes drops its files.
+	r, w = pipeTest(t, p, mem)
+	sendRightsTest(t, p, mem, a, "", w)
+	_ = p.sysClose(w)
+	if res, _ := recvTest(p, mem, r); res != 0 {
+		t.Fatalf("pipe read after an empty send of its write end = %#x, want end of file", res)
+	}
+	_ = p.sysClose(r)
+
+	// Closing the receiving end releases the files in flight.
+	r, w = pipeTest(t, p, mem)
+	sendRightsTest(t, p, mem, a, "z", w)
+	_ = p.sysClose(w)
+	_ = p.sysClose(b)
+	if res, _ := recvTest(p, mem, r); res != 0 {
+		t.Fatalf("pipe read after its write end closed in flight = %#x, want end of file", res)
+	}
+}
+
+// TestUnixSocketRightsErrors checks a send rejects control messages other
+// than SCM_RIGHTS and unknown descriptors without sending.
+func TestUnixSocketRightsErrors(t *testing.T) {
+	// Build a control message of another type.
+	p, mem := fsTestProcess()
+	a, _ := pairTest(t, p, mem)
+	control := binary.LittleEndian.AppendUint32(nil, cmsghdrSize+4)
+	control = binary.LittleEndian.AppendUint32(control, guestSolSocket)
+	control = binary.LittleEndian.AppendUint32(control, guestScmRights+1)
+	control = binary.LittleEndian.AppendUint32(control, a)
+	mem.Write(rightsTestControl, control)
+	writeTestMsghdr(mem, 1, uint32(len(control)))
+
+	// Send it.
+	if res := p.sysSendmsg(context.Background(), a, rightsTestMsg, 0); res != negErrno(EINVAL) {
+		t.Fatalf("sendmsg with SCM_CREDENTIALS = %#x, want EINVAL", res)
+	}
+
+	// Send an unknown descriptor.
+	binary.LittleEndian.PutUint32(control[8:], guestScmRights)
+	binary.LittleEndian.PutUint32(control[12:], 99)
+	mem.Write(rightsTestControl, control)
+	if res := p.sysSendmsg(context.Background(), a, rightsTestMsg, 0); res != negErrno(EBADF) {
+		t.Fatalf("sendmsg of an unknown descriptor = %#x, want EBADF", res)
 	}
 }

@@ -97,6 +97,9 @@ const (
 	// ENOTSOCK reports a socket call on a descriptor that is not a socket.
 	ENOTSOCK = 88
 
+	// EMSGSIZE reports a message call with more iovecs than the kernel takes.
+	EMSGSIZE = 90
+
 	// EPROTONOSUPPORT reports a socket type or protocol the kernel lacks.
 	EPROTONOSUPPORT = 93
 

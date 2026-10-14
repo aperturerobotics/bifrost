@@ -39,37 +39,50 @@ func (p *Process) sysRead(ctx context.Context, fd, bufPtr, count uint32) uint64 
 // that is not at end of file returns EINTR when a signal interrupted it, or
 // EAGAIN when the file is nonblocking.
 func (p *Process) readFile(ctx context.Context, of *OpenFile, count int) ([]byte, uint64) {
-	// Read a pipe, a connected socket, a pty master or a terminal, which
-	// wait for data, or a device or regular file.
-	buf := make([]byte, count)
-	var n int
-	var eof bool
 	switch {
 	case of.rx != nil:
-		n, eof = of.rx.read(of.ioContext(ctx), buf)
+		// Read a pipe, a connected socket or a pty master. A read drops the
+		// files sent with the data, as on Linux.
+		data, files, errno := p.readPipe(ctx, of, count)
+		unrefFiles(files)
+		return data, errno
 	case of.tty != nil:
-		var err error
-		n, err = of.tty.in.read(of.ioContext(ctx), buf)
-		eof = err == io.EOF
+		// Read a terminal, which waits for input.
+		buf := make([]byte, count)
+		n, err := of.tty.in.read(of.ioContext(ctx), buf)
+		return buf[:n], readStatus(ctx, of, n, err == io.EOF)
 	case of.sock != nil:
 		return nil, negErrno(ENOTCONN)
 	case of.node == nil:
 		return nil, negErrno(EBADF)
-	default:
-		return p.readVFS(of, count)
 	}
+	return p.readVFS(of, count)
+}
 
-	// Report data or end of file. A pty master reads its slave's end as EIO,
-	// as Linux does.
+// readPipe reads up to count bytes from the pipe of a pipe, connected socket
+// or pty master, waiting for data unless the file is nonblocking. It returns
+// the files sent with the first byte read, whose references pass to the
+// caller.
+func (p *Process) readPipe(ctx context.Context, of *OpenFile, count int) ([]byte, []*OpenFile, uint64) {
+	buf := make([]byte, count)
+	n, files, eof := of.rx.read(of.ioContext(ctx), buf)
+	return buf[:n], files, readStatus(ctx, of, n, eof)
+}
+
+// readStatus returns the result of a read of a pipe, socket or terminal that
+// took n bytes: success for data or end of file, EIO at the end of a pty
+// master's slave, as Linux reports, and EINTR or EAGAIN for a read that took
+// nothing.
+func readStatus(ctx context.Context, of *OpenFile, n int, eof bool) uint64 {
 	switch {
 	case eof && n == 0 && of.ptm != nil:
-		return nil, negErrno(EIO)
+		return negErrno(EIO)
 	case n != 0 || eof:
-		return buf[:n], 0
+		return 0
 	case interrupted(ctx):
-		return nil, negErrno(EINTR)
+		return negErrno(EINTR)
 	}
-	return nil, negErrno(EAGAIN)
+	return negErrno(EAGAIN)
 }
 
 // readVFS reads from a device or regular file at the descriptor's offset.
@@ -115,7 +128,7 @@ func (p *Process) writeOutBytes(ctx context.Context, fd uint32, buf []byte) uint
 	case !ok:
 		return negErrno(EBADF)
 	case of.tx != nil:
-		return p.writePipe(ctx, of, buf)
+		return p.writePipe(ctx, of, buf, nil, false)
 	case of.ptm != nil:
 		return of.ptm.write(buf)
 	case of.tty != nil:
@@ -128,17 +141,25 @@ func (p *Process) writeOutBytes(ctx context.Context, fd uint32, buf []byte) uint
 	return negErrno(EBADF)
 }
 
-// writePipe writes buf to a pipe or connected socket, waiting while it is
-// full. A caught signal interrupts the wait, and a nonblocking file takes
-// only what fits. A write with no reader raises SIGPIPE and fails with EPIPE.
-func (p *Process) writePipe(ctx context.Context, of *OpenFile, buf []byte) uint64 {
+// writePipe writes buf to a pipe or connected socket with files attached to
+// its first byte, waiting while it is full. It takes over the caller's
+// reference to each file, and drops them when no byte is written. A caught
+// signal interrupts the wait, and a nonblocking file takes only what fits. A
+// write with no reader fails with EPIPE, and raises SIGPIPE unless nosignal
+// is set.
+func (p *Process) writePipe(ctx context.Context, of *OpenFile, buf []byte, files []*OpenFile, nosignal bool) uint64 {
 	// Write, waiting while the pipe is full.
 	ctx, release := p.interruptible(ctx)
 	defer release()
-	n, ok := of.tx.write(of.ioContext(ctx), buf)
+	n, ok := of.tx.write(of.ioContext(ctx), buf, files)
+	if n == 0 {
+		unrefFiles(files)
+	}
 
 	// Report a closed reader or a write that took nothing.
 	switch {
+	case !ok && nosignal:
+		return negErrno(EPIPE)
 	case !ok:
 		p.deliverSignal(SIGPIPE)
 		return negErrno(EPIPE)

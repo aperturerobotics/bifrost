@@ -436,9 +436,7 @@ func (p *Process) wasiSockRecv(ctx context.Context, mem engine.Memory, fd, iovsP
 	}
 
 	// Read the data.
-	errno := wasiTransfer(mem, iovsPtr, iovsLen, nPtr, func(base, length uint32) (uint32, uint32) {
-		return wasiResult(p.sysRead(ctx, fd, base, length))
-	})
+	errno := wasiTransfer(mem, iovsPtr, iovsLen, nPtr, p.wasiReadMove(ctx, fd))
 	if errno == wasiErrnoSuccess && !mem.Write(flagsPtr, []byte{0, 0}) {
 		return wasiErrnoFault
 	}

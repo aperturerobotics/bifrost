@@ -162,7 +162,15 @@ const (
 	guestSockNonblock = 0x4000
 	guestSockCloexec  = 0x2000
 	guestMsgWaitall   = 0x2
+	guestMsgCtrunc    = 0x8
 	guestMsgDontwait  = 0x40
+	guestMsgNosignal  = 0x4000
+	// guestMsgCmsgCloexec is MSG_CMSG_CLOEXEC.
+	guestMsgCmsgCloexec = 0x40000000
+	// guestSolSocket is SOL_SOCKET, which wasi-libc numbers apart from
+	// Linux.
+	guestSolSocket = 0x7fffffff
+	guestScmRights = 1
 )
 
 // flock operations (asm-generic).
