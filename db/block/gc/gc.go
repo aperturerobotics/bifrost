@@ -66,24 +66,37 @@ func NewCollector(
 	}
 }
 
+// collectChunk bounds the candidates a budgeted collection sweeps between
+// checks of its budget.
+const collectChunk = 4096
+
 // Collect sweeps all unreferenced nodes and removes their physical blocks.
 func (c *Collector) Collect(ctx context.Context) (*Stats, error) {
-	return c.collect(ctx, true)
+	return c.collect(ctx, true, 0)
+}
+
+// CollectFor sweeps unreferenced nodes and removes their physical blocks
+// until none remain or budget has elapsed, and sets Stats.More when it
+// stopped for the budget. It sweeps at least one chunk of candidates, so
+// repeated calls progress however long listing the candidates takes.
+func (c *Collector) CollectFor(ctx context.Context, budget time.Duration) (*Stats, error) {
+	return c.collect(ctx, true, budget)
 }
 
 // CollectGraphOnly sweeps unreferenced nodes from the graph without authorizing
 // deletion from the physical store.
 func (c *Collector) CollectGraphOnly(ctx context.Context) (*Stats, error) {
-	return c.collect(ctx, false)
+	return c.collect(ctx, false, 0)
 }
 
 // collect loops until no unreferenced nodes remain, since removing a node may
-// orphan its children.
-func (c *Collector) collect(ctx context.Context, removeBlocks bool) (*Stats, error) {
+// orphan its children, or until a nonzero budget has elapsed.
+func (c *Collector) collect(ctx context.Context, removeBlocks bool, budget time.Duration) (*Stats, error) {
 	// Start timing and accumulate cycle statistics across cascaded sweeps.
 	start := time.Now()
 	stats := &Stats{}
 	defer func() { stats.Duration = time.Since(start) }()
+	spent := func() bool { return budget != 0 && time.Since(start) >= budget }
 
 	// Scan unreferenced nodes until an iteration makes no progress.
 	for {
@@ -102,6 +115,7 @@ func (c *Collector) collect(ctx context.Context, removeBlocks bool) (*Stats, err
 			return stats, errors.Wrap(err, "get unreferenced nodes")
 		}
 		stats.UnreferencedNodeCount += len(nodes)
+		stats.Candidates = len(nodes)
 		if len(nodes) == 0 {
 			break
 		}
@@ -110,12 +124,31 @@ func (c *Collector) collect(ctx context.Context, removeBlocks bool) (*Stats, err
 		// publication. Use the store's physical atomic sweep where available.
 		// Graph-only and callback collectors keep their established contract.
 		if atomic, ok := c.store.(AtomicSweepStore); ok && removeBlocks && c.onSwept == nil {
-			swept, err := c.sweepAtomic(ctx, atomic, nodes, stats)
-			if err != nil {
-				return stats, err
+			// Sweep the candidates in chunks, stopping at the budget.
+			candidates := slices.DeleteFunc(slices.Clone(nodes), IsPermanentRoot)
+			var swept int
+			for len(candidates) != 0 {
+				chunk := candidates[:min(len(candidates), collectChunk)]
+				candidates = candidates[len(chunk):]
+				n, err := c.sweepAtomic(ctx, atomic, chunk, stats)
+				swept += n
+				if err != nil {
+					return stats, err
+				}
+				if len(candidates) != 0 && spent() {
+					stats.More = true
+					return stats, nil
+				}
 			}
+
+			// Stop when the pass removed nothing, or report the cascade
+			// left for the next call when the budget is spent.
 			if swept == 0 {
 				break
+			}
+			if spent() {
+				stats.More = true
+				return stats, nil
 			}
 			continue
 		}
@@ -200,6 +233,10 @@ func (c *Collector) collect(ctx context.Context, removeBlocks bool) (*Stats, err
 
 			swept++
 			stats.NodesSwept++
+			if spent() {
+				stats.More = true
+				return stats, nil
+			}
 		}
 
 		// Stop when only permanent roots or otherwise unsweepable nodes remain.
@@ -213,15 +250,9 @@ func (c *Collector) collect(ctx context.Context, removeBlocks bool) (*Stats, err
 	return stats, nil
 }
 
-// sweepAtomic sweeps one candidate snapshot through the store's atomic sweep
-// and returns the number of nodes removed.
-func (c *Collector) sweepAtomic(ctx context.Context, atomic AtomicSweepStore, nodes []string, stats *Stats) (int, error) {
-	// Leave permanent roots out of the candidates.
-	candidates := slices.DeleteFunc(slices.Clone(nodes), IsPermanentRoot)
-	if len(candidates) == 0 {
-		return 0, nil
-	}
-
+// sweepAtomic sweeps candidates through the store's atomic sweep and returns
+// the number of nodes removed.
+func (c *Collector) sweepAtomic(ctx context.Context, atomic AtomicSweepStore, candidates []string, stats *Stats) (int, error) {
 	// Sweep the candidates and account for the nodes removed, also on error.
 	start := time.Now()
 	removed, err := atomic.SweepUnreferenced(ctx, c.refGraph, candidates)

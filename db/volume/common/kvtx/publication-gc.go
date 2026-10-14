@@ -206,22 +206,31 @@ func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphO
 }
 
 // sweepChunk removes the chunk's candidates the orphan marker still owns alone,
-// with their edges and blocks, and returns them.
+// with their edges and blocks, and returns them. It drops the marker of each
+// candidate another owner took since it was marked: the marker would
+// otherwise list the node as a candidate in every later sweep, and the graph
+// marks it again when it loses its last owner.
 func sweepChunk(ctx context.Context, blocks block.StoreOps, rg *block_gc.RefGraph, chunk []string) ([]string, error) {
-	// Collect the candidates the marker still owns alone, with their edges.
-	var swept []string
+	// Collect the candidates the marker still owns alone, with their edges,
+	// and the candidates another owner took.
+	var swept, taken []string
 	var removes []block_gc.RefEdge
+	released := make(map[string]struct{})
 	seen := make(map[string]struct{}, len(chunk))
 	for _, node := range chunk {
 		if _, dup := seen[node]; dup {
 			continue
 		}
 		seen[node] = struct{}{}
-		orphan, err := isMarkedOrphan(ctx, rg, node)
+		marked, owned, err := markerState(ctx, rg, node)
 		if err != nil {
 			return nil, err
 		}
-		if !orphan {
+		if !marked {
+			continue
+		}
+		if owned {
+			taken = append(taken, node)
 			continue
 		}
 		targets, err := rg.GetOutgoingRefs(ctx, node)
@@ -230,11 +239,21 @@ func sweepChunk(ctx context.Context, blocks block.StoreOps, rg *block_gc.RefGrap
 		}
 		for _, target := range targets {
 			removes = append(removes, block_gc.RefEdge{Subject: node, Object: target})
+			released[target] = struct{}{}
 		}
 		removes = append(removes, block_gc.RefEdge{Subject: block_gc.NodeUnreferenced, Object: node})
 		swept = append(swept, node)
 	}
-	if len(swept) == 0 {
+
+	// Drop the stale markers. A node a swept node releases keeps its marker:
+	// removing it would also stop the batch from marking the node when that
+	// release takes its last owner.
+	for _, node := range taken {
+		if _, ok := released[node]; !ok {
+			removes = append(removes, block_gc.RefEdge{Subject: block_gc.NodeUnreferenced, Object: node})
+		}
+	}
+	if len(removes) == 0 {
 		return nil, nil
 	}
 
@@ -255,28 +274,27 @@ func sweepChunk(ctx context.Context, blocks block.StoreOps, rg *block_gc.RefGrap
 	return swept, nil
 }
 
-// isMarkedOrphan reports whether the unreferenced marker is the only current
-// owner of node.
-func isMarkedOrphan(ctx context.Context, rg *block_gc.RefGraph, node string) (bool, error) {
+// markerState reports whether the unreferenced marker holds node and whether
+// another owner does. A permanent root reports neither, so it is never swept.
+func markerState(ctx context.Context, rg *block_gc.RefGraph, node string) (marked, owned bool, err error) {
 	// A permanent root is never swept.
 	if block_gc.IsPermanentRoot(node) {
-		return false, nil
+		return false, false, nil
 	}
 
-	// Any other owner rescued the node after the collector took its snapshot.
-	// Without the marker it was already swept or never a candidate.
+	// Classify the current owners.
 	incoming, err := rg.GetIncomingRefs(ctx, node)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
-	marked := false
 	for _, owner := range incoming {
-		if owner != block_gc.NodeUnreferenced {
-			return false, nil
+		if owner == block_gc.NodeUnreferenced {
+			marked = true
+		} else {
+			owned = true
 		}
-		marked = true
 	}
-	return marked, nil
+	return marked, owned, nil
 }
 
 var (

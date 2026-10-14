@@ -78,10 +78,12 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 	collector := block_gc.NewCollector(rg, vol, nil)
 	c.le.WithField("interval", interval.String()).Debug("gc sweep routine started")
 
-	// Collect unreferenced volume nodes on each maintenance deadline.
+	// Collect unreferenced volume nodes on each maintenance deadline, for at
+	// most one interval at a time. A collection that stops with candidates
+	// left continues at once.
 	timer := time.NewTimer(interval)
 	defer timer.Stop()
-	for ; ; timer.Reset(interval) {
+	for {
 		// Wait for the next collection deadline or volume cancellation.
 		select {
 		case <-ctx.Done():
@@ -97,21 +99,30 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 		}
 
 		// Collect unreferenced nodes, retrying failures at the next deadline.
-		stats, err := collector.Collect(ctx)
+		stats, err := collector.CollectFor(ctx, interval)
 		if err != nil {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
 			c.le.WithError(err).Warn("gc sweep failed")
+			timer.Reset(interval)
 			continue
 		}
 
-		// Report the reclaimed nodes and collection duration.
-		if stats.NodesSwept > 0 {
+		// Report each collection that found candidates, and continue a
+		// collection the budget stopped.
+		if stats.UnreferencedNodeCount != 0 {
 			c.le.
 				WithField("swept", stats.NodesSwept).
+				WithField("candidates", stats.Candidates).
+				WithField("more", stats.More).
 				WithField("duration", stats.Duration.String()).
 				Info("gc sweep completed")
+		}
+		if stats.More {
+			timer.Reset(0)
+		} else {
+			timer.Reset(interval)
 		}
 	}
 }

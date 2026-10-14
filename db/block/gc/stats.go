@@ -12,6 +12,10 @@ type Stats struct {
 	NodesSwept int
 	// UnreferencedNodeCount is the number of unreferenced node entries read.
 	UnreferencedNodeCount int
+	// Candidates is the number of unreferenced nodes the last pass listed.
+	Candidates int
+	// More reports that a budgeted collection stopped with candidates left.
+	More bool
 	// RemoveNodeRefsCount is the number of nodes whose outgoing refs were removed.
 	RemoveNodeRefsCount int
 	// RemoveUnreferencedEdgeCount is the number of unreferenced marker edges removed.

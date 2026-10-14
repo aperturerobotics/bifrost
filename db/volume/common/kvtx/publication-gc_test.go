@@ -56,9 +56,12 @@ func TestPublicationSweepRechecksRescuedCandidate(t *testing.T) {
 
 // TestPublicationSweepBatchMarksReleasedChildren checks that one sweep batch
 // marks each child it leaves without an owner, leaves a child another owner
-// keeps unmarked, and leaves no marker on the nodes it removes.
+// keeps unmarked, leaves no marker on the nodes it removes, and drops the
+// stale marker of a candidate another owner took.
 func TestPublicationSweepBatchMarksReleasedChildren(t *testing.T) {
 	// Mark two orphans: one shares a child with a kept node, both own another.
+	// The child also holds a marker from before the orphans took it, and a
+	// kept node took the marked node taken.
 	v, _ := newPublicationTestVolume(t)
 	ctx := t.Context()
 	rg := v.GetRefGraph()
@@ -71,23 +74,27 @@ func TestPublicationSweepBatchMarksReleasedChildren(t *testing.T) {
 		{Subject: "o1", Object: "child"},
 		{Subject: "o1", Object: "shared"},
 		{Subject: "o2", Object: "child"},
+		{Subject: unref, Object: "child"},
+		{Subject: unref, Object: "taken"},
+		{Subject: "keep", Object: "taken"},
 	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Sweep both in one batch, with a duplicate candidate.
-	removed, err := v.SweepUnreferenced(ctx, rg, []string{"o1", "o2", "o1"})
+	removed, err := v.SweepUnreferenced(ctx, rg, []string{"o1", "child", "taken", "o2", "o1"})
 	if err != nil || !slices.Equal(removed, []string{"o1", "o2"}) {
 		t.Fatalf("sweep: removed=%v err=%v", removed, err)
 	}
 
-	// Only the released child gains a marker.
+	// Only the released child keeps a marker.
 	for node, want := range map[string][]string{
 		"o1":     nil,
 		"o2":     nil,
 		"child":  {unref},
 		"shared": {"keep"},
+		"taken":  {"keep"},
 	} {
 		got, err := rg.GetIncomingRefs(ctx, node)
 		if err != nil {
@@ -96,6 +103,35 @@ func TestPublicationSweepBatchMarksReleasedChildren(t *testing.T) {
 		if !slices.Equal(got, want) {
 			t.Errorf("%s owners = %v, want %v", node, got, want)
 		}
+	}
+}
+
+// TestPublicationCollectForStopsAtBudget checks that a budgeted collection
+// reports the cascade it leaves and that the next call sweeps it.
+func TestPublicationCollectForStopsAtBudget(t *testing.T) {
+	// Mark an orphan that owns a child alone.
+	v, _ := newPublicationTestVolume(t)
+	ctx := t.Context()
+	rg := v.GetRefGraph()
+	err := rg.ApplyRefBatch(ctx, []block_gc.RefEdge{
+		{Subject: block_gc.NodeUnreferenced, Object: "parent"},
+		{Subject: "parent", Object: "child"},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A spent budget still sweeps the listed candidates, then stops.
+	collector := block_gc.NewCollector(rg, v, nil)
+	stats, err := collector.CollectFor(ctx, time.Nanosecond)
+	if err != nil || stats.NodesSwept != 1 || !stats.More {
+		t.Fatalf("first collection stats=%+v err=%v", stats, err)
+	}
+
+	// The next collection sweeps the released child and finishes.
+	stats, err = collector.CollectFor(ctx, time.Minute)
+	if err != nil || stats.NodesSwept != 1 || stats.More {
+		t.Fatalf("second collection stats=%+v err=%v", stats, err)
 	}
 }
 
