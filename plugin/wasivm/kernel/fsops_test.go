@@ -18,7 +18,7 @@ func fsTestProcess() (*Process, *memMemory) {
 // descriptor and the node.
 func openTestFile(p *Process, name string, content []byte) (uint32, *VNode) {
 	node := p.kernel.vfs.addFile("/tmp/"+name, content, 0o644)
-	return p.installFD(&OpenFile{node: node, path: "/tmp/" + name}), node
+	return p.installFD(&OpenFile{node: node, path: "/tmp/" + name}, false), node
 }
 
 // TestSendfileAdvancesOffset checks sendfile without an offset pointer copies

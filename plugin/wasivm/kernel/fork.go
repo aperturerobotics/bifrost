@@ -202,8 +202,9 @@ func parseInterpLine(data []byte) (string, string, bool) {
 }
 
 // execChild registers the process that runs the program at exe under p's PID
-// as p.selfExecProc. It keeps p's process state, such as its descriptors,
-// directory and credentials, and takes env when it is set.
+// as p.selfExecProc. It keeps p's process state, such as its descriptors less
+// the close-on-exec ones, directory and credentials, and takes env when it is
+// set.
 func (p *Process) execChild(args []string, env map[string]string, exe string) {
 	// Keep the process state with the new arguments and environment.
 	child := newProcess(p.kernel, p.pid, args)
@@ -211,6 +212,13 @@ func (p *Process) execChild(args []string, env map[string]string, exe string) {
 	child.args = args
 	child.exe = exe
 	child.started = p.started
+
+	// Drop the close-on-exec descriptors and hold the rest. p's exit
+	// releases its own references.
+	for fd := range child.cloexec {
+		delete(child.fds, fd)
+	}
+	clear(child.cloexec)
 	for _, of := range child.fds {
 		of.ref()
 	}

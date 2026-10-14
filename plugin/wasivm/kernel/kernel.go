@@ -386,6 +386,7 @@ func (k *Kernel) exitProcess(p *Process) {
 		of.unref()
 		delete(p.fds, fd)
 	}
+	clear(p.cloexec)
 	p.cancel()
 	close(p.exitCh)
 

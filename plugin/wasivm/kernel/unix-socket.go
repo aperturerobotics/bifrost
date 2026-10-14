@@ -153,33 +153,39 @@ func (p *Process) socketFile(fd uint32) (*OpenFile, uint64) {
 }
 
 // socketStatus returns the kernel status flags of a socket type, which must
-// be a stream socket of the default protocol in the Unix family.
-func socketStatus(domain, typ, protocol uint32) (uint32, uint64) {
+// be a stream socket of the default protocol in the Unix family, and whether
+// its descriptors are close-on-exec.
+func socketStatus(domain, typ, protocol uint32) (uint32, bool, uint64) {
+	// Check the family, type and protocol.
 	switch {
 	case domain != guestAFUNIX:
-		return 0, negErrno(EAFNOSUPPORT)
+		return 0, false, negErrno(EAFNOSUPPORT)
 	case typ&^(guestSockNonblock|guestSockCloexec) != guestSockStream || protocol != 0:
-		return 0, negErrno(EPROTONOSUPPORT)
-	case typ&guestSockNonblock != 0:
-		return oNONBLOCK, 0
+		return 0, false, negErrno(EPROTONOSUPPORT)
 	}
-	return 0, 0
+
+	// Read the flags.
+	var status uint32
+	if typ&guestSockNonblock != 0 {
+		status = oNONBLOCK
+	}
+	return status, typ&guestSockCloexec != 0, 0
 }
 
 // sysSocket creates an unconnected Unix stream socket.
 func (p *Process) sysSocket(domain, typ, protocol uint32) uint64 {
-	status, errno := socketStatus(domain, typ, protocol)
+	status, cloexec, errno := socketStatus(domain, typ, protocol)
 	if errno != 0 {
 		return errno
 	}
-	return uint64(p.installFD(p.kernel.newSocketFile(status)))
+	return uint64(p.installFD(p.kernel.newSocketFile(status), cloexec))
 }
 
 // sysSocketpair creates two connected Unix stream sockets and writes their
 // descriptors to svPtr.
 func (p *Process) sysSocketpair(domain, typ, protocol, svPtr uint32) uint64 {
 	// Connect two sockets.
-	status, errno := socketStatus(domain, typ, protocol)
+	status, cloexec, errno := socketStatus(domain, typ, protocol)
 	if errno != 0 {
 		return errno
 	}
@@ -187,7 +193,7 @@ func (p *Process) sysSocketpair(domain, typ, protocol, svPtr uint32) uint64 {
 	p.kernel.connectPair(a, b)
 
 	// Install them and return their numbers.
-	afd, bfd := p.installFD(a), p.installFD(b)
+	afd, bfd := p.installFD(a, cloexec), p.installFD(b, cloexec)
 	mem := p.inst.Memory()
 	if !mem.WriteUint32Le(svPtr, afd) || !mem.WriteUint32Le(svPtr+4, bfd) {
 		_ = p.sysClose(afd)
@@ -327,7 +333,8 @@ func (p *Process) sysConnect(fd, addrPtr, addrLen uint32) uint64 {
 
 // sysAccept takes the oldest connection waiting on a listening socket and
 // returns its descriptor, with the kernel status flags in status. It waits
-// for a connection unless the socket is nonblocking.
+// for a connection unless the socket is nonblocking. WASI's sock_accept
+// carries no close-on-exec flag, so the descriptor never has one.
 func (p *Process) sysAccept(ctx context.Context, fd, status uint32) uint64 {
 	// Find the listener.
 	of, errno := p.socketFile(fd)
@@ -356,7 +363,7 @@ func (p *Process) sysAccept(ctx context.Context, fd, status uint32) uint64 {
 	conn := l.queue[0]
 	l.queue = l.queue[1:]
 	conn.flags |= status
-	return uint64(p.installFD(conn))
+	return uint64(p.installFD(conn, false))
 }
 
 // sysSockname writes a socket's address, or its peer's when peer is set, to
@@ -411,8 +418,7 @@ func (p *Process) sysSetsockopt(fd uint32) uint64 {
 // msgContext returns the context of a send or receive with the guest's
 // message flags. MSG_DONTWAIT makes it nonblocking. MSG_WAITALL is accepted
 // and a short read returns what arrived; MSG_NOSIGNAL is the caller's, and
-// MSG_CMSG_CLOEXEC needs nothing, since the kernel has no close-on-exec flag.
-// Peeking is unsupported.
+// MSG_CMSG_CLOEXEC is the receiver's. Peeking is unsupported.
 func msgContext(ctx context.Context, flags uint32) (context.Context, uint64) {
 	switch {
 	case flags&^(guestMsgDontwait|guestMsgWaitall|guestMsgNosignal|guestMsgCmsgCloexec) != 0:
@@ -568,7 +574,7 @@ func (p *Process) sysRecvmsg(ctx context.Context, fd, msgPtr, flags uint32) uint
 
 	// Install the files, then report no address, the control length and
 	// the flags.
-	controlLen, msgFlags, errno := p.writeRights(files, hdr.control, hdr.controlLen)
+	controlLen, msgFlags, errno := p.writeRights(files, hdr.control, hdr.controlLen, flags&guestMsgCmsgCloexec != 0)
 	if errno != 0 {
 		return errno
 	}
@@ -636,11 +642,12 @@ func (p *Process) readRights(ptr, length uint32) ([]*OpenFile, uint64) {
 	return files, 0
 }
 
-// writeRights installs files as descriptors and writes them as an SCM_RIGHTS
-// message to the control buffer of capacity bytes at ptr. It returns the
-// control length and the message flags: MSG_CTRUNC when files did not fit,
-// which it releases. It takes over the references of files.
-func (p *Process) writeRights(files []*OpenFile, ptr, capacity uint32) (uint32, uint32, uint64) {
+// writeRights installs files as descriptors, close-on-exec when cloexec is
+// set, and writes them as an SCM_RIGHTS message to the control buffer of
+// capacity bytes at ptr. It returns the control length and the message flags:
+// MSG_CTRUNC when files did not fit, which it releases. It takes over the
+// references of files.
+func (p *Process) writeRights(files []*OpenFile, ptr, capacity uint32, cloexec bool) (uint32, uint32, uint64) {
 	// Fit what the buffer holds and release the rest.
 	if len(files) == 0 {
 		return 0, 0, 0
@@ -665,7 +672,7 @@ func (p *Process) writeRights(files []*OpenFile, ptr, capacity uint32) (uint32, 
 	msg = binary.LittleEndian.AppendUint32(msg, guestScmRights)
 	fds := make([]uint32, 0, fit)
 	for _, of := range files[:fit] {
-		fd := p.installFD(of)
+		fd := p.installFD(of, cloexec)
 		fds = append(fds, fd)
 		msg = binary.LittleEndian.AppendUint32(msg, fd)
 	}

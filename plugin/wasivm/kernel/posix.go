@@ -307,7 +307,8 @@ func posixFunctions() map[string]hostFunc {
 		// Pseudo-terminals. The C library's ptsname reads the index with
 		// TIOCGPTN.
 		"posix_openpt": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
-			return p.posixResult(ctx, p.openPtmx(oRDWR|kernelStatusFlags(uint32(a[0]))))
+			flags := uint32(a[0])
+			return p.posixResult(ctx, p.openPtmx(oRDWR|kernelStatusFlags(flags), flags&guestOCLOEXEC != 0))
 		}},
 		"grantpt": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			_, errno := p.fdMaster(uint32(a[0]))
@@ -348,17 +349,22 @@ func posixFunctions() map[string]hostFunc {
 			return p.posixResult(ctx, p.sysFcntl(uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
 		"dup3": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
-			// dup3 refuses to duplicate a descriptor onto itself.
-			if a[0] == a[1] {
+			// dup3 refuses to duplicate a descriptor onto itself and takes
+			// only O_CLOEXEC.
+			flags := uint32(a[2])
+			if a[0] == a[1] || flags&^guestOCLOEXEC != 0 {
 				return p.posixResult(ctx, negErrno(EINVAL))
 			}
-			return p.posixResult(ctx, p.sysDup2(uint32(a[0]), uint32(a[1])))
+			ret := p.sysDup2(uint32(a[0]), uint32(a[1]))
+			if ret == a[1] {
+				p.setCloexec(uint32(ret), flags != 0)
+			}
+			return p.posixResult(ctx, ret)
 		}},
 		"pipe": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysPipe2(uint32(a[0]), 0))
 		}},
 		"pipe2": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
-			// The kernel has no close-on-exec, so only O_NONBLOCK applies.
 			return p.posixResult(ctx, p.sysPipe2(uint32(a[0]), uint32(a[1])))
 		}},
 

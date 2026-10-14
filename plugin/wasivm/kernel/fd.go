@@ -3,9 +3,14 @@ package kernel
 import "os"
 
 // openResolved opens an already-resolved VFS path and installs it in the
-// process fd table. POSIX openat and WASI path_open share this owner path so
-// descriptors are readable, seekable, and closeable through either ABI.
+// process fd table, close-on-exec with O_CLOEXEC. POSIX openat and WASI
+// path_open share this owner path so descriptors are readable, seekable, and
+// closeable through either ABI.
 func (p *Process) openResolved(resolved string, flags, mode uint32) uint64 {
+	// Take O_CLOEXEC, which marks the descriptor rather than the file.
+	cloexec := flags&oCLOEXEC != 0
+	flags &^= oCLOEXEC
+
 	// Find the file, creating it when asked.
 	node := p.kernel.vfs.lookup(resolved)
 	switch {
@@ -32,7 +37,7 @@ func (p *Process) openResolved(resolved string, flags, mode uint32) uint64 {
 	of := &OpenFile{node: node, path: resolved, flags: flags}
 	if node.mode&sIFMT == sIFCHR {
 		if node.rdev == devPtmx {
-			return p.openPtmx(flags)
+			return p.openPtmx(flags, cloexec)
 		}
 		if errno := p.openTerminal(of); errno != 0 {
 			return errno
@@ -48,7 +53,7 @@ func (p *Process) openResolved(resolved string, flags, mode uint32) uint64 {
 		p.kernel.vfs.refreshHost(node)
 		of.offset = node.size
 	}
-	return uint64(p.installFD(of))
+	return uint64(p.installFD(of, cloexec))
 }
 
 // openTerminal binds an open of /dev/tty, /dev/console or a pty slave to its
@@ -118,29 +123,43 @@ func (p *Process) sysClose(fd uint32) uint64 {
 	}
 	of.unref()
 	delete(p.fds, fd)
+	delete(p.cloexec, fd)
 	return 0
 }
 
-// installFD points the lowest unused descriptor at of and returns it.
-func (p *Process) installFD(of *OpenFile) uint32 {
+// installFD points the lowest unused descriptor at of, close-on-exec when
+// cloexec is set, and returns it.
+func (p *Process) installFD(of *OpenFile, cloexec bool) uint32 {
 	fd := p.allocFD()
 	p.setFD(fd, of)
+	p.setCloexec(fd, cloexec)
 	return fd
 }
 
-// setFD points descriptor fd at of, closing the file fd held before.
+// setFD points descriptor fd at of, closing the file fd held before. The
+// descriptor starts without close-on-exec.
 func (p *Process) setFD(fd uint32, of *OpenFile) {
 	of.ref()
 	if old, ok := p.fds[fd]; ok {
 		old.unref()
 	}
 	p.fds[fd] = of
+	delete(p.cloexec, fd)
 }
 
-// sysFcntl handles file control operations. The kernel has no close-on-exec
-// flag, so the descriptor flags read as zero. F_GETFL and F_SETFL take the
-// file status flags in the guest's values, and F_SETFL changes only the
-// append and nonblocking flags, as on Linux.
+// setCloexec sets or clears the close-on-exec flag of descriptor fd.
+func (p *Process) setCloexec(fd uint32, cloexec bool) {
+	if cloexec {
+		p.cloexec[fd] = struct{}{}
+	} else {
+		delete(p.cloexec, fd)
+	}
+}
+
+// sysFcntl handles file control operations. The descriptor flags hold only
+// FD_CLOEXEC. F_GETFL and F_SETFL take the file status flags in the guest's
+// values, and F_SETFL changes only the append and nonblocking flags, as on
+// Linux.
 func (p *Process) sysFcntl(fd, cmd, arg uint32) uint64 {
 	of, ok := p.fds[fd]
 	if !ok {
@@ -153,8 +172,15 @@ func (p *Process) sysFcntl(fd, cmd, arg uint32) uint64 {
 			newFD++
 		}
 		p.setFD(newFD, of)
+		p.setCloexec(newFD, cmd == fDUPFD_CLOEXEC)
 		return uint64(newFD)
-	case fGETFD, fSETFD:
+	case fGETFD:
+		if _, ok := p.cloexec[fd]; ok {
+			return fdCLOEXEC
+		}
+		return 0
+	case fSETFD:
+		p.setCloexec(fd, arg&fdCLOEXEC != 0)
 		return 0
 	case fGETFL:
 		return uint64(guestFileFlags(of.flags))
@@ -218,13 +244,16 @@ func (p *Process) sysDup(fd uint32) uint64 {
 	return uint64(newFD)
 }
 
-// sysDup2 duplicates a file descriptor to a specific number.
+// sysDup2 duplicates a file descriptor to a specific number. Duplicating a
+// descriptor onto itself changes nothing.
 func (p *Process) sysDup2(oldfd, newfd uint32) uint64 {
 	of, ok := p.fds[oldfd]
 	if !ok {
 		return negErrno(EBADF)
 	}
-	p.setFD(newfd, of)
+	if oldfd != newfd {
+		p.setFD(newfd, of)
+	}
 	return uint64(newfd)
 }
 
@@ -239,13 +268,14 @@ func (p *Process) fdTerminal(fd uint32) *tty {
 }
 
 // sysPipe2 creates a pipe and writes its read and write descriptors to
-// pipefdPtr. flags holds the guest's status flags for both ends.
+// pipefdPtr. flags holds the guest's status flags and O_CLOEXEC for both
+// ends.
 func (p *Process) sysPipe2(pipefdPtr, flags uint32) uint64 {
 	// Install both ends.
 	pipe := newBufferedPipe(p.kernel.vfs.allocIno())
-	status := kernelStatusFlags(flags)
-	rfd := p.installFD(&OpenFile{rx: pipe, flags: oRDONLY | status})
-	wfd := p.installFD(&OpenFile{tx: pipe, flags: oWRONLY | status})
+	status, cloexec := kernelStatusFlags(flags), flags&guestOCLOEXEC != 0
+	rfd := p.installFD(&OpenFile{rx: pipe, flags: oRDONLY | status}, cloexec)
+	wfd := p.installFD(&OpenFile{tx: pipe, flags: oWRONLY | status}, cloexec)
 
 	// Return their numbers.
 	mem := p.inst.Memory()

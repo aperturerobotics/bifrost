@@ -23,9 +23,11 @@ const (
 
 	wasiFdflagsAppend   = 1
 	wasiFdflagsNonblock = 4
-	// wasiFdflagsNoctty is the WasiVM libc's O_NOCTTY, which its open passes
-	// in a bit of the fdflags WASI leaves unused.
-	wasiFdflagsNoctty = 0x100
+	// wasiFdflagsNoctty and wasiFdflagsCloexec are the WasiVM libc's
+	// O_NOCTTY and O_CLOEXEC, which its open passes in bits of the fdflags
+	// WASI leaves unused.
+	wasiFdflagsNoctty  = 0x100
+	wasiFdflagsCloexec = guestOCLOEXEC
 
 	wasiRiflagsRecvPeek = 1
 
@@ -471,15 +473,17 @@ func (p *Process) wasiFDReadDir(mem engine.Memory, fd, bufPtr, bufLen uint32, co
 	return wasiErrnoSuccess
 }
 
-// wasiFDRenumber moves descriptor from to number to, closing the file to
-// held before.
+// wasiFDRenumber moves descriptor from, with its close-on-exec flag, to
+// number to, closing the file to held before.
 func (p *Process) wasiFDRenumber(from, to uint32) uint32 {
 	of, ok := p.fds[from]
 	if !ok {
 		return wasiErrnoBadf
 	}
 	if from != to {
+		_, cloexec := p.cloexec[from]
 		p.setFD(to, of)
+		p.setCloexec(to, cloexec)
 		_ = p.sysClose(from)
 	}
 	return wasiErrnoSuccess
@@ -594,6 +598,9 @@ func (p *Process) wasiPathOpen(mem engine.Memory, dirfd, pathPtr, pathLen, oflag
 	}
 	if fdflags&wasiFdflagsNoctty != 0 {
 		flags |= oNOCTTY
+	}
+	if fdflags&wasiFdflagsCloexec != 0 {
+		flags |= oCLOEXEC
 	}
 
 	// Open the file and report its descriptor.

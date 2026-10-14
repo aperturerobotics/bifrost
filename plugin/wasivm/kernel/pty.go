@@ -36,8 +36,9 @@ type pty struct {
 }
 
 // openPtmx creates a pseudo-terminal and opens its master with the open
-// flags. The slave appears at /dev/pts/N, locked until unlockpt.
-func (p *Process) openPtmx(flags uint32) uint64 {
+// flags, close-on-exec when cloexec is set. The slave appears at /dev/pts/N,
+// locked until unlockpt.
+func (p *Process) openPtmx(flags uint32, cloexec bool) uint64 {
 	// Take the lowest free index.
 	k := p.kernel
 	index := 0
@@ -60,7 +61,7 @@ func (p *Process) openPtmx(flags uint32) uint64 {
 	// Open the master, which reads the slave's output.
 	ptmx := k.vfs.lookup("/dev/ptmx")
 	of := &OpenFile{node: ptmx, path: "/dev/ptmx", flags: flags, ptm: pt, rx: pt.out}
-	return uint64(p.installFD(of))
+	return uint64(p.installFD(of, cloexec))
 }
 
 // openSlave records an open of the slave. It fails with EIO while the slave

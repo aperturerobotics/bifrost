@@ -158,6 +158,10 @@ const (
 	guestONONBLOCK = 0x4
 	guestORDONLY   = 0x04000000
 	guestOWRONLY   = 0x10000000
+	// guestOCLOEXEC is O_CLOEXEC, which wasi-libc defines as zero. The
+	// WasiVM headers give it a private bit of the WASI descriptor flags,
+	// which open passes to path_open.
+	guestOCLOEXEC = 0x200
 )
 
 // Socket constants as the guest's headers number them.

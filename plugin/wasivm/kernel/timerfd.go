@@ -44,7 +44,7 @@ func (p *Process) sysTimerfdCreate(clockID, flags uint32) uint64 {
 		flags:   oRDWR | status,
 		counter: timer.count,
 		timer:   timer,
-	}))
+	}, flags&guestTfdCloexec != 0))
 }
 
 // sysTimerfdSettime arms or disarms the timer of fd from the itimerspec at

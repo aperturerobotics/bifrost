@@ -31,7 +31,8 @@ func (p *Process) sysEpollCreate1(flags uint32) uint64 {
 	if flags&^guestEpollCloexec != 0 {
 		return negErrno(EINVAL)
 	}
-	return uint64(p.installFD(&OpenFile{path: "anon_inode:[eventpoll]", flags: oRDWR, epoll: &epollSet{}}))
+	of := &OpenFile{path: "anon_inode:[eventpoll]", flags: oRDWR, epoll: &epollSet{}}
+	return uint64(p.installFD(of, flags&guestEpollCloexec != 0))
 }
 
 // sysEpollCtl adds, modifies or removes descriptor fd on the interest list of

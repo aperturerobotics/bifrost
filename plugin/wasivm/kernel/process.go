@@ -83,7 +83,10 @@ type procState struct {
 	groups []uint32
 
 	// fds maps each descriptor number to its open file.
-	fds   map[uint32]*OpenFile
+	fds map[uint32]*OpenFile
+	// cloexec holds the descriptors exec closes.
+	cloexec map[uint32]struct{}
+
 	cwd   string
 	umask uint32
 	// rlimits holds the resource limits by RLIMIT number.
@@ -102,6 +105,7 @@ func (s procState) clone() procState {
 	// Copy the maps and slices; the struct copy holds the rest.
 	s.groups = slices.Clone(s.groups)
 	s.fds = maps.Clone(s.fds)
+	s.cloexec = maps.Clone(s.cloexec)
 	s.env = maps.Clone(s.env)
 	s.args = slices.Clone(s.args)
 	return s
@@ -127,6 +131,7 @@ func newProcess(k *Kernel, pid int, args []string) *Process {
 			pgid:    pid,
 			sid:     pid,
 			fds:     make(map[uint32]*OpenFile),
+			cloexec: make(map[uint32]struct{}),
 			cwd:     "/",
 			umask:   0o022,
 			rlimits: defaultRlimits(),

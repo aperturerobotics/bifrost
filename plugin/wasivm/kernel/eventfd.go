@@ -7,22 +7,23 @@ import (
 )
 
 // eventfd flags as the guest's headers number them: EFD_NONBLOCK is
-// O_NONBLOCK, and EFD_CLOEXEC is wasi-libc's O_CLOEXEC, zero.
+// O_NONBLOCK and EFD_CLOEXEC is O_CLOEXEC.
 const (
 	guestEfdSemaphore = 0x1
 	guestEfdNonblock  = guestONONBLOCK
+	guestEfdCloexec   = guestOCLOEXEC
 )
 
 // sysEventfd opens an event file whose counter starts at initval.
 func (p *Process) sysEventfd(initval, flags uint32) uint64 {
-	if flags&^(guestEfdSemaphore|guestEfdNonblock) != 0 {
+	if flags&^(guestEfdSemaphore|guestEfdNonblock|guestEfdCloexec) != 0 {
 		return negErrno(EINVAL)
 	}
 	return uint64(p.installFD(&OpenFile{
 		path:    "anon_inode:[eventfd]",
 		flags:   oRDWR | kernelStatusFlags(flags&guestEfdNonblock),
 		counter: newCounter(uint64(initval), flags&guestEfdSemaphore != 0),
-	}))
+	}, flags&guestEfdCloexec != 0))
 }
 
 // readCounter reads an event or timer file: it waits for a nonzero count and

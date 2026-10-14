@@ -13,8 +13,8 @@ const (
 	guestMapType   = 0x3
 )
 
-// The guest's memfd_create flags: close-on-exec, which the kernel ignores,
-// sealing and the executable bits.
+// The guest's memfd_create flags: close-on-exec, sealing and the executable
+// bits.
 const (
 	guestMfdCloexec      = 0x1
 	guestMfdAllowSealing = 0x2
@@ -68,7 +68,7 @@ func (p *Process) sysMemfdCreate(namePtr, flags uint32) uint64 {
 	case flags&guestMfdAllowSealing != 0:
 		of.node.seals = 0
 	}
-	return uint64(p.installFD(of))
+	return uint64(p.installFD(of, flags&guestMfdCloexec != 0))
 }
 
 // newMemfd opens a detached in-memory file named for memfd_create. The
