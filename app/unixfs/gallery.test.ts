@@ -1,381 +1,134 @@
 import { describe, expect, it } from 'vitest'
 
+import type { HandleWatchFilesResponse } from '@s4wave/sdk/unixfs/handle.pb.js'
+
 import {
-  collectUnixFSGalleryCandidates,
   type UnixFSGalleryDiscoveryState,
   streamUnixFSGalleryCandidates,
 } from './gallery.js'
 
-type FakeNode =
-  | {
-      kind: 'dir'
-      children: Record<string, FakeNode>
-    }
-  | {
-      kind: 'file'
-    }
-
-const fakeNodeWatchers = new WeakMap<FakeNode, Set<() => void>>()
-
-function watchFakeNode(node: FakeNode, cb: () => void): () => void {
-  let watchers = fakeNodeWatchers.get(node)
-  if (!watchers) {
-    watchers = new Set()
-    fakeNodeWatchers.set(node, watchers)
-  }
-  watchers.add(cb)
-  return () => watchers?.delete(cb)
-}
-
-function notifyFakeNode(node: FakeNode): void {
-  for (const cb of fakeNodeWatchers.get(node) ?? []) {
-    cb()
-  }
-}
-
+// FakeHandle serves one path of a fake tree and replays the WatchFiles
+// responses of its directory.
 class FakeHandle {
+  watchedExtensions: string[] = []
+
   constructor(
-    private readonly node: FakeNode,
-    private readonly path = '',
+    private readonly files: Set<string>,
+    private readonly responses: Map<string, HandleWatchFilesResponse[]>,
+    readonly path = '',
   ) {}
 
   [Symbol.dispose](): void {}
 
   clone(): Promise<FakeHandle> {
-    return Promise.resolve(new FakeHandle(this.node, this.path))
+    return Promise.resolve(this)
   }
 
   getFileInfo(): Promise<{ isDir: boolean }> {
-    return Promise.resolve({ isDir: this.node.kind === 'dir' })
+    return Promise.resolve({ isDir: !this.files.has(this.path) })
   }
 
-  lookup(name: string): Promise<FakeHandle> {
-    if (this.node.kind !== 'dir') {
-      return Promise.reject(new Error('not a directory'))
-    }
-    const child = this.node.children[name]
-    if (!child) {
-      return Promise.reject(new Error(`missing child: ${name}`))
-    }
-    return Promise.resolve(
-      new FakeHandle(child, this.path ? `${this.path}/${name}` : name),
-    )
+  lookupPath(path: string): Promise<{ handle: FakeHandle }> {
+    const handle = new FakeHandle(this.files, this.responses, path)
+    lastHandle = handle
+    return Promise.resolve({ handle })
   }
 
-  async lookupPath(path: string): Promise<{
-    handle: FakeHandle
-    traversedPath: string[]
-  }> {
-    const parts = path.split('/').filter(Boolean)
-    let handle: FakeHandle = new FakeHandle(this.node, this.path)
-    for (const part of parts) {
-      handle = await handle.lookup(part)
+  async *watchFiles(
+    extensions: string[],
+  ): AsyncIterable<HandleWatchFilesResponse> {
+    this.watchedExtensions = extensions
+    for (const resp of this.responses.get(this.path) ?? []) {
+      yield await Promise.resolve(resp)
     }
-    return {
-      handle,
-      traversedPath: parts,
-    }
-  }
-
-  readdirAll(): Promise<Array<{ isDir: boolean; name: string }>> {
-    if (this.node.kind !== 'dir') {
-      return Promise.resolve([])
-    }
-    return Promise.resolve(
-      Object.entries(this.node.children).map(([name, child]) => ({
-        name,
-        isDir: child.kind === 'dir',
-      })),
-    )
-  }
-
-  async *watchReaddir(
-    signal?: AbortSignal,
-  ): AsyncIterable<Array<{ isDir: boolean; name: string }>> {
-    if (this.node.kind !== 'dir') {
-      return
-    }
-    yield await this.readdirAll()
-
-    while (!signal?.aborted) {
-      await new Promise<void>((resolve) => {
-        const release = watchFakeNode(this.node, () => {
-          release()
-          resolve()
-        })
-        signal?.addEventListener(
-          'abort',
-          () => {
-            release()
-            resolve()
-          },
-          { once: true },
-        )
-      })
-      if (!signal?.aborted) {
-        yield await this.readdirAll()
-      }
-    }
-  }
-
-  putFile(path: string): void {
-    this.putNode(path, { kind: 'file' })
-  }
-
-  remove(path: string): void {
-    const [parent, name] = this.lookupParent(path)
-    delete parent.children[name]
-    notifyFakeNode(parent)
-  }
-
-  private putNode(path: string, node: FakeNode): void {
-    const [parent, name] = this.lookupParent(path)
-    parent.children[name] = node
-    notifyFakeNode(parent)
-  }
-
-  private lookupParent(
-    path: string,
-  ): [{ kind: 'dir'; children: Record<string, FakeNode> }, string] {
-    const parts = path.split('/').filter(Boolean)
-    const name = parts.pop()
-    if (!name) {
-      throw new Error('path must include a file name')
-    }
-    let node = this.node
-    for (const part of parts) {
-      if (node.kind !== 'dir') {
-        throw new Error(`not a directory: ${part}`)
-      }
-      const child = node.children[part]
-      if (!child) {
-        throw new Error(`missing child: ${part}`)
-      }
-      node = child
-    }
-    if (node.kind !== 'dir') {
-      throw new Error('parent is not a directory')
-    }
-    return [node, name]
   }
 }
 
-function buildRootHandle(node: FakeNode) {
-  return new FakeHandle(node) as unknown as Parameters<
-    typeof collectUnixFSGalleryCandidates
-  >[0]
-}
+let lastHandle: FakeHandle | undefined
 
-function buildFakeRootHandle(node: FakeNode): FakeHandle {
-  return new FakeHandle(node)
-}
-
-async function nextGalleryPaths(
-  iter: AsyncIterator<UnixFSGalleryDiscoveryState>,
-): Promise<string[] | undefined> {
-  const next = await Promise.race([
-    iter.next(),
-    new Promise<IteratorResult<UnixFSGalleryDiscoveryState>>((_, reject) => {
-      setTimeout(
-        () => reject(new Error('timed out waiting for gallery state')),
-        1000,
-      )
-    }),
-  ])
-  const state: UnixFSGalleryDiscoveryState | undefined = next.done
-    ? undefined
-    : next.value
-  return state?.items.map((item) => item.path)
-}
-
-async function waitForGalleryPaths(
-  iter: AsyncIterator<UnixFSGalleryDiscoveryState>,
-  expected: string[],
-): Promise<void> {
-  for (let i = 0; i < 10; i++) {
-    const paths = await nextGalleryPaths(iter)
-    expect(paths).toBeDefined()
-    if (JSON.stringify(paths) === JSON.stringify(expected)) {
-      return
-    }
+// collectStates runs the gallery stream over a fake tree until its watch ends.
+async function collectStates(
+  scopePath: string,
+  responses: Record<string, HandleWatchFilesResponse[]>,
+  files: string[] = [],
+): Promise<UnixFSGalleryDiscoveryState[]> {
+  const root = new FakeHandle(
+    new Set(files),
+    new Map(Object.entries(responses)),
+  )
+  const states: UnixFSGalleryDiscoveryState[] = []
+  for await (const state of streamUnixFSGalleryCandidates(
+    root as unknown as Parameters<typeof streamUnixFSGalleryCandidates>[0],
+    scopePath,
+    new AbortController().signal,
+  )) {
+    states.push(state)
   }
-  throw new Error(`gallery stream did not reach ${expected.join(', ')}`)
+  return states
 }
-
-function waitForWatchTurn(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0))
-}
-
-describe('collectUnixFSGalleryCandidates', () => {
-  it('recurses under the scoped path and returns nested image candidates', async () => {
-    const items = await collectUnixFSGalleryCandidates(
-      buildRootHandle({
-        kind: 'dir',
-        children: {
-          docs: {
-            kind: 'dir',
-            children: {
-              'cover.png': { kind: 'file' },
-              nested: {
-                kind: 'dir',
-                children: {
-                  'poster.jpg': { kind: 'file' },
-                },
-              },
-            },
-          },
-          other: {
-            kind: 'dir',
-            children: {
-              'outside.webp': { kind: 'file' },
-            },
-          },
-        },
-      }),
-      '/docs',
-      new AbortController().signal,
-    )
-
-    expect(items.map((item) => item.path)).toEqual([
-      '/docs/cover.png',
-      '/docs/nested/poster.jpg',
-    ])
-  })
-
-  it('filters the candidate set to the supported gallery mime types', async () => {
-    const items = await collectUnixFSGalleryCandidates(
-      buildRootHandle({
-        kind: 'dir',
-        children: {
-          media: {
-            kind: 'dir',
-            children: {
-              'logo.svg': { kind: 'file' },
-              'photo.avif': { kind: 'file' },
-              'notes.txt': { kind: 'file' },
-              'icon.ico': { kind: 'file' },
-            },
-          },
-        },
-      }),
-      '/media',
-      new AbortController().signal,
-    )
-
-    expect(items.map((item) => [item.name, item.mimeType])).toEqual([
-      ['logo.svg', 'image/svg+xml'],
-      ['photo.avif', 'image/avif'],
-    ])
-  })
-
-  it('falls back to the parent directory when the scoped path points at a file', async () => {
-    const items = await collectUnixFSGalleryCandidates(
-      buildRootHandle({
-        kind: 'dir',
-        children: {
-          docs: {
-            kind: 'dir',
-            children: {
-              'cover.png': { kind: 'file' },
-              'poster.jpg': { kind: 'file' },
-              notes: {
-                kind: 'dir',
-                children: {
-                  'ignore.txt': { kind: 'file' },
-                },
-              },
-            },
-          },
-        },
-      }),
-      '/docs/cover.png',
-      new AbortController().signal,
-    )
-
-    expect(items.map((item) => item.path)).toEqual([
-      '/docs/cover.png',
-      '/docs/poster.jpg',
-    ])
-  })
-})
 
 describe('streamUnixFSGalleryCandidates', () => {
-  it('emits the watched recursive crawl state', async () => {
-    const states: Array<{
-      complete: boolean
-      count: number
-      scopePath: string
-    }> = []
-    const ctrl = new AbortController()
-    for await (const state of streamUnixFSGalleryCandidates(
-      buildRootHandle({
-        kind: 'dir',
-        children: {
-          docs: {
-            kind: 'dir',
-            children: {
-              'cover.png': { kind: 'file' },
-              nested: {
-                kind: 'dir',
-                children: {
-                  'poster.jpg': { kind: 'file' },
-                },
-              },
-            },
-          },
+  it('maps the first response to the complete index of the scope', async () => {
+    const states = await collectStates('/docs', {
+      docs: [
+        {
+          added: ['nested/poster.jpg', 'cover.png'],
+          errors: ['locked: permission denied'],
+          truncated: true,
         },
-      }),
-      '/docs',
-      ctrl.signal,
-    )) {
-      states.push({
-        complete: state.complete,
-        count: state.items.length,
-        scopePath: state.scopePath,
-      })
-      if (state.complete) {
-        ctrl.abort()
-      }
-    }
+      ],
+    })
 
+    expect(lastHandle?.watchedExtensions).toContain('.png')
     expect(states).toEqual([
-      { count: 0, complete: false, scopePath: '/docs' },
-      { count: 2, complete: true, scopePath: '/docs' },
+      {
+        scopePath: '/docs',
+        items: [
+          {
+            path: '/docs/cover.png',
+            name: 'cover.png',
+            label: 'cover.png',
+            mimeType: 'image/png',
+          },
+          {
+            path: '/docs/nested/poster.jpg',
+            name: 'poster.jpg',
+            label: 'nested/poster.jpg',
+            mimeType: 'image/jpeg',
+          },
+        ],
+        errors: ['locked: permission denied'],
+        truncated: true,
+      },
     ])
   })
 
-  it('updates when watched directory contents change', async () => {
-    const root = buildFakeRootHandle({
-      kind: 'dir',
-      children: {
-        docs: {
-          kind: 'dir',
-          children: {
-            'cover.png': { kind: 'file' },
-          },
-        },
-      },
+  it('applies the paths each change adds and removes', async () => {
+    const states = await collectStates('/docs', {
+      docs: [
+        { added: ['cover.png', 'b.webp'] },
+        { added: ['a.svg'], removed: ['cover.png'] },
+      ],
     })
-    const ctrl = new AbortController()
-    const iter = streamUnixFSGalleryCandidates(
-      root as unknown as Parameters<typeof streamUnixFSGalleryCandidates>[0],
-      '/docs',
-      ctrl.signal,
-    )[Symbol.asyncIterator]()
 
-    await waitForGalleryPaths(iter, ['/docs/cover.png'])
+    expect(states.map((state) => state.items.map((item) => item.path))).toEqual(
+      [
+        ['/docs/b.webp', '/docs/cover.png'],
+        ['/docs/a.svg', '/docs/b.webp'],
+      ],
+    )
+  })
 
-    await waitForWatchTurn()
-    root.putFile('/docs/new.webp')
+  it('indexes the parent directory when the scope path names a file', async () => {
+    const states = await collectStates(
+      '/docs/cover.png',
+      { docs: [{ added: ['cover.png'] }] },
+      ['docs/cover.png'],
+    )
 
-    await waitForGalleryPaths(iter, ['/docs/cover.png', '/docs/new.webp'])
-
-    await waitForWatchTurn()
-    root.remove('/docs/cover.png')
-
-    await waitForGalleryPaths(iter, ['/docs/new.webp'])
-
-    ctrl.abort()
-    await iter.return?.()
+    expect(states.map((state) => state.scopePath)).toEqual(['/docs'])
+    expect(states[0]?.items.map((item) => item.path)).toEqual([
+      '/docs/cover.png',
+    ])
   })
 })

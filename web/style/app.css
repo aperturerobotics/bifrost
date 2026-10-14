@@ -1388,7 +1388,7 @@
 }
 
 @utility grid-cols-gallery {
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  grid-template-columns: repeat(var(--gallery-columns), minmax(0, 1fr));
 }
 
 @utility grid-cols-device {

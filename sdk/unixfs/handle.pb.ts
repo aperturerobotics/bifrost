@@ -1259,3 +1259,104 @@ export const HandleWatchReaddirResponse: MessageType<HandleWatchReaddirResponse>
       { no: 1, name: 'entries', kind: 'message', T: DirEntry, repeated: true },
     ] satisfies readonly PartialFieldInfo[],
   })
+
+/**
+ * HandleWatchFilesRequest is the request for WatchFiles.
+ *
+ * @generated from message s4wave.unixfs.HandleWatchFilesRequest
+ */
+export interface HandleWatchFilesRequest {
+  /**
+   * Extensions are the file name suffixes to match, such as ".png". Matching
+   * ignores case.
+   *
+   * @generated from field: repeated string extensions = 1;
+   */
+  extensions?: string[]
+  /**
+   * Limit bounds the number of matched paths, taken in path order. Zero
+   * selects the server default.
+   *
+   * @generated from field: uint32 limit = 2;
+   */
+  limit?: number
+}
+
+export const HandleWatchFilesRequest: MessageType<HandleWatchFilesRequest> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.unixfs.HandleWatchFilesRequest',
+    fields: [
+      {
+        no: 1,
+        name: 'extensions',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      { no: 2, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * HandleWatchFilesResponse is one change to the files matched below the
+ * directory. The first response holds every match.
+ *
+ * @generated from message s4wave.unixfs.HandleWatchFilesResponse
+ */
+export interface HandleWatchFilesResponse {
+  /**
+   * Added are the matched paths added, relative to the directory, in path
+   * order.
+   *
+   * @generated from field: repeated string added = 1;
+   */
+  added?: string[]
+  /**
+   * Removed are the matched paths removed.
+   *
+   * @generated from field: repeated string removed = 2;
+   */
+  removed?: string[]
+  /**
+   * Truncated is set when the limit hides further matches.
+   *
+   * @generated from field: bool truncated = 3;
+   */
+  truncated?: boolean
+  /**
+   * Errors describe each directory that could not be read. Each response
+   * carries the complete current list.
+   *
+   * @generated from field: repeated string errors = 4;
+   */
+  errors?: string[]
+}
+
+export const HandleWatchFilesResponse: MessageType<HandleWatchFilesResponse> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.unixfs.HandleWatchFilesResponse',
+    fields: [
+      {
+        no: 1,
+        name: 'added',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      {
+        no: 2,
+        name: 'removed',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+      { no: 3, name: 'truncated', kind: 'scalar', T: ScalarType.BOOL },
+      {
+        no: 4,
+        name: 'errors',
+        kind: 'scalar',
+        T: ScalarType.STRING,
+        repeated: true,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+  })

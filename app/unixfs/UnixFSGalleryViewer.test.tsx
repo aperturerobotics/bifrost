@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { cloneElement, isValidElement, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { UnixFSGalleryViewer } from './UnixFSGalleryViewer.js'
@@ -15,12 +15,12 @@ const h = vi.hoisted(() => ({
   buildInlineURL: vi.fn((_, __, ___, path: string) => `/inline${path}`),
   galleryState: null as unknown as ReturnType<typeof buildGalleryState>,
   downloadURL: vi.fn(() => Promise.resolve()),
-  lightboxIndex: 0,
-  photoProviderProps: null as null | {
+  photoSliderProps: null as null | {
     className?: string
+    index?: number
     portalContainer?: HTMLElement
+    visible: boolean
   },
-  photoViewClick: vi.fn(),
   routerPath: '',
   rootHandle: {
     value: {},
@@ -35,7 +35,7 @@ function buildGalleryState(
     scopePath: '/',
     items: [],
     errors: [],
-    complete: true,
+    truncated: false,
   },
 ) {
   return {
@@ -121,59 +121,33 @@ vi.mock('./download.js', async (importOriginal) => {
 })
 
 vi.mock('react-photo-view', () => ({
-  PhotoProvider: ({
-    children,
+  PhotoSlider: ({
     className,
+    index,
     portalContainer,
     toolbarRender,
+    visible,
   }: {
-    children?: ReactNode
     className?: string
+    index?: number
     portalContainer?: HTMLElement
-    toolbarRender?: (props: {
-      images: unknown[]
-      index: number
-      onIndexChange: (index: number) => void
-      visible: boolean
-      onClose: () => void
-      overlayVisible: boolean
-      overlay?: ReactNode
-      rotate: number
-      onRotate: (rotate: number) => void
-      scale: number
-      onScale: (scale: number) => void
-    }) => ReactNode
+    toolbarRender?: (props: { index: number }) => ReactNode
+    visible: boolean
   }) => {
-    h.photoProviderProps = {
-      className,
-      portalContainer,
-    }
-    return (
-      <>
-        {children}
-        {toolbarRender?.({
-          images: [],
-          index: h.lightboxIndex,
-          onIndexChange: () => undefined,
-          visible: true,
-          onClose: () => undefined,
-          overlayVisible: true,
-          overlay: null,
-          rotate: 0,
-          onRotate: () => undefined,
-          scale: 1,
-          onScale: () => undefined,
-        })}
-      </>
-    )
+    h.photoSliderProps = { className, index, portalContainer, visible }
+    return visible ? <>{toolbarRender?.({ index: index ?? 0 })}</> : null
   },
-  PhotoView: ({ children }: { children?: ReactNode }) =>
-    isValidElement<{ onClick?: () => void }>(children)
-      ? cloneElement(children, {
-          onClick: h.photoViewClick,
-        })
-      : children,
 }))
+
+// buildItems returns count gallery items under /gallery.
+function buildItems(count: number) {
+  return Array.from({ length: count }, (_, i) => ({
+    path: `/gallery/${i}.png`,
+    name: `${i}.png`,
+    label: `${i}.png`,
+    mimeType: 'image/png',
+  }))
+}
 
 describe('UnixFSGalleryViewer', () => {
   beforeEach(() => {
@@ -181,9 +155,7 @@ describe('UnixFSGalleryViewer', () => {
     h.buildDownloadURL.mockClear()
     h.buildInlineURL.mockClear()
     h.downloadURL.mockClear()
-    h.lightboxIndex = 0
-    h.photoProviderProps = null
-    h.photoViewClick.mockReset()
+    h.photoSliderProps = null
     h.routerPath = ''
     h.galleryState = buildGalleryState()
   })
@@ -222,19 +194,12 @@ describe('UnixFSGalleryViewer', () => {
     })
   })
 
-  it('lays out gallery tiles from the viewer frame width instead of viewport breakpoints', () => {
+  it('renders only the tiles near the visible part of a large gallery', () => {
     h.galleryState = buildGalleryState({
       scopePath: '/gallery',
-      items: [
-        {
-          path: '/gallery/first.png',
-          name: 'first.png',
-          label: 'first.png',
-          mimeType: 'image/png',
-        },
-      ],
+      items: buildItems(1000),
       errors: [],
-      complete: true,
+      truncated: false,
     })
 
     render(
@@ -252,14 +217,14 @@ describe('UnixFSGalleryViewer', () => {
       />,
     )
 
-    expect(screen.getByTestId('unixfs-gallery-grid').className).toContain(
-      'grid-cols-gallery',
-    )
+    expect(screen.getByText('1000 images under /gallery')).toBeDefined()
+    const tiles = screen.getAllByTestId('unixfs-gallery-item')
+    expect(tiles.length).toBeGreaterThan(0)
+    expect(tiles.length).toBeLessThan(50)
   })
 
   it('wires the lightbox toolbar actions to the current image', () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    h.lightboxIndex = 1
     h.galleryState = buildGalleryState({
       scopePath: '/',
       items: [
@@ -277,7 +242,7 @@ describe('UnixFSGalleryViewer', () => {
         },
       ],
       errors: [],
-      complete: true,
+      truncated: false,
     })
 
     render(
@@ -295,6 +260,7 @@ describe('UnixFSGalleryViewer', () => {
       />,
     )
 
+    fireEvent.click(screen.getAllByTestId('unixfs-gallery-item')[1])
     fireEvent.click(screen.getByTitle('Open In Browser'))
     fireEvent.click(screen.getByTitle('Download'))
 
@@ -321,7 +287,7 @@ describe('UnixFSGalleryViewer', () => {
         },
       ],
       errors: [],
-      complete: true,
+      truncated: false,
     })
 
     const props = {
@@ -357,7 +323,7 @@ describe('UnixFSGalleryViewer', () => {
         },
       ],
       errors: [],
-      complete: true,
+      truncated: false,
     })
 
     render(
@@ -390,7 +356,7 @@ describe('UnixFSGalleryViewer', () => {
         },
       ],
       errors: [],
-      complete: true,
+      truncated: false,
     })
 
     render(
@@ -408,13 +374,13 @@ describe('UnixFSGalleryViewer', () => {
       />,
     )
 
-    expect(h.photoProviderProps?.portalContainer).toBe(
+    expect(h.photoSliderProps?.portalContainer).toBe(
       screen.getByTestId('unixfs-gallery-viewer'),
     )
-    expect(h.photoProviderProps?.className).toContain('!absolute')
+    expect(h.photoSliderProps?.className).toContain('!absolute')
   })
 
-  it('forwards PhotoView click behavior into gallery tiles', () => {
+  it('opens the lightbox at the clicked tile', () => {
     h.galleryState = buildGalleryState({
       scopePath: '/gallery',
       items: [
@@ -426,7 +392,7 @@ describe('UnixFSGalleryViewer', () => {
         },
       ],
       errors: [],
-      complete: true,
+      truncated: false,
     })
 
     render(
@@ -444,8 +410,9 @@ describe('UnixFSGalleryViewer', () => {
       />,
     )
 
+    expect(h.photoSliderProps?.visible).toBe(false)
     fireEvent.click(screen.getByTestId('unixfs-gallery-item'))
 
-    expect(h.photoViewClick).toHaveBeenCalledTimes(1)
+    expect(h.photoSliderProps).toMatchObject({ index: 0, visible: true })
   })
 })

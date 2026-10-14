@@ -59,6 +59,8 @@ service FSHandleResourceService {
   rpc UploadTree(stream HandleUploadTreeRequest) returns (HandleUploadTreeResponse);
 
   rpc WatchReaddir(HandleWatchReaddirRequest) returns (stream HandleWatchReaddirResponse);
+
+  rpc WatchFiles(HandleWatchFilesRequest) returns (stream HandleWatchFilesResponse);
 }
 
 // FileInfo contains file metadata.
@@ -373,4 +375,29 @@ message HandleWatchReaddirRequest {}
 message HandleWatchReaddirResponse {
   // Entries is the full directory listing.
   repeated DirEntry entries = 1;
+}
+
+// HandleWatchFilesRequest is the request for WatchFiles.
+message HandleWatchFilesRequest {
+  // Extensions are the file name suffixes to match, such as ".png". Matching
+  // ignores case.
+  repeated string extensions = 1;
+  // Limit bounds the number of matched paths, taken in path order. Zero
+  // selects the server default.
+  uint32 limit = 2;
+}
+
+// HandleWatchFilesResponse is one change to the files matched below the
+// directory. The first response holds every match.
+message HandleWatchFilesResponse {
+  // Added are the matched paths added, relative to the directory, in path
+  // order.
+  repeated string added = 1;
+  // Removed are the matched paths removed.
+  repeated string removed = 2;
+  // Truncated is set when the limit hides further matches.
+  bool truncated = 3;
+  // Errors describe each directory that could not be read. Each response
+  // carries the complete current list.
+  repeated string errors = 4;
 }
