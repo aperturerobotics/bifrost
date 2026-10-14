@@ -92,11 +92,46 @@ func (e *SDKEngine) WaitSeqno(ctx context.Context, value uint64) (uint64, error)
 	return resp.Seqno, nil
 }
 
-// WaitObjectRev waits until the object at key reaches rev. Remote clients
-// watching one object should use the object state resource's WaitRev, which
-// the server answers with a key-scoped watch.
+// WaitObjectRev waits until the object at key reaches rev through the remote
+// engine's key watch, which wakes only on commits that change the object.
 func (e *SDKEngine) WaitObjectRev(ctx context.Context, key string, rev uint64, ignoreNotFound bool) (uint64, error) {
-	return world.WaitObjectRevBySeqno(ctx, e, key, rev, ignoreNotFound)
+	// Wait on the remote key watch.
+	resp, err := e.service.WaitObjectRev(ctx, &s4wave_world.WaitObjectRevRequest{
+		Key:            key,
+		Rev:            rev,
+		IgnoreNotFound: ignoreNotFound,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	// Restore ErrObjectNotFound from the response code.
+	if err := s4wave_world.ErrorFromCode(resp.GetErrorCode()); err != nil {
+		return 0, err
+	}
+	return resp.GetRev(), nil
+}
+
+// WatchChanges follows the remote engine's change stream, calling cb with each
+// later seqno and the changes since the previous one.
+func (e *SDKEngine) WatchChanges(ctx context.Context, afterSeqno uint64, cb func(seqno uint64, changes *world.ChangeSet) error) error {
+	// Open the stream after afterSeqno.
+	strm, err := e.service.WatchChanges(ctx, &s4wave_world.WatchChangesRequest{AfterSeqno: afterSeqno})
+	if err != nil {
+		return err
+	}
+	defer strm.Close()
+
+	// Hand each change to cb until the stream or cb ends.
+	for {
+		msg, err := strm.Recv()
+		if err != nil {
+			return err
+		}
+		if err := cb(msg.GetSeqno(), msg.ToChangeSet()); err != nil {
+			return err
+		}
+	}
 }
 
 // GetWorldRootSnapshot returns the current committed World root snapshot.
@@ -143,4 +178,8 @@ func (e *SDKEngine) AccessWorldState(ctx context.Context, ref *bucket.ObjectRef,
 	return s4wave_bucket_lookup.AccessCursor(ctx, e.client, resp.GetResourceId(), cb)
 }
 
-var _ world.Engine = (*SDKEngine)(nil)
+// _ are type assertions.
+var (
+	_ world.Engine        = (*SDKEngine)(nil)
+	_ world.ChangeWatcher = (*SDKEngine)(nil)
+)

@@ -1703,3 +1703,75 @@ func TestSDKWorldStateObjectAccessWorldStateInvokesCallback(t *testing.T) {
 		t.Fatal("AccessWorldState returned without invoking the callback")
 	}
 }
+
+// TestSDKEngine_WatchChanges checks that the remote change stream lists the
+// object a commit created.
+func TestSDKEngine_WatchChanges(t *testing.T) {
+	// Start an SDK engine and take its seqno.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	engine, cleanup := setupSDKEngine(ctx, t)
+	defer cleanup()
+	seqno, err := engine.GetSeqno(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Follow the change stream in the background.
+	errDone := errors.New("done")
+	changes := make(chan *world.ChangeSet, 1)
+	watchErr := make(chan error, 1)
+	go func() {
+		watchErr <- engine.WatchChanges(ctx, seqno, func(_ uint64, cs *world.ChangeSet) error {
+			changes <- cs
+			return errDone
+		})
+	}()
+
+	// Commit one object and expect exactly its key.
+	ws := world.NewEngineWorldState(engine, true)
+	obj, err := ws.CreateObject(ctx, "watch-changes/created", nil)
+	world.ReleaseObjectState(obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cs := <-changes
+	if cs.Unknown || !slices.Equal(cs.Keys, []string{"watch-changes/created"}) {
+		t.Fatalf("changes = %+v, want the created key", cs)
+	}
+	if err := <-watchErr; !errors.Is(err, errDone) {
+		t.Fatalf("WatchChanges = %v, want the callback error", err)
+	}
+}
+
+// TestSDKEngine_WaitObjectRev checks that the remote key wait reports a
+// missing object and waits for one to appear.
+func TestSDKEngine_WaitObjectRev(t *testing.T) {
+	// Start an SDK engine.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	engine, cleanup := setupSDKEngine(ctx, t)
+	defer cleanup()
+
+	// A missing object fails the wait unless it may appear.
+	const key = "wait-object-rev/created"
+	if _, err := engine.WaitObjectRev(ctx, key, 1, false); !errors.Is(err, world.ErrObjectNotFound) {
+		t.Fatalf("WaitObjectRev(missing) = %v, want ErrObjectNotFound", err)
+	}
+
+	// Wait for the object to appear, then create it.
+	done := make(chan error, 1)
+	go func() {
+		_, err := engine.WaitObjectRev(ctx, key, 1, true)
+		done <- err
+	}()
+	ws := world.NewEngineWorldState(engine, true)
+	obj, err := ws.CreateObject(ctx, key, nil)
+	world.ReleaseObjectState(obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+}
