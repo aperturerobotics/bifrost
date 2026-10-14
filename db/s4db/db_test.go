@@ -317,8 +317,9 @@ func writeKeys(ctx context.Context, db *DB, who string) error {
 // runChild writes the child's keys to the file at path and prints the last
 // commit it saw.
 func runChild(path string) error {
-	// Open the file the parent holds open.
-	db, err := Open(path, Options{CheckpointMin: 32 << 10, CheckpointMax: 64 << 10})
+	// Open the file the parent holds open, checkpointing often so the
+	// parent's background checkpoints race this process's writes.
+	db, err := Open(path, Options{CheckpointMin: 8 << 10, CheckpointMax: 16 << 10})
 	if err != nil {
 		return err
 	}
