@@ -89,16 +89,42 @@ func (l *unixListener) state() (ready bool, change <-chan struct{}) {
 
 // newSocketFile returns an open file for a new unconnected socket with the
 // kernel's status flags.
-func (p *Process) newSocketFile(status uint32) *OpenFile {
-	return &OpenFile{flags: oRDWR | status, sock: &unixSocket{ino: p.kernel.vfs.allocIno()}}
+func (k *Kernel) newSocketFile(status uint32) *OpenFile {
+	return &OpenFile{flags: oRDWR | status, sock: &unixSocket{ino: k.vfs.allocIno()}}
 }
 
 // connectPair connects two socket files with a pipe in each direction.
-func (p *Process) connectPair(a, b *OpenFile) {
-	toA := newBufferedPipe(p.kernel.vfs.allocIno())
-	toB := newBufferedPipe(p.kernel.vfs.allocIno())
+func (k *Kernel) connectPair(a, b *OpenFile) {
+	toA := newBufferedPipe(k.vfs.allocIno())
+	toB := newBufferedPipe(k.vfs.allocIno())
 	a.rx, a.tx = toA, toB
 	b.rx, b.tx = toB, toA
+}
+
+// connectUnix connects the unconnected socket file of to the listener bound
+// at the absolute path resolved. The connection waits in the listener's
+// queue, so it returns at once. The caller holds the kernel lock.
+func (k *Kernel) connectUnix(of *OpenFile, resolved string) uint64 {
+	// Find the listener.
+	node := k.vfs.lookup(resolved)
+	switch {
+	case node == nil:
+		return negErrno(ENOENT)
+	case node.socket == nil:
+		return negErrno(ECONNREFUSED)
+	}
+	server := node.socket
+
+	// Queue the server's end of a new connection.
+	conn := &OpenFile{flags: oRDWR, sock: &unixSocket{
+		ino:      k.vfs.allocIno(),
+		path:     server.path,
+		peerPath: of.sock.path,
+	}}
+	k.connectPair(of, conn)
+	of.sock.peerPath = server.path
+	server.listener.push(conn)
+	return 0
 }
 
 // socketFile returns the open file of socket descriptor fd.
@@ -133,7 +159,7 @@ func (p *Process) sysSocket(domain, typ, protocol uint32) uint64 {
 	if errno != 0 {
 		return errno
 	}
-	return uint64(p.installFD(p.newSocketFile(status)))
+	return uint64(p.installFD(p.kernel.newSocketFile(status)))
 }
 
 // sysSocketpair creates two connected Unix stream sockets and writes their
@@ -144,8 +170,8 @@ func (p *Process) sysSocketpair(domain, typ, protocol, svPtr uint32) uint64 {
 	if errno != 0 {
 		return errno
 	}
-	a, b := p.newSocketFile(status), p.newSocketFile(status)
-	p.connectPair(a, b)
+	a, b := p.kernel.newSocketFile(status), p.kernel.newSocketFile(status)
+	p.kernel.connectPair(a, b)
 
 	// Install them and return their numbers.
 	afd, bfd := p.installFD(a), p.installFD(b)
@@ -259,10 +285,9 @@ func (p *Process) sysListen(fd uint32) uint64 {
 	return 0
 }
 
-// sysConnect connects a socket to the listener bound at a path. The
-// connection waits in the listener's queue, so connect returns at once. An
-// abstract address refuses the connection, as Linux does for a name no socket
-// binds, so a client such as libxcb falls back to the path.
+// sysConnect connects a socket to the listener bound at a path. An abstract
+// address refuses the connection, as Linux does for a name no socket binds, so
+// a client such as libxcb falls back to the path.
 func (p *Process) sysConnect(fd, addrPtr, addrLen uint32) uint64 {
 	// Read the address of an unconnected socket.
 	of, errno := p.socketFile(fd)
@@ -281,27 +306,7 @@ func (p *Process) sysConnect(fd, addrPtr, addrLen uint32) uint64 {
 	case abstract:
 		return negErrno(ECONNREFUSED)
 	}
-
-	// Find the listener.
-	node := p.kernel.vfs.lookup(resolved)
-	switch {
-	case node == nil:
-		return negErrno(ENOENT)
-	case node.socket == nil:
-		return negErrno(ECONNREFUSED)
-	}
-	server := node.socket
-
-	// Queue the server's end of a new connection.
-	conn := &OpenFile{flags: oRDWR, sock: &unixSocket{
-		ino:      p.kernel.vfs.allocIno(),
-		path:     server.path,
-		peerPath: of.sock.path,
-	}}
-	p.connectPair(of, conn)
-	of.sock.peerPath = server.path
-	server.listener.push(conn)
-	return 0
+	return p.kernel.connectUnix(of, resolved)
 }
 
 // sysAccept takes the oldest connection waiting on a listening socket and
