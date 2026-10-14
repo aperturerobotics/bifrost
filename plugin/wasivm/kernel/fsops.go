@@ -129,7 +129,9 @@ func (p *Process) sysFchmod(fd, mode uint32) uint64 {
 }
 
 // fdNode returns the node of descriptor fd. A pipe or socket has no node,
-// so it gets one that describes a FIFO or socket with its inode number.
+// so it gets one that describes a FIFO or socket with its inode number. An
+// event, timer or epoll file gets one with no type, as Linux reports an
+// anonymous inode.
 func (p *Process) fdNode(fd uint32) (*VNode, uint64) {
 	of, ok := p.fds[fd]
 	switch {
@@ -137,8 +139,10 @@ func (p *Process) fdNode(fd uint32) (*VNode, uint64) {
 		return nil, negErrno(EBADF)
 	case of.sock != nil:
 		return of.sock.vnode(), 0
-	case of.node == nil:
+	case of.pipe() != nil:
 		return &VNode{ino: of.pipe().ino, mode: sIFIFO | 0o600, nlink: 1}, 0
+	case of.node == nil:
+		return &VNode{mode: 0o600, nlink: 1}, 0
 	}
 	return of.node, 0
 }

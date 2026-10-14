@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"maps"
 	"math"
-	"reflect"
 	goruntime "runtime"
 	"slices"
 	"time"
@@ -206,18 +205,10 @@ func (p *Process) wasiPollOneoff(ctx context.Context, mem engine.Memory, inPtr, 
 		}
 
 		// Wait for a change, the clock or a caught signal.
-		cases := make([]reflect.SelectCase, 0, len(changes)+2)
-		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Done())})
-		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(timerCh)})
-		for _, change := range changes {
-			cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(change)})
-		}
-		var chosen int
-		blocking(ctx, func() { chosen, _, _ = reflect.Select(cases) })
-		switch chosen {
-		case 0:
+		switch waitAny(ctx, timerCh, changes) {
+		case waitDone:
 			return wasiErrno(EINTR)
-		case 1:
+		case waitTimer:
 			return wasiWritePollEvents(mem, []wasiPollEvent{*poll.clock}, outPtr, neventsPtr)
 		}
 	}
@@ -254,23 +245,10 @@ func (p *Process) wasiPollFDs(poll *wasiPoll) ([]wasiPollEvent, []<-chan struct{
 // descriptor that is not open reports neither readiness nor a change.
 func (p *Process) fdReadiness(fd uint32, write bool) (ready, hangup bool, change <-chan struct{}) {
 	of, ok := p.fds[fd]
-	switch {
-	case !ok:
+	if !ok {
 		return false, false, nil
-	case write && of.tx != nil:
-		return of.tx.state(true)
-	case write:
-		return true, false, nil
-	case of.rx != nil:
-		return of.rx.state(false)
-	case of.sock != nil && of.sock.listener != nil:
-		ready, change := of.sock.listener.state()
-		return ready, false, change
-	case of.tty != nil:
-		ready, change := of.tty.in.ready()
-		return ready, false, change
 	}
-	return true, false, nil
+	return of.readiness(write)
 }
 
 // wasiReadPoll reads n poll_oneoff subscriptions at inPtr into the clocks

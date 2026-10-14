@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -320,6 +321,31 @@ func wait(ctx context.Context, ch <-chan struct{}) bool {
 	})
 	return done
 }
+
+// waitAny waits without the kernel lock for ctx to end, timer to fire or any
+// of changes to close, and returns waitDone, waitTimer or waitChange. A nil
+// timer never fires.
+func waitAny(ctx context.Context, timer <-chan time.Time, changes []<-chan struct{}) int {
+	// List the cases in the order of the results.
+	cases := make([]reflect.SelectCase, 0, len(changes)+2)
+	cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Done())})
+	cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(timer)})
+	for _, change := range changes {
+		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(change)})
+	}
+
+	// Wait for one.
+	var chosen int
+	blocking(ctx, func() { chosen, _, _ = reflect.Select(cases) })
+	return min(chosen, waitChange)
+}
+
+// The results of waitAny.
+const (
+	waitDone = iota
+	waitTimer
+	waitChange
+)
 
 // blocking runs wait, which blocks, without the kernel lock the host call
 // running under ctx holds, so other processes run in the meantime. Outside a

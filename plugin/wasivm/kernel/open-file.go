@@ -34,6 +34,14 @@ type OpenFile struct {
 	// sock is the socket the file is, or nil.
 	sock *unixSocket
 
+	// counter is the count an eventfd or timerfd file reads, or nil.
+	counter *counter
+	// timer is the timer of a timerfd file, which adds to its counter, or
+	// nil.
+	timer *timerFile
+	// epoll is the interest list of an epoll file, or nil.
+	epoll *epollSet
+
 	// data is a synthesized file's content, generated at open.
 	data []byte
 
@@ -56,10 +64,10 @@ func (of *OpenFile) unref() {
 }
 
 // release closes the file's sides of its pipes, its socket and its
-// pseudo-terminal: a slave's last close ends the master's input, and the
-// master's close hangs up the slave.
+// pseudo-terminal, and stops its timer: a slave's last close ends the
+// master's input, and the master's close hangs up the slave.
 func (of *OpenFile) release() {
-	// Close the pipes and the socket.
+	// Close the pipes and the socket, and stop the timer.
 	if of.rx != nil {
 		of.rx.close(true)
 	}
@@ -68,6 +76,9 @@ func (of *OpenFile) release() {
 	}
 	if of.sock != nil {
 		of.sock.close()
+	}
+	if of.timer != nil {
+		of.timer.stop()
 	}
 
 	// Close the pseudo-terminal's side.
@@ -91,6 +102,34 @@ func (of *OpenFile) terminal() *tty {
 		return nil
 	}
 	return t
+}
+
+// readiness reports whether a read of the file, or a write when write is
+// set, would proceed without waiting, and whether the other side closed.
+// change closes at the file's next change while it is not ready. A regular
+// file is always ready and has no change. An epoll file reports neither
+// readiness nor a change, since its readiness is not watched.
+func (of *OpenFile) readiness(write bool) (ready, hangup bool, change <-chan struct{}) {
+	switch {
+	case of.counter != nil:
+		ready, change := of.counter.state(write)
+		return ready, false, change
+	case of.epoll != nil:
+		return false, false, nil
+	case write && of.tx != nil:
+		return of.tx.state(true)
+	case write:
+		return true, false, nil
+	case of.rx != nil:
+		return of.rx.state(false)
+	case of.sock != nil && of.sock.listener != nil:
+		ready, change := of.sock.listener.state()
+		return ready, false, change
+	case of.tty != nil:
+		ready, change := of.tty.in.ready()
+		return ready, false, change
+	}
+	return true, false, nil
 }
 
 // pipe returns the pipe a pipe file reads or writes, or nil.

@@ -34,10 +34,10 @@ func (p *Process) sysRead(ctx context.Context, fd, bufPtr, count uint32) uint64 
 	return uint64(len(data))
 }
 
-// readFile reads up to count bytes from a pipe, socket, device or regular
-// file, advancing a regular file's offset. An empty read of a pipe or socket
-// that is not at end of file returns EINTR when a signal interrupted it, or
-// EAGAIN when the file is nonblocking.
+// readFile reads up to count bytes from a pipe, socket, event or timer file,
+// device or regular file, advancing a regular file's offset. An empty read of
+// a pipe, socket or counter that is not at end of file returns EINTR when a
+// signal interrupted it, or EAGAIN when the file is nonblocking.
 func (p *Process) readFile(ctx context.Context, of *OpenFile, count int) ([]byte, uint64) {
 	switch {
 	case of.rx != nil:
@@ -46,6 +46,8 @@ func (p *Process) readFile(ctx context.Context, of *OpenFile, count int) ([]byte
 		data, files, errno := p.readPipe(ctx, of, count)
 		unrefFiles(files)
 		return data, errno
+	case of.counter != nil:
+		return p.readCounter(ctx, of, count)
 	case of.tty != nil:
 		// Read a terminal, which waits for input.
 		buf := make([]byte, count)
@@ -129,6 +131,8 @@ func (p *Process) writeOutBytes(ctx context.Context, fd uint32, buf []byte) uint
 		return negErrno(EBADF)
 	case of.tx != nil:
 		return p.writePipe(ctx, of, buf, nil, false)
+	case of.counter != nil:
+		return p.writeCounter(ctx, of, buf)
 	case of.ptm != nil:
 		return of.ptm.write(buf)
 	case of.tty != nil:

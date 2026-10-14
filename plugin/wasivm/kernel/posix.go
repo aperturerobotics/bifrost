@@ -361,6 +361,29 @@ func posixFunctions() map[string]hostFunc {
 			// The kernel has no close-on-exec, so only O_NONBLOCK applies.
 			return p.posixResult(ctx, p.sysPipe2(uint32(a[0]), uint32(a[1])))
 		}},
+
+		// Event, timer and epoll files.
+		"eventfd": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysEventfd(uint32(a[0]), uint32(a[1])))
+		}},
+		"timerfd_create": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysTimerfdCreate(uint32(a[0]), uint32(a[1])))
+		}},
+		"timerfd_settime": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysTimerfdSettime(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3])))
+		}},
+		"timerfd_gettime": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysTimerfdGettime(uint32(a[0]), uint32(a[1])))
+		}},
+		"epoll_create1": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysEpollCreate1(uint32(a[0])))
+		}},
+		"epoll_ctl": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysEpollCtl(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3])))
+		}},
+		"epoll_wait": {"iiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysEpollWait(ctx, uint32(a[0]), uint32(a[1]), int32(a[2]), int32(a[3])))
+		}},
 		"umask": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
 			old := p.umask
 			p.umask = uint32(a[0]) & 0o777
