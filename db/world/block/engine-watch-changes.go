@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 
+	"github.com/s4wave/spacewave/db/block"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/world"
 )
@@ -46,7 +47,7 @@ func (e *Engine) WatchChanges(
 			return err
 		}
 
-		// Pin the current head and the recorded head at the base seqno.
+		// Hold the current head and pin the recorded head at the base seqno.
 		seqno, head, base, release, err := e.holdWatchedHeads(ctx, afterSeqno)
 		if err != nil {
 			return err
@@ -77,46 +78,52 @@ func (e *Engine) WatchChanges(
 	}
 }
 
-// holdWatchedHeads pins the current head and the recorded head at afterSeqno
-// until release. base is nil when no single recorded head has that seqno or
-// it can no longer be pinned.
+// holdWatchedHeads holds the current head and pins the recorded head at
+// afterSeqno until release. base is nil when no single recorded head has that
+// seqno or it can no longer be pinned.
 func (e *Engine) holdWatchedHeads(ctx context.Context, afterSeqno uint64) (
 	seqno uint64,
 	head, base *bucket_lookup.Cursor,
 	release func(),
 	err error,
 ) {
-	// Pin the current head under the publication lock.
+	// Read the current head's seqno under the publication lock.
 	locked := e.bcast.Lock()
-	defer locked.Unlock()
 	if e.closed {
+		locked.Unlock()
 		return 0, nil, nil, nil, ErrEngineClosed
 	}
 	if err := e.initializeHeadReadTx(ctx); err != nil {
+		locked.Unlock()
 		return 0, nil, nil, nil, err
 	}
 	seqno, err = e.head.readTx.state.GetSeqno(ctx)
 	if err != nil {
-		return 0, nil, nil, nil, err
-	}
-	head, releaseHead, err := e.holdRoot(ctx, e.head.root)
-	if err != nil {
+		locked.Unlock()
 		return 0, nil, nil, nil, err
 	}
 
-	// Find the one recorded root at the base seqno.
-	found := e.watchedHeadLocked(afterSeqno)
-	if found == nil {
+	// Hold the head and clone the recorded root at the base seqno.
+	head, releaseHead := e.holdHeadLocked()
+	if found := e.watchedHeadLocked(afterSeqno); found != nil {
+		base = found.Clone()
+	}
+	locked.Unlock()
+	if base == nil {
 		return seqno, head, nil, releaseHead, nil
 	}
 
-	// Pin it. A base the volume already collected cannot be compared.
-	base, releaseBase, err := e.holdRoot(ctx, found)
+	// Pin the base outside the lock without waiting for a peer. A base the
+	// volume already collected cannot be compared.
+	pinCtx, _ := block.WithoutPeerWait(ctx)
+	unpinBase, err := block.PinRoot(pinCtx, e.writeBlockStore, base.GetRef().GetRootRef())
 	if err != nil {
+		base.Release()
 		return seqno, head, nil, releaseHead, nil
 	}
 	return seqno, head, base, func() {
-		releaseBase()
+		base.Release()
+		unpinBase()
 		releaseHead()
 	}, nil
 }

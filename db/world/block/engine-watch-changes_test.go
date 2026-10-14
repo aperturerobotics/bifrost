@@ -10,6 +10,7 @@ import (
 
 	"github.com/s4wave/spacewave/db/block"
 	block_mock "github.com/s4wave/spacewave/db/block/mock"
+	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/world"
 )
 
@@ -161,35 +162,31 @@ func TestWatchChangesCollectedBase(t *testing.T) {
 	}
 }
 
-// peerRootStore pins one root through a peer. A pin of that root that may wait
-// for a peer blocks until its context ends, and one that may not reports the
-// root unavailable, as a store reading through to an absent peer does. Other
-// pins go to the store.
-type peerRootStore struct {
+// pinFuncStore pins roots with pin and passes everything else to the store.
+type pinFuncStore struct {
 	block.StoreOps
 	block.RootRetainer
-	// peer is the root only a peer holds.
-	peer *block.BlockRef
+	// pin pins a root.
+	pin func(ctx context.Context, ref *block.BlockRef) (func(), error)
 }
 
 // SupportsRootRetention reports that the store pins roots.
-func (s *peerRootStore) SupportsRootRetention() bool { return true }
+func (s *pinFuncStore) SupportsRootRetention() bool { return true }
 
-// PinRoot pins ref, asking the absent peer for the peer root.
-func (s *peerRootStore) PinRoot(ctx context.Context, ref *block.BlockRef) (func(), error) {
-	if !ref.EqualsRef(s.peer) {
-		return block.PinRoot(ctx, s.StoreOps, ref)
-	}
-	if block.GetPeerWait(ctx) != nil {
-		return nil, block.ErrUnavailable
-	}
-	<-ctx.Done()
-	return nil, context.Cause(ctx)
+// PinRoot pins ref with pin.
+func (s *pinFuncStore) PinRoot(ctx context.Context, ref *block.BlockRef) (func(), error) {
+	return s.pin(ctx, ref)
+}
+
+// setPin replaces how the engine's write store pins roots.
+func setPin(e *Engine, pin func(ctx context.Context, ref *block.BlockRef) (func(), error)) {
+	locked := e.bcast.Lock()
+	e.writeBlockStore = &pinFuncStore{StoreOps: e.writeBlockStore, pin: pin}
+	locked.Unlock()
 }
 
 // TestWatchChangesPeerBase checks that a watcher whose base only an absent
-// peer could serve sees unknown changes. Pinning the base must not wait for
-// the peer, since it holds the publication lock every reader and writer needs.
+// peer could serve sees unknown changes without waiting for the peer.
 func TestWatchChangesPeerBase(t *testing.T) {
 	// Commit an object and watch from that head.
 	f := newSessionFixture(t)
@@ -203,23 +200,64 @@ func TestWatchChangesPeerBase(t *testing.T) {
 	after := headSeqno(t, ctx, f.engine)
 	base := f.engine.GetRootRef().GetRootRef()
 
-	// Supersede the head and leave it only on an absent peer.
+	// Supersede the head and leave the base only on an absent peer: a pin
+	// that may wait for the peer blocks, and one that may not fails.
 	w = sessionWriter(t, f)
 	sessionObject(t, w, "peer/second")
 	if err := w.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
-	e := f.engine
-	locked := e.bcast.Lock()
-	e.writeBlockStore = &peerRootStore{StoreOps: e.writeBlockStore, peer: base}
-	locked.Unlock()
+	store := f.engine.writeBlockStore
+	setPin(f.engine, func(ctx context.Context, ref *block.BlockRef) (func(), error) {
+		if !ref.EqualsRef(base) {
+			return block.PinRoot(ctx, store, ref)
+		}
+		if block.GetPeerWait(ctx) != nil {
+			return nil, block.ErrUnavailable
+		}
+		<-ctx.Done()
+		return nil, context.Cause(ctx)
+	})
 
 	// Expect unknown changes since the base before the deadline.
-	if _, changes := readChangeWindow(t, ctx, e, after); !changes.Unknown {
+	if _, changes := readChangeWindow(t, ctx, f.engine, after); !changes.Unknown {
 		t.Fatalf("changes since a peer-only base = %+v, want unknown", changes)
 	}
 	if err := ctx.Err(); err != nil {
 		t.Fatalf("watch waited for the absent peer: %v", err)
+	}
+}
+
+// TestHeadHoldersSharePublicationPin checks that readers and write forks of
+// the published head share the pin taken at publication instead of pinning
+// again under the publication lock.
+func TestHeadHoldersSharePublicationPin(t *testing.T) {
+	// Publish a head, then make every later pin block.
+	f := newSessionFixture(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	w := sessionWriter(t, f)
+	sessionObject(t, w, "pin/first")
+	if err := w.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	setPin(f.engine, func(ctx context.Context, _ *block.BlockRef) (func(), error) {
+		<-ctx.Done()
+		return nil, context.Cause(ctx)
+	})
+
+	// Read the head and fork it for writing.
+	err := f.engine.AccessWorldState(ctx, nil, func(*bucket_lookup.Cursor) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	fork, err := f.engine.ForkBlockTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fork.Discard()
+	if err := ctx.Err(); err != nil {
+		t.Fatalf("head holder pinned again: %v", err)
 	}
 }
 

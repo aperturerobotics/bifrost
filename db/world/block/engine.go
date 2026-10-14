@@ -3,6 +3,7 @@ package world_block
 import (
 	"context"
 	"slices"
+	"sync/atomic"
 
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/csync"
@@ -22,8 +23,45 @@ import (
 type engineHead struct {
 	// root retains the cursor authority backing this head.
 	root *bucket_lookup.Cursor
+	// pin keeps root's blocks from collection while the head or a holder
+	// uses it.
+	pin *rootPin
 	// readTx reads this root until retirement drains its users.
 	readTx *Tx
+}
+
+// rootPin shares one root pin among its holders. Publication pins each head
+// once, so a holder takes the pin under bcast without block I/O.
+type rootPin struct {
+	// refs counts the holders, including the head.
+	refs atomic.Int64
+	// unpin releases the pin after the last holder.
+	unpin func()
+}
+
+// newRootPin pins ref in store for its first holder.
+func newRootPin(ctx context.Context, store block.StoreOps, ref *block.BlockRef) (*rootPin, error) {
+	// Pin the root and count the first holder.
+	unpin, err := block.PinRoot(ctx, store, ref)
+	if err != nil {
+		return nil, err
+	}
+	p := &rootPin{unpin: unpin}
+	p.refs.Store(1)
+	return p, nil
+}
+
+// hold adds a holder and returns its release.
+func (p *rootPin) hold() func() {
+	p.refs.Add(1)
+	return p.release
+}
+
+// release drops a holder and unpins after the last one.
+func (p *rootPin) release() {
+	if p.refs.Add(-1) == 0 {
+		p.unpin()
+	}
 }
 
 // engineRetirement is an obsolete resource set detached from Engine publication.
@@ -249,6 +287,14 @@ func NewEngine(
 		}
 	}
 
+	// Pin the opening head against collection.
+	pin, err := newRootPin(ctx, e.writeBlockStore, e.head.root.GetRef().GetRootRef())
+	if err != nil {
+		e.head.root.Release()
+		return nil, err
+	}
+	e.head.pin = pin
+
 	// Stage writes when the engine can publish a head atomically.
 	if e.writeCoordinator != nil && e.atomicPublisher != nil && e.atomicHeadFn != nil && e.atomicPublisher.SupportsAtomicPublication() {
 		// Content-addressed bytes are engine-retained, not transaction authority.
@@ -261,7 +307,7 @@ func NewEngine(
 
 	// Publish a complete read head before returning the engine.
 	taskCtx, subtask := trace.NewTask(ctx, "hydra/world-block/engine/new/initialize-head-read-tx")
-	err := e.initializeHeadReadTx(taskCtx)
+	err = e.initializeHeadReadTx(taskCtx)
 	subtask.End()
 	if err == nil {
 		err = e.recordInitialHead(ctx)
@@ -496,6 +542,14 @@ func (e *Engine) installRootRefLocked(ctx context.Context, ref *bucket.ObjectRef
 		nextRoot.Release()
 		return engineRetirement{}, err
 	}
+
+	// Pin the replacement once for every later holder.
+	pin, err := newRootPin(ctx, e.writeBlockStore, nextRoot.GetRef().GetRootRef())
+	if err != nil {
+		nextWorld.Discard()
+		nextRoot.Release()
+		return engineRetirement{}, err
+	}
 	var watched []*watchedHead
 	if evicted := e.recordWatchedHeadLocked(nextRoot, seqno); evicted != nil {
 		watched = append(watched, evicted)
@@ -513,6 +567,7 @@ func (e *Engine) installRootRefLocked(ctx context.Context, ref *bucket.ObjectRef
 	}
 	e.head = &engineHead{
 		root:   nextRoot,
+		pin:    pin,
 		readTx: NewTx(nextWorld),
 	}
 	e.signalHeadLocked()
@@ -539,7 +594,7 @@ func (e *Engine) invalidateHeadReadTxLocked() engineRetirement {
 		return engineRetirement{}
 	}
 	retirement := e.beginRetirementLocked(engineRetirement{readTx: e.head.readTx})
-	e.head = &engineHead{root: e.head.root}
+	e.head = &engineHead{root: e.head.root, pin: e.head.pin}
 	return retirement
 }
 
@@ -568,6 +623,7 @@ func (e *Engine) drainRetirement(ctx context.Context, retirement engineRetiremen
 	// Release the root authority only after every coupled transaction drains.
 	if retirement.head != nil && retirement.head.root != nil {
 		retirement.head.root.Release()
+		retirement.head.pin.release()
 	}
 	for _, h := range retirement.watched {
 		h.root.Release()
@@ -938,14 +994,9 @@ func (e *Engine) ForkBlockTransaction(ctx context.Context, write bool) (*Tx, err
 	}
 	ws.ownedStore, ws.releaseOwned = buffered, buffered != nil
 
-	// Pin the base root for the lifetime of a write fork.
+	// Hold the base root's pin for the lifetime of a write fork.
 	if write {
-		release, err := block.PinRoot(ctx, e.writeBlockStore, e.head.root.GetRef().GetRootRef())
-		if err != nil {
-			ws.Discard()
-			return nil, err
-		}
-		ws.readRelease = release
+		ws.readRelease = e.head.pin.hold()
 	}
 
 	// Wrap the World state in a transaction.
@@ -1038,26 +1089,18 @@ func (e *Engine) AccessWorldState(
 	})
 }
 
-// holdRoot clones root and pins its blocks against collection until release.
-// The caller must hold bcast so root stays published until it is pinned.
-// Since every reader and writer waits for bcast, the pin does not wait for a
-// peer to connect: a root block no local store or connected peer holds fails
-// the hold with an error block.IsNotAvailable reports.
-// Cursor.Clone copies the bucket handle without taking a release func, so the
-// hold does not establish a cross-bucket lifetime across Engine.Close.
-func (e *Engine) holdRoot(ctx context.Context, root *bucket_lookup.Cursor) (*bucket_lookup.Cursor, func(), error) {
-	// Pin a clone of root without waiting for an absent peer.
-	held := root.Clone()
-	ctx, _ = block.WithoutPeerWait(ctx)
-	unpin, err := block.PinRoot(ctx, e.writeBlockStore, held.GetRef().GetRootRef())
-	if err != nil {
-		held.Release()
-		return nil, nil, err
-	}
+// holdHeadLocked clones the published head and holds its pin until release.
+// The pin was taken at publication, so holding it needs no block I/O. Cursor.Clone
+// copies the bucket handle without taking a release func, so the hold does not
+// establish a cross-bucket lifetime across Engine.Close. The caller must hold
+// bcast.
+func (e *Engine) holdHeadLocked() (*bucket_lookup.Cursor, func()) {
+	held := e.head.root.Clone()
+	unpin := e.head.pin.hold()
 	return held, func() {
 		held.Release()
 		unpin()
-	}, nil
+	}
 }
 
 // accessStorage builds a writable bucket lookup cursor with an optional ref,
@@ -1073,11 +1116,8 @@ func (e *Engine) accessStorage(
 		locked.Unlock()
 		return ErrEngineClosed
 	}
-	ncs, release, err := e.holdRoot(ctx, e.head.root)
+	ncs, release := e.holdHeadLocked()
 	locked.Unlock()
-	if err != nil {
-		return err
-	}
 	defer release()
 	if ref != nil && e.stagedStore != nil {
 		ncs.SetTransactionStore(e.stagedStore)
@@ -1334,6 +1374,7 @@ func (e *Engine) initializeHeadReadTx(ctx context.Context) error {
 	}
 	e.head = &engineHead{
 		root:   e.head.root,
+		pin:    e.head.pin,
 		readTx: NewTx(world),
 	}
 	return nil
