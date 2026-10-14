@@ -281,6 +281,9 @@ func (p *Process) sysListen(fd uint32) uint64 {
 	case of.sock.listener == nil:
 		of.sock.listener = &unixListener{waitCh: make(chan struct{})}
 		of.sock.node.socket = of.sock
+		p.kernel.listens.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			broadcast()
+		})
 	}
 	return 0
 }

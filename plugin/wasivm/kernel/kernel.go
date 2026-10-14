@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/aperturerobotics/util/broadcast"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
 )
@@ -36,6 +37,9 @@ type Kernel struct {
 	caller *Process
 	// mounts is the mount table, in mount order. The kernel lock guards it.
 	mounts []*mount
+	// listens wakes the host dials that wait for a listener each time a
+	// socket starts listening.
+	listens broadcast.Broadcast
 
 	// procs is the process table.
 	procs *processTable

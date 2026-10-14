@@ -10,31 +10,37 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	// ErrNoListener is returned by DialUnix when no socket listens at the
-	// path.
-	ErrNoListener = errors.New("no socket listens at the path")
-
-	// errNoDeadline is returned by the deadline methods of a host connection.
-	errNoDeadline = errors.New("unix connection deadlines are unsupported")
-)
+// errNoDeadline is returned by the deadline methods of a host connection.
+var errNoDeadline = errors.New("unix connection deadlines are unsupported")
 
 // DialUnix connects host code to the Unix stream socket listening at the
-// absolute path in the guest's filesystem, as a guest's connect does. The
-// guest accepts the connection like any other.
-func (k *Kernel) DialUnix(socketPath string) (net.Conn, error) {
-	// Queue a connection to the listener.
+// absolute path in the guest's filesystem, as a guest's connect does. It waits
+// for a socket to listen there, or for ctx to end. The guest accepts the
+// connection like any other.
+func (k *Kernel) DialUnix(ctx context.Context, socketPath string) (net.Conn, error) {
+	// Queue a connection once a listener is bound at the path. Each listen
+	// wakes the wait.
+	resolved := path.Clean("/" + socketPath)
 	k.mu.Lock()
 	of := k.newSocketFile(0)
-	errno := k.connectUnix(of, path.Clean("/"+socketPath))
-	k.mu.Unlock()
-	if errno != 0 {
-		return nil, errors.Wrap(ErrNoListener, socketPath)
+	for k.connectUnix(of, resolved) != 0 {
+		var listenCh <-chan struct{}
+		k.listens.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			listenCh = getWaitCh()
+		})
+		k.mu.Unlock()
+		select {
+		case <-ctx.Done():
+			return nil, context.Cause(ctx)
+		case <-listenCh:
+		}
+		k.mu.Lock()
 	}
+	k.mu.Unlock()
 
 	// Wrap the host's end.
-	ctx, cancel := context.WithCancel(context.Background())
-	return &unixConn{of: of, path: socketPath, ctx: ctx, cancel: cancel}, nil
+	connCtx, cancel := context.WithCancel(context.Background())
+	return &unixConn{of: of, path: socketPath, ctx: connCtx, cancel: cancel}, nil
 }
 
 // unixConn is the host's end of a connection to a guest Unix socket. Its open
