@@ -7,12 +7,10 @@ import (
 	"github.com/s4wave/spacewave/db/world"
 )
 
-// watchBlock is the value contract WatchWorldObject needs from a block:
-// wire encoding, change detection, and clone-on-send.
-type watchBlock[T any] interface {
-	block.Block
+// watchValue is the change detection WatchWorldObject needs from a value.
+type watchValue[T any] interface {
+	// EqualVT reports whether the value equals other.
 	EqualVT(other T) bool
-	CloneVT() T
 }
 
 // ReadWorldBlock reads one block of type T from an object state. It returns
@@ -35,7 +33,7 @@ func ReadWorldBlock[T block.Block](
 // read runs once per revision against the object handle; emit runs after each
 // read with changed reporting whether the value differs (EqualVT) from the
 // previous revision. The watch ends when ctx is canceled.
-func WatchWorldObject[T watchBlock[T]](
+func WatchWorldObject[T watchValue[T]](
 	ctx context.Context,
 	ws world.WorldState,
 	objectKey string,

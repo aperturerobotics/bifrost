@@ -11,6 +11,7 @@ import (
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
+	s4wave_world "github.com/s4wave/spacewave/sdk/world"
 )
 
 // CanvasResource implements the CanvasResourceService SRPC interface.
@@ -210,47 +211,16 @@ func (r *CanvasResource) WatchCanvasState(_ *WatchCanvasStateRequest, strm SRPCC
 	)
 }
 
+// watchCanvasWorld publishes the Canvas state each time its object changes.
 func (r *CanvasResource) watchCanvasWorld(ctx context.Context) error {
-	for {
-		if err := ctx.Err(); err != nil {
-			r.setCanvasWatchError(err)
-			return err
+	err := s4wave_world.WatchWorldObject(ctx, r.ws, r.objKey, r.readCanvasWorldState, func(state *CanvasState, changed bool) error {
+		if changed {
+			r.setCanvasWatchState(state)
 		}
-
-		seqno, err := r.ws.GetSeqno(ctx)
-		if err != nil {
-			r.setCanvasWatchError(err)
-			return err
-		}
-
-		objState, found, err := r.ws.GetObject(ctx, r.objKey)
-		if err != nil {
-			world.ReleaseObjectState(objState)
-			r.setCanvasWatchError(err)
-			return err
-		}
-		if !found {
-			r.setCanvasWatchError(world.ErrObjectNotFound)
-			return world.ErrObjectNotFound
-		}
-		state, err := func() (*CanvasState, error) {
-			// Release the object-state handle before the WaitSeqno block below
-			// so the read scope does not span the wait.
-			defer world.ReleaseObjectState(objState)
-			return r.readCanvasWorldState(ctx, objState)
-		}()
-		if err != nil {
-			r.setCanvasWatchError(err)
-			return err
-		}
-		r.setCanvasWatchState(state)
-
-		_, err = r.ws.WaitSeqno(ctx, seqno+1)
-		if err != nil {
-			r.setCanvasWatchError(err)
-			return err
-		}
-	}
+		return nil
+	})
+	r.setCanvasWatchError(err)
+	return err
 }
 
 func (r *CanvasResource) readCanvasWorldState(ctx context.Context, objState world.ObjectState) (*CanvasState, error) {

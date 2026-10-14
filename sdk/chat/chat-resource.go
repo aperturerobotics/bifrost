@@ -148,8 +148,9 @@ func (r *ChatResource) WatchChannelInfo(
 	ctx := strm.Context()
 	var sent *spacewave_chat_rpc.GetChannelInfoResponse
 	for {
-		// Snapshot the World sequence before reading to avoid missing a concurrent change.
-		seqno, err := r.ws.GetSeqno(ctx)
+		// Read the channel root before its metadata, so a concurrent change
+		// ends the wait below.
+		seen, err := r.readChannelRoot(ctx)
 		if err != nil {
 			return err
 		}
@@ -167,8 +168,8 @@ func (r *ChatResource) WatchChannelInfo(
 			sent = info
 		}
 
-		// Resume only when the shared World changes or the client releases its stream.
-		if _, err := r.ws.WaitSeqno(ctx, seqno+1); err != nil {
+		// Resume when the channel changes or the client releases its stream.
+		if err := world.WaitObjectChange(ctx, r.ws, seen); err != nil {
 			return err
 		}
 	}
@@ -320,7 +321,7 @@ func (r *ChatResource) ListMessages(
 	return &spacewave_chat_rpc.ListMessagesResponse{Messages: messages, HasMore: hasMore}, nil
 }
 
-// WatchMessages streams new message batches after each world change.
+// WatchMessages streams new message batches after each channel change.
 func (r *ChatResource) WatchMessages(
 	_ *spacewave_chat_rpc.WatchMessagesRequest,
 	strm spacewave_chat_rpc.SRPCChatResourceService_WatchMessagesStream,
@@ -330,12 +331,10 @@ func (r *ChatResource) WatchMessages(
 	nextIndex := uint64(0)
 	initialized := false
 
-	// Snapshot the World sequence before reading to avoid missing a concurrent append.
+	// Read the channel root before the channel, so a concurrent append ends
+	// the wait below.
 	for {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		seqno, err := r.ws.GetSeqno(ctx)
+		seen, err := r.readChannelRoot(ctx)
 		if err != nil {
 			return err
 		}
@@ -376,8 +375,9 @@ func (r *ChatResource) WatchMessages(
 			}
 		}
 
-		// Resume only when the shared World changes or the client releases its stream.
-		if _, err := r.ws.WaitSeqno(ctx, seqno+1); err != nil {
+		// Resume when the channel changes or the client releases its stream.
+		// Every append bumps the channel's message count.
+		if err := world.WaitObjectChange(ctx, r.ws, seen); err != nil {
 			return err
 		}
 	}
@@ -1202,6 +1202,18 @@ func (r *ChatResource) readChannel(ctx context.Context) (*ChatChannel, error) {
 		return nil, errors.New("chat resource requires world state")
 	}
 	return world.LookupObjectBody[*ChatChannel](ctx, r.ws, r.objectKey, NewChatChannelBlock)
+}
+
+// readChannelRoot reads the channel object's root and revision.
+func (r *ChatResource) readChannelRoot(ctx context.Context) (*world.ObjectRootRef, error) {
+	if r.ws == nil {
+		return nil, errors.New("chat resource requires world state")
+	}
+	refs, err := world.GetObjectRootRefsBatch(ctx, r.ws, []string{r.objectKey})
+	if err != nil {
+		return nil, err
+	}
+	return refs[0], nil
 }
 
 // readMessages resolves only the selected history page.
