@@ -282,13 +282,21 @@ func (a *ProviderAccount) mountEnrolledSO(
 	}
 	defer relSO()
 
-	// Install the invited state and lineage, whose grant lets the invitee
-	// decrypt the SO data.
+	// Resolve the local shared object the invited state installs into.
 	localSO, ok := so.(*SharedObject)
 	if !ok {
 		return errors.New("unexpected shared object type")
 	}
-	if err := localSO.soHost.InstallInviteSnapshot(ctx, state, lineage); err != nil {
+
+	// Install the invited state and lineage, whose grant lets the invitee
+	// decrypt the SO data. An account that lists the object holds it, so the
+	// state merges into the held one. Otherwise mounting only minted a
+	// placeholder to replace.
+	install := localSO.soHost.InstallInviteSnapshot
+	if listsSharedObject(a.soListCtr.GetValue(), soID) {
+		install = localSO.soHost.MergeInviteSnapshot
+	}
+	if err := install(ctx, state, lineage); err != nil {
 		return errors.Wrap(err, "install owner shared object state")
 	}
 
@@ -315,10 +323,8 @@ func (a *ProviderAccount) mountEnrolledSO(
 	}
 
 	// An existing participant accepting a new invite is already listed.
-	for _, entry := range soList.GetSharedObjects() {
-		if entry.GetRef().GetProviderResourceRef().GetId() == soID {
-			return nil
-		}
+	if listsSharedObject(soList, soID) {
+		return nil
 	}
 
 	// Otherwise add the object in ID order.
@@ -337,4 +343,11 @@ func (a *ProviderAccount) mountEnrolledSO(
 	}
 	a.soListCtr.SetValue(soList)
 	return nil
+}
+
+// listsSharedObject reports whether the list has an entry for the object.
+func listsSharedObject(list *sobject.SharedObjectList, soID string) bool {
+	return slices.ContainsFunc(list.GetSharedObjects(), func(entry *sobject.SharedObjectListEntry) bool {
+		return entry.GetRef().GetProviderResourceRef().GetId() == soID
+	})
 }

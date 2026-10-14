@@ -10,11 +10,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TestInstallInviteSnapshotKeepsHeldOperations checks that a replica holding
+// TestMergeInviteSnapshotKeepsHeldOperations checks that a replica holding
 // the object under an older config takes a newer invitation snapshot without
-// losing its unshared operations, and that an invitation outside the held
-// config chain replaces the held state.
-func TestInstallInviteSnapshotKeepsHeldOperations(t *testing.T) {
+// losing its unshared operations, and that a stale invitation or one outside
+// the held config chain leaves the held state alone.
+func TestMergeInviteSnapshotKeepsHeldOperations(t *testing.T) {
 	// Hold the genesis state with an operation the replica has not shared.
 	ctx := t.Context()
 	le := logrus.NewEntry(logrus.New())
@@ -56,7 +56,7 @@ func TestInstallInviteSnapshotKeepsHeldOperations(t *testing.T) {
 	candidate.Invites = []*sobject.SOInvite{{InviteId: "fresh", MaxUses: 1, Uses: 1}}
 
 	// Installing it adopts the newer config and invite and keeps the operation.
-	if err := host.InstallInviteSnapshot(ctx, candidate, []*sobject.SOConfigChange{genesis, addWriter}); err != nil {
+	if err := host.MergeInviteSnapshot(ctx, candidate, []*sobject.SOConfigChange{genesis, addWriter}); err != nil {
 		t.Fatal(err)
 	}
 	got, err := host.GetHostState(ctx)
@@ -73,7 +73,12 @@ func TestInstallInviteSnapshotKeepsHeldOperations(t *testing.T) {
 		t.Fatalf("installed state holds %d operations, want the unshared one", len(got.GetOps()))
 	}
 
-	// An invitation from an unrelated config chain replaces the held state.
+	// An invitation behind the held config is refused.
+	if err := host.MergeInviteSnapshot(ctx, held, []*sobject.SOConfigChange{genesis}); err == nil {
+		t.Fatal("stale invitation was installed")
+	}
+
+	// An invitation from an unrelated config chain is refused.
 	other, _, err := crypto.GenerateKeyPair(crypto.KeyType_Ed25519, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -82,14 +87,16 @@ func TestInstallInviteSnapshotKeepsHeldOperations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := host.InstallInviteSnapshot(ctx, foreign, []*sobject.SOConfigChange{foreignGenesis}); err != nil {
-		t.Fatal(err)
+	if err := host.MergeInviteSnapshot(ctx, foreign, []*sobject.SOConfigChange{foreignGenesis}); err == nil {
+		t.Fatal("foreign invitation was installed")
 	}
-	got, err = host.GetHostState(ctx)
+
+	// Neither refusal changed the held state.
+	unchanged, err := host.GetHostState(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !got.EqualVT(foreign) {
-		t.Fatal("unrelated invitation did not replace the held state")
+	if !unchanged.EqualVT(got) {
+		t.Fatal("refused invitation changed the held state")
 	}
 }

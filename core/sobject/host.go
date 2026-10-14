@@ -3,6 +3,7 @@ package sobject
 import (
 	"bytes"
 	"context"
+	"slices"
 
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/refcount"
@@ -321,11 +322,35 @@ func (s *SOState) mergeSnapshot(sharedObjectID string, candidate *SOState) error
 // of every operation the candidate holds. The caller must have authenticated
 // the invitation owner and its response before calling this operation.
 //
-// A replica that already holds the object keeps its own operations when the
-// lineage extends the held config, which the held config authorizes; the
-// invitation's invites replace the held ones. Otherwise the invitation replaces
-// the held state. Ordinary peer synchronization must use ImportPeerSnapshot.
+// The invitation replaces the held state, so the caller must hold no state it
+// needs: a replica that holds the object calls MergeInviteSnapshot instead.
+// Ordinary peer synchronization must use ImportPeerSnapshot.
 func (s *SOHost) InstallInviteSnapshot(ctx context.Context, candidate *SOState, lineage []*SOConfigChange) error {
+	return s.writeInviteSnapshot(ctx, candidate, lineage, func(*SOState) (*SOState, error) {
+		return candidate.Clone(), nil
+	})
+}
+
+// MergeInviteSnapshot merges an invitation result into the state this replica
+// holds. The lineage must extend the held config, which authorizes every
+// change, so the replica keeps its own operations and invitations. A stale
+// invitation, one from an unrelated chain, or one beyond the retained lineage
+// is refused, because installing it would roll back or replace the authority
+// the replica holds. See InstallInviteSnapshot for the arguments.
+func (s *SOHost) MergeInviteSnapshot(ctx context.Context, candidate *SOState, lineage []*SOConfigChange) error {
+	return s.writeInviteSnapshot(ctx, candidate, lineage, func(held *SOState) (*SOState, error) {
+		return s.mergeInvitation(held, candidate, lineage)
+	})
+}
+
+// writeInviteSnapshot validates an invitation, then commits the state next
+// derives from the held state with the invitation's lineage.
+func (s *SOHost) writeInviteSnapshot(
+	ctx context.Context,
+	candidate *SOState,
+	lineage []*SOConfigChange,
+	next func(held *SOState) (*SOState, error),
+) error {
 	// Validate the new checkpoint and lineage before opening the provider's
 	// replacement boundary.
 	if s.syncFuncs.CheckpointLock == nil || len(candidate.GetConfig().GetConfigChainHash()) == 0 {
@@ -347,27 +372,48 @@ func (s *SOHost) InstallInviteSnapshot(ctx context.Context, candidate *SOState, 
 		return err
 	}
 	defer lock.Release()
+	state, err := next(lock.GetSOState())
+	if err != nil {
+		return err
+	}
+	return lock.WriteSOState(ctx, state, lineage...)
+}
 
-	// Merge into the held state when the lineage extends the held config.
-	next := candidate.Clone()
-	previous := lock.GetSOState()
-	if head := previous.GetConfig().GetConfigChainHash(); len(head) != 0 {
-		suffix, err := unappliedConfigChanges(head, lineage)
-		if err != nil {
-			return err
-		}
-		if VerifyConfigChainSuffix(s.sharedObjectID, previous.GetConfig(), candidate.GetConfig(), suffix) == nil {
-			next = previous.Clone()
-			if err := next.mergeSnapshot(s.sharedObjectID, candidate); err != nil {
-				return err
-			}
-			next.Invites = candidate.CloneVT().GetInvites()
-			if err := next.Validate(s.sharedObjectID); err != nil {
-				return errors.Wrap(err, "invitation state")
-			}
+// mergeInvitation returns the held state advanced to the invitation's config,
+// which the lineage must reach from the held config head. The held state keeps
+// its operations and invitations; the invitation's invites replace the held
+// invites of the same ID.
+func (s *SOHost) mergeInvitation(held, candidate *SOState, lineage []*SOConfigChange) (*SOState, error) {
+	// Authenticate the invitation as an extension of the held config.
+	suffix, err := unappliedConfigChanges(held.GetConfig().GetConfigChainHash(), lineage)
+	if err != nil {
+		return nil, err
+	}
+	if err := VerifyConfigChainSuffix(s.sharedObjectID, held.GetConfig(), candidate.GetConfig(), suffix); err != nil {
+		return nil, errors.Wrap(err, "invitation configuration authority")
+	}
+
+	// Merge the invitation into a copy of the held state.
+	next := held.Clone()
+	if err := next.mergeSnapshot(s.sharedObjectID, candidate); err != nil {
+		return nil, err
+	}
+	for _, invite := range candidate.Clone().GetInvites() {
+		idx := slices.IndexFunc(next.Invites, func(existing *SOInvite) bool {
+			return existing.GetInviteId() == invite.GetInviteId()
+		})
+		if idx == -1 {
+			next.Invites = append(next.Invites, invite)
+		} else {
+			next.Invites[idx] = invite
 		}
 	}
-	return lock.WriteSOState(ctx, next, lineage...)
+
+	// Check the merged state.
+	if err := next.Validate(s.sharedObjectID); err != nil {
+		return nil, errors.Wrap(err, "invitation state")
+	}
+	return next, nil
 }
 
 // ApplyConfigChange applies a signed SOConfigChange to the shared object state.

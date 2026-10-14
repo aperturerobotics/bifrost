@@ -2,6 +2,7 @@ package resource_provider
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -368,22 +369,32 @@ func (s *LocalProviderResource) lookupLocalSessionByPeerID(
 // object records the invite, which the approving peer's state carries once the
 // invite is redeemed.
 func localAccountRedeemedInvite(ctx context.Context, localAcc *provider_local.ProviderAccount, invite *sobject.SOInviteMessage) (bool, error) {
-	for _, entry := range localAcc.GetSOListCtr().GetValue().GetSharedObjects() {
-		if entry.GetRef().GetProviderResourceRef().GetId() != invite.GetSharedObjectId() {
-			continue
-		}
-		so, release, err := localAcc.MountSharedObject(ctx, entry.GetRef(), nil)
-		if err != nil {
-			return false, errors.Wrap(err, "mount shared object")
-		}
-		defer release()
-		state, err := so.(*provider_local.SharedObject).GetSOHostState(ctx)
-		if err != nil {
-			return false, errors.Wrap(err, "read shared object state")
-		}
-		return sobject.FindInvite(state, invite.GetInviteId()) != nil, nil
+	// Find the account's entry for the invite's shared object.
+	entries := localAcc.GetSOListCtr().GetValue().GetSharedObjects()
+	idx := slices.IndexFunc(entries, func(entry *sobject.SharedObjectListEntry) bool {
+		return entry.GetRef().GetProviderResourceRef().GetId() == invite.GetSharedObjectId()
+	})
+	if idx == -1 {
+		return false, nil
 	}
-	return false, nil
+
+	// Read the state the account holds.
+	so, release, err := localAcc.MountSharedObject(ctx, entries[idx].GetRef(), nil)
+	if err != nil {
+		return false, errors.Wrap(err, "mount shared object")
+	}
+	defer release()
+	localSO, ok := so.(*provider_local.SharedObject)
+	if !ok {
+		return false, errors.New("unexpected shared object type")
+	}
+	state, err := localSO.GetSOHostState(ctx)
+	if err != nil {
+		return false, errors.Wrap(err, "read shared object state")
+	}
+
+	// The invite is redeemed once the held state records it.
+	return sobject.FindInvite(state, invite.GetInviteId()) != nil, nil
 }
 
 // _ verifies the local provider Resource contract.
