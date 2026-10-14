@@ -103,8 +103,9 @@ func TestUnixSocketConnectAccept(t *testing.T) {
 	}
 }
 
-// TestUnixSocketAddressErrors checks a bound path refuses a second bind, and
-// a path whose listener closed refuses connections.
+// TestUnixSocketAddressErrors checks a bound path refuses a second bind, a
+// path whose listener closed refuses connections, and an abstract address
+// refuses connections and cannot be bound.
 func TestUnixSocketAddressErrors(t *testing.T) {
 	// Bind the path twice.
 	p, mem := fsTestProcess()
@@ -121,6 +122,14 @@ func TestUnixSocketAddressErrors(t *testing.T) {
 	}
 	if res := p.sysSocket(guestAFUNIX+1, guestSockStream, 0); res != negErrno(EAFNOSUPPORT) {
 		t.Fatalf("socket in another family = %#x, want EAFNOSUPPORT", res)
+	}
+
+	// Connect to and bind an abstract address.
+	if res := p.sysConnect(other, sockTestAddr, writeTestSockaddr(mem, "\x00/tmp/.X11-unix/X0")); res != negErrno(ECONNREFUSED) {
+		t.Fatalf("connect to an abstract address = %#x, want ECONNREFUSED", res)
+	}
+	if res := p.sysBind(other, sockTestAddr, writeTestSockaddr(mem, "\x00/tmp/.X11-unix/X0")); res != negErrno(EINVAL) {
+		t.Fatalf("bind to an abstract address = %#x, want EINVAL", res)
 	}
 }
 

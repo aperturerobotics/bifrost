@@ -160,30 +160,34 @@ func (p *Process) sysSocketpair(domain, typ, protocol, svPtr uint32) uint64 {
 
 // readSockaddrPath reads the path of the sockaddr_un of addrLen bytes at
 // addrPtr. It returns the path as given and resolved against the working
-// directory. The abstract namespace is unsupported.
-func (p *Process) readSockaddrPath(addrPtr, addrLen uint32) (path, resolved string, errno uint64) {
+// directory. The kernel has no abstract namespace: an abstract address, a name
+// after a leading null byte, returns abstract set and no path.
+func (p *Process) readSockaddrPath(addrPtr, addrLen uint32) (path, resolved string, abstract bool, errno uint64) {
 	// Read the address.
 	if addrLen <= sockaddrPathOffset || addrLen > sockaddrUnSize {
-		return "", "", negErrno(EINVAL)
+		return "", "", false, negErrno(EINVAL)
 	}
 	buf, ok := p.inst.Memory().Read(addrPtr, addrLen)
 	switch {
 	case !ok:
-		return "", "", negErrno(EFAULT)
+		return "", "", false, negErrno(EFAULT)
 	case binary.LittleEndian.Uint16(buf) != guestAFUNIX:
-		return "", "", negErrno(EINVAL)
+		return "", "", false, negErrno(EINVAL)
 	}
 
 	// Take the path up to its terminator.
 	name := buf[sockaddrPathOffset:]
+	if len(name) > 1 && name[0] == 0 {
+		return "", "", true, 0
+	}
 	if i := bytes.IndexByte(name, 0); i >= 0 {
 		name = name[:i]
 	}
 	if len(name) == 0 {
-		return "", "", negErrno(EINVAL)
+		return "", "", false, negErrno(EINVAL)
 	}
 	path = string(name)
-	return path, resolvePath(p.cwd, p.fds, atFDCWD, path), 0
+	return path, resolvePath(p.cwd, p.fds, atFDCWD, path), false, 0
 }
 
 // writeSockaddr writes a sockaddr_un holding path to addrPtr, truncated to
@@ -218,9 +222,12 @@ func (p *Process) sysBind(fd, addrPtr, addrLen uint32) uint64 {
 	if of.sock.path != "" {
 		return negErrno(EINVAL)
 	}
-	path, resolved, errno := p.readSockaddrPath(addrPtr, addrLen)
-	if errno != 0 {
+	path, resolved, abstract, errno := p.readSockaddrPath(addrPtr, addrLen)
+	switch {
+	case errno != 0:
 		return errno
+	case abstract:
+		return negErrno(EINVAL)
 	}
 
 	// Create the node, which must not exist.
@@ -253,7 +260,9 @@ func (p *Process) sysListen(fd uint32) uint64 {
 }
 
 // sysConnect connects a socket to the listener bound at a path. The
-// connection waits in the listener's queue, so connect returns at once.
+// connection waits in the listener's queue, so connect returns at once. An
+// abstract address refuses the connection, as Linux does for a name no socket
+// binds, so a client such as libxcb falls back to the path.
 func (p *Process) sysConnect(fd, addrPtr, addrLen uint32) uint64 {
 	// Read the address of an unconnected socket.
 	of, errno := p.socketFile(fd)
@@ -265,9 +274,12 @@ func (p *Process) sysConnect(fd, addrPtr, addrLen uint32) uint64 {
 	case of.sock.listener != nil:
 		return negErrno(EINVAL)
 	}
-	_, resolved, errno := p.readSockaddrPath(addrPtr, addrLen)
-	if errno != 0 {
+	_, resolved, abstract, errno := p.readSockaddrPath(addrPtr, addrLen)
+	switch {
+	case errno != 0:
 		return errno
+	case abstract:
+		return negErrno(ECONNREFUSED)
 	}
 
 	// Find the listener.
