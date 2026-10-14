@@ -766,13 +766,15 @@ export const OpenNestedWorldRequest: MessageType<OpenNestedWorldRequest> =
   })
 
 /**
- * OpenNestedWorldResponse grants a read-only World state at the published snapshot.
+ * OpenNestedWorldResponse grants a read-only Engine over the nested World.
  *
  * @generated from message s4wave.world.OpenNestedWorldResponse
  */
 export interface OpenNestedWorldResponse {
   /**
-   * ResourceId identifies the retained nested World state resource.
+   * ResourceId identifies the nested World Engine resource.
+   * Its seqno is the outer object's revision, and each transaction reads the
+   * nested World published at the revision it opened.
    *
    * @generated from field: uint32 resource_id = 1;
    */

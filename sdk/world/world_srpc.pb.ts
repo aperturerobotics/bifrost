@@ -1098,7 +1098,8 @@ export const WorldStateResourceServiceDefinition = {
       kind: MethodKind.Unary,
     },
     /**
-     * OpenNestedWorld opens the immutable nested World published by an outer object.
+     * OpenNestedWorld opens a read-only Engine that follows the nested World an
+     * outer object publishes.
      *
      * @generated from rpc s4wave.world.WorldStateResourceService.OpenNestedWorld
      */
@@ -1359,7 +1360,8 @@ export interface WorldStateResourceService {
   ): Promise<StageWorldStateResponse>
 
   /**
-   * OpenNestedWorld opens the immutable nested World published by an outer object.
+   * OpenNestedWorld opens a read-only Engine that follows the nested World an
+   * outer object publishes.
    *
    * @generated from rpc s4wave.world.WorldStateResourceService.OpenNestedWorld
    */
@@ -1609,7 +1611,8 @@ export interface WorldStateResourceServiceHandler {
   ): Promise<StageWorldStateResponse>
 
   /**
-   * OpenNestedWorld opens the immutable nested World published by an outer object.
+   * OpenNestedWorld opens a read-only Engine that follows the nested World an
+   * outer object publishes.
    *
    * @generated from rpc s4wave.world.WorldStateResourceService.OpenNestedWorld
    */
@@ -1977,7 +1980,8 @@ export class WorldStateResourceServiceClient implements WorldStateResourceServic
   }
 
   /**
-   * OpenNestedWorld opens the immutable nested World published by an outer object.
+   * OpenNestedWorld opens a read-only Engine that follows the nested World an
+   * outer object publishes.
    *
    * @generated from rpc s4wave.world.WorldStateResourceService.OpenNestedWorld
    */
