@@ -65,9 +65,9 @@ func (p *Process) sysMemfdCreate(namePtr, flags uint32) uint64 {
 	return uint64(p.installFD(of))
 }
 
-// sysMmap fills the length bytes at addr with the file of fd from off, zero
-// past its end, for the C library's mmap of a file into memory it allocated.
-// A writable shared mapping is recorded.
+// sysMmap fills the length bytes at addr with the file of fd from off, as the
+// processes' mappings show it, zero past its end, for the C library's mmap of
+// a file into memory it allocated. A writable shared mapping is recorded.
 func (p *Process) sysMmap(addr, length, prot, flags, fd uint32, off int64) uint64 {
 	// Check the file and the access a writable shared mapping needs.
 	of, ok := p.fds[fd]
@@ -84,7 +84,7 @@ func (p *Process) sysMmap(addr, length, prot, flags, fd uint32, off int64) uint6
 	}
 
 	// Copy the file into the memory.
-	data, errno := p.kernel.readNodeBytes(of, off, int(length))
+	data, errno := p.kernel.readMapped(of, off, int(length))
 	if errno != 0 {
 		return errno
 	}

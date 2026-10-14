@@ -56,11 +56,11 @@ func mappedBytesTest(t *testing.T, f *File, off int64, n int) string {
 }
 
 // TestMmapShared checks a writable shared mapping of a memfd starts with the
-// file's bytes, that the host reads the program's writes through it before
-// msync, and that msync and munmap write them back without growing the file,
-// after the program closed its descriptor.
+// file's bytes, that the host and a new mapping read the program's writes
+// through it before msync, and that msync and munmap write them back without
+// growing the file, after the program closed its descriptor.
 func TestMmapShared(t *testing.T) {
-	// Map an 8-byte memfd into 16 bytes of memory, then close it.
+	// Map an 8-byte memfd into 16 bytes of memory.
 	p, mem := fsTestProcess()
 	fd := memfdTest(t, p, mem, "abcdefgh")
 	f := hostFileTest(p, fd)
@@ -68,12 +68,12 @@ func TestMmapShared(t *testing.T) {
 	if res := p.sysMmap(mmapTestAddr, 16, guestProtWrite, guestMapShared, fd, 0); res != 0 {
 		t.Fatalf("mmap = %#x", res)
 	}
-	_ = p.sysClose(fd)
 	if got, _ := mem.Read(mmapTestAddr, 16); string(got) != "abcdefgh\x00\x00\x00\x00\x00\x00\x00\x00" {
 		t.Fatalf("mapped memory %q, want the file then zeros", got)
 	}
 
-	// The host reads the program's write before msync.
+	// The host and a new mapping read the program's write before msync.
+	// Then the program closes its descriptor.
 	mem.Write(mmapTestAddr+2, []byte("XYZ"))
 	if got := mappedBytesTest(t, f, 1, 5); got != "bXYZf" {
 		t.Fatalf("host read %q, want bXYZf", got)
@@ -81,6 +81,13 @@ func TestMmapShared(t *testing.T) {
 	if got := fileBytesTest(t, f); got != "abcdefgh" {
 		t.Fatalf("file before msync %q, want abcdefgh", got)
 	}
+	if res := p.sysMmap(mmapTestAddr+64, 8, 0, 0x2, fd, 0); res != 0 {
+		t.Fatalf("second mmap = %#x", res)
+	}
+	if got, _ := mem.Read(mmapTestAddr+64, 8); string(got) != "abXYZfgh" {
+		t.Fatalf("second mapping %q, want abXYZfgh", got)
+	}
+	_ = p.sysClose(fd)
 
 	// msync writes the memory back within the file's size.
 	mem.Write(mmapTestAddr+8, []byte("past"))
