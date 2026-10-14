@@ -1,5 +1,6 @@
 import { ClientResourceRef } from '@aptre/bldr-sdk/resource/client.js'
 import { Resource } from '@aptre/bldr-sdk/resource/resource.js'
+import { SharedStreams } from '@aptre/bldr-sdk/resource/shared-streams.js'
 import {
   SessionResourceService,
   SessionResourceServiceClient,
@@ -77,6 +78,8 @@ export class Session extends Resource {
   private _localProvider: LocalSession | null = null
   // _systemStatus is the lazy-initialized SystemStatus wrapper.
   private _systemStatus: SystemStatus | null = null
+  // streams shares the snapshot watches opened through this Session.
+  private readonly streams = new SharedStreams()
 
   constructor(resourceRef: ClientResourceRef, sessionRef?: SessionRef) {
     super(resourceRef)
@@ -127,11 +130,16 @@ export class Session extends Resource {
   }
 
   // watchResourcesList returns a stream of the full spaces list snapshots.
+  // Watches of the same request share one stream.
   public watchResourcesList(
-    req?: WatchResourcesListRequest,
+    req: WatchResourcesListRequest = {},
     abortSignal?: AbortSignal,
   ): AsyncIterable<WatchResourcesListResponse> {
-    return this.service.WatchResourcesList(req ?? {}, abortSignal)
+    return this.streams.watch(
+      'resources-list:' + WatchResourcesListRequest.toJsonString(req),
+      (signal) => this.service.WatchResourcesList(req, signal),
+      abortSignal,
+    )
   }
 
   // watchSharedObjectHealth streams SharedObject health by SharedObject ID.

@@ -4,6 +4,7 @@ import { Cdn } from '../cdn/cdn.js'
 import { DebugDb } from '../debugdb/debugdb.js'
 import { Provider } from '../provider/provider.js'
 import { Resource } from '@aptre/bldr-sdk/resource/resource.js'
+import { SharedStreams } from '@aptre/bldr-sdk/resource/shared-streams.js'
 import {
   RootResourceService,
   RootResourceServiceClient,
@@ -36,6 +37,11 @@ import {
   WatchSessionsRequest,
   WatchSessionsResponse,
 } from './root.pb.js'
+import { ObjectTypeRegistryResourceServiceClient } from '../objecttype/registry/registry_srpc.pb.js'
+import type {
+  WatchObjectTypesRequest,
+  WatchObjectTypesResponse,
+} from '../objecttype/registry/registry.pb.js'
 import { Session } from '../session/session.js'
 import { StateAtom } from '@aptre/bldr-sdk/state/state.js'
 import type { Changelog } from '@s4wave/core/changelog/changelog.pb.js'
@@ -52,8 +58,10 @@ import {
 //   using myProvider = await root.lookupProvider("provider-id")
 // This will automatically release() when the function returns (or scope exits).
 export class Root extends Resource {
-  // service is the root resource service
+  // service is the root resource service.
   private service: RootResourceService
+  // streams shares the snapshot watches opened through this Root.
+  private readonly streams = new SharedStreams()
 
   constructor(resourceRef: ClientResourceRef) {
     super(resourceRef)
@@ -259,11 +267,32 @@ export class Root extends Resource {
   }
 
   // watchSessions streams the session list, updating when sessions change.
+  // Every watch shares one stream.
   public watchSessions(
-    req?: WatchSessionsRequest,
+    req: WatchSessionsRequest = {},
     abortSignal?: AbortSignal,
   ): AsyncIterable<WatchSessionsResponse> {
-    return this.service.WatchSessions(req ?? {}, abortSignal)
+    return this.streams.watch(
+      'sessions',
+      (signal) => this.service.WatchSessions(req, signal),
+      abortSignal,
+    )
+  }
+
+  // watchObjectTypes streams the object types registered for an
+  // installation. Watches of the same installation share one stream.
+  public watchObjectTypes(
+    req: WatchObjectTypesRequest = {},
+    abortSignal?: AbortSignal,
+  ): AsyncIterable<WatchObjectTypesResponse> {
+    return this.streams.watch(
+      'object-types:' + (req.instanceKey ?? ''),
+      (signal) =>
+        new ObjectTypeRegistryResourceServiceClient(
+          this.client,
+        ).WatchObjectTypes(req, signal),
+      abortSignal,
+    )
   }
 
   // watchAllAccountStatuses streams provider account status by session index.

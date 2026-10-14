@@ -158,7 +158,7 @@ import (
 //go:embed sdk/*.ts sdk/impl/*.ts
 //go:embed sdk/resource/client.ts sdk/resource/resource.ts sdk/resource/index.ts
 //go:embed sdk/resource/unix-client.ts
-//go:embed sdk/resource/rpc-stream.ts
+//go:embed sdk/resource/rpc-stream.ts sdk/resource/shared-streams.ts
 //go:embed sdk/resource/resource.pb.ts sdk/resource/resource_srpc.pb.ts
 //go:embed sdk/resource/server/server.ts sdk/resource/server/tracked-client.ts
 //go:embed sdk/resource/server/attached-resource.ts
