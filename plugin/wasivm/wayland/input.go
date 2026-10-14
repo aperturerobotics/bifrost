@@ -1,5 +1,7 @@
 package wayland
 
+import "maps"
+
 // keymap is the keyboard's US layout as an xkbcommon text keymap. Each
 // section includes the guest's xkeyboard-config data, which libxkbcommon
 // resolves, so the keymap stays small.
@@ -89,21 +91,35 @@ func buildKeysymCodes() map[uint32]uint32 {
 	}
 
 	// Add the function and modifier keys.
-	for sym, code := range map[uint32]uint32{
-		0xff08: 14,  // BackSpace
-		0xff09: 15,  // Tab
-		0xff0d: 28,  // Return
-		0xff1b: 1,   // Escape
-		0xff50: 102, // Home
-		0xff51: 105, // Left
-		0xff52: 103, // Up
-		0xff53: 106, // Right
-		0xff54: 108, // Down
-		0xff55: 104, // Prior
-		0xff56: 109, // Next
-		0xff57: 107, // End
-		0xff63: 110, // Insert
-		0xffff: 111, // Delete
+	// BackSpace
+	// Tab
+	// Return
+	// Escape
+	// Home
+	// Left
+	// Up
+	// Right
+	// Down
+	// Prior
+	// Next
+	// End
+	// Insert
+	// Delete
+	maps.Copy(codes, map[uint32]uint32{
+		0xff08: 14,
+		0xff09: 15,
+		0xff0d: 28,
+		0xff1b: 1,
+		0xff50: 102,
+		0xff51: 105,
+		0xff52: 103,
+		0xff53: 106,
+		0xff54: 108,
+		0xff55: 104,
+		0xff56: 109,
+		0xff57: 107,
+		0xff63: 110,
+		0xffff: 111,
 		0xffe1: keyLeftShift,
 		0xffe2: keyRightShift,
 		0xffe3: keyLeftCtrl,
@@ -113,9 +129,7 @@ func buildKeysymCodes() map[uint32]uint32 {
 		0xffea: keyRightAlt,
 		0xffeb: keyLeftMeta,
 		0xffec: keyRightMeta,
-	} {
-		codes[sym] = code
-	}
+	})
 
 	// Add F1 to F12: F1 to F10 run from 59, F11 and F12 from 87.
 	for i := range uint32(12) {

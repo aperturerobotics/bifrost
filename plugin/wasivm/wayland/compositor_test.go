@@ -3,7 +3,6 @@
 package wayland
 
 import (
-	"context"
 	"encoding/binary"
 	"strings"
 	"testing"
@@ -73,8 +72,7 @@ func (c *testClient) await(id uint32, op uint16) *message {
 // and gets pointer input.
 func TestCompositor(t *testing.T) {
 	// Start a kernel.
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	rt := native.New(ctx)
 	defer func() { _ = rt.Close(ctx) }()
 	k, err := kernel.New(ctx, rt, &kernel.Config{VirtualTerminal: true, Stdin: strings.NewReader("")})
