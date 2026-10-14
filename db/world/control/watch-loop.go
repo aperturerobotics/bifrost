@@ -244,15 +244,17 @@ func (c *WatchLoop) executeOnce(ctx context.Context, ws world.WorldState) (bool,
 		return false, nil
 	}
 
-	// Wait for the next object revision, or the next World change without one.
-	if objState != nil {
-		_, err = objState.WaitRev(wakeCtx, rev+1, !objFound)
-		if err == world.ErrObjectNotFound && objFound {
-			// ignore ErrObjectNotFound if we previously found the object
-			// allow the handler to be notified of the deletion
+	// Wait for the next revision of the watched object, its deletion or its
+	// creation. A loop without an object waits for the next World change.
+	switch {
+	case objState != nil:
+		_, err = objState.WaitRev(wakeCtx, rev+1, false)
+		if errors.Is(err, world.ErrObjectNotFound) {
 			err = nil
 		}
-	} else {
+	case c.objectKey != "":
+		_, err = world.WaitObjectRev(wakeCtx, ws, c.objectKey, 0, true)
+	default:
 		_, err = ws.WaitSeqno(wakeCtx, seqno+1)
 	}
 	finishWake()
