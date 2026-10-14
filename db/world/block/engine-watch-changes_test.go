@@ -25,11 +25,11 @@ func TestWatchChanges(t *testing.T) {
 	ctx := t.Context()
 	e := newRetirementTestEngine(t, ctx)
 	ws := world.NewEngineWorldState(e, true)
-	createKeyWatchTestObject(t, ctx, ws, "watch/kept")
-	createKeyWatchTestObject(t, ctx, ws, "watch/deleted")
-	createKeyWatchTestObject(t, ctx, ws, "watch/linked")
-	createKeyWatchTestObject(t, ctx, ws, "watch/revised")
-	createKeyWatchTestObject(t, ctx, ws, "watch/untouched")
+	createWatchTestObject(t, ctx, ws, "watch/kept")
+	createWatchTestObject(t, ctx, ws, "watch/deleted")
+	createWatchTestObject(t, ctx, ws, "watch/linked")
+	createWatchTestObject(t, ctx, ws, "watch/revised")
+	createWatchTestObject(t, ctx, ws, "watch/untouched")
 
 	// Link two of them with the quad the changes delete.
 	unlinked := world.NewGraphQuadWithKeys("watch/kept", "<old>", "watch/linked", "")
@@ -42,7 +42,7 @@ func TestWatchChanges(t *testing.T) {
 
 	// Create and delete an object, and set and delete a quad, over several
 	// commits.
-	createKeyWatchTestObject(t, ctx, ws, "watch/created")
+	createWatchTestObject(t, ctx, ws, "watch/created")
 	if _, err := ws.DeleteObject(ctx, "watch/deleted"); err != nil {
 		t.Fatal(err)
 	}
@@ -125,6 +125,52 @@ func TestWatchChangesImportedRoot(t *testing.T) {
 	checkQuads(t, changes.Quads, quads...)
 }
 
+// TestWatchChangesLive checks that the change watch hands each commit to
+// every subscriber already watching, listing only the object it changed.
+func TestWatchChangesLive(t *testing.T) {
+	// Start two subscribers from the current head.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	e := newRetirementTestEngine(t, ctx)
+	ws := world.NewEngineWorldState(e, true)
+	after := headSeqno(t, ctx, e)
+	reports := make(chan []string)
+	errs := make(chan error, 2)
+	for range 2 {
+		go func() {
+			errs <- e.WatchChanges(ctx, after, func(_ uint64, cs *world.ChangeSet) error {
+				if cs.Unknown {
+					return errors.New("live changes are unknown")
+				}
+				select {
+				case reports <- slices.Sorted(slices.Values(cs.Keys)):
+					return nil
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			})
+		}()
+	}
+
+	// Expect each commit at both subscribers. The second commit follows the
+	// first report, so the change watch delivers it live.
+	for _, key := range []string{"live/a", "live/b"} {
+		createWatchTestObject(t, ctx, ws, key)
+		for range 2 {
+			select {
+			case got := <-reports:
+				if !slices.Equal(got, []string{key}) {
+					t.Fatalf("changed keys %q, want %q", got, []string{key})
+				}
+			case err := <-errs:
+				t.Fatal(err)
+			case <-time.After(10 * time.Second):
+				t.Fatalf("no report of %q", key)
+			}
+		}
+	}
+}
+
 // TestWatchChangesEvicted checks that a watcher whose head the Engine no
 // longer retains sees unknown changes.
 func TestWatchChangesEvicted(t *testing.T) {
@@ -134,7 +180,7 @@ func TestWatchChangesEvicted(t *testing.T) {
 	ws := world.NewEngineWorldState(e, true)
 	after := headSeqno(t, ctx, e)
 	for i := range changeWatchHeads {
-		createKeyWatchTestObject(t, ctx, ws, "evict/"+strconv.Itoa(i))
+		createWatchTestObject(t, ctx, ws, "evict/"+strconv.Itoa(i))
 	}
 
 	// Expect unknown changes since the evicted head.

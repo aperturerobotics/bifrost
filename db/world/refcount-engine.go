@@ -196,5 +196,26 @@ func (e *RefCountEngine) WaitObjectRev(ctx context.Context, key string, rev uint
 	return objRev, err
 }
 
+// WatchChanges forwards the change feed of the current engine. A restart on a
+// newly resolved engine continues after the last reported seqno.
+func (e *RefCountEngine) WatchChanges(
+	ctx context.Context,
+	afterSeqno uint64,
+	cb func(seqno uint64, changes *ChangeSet) error,
+) error {
+	return e.rc.Access(ctx, func(ctx context.Context, val *Engine) error {
+		return WatchChanges(ctx, *val, afterSeqno, func(seqno uint64, changes *ChangeSet) error {
+			if err := cb(seqno, changes); err != nil {
+				return err
+			}
+			afterSeqno = seqno
+			return nil
+		})
+	})
+}
+
 // _ is a type assertion
-var _ Engine = (*RefCountEngine)(nil)
+var (
+	_ Engine        = (*RefCountEngine)(nil)
+	_ ChangeWatcher = (*RefCountEngine)(nil)
+)

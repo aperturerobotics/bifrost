@@ -42,5 +42,17 @@ func (e *Engine) NewTransaction(ctx context.Context, write bool) (world.Tx, erro
 	return NewTx(le, tx), nil
 }
 
+// WatchChanges forwards the change feed of the underlying engine.
+func (e *Engine) WatchChanges(
+	ctx context.Context,
+	afterSeqno uint64,
+	cb func(seqno uint64, changes *world.ChangeSet) error,
+) error {
+	return world.WatchChanges(ctx, e.Engine, afterSeqno, cb)
+}
+
 // _ is a type assertion
-var _ world.Engine = (*Engine)(nil)
+var (
+	_ world.Engine        = (*Engine)(nil)
+	_ world.ChangeWatcher = (*Engine)(nil)
+)

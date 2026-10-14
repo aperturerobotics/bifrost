@@ -33,7 +33,13 @@ func WorldChanges(ctx context.Context, before, after *block.Cursor, maxKeys int)
 	if err != nil || !complete {
 		return world.NewUnknownChangeSet(), err
 	}
+	return worldChangesWithKeys(ctx, before, after, keys, maxKeys)
+}
 
+// worldChangesWithKeys completes the ChangeSet between two World roots that
+// ChangedObjectKeys has decoded and compared, from the changed object keys it
+// listed. It reuses the keys slice.
+func worldChangesWithKeys(ctx context.Context, before, after *block.Cursor, keys []string, maxKeys int) (*world.ChangeSet, error) {
 	// List the quads set or deleted between the graphs.
 	quads, complete, err := changedGraphQuads(ctx, before, after, maxKeys)
 	if err != nil || !complete {
