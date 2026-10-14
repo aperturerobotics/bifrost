@@ -2,7 +2,9 @@ package space_unixfs
 
 import (
 	"context"
+	"slices"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -153,23 +155,21 @@ func (f *FSCursor) getProjectionTail() ([]string, bool) {
 func (f *FSCursor) getMountedObjectKey(ctx context.Context) (string, bool, error) {
 	// Require an object mount marker at the end of the projected path.
 	tail, ok := f.getProjectionTail()
-	if !ok || len(tail) == 0 || tail[len(tail)-1] != "-" {
+	if !ok || len(tail) == 0 || tail[len(tail)-1] != projectedMountName {
 		return "", false, nil
 	}
 
-	// Extract the object path preceding its mount marker.
+	// Mount the object named by the path preceding the marker.
 	objectPath := tail[:len(tail)-1]
 	if len(objectPath) == 0 {
 		return "", false, nil
 	}
-
-	// Match the object path against the objects projected from the World.
-	objects, err := listProjectedObjects(ctx, f.ws)
-	if err != nil {
+	objectKey := strings.Join(objectPath, "/")
+	found, err := isProjectedObject(ctx, f.ws, objectKey)
+	if err != nil || !found {
 		return "", false, err
 	}
-	objectKey, found := findExactObjectKey(objectPath, objects)
-	return objectKey, found, nil
+	return objectKey, true, nil
 }
 
 func (f *FSCursor) lookupChild(ctx context.Context, name string) (unixfs.FSCursor, error) {
@@ -217,52 +217,61 @@ func (f *FSCursor) lookupChild(ctx context.Context, name string) (unixfs.FSCurso
 	}
 
 	// Require the requested child in the projected directory.
-	children, err := f.listChildren(ctx)
+	exists, err := f.hasChild(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := children[name]; !ok {
+	if !exists {
 		return nil, unixfs_errors.ErrNotExist
 	}
 	return f.buildChild(name), nil
 }
 
-func (f *FSCursor) listChildren(ctx context.Context) (map[string]*projectedChild, error) {
+// hasChild reports whether the projected directory has a child named name:
+// the mount entry of a projected object, or a segment leading to one.
+func (f *FSCursor) hasChild(ctx context.Context, name string) (bool, error) {
 	// Require a projected directory path instead of an object mount.
+	path, err := f.getDirectoryPath()
+	if err != nil {
+		return false, err
+	}
+
+	// Match the mount entry against the directory's own object.
+	if name == projectedMountName {
+		if len(path) == 0 {
+			return false, nil
+		}
+		return isProjectedObject(ctx, f.ws, strings.Join(path, "/"))
+	}
+
+	// Match any other name against the objects at or below it.
+	if name == "" || strings.Contains(name, "/") {
+		return false, nil
+	}
+	return hasProjectedObject(ctx, f.ws, strings.Join(append(slices.Clone(path), name), "/"))
+}
+
+// getDirectoryPath returns the World key path of the projected directory, or
+// an error when the cursor is not a projected directory.
+func (f *FSCursor) getDirectoryPath() ([]string, error) {
 	path, ok := f.getProjectionTail()
 	if !ok {
 		return nil, unixfs_errors.ErrNotExist
 	}
-	if len(path) > 0 && path[len(path)-1] == "-" {
+	if len(path) != 0 && path[len(path)-1] == projectedMountName {
 		return nil, unixfs_errors.ErrNotDirectory
 	}
+	return path, nil
+}
 
-	// Read the World objects eligible for filesystem projection.
-	objects, err := listProjectedObjects(ctx, f.ws)
+// listChildren returns the sorted child names of the projected directory.
+func (f *FSCursor) listChildren(ctx context.Context) ([]string, error) {
+	// Require a projected directory path instead of an object mount.
+	path, err := f.getDirectoryPath()
 	if err != nil {
 		return nil, err
 	}
-
-	// Collect the next path segment of each object below this directory.
-	children := make(map[string]*projectedChild)
-	for _, objectKey := range objects {
-		segs := splitObjectKey(objectKey)
-		if !hasPathPrefix(segs, path) || len(segs) <= len(path) {
-			continue
-		}
-
-		childName := segs[len(path)]
-		children[childName] = &projectedChild{name: childName}
-	}
-
-	// Expose the mount marker when this directory is also an exact object path.
-	if len(path) > 0 {
-		if _, found := findExactObjectKey(path, objects); found {
-			children["-"] = &projectedChild{name: "-"}
-		}
-	}
-
-	return children, nil
+	return listProjectedChildren(ctx, f.ws, path)
 }
 
 func (f *FSCursor) readdirChildren(ctx context.Context, skip uint64, cb func(ent unixfs.FSCursorDirent) error) error {
@@ -285,11 +294,11 @@ func (f *FSCursor) readdirChildren(ctx context.Context, skip uint64, cb func(ent
 	case 4:
 		dirents = append(dirents, newProjectedDirent("-", unixfs.NewFSCursorNodeType_Dir()))
 	default:
-		children, err := f.listChildren(ctx)
+		names, err := f.listChildren(ctx)
 		if err != nil {
 			return err
 		}
-		dirents = buildProjectedDirents(children)
+		dirents = buildProjectedDirents(names)
 	}
 
 	// Deliver directory entries after the requested skip count.

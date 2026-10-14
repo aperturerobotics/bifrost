@@ -4,8 +4,6 @@ package space_unixfs
 
 import (
 	"context"
-	"slices"
-	"strings"
 
 	git_world "github.com/s4wave/spacewave/db/git/world"
 	"github.com/s4wave/spacewave/db/unixfs"
@@ -18,42 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func listProjectedObjects(ctx context.Context, ws world.WorldState) ([]string, error) {
-	// Open an iterator over the World objects for projection.
-	iter := ws.IterateObjects(ctx, "", false)
-	defer iter.Close()
-
-	// Collect object keys while excluding World type records.
-	var objectKeys []string
-	for iter.Next() {
-		key := iter.Key()
-		if strings.HasPrefix(key, world_types.TypesPrefix) {
-			continue
-		}
-		objectKeys = append(objectKeys, key)
-	}
-	if err := iter.Err(); err != nil {
-		return nil, err
-	}
-
-	// Read the type metadata for the candidate object keys.
-	metadata, err := world_types.GetObjectMetadataBatch(ctx, ws, objectKeys)
-	if err != nil {
-		return nil, err
-	}
-
-	// Retain supported filesystem and Git objects in sorted order.
-	var projected []string
-	for _, md := range metadata {
-		if !supportsProjectedType(md.TypeID) {
-			continue
-		}
-		projected = append(projected, md.ObjectKey)
-	}
-	slices.Sort(projected)
-	return projected, nil
-}
-
+// supportsProjectedType reports whether objects of typeID can be projected.
 func supportsProjectedType(typeID string) bool {
 	switch typeID {
 	case unixfs_world.FSNodeTypeID, unixfs_world.FSObjectTypeID, unixfs_world.FSHostVolumeTypeID:
@@ -65,6 +28,7 @@ func supportsProjectedType(typeID string) bool {
 	}
 }
 
+// openObjectCursor opens the filesystem cursor of a projected object.
 func openObjectCursor(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -96,51 +60,7 @@ func openObjectCursor(
 	return unixfs_world.NewFSCursor(le, ws, objectKey, fsType, nil, false), nil
 }
 
-func buildProjectedDirents(children map[string]*projectedChild) []*projectedDirent {
-	// Sort projected child names for stable directory traversal.
-	names := make([]string, 0, len(children))
-	for name := range children {
-		names = append(names, name)
-	}
-	slices.Sort(names)
-
-	// Represent each projected child as a directory entry.
-	dirents := make([]*projectedDirent, 0, len(names))
-	for _, name := range names {
-		dirents = append(dirents, newProjectedDirent(name, unixfs.NewFSCursorNodeType_Dir()))
-	}
-	return dirents
-}
-
-func splitObjectKey(objectKey string) []string {
-	if objectKey == "" {
-		return nil
-	}
-	return strings.Split(objectKey, "/")
-}
-
-func hasPathPrefix(path, prefix []string) bool {
-	if len(prefix) > len(path) {
-		return false
-	}
-	for i := range prefix {
-		if path[i] != prefix[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func findExactObjectKey(path []string, objectKeys []string) (string, bool) {
-	want := strings.Join(path, "/")
-	for _, objectKey := range objectKeys {
-		if objectKey == want {
-			return objectKey, true
-		}
-	}
-	return "", false
-}
-
+// openGitWorktreeCursor opens the working directory of a Git worktree.
 func openGitWorktreeCursor(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -154,6 +74,7 @@ func openGitWorktreeCursor(
 	return unixfs_world.FollowUnixfsRef(ctx, le, ws, workdirRef, "", false)
 }
 
+// openGitRepoCursor opens a read-only cursor over a Git repository.
 func openGitRepoCursor(ctx context.Context, ws world.WorldState, objectKey string) (unixfs.FSCursor, error) {
 	return git_repofs.OpenRepoFSCursor(ctx, ws, objectKey, false)
 }
