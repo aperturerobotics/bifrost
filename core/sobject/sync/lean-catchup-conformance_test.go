@@ -191,6 +191,7 @@ func leanSyncResponse(t *testing.T, arena *fastjson.Arena, response *syncRespons
 	value.Set("cursor", arena.NewString(hex.EncodeToString(response.cursor)))
 	value.Set("changes", leanSyncChanges(t, arena, response.changes))
 	value.Set("snapshot", leanSyncSnapshot(arena, response.snapshot))
+	value.Set("branch", leanSyncBool(arena, response.branch != nil))
 	return value
 }
 
@@ -334,13 +335,7 @@ func leanSyncCatchupCases(t *testing.T, seed uint64) []leanSyncCase {
 			expected.Set("ok", leanSyncBool(&arena, err == nil))
 			result.Set("ok", leanSyncBool(&arena, err == nil))
 			result.Set("state", leanSyncResponse(t, &arena, pending))
-			kind := 0
-			switch message.GetBody().(type) {
-			case *SOSyncMessage_HistoryPage:
-				kind = 9
-			case *SOSyncMessage_Snapshot:
-				kind = 1
-			}
+			kind := leanSyncWriterKind(message)
 			result.Set("kind", arena.NewNumberInt(kind))
 			result.Set("page", leanSyncPage(t, &arena, message))
 			result.Set("snapshot", leanSyncSnapshot(&arena, message.GetSnapshot()))

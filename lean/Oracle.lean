@@ -78,7 +78,7 @@ deriving instance ToJson, FromJson for Sync.AuthorityRead, Sync.AuthorityWatch
 deriving instance ToJson, FromJson for Sync.WorkerJoin, Sync.JoinResult, Sync.StreamFinish
 deriving instance ToJson, FromJson for Sync.Head, Sync.HistoryChange, Sync.Receive, Sync.HistoryPage
 deriving instance ToJson, FromJson for Sync.ReceiveResult
-deriving instance ToJson, FromJson for Sync.Snapshot, Sync.Response, Sync.NextMessage
+deriving instance ToJson, FromJson for Sync.Snapshot, Sync.HistoryRead, Sync.Response, Sync.NextMessage
 deriving instance ToJson, FromJson for Sync.Request, Sync.AcceptanceInput, Sync.AcceptanceResult
 deriving instance ToJson, FromJson for Sync.WriterAttempt, Sync.WriterResult
 deriving instance ToJson, FromJson for Sync.ExchangeFrame, Sync.Exchange, Sync.ExchangePrimitives
@@ -99,9 +99,10 @@ def respond (req : Json) : Except String Json := do
     let state ← req.getObjValAs? State "state"
     let request ← req.getObjValAs? Sync.Request "request"
     let history ← req.getObjValAs? (Option (List Sync.HistoryChange)) "history"
+    let branch ← req.getObjValAs? (Option Sync.HistoryRead) "branch"
     let encoded ← req.getObjValAs? (Option String) "encoded"
     let bytes ← req.getObjValAs? Nat "bytes"
-    let result := Sync.prepareResponse state request history (fun _ => encoded) (fun _ => bytes)
+    let result := Sync.prepareResponse state request history branch (fun _ => encoded) (fun _ => bytes)
     return json% {ok: $(result.isSome), response: $result}
   | "syncStateHash" =>
     let state ← req.getObjValAs? State "state"

@@ -214,24 +214,8 @@ func (s *SOHost) ImportPeerSnapshot(
 	localPeer peer.ID,
 	validateAccess func(context.Context, *SOState) error,
 ) error {
-	// Bound untrusted work before acquiring the provider's write lock.
-	if candidate.SizeVT() > MaxSyncStateSize || len(changes) > MaxConfigSuffixEntries {
-		return ErrConfigHistoryUnavailable
-	}
-	var historyBytes int
-	for _, change := range changes {
-		historyBytes += change.SizeVT()
-		if historyBytes > MaxConfigSuffixBytes {
-			return ErrConfigHistoryUnavailable
-		}
-	}
-
-	// Acquire the provider's import boundary, which never publishes remote roots.
-	lockFn := s.syncFuncs.Lock
-	if lockFn == nil {
-		lockFn = s.lockFn
-	}
-	lock, err := lockFn(ctx, s.sharedObjectID)
+	// Acquire the provider's import boundary for the bounded candidate.
+	lock, err := s.lockPeerImport(ctx, candidate, changes)
 	if err != nil {
 		return err
 	}
@@ -243,9 +227,50 @@ func (s *SOHost) ImportPeerSnapshot(
 	if err != nil {
 		return err
 	}
+	if err := s.checkMergeFloor(ctx, previous, changes); err != nil {
+		return err
+	}
 	if err := VerifyConfigChainSuffix(s.sharedObjectID, previous.GetConfig(), candidate.GetConfig(), changes); err != nil {
 		return errors.Wrap(err, "peer snapshot configuration authority")
 	}
+	return s.commitPeerSnapshot(ctx, lock, candidate, changes, localPeer, validateAccess)
+}
+
+// lockPeerImport bounds untrusted work, then acquires the provider's import
+// boundary, which never publishes remote roots.
+func (s *SOHost) lockPeerImport(ctx context.Context, candidate *SOState, changes []*SOConfigChange) (SOStateLock, error) {
+	// Bound untrusted work before acquiring the provider's write lock.
+	if candidate.SizeVT() > MaxSyncStateSize || len(changes) > MaxConfigSuffixEntries {
+		return nil, ErrConfigHistoryUnavailable
+	}
+	var historyBytes int
+	for _, change := range changes {
+		historyBytes += change.SizeVT()
+		if historyBytes > MaxConfigSuffixBytes {
+			return nil, ErrConfigHistoryUnavailable
+		}
+	}
+
+	// Acquire the lock.
+	lockFn := s.syncFuncs.Lock
+	if lockFn == nil {
+		lockFn = s.lockFn
+	}
+	return lockFn(ctx, s.sharedObjectID)
+}
+
+// commitPeerSnapshot merges a candidate whose config changes, the suffix from
+// the held config, the caller verified, and writes it under lock.
+func (s *SOHost) commitPeerSnapshot(
+	ctx context.Context,
+	lock SOStateLock,
+	candidate *SOState,
+	changes []*SOConfigChange,
+	localPeer peer.ID,
+	validateAccess func(context.Context, *SOState) error,
+) error {
+	// Find whether the local peer can still read the candidate.
+	previous := lock.GetSOState()
 	readable := false
 	for _, participant := range candidate.GetConfig().GetParticipants() {
 		if participant.GetPeerId() == localPeer.String() && CanReadState(participant.GetRole()) {

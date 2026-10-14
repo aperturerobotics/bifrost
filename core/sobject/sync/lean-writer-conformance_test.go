@@ -245,6 +245,8 @@ func leanSyncWriterKind(message *SOSyncMessage) int {
 		return 9
 	case *SOSyncMessage_RecoveryRequired:
 		return 10
+	case *SOSyncMessage_Branch:
+		return 11
 	default:
 		return 0
 	}

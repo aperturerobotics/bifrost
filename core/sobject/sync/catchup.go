@@ -22,6 +22,9 @@ const maxHistoryPageBytes = 1024 * 1024
 // maxHistoryPageEntries bounds verification work in one history page.
 const maxHistoryPageEntries = 128
 
+// maxConfigHashSize bounds a config chain hash a peer names.
+const maxConfigHashSize = 128
+
 // catchupTimeout bounds a pinned advertisement and its request through acknowledgment.
 const catchupTimeout = 60 * time.Second
 
@@ -36,6 +39,9 @@ type syncReceive struct {
 	base []byte
 	// cursor is the hash after the last received entry.
 	cursor []byte
+	// branch is the sender's record at the requested floor when the chains
+	// diverged, and nil when the pages extend base.
+	branch []byte
 	// changes remains untrusted until the host verifies the complete suffix.
 	changes []*sobject.SOConfigChange
 	// size counts serialized retained history bytes.
@@ -50,6 +56,8 @@ type syncResponse struct {
 	revision uint64
 	// cursor is the head before the next page.
 	cursor []byte
+	// branch announces a diverged chain before the first page, then clears.
+	branch *SOSyncBranch
 	// changes contains the unsent suffix, in causal order.
 	changes []*sobject.SOConfigChange
 	// snapshot completes the response after all history pages.
@@ -341,7 +349,7 @@ func (x *syncExchange) receive(ctx context.Context, le *logrus.Entry, current *s
 		if len(head.GetConfigHash()) == 0 {
 			return sobject.ErrConfigHistoryUnavailable
 		}
-		if head.GetRevision() <= x.remoteRevision || len(head.GetConfigHash()) > 128 || len(head.GetStateHash()) != sha256.Size || x.receiving != nil || x.control != nil {
+		if head.GetRevision() <= x.remoteRevision || len(head.GetConfigHash()) > maxConfigHashSize || len(head.GetStateHash()) != sha256.Size || x.receiving != nil || x.control != nil {
 			return errors.New("invalid or overlapping sync head")
 		}
 		x.remoteRevision = head.GetRevision()
@@ -361,15 +369,16 @@ func (x *syncExchange) receive(ctx context.Context, le *logrus.Entry, current *s
 			return nil
 		}
 
-		// Pin the head and request the config history behind it.
+		// Pin the head and request the config history behind it. The floor
+		// bounds the branch a diverged peer sends instead.
 		base := bytes.Clone(config.GetConfigChainHash())
 		x.receiving = &syncReceive{head: head, base: base, cursor: base, deadline: time.Now().Add(catchupTimeout)}
 		x.control = &SOSyncMessage{Body: &SOSyncMessage_HistoryRequest{HistoryRequest: &SOSyncHistoryRequest{
-			Revision: head.GetRevision(), BaseHash: base,
+			Revision: head.GetRevision(), BaseHash: base, FloorSeqno: x.sync.soHost.CheckpointFloor(ctx, current),
 		}}}
 	case *SOSyncMessage_HistoryRequest:
 		request := body.HistoryRequest
-		if x.advertised == nil || request.GetRevision() != x.revision || x.requested || len(request.GetBaseHash()) == 0 || len(request.GetBaseHash()) > 128 {
+		if x.advertised == nil || request.GetRevision() != x.revision || x.requested || len(request.GetBaseHash()) == 0 || len(request.GetBaseHash()) > maxConfigHashSize {
 			return errors.New("invalid or repeated sync request")
 		}
 		x.requested = true
@@ -383,6 +392,13 @@ func (x *syncExchange) receive(ctx context.Context, le *logrus.Entry, current *s
 			}
 			x.control = &SOSyncMessage{Body: &SOSyncMessage_RecoveryRequired{RecoveryRequired: &SOSyncRecoveryRequired{Revision: x.revision}}}
 		}
+	case *SOSyncMessage_Branch:
+		branch := body.Branch
+		if x.receiving == nil || branch.GetRevision() != x.receiving.head.GetRevision() || x.receiving.branch != nil || len(x.receiving.changes) != 0 || len(branch.GetCursor()) == 0 || len(branch.GetCursor()) > maxConfigHashSize {
+			return errors.New("invalid or repeated sync branch")
+		}
+		x.receiving.branch = bytes.Clone(branch.GetCursor())
+		x.receiving.cursor = x.receiving.branch
 	case *SOSyncMessage_HistoryPage:
 		if x.receiving == nil {
 			return errors.New("unsolicited history page")
@@ -476,10 +492,20 @@ func syncAcknowledgment(revision uint64) *SOSyncMessage {
 	return &SOSyncMessage{Body: &SOSyncMessage_Ack{Ack: &SOSyncAck{Revision: revision}}}
 }
 
-// prepareResponse reads a bounded suffix and serializes exactly the advertised state.
+// prepareResponse reads a bounded suffix and serializes exactly the advertised
+// state. When the held chain does not reach the requested base, the chains
+// diverged, and the response carries the held branch above the requested
+// floor so the requester can merge.
 func (s *SOSync) prepareResponse(ctx context.Context, state *sobject.SOState, request *SOSyncHistoryRequest) (*syncResponse, error) {
-	// Read the config history suffix and enforce its size budget.
-	changes, err := s.soHost.ReadConfigHistory(ctx, request.GetBaseHash(), state.GetConfig().GetConfigChainHash())
+	// Read the config history suffix, or the branch, and enforce its size budget.
+	head := state.GetConfig().GetConfigChainHash()
+	cursor := bytes.Clone(request.GetBaseHash())
+	var branch *SOSyncBranch
+	changes, err := s.soHost.ReadConfigHistory(ctx, request.GetBaseHash(), head)
+	if errors.Is(err, sobject.ErrConfigHistoryUnavailable) {
+		cursor, changes, err = s.soHost.ReadConfigBranch(ctx, head, request.GetFloorSeqno())
+		branch = &SOSyncBranch{Revision: request.GetRevision(), Cursor: bytes.Clone(cursor)}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -504,12 +530,19 @@ func (s *SOSync) prepareResponse(ctx context.Context, state *sobject.SOState, re
 	}
 
 	// Return the response with its page cursor.
-	return &syncResponse{revision: request.GetRevision(), cursor: bytes.Clone(request.GetBaseHash()), changes: changes, snapshot: snapshot}, nil
+	return &syncResponse{revision: request.GetRevision(), cursor: cursor, branch: branch, changes: changes, snapshot: snapshot}, nil
 }
 
-// nextMessage emits one causal page or the final snapshot without exceeding a frame budget.
+// nextMessage emits the branch announcement, one causal page or the final
+// snapshot without exceeding a frame budget.
 func (r *syncResponse) nextMessage() (*SOSyncMessage, error) {
-	// Finish with the snapshot once every page has been emitted.
+	// Announce a diverged chain first, and finish with the snapshot once
+	// every page has been emitted.
+	if r.branch != nil {
+		branch := r.branch
+		r.branch = nil
+		return &SOSyncMessage{Body: &SOSyncMessage_Branch{Branch: branch}}, nil
+	}
 	if len(r.changes) == 0 {
 		return &SOSyncMessage{Body: &SOSyncMessage_Snapshot{Snapshot: r.snapshot}}, nil
 	}
@@ -588,11 +621,17 @@ func (s *SOSync) acceptResponse(ctx context.Context, receiving *syncReceive, sna
 		return err
 	}
 
-	// Verify the snapshot matches the pinned advertisement and import it.
+	// Verify the snapshot matches the pinned advertisement, then import it or
+	// merge its diverged branch.
 	if state.GetConfig().GetConfigChainSeqno() != receiving.head.GetConfigSeqno() || !bytes.Equal(state.GetConfig().GetConfigChainHash(), receiving.head.GetConfigHash()) {
 		return errors.New("snapshot differs from pinned advertisement")
 	}
-	err := s.soHost.ImportPeerSnapshot(ctx, state, receiving.changes, s.localObjectPeerID, s.validateSnapshotAccess)
+	var err error
+	if receiving.branch != nil {
+		err = s.soHost.MergePeerBranch(ctx, state, receiving.branch, receiving.changes, s.localObjectKey, s.validateSnapshotAccess)
+	} else {
+		err = s.soHost.ImportPeerSnapshot(ctx, state, receiving.changes, s.localObjectPeerID, s.validateSnapshotAccess)
+	}
 	if err != nil && s.responseObsolete(ctx, receiving.head) {
 		return nil
 	}

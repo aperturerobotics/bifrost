@@ -8,8 +8,9 @@ Mirrors paging, response preparation, acceptance and the serialized writer in
 `core/sobject/sync/catchup.go`.
 The digest size contract matches Go revision `f27844e847a0`: only transmitted
 snapshot frames have a size limit; held state can still produce a digest.
-`appendPage` preserves partial receive-buffer mutations on failure; `nextMessage`
+`appendPage` preserves partial receive-buffer mutations on failure; `nextPage`
 preserves the consumed response prefix even when hashing a later entry fails.
+`nextMessage` announces a diverged branch before the pages `nextPage` emits.
 Neither paging operation has access to held host state. `acceptResponse` alone
 composes pinned-response checks with the atomic host import model.
 
@@ -124,6 +125,9 @@ structure Response where
   cursor : String
   changes : List HistoryChange
   snapshot : Option Snapshot
+  /-- branch announces, before the first page, that cursor is the sender's record at the
+      requested floor because the sender does not hold the requested base. -/
+  branch : Bool
   deriving DecidableEq, Repr
 
 /-- prefixBytes reads the complete encoded page size for a proposed nonempty prefix. -/
@@ -158,14 +162,24 @@ structure NextMessage where
   snapshot : Option Snapshot
   deriving DecidableEq, Repr
 
-/-- nextMessage emits a snapshot only after the selected suffix has drained. -/
-def nextMessage (before : Response) (sizes : List Nat) : NextMessage :=
+/-- nextPage emits a snapshot only after the selected suffix has drained. -/
+def nextPage (before : Response) (sizes : List Nat) : NextMessage :=
   if before.changes.isEmpty then ⟨true, before, 1, none, before.snapshot⟩
   else
     let built := buildPage before [] sizes
     if !built.ok || built.selected.isEmpty then ⟨false, built.state, 0, none, none⟩
     else ⟨true, built.state, 9,
       some ⟨before.revision, before.cursor, built.selected, prefixBytes sizes built.selected.length⟩, none⟩
+
+/-- nextMessage announces a diverged branch once, then emits the pages and snapshot of nextPage. -/
+def nextMessage (before : Response) (sizes : List Nat) : NextMessage :=
+  if before.branch then ⟨true, {before with branch := false}, 11, none, none⟩
+  else nextPage before sizes
+
+/-- Without a branch announcement nextMessage is exactly nextPage. -/
+theorem nextMessage_unannounced (before : Response) (sizes : List Nat) (announced : before.branch = false) :
+    nextMessage before sizes = nextPage before sizes := by
+  simp [nextMessage, announced]
 
 /-- Every receive result preserves the pinned target and original trusted base. -/
 theorem appendChanges_binding (before : Receive) (changes : List HistoryChange) :
@@ -327,47 +341,47 @@ theorem buildPage_nonempty (before : Response) (selected : List HistoryChange) (
   all_goals simp_all
 
 /-- Healthy nonempty history with a fitting first entry can emit a page. -/
-theorem nextMessage_available (before : Response) (sizes : List Nat)
+theorem nextPage_available (before : Response) (sizes : List Nat)
     (nonempty : before.changes ≠ []) (hashed : before.changes.all (·.hashOK) = true)
     (fits : prefixBytes sizes 1 ≤ maxHistoryPageBytes) :
-    (nextMessage before sizes).ok = true ∧ (nextMessage before sizes).page.isSome = true := by
-  rcases before with ⟨revision, cursor, changes, snapshot⟩
+    (nextPage before sizes).ok = true ∧ (nextPage before sizes).page.isSome = true := by
+  rcases before with ⟨revision, cursor, changes, snapshot, branch⟩
   cases changes with
   | nil => contradiction
   | cons change rest =>
     have firstHash : change.hashOK = true := by
       simp only [List.all_cons, Bool.and_eq_true] at hashed
       exact hashed.1
-    have healthy := buildPage_healthy ⟨revision, cursor, change :: rest, snapshot⟩ [] sizes hashed
-    have selected : (buildPage ⟨revision, cursor, change :: rest, snapshot⟩ [] sizes).selected ≠ [] := by
+    have healthy := buildPage_healthy ⟨revision, cursor, change :: rest, snapshot, branch⟩ [] sizes hashed
+    have selected : (buildPage ⟨revision, cursor, change :: rest, snapshot, branch⟩ [] sizes).selected ≠ [] := by
       rw [buildPage]
       simp only [List.length_nil, maxHistoryPageEntries, Nat.zero_add,
         show ¬(0 : Nat) ≥ 128 from by decide, decide_false, Bool.false_or,
         show ¬prefixBytes sizes 1 > maxHistoryPageBytes from Nat.not_lt.mpr fits,
         ↓reduceIte, firstHash, Bool.not_true, Bool.false_eq_true, List.nil_append]
       exact buildPage_nonempty _ [change] sizes (by simp)
-    simp [nextMessage, healthy, selected]
+    simp [nextPage, healthy, selected]
 
 /-- A snapshot is emitted only after all response entries have been drained. -/
-theorem nextMessage_snapshot {before : Response} {sizes : List Nat}
-    (snapshot : (nextMessage before sizes).kind = 1) :
-    before.changes = [] ∧ (nextMessage before sizes).snapshot = before.snapshot := by
-  unfold nextMessage at snapshot ⊢
+theorem nextPage_snapshot {before : Response} {sizes : List Nat}
+    (snapshot : (nextPage before sizes).kind = 1) :
+    before.changes = [] ∧ (nextPage before sizes).snapshot = before.snapshot := by
+  unfold nextPage at snapshot ⊢
   split at snapshot
   · simp_all
   · dsimp only at snapshot ⊢
     split at snapshot <;> simp at snapshot
 
 /-- A returned page is a nonempty bounded prefix with the pinned revision and initial cursor. -/
-theorem nextMessage_page {before : Response} {sizes : List Nat} {page : HistoryPage}
-    (returned : (nextMessage before sizes).page = some page) :
+theorem nextPage_page {before : Response} {sizes : List Nat} {page : HistoryPage}
+    (returned : (nextPage before sizes).page = some page) :
     page.revision = before.revision ∧ page.cursor = before.cursor ∧ page.changes ≠ [] ∧
     page.changes.length ≤ maxHistoryPageEntries ∧ page.bytes ≤ maxHistoryPageBytes ∧
-    page.changes ++ (nextMessage before sizes).state.changes = before.changes := by
+    page.changes ++ (nextPage before sizes).state.changes = before.changes := by
   have partition := buildPage_partition before [] sizes
   have count := buildPage_count before [] sizes (by simp [maxHistoryPageEntries])
   have bytes := buildPage_bytes before [] sizes (Or.inl rfl)
-  unfold nextMessage at returned ⊢
+  unfold nextPage at returned ⊢
   split at returned
   · contradiction
   · rename_i nonempty
@@ -381,11 +395,11 @@ theorem nextMessage_page {before : Response} {sizes : List Nat} {page : HistoryP
       simp_all
 
 /-- Every emitted page advances the response cursor to its last entry. -/
-theorem nextMessage_cursor {before : Response} {sizes : List Nat} {page : HistoryPage}
-    (returned : (nextMessage before sizes).page = some page) :
-    (nextMessage before sizes).state.cursor = historyCursor before.cursor page.changes := by
+theorem nextPage_cursor {before : Response} {sizes : List Nat} {page : HistoryPage}
+    (returned : (nextPage before sizes).page = some page) :
+    (nextPage before sizes).state.cursor = historyCursor before.cursor page.changes := by
   have cursor := buildPage_cursor before [] sizes before.cursor rfl
-  unfold nextMessage at returned ⊢
+  unfold nextPage at returned ⊢
   split at returned
   · contradiction
   · rename_i nonempty
@@ -399,10 +413,10 @@ theorem nextMessage_cursor {before : Response} {sizes : List Nat} {page : Histor
       exact cursor
 
 /-- Every emitted page strictly reduces the remaining suffix, providing the finite progress measure. -/
-theorem nextMessage_progress {before : Response} {sizes : List Nat} {page : HistoryPage}
-    (returned : (nextMessage before sizes).page = some page) :
-    (nextMessage before sizes).state.changes.length < before.changes.length := by
-  have exact := nextMessage_page returned
+theorem nextPage_progress {before : Response} {sizes : List Nat} {page : HistoryPage}
+    (returned : (nextPage before sizes).page = some page) :
+    (nextPage before sizes).state.changes.length < before.changes.length := by
+  have exact := nextPage_page returned
   have positive : 0 < page.changes.length := by
     cases observed : page.changes with
     | nil => exact False.elim (exact.2.2.1 observed)
@@ -426,16 +440,45 @@ def retainedHistory (state : State) (request : Request) (history : Option (List 
     Option (List HistoryChange) :=
   if request.base == state.config.hash && request.base != "" then some [] else history
 
-/-- prepareResponse bounds retained history and encodes the stripped advertised state. -/
+/-- HistoryRead is a retained suffix and the hash before its first entry. -/
+structure HistoryRead where
+  cursor : String
+  changes : List HistoryChange
+  deriving DecidableEq, Repr
+
+/--
+selectHistory sends the held suffix from the requested base. When the provider
+does not hold that base, the chains diverged, and it sends the held branch above
+the requested floor instead, flagged true.
+-/
+def selectHistory (state : State) (request : Request) (history : Option (List HistoryChange))
+    (branch : Option HistoryRead) : Option (HistoryRead × Bool) :=
+  match retainedHistory state request history with
+  | some changes => some (⟨request.base, changes⟩, false)
+  | none => branch.map (·, true)
+
+/-- A suffix that is not a diverged branch starts at the requested base. -/
+theorem selectHistory_base {state : State} {request : Request} {history : Option (List HistoryChange)}
+    {branch : Option HistoryRead} {read : HistoryRead}
+    (selected : selectHistory state request history branch = some (read, false)) : read.cursor = request.base := by
+  unfold selectHistory at selected
+  cases held : retainedHistory state request history with
+  | some changes =>
+    simp only [held, Option.some.injEq, Prod.mk.injEq, and_true] at selected
+    rw [← selected]
+  | none => cases branch <;> simp [held] at selected
+
+/-- prepareResponse bounds the selected history and encodes the stripped advertised state. -/
 def prepareResponse (state : State) (request : Request) (history : Option (List HistoryChange))
-    (encode : State → Option String) (frameBytes : Snapshot → Nat) : Option Response := do
-  let changes ← retainedHistory state request history
-  if changes.any (fun change => change.bytes + 256 > maxHistoryPageBytes) then none
+    (branch : Option HistoryRead) (encode : State → Option String) (frameBytes : Snapshot → Nat) :
+    Option Response := do
+  let selected ← selectHistory state request history branch
+  if selected.1.changes.any (fun change => change.bytes + 256 > maxHistoryPageBytes) then none
   else
     let data ← encode (wireState state)
     let snapshot : Snapshot := ⟨data, request.revision, request.base⟩
     if frameBytes snapshot > 10 * 1024 * 1024 then none
-    else some ⟨request.revision, request.base, changes, some snapshot⟩
+    else some ⟨request.revision, selected.1.cursor, selected.1.changes, some snapshot, selected.2⟩
 
 /-- syncStateHash hashes stripped state of any size after requiring a checkpoint. -/
 def syncStateHash (state : State) (encode : State → Option String)
@@ -507,16 +550,17 @@ theorem wireState_private (state : State) :
 
 /-- Every prepared snapshot encodes the stripped pinned state under the exact request binding. -/
 theorem prepareResponse_bound {state : State} {request : Request} {history : Option (List HistoryChange)}
-    {encode : State → Option String} {frameBytes : Snapshot → Nat} {response : Response}
-    (prepared : prepareResponse state request history encode frameBytes = some response) :
-    response.revision = request.revision ∧ response.cursor = request.base ∧
+    {branch : Option HistoryRead} {encode : State → Option String} {frameBytes : Snapshot → Nat}
+    {response : Response} (prepared : prepareResponse state request history branch encode frameBytes = some response) :
+    response.revision = request.revision ∧ (response.branch = false → response.cursor = request.base) ∧
     ∃ snapshot, response.snapshot = some snapshot ∧ snapshot.revision = request.revision ∧
       snapshot.base = request.base ∧
       encode (wireState state) = some snapshot.data ∧ frameBytes snapshot ≤ 10 * 1024 * 1024 := by
   unfold prepareResponse at prepared
-  cases selected : retainedHistory state request history with
+  cases selected : selectHistory state request history branch with
   | none => simp [selected] at prepared
-  | some changes =>
+  | some pair =>
+    rcases pair with ⟨read, diverged⟩
     simp only [selected, Option.bind_eq_bind, Option.bind_some] at prepared
     split at prepared
     · contradiction
@@ -527,7 +571,9 @@ theorem prepareResponse_bound {state : State} {request : Request} {history : Opt
         split at prepared
         · contradiction
         · cases prepared
-          exact ⟨rfl, rfl, _, rfl, rfl, rfl, rfl, by omega⟩
+          refine ⟨rfl, fun announced => ?_, _, rfl, rfl, rfl, rfl, by omega⟩
+          subst announced
+          exact selectHistory_base selected
 
 /-- Obsolescence cannot hide a conflicting equal-sequence advertisement. -/
 theorem responseObsolete_equal (state : State) (head : Head)
@@ -650,28 +696,28 @@ theorem syncStateHash_local (state : State) (invites : List String)
 
 /-- Preparation discloses the same bytes independently of local capabilities. -/
 theorem prepareResponse_local (state : State) (invites : List String)
-    (request : Request) (history : Option (List HistoryChange))
+    (request : Request) (history : Option (List HistoryChange)) (branch : Option HistoryRead)
     (encode : State → Option String) (frameBytes : Snapshot → Nat) :
-    prepareResponse {state with invites} request history encode frameBytes =
-      prepareResponse state request history encode frameBytes := rfl
+    prepareResponse {state with invites} request history branch encode frameBytes =
+      prepareResponse state request history branch encode frameBytes := rfl
 
 /-- Healthy provider output and fitting real encodings produce the requested complete response. -/
 theorem prepareResponse_complete (state : State) (request : Request) (history : Option (List HistoryChange))
-    (encode : State → Option String) (frameBytes : Snapshot → Nat) (changes : List HistoryChange) (data : String)
+    (branch : Option HistoryRead) (encode : State → Option String) (frameBytes : Snapshot → Nat) (changes : List HistoryChange) (data : String)
     (read : retainedHistory state request history = some changes)
     (entries : ∀ change ∈ changes, change.bytes + 256 ≤ maxHistoryPageBytes)
     (encoded : encode (wireState state) = some data)
     (bounded : frameBytes ⟨data, request.revision, request.base⟩ ≤ 10 * 1024 * 1024) :
-    prepareResponse state request history encode frameBytes =
-      some ⟨request.revision, request.base, changes, some ⟨data, request.revision, request.base⟩⟩ := by
-  simpa [prepareResponse, read, encoded, Nat.not_lt.mpr bounded] using entries
+    prepareResponse state request history branch encode frameBytes =
+      some ⟨request.revision, request.base, changes, some ⟨data, request.revision, request.base⟩, false⟩ := by
+  simpa [prepareResponse, selectHistory, read, encoded, Nat.not_lt.mpr bounded] using entries
 
 /-- Every sender step preserves the advertised revision and final snapshot. -/
-theorem nextMessage_binding (before : Response) (sizes : List Nat) :
-    (nextMessage before sizes).state.revision = before.revision ∧
-    (nextMessage before sizes).state.snapshot = before.snapshot := by
+theorem nextPage_binding (before : Response) (sizes : List Nat) :
+    (nextPage before sizes).state.revision = before.revision ∧
+    (nextPage before sizes).state.snapshot = before.snapshot := by
   have binding := buildPage_binding before [] sizes
-  unfold nextMessage
+  unfold nextPage
   split
   · exact ⟨rfl, rfl⟩
   · dsimp only
@@ -683,8 +729,8 @@ def drainPages : Nat → Response → (Response → List Nat) → Option (List H
   | fuel + 1, before, sizes =>
     if before.changes.isEmpty then some ([], before.snapshot)
     else do
-      let page ← (nextMessage before (sizes before)).page
-      let (pages, snapshot) ← drainPages fuel (nextMessage before (sizes before)).state sizes
+      let page ← (nextPage before (sizes before)).page
+      let (pages, snapshot) ← drainPages fuel (nextPage before (sizes before)).state sizes
       return (page :: pages, snapshot)
 
 /-- A drained response contains every original entry exactly once, followed by its pinned snapshot. -/
@@ -704,19 +750,19 @@ theorem drainPages_exact {fuel : Nat} {before : Response} {sizes : Response → 
     split at drained
     · cases drained
       simp_all
-    · cases emitted : (nextMessage before (sizes before)).page with
+    · cases emitted : (nextPage before (sizes before)).page with
       | none => simp [emitted] at drained
       | some page =>
         simp only [emitted, Option.bind_eq_bind, Option.bind_some] at drained
-        cases rest : drainPages fuel (nextMessage before (sizes before)).state sizes with
+        cases rest : drainPages fuel (nextPage before (sizes before)).state sizes with
         | none => simp [rest] at drained
         | some pair =>
           rcases pair with ⟨tail, final⟩
           simp only [rest, Option.bind_some] at drained
           rcases drained with ⟨rfl, rfl⟩
           obtain ⟨entries, pinned⟩ := ih rest
-          have partition := (nextMessage_page emitted).2.2.2.2.2
-          exact ⟨by simpa [entries] using partition, pinned.trans (nextMessage_binding before _).2⟩
+          have partition := (nextPage_page emitted).2.2.2.2.2
+          exact ⟨by simpa [entries] using partition, pinned.trans (nextPage_binding before _).2⟩
 
 /-- responseSuffix records exactly the cursor and pinned fields after consuming a prefix. -/
 def responseSuffix (tail head : Response) : Prop :=
@@ -728,11 +774,11 @@ theorem responseSuffix_self (response : Response) : responseSuffix response resp
   ⟨[], rfl, rfl, rfl, rfl⟩
 
 /-- Each emitted page leaves the precise remaining suffix of the original response. -/
-theorem nextMessage_suffix {before : Response} {sizes : List Nat} {page : HistoryPage}
-    (returned : (nextMessage before sizes).page = some page) :
-    responseSuffix (nextMessage before sizes).state before := by
-  have binding := nextMessage_binding before sizes
-  exact ⟨page.changes, (nextMessage_page returned).2.2.2.2.2, binding.1, binding.2, nextMessage_cursor returned⟩
+theorem nextPage_suffix {before : Response} {sizes : List Nat} {page : HistoryPage}
+    (returned : (nextPage before sizes).page = some page) :
+    responseSuffix (nextPage before sizes).state before := by
+  have binding := nextPage_binding before sizes
+  exact ⟨page.changes, (nextPage_page returned).2.2.2.2.2, binding.1, binding.2, nextPage_cursor returned⟩
 
 /-- Consuming two prefixes retains the same original binding and composes their cursors. -/
 theorem responseSuffix_trans {tail middle head : Response}
@@ -756,18 +802,18 @@ theorem drainPages_available (fuel : Nat) (before : Response) (sizes : Response 
   | succ fuel ih =>
     by_cases empty : before.changes = []
     · exact ⟨[], before.snapshot, by simp [drainPages, empty]⟩
-    · have available := nextMessage_available before (sizes before) empty hashed (fits before (responseSuffix_self before) empty)
-      cases emitted : (nextMessage before (sizes before)).page with
+    · have available := nextPage_available before (sizes before) empty hashed (fits before (responseSuffix_self before) empty)
+      cases emitted : (nextPage before (sizes before)).page with
       | none => simp [emitted] at available
       | some page =>
-        have partition := (nextMessage_page emitted).2.2.2.2.2
-        have retained : (page.changes ++ (nextMessage before (sizes before)).state.changes).all (·.hashOK) = true := by
+        have partition := (nextPage_page emitted).2.2.2.2.2
+        have retained : (page.changes ++ (nextPage before (sizes before)).state.changes).all (·.hashOK) = true := by
           rw [partition]
           exact hashed
         simp only [List.all_append, Bool.and_eq_true] at retained
-        have progress := nextMessage_progress emitted
-        obtain ⟨pages, snapshot, tail⟩ := ih (nextMessage before (sizes before)).state (by omega) retained.2
-          (fun response suffix nonempty => fits response (responseSuffix_trans suffix (nextMessage_suffix emitted)) nonempty)
+        have progress := nextPage_progress emitted
+        obtain ⟨pages, snapshot, tail⟩ := ih (nextPage before (sizes before)).state (by omega) retained.2
+          (fun response suffix nonempty => fits response (responseSuffix_trans suffix (nextPage_suffix emitted)) nonempty)
         exact ⟨page :: pages, snapshot, by simp [drainPages, empty, emitted, tail]⟩
 
 /-- pageSequence records the exact binding, bounds and suffix partition of consecutive pages. -/
@@ -835,20 +881,20 @@ theorem drainPages_schedule {fuel : Nat} {before : Response} {sizes : Response �
     split at drained
     · cases drained
       simpa [pageSequence] using ‹before.changes.isEmpty = true›
-    · cases emitted : (nextMessage before (sizes before)).page with
+    · cases emitted : (nextPage before (sizes before)).page with
       | none => simp [emitted] at drained
       | some page =>
         simp only [emitted, Option.bind_eq_bind, Option.bind_some] at drained
-        cases rest : drainPages fuel (nextMessage before (sizes before)).state sizes with
+        cases rest : drainPages fuel (nextPage before (sizes before)).state sizes with
         | none => simp [rest] at drained
         | some pair =>
           rcases pair with ⟨tail, final⟩
           simp only [rest, Option.bind_some] at drained
           rcases drained with ⟨rfl, rfl⟩
           have schedule := ih rest
-          obtain ⟨revision, cursor, nonempty, count, bytes, partition⟩ := nextMessage_page emitted
+          obtain ⟨revision, cursor, nonempty, count, bytes, partition⟩ := nextPage_page emitted
           refine ⟨revision, cursor, nonempty, bytes, count, _, partition, ?_⟩
-          simpa only [(nextMessage_binding before (sizes before)).1, nextMessage_cursor emitted] using schedule
+          simpa only [(nextPage_binding before (sizes before)).1, nextPage_cursor emitted] using schedule
 
 /-- receivePages composes successful appendPage calls; rejection never yields a complete receiver. -/
 def receivePages (before : Receive) : List HistoryPage → Option Receive
@@ -1129,6 +1175,7 @@ structure ExchangePrimitives where
   encoded : Option String
   digest : String
   history : Option (List HistoryChange)
+  branch : Option HistoryRead
   advertisedEncoded : Option String
   snapshotBytes : Nat
   sizes : List Nat
@@ -1214,7 +1261,7 @@ def receiveExchange (before : Exchange) (current : State) (frame : ExchangeFrame
       let some advertised := before.advertised | return ⟨false, before, none, none, none⟩
       if frame.request.revision != before.revision || before.requested || frame.request.base == "" || frame.baseBytes > 128 then
         return ⟨false, before, none, none, none⟩
-      let response := prepareResponse advertised frame.request input.history (fun _ => input.advertisedEncoded)
+      let response := prepareResponse advertised frame.request input.history input.branch (fun _ => input.advertisedEncoded)
         (fun _ => input.snapshotBytes)
       let state := {before with requested := true, response := response}
       if response.isNone then

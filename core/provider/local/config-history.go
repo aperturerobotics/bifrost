@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -40,8 +41,13 @@ func WriteSOConfigHistory(
 		return errors.Wrap(err, "config history checkpoint")
 	}
 
-	// Verify every transition against the state held under the provider lock.
+	// Verify every transition against the state held under the provider lock,
+	// starting at the fork when a merge absorbs the held head.
 	checkpoint := current.CloneVT()
+	current, err := sobject.ConfigSuffixBase(current, changes)
+	if err != nil {
+		return err
+	}
 	for _, change := range changes {
 		accepted, err := sobject.VerifyConfigChange(sharedObjectID, current, change)
 		if err != nil {
@@ -76,7 +82,13 @@ func WriteSOConfigHistory(
 	}
 
 	// Store entries separately so opening state does not load the full history.
-	for _, change := range changes {
+	return writeSOConfigEntries(ctx, tx, sharedObjectID, changes)
+}
+
+// writeSOConfigEntries retains each change, and each record a merge among them
+// absorbs, by its hash.
+func writeSOConfigEntries(ctx context.Context, tx kvtx.Tx, id string, changes []*sobject.SOConfigChange) error {
+	for _, change := range append(slices.Clone(changes), sobject.AbsorbedConfigChanges(changes)...) {
 		hash, err := sobject.HashSOConfigChange(change)
 		if err != nil {
 			return err
@@ -85,7 +97,7 @@ func WriteSOConfigHistory(
 		if err != nil {
 			return err
 		}
-		if err := tx.Set(ctx, SOConfigHistoryEntryKey(sharedObjectID, hash), data); err != nil {
+		if err := tx.Set(ctx, SOConfigHistoryEntryKey(id, hash), data); err != nil {
 			return err
 		}
 	}
@@ -159,20 +171,7 @@ func WriteSOConfigLineage(ctx context.Context, tx kvtx.Tx, id string, target *so
 	}
 
 	// Retain each change by its hash.
-	for _, change := range lineage {
-		hash, err := sobject.HashSOConfigChange(change)
-		if err != nil {
-			return err
-		}
-		data, err := change.MarshalVT()
-		if err != nil {
-			return err
-		}
-		if err := tx.Set(ctx, SOConfigHistoryEntryKey(id, hash), data); err != nil {
-			return err
-		}
-	}
-	return nil
+	return writeSOConfigEntries(ctx, tx, id, lineage)
 }
 
 // readSOConfigHistory traverses immutable entries in the caller's read transaction.
