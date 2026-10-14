@@ -44,6 +44,9 @@ type Kernel struct {
 
 	// procs is the process table.
 	procs *processTable
+	// mapSeq numbers the file mappings in creation order. The kernel lock
+	// guards it.
+	mapSeq uint64
 	// shutdown ends the run Boot started, with ErrReboot or errHalt as the
 	// cause. It is nil outside Boot.
 	shutdown context.CancelCauseFunc
@@ -260,6 +263,9 @@ func (k *Kernel) runGuest(ctx context.Context, p *Process, run func(ctx context.
 	// Run the guest; it ends by panicking a ProcessExitError from exit.
 	err := run(ctx)
 	if p.inst != nil {
+		k.mu.Lock()
+		p.unmapAll()
+		k.mu.Unlock()
 		_ = p.inst.Close(ctx)
 	}
 	var exitErr *ProcessExitError

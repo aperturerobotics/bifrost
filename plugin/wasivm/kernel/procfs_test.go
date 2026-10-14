@@ -34,7 +34,7 @@ func readProcFile(t *testing.T, p *Process, path string) string {
 	}
 	fd := uint32(res)
 	defer p.sysClose(fd)
-	data, errno := p.readNodeBytes(p.fds[fd], 0, 1<<16)
+	data, errno := p.kernel.readNodeBytes(p.fds[fd], 0, 1<<16)
 	if errno != 0 {
 		t.Fatalf("read %s: %#x", path, errno)
 	}

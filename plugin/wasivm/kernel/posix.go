@@ -321,6 +321,21 @@ func posixFunctions() map[string]hostFunc {
 			return p.posixResult(ctx, errno)
 		}},
 
+		// Memory files and file mappings. The C library's mmap, msync and
+		// munmap call the __wasivm imports for a file mapping.
+		"memfd_create": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysMemfdCreate(uint32(a[0]), uint32(a[1])))
+		}},
+		"__wasivm_mmap": {"iiiiiij", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysMmap(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]), uint32(a[4]), int64(a[5])))
+		}},
+		"__wasivm_msync": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysMsync(uint32(a[0]), uint32(a[1])))
+		}},
+		"__wasivm_munmap": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysMunmap(uint32(a[0]), uint32(a[1])))
+		}},
+
 		// Files. __posix_fcntl3 replaces wasi-libc's fcntl, which rejects
 		// F_DUPFD.
 		"dup": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {

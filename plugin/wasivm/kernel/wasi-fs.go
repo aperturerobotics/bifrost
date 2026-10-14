@@ -384,7 +384,7 @@ func (p *Process) wasiFDPread(mem engine.Memory, fd, iovsPtr, iovsLen uint32, of
 	pos := int64(offset)
 	return wasiTransfer(mem, iovsPtr, iovsLen, nreadPtr, func(base, length uint32) (uint32, uint32) {
 		// Read the file into the buffer.
-		buf, res := p.readNodeBytes(of, pos, int(length))
+		buf, res := p.kernel.readNodeBytes(of, pos, int(length))
 		if res != 0 {
 			return 0, wasiErrnoFromResult(res)
 		}
@@ -416,7 +416,7 @@ func (p *Process) wasiFDPwrite(mem engine.Memory, fd, iovsPtr, iovsLen uint32, o
 		if !ok {
 			return 0, wasiErrnoFault
 		}
-		n, res := p.writeNodeBytes(of, pos, buf)
+		n, res := p.kernel.writeNodeBytes(of, pos, buf)
 		if res != 0 {
 			return 0, wasiErrnoFromResult(res)
 		}

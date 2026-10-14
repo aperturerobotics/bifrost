@@ -103,7 +103,7 @@ func (p *Process) readVFS(of *OpenFile, count int) ([]byte, uint64) {
 	}
 
 	// Read a regular file and advance the offset.
-	data, errno := p.readNodeBytes(of, of.offset, count)
+	data, errno := p.kernel.readNodeBytes(of, of.offset, count)
 	if errno != 0 {
 		return nil, errno
 	}
@@ -183,7 +183,7 @@ func (p *Process) writeVFS(of *OpenFile, buf []byte) uint64 {
 	}
 
 	// Write a regular file and advance the offset.
-	n, errno := p.writeNodeBytes(of, of.offset, buf)
+	n, errno := p.kernel.writeNodeBytes(of, of.offset, buf)
 	if errno != 0 {
 		return errno
 	}
@@ -242,7 +242,7 @@ func resize(data []byte, size int64) []byte {
 // readNodeBytes reads up to count bytes of an open file at off. It returns
 // fewer bytes at the end of the file, or a negative errno. It does not move
 // the descriptor offset.
-func (p *Process) readNodeBytes(of *OpenFile, off int64, count int) ([]byte, uint64) {
+func (k *Kernel) readNodeBytes(of *OpenFile, off int64, count int) ([]byte, uint64) {
 	// Read a synthesized file's snapshot or a host file.
 	node := of.node
 	switch {
@@ -251,7 +251,7 @@ func (p *Process) readNodeBytes(of *OpenFile, off int64, count int) ([]byte, uin
 	case node.gen != nil:
 		return readAt(of.data, off, count), 0
 	case node.hostPath != "":
-		f, err := p.kernel.vfs.host.Open(node.hostPath)
+		f, err := k.vfs.host.Open(node.hostPath)
 		if err != nil {
 			return nil, negErrno(EIO)
 		}
@@ -276,7 +276,7 @@ func readAt(data []byte, off int64, count int) []byte {
 // writeNodeBytes writes data to an open file at off, growing the file as
 // needed. It returns the bytes written or a negative errno. It does not move
 // the descriptor offset.
-func (p *Process) writeNodeBytes(of *OpenFile, off int64, data []byte) (int, uint64) {
+func (k *Kernel) writeNodeBytes(of *OpenFile, off int64, data []byte) (int, uint64) {
 	// Refuse a synthesized file, or write a host file and take its new size.
 	node := of.node
 	switch {
@@ -285,7 +285,7 @@ func (p *Process) writeNodeBytes(of *OpenFile, off int64, data []byte) (int, uin
 	case node.gen != nil:
 		return 0, negErrno(EACCES)
 	case node.hostPath != "":
-		f, err := p.kernel.vfs.host.OpenFile(node.hostPath, os.O_WRONLY, 0)
+		f, err := k.vfs.host.OpenFile(node.hostPath, os.O_WRONLY, 0)
 		if err != nil {
 			return 0, negErrno(EIO)
 		}

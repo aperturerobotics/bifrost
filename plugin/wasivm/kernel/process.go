@@ -29,6 +29,9 @@ type Process struct {
 	// memSize is the size of the program's memory at its last host call. The
 	// kernel lock guards it.
 	memSize uint32
+	// mappings holds the program's writable shared file mappings. The kernel
+	// lock guards it.
+	mappings []*mapping
 
 	// exitCh closes when the program has exited and exitCode and exitSignal
 	// are final. exitSignal is the signal that ended the program, or 0.

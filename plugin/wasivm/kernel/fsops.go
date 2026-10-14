@@ -45,7 +45,7 @@ func (p *Process) sysSendfile(ctx context.Context, outFd, inFd, offsetPtr, count
 			return negErrno(EFAULT)
 		}
 		off = int64(v)
-		buf, errno = p.readNodeBytes(in, off, int(count))
+		buf, errno = p.kernel.readNodeBytes(in, off, int(count))
 	} else {
 		buf, errno = p.readFile(ctx, in, int(count))
 	}

@@ -91,6 +91,7 @@ func (p *Process) forkChild(pid int, inst engine.Instance) *Process {
 	for _, of := range child.fds {
 		of.ref()
 	}
+	p.forkMappings(child)
 
 	// Copy the signal state without the signals in flight.
 	p.sigMu.Lock()
@@ -123,6 +124,7 @@ func (p *Process) exec(ctx context.Context, path string, args []string, env map[
 
 	// Replace the process.
 	p.execChild(args, env, resolved)
+	p.unmapAll()
 	_ = p.inst.Close(ctx)
 	p.kernel.startChildProcess(context.WithoutCancel(ctx), p.selfExecProc, func(ctx context.Context) error {
 		return p.kernel.runProgram(ctx, p.selfExecProc, wasm)
