@@ -2,6 +2,7 @@ package world_block
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -12,8 +13,19 @@ import (
 )
 
 // TestEngineChangeWatchWakesOnlyChangedKeys checks that a commit wakes the
-// waiters of the objects it changed and leaves other waiters asleep.
+// waiters of the objects it changed and leaves other waiters asleep, also when
+// the commit changes too many objects to list.
 func TestEngineChangeWatchWakesOnlyChangedKeys(t *testing.T) {
+	for _, bulk := range []int{0, changeDiffLimit} {
+		t.Run(fmt.Sprintf("bulk-%d", bulk), func(t *testing.T) {
+			testChangeWatchWakesOnlyChangedKeys(t, bulk)
+		})
+	}
+}
+
+// testChangeWatchWakesOnlyChangedKeys runs the wake check with a commit that
+// also creates bulk other objects.
+func testChangeWatchWakesOnlyChangedKeys(t *testing.T, bulk int) {
 	// Create two objects on a real block Engine.
 	ctx := t.Context()
 	e := newRetirementTestEngine(t, ctx)
@@ -40,11 +52,28 @@ func TestEngineChangeWatchWakesOnlyChangedKeys(t *testing.T) {
 	defer e.unwatchObjectKey(quietWatch, "watch/quiet", quietWake)
 	defer e.unwatchObjectKey(busyWatch, "watch/busy", busyWake)
 
-	// One comparison wakes every changed key under one lock, so the busy
-	// waiter's wakeup proves the quiet key was compared and left unchanged.
-	if _, _, err := ws.ApplyWorldOp(ctx, world_mock.NewMockWorldOp("watch/busy", "changed"), ""); err != nil {
+	// Change the busy object in one commit with the bulk objects.
+	tx, err := e.NewTransaction(ctx, true)
+	if err != nil {
 		t.Fatal(err)
 	}
+	defer tx.Discard()
+	for i := range bulk {
+		obj, err := tx.CreateObject(ctx, fmt.Sprintf("watch/bulk/%05d", i), nil)
+		world.ReleaseObjectState(obj)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, _, err := tx.ApplyWorldOp(ctx, world_mock.NewMockWorldOp("watch/busy", "changed"), ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// One comparison wakes every changed key under one lock, so the busy
+	// waiter's wakeup proves the quiet key was compared and left unchanged.
 	select {
 	case <-busyCh:
 	case <-ctx.Done():

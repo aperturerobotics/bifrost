@@ -4,16 +4,74 @@ import (
 	"bytes"
 	"context"
 	"slices"
+	"sort"
 
 	"github.com/s4wave/spacewave/db/block"
 	iavl "github.com/s4wave/spacewave/db/kvtx/block/iavl"
 	okra "github.com/s4wave/spacewave/db/kvtx/block/okra"
 )
 
+// changedKeysMaxVisits bounds the tree nodes an unrestricted comparison visits.
+const changedKeysMaxVisits = 100000
+
+// KeyRange is the half-open key range from Start up to End. A nil End is
+// unbounded.
+type KeyRange struct {
+	// Start is the first key in the range.
+	Start []byte
+	// End is the first key after the range, or nil for no end.
+	End []byte
+}
+
+// ExactKeyRange returns the range holding only key.
+func ExactKeyRange(key []byte) KeyRange {
+	return KeyRange{Start: key, End: append(bytes.Clone(key), 0)}
+}
+
+// PrefixKeyRange returns the range of the keys starting with prefix.
+func PrefixKeyRange(prefix []byte) KeyRange {
+	// Increment the last byte below 0xff after dropping the trailing 0xff
+	// bytes; a prefix of only 0xff bytes has no end.
+	end := bytes.Clone(prefix)
+	for len(end) != 0 && end[len(end)-1] == 0xff {
+		end = end[:len(end)-1]
+	}
+	if len(end) == 0 {
+		return KeyRange{Start: prefix}
+	}
+	end[len(end)-1]++
+	return KeyRange{Start: prefix, End: end}
+}
+
 // ChangedKeys compares immutable KV roots, skipping equal subtree references.
-// It reads tree metadata and inline values, never external value blocks. Complete
-// is false after maxKeys changes or 100,000 visited tree nodes; callers then reread.
+// It reads tree metadata and inline values, never external value blocks.
+// Complete is false after maxKeys changes or 100,000 visited tree nodes;
+// callers then reread.
 func ChangedKeys(ctx context.Context, before, after *block.Cursor, maxKeys int) (keys [][]byte, complete bool, err error) {
+	return changedKeys(ctx, before, after, nil, maxKeys)
+}
+
+// ChangedKeysIn lists the keys within ranges that differ between two immutable
+// KV roots. It skips every subtree that shares its reference or holds no key in
+// ranges, so its cost follows the number of keys in ranges rather than the size
+// of the change. ranges may be in any order and may overlap.
+func ChangedKeysIn(ctx context.Context, before, after *block.Cursor, ranges []KeyRange) ([][]byte, error) {
+	if len(ranges) == 0 {
+		return nil, nil
+	}
+	keys, _, err := changedKeys(ctx, before, after, normalizeKeyRanges(ranges), 0)
+	return keys, err
+}
+
+// changedKeys compares two KV roots. A nil ranges compares every key, bounded
+// by maxKeys and changedKeysMaxVisits; otherwise only keys in the sorted,
+// disjoint ranges are compared, without a bound.
+func changedKeys(
+	ctx context.Context,
+	before, after *block.Cursor,
+	ranges []KeyRange,
+	maxKeys int,
+) (keys [][]byte, complete bool, err error) {
 	// Open the before and after KV roots as lazy comparison frontiers.
 	left, err := newDiffTree(ctx, before)
 	if err != nil {
@@ -30,8 +88,18 @@ func ChangedKeys(ctx context.Context, before, after *block.Cursor, maxKeys int) 
 		if err := ctx.Err(); err != nil {
 			return nil, false, err
 		}
-		if visited >= 100000 || len(keys) >= maxKeys {
+		if ranges == nil && (visited >= changedKeysMaxVisits || len(keys) >= maxKeys) {
 			return nil, false, nil
+		}
+
+		// Drop the frontier nodes that cannot hold a key in ranges.
+		if ranges != nil && !mayHoldKeyIn(left, ranges) {
+			left = left[:len(left)-1]
+			continue
+		}
+		if ranges != nil && !mayHoldKeyIn(right, ranges) {
+			right = right[:len(right)-1]
+			continue
 		}
 
 		// Locate the next nodes on the before and after frontiers.
@@ -58,6 +126,24 @@ func ChangedKeys(ctx context.Context, before, after *block.Cursor, maxKeys int) 
 		}
 		if err := b.load(ctx); err != nil {
 			return nil, false, err
+		}
+
+		// Check the ranges again once loading reveals a leaf's key.
+		if ranges != nil && (!mayHoldKeyIn(left, ranges) || !mayHoldKeyIn(right, ranges)) {
+			continue
+		}
+
+		// Collect a leaf that sorts before the other side's subtree, since
+		// that subtree and every node after it start after the leaf.
+		if a != nil && a.leaf && b != nil && !b.leaf && bytes.Compare(a.key, b.lower) < 0 {
+			keys = append(keys, bytes.Clone(a.key))
+			left = left[:len(left)-1]
+			continue
+		}
+		if b != nil && b.leaf && a != nil && !a.leaf && bytes.Compare(b.key, a.lower) < 0 {
+			keys = append(keys, bytes.Clone(b.key))
+			right = right[:len(right)-1]
+			continue
 		}
 
 		// Expand the taller frontier until both sides expose comparable leaves.
@@ -87,13 +173,69 @@ func ChangedKeys(ctx context.Context, before, after *block.Cursor, maxKeys int) 
 	return keys, true, nil
 }
 
+// normalizeKeyRanges sorts ranges by start and merges overlapping ones.
+func normalizeKeyRanges(ranges []KeyRange) []KeyRange {
+	// Sort the ranges by their start key.
+	sorted := slices.Clone(ranges)
+	slices.SortFunc(sorted, func(a, b KeyRange) int {
+		return bytes.Compare(a.Start, b.Start)
+	})
+
+	// Merge each range into the previous one when they overlap.
+	out := sorted[:1]
+	for _, r := range sorted[1:] {
+		last := &out[len(out)-1]
+		if last.End != nil && bytes.Compare(r.Start, last.End) > 0 {
+			out = append(out, r)
+			continue
+		}
+		if last.End != nil && (r.End == nil || bytes.Compare(r.End, last.End) > 0) {
+			last.End = r.End
+		}
+	}
+	return out
+}
+
+// mayHoldKeyIn reports whether the top node of the frontier may hold a key in
+// the sorted, disjoint ranges. A node spans from its lower bound up to the
+// lower bound of the node below it on the frontier, which follows it in key
+// order.
+func mayHoldKeyIn(frontier []*diffTreeNode, ranges []KeyRange) bool {
+	// Treat an exhausted frontier as holding nothing.
+	if len(frontier) == 0 {
+		return true
+	}
+
+	// Find the first range ending after the node's lower bound.
+	n := frontier[len(frontier)-1]
+	i := sort.Search(len(ranges), func(i int) bool {
+		return ranges[i].End == nil || bytes.Compare(ranges[i].End, n.lower) > 0
+	})
+	if i == len(ranges) {
+		return false
+	}
+
+	// Check that the range starts before the node ends.
+	if n.leaf {
+		return bytes.Compare(ranges[i].Start, n.key) <= 0
+	}
+	if len(frontier) == 1 {
+		return true
+	}
+	return bytes.Compare(ranges[i].Start, frontier[len(frontier)-2].lower) < 0
+}
+
 // diffTreeNode is a lazy ordered frontier; children are stored right-to-left for a stack.
 type diffTreeNode struct {
-	cursor   *block.Cursor
-	kind     KVImplType
-	loaded   bool
-	leaf     bool
-	height   uint32
+	cursor *block.Cursor
+	kind   KVImplType
+	loaded bool
+	leaf   bool
+	height uint32
+	// lower is a lower bound of the keys under the node, and a leaf's key
+	// once loaded. Every key under a node sorts before the lower bound of the
+	// node below it on the frontier.
+	lower    []byte
 	key      []byte
 	value    []byte
 	children []*diffTreeNode
@@ -143,22 +285,23 @@ func (n *diffTreeNode) load(ctx context.Context) error {
 			return err
 		}
 
-		// Expose the IAVL leaf value or its child references.
+		// Expose the IAVL leaf value or its child references. Keys below an
+		// inner node's key go left, so its key bounds the right child.
 		n.height = node.GetHeight()
 		n.leaf = node.IsLeaf()
 		if n.leaf {
-			n.key = node.GetKey()
+			n.key, n.lower = node.GetKey(), node.GetKey()
 			n.value, err = node.MarshalVT()
 			return err
 		}
 		n.children = []*diffTreeNode{
-			{cursor: n.cursor.FollowRef(6, node.GetRightChildRef()), kind: n.kind},
-			{cursor: n.cursor.FollowRef(5, node.GetLeftChildRef()), kind: n.kind},
+			{cursor: n.cursor.FollowRef(6, node.GetRightChildRef()), kind: n.kind, lower: node.GetKey()},
+			{cursor: n.cursor.FollowRef(5, node.GetLeftChildRef()), kind: n.kind, lower: n.lower},
 		}
 		return nil
 	}
 
-	// Read and validate the Okra frontier page.
+	// Read the Okra frontier page, which decoding already validated.
 	page, err := block.UnmarshalBlock[*okra.Page](ctx, n.cursor, okra.NewPageBlock)
 	if err != nil {
 		return err
@@ -166,21 +309,36 @@ func (n *diffTreeNode) load(ctx context.Context) error {
 	if page == nil {
 		return block.ErrNotFound
 	}
-	if err := page.Validate(); err != nil {
-		return err
-	}
 
-	// Expose Okra leaf values or child references in stack order.
+	// Expose Okra leaf values or child references in stack order. A child
+	// starts at its entry's key; the level anchor starts where the page does.
 	n.height = page.GetLevel() + 1
 	entries := page.GetEntries()
-	for i, entry := range slices.Backward(entries) {
-		if page.GetLevel() == 0 {
+	if page.GetLevel() == 0 {
+		leaves := make([]diffTreeNode, len(entries))
+		for i, entry := range slices.Backward(entries) {
 			if !entry.GetAnchor() {
-				n.children = append(n.children, &diffTreeNode{loaded: true, leaf: true, key: entry.GetKey(), value: entry.GetHash()})
+				leaves[i] = diffTreeNode{
+					loaded: true,
+					leaf:   true,
+					lower:  entry.GetKey(),
+					key:    entry.GetKey(),
+					value:  entry.GetHash(),
+				}
+				n.children = append(n.children, &leaves[i])
 			}
-		} else if !entry.GetChildRef().GetEmpty() {
-			n.children = append(n.children, &diffTreeNode{cursor: page.FollowChild(n.cursor, i), kind: n.kind})
 		}
+		return nil
+	}
+	for i, entry := range slices.Backward(entries) {
+		if entry.GetChildRef().GetEmpty() {
+			continue
+		}
+		lower := entry.GetKey()
+		if entry.GetAnchor() {
+			lower = n.lower
+		}
+		n.children = append(n.children, &diffTreeNode{cursor: page.FollowChild(n.cursor, i), kind: n.kind, lower: lower})
 	}
 	return nil
 }

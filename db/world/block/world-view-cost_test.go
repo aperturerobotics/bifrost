@@ -129,10 +129,16 @@ type viewCostCase struct {
 // on the seeded World, commits a change to an object only one of them read,
 // and checks the transactions each view opens in response.
 func TestWorldViewCostOnUnrelatedCommit(t *testing.T) {
-	// Open an Engine on the seeded World.
+	// Open an Engine on a small seeded World; the transaction counts do not
+	// depend on its size.
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-	eng, cleanup := setupWorldSeededBench(ctx, t)
+	tbed, rootRef, err := seedWorld(ctx, 2*worldSeedObjectsPerTx)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer tbed.Release()
+	eng, cleanup := openSeededEngine(ctx, t, tbed, rootRef)
 	defer cleanup()
 
 	// Each view reads its own seed object, except the one that reads the

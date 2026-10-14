@@ -156,6 +156,39 @@ func ChangedObjectKeys(ctx context.Context, before, after *block.Cursor, maxKeys
 	return objKeys, true, nil
 }
 
+// ChangedObjectKeysIn lists which of keys name objects whose records differ
+// between two World roots. It compares only the parts of the object trees that
+// can hold those keys, so it lists a change of any size.
+func ChangedObjectKeysIn(ctx context.Context, before, after *block.Cursor, keys []string) ([]string, error) {
+	// Decode both World roots so their object tree sub-blocks resolve.
+	for _, bcs := range []*block.Cursor{before, after} {
+		w, err := UnmarshalWorld(ctx, bcs)
+		if err != nil {
+			return nil, err
+		}
+		if w == nil {
+			return nil, block.ErrNotFound
+		}
+	}
+
+	// Compare the object records of the listed keys.
+	ranges := make([]kvtx_block.KeyRange, len(keys))
+	for i, key := range keys {
+		ranges[i] = kvtx_block.ExactKeyRange([]byte(objectKeyPrefix + key))
+	}
+	changed, err := kvtx_block.ChangedKeysIn(ctx, before.FollowSubBlock(1), after.FollowSubBlock(1), ranges)
+	if err != nil {
+		return nil, err
+	}
+
+	// Strip the storage prefix to recover the object keys.
+	objKeys := make([]string, len(changed))
+	for i, key := range changed {
+		objKeys[i] = string(key[len(objectKeyPrefix):])
+	}
+	return objKeys, nil
+}
+
 // changedGraphQuads lists the quads set or deleted between the graphs of two
 // decoded World roots. A link record present in only one graph names a quad
 // set or deleted; one rewritten in place names the quads of both versions.

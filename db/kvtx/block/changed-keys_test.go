@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/s4wave/spacewave/db/block"
 )
 
-// TestChangedKeys checks inserts, removals, value edits, tree rotations, and bounded fallback.
+// TestChangedKeys checks inserts, removals, value edits, tree rotations, bounded
+// fallback, and the comparison restricted to key ranges.
 func TestChangedKeys(t *testing.T) {
 	for _, impl := range []KVImplType{KVImplType_KV_IMPL_TYPE_IAVL, KVImplType_KV_IMPL_TYPE_OKRA, KVImplType_KV_IMPL_TYPE_OKRA_INLINE} {
 		t.Run(impl.String(), func(t *testing.T) {
@@ -101,6 +103,36 @@ func TestChangedKeys(t *testing.T) {
 						t.Fatalf("limit: complete=%t err=%v", complete, err)
 					}
 				}
+
+				// Verify the comparison restricted to a prefix and a few keys
+				// reports exactly the changed keys within them.
+				ranges := []KeyRange{PrefixKeyRange([]byte("key/01"))}
+				inRanges := func(key string) bool { return strings.HasPrefix(key, "key/01") }
+				for range 3 {
+					key := fmt.Sprintf("key/%04d", rng.IntN(1500))
+					ranges = append(ranges, ExactKeyRange([]byte(key)))
+					prev := inRanges
+					inRanges = func(k string) bool { return k == key || prev(k) }
+				}
+				if len(want) != 0 {
+					ranges = append(ranges, ExactKeyRange([]byte(want[0])))
+					prev := inRanges
+					inRanges = func(k string) bool { return k == want[0] || prev(k) }
+				}
+				readCtx, inCounter := block.WithReadCounter(ctx)
+				inKeys, err := ChangedKeysIn(readCtx, before, after, ranges)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got = got[:0]
+				for _, key := range inKeys {
+					got = append(got, string(key))
+				}
+				wantIn := slices.DeleteFunc(slices.Clone(want), func(key string) bool { return !inRanges(key) })
+				if !slices.Equal(got, wantIn) {
+					t.Fatalf("round %d: restricted keys=%v want=%v", round, got, wantIn)
+				}
+				t.Logf("round %d: restricted changed=%d block reads=%d", round, len(inKeys), inCounter.Snapshot().BlockReadCount)
 			}
 		})
 	}
