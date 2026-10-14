@@ -172,6 +172,16 @@ func (f *FSCursor) WaitObjectRev(ctx context.Context, nrev uint64) error {
 	}
 }
 
+// GetChangeCh returns a channel closed at the next change to the cursor: an
+// applied World object revision, a new root, or release.
+func (f *FSCursor) GetChangeCh() <-chan struct{} {
+	var ch <-chan struct{}
+	f.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+		ch = getWaitCh()
+	})
+	return ch
+}
+
 // GetCursorOps returns the interface implementing FSCursorOps.
 // Return nil, nil to indicate this position is null (nothing here).
 func (f *FSCursor) GetCursorOps(ctx context.Context) (unixfs.FSCursorOps, error) {

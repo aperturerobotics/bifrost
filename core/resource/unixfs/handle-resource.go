@@ -13,7 +13,9 @@ import (
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/pkg/errors"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
+	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/unixfs"
+	unixfs_errors "github.com/s4wave/spacewave/db/unixfs/errors"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	"github.com/s4wave/spacewave/db/world"
 	s4wave_unixfs "github.com/s4wave/spacewave/sdk/unixfs"
@@ -243,7 +245,7 @@ func (r *FSHandleResource) reloadHandleLocked(ctx context.Context) error {
 	}
 
 	// Open a replacement handle on the current World root.
-	nextHandle, err := r.newObjectFSHandle(ctx)
+	nextHandle, _, err := r.newObjectFSHandle(ctx)
 	if err != nil {
 		return err
 	}
@@ -255,10 +257,11 @@ func (r *FSHandleResource) reloadHandleLocked(ctx context.Context) error {
 	return nil
 }
 
-func (r *FSHandleResource) newObjectFSHandle(ctx context.Context) (*unixfs.FSHandle, error) {
+// newObjectFSHandle opens a handle at the resource path on a new World cursor.
+func (r *FSHandleResource) newObjectFSHandle(ctx context.Context) (*unixfs.FSHandle, *unixfs_world.FSCursor, error) {
 	// Require the World object that backs the filesystem handle.
 	if r.ws == nil || r.objKey == "" {
-		return nil, errors.New("object-backed filesystem handle unavailable")
+		return nil, nil, errors.New("object-backed filesystem handle unavailable")
 	}
 
 	// Open a filesystem cursor with the World state access mode.
@@ -277,23 +280,14 @@ func (r *FSHandleResource) newObjectFSHandle(ctx context.Context) (*unixfs.FSHan
 	var err error
 	if len(r.path) == 0 {
 		nextHandle, err = unixfs.NewFSHandle(fsCursor)
-		if err != nil {
-			return nil, err
-		}
 	} else {
-		nextHandle, err = unixfs.NewFSHandleWithPrefix(
-			ctx,
-			fsCursor,
-			r.path,
-			false,
-			time.Now(),
-		)
-		if err != nil {
-			return nil, err
-		}
+		nextHandle, err = unixfs.NewFSHandleWithPrefix(ctx, fsCursor, r.path, false, time.Now())
 	}
-
-	return nextHandle, nil
+	if err != nil {
+		fsCursor.Release()
+		return nil, nil, err
+	}
+	return nextHandle, fsCursor, nil
 }
 
 // borrowDestParentHandle resolves and borrows a destination parent resource.
@@ -942,161 +936,124 @@ func dirEntryFromCursor(ent unixfs.FSCursorDirent) *s4wave_unixfs.DirEntry {
 	}
 }
 
-// readWatchEntries reads all directory entries for WatchReaddir.
-func readWatchEntries(ctx context.Context, handle *unixfs.FSHandle) ([]*s4wave_unixfs.DirEntry, error) {
-	var entries []*s4wave_unixfs.DirEntry
-	err := handle.ReaddirAll(ctx, 0, func(ent unixfs.FSCursorDirent) error {
-		entries = append(entries, dirEntryFromCursor(ent))
-		return nil
+// nodeRefOps is implemented by cursor ops that expose the node's block reference.
+type nodeRefOps interface {
+	// GetNodeRef returns the block reference of the node, or nil if unknown.
+	GetNodeRef() *block.BlockRef
+}
+
+// readWatchEntries reads the directory's block reference and, unless it equals
+// prevRef, all of its entries in one access of the directory node. changed is
+// false when the listing was skipped.
+func readWatchEntries(
+	ctx context.Context,
+	handle *unixfs.FSHandle,
+	prevRef *block.BlockRef,
+) (entries []*s4wave_unixfs.DirEntry, ref *block.BlockRef, changed bool, err error) {
+	err = handle.AccessOps(ctx, func(_ unixfs.FSCursor, ops unixfs.FSCursorOps) error {
+		// Skip the listing while the directory subtree is unchanged.
+		entries, ref, changed = nil, nil, true
+		if refOps, ok := ops.(nodeRefOps); ok {
+			ref = refOps.GetNodeRef()
+		}
+		if !ref.GetEmpty() && ref.EqualsRef(prevRef) {
+			changed = false
+			return nil
+		}
+
+		// Read every entry of the changed directory.
+		return ops.ReaddirAll(ctx, 0, func(ent unixfs.FSCursorDirent) error {
+			entries = append(entries, dirEntryFromCursor(ent))
+			return nil
+		})
 	})
-	if err != nil {
-		return nil, err
-	}
-	return entries, nil
+	return entries, ref, changed, err
 }
 
 // WatchReaddir watches directory entries and streams the full listing on each change.
+//
+// An object-backed watch keeps one cursor, which applies each World object
+// revision in place, and lists the directory only when its block reference
+// changes.
 func (r *FSHandleResource) WatchReaddir(req *s4wave_unixfs.HandleWatchReaddirRequest, strm s4wave_unixfs.SRPCFSHandleResourceService_WatchReaddirStream) error {
-	// Open an independent watch handle and retain its last emitted revision.
+	// Open an independent watch handle.
 	ctx := strm.Context()
-	var prev *s4wave_unixfs.HandleWatchReaddirResponse
-	var lastObjRev uint64
-	var haveObjRev bool
-	var watchHandle *unixfs.FSHandle
-	if r.ws != nil && r.objKey != "" {
-		var err error
-		watchHandle, err = r.newObjectFSHandle(ctx)
-		if err != nil {
-			return err
-		}
-		defer func() { watchHandle.Release() }()
-	} else {
-		var err error
-		r.handleMtx.RLock()
-		watchHandle, err = r.handle.Clone(ctx)
-		r.handleMtx.RUnlock()
-		if err != nil {
-			return err
-		}
-		defer watchHandle.Release()
+	watchHandle, fsCursor, err := r.newWatchHandle(ctx)
+	if err != nil {
+		return err
 	}
+	defer func() { watchHandle.Release() }()
 
 	// Publish each changed directory listing until the watch ends.
+	var prev *s4wave_unixfs.HandleWatchReaddirResponse
+	var prevRef *block.BlockRef
 	for {
-		// Capture the local change notification before reading the World revision.
-		var ch <-chan struct{}
+		// Capture the change notifications before reading the directory.
+		var localCh, cursorCh <-chan struct{}
 		r.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			ch = getWaitCh()
+			localCh = getWaitCh()
 		})
-		objState, objRev, err := r.watchObjectRev(ctx)
-		if err != nil {
-			world.ReleaseObjectState(objState)
-			return err
+		if fsCursor != nil {
+			cursorCh = fsCursor.GetChangeCh()
 		}
-		if haveObjRev && objState != nil && objRev != lastObjRev {
-			nextWatchHandle, err := r.newObjectFSHandle(ctx)
+
+		// Replace a cursor released by a World object change beyond its root.
+		if fsCursor != nil && fsCursor.CheckReleased() {
+			nextHandle, nextCursor, err := r.newObjectFSHandle(ctx)
 			if err != nil {
-				world.ReleaseObjectState(objState)
 				return err
 			}
 			watchHandle.Release()
-			watchHandle = nextWatchHandle
+			watchHandle, fsCursor = nextHandle, nextCursor
+			continue
 		}
 
 		// Read the directory listing while the resource tree read barrier is held.
 		r.handleMtx.RLock()
-		entries, err := readWatchEntries(ctx, watchHandle)
+		entries, ref, changed, err := readWatchEntries(ctx, watchHandle, prevRef)
 		r.handleMtx.RUnlock()
+		if errors.Is(err, unixfs_errors.ErrReleased) && fsCursor != nil && fsCursor.CheckReleased() {
+			continue
+		}
 		if err != nil {
-			world.ReleaseObjectState(objState)
 			return err
 		}
+		prevRef = ref
 
 		// Emit the directory listing only when its entries change.
-		resp := &s4wave_unixfs.HandleWatchReaddirResponse{
-			Entries: entries,
-		}
-		if prev == nil || !resp.EqualVT(prev) {
-			if err := strm.Send(resp); err != nil {
-				world.ReleaseObjectState(objState)
-				return err
+		if changed {
+			resp := &s4wave_unixfs.HandleWatchReaddirResponse{Entries: entries}
+			if prev == nil || !resp.EqualVT(prev) {
+				if err := strm.Send(resp); err != nil {
+					return err
+				}
+				prev = resp
 			}
-			prev = resp
-		}
-		if objState != nil {
-			lastObjRev = objRev
-			haveObjRev = true
 		}
 
-		// Wait for a local notification or a change to the World object revision.
-		err = r.waitReaddirChange(ctx, ch, objState, objRev)
-		world.ReleaseObjectState(objState)
-		if err != nil {
-			return err
-		}
-	}
-}
-
-func (r *FSHandleResource) watchObjectRev(ctx context.Context) (world.ObjectState, uint64, error) {
-	// Keep detached directory watches independent of World object revisions.
-	if r.ws == nil || r.objKey == "" {
-		return nil, 0, nil
-	}
-
-	// Open the backing World object and require it to remain present.
-	objState, found, err := r.ws.GetObject(ctx, r.objKey)
-	if err != nil {
-		world.ReleaseObjectState(objState)
-		return nil, 0, err
-	}
-	if !found {
-		world.ReleaseObjectState(objState)
-		return nil, 0, world.ErrObjectNotFound
-	}
-
-	// Read the root revision used to wait for the next directory change.
-	_, rev, err := objState.GetRootRef(ctx)
-	if err != nil {
-		world.ReleaseObjectState(objState)
-		return nil, 0, err
-	}
-	return objState, rev, nil
-}
-
-func (r *FSHandleResource) waitReaddirChange(
-	ctx context.Context,
-	localChange <-chan struct{},
-	objState world.ObjectState,
-	objRev uint64,
-) error {
-	// Wait for a local change when the directory has no backing World object.
-	if objState == nil {
+		// Wait for a local change or a change applied to the watch cursor.
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
-		case <-localChange:
-			return nil
+			return context.Canceled
+		case <-localCh:
+		case <-cursorCh:
 		}
 	}
+}
 
-	// Start a cancellable wait for the next backing World object revision.
-	waitCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	objChange := make(chan error, 1)
-	go func() {
-		_, err := objState.WaitRev(waitCtx, objRev+1, false)
-		objChange <- err
-	}()
-
-	// Finish the directory wait on cancellation or either change notification.
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-localChange:
-		return nil
-	case err := <-objChange:
-		return err
+// newWatchHandle opens an independent handle for WatchReaddir. The World
+// cursor is nil for a handle with no backing World object.
+func (r *FSHandleResource) newWatchHandle(ctx context.Context) (*unixfs.FSHandle, *unixfs_world.FSCursor, error) {
+	// Watch an object-backed directory on its own World cursor.
+	if r.ws != nil && r.objKey != "" {
+		return r.newObjectFSHandle(ctx)
 	}
+
+	// Clone a detached handle under the resource tree read barrier.
+	r.handleMtx.RLock()
+	defer r.handleMtx.RUnlock()
+	handle, err := r.handle.Clone(ctx)
+	return handle, nil, err
 }
 
 // _ is a type assertion
