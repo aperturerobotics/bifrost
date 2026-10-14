@@ -581,6 +581,9 @@ type SharedObjectListEntry struct {
 	// Source indicates how the shared object was acquired.
 	// Known values: "created" (owner-created), "shared" (invite-received or org-enrolled).
 	Source string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
+	// UpdatedAt is when the provider last changed the object's metadata, in
+	// Unix milliseconds, or zero when the provider does not track it.
+	UpdatedAt int64 `protobuf:"varint,4,opt,name=updated_at,json=updatedAt,proto3" json:"updatedAt,omitempty"`
 }
 
 func (x *SharedObjectListEntry) Reset() {
@@ -608,6 +611,13 @@ func (x *SharedObjectListEntry) GetSource() string {
 		return x.Source
 	}
 	return ""
+}
+
+func (x *SharedObjectListEntry) GetUpdatedAt() int64 {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return 0
 }
 
 // SharedObjectMeta is the contents of the provider_feature_meta field for a SharedObject.
@@ -2651,6 +2661,7 @@ func (m *SharedObjectListEntry) CloneVT() *SharedObjectListEntry {
 	}
 	r := new(SharedObjectListEntry)
 	r.Source = m.Source
+	r.UpdatedAt = m.UpdatedAt
 	r.Ref = protobuf_go_lite.CloneVTValue(m.Ref)
 	r.Meta = protobuf_go_lite.CloneVTValue(m.Meta)
 	if len(m.unknownFields) > 0 {
@@ -3479,6 +3490,9 @@ func (this *SharedObjectListEntry) EqualVT(that *SharedObjectListEntry) bool {
 		return false
 	}
 	if this.Source != that.Source {
+		return false
+	}
+	if this.UpdatedAt != that.UpdatedAt {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -5201,6 +5215,11 @@ func (x *SharedObjectListEntry) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("source")
 		s.WriteString(x.Source)
 	}
+	if x.UpdatedAt != 0 || s.HasField("updatedAt") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("updatedAt")
+		s.WriteInt64(x.UpdatedAt)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -5235,6 +5254,9 @@ func (x *SharedObjectListEntry) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "source":
 			s.AddField("source")
 			x.Source = s.ReadString()
+		case "updated_at", "updatedAt":
+			s.AddField("updated_at")
+			x.UpdatedAt = s.ReadInt64()
 		}
 	})
 }
@@ -8498,6 +8520,11 @@ func (m *SharedObjectListEntry) MarshalToSizedBufferVT(dAtA []byte) (int, error)
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.UpdatedAt != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.UpdatedAt))
+		i--
+		dAtA[i] = 0x20
+	}
 	if len(m.Source) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Source)
 		i--
@@ -10909,6 +10936,7 @@ func (m *SharedObjectListEntry) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Source)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.UpdatedAt)
 	n += len(m.unknownFields)
 	return n
 }
@@ -11712,6 +11740,10 @@ func (x *SharedObjectListEntry) MarshalProtoText() string {
 	if x.Source != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "source")
 		protobuf_go_lite.TextWriteString(&sb, x.Source)
+	}
+	if x.UpdatedAt != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "updated_at")
+		protobuf_go_lite.TextWriteInt(&sb, x.UpdatedAt)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -13112,6 +13144,15 @@ func (m *SharedObjectListEntry) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Source = v
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedAt", wireType)
+			}
+			m.UpdatedAt = 0
+			m.UpdatedAt, iNdEx, err = protobuf_go_lite.DecodeVarintInt64(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

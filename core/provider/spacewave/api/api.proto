@@ -817,6 +817,9 @@ message SpaceMetadataResponse {
   // {base}/{spaceId}/packs/{shard}/{packId}.kvf. Empty unless the object is a
   // public Space.
   string public_base_url = 6;
+  // UpdatedAt is when the shared object's metadata last changed, in Unix
+  // milliseconds. The shared object list carries the same value per entry.
+  int64 updated_at = 7;
 }
 
 // -- Organizations --

@@ -618,6 +618,13 @@ export interface SharedObjectListEntry {
    * @generated from field: string source = 3;
    */
   source?: string
+  /**
+   * UpdatedAt is when the provider last changed the object's metadata, in
+   * Unix milliseconds, or zero when the provider does not track it.
+   *
+   * @generated from field: int64 updated_at = 4;
+   */
+  updatedAt?: bigint
 }
 
 export const SharedObjectListEntry: MessageType<SharedObjectListEntry> =
@@ -627,6 +634,7 @@ export const SharedObjectListEntry: MessageType<SharedObjectListEntry> =
       { no: 1, name: 'ref', kind: 'message', T: SharedObjectRef },
       { no: 2, name: 'meta', kind: 'message', T: SharedObjectMeta },
       { no: 3, name: 'source', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'updated_at', kind: 'scalar', T: ScalarType.INT64 },
     ] satisfies readonly PartialFieldInfo[],
   })
 
