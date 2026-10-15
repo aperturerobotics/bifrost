@@ -18,8 +18,9 @@ import (
 // Implements the "web" platform ID.
 type Config struct {
 	unknownFields []byte
-	// CacheDir is the directory caching compiled module bytecode.
-	// Empty disables the cache, so each start parses the plugin modules.
+	// CacheDir is the directory caching the native code compiled from QuickJS
+	// and the bytecode of plugin modules, so a restart skips both compilers.
+	// Empty disables the cache.
 	CacheDir string `protobuf:"bytes,1,opt,name=cache_dir,json=cacheDir,proto3" json:"cacheDir,omitempty"`
 }
 

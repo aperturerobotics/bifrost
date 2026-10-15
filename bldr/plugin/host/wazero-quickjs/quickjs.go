@@ -77,6 +77,9 @@ type WazeroQuickJsHost struct {
 	// this is released after a timeout to free up memory if no plugins are running.
 	// shared between plugin instances to save memory and speed up startup time.
 	quickjsVmRc *refcount.RefCount[*quickjsVm]
+	// wazeroCacheDir holds the native code wazero compiles from the QuickJS
+	// module, empty to keep it in memory.
+	wazeroCacheDir string
 	// bytecode caches compiled plugin modules, nil when disabled.
 	bytecode *bytecodeCache
 }
@@ -89,7 +92,7 @@ type quickjsVm struct {
 }
 
 // NewWazeroQuickJsHost constructs a new WazeroQuickJsHost.
-// cacheDir caches compiled module bytecode, and empty disables the cache.
+// cacheDir caches compiled code across restarts, and empty disables the cache.
 func NewWazeroQuickJsHost(b bus.Bus, le *logrus.Entry, cacheDir string) (*WazeroQuickJsHost, error) {
 	// determine the platform id for the host
 	platformID := bldr_platform.NewJsPlatform().GetPlatformID()
@@ -99,7 +102,8 @@ func NewWazeroQuickJsHost(b bus.Bus, le *logrus.Entry, cacheDir string) (*Wazero
 		pluginPlatformID: platformID,
 	}
 	if cacheDir != "" {
-		h.bytecode = &bytecodeCache{dir: cacheDir}
+		h.wazeroCacheDir = filepath.Join(cacheDir, "wazero")
+		h.bytecode = &bytecodeCache{dir: filepath.Join(cacheDir, "bytecode")}
 	}
 	h.quickjsVmRc = refcount.NewRefCount(nil, false, nil, nil, h.resolveQuickjsVm)
 	return h, nil
@@ -108,15 +112,18 @@ func NewWazeroQuickJsHost(b bus.Bus, le *logrus.Entry, cacheDir string) (*Wazero
 // resolveQuickjsVm resolves the shared compilation cache for quickjs plugins.
 func (h *WazeroQuickJsHost) resolveQuickjsVm(ctx context.Context, released func()) (*quickjsVm, func(), error) {
 	// Create the compilation cache and its release func.
-	cache := wazero.NewCompilationCache()
+	cache, err := h.newCompilationCache()
+	if err != nil {
+		return nil, nil, err
+	}
 	rel := func() { _ = cache.Close(ctx) }
 
-	// Pre-warm the cache by compiling once.
+	// Pre-warm the cache by compiling once, or by reading the disk cache.
 	runtimeConfig := wazero.NewRuntimeConfig().
 		WithCompilationCache(cache).
 		WithCloseOnContextDone(true)
 	r := wazero.NewRuntimeWithConfig(ctx, runtimeConfig)
-	_, err := wasi_snapshot_preview1.Instantiate(ctx, r)
+	_, err = wasi_snapshot_preview1.Instantiate(ctx, r)
 	if err != nil {
 		_ = r.Close(ctx)
 		rel()
@@ -131,6 +138,15 @@ func (h *WazeroQuickJsHost) resolveQuickjsVm(ctx context.Context, released func(
 
 	// Return the vm sharing the warmed cache.
 	return &quickjsVm{cache: cache}, rel, nil
+}
+
+// newCompilationCache creates the compilation cache, on disk when the host
+// has a cache directory.
+func (h *WazeroQuickJsHost) newCompilationCache() (wazero.CompilationCache, error) {
+	if h.wazeroCacheDir == "" {
+		return wazero.NewCompilationCache(), nil
+	}
+	return wazero.NewCompilationCacheWithDir(h.wazeroCacheDir)
 }
 
 // newPluginRuntime creates a per-plugin wazero.Runtime with the shared compilation cache.

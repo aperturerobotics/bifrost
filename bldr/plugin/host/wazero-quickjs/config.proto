@@ -5,7 +5,8 @@ package plugin.host.wazero_quickjs;
 // Uses QuickJS running as WASI in Wazero to execute JavaScript plugins.
 // Implements the "web" platform ID.
 message Config {
-  // CacheDir is the directory caching compiled module bytecode.
-  // Empty disables the cache, so each start parses the plugin modules.
+  // CacheDir is the directory caching the native code compiled from QuickJS
+  // and the bytecode of plugin modules, so a restart skips both compilers.
+  // Empty disables the cache.
   string cache_dir = 1;
 }

@@ -16,8 +16,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
  */
 export interface Config {
   /**
-   * CacheDir is the directory caching compiled module bytecode.
-   * Empty disables the cache, so each start parses the plugin modules.
+   * CacheDir is the directory caching the native code compiled from QuickJS
+   * and the bytecode of plugin modules, so a restart skips both compilers.
+   * Empty disables the cache.
    *
    * @generated from field: string cache_dir = 1;
    */
