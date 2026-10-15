@@ -57,12 +57,17 @@ export async function openNodeEngine(directory: string): Promise<OwnedEngine> {
         case RuntimeMessage_Kind.READY:
           ready.resolve()
           break
+        // CLOSED and FAILED end the runtime. Compiled goroutines, such as a
+        // process-wide cache's ticker, keep the Worker's event loop alive, so
+        // the host ends the Worker as a Go process ends when main returns.
         case RuntimeMessage_Kind.CLOSED:
           acknowledgedClose = true
           if (message.error) fail(new Error(message.error))
+          void worker.terminate()
           break
         case RuntimeMessage_Kind.FAILED:
           fail(new Error(message.error || 'Sync engine startup failed'))
+          void worker.terminate()
           break
         default:
           fail(
