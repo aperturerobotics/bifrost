@@ -67,9 +67,10 @@ export class WasiVmHandle extends Resource {
     return this.console.Console(frames, abortSignal)
   }
 
-  // connectDisplay attaches to X display 0 of the running VM. The stream
-  // waits for the VM and its X server, sends the whole screen, then each
-  // region that changes; input carries the viewer's pointer and keys back.
+  // connectDisplay attaches to the display of the running VM. The stream
+  // waits for the VM and the first display it brings up, X display 0 or a
+  // Wayland client of its compositor, sends the whole screen, then each region
+  // that changes; input carries the viewer's pointer and keys back.
   public connectDisplay(
     input: MessageStream<WasiVmDisplayInput>,
     abortSignal?: AbortSignal,

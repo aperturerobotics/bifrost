@@ -34,8 +34,8 @@ type DisplayStatus =
 const wheelUp = 1 << 3
 const wheelDown = 1 << 4
 
-// WasiVmDisplay shows X display 0 of a running VM on a canvas scaled to fit
-// the pane. Pointer, wheel and key input on the canvas drive the desktop.
+// WasiVmDisplay shows the display of a running VM, X or Wayland, on a canvas
+// scaled to fit the pane. Pointer, wheel and key input on the canvas drive the desktop.
 export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const inputRef = useRef<Pushable<WasiVmDisplayInput> | null>(null)
@@ -90,7 +90,7 @@ export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
         if (!cancelled) {
           setStatus({
             kind: 'ended',
-            detail: 'The X server closed the display.',
+            detail: 'The display closed.',
           })
         }
       } catch (err) {
@@ -197,8 +197,7 @@ export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
               ? {
                   state: 'active',
                   title: 'Waiting for the display',
-                  detail:
-                    'The desktop appears once the VM starts its X server.',
+                  detail: 'The desktop appears once the VM starts its display.',
                 }
               : {
                   state: 'error',

@@ -140,13 +140,13 @@ service WasiVmConsoleService {
       returns (stream .s4wave.terminal.TerminalFrame);
 }
 
-// WasiVmDisplayService attaches a viewer to the X display of a running
-// WasiVM.
+// WasiVmDisplayService attaches a viewer to the display of a running WasiVM:
+// X display 0 or its Wayland compositor.
 service WasiVmDisplayService {
-  // Display streams the screen and carries input back. Once the X server on
-  // display 0 accepts the VM's client, the VM sends the whole screen, then
-  // each region that changes. The viewer sends pointer and key input. The
-  // stream ends when the X server closes the connection.
+  // Display streams the screen and carries input back. Once the guest brings
+  // up a display, an X server on display 0 or a Wayland client, the VM sends
+  // the whole screen, then each region that changes. The viewer sends pointer
+  // and key input. The stream ends when the display closes.
   rpc Display(stream WasiVmDisplayInput) returns (stream WasiVmDisplayFrame);
 }
 

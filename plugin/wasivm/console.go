@@ -6,6 +6,7 @@ import (
 
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel"
+	"github.com/s4wave/spacewave/plugin/wasivm/wayland"
 	s4wave_terminal "github.com/s4wave/spacewave/sdk/terminal"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
@@ -20,6 +21,9 @@ const scrollback = 64 * 1024
 type console struct {
 	// kernel is the run's kernel, which the display dials.
 	kernel *kernel.Kernel
+	// wayland is the run's Wayland compositor, or nil when it could not
+	// listen.
+	wayland *wayland.Compositor
 	// input feeds the kernel's terminal.
 	input io.Writer
 	// resize sets the size of the kernel's terminal.

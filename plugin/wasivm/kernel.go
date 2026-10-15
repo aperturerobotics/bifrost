@@ -13,9 +13,13 @@ import (
 	unixfs_overlay "github.com/s4wave/spacewave/db/unixfs/overlay"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel"
+	"github.com/s4wave/spacewave/plugin/wasivm/wayland"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 	"github.com/sirupsen/logrus"
 )
+
+// The Wayland compositor's screen size in pixels.
+const screenWidth, screenHeight = 1024, 768
 
 // startKernel boots the kernel for one run on the root filesystem rootfs,
 // taking ownership of it. An in-memory upper layer holds the run's writes, so each run
@@ -63,11 +67,25 @@ func startKernel(
 	c.kernel = k
 	c.resize = k.Resize
 
+	// Serve the guest's Wayland clients, listening before init runs.
+	if c.wayland, err = wayland.Listen(k, screenWidth, screenHeight); err != nil {
+		le.WithError(err).Warn("wayland compositor did not start")
+	} else {
+		go func() {
+			if err := c.wayland.Serve(ctx); err != nil && ctx.Err() == nil {
+				le.WithError(err).Warn("wayland compositor ended")
+			}
+		}()
+	}
+
 	// Run init, then release the run and report how it ended.
 	go func() {
 		// Run init until it exits or the run ends, then release the run.
 		bootErr := k.Boot(ctx)
 		_ = input.Close()
+		if c.wayland != nil {
+			c.wayland.Close()
+		}
 		cleanupCtx := context.WithoutCancel(ctx)
 		_ = k.Close(cleanupCtx)
 		_ = rt.Close(cleanupCtx)

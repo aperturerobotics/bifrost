@@ -3,6 +3,7 @@
 package wayland
 
 import (
+	"context"
 	"encoding/binary"
 	"image"
 	"slices"
@@ -533,4 +534,37 @@ func TestXdgOutput(t *testing.T) {
 		t.Fatalf("name %q, want WASIVM-1", name)
 	}
 	c.await(idOutput, outputDone)
+}
+
+// TestWaitClient checks WaitClient returns once a client connects, and Close
+// ends a viewer's Run.
+func TestWaitClient(t *testing.T) {
+	// No client has connected yet.
+	tc := newTestCompositor(t, 160, 120)
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	if err := tc.comp.WaitClient(ctx); err == nil {
+		t.Fatal("WaitClient returned before a client connected")
+	}
+
+	// A client connects.
+	tc.connect()
+	if err := tc.comp.WaitClient(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	// Close ends a viewer.
+	done := make(chan error, 1)
+	go func() {
+		done <- tc.comp.Run(t.Context(), func(*s4wave_vm.WasiVmDisplayFrame) error { return nil })
+	}()
+	tc.comp.Close()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Run continued after Close")
+	}
 }

@@ -177,10 +177,10 @@ type SRPCWasiVmDisplayServiceClient interface {
 	// SRPCClient returns the underlying SRPC client.
 	SRPCClient() srpc.Client
 
-	// Display streams the screen and carries input back. Once the X server on
-	// display 0 accepts the VM's client, the VM sends the whole screen, then
-	// each region that changes. The viewer sends pointer and key input. The
-	// stream ends when the X server closes the connection.
+	// Display streams the screen and carries input back. Once the guest brings
+	// up a display, an X server on display 0 or a Wayland client, the VM sends
+	// the whole screen, then each region that changes. The viewer sends pointer
+	// and key input. The stream ends when the display closes.
 	Display(ctx context.Context) (SRPCWasiVmDisplayService_DisplayClient, error)
 }
 
@@ -242,10 +242,10 @@ func (x *srpcWasiVmDisplayService_DisplayClient) RecvTo(m *WasiVmDisplayFrame) e
 }
 
 type SRPCWasiVmDisplayServiceServer interface {
-	// Display streams the screen and carries input back. Once the X server on
-	// display 0 accepts the VM's client, the VM sends the whole screen, then
-	// each region that changes. The viewer sends pointer and key input. The
-	// stream ends when the X server closes the connection.
+	// Display streams the screen and carries input back. Once the guest brings
+	// up a display, an X server on display 0 or a Wayland client, the VM sends
+	// the whole screen, then each region that changes. The viewer sends pointer
+	// and key input. The stream ends when the display closes.
 	Display(SRPCWasiVmDisplayService_DisplayStream) error
 }
 

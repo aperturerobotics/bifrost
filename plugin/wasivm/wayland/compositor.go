@@ -47,6 +47,8 @@ type Compositor struct {
 	clients map[*client]struct{}
 	// closed is set once Close runs, so no client connects after it.
 	closed bool
+	// connected is set once a client has connected.
+	connected bool
 	// serial numbers input and configure events.
 	serial uint32
 	// windows is the mapped toplevels, bottom to top.
@@ -122,10 +124,12 @@ func (c *Compositor) Serve(ctx context.Context) error {
 		}
 		cl := newClient(c, conn)
 		var closed bool
-		c.bcast.HoldLock(func(func(), func() <-chan struct{}) {
+		c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 			closed = c.closed
 			if !closed {
 				c.clients[cl] = struct{}{}
+				c.connected = true
+				broadcast()
 			}
 		})
 		if closed {
@@ -141,13 +145,15 @@ func (c *Compositor) Close() {
 	// Stop accepting.
 	_ = c.listener.Close()
 
-	// Disconnect the clients, whose serve loops then clean up.
+	// Disconnect the clients, whose serve loops then clean up, and end the
+	// waits and the viewers.
 	var clients []*client
-	c.bcast.HoldLock(func(func(), func() <-chan struct{}) {
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		c.closed = true
 		for cl := range c.clients {
 			clients = append(clients, cl)
 		}
+		broadcast()
 	})
 	for _, cl := range clients {
 		_ = cl.conn.Close()
@@ -155,8 +161,31 @@ func (c *Compositor) Close() {
 	_ = c.keymap.Close()
 }
 
-// Run sends the whole screen to send, then each area that changes, until ctx
-// ends. Each area is the bounding box of the changes since the last one.
+// WaitClient waits until a client has connected, or until Close or ctx ends.
+func (c *Compositor) WaitClient(ctx context.Context) error {
+	for {
+		var connected, closed bool
+		var waitCh <-chan struct{}
+		c.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			connected, closed, waitCh = c.connected, c.closed, getWaitCh()
+		})
+		switch {
+		case connected:
+			return nil
+		case closed:
+			return errors.New("compositor closed")
+		}
+		select {
+		case <-ctx.Done():
+			return context.Cause(ctx)
+		case <-waitCh:
+		}
+	}
+}
+
+// Run sends the whole screen to send, then each area that changes, until
+// Close or ctx ends. Each area is the bounding box of the changes since the
+// last one.
 func (c *Compositor) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplayFrame) error) error {
 	// Register the viewer with the whole screen damaged.
 	damage := c.screen
@@ -170,14 +199,18 @@ func (c *Compositor) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplay
 	// Send the damaged area each time it grows.
 	for {
 		var frame *s4wave_vm.WasiVmDisplayFrame
+		var closed bool
 		var waitCh <-chan struct{}
 		c.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
 			if !damage.Empty() {
 				frame = c.readScreen(damage)
 				damage = image.Rectangle{}
 			}
-			waitCh = getWaitCh()
+			closed, waitCh = c.closed, getWaitCh()
 		})
+		if closed {
+			return nil
+		}
 		if frame != nil {
 			if err := send(frame); err != nil {
 				return err

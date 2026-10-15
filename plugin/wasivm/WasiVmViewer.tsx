@@ -130,7 +130,7 @@ interface WasiVmScreenToggleProps {
 }
 
 // WasiVmScreenToggle switches a running VM's view between its console and
-// its X display. Its label collapses to the icon in a narrow header.
+// its display. Its label collapses to the icon in a narrow header.
 function WasiVmScreenToggle({
   showDisplay,
   onToggle,
@@ -157,7 +157,7 @@ interface WasiVmScreenProps {
   showDisplay: boolean
 }
 
-// WasiVmScreen shows the console or the X display of a running VM, each
+// WasiVmScreen shows the console or the display of a running VM, each
 // attached through the VM's typed resource.
 function WasiVmScreen({
   worldState,
@@ -195,7 +195,7 @@ function WasiVmScreen({
 }
 
 // WasiVmViewer displays a WasiVM. A stopped or failed VM shows its machine
-// card with Start or Reset; a running VM shows its console or its X display.
+// card with Start or Reset; a running VM shows its console or its display.
 export default function WasiVmViewer({
   objectInfo,
   worldState,

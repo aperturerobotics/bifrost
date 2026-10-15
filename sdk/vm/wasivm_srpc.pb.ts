@@ -108,8 +108,8 @@ export class WasiVmConsoleServiceClient implements WasiVmConsoleService {
   }
 }
 /**
- * WasiVmDisplayService attaches a viewer to the X display of a running
- * WasiVM.
+ * WasiVmDisplayService attaches a viewer to the display of a running WasiVM:
+ * X display 0 or its Wayland compositor.
  *
  * @generated from service s4wave.vm.WasiVmDisplayService
  */
@@ -117,10 +117,10 @@ export const WasiVmDisplayServiceDefinition = {
   typeName: 's4wave.vm.WasiVmDisplayService',
   methods: {
     /**
-     * Display streams the screen and carries input back. Once the X server on
-     * display 0 accepts the VM's client, the VM sends the whole screen, then
-     * each region that changes. The viewer sends pointer and key input. The
-     * stream ends when the X server closes the connection.
+     * Display streams the screen and carries input back. Once the guest brings
+     * up a display, an X server on display 0 or a Wayland client, the VM sends
+     * the whole screen, then each region that changes. The viewer sends pointer
+     * and key input. The stream ends when the display closes.
      *
      * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
      */
@@ -134,17 +134,17 @@ export const WasiVmDisplayServiceDefinition = {
 } as const
 
 /**
- * WasiVmDisplayService attaches a viewer to the X display of a running
- * WasiVM.
+ * WasiVmDisplayService attaches a viewer to the display of a running WasiVM:
+ * X display 0 or its Wayland compositor.
  *
  * @generated from service s4wave.vm.WasiVmDisplayService
  */
 export interface WasiVmDisplayService {
   /**
-   * Display streams the screen and carries input back. Once the X server on
-   * display 0 accepts the VM's client, the VM sends the whole screen, then
-   * each region that changes. The viewer sends pointer and key input. The
-   * stream ends when the X server closes the connection.
+   * Display streams the screen and carries input back. Once the guest brings
+   * up a display, an X server on display 0 or a Wayland client, the VM sends
+   * the whole screen, then each region that changes. The viewer sends pointer
+   * and key input. The stream ends when the display closes.
    *
    * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
    */
@@ -155,17 +155,17 @@ export interface WasiVmDisplayService {
 }
 
 /**
- * WasiVmDisplayService attaches a viewer to the X display of a running
- * WasiVM.
+ * WasiVmDisplayService attaches a viewer to the display of a running WasiVM:
+ * X display 0 or its Wayland compositor.
  *
  * @generated from service s4wave.vm.WasiVmDisplayService
  */
 export interface WasiVmDisplayServiceHandler {
   /**
-   * Display streams the screen and carries input back. Once the X server on
-   * display 0 accepts the VM's client, the VM sends the whole screen, then
-   * each region that changes. The viewer sends pointer and key input. The
-   * stream ends when the X server closes the connection.
+   * Display streams the screen and carries input back. Once the guest brings
+   * up a display, an X server on display 0 or a Wayland client, the VM sends
+   * the whole screen, then each region that changes. The viewer sends pointer
+   * and key input. The stream ends when the display closes.
    *
    * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
    */
@@ -188,10 +188,10 @@ export class WasiVmDisplayServiceClient implements WasiVmDisplayService {
     this.Display = this.Display.bind(this)
   }
   /**
-   * Display streams the screen and carries input back. Once the X server on
-   * display 0 accepts the VM's client, the VM sends the whole screen, then
-   * each region that changes. The viewer sends pointer and key input. The
-   * stream ends when the X server closes the connection.
+   * Display streams the screen and carries input back. Once the guest brings
+   * up a display, an X server on display 0 or a Wayland client, the VM sends
+   * the whole screen, then each region that changes. The viewer sends pointer
+   * and key input. The stream ends when the display closes.
    *
    * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
    */
