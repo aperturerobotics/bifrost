@@ -14,7 +14,7 @@ import (
 	block "github.com/s4wave/spacewave/db/block"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
 	transform_gzip "github.com/s4wave/spacewave/db/block/transform/gzip"
-	transform_lz4 "github.com/s4wave/spacewave/db/block/transform/lz4"
+	transform_s2 "github.com/s4wave/spacewave/db/block/transform/s2"
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/testbed"
@@ -22,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// buildTestTransformConfs builds the source (gzip) and destination (lz4)
+// buildTestTransformConfs builds the source (gzip) and destination (s2)
 // transform configurations.
 func buildTestTransformConfs(t *testing.T) (*block_transform.Config, *block_transform.Config) {
 	// Mark the helper and build both transform configurations.
@@ -36,9 +36,9 @@ func buildTestTransformConfs(t *testing.T) (*block_transform.Config, *block_tran
 		t.Fatal(err.Error())
 	}
 
-	// Build the lz4 destination transform configuration.
+	// Build the s2 destination transform configuration.
 	destTransformConf, err := block_transform.NewConfig([]config.Config{
-		&transform_lz4.Config{},
+		&transform_s2.Config{},
 	})
 	if err != nil {
 		t.Fatal(err.Error())

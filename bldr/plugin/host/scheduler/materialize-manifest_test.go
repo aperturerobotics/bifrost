@@ -18,7 +18,7 @@ import (
 	block "github.com/s4wave/spacewave/db/block"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
 	transform_gzip "github.com/s4wave/spacewave/db/block/transform/gzip"
-	transform_lz4 "github.com/s4wave/spacewave/db/block/transform/lz4"
+	transform_s2 "github.com/s4wave/spacewave/db/block/transform/s2"
 	bucket "github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/testbed"
@@ -85,7 +85,7 @@ func runBrowserCopyFixture(t *testing.T, instanceKey string) {
 		}
 	}
 
-	// Source cursor with gzip transform; destination cursor with lz4.
+	// Source cursor with gzip transform; destination cursor with s2.
 	srcTransformConf, err := block_transform.NewConfig([]config.Config{
 		&transform_gzip.Config{},
 	})
@@ -93,7 +93,7 @@ func runBrowserCopyFixture(t *testing.T, instanceKey string) {
 		t.Fatal(err.Error())
 	}
 	destTransformConf, err := block_transform.NewConfig([]config.Config{
-		&transform_lz4.Config{},
+		&transform_s2.Config{},
 	})
 	if err != nil {
 		t.Fatal(err.Error())
