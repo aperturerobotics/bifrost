@@ -40,6 +40,11 @@ func (t *batchTransactionHandle) Discard() {
 	}
 }
 
+// GetObjectRootRefsBatch preserves the underlying transport's batched reads.
+func (t *batchTransactionHandle) GetObjectRootRefsBatch(ctx context.Context, keys []string) ([]*ObjectRootRef, error) {
+	return GetObjectRootRefsBatch(ctx, t.WorldState, keys)
+}
+
 // GetObjectBodiesBatch preserves the underlying transport's batched reads.
 func (t *batchTransactionHandle) GetObjectBodiesBatch(ctx context.Context, keys []string) ([]*ObjectBody, error) {
 	return GetObjectBodiesBatch(ctx, t.WorldState, keys)
@@ -50,4 +55,8 @@ func (t *batchTransactionHandle) GetObjectBodiesBatchPage(ctx context.Context, k
 	return GetObjectBodiesBatchPage(ctx, t.WorldState, keys, byteBudget)
 }
 
-var _ Tx = (*batchTransactionHandle)(nil)
+// _ is a type assertion
+var (
+	_ Tx                   = (*batchTransactionHandle)(nil)
+	_ ObjectRootRefBatcher = (*batchTransactionHandle)(nil)
+)
