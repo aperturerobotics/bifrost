@@ -35,12 +35,15 @@ func (a *ProviderAccount) runAccountReplicaCopy(
 	exchange *dex_solicit.Controller,
 ) (rerr error) {
 	// Publish a failure, such as exhausted storage, where the sync status
-	// reads it.
-	defer func() {
-		if rerr != nil && ctx.Err() == nil {
-			state.publishCopyError(so.GetSharedObjectID(), rerr)
+	// reads it: from this loop and from each copy attempt, which the copier
+	// retries without returning here.
+	publishErr := func(ctx context.Context, err error) error {
+		if err != nil && ctx.Err() == nil {
+			state.publishCopyError(so.GetSharedObjectID(), err)
 		}
-	}()
+		return err
+	}
+	defer func() { _ = publishErr(ctx, rerr) }()
 
 	// Open the copy's local progress store and the object state stream.
 	local, release, err := so.AccessLocalStateStore(ctx, "account-replica-copy", nil)
@@ -90,10 +93,10 @@ func (a *ProviderAccount) runAccountReplicaCopy(
 		copier.SetRoutine(func(ctx context.Context) error {
 			if span != nil {
 				if _, err := so.GetBlockStore().PutBlockBatch(ctx, []*block.PutBatchEntry{span}); err != nil {
-					return err
+					return publishErr(ctx, err)
 				}
 			}
-			return a.copyAccountWorldHead(ctx, so, state, local, head, exchange)
+			return publishErr(ctx, a.copyAccountWorldHead(ctx, so, state, local, head, exchange))
 		})
 	}
 }
