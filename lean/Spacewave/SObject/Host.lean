@@ -53,19 +53,12 @@ def unappliedEntries (head : String) (entries : List Entry) : List Entry :=
       | some i => entries.drop (i + 1)
       | none => entries
 
-/-- A proof that already verifies from the checkpoint is used unchanged. -/
-theorem unappliedEntries_of_verifySuffix {obj : String} {cur cand : Config} {entries : List Entry}
-    (h : verifySuffix obj cur cand entries = true) :
-    unappliedEntries cur.hash entries = entries := by
+/-- A proof that already follows the checkpoint is used unchanged. -/
+theorem unappliedEntries_of_follows {cur : Config} {entries : List Entry}
+    (h : Follows cur entries) : unappliedEntries cur.hash entries = entries := by
   cases entries with
   | nil => rfl
-  | cons e rest =>
-    by_cases linked : e.prev = cur.hash
-    · simp [unappliedEntries, linked]
-    · have step : suffixStep obj cur e = none := by
-        unfold suffixStep verifyChange
-        split <;> (try split) <;> simp [linked]
-      simp [verifySuffix, applySuffix, List.foldlM, step] at h
+  | cons e rest => simp [unappliedEntries, h e (by simp)]
 
 /-- Trimming keeps only entries from the original proof. -/
 theorem mem_of_mem_unappliedEntries {head : String} {entries : List Entry} {e : Entry}
@@ -139,21 +132,36 @@ theorem applySuffix_verified {obj : String} {es : List Entry} {cur next : Config
       simp only [checked, Option.bind_eq_bind, Option.bind_some]
       exact ih h
 
-/-- Nonempty entry hashes make a verified suffix advance exactly its length. -/
+/--
+A verified suffix never lowers the sequence number, given nonempty entry hashes:
+one that follows the checkpoint advances it by its length, and one from a merge
+fork must end above it.
+-/
 theorem verifySuffix_seqno {obj : String} {previous candidate : Config} {entries : List Entry}
     (hashes : ∀ e ∈ entries, e.hash ≠ "")
     (h : verifySuffix obj previous candidate entries = true) :
-    candidate.seqno = previous.seqno + entries.length := by
+    previous.seqno ≤ candidate.seqno := by
   simp only [verifySuffix, Bool.and_eq_true] at h
   obtain ⟨⟨checkpoint, _⟩, suffix⟩ := h
   have checkpoint' : previous.hash ≠ "" := by simpa using checkpoint
-  cases applied : applySuffix obj previous entries with
-  | none => simp [applied] at suffix
-  | some next =>
-    simp only [applied] at suffix
-    have progressed := foldlM_verifyChange_seqno checkpoint' hashes (applySuffix_verified applied)
-    simp only [Config.same, Bool.and_eq_true, beq_iff_eq, List.isPerm_iff] at suffix
-    exact suffix.1.2 ▸ progressed.1
+  split at suffix
+  · rename_i next applied
+    simp only [Bool.and_eq_true, Bool.or_eq_true, decide_eq_true_eq, Config.same, beq_iff_eq,
+      List.isPerm_iff] at suffix
+    obtain ⟨linked | above, ⟨_, same⟩, _⟩ := suffix
+    · have follows : Follows previous entries := by
+        intro e he
+        cases entries with
+        | nil => simp at he
+        | cons x xs =>
+          simp only [List.head?_cons, Option.mem_def, Option.some.injEq] at he
+          subst he
+          simpa using linked
+      rw [suffixBase_follows follows, Option.bind_some] at applied
+      have progressed := foldlM_verifyChange_seqno checkpoint' hashes (applySuffix_verified applied)
+      omega
+    · omega
+  · contradiction
 
 /-! ## Peer import -/
 
@@ -217,7 +225,7 @@ theorem importPeerSnapshot_config_monotone {object : String}
     (importPeerSnapshot_authority h)
   rcases importPeerSnapshot_target h with unchanged | ⟨advanced, _⟩
   · simp [unchanged]
-  · rw [advanced, seq]; omega
+  · rw [advanced]; exact seq
 
 /-- A proved removal commits without the merge or the access callback. -/
 theorem importPeerSnapshot_revoked {object : String}
@@ -225,19 +233,21 @@ theorem importPeerSnapshot_revoked {object : String}
     (merged : Option State) (accessOK : Bool)
     (bounded : bytes ≤ 10 * 1024 * 1024 ∧ entries.length ≤ 4096 ∧
       history ≤ 8 * 1024 * 1024)
+    (follows : Follows previous.config entries)
     (chain : verifySuffix object previous.config candidate.config entries = true)
     (removed : readableBy candidate.config peer = false) (nonempty : entries ≠ []) :
     importPeerSnapshot object previous candidate entries peer bytes history merged true accessOK
       true =
       some ⟨{previous with config := candidate.config, epochs := [], ops := []}, true, true⟩ := by
   simp [importPeerSnapshot, bounded.1, bounded.2.1, bounded.2.2,
-    unappliedEntries_of_verifySuffix chain, chain, removed, nonempty, publishHost]
+    unappliedEntries_of_follows follows, chain, removed, nonempty, publishHost]
 
 /-- A readable import publishes the merge with the candidate configuration and local invitations. -/
 theorem importPeerSnapshot_merged {object : String}
     {previous candidate merged : State} {entries : List Entry} {peer : String} {bytes history : Nat}
     (bounded : bytes ≤ 10 * 1024 * 1024 ∧ entries.length ≤ 4096 ∧
       history ≤ 8 * 1024 * 1024)
+    (follows : Follows previous.config entries)
     (chain : verifySuffix object previous.config candidate.config entries = true)
     (readable : readableBy candidate.config peer = true)
     (changed : {merged with config := candidate.config, invites := previous.invites} ≠ previous) :
@@ -245,6 +255,6 @@ theorem importPeerSnapshot_merged {object : String}
       true =
       some ⟨{merged with config := candidate.config, invites := previous.invites}, false, true⟩ := by
   simp [importPeerSnapshot, bounded.1, bounded.2.1, bounded.2.2,
-    unappliedEntries_of_verifySuffix chain, chain, readable, changed, publishHost]
+    unappliedEntries_of_follows follows, chain, readable, changed, publishHost]
 
 end Spacewave.SObject

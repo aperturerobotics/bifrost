@@ -27,9 +27,11 @@ const leanScenarioSteps = 30
 // VerifyConfigChain and VerifyConfigChainSuffix make the same decisions as
 // the Lean model in lean/Spacewave/SObject/ConfigChain.lean.
 func TestLeanConfigChainConformance(t *testing.T) {
+	// Share one oracle and peer set across the seeds.
 	oracle := leanOracle(t)
 	peers := createMockPeers(t, 6)
 
+	// Generate every seed's cases and check them in one oracle run.
 	var cases []leanCase
 	for seed := range uint64(400) {
 		cases = append(cases, runConfigChainScenario(t, peers, seed)...)
@@ -147,10 +149,24 @@ type configChainScenario struct {
 	arena fastjson.Arena
 	// cases records Go's decisions for the oracle.
 	cases []leanCase
+	// branch holds the branch the last proposed merge absorbs.
+	branch absorbedBranch
+	// absorbed lists the branches of merges the main chain accepted.
+	absorbed []absorbedBranch
+}
+
+// absorbedBranch is a branch a merge absorbs: the heads its records yield and
+// the main chain index of its fork.
+type absorbedBranch struct {
+	// heads are the configs after each branch record.
+	heads []*SharedObjectConfig
+	// forkAt indexes the fork in the main chain.
+	forkAt int
 }
 
 // runConfigChainScenario generates the cases for one seed.
 func runConfigChainScenario(t *testing.T, peers []peer.Peer, seed uint64) []leanCase {
+	// Load each peer's signing key, then walk the scenario.
 	t.Helper()
 	s := &configChainScenario{t: t, rng: rand.New(rand.NewPCG(seed, 0x5eed))}
 	for _, p := range peers {
@@ -165,8 +181,8 @@ func runConfigChainScenario(t *testing.T, peers []peer.Peer, seed uint64) []lean
 	return s.cases
 }
 
-// run proposes a genesis and then leanScenarioSteps changes, advancing the
-// held configuration through each change Go accepts.
+// run proposes a genesis and then leanScenarioSteps records, advancing the
+// held configuration through each record Go accepts.
 func (s *configChainScenario) run() {
 	// Start from a genesis entry; most scenarios produce a valid one.
 	genesis := s.genesis()
@@ -174,27 +190,103 @@ func (s *configChainScenario) run() {
 	if !s.checkChain(chain) {
 		return
 	}
-	cur := configWithAppliedConfigChainHead(genesis.GetConfig(), 0, s.hash(genesis))
-	heads := []*SharedObjectConfig{cur}
+	heads := []*SharedObjectConfig{configWithAppliedConfigChainHead(genesis.GetConfig(), 0, s.hash(genesis))}
 
-	// Propose changes, checking each alone, within the chain, and as a suffix.
+	// Propose records, checking each alone, within the chain, and as a suffix.
 	for i := range leanScenarioSteps {
-		entry := s.change(cur)
-		next, err := VerifyConfigChange(mockSharedObjectID, cur, entry)
-		s.checkChange(i, cur, entry, next, err)
-		s.checkChain(append(slices.Clone(chain), entry))
-		if err == nil {
-			chain = append(chain, entry)
-			heads = append(heads, next)
-			cur = next
+		entry := s.propose(chain, heads, 0)
+		var ok bool
+		chain, heads, ok = s.extend("step "+strconv.Itoa(i), chain, heads, entry)
+		if ok && entry.GetMerge() != nil {
+			s.absorbed = append(s.absorbed, s.branch)
 		}
 		s.checkSuffix(heads, chain)
 	}
 }
 
+// propose returns a record on the last head: usually a change, sometimes a
+// merge absorbing a branch grown from an earlier head. depth bounds nesting.
+func (s *configChainScenario) propose(chain []*SOConfigChange, heads []*SharedObjectConfig, depth int) *SOConfigChange {
+	if depth < 2 && len(chain) > 1 && s.rng.IntN(4) == 0 {
+		return s.merge(chain, heads, depth)
+	}
+	return s.change(heads[len(heads)-1])
+}
+
+// extend checks entry alone and within the chain, and returns the chain and
+// heads extended by it when Go accepts it.
+func (s *configChainScenario) extend(
+	name string,
+	chain []*SOConfigChange,
+	heads []*SharedObjectConfig,
+	entry *SOConfigChange,
+) ([]*SOConfigChange, []*SharedObjectConfig, bool) {
+	// Record Go's decisions on the entry, and keep it when accepted.
+	cur := heads[len(heads)-1]
+	next, err := VerifyConfigChange(mockSharedObjectID, cur, entry)
+	s.checkChange(name, cur, entry, next, err)
+	s.checkChain(append(slices.Clone(chain), entry))
+	if err != nil {
+		return chain, heads, false
+	}
+	return append(chain, entry), append(heads, next), true
+}
+
+// merge proposes a merge on the last head absorbing a branch of one to three
+// records grown from an earlier head, sometimes with a rejected record, a
+// config the branch does not yield, or a wrong kind, fork or signer.
+func (s *configChainScenario) merge(chain []*SOConfigChange, heads []*SharedObjectConfig, depth int) *SOConfigChange {
+	// Grow the branch from the fork, retrying rejected records and sometimes
+	// keeping one.
+	from := s.rng.IntN(len(heads) - 1)
+	branchChain, branchHeads := slices.Clone(chain[:from+1]), slices.Clone(heads[:from+1])
+	name := "branch at depth " + strconv.Itoa(depth+1)
+	want := from + 2 + s.rng.IntN(3)
+	for attempt := 0; attempt < 8 && len(branchChain) < want; attempt++ {
+		entry := s.propose(branchChain, branchHeads, depth+1)
+		var ok bool
+		branchChain, branchHeads, ok = s.extend(name, branchChain, branchHeads, entry)
+		if !ok && s.rng.IntN(8) == 0 {
+			branchChain = append(branchChain, entry)
+			break
+		}
+	}
+	cur := heads[len(heads)-1]
+	if len(branchChain) == from+1 {
+		return s.change(cur)
+	}
+	s.branch = absorbedBranch{heads: branchHeads[from+1:], forkAt: from}
+
+	// Carry the config the branch yields, sometimes perturbed.
+	merge := &SOConfigMerge{Fork: chain[from], Branch: branchChain[from+1:]}
+	next, err := mergeConfigBranch(mockSharedObjectID, cur, merge)
+	if err != nil || s.rng.IntN(8) == 0 {
+		next = cur.CloneVT()
+		s.mutate(next)
+	}
+	entry := newSOConfigChange(mockSharedObjectID, cur, next, SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_MERGE)
+	entry.Merge = merge
+	switch s.rng.IntN(16) {
+	case 0:
+		entry.ChangeType = SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT
+	case 1:
+		entry.Merge = nil
+	case 2:
+		merge.Fork = chain[s.rng.IntN(len(chain))]
+	}
+
+	// Sign as an owner of the head, sometimes as any peer.
+	signer := s.rng.IntN(len(s.ids))
+	if s.rng.IntN(4) != 0 {
+		signer = s.peer(cur, func(p *SOParticipantConfig) bool { return p != nil && IsOwner(p.GetRole()) })
+	}
+	s.sign(entry, signer)
+	return entry
+}
+
 // checkChange records one VerifyConfigChange decision.
 func (s *configChainScenario) checkChange(
-	step int,
+	name string,
 	cur *SharedObjectConfig,
 	entry *SOConfigChange,
 	next *SharedObjectConfig,
@@ -208,7 +300,7 @@ func (s *configChainScenario) checkChange(
 	req.Set("entry", s.entryJSON(entry))
 
 	// Record the Go decision and, when accepted, the next configuration.
-	c := leanCase{name: "verifyChange step " + strconv.Itoa(step), request: req.MarshalTo(nil), ok: err == nil}
+	c := leanCase{name: "verifyChange " + name, request: req.MarshalTo(nil), ok: err == nil}
 	if err == nil {
 		projected := projectLeanConfig(next)
 		c.config = &projected
@@ -232,11 +324,16 @@ func (s *configChainScenario) checkChain(chain []*SOConfigChange) bool {
 }
 
 // checkSuffix records one VerifyConfigChainSuffix decision from a random held
-// checkpoint to the current head or a perturbed candidate.
+// checkpoint, on the chain or on a branch a merge absorbed, to the current head
+// or a perturbed candidate.
 func (s *configChainScenario) checkSuffix(heads []*SharedObjectConfig, chain []*SOConfigChange) {
 	// Pick a checkpoint and the entries after it, sometimes dropping the last.
 	from := s.rng.IntN(len(heads))
-	entries := chain[from+1:]
+	held, entries := heads[from], chain[from+1:]
+	if len(s.absorbed) != 0 && s.rng.IntN(3) == 0 {
+		branch := s.absorbed[s.rng.IntN(len(s.absorbed))]
+		held, entries = branch.heads[s.rng.IntN(len(branch.heads))], chain[branch.forkAt+1:]
+	}
 	if len(entries) != 0 && s.rng.IntN(8) == 0 {
 		entries = entries[:len(entries)-1]
 	}
@@ -256,13 +353,13 @@ func (s *configChainScenario) checkSuffix(heads []*SharedObjectConfig, chain []*
 	req := s.arena.NewObject()
 	req.Set("op", s.arena.NewString("verifySuffix"))
 	req.Set("object", s.arena.NewString(mockSharedObjectID))
-	req.Set("current", projectLeanConfig(heads[from]).json(&s.arena))
+	req.Set("current", projectLeanConfig(held).json(&s.arena))
 	req.Set("candidate", projectLeanConfig(candidate).json(&s.arena))
 	req.Set("entries", s.entriesJSON(entries))
 
 	// Record the Go decision as the expected result.
-	ok := VerifyConfigChainSuffix(mockSharedObjectID, heads[from], candidate, entries) == nil
-	name := "verifySuffix from " + strconv.Itoa(from)
+	ok := VerifyConfigChainSuffix(mockSharedObjectID, held, candidate, entries) == nil
+	name := "verifySuffix from seqno " + strconv.FormatUint(held.GetConfigChainSeqno(), 10)
 	s.cases = append(s.cases, leanCase{name: name, request: req.MarshalTo(nil), ok: ok})
 }
 
@@ -320,7 +417,7 @@ func (s *configChainScenario) change(cur *SharedObjectConfig) *SOConfigChange {
 		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT,
 		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT,
 		SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_SELF_ENROLL_PEER,
-		SOConfigChangeType(s.rng.IntN(10)),
+		SOConfigChangeType(s.rng.IntN(13)),
 	}
 	kind := kinds[s.rng.IntN(len(kinds))]
 
@@ -406,6 +503,7 @@ func (s *configChainScenario) mutate(cfg *SharedObjectConfig) {
 // enroll adds signer as a participant bound to an existing entity, as a
 // well-formed self-enrollment does, sometimes with an escalated role.
 func (s *configChainScenario) enroll(cfg *SharedObjectConfig, signer int) {
+	// Bind to a random existing participant's entity and role.
 	entity := "e0"
 	role := SOParticipantRole_SOParticipantRole_READER
 	if parts := cfg.GetParticipants(); len(parts) != 0 {
@@ -415,6 +513,8 @@ func (s *configChainScenario) enroll(cfg *SharedObjectConfig, signer int) {
 	if s.rng.IntN(4) == 0 {
 		role = s.role()
 	}
+
+	// Append the signer as the enrolled participant.
 	cfg.Participants = append(cfg.Participants, &SOParticipantConfig{
 		PeerId:   s.ids[signer],
 		Role:     role,
@@ -446,6 +546,7 @@ func (s *configChainScenario) peer(cfg *SharedObjectConfig, match func(*SOPartic
 
 // participant returns a random participant, usually a peer absent from cfg.
 func (s *configChainScenario) participant(cfg *SharedObjectConfig) *SOParticipantConfig {
+	// Pick the peer ID, usually absent from cfg, sometimes malformed.
 	id := s.ids[s.rng.IntN(len(s.ids))]
 	if s.rng.IntN(4) != 0 {
 		id = s.ids[s.peer(cfg, func(p *SOParticipantConfig) bool { return p == nil })]
@@ -453,6 +554,8 @@ func (s *configChainScenario) participant(cfg *SharedObjectConfig) *SOParticipan
 	if s.rng.IntN(16) == 0 {
 		id = "not-a-peer-id"
 	}
+
+	// Pick the entity, sometimes empty, and a random role.
 	entity := "e" + strconv.Itoa(s.rng.IntN(3))
 	if s.rng.IntN(8) == 0 {
 		entity = ""
@@ -524,6 +627,15 @@ func (s *configChainScenario) entryJSON(entry *SOConfigChange) *fastjson.Value {
 	v.Set("prev", a.NewString(hex.EncodeToString(entry.GetPreviousHash())))
 	v.Set("kind", a.NewNumberInt(int(entry.GetChangeType())))
 	v.Set("hash", a.NewString(hex.EncodeToString(s.hash(entry))))
+
+	// Project the merge and its branch.
+	v.Set("merge", a.NewNull())
+	if merge := entry.GetMerge(); merge != nil {
+		m := a.NewObject()
+		m.Set("fork", s.entryJSON(merge.GetFork()))
+		m.Set("branch", s.entriesJSON(merge.GetBranch()))
+		v.Set("merge", m)
+	}
 	return v
 }
 
@@ -589,6 +701,7 @@ func (c leanConfig) equal(o leanConfig) bool {
 
 // json renders the configuration as a Lean Config.
 func (c leanConfig) json(a *fastjson.Arena) *fastjson.Value {
+	// Render the participants in order.
 	parts := a.NewArray()
 	for i, p := range c.participants {
 		v := a.NewObject()
@@ -598,6 +711,7 @@ func (c leanConfig) json(a *fastjson.Arena) *fastjson.Value {
 		parts.SetArrayItem(i, v)
 	}
 
+	// Render the config with its chain head.
 	v := a.NewObject()
 	v.Set("participants", parts)
 	v.Set("hash", a.NewString(c.hash))

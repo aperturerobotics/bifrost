@@ -57,13 +57,53 @@ per line. A request names a model function in `op` and carries its inputs:
 Host operations return `{"ok", "outcome"}`. Outcome contains visible `state`,
 `revoked`, and `wrote`, including unchanged state on rejection.
 
+An entry carries a nullable `merge` of `{"fork", "branch"}`; an omitted one is null.
+
 A request the oracle cannot parse yields `{"error"}`. Field names match the
 model structures and the projections in the Go conformance tests.
 -/
 
 open Lean Spacewave.SObject
 
-deriving instance ToJson, FromJson for Participant, Config, Sig, Entry
+deriving instance ToJson, FromJson for Participant, Config, Sig
+
+mutual
+/-- entryToJson encodes an entry with its nested merge, which deriving cannot. -/
+partial def entryToJson (e : Entry) : Json :=
+  json% {object: $e.object, seqno: $e.seqno, config: $e.config, sigs: $e.sigs, prev: $e.prev,
+    kind: $e.kind, hash: $e.hash, merge: $(mergeToJson e.merge)}
+
+/-- mergeToJson encodes a merge as null or `{"fork", "branch"}`. -/
+partial def mergeToJson : Merge → Json
+  | .none => .null
+  | .some fork branch => json% {fork: $(entryToJson fork), branch: $(branchToJson branch)}
+
+/-- branchToJson encodes a branch as its entries, oldest first. -/
+partial def branchToJson : Branch → List Json
+  | .nil => []
+  | .cons head tail => entryToJson head :: branchToJson tail
+end
+
+mutual
+/-- entryFromJson decodes an entry encoded by entryToJson. -/
+partial def entryFromJson (j : Json) : Except String Entry := do
+  return {
+    object := ← j.getObjValAs? String "object", seqno := ← j.getObjValAs? Nat "seqno"
+    config := ← j.getObjValAs? (Option Config) "config", sigs := ← j.getObjValAs? (List Sig) "sigs"
+    prev := ← j.getObjValAs? String "prev", kind := ← j.getObjValAs? ChangeType "kind"
+    hash := ← j.getObjValAs? String "hash"
+    merge := ← mergeFromJson ((j.getObjVal? "merge").toOption.getD .null) }
+
+/-- mergeFromJson decodes a merge encoded by mergeToJson. -/
+partial def mergeFromJson : Json → Except String Merge
+  | .null => return .none
+  | j => do
+    let branch ← (← (← j.getObjVal? "branch").getArr?).toList.mapM entryFromJson
+    return .some (← entryFromJson (← j.getObjVal? "fork")) (branch.foldr .cons .nil)
+end
+
+instance : ToJson Entry := ⟨entryToJson⟩
+instance : FromJson Entry := ⟨entryFromJson⟩
 deriving instance ToJson, FromJson for Grant, State, HostResult
 
 deriving instance ToJson, FromJson for Order.Pos, Order.Op

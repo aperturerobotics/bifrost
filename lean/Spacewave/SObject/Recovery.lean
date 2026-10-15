@@ -76,7 +76,7 @@ def buildSelfEnroll (object : String) (current : Option Config) (sig : Option Si
   else
     let next := {current with participants := current.participants ++ [⟨peer, role, entity⟩]}
     some ⟨object, expectedSeqno current % seqnoLimit, some next, [sig],
-      current.hash, ChangeType.selfEnrollPeer, hash⟩
+      current.hash, ChangeType.selfEnrollPeer, hash, .none⟩
 
 /-- RecoveryGrant carries actual encrypted grant bytes and their recovered plaintext identity. -/
 structure RecoveryGrant where
@@ -190,7 +190,7 @@ theorem buildSelfEnroll_spec {object : String} {current : Option Config} {sig : 
       Role.reader ≤ role ∧ role ≤ Role.owner ∧
       out = ⟨object, expectedSeqno c % seqnoLimit,
         some {c with participants := c.participants ++ [⟨peer, role, entity⟩]}, [signature],
-        c.hash, ChangeType.selfEnrollPeer, hash⟩ := by
+        c.hash, ChangeType.selfEnrollPeer, hash, .none⟩ := by
   unfold buildSelfEnroll at h
   cases current with
   | none => simp at h

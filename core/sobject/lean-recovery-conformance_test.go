@@ -18,6 +18,7 @@ import (
 
 // TestLeanRecoveryConformance compares recovery construction, decoding and provider authority.
 func TestLeanRecoveryConformance(t *testing.T) {
+	// Generate every seed's cases and check them in one oracle run.
 	oracle := leanOracle(t)
 	peers := createMockPeers(t, 4)
 	var cases []leanCase
@@ -185,11 +186,14 @@ func runLeanRecoveryScenario(t *testing.T, peers []peer.Peer, seed uint64) []lea
 
 // encryptLeanRecovery supplies the envelope primitive without deciding recovery constructor admission.
 func encryptLeanRecovery(t *testing.T, material *SOEntityRecoveryMaterial, recipients []crypto.PubKey, context string) ([]byte, error) {
+	// Give each recipient one share of the envelope.
 	t.Helper()
 	grants := make([]*envelope.EnvelopeGrantConfig, len(recipients))
 	for i := range recipients {
 		grants[i] = &envelope.EnvelopeGrantConfig{ShareCount: 1, KeypairIndexes: []uint32{uint32(i)}}
 	}
+
+	// Seal the material and encode the envelope.
 	env, err := envelope.BuildEnvelope(rand.Reader, context, mustMarshalVT(t, material), recipients,
 		&envelope.EnvelopeConfig{Threshold: 0, GrantConfigs: grants})
 	if err != nil {
@@ -200,6 +204,7 @@ func encryptLeanRecovery(t *testing.T, material *SOEntityRecoveryMaterial, recip
 
 // decodeLeanRecovery performs only primitive envelope parsing, decryption and material parsing.
 func decodeLeanRecovery(t *testing.T, keys []crypto.PrivKey, env *SOEntityRecoveryEnvelope) *SOEntityRecoveryMaterial {
+	// Parse and unlock the envelope.
 	t.Helper()
 	parsed := &envelope.Envelope{}
 	if parsed.UnmarshalVT(env.GetEnvelopeData()) != nil {
@@ -218,6 +223,7 @@ func decodeLeanRecovery(t *testing.T, keys []crypto.PrivKey, env *SOEntityRecove
 
 // runLeanRecoveryResolver reuses the provider fixtures to vary each independent provider result.
 func runLeanRecoveryResolver(t *testing.T, projection *configChainScenario, base *SOEntityRecoveryMaterial, seed uint64) []leanCase {
+	// Vary one provider result per variant.
 	t.Helper()
 	a := &projection.arena
 	injected := errors.New("injected recovery provider failure")
@@ -277,14 +283,19 @@ func runLeanRecoveryResolver(t *testing.T, projection *configChainScenario, base
 
 // projectLeanRecoveryMaterial retains exact material bytes and the separately inspected entity/role.
 func projectLeanRecoveryMaterial(t *testing.T, a *fastjson.Arena, material *SOEntityRecoveryMaterial) *fastjson.Value {
+	// Project absent material as null.
 	t.Helper()
 	if material == nil {
 		return a.NewNull()
 	}
+
+	// Project the exact bytes and the inspected entity and role.
 	result := a.NewObject()
 	result.Set("data", a.NewString(hex.EncodeToString(mustMarshalVT(t, material))))
 	result.Set("entity", a.NewString(material.GetEntityId()))
 	result.Set("role", a.NewNumberInt(int(material.GetRole())))
+
+	// Project the grant bytes when the material carries one.
 	result.Set("grant", a.NewNull())
 	if material.GetGrantInner() != nil {
 		result.Set("grant", a.NewString(hex.EncodeToString(mustMarshalVT(t, material.GetGrantInner()))))
@@ -294,9 +305,12 @@ func projectLeanRecoveryMaterial(t *testing.T, a *fastjson.Arena, material *SOEn
 
 // projectLeanRecoveryEnvelope retains the actual encrypted payload and all envelope metadata.
 func projectLeanRecoveryEnvelope(a *fastjson.Arena, env *SOEntityRecoveryEnvelope) *fastjson.Value {
+	// Project an absent envelope as null.
 	if env == nil {
 		return a.NewNull()
 	}
+
+	// Project the payload and its metadata.
 	result := a.NewObject()
 	result.Set("entity", a.NewString(env.GetEntityId()))
 	result.Set("epoch", a.NewNumberString(strconv.FormatUint(env.GetKeyEpoch(), 10)))
@@ -446,7 +460,7 @@ func runLeanRecoveryEnrollment(t *testing.T, projection *configChainScenario, pe
 			missingSigner := entry.CloneVT()
 			missingSigner.Signatures[0].PubKey = nil
 			next, err := VerifyConfigChange(mockSharedObjectID, current, missingSigner)
-			projection.checkChange(variant, current, missingSigner, next, err)
+			projection.checkChange("recovery variant "+strconv.Itoa(variant), current, missingSigner, next, err)
 		}
 		if current != nil && signer != nil {
 			req.Set("op", a.NewString("enrollRecovery"))

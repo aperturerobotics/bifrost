@@ -176,7 +176,8 @@ func configChangeResult(entry *SOConfigChange) (*SharedObjectConfig, error) {
 // nonempty checkpoint. Every transition must be authorized by its predecessor.
 // Genesis and self-enrollment are unavailable on this peer verification path.
 // A suffix that does not follow the checkpoint starts at the fork of a merge
-// that absorbs it; see ConfigSuffixBase.
+// that absorbs it; see ConfigSuffixBase. It must end above the checkpoint, as
+// a merge on the winning head does, so a merge never rolls a replica back.
 // Empty suffixes require every candidate field to equal the checkpoint,
 // independent of participant order.
 // This verifies configuration authority only, not root or content acceptance.
@@ -188,6 +189,10 @@ func VerifyConfigChainSuffix(sharedObjectID string, current, candidate *SharedOb
 	if err := current.Validate(); err != nil {
 		return errors.Wrap(err, "trusted config")
 	}
+
+	// Start at the checkpoint, or at the fork of a merge that absorbs it.
+	held := current.GetConfigChainSeqno()
+	forked := len(entries) != 0 && !bytes.Equal(entries[0].GetPreviousHash(), current.GetConfigChainHash())
 	current, err := ConfigSuffixBase(current, entries)
 	if err != nil {
 		return err
@@ -203,6 +208,9 @@ func VerifyConfigChainSuffix(sharedObjectID string, current, candidate *SharedOb
 			return errors.Wrapf(err, "entry[%d]", i)
 		}
 		current = next
+	}
+	if forked && current.GetConfigChainSeqno() <= held {
+		return errors.New("merged config suffix ends at or below the held head")
 	}
 
 	// Bind both the effective configuration and the computed head to the candidate.

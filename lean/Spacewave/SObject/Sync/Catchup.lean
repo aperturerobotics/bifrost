@@ -672,6 +672,7 @@ theorem acceptResponse_complete (input : AcceptanceInput) (candidate merged : St
     (configHash : candidate.config.hash = input.receiving.head.configHash)
     (bounded : input.candidateBytes ≤ 10 * 1024 * 1024 ∧ input.receiving.changes.length ≤ 4096 ∧
       historyBytes input.receiving.changes ≤ 8 * 1024 * 1024)
+    (follows : Follows input.previous.config (input.receiving.changes.map (·.entry)))
     (chain : verifySuffix input.object input.previous.config candidate.config (input.receiving.changes.map (·.entry)) = true)
     (readable : readableBy candidate.config input.localPeer = true)
     (changed : {merged with config := candidate.config, invites := input.previous.invites} ≠ input.previous)
@@ -680,7 +681,7 @@ theorem acceptResponse_complete (input : AcceptanceInput) (candidate merged : St
       (acceptResponse input).host.state =
         {merged with config := candidate.config, invites := input.previous.invites} := by
   have imported := importPeerSnapshot_merged (bytes := input.candidateBytes)
-    (by simpa using bounded) chain readable changed
+    (by simpa using bounded) follows chain readable changed
   rw [← merge] at imported
   simp [acceptResponse, present, decoded, revision, base, cursor, digest, current,
     configSeq, configHash, lock, access, write, imported, visibleHost]
@@ -997,6 +998,7 @@ theorem pagesExchange_imports (sender : Response) (input : AcceptanceInput) (siz
     (configSeq : candidate.config.seqno = input.receiving.head.configSeqno)
     (configHash : candidate.config.hash = input.receiving.head.configHash)
     (candidateBytes : input.candidateBytes ≤ 10 * 1024 * 1024)
+    (follows : Follows input.previous.config (sender.changes.map (·.entry)))
     (chain : verifySuffix input.object input.previous.config candidate.config (sender.changes.map (·.entry)) = true)
     (readable : readableBy candidate.config input.localPeer = true)
     (changed : {merged with config := candidate.config, invites := input.previous.invites} ≠ input.previous)
@@ -1026,7 +1028,7 @@ theorem pagesExchange_imports (sender : Response) (input : AcceptanceInput) (siz
     (by simpa only [head] using current)
     (by simpa only [head] using configSeq)
     (by simpa only [head] using configHash) bounded
-    (by simpa only [changes] using chain) readable changed lock access write
+    (by simpa only [changes] using follows) (by simpa only [changes] using chain) readable changed lock access write
   exact ⟨pages, after, by simpa only [snapshotEq, pinned] using sent, received, imported⟩
 
 /-- WriterAttempt records a channel selection, current authority and completed transport operation.
@@ -1389,6 +1391,7 @@ theorem receiveExchange_complete (before : Exchange) (current : State) (frame : 
     (configHash : candidate.config.hash = input.acceptance.receiving.head.configHash)
     (bounded : input.acceptance.candidateBytes ≤ 10 * 1024 * 1024 ∧ input.acceptance.receiving.changes.length ≤ 4096 ∧
       historyBytes input.acceptance.receiving.changes ≤ 8 * 1024 * 1024)
+    (follows : Follows input.acceptance.previous.config (input.acceptance.receiving.changes.map (·.entry)))
     (chain : verifySuffix input.acceptance.object input.acceptance.previous.config candidate.config (input.acceptance.receiving.changes.map (·.entry)) = true)
     (readable : readableBy candidate.config input.acceptance.localPeer = true)
     (changed : {merged with config := candidate.config, invites := input.acceptance.previous.invites} ≠
@@ -1401,7 +1404,7 @@ theorem receiveExchange_complete (before : Exchange) (current : State) (frame : 
       accepted.host.wrote = true ∧
         accepted.host.state = {merged with config := candidate.config, invites := input.acceptance.previous.invites} := by
   have accepted := acceptResponse_complete input.acceptance candidate merged snapshot present decoded merge revision
-    base cursor digest notObsolete configSeq configHash bounded chain readable changed lock access write
+    base cursor digest notObsolete configSeq configHash bounded follows chain readable changed lock access write
   have sameInput : {input.acceptance with receiving := input.acceptance.receiving, snapshot := frame.snapshot} = input.acceptance := by
     simp [frameSnapshot]
   simp [receiveExchange, kind, live, control, receiving, sameInput, accepted, revision]

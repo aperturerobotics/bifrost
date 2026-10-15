@@ -9,6 +9,8 @@ Spacewave `cc4d9007e` plus the owner-retention fix:
 - `verifySignatures` mirrors `verifyConfigChangeSignatures`.
 - `validateSelfEnroll` mirrors `validateSelfEnrollPeerChange`.
 - `verifyChange` mirrors `VerifyConfigChange`.
+- `mergeValid` mirrors `verifyConfigMerge` and `mergeConfigBranch`.
+- `suffixBase` mirrors `ConfigSuffixBase`.
 - `verifySuffix` mirrors `VerifyConfigChainSuffix`.
 - `verifyChain` mirrors `VerifyConfigChain`.
 
@@ -21,7 +23,8 @@ empty when its key does not parse, and whether it verified over the same bytes;
 unforgeability is the assumption that `valid` holds only for the named signer's
 key. Every verifier takes the shared object it verifies for. Role and change
 type codes stay integers because protobuf decoding keeps values outside the
-enum.
+enum. Every configuration is under owner control: the model has no group
+control, sequencer or sealed checkpoint, so a merge merges participants only.
 -/
 
 namespace Spacewave.SObject
@@ -52,11 +55,17 @@ def incrementInviteUses : ChangeType := 6
 def selfEnrollPeer : ChangeType := 7
 def transferOwnership : ChangeType := 8
 def setRoster : ChangeType := 9
+def setSequencer : ChangeType := 10
+def setControl : ChangeType := 11
+def merge : ChangeType := 12
 
-/-- peerChanges are the change types a peer may relay in a suffix. -/
+/--
+peerChanges mirrors `isPeerConfigChange`: the change types a peer may relay in
+a suffix or a merge may absorb.
+-/
 def peerChanges : List ChangeType :=
   [addParticipant, removeParticipant, addInvite, revokeInvite, incrementInviteUses,
-    transferOwnership, setRoster]
+    transferOwnership, setRoster, setSequencer, setControl, merge]
 
 end ChangeType
 
@@ -89,7 +98,12 @@ structure Sig where
   valid : Bool
   deriving DecidableEq, Repr
 
-/-- Entry is one `SOConfigChange`; `config` is none when Go's field is nil. -/
+mutual
+
+/--
+Entry is one `SOConfigChange`; `config` is none when Go's field is nil, and
+`merge` is its `SOConfigMerge`.
+-/
 structure Entry where
   object : String
   seqno : Nat
@@ -98,7 +112,21 @@ structure Entry where
   prev : String
   kind : ChangeType
   hash : String
-  deriving DecidableEq, Repr
+  merge : Merge
+
+/-- Merge is an absent `SOConfigMerge`, or its fork and the branch after it. -/
+inductive Merge where
+  | none
+  | some (fork : Entry) (branch : Branch)
+
+/-- Branch is the records a merge absorbs, oldest first. -/
+inductive Branch where
+  | nil
+  | cons (head : Entry) (tail : Branch)
+
+end
+
+deriving instance DecidableEq, Repr for Entry
 
 /-- Participant.valid mirrors `SOParticipantConfig.Validate`. -/
 def Participant.valid (p : Participant) : Bool :=
@@ -194,21 +222,85 @@ def expectedSeqno (cur : Config) : Nat :=
   if cur.hash = "" then 0 else cur.seqno + 1
 
 /--
+mergeParticipants mirrors `mergeByKey` over participants: it applies the
+change from `parent` to `next` onto `target` by peer. Go replaces a changed
+participant in place, and this appends it, so the two results are permutations
+whenever `target` has unique peers.
+-/
+def mergeParticipants (target parent next : List Participant) : List Participant :=
+  let changed := next.filter fun q => lookupPeer parent q.peer != some q
+  let removed (peer : String) := parent.any (·.peer == peer) && !next.any (·.peer == peer)
+  target.filter (fun p => !removed p.peer && !changed.any (·.peer == p.peer)) ++ changed
+
+/-- Delta is one absorbed record: its signers and the configurations around it. -/
+structure Delta where
+  signers : List String
+  parent : Config
+  next : Config
+  deriving DecidableEq, Repr
+
+/--
+absorb mirrors one `mergeConfigBranch` step: a record every signer of which
+owns the merged configuration so far applies its change, when the result stays
+valid.
+-/
+def absorb (result : Config) (d : Delta) : Config :=
+  let candidate := { result with
+    participants := mergeParticipants result.participants d.parent.participants d.next.participants }
+  if !d.signers.isEmpty && d.signers.all (isOwner result) && candidate.validate then candidate
+  else result
+
+mutual
+
+/--
 verifyChange mirrors `VerifyConfigChange`. It accepts an entry bound to
 `obj`, linked to the head of `cur`, at the next sequence number, authorized by
-`cur`, whose configuration with the entry as its head is valid, and returns
-that configuration.
+`cur`, whose configuration with the entry as its head is valid and, for a
+merge, is the one its branch yields on `cur`, and returns that configuration.
 -/
-def verifyChange (obj : String) (cur : Config) (e : Entry) : Option Config :=
-  match e.config with
-  | none => none
-  | some next =>
-    let result := next.withHead e.seqno e.hash
-    if e.object = obj ∧ e.prev = cur.hash ∧ expectedSeqno cur < seqnoLimit ∧
-        e.seqno = expectedSeqno cur ∧ verifySignatures e cur ∧ result.validate then
-      some result
+def verifyChange (obj : String) (cur : Config) : Entry → Option Config
+  | e@⟨_, _, config, _, _, _, _, merge⟩ =>
+    match config with
+    | none => none
+    | some next =>
+      let result := next.withHead e.seqno e.hash
+      if e.object = obj ∧ e.prev = cur.hash ∧ expectedSeqno cur < seqnoLimit ∧
+          e.seqno = expectedSeqno cur ∧ verifySignatures e cur ∧ result.validate then
+        if mergeValid obj cur e.kind next merge then some result else none
+      else
+        none
+
+/--
+mergeValid mirrors `verifyConfigMerge`: only a merge carries a branch, and a
+merge must carry the configuration `next` that its branch yields on `cur`.
+-/
+def mergeValid (obj : String) (cur : Config) (kind : ChangeType) (next : Config) :
+    Merge → Bool
+  | .none => kind != ChangeType.merge
+  | .some fork branch =>
+    kind == ChangeType.merge &&
+      match fork.config with
+      | none => false
+      | some forkConfig =>
+        match branchDeltas obj (forkConfig.withHead fork.seqno fork.hash) branch with
+        | some (d :: ds) => next.same ((d :: ds).foldl absorb cur)
+        | _ => false
+
+/--
+branchDeltas mirrors the verification loop of `mergeConfigBranch`: each
+absorbed record is a peer change verified on the configuration before it.
+-/
+def branchDeltas (obj : String) (parent : Config) : Branch → Option (List Delta)
+  | .nil => some []
+  | .cons e rest =>
+    if e.kind ∈ ChangeType.peerChanges then
+      match verifyChange obj parent e with
+      | none => none
+      | some next => (branchDeltas obj next rest).map (⟨e.sigs.map (·.signer), parent, next⟩ :: ·)
     else
       none
+
+end
 
 /-- suffixStep is one `VerifyConfigChainSuffix` step: a peer change type, then `verifyChange`. -/
 def suffixStep (obj : String) (cur : Config) (e : Entry) : Option Config :=
@@ -218,14 +310,48 @@ def suffixStep (obj : String) (cur : Config) (e : Entry) : Option Config :=
 def applySuffix (obj : String) (cur : Config) (es : List Entry) : Option Config :=
   es.foldlM (suffixStep obj) cur
 
+mutual
+
+/--
+absorbedFork mirrors `AbsorbedFork`: the fork of the merge in `e` that absorbs
+the record hashed `head`, searching merges nested in absorbed branches.
+-/
+def absorbedFork (head : String) : Entry → Option Entry
+  | ⟨_, _, _, _, _, kind, _, .some fork branch⟩ =>
+    if kind == ChangeType.merge && head != "" then branchFork head fork branch else none
+  | ⟨_, _, _, _, _, _, _, .none⟩ => none
+
+/-- branchFork searches one merge's branch for `head`, returning `fork` for a direct record. -/
+def branchFork (head : String) (fork : Entry) : Branch → Option Entry
+  | .nil => none
+  | .cons e rest => if e.hash == head then some fork else (absorbedFork head e).or (branchFork head fork rest)
+
+end
+
+/--
+suffixBase mirrors `ConfigSuffixBase`: a suffix that does not follow `cur`
+starts at the fork of the first merge that absorbs the head of `cur`.
+-/
+def suffixBase (cur : Config) : List Entry → Option Config
+  | [] => some cur
+  | es@(first :: _) =>
+    if first.prev = cur.hash then some cur
+    else
+      match es.findSome? (absorbedFork cur.hash) with
+      | some fork =>
+        if fork.hash = first.prev then fork.config.map (·.withHead fork.seqno fork.hash) else none
+      | none => none
+
 /--
 verifySuffix mirrors `VerifyConfigChainSuffix`: from a nonempty valid
-checkpoint, the entries must reach a configuration equal to the candidate.
+checkpoint, the entries, starting at its head or at the fork of a merge that
+absorbs it, must reach a configuration equal to the candidate. A suffix from a
+fork must end above the checkpoint.
 -/
 def verifySuffix (obj : String) (cur cand : Config) (es : List Entry) : Bool :=
   cur.hash != "" && cur.validate &&
-    match applySuffix obj cur es with
-    | some c => c.same cand
+    match (suffixBase cur es).bind (applySuffix obj · es) with
+    | some c => (es.head?.all (·.prev == cur.hash) || cur.seqno < c.seqno) && c.same cand
     | none => false
 
 /-- genesisValid mirrors the genesis checks of `VerifyConfigChain`. -/
@@ -289,15 +415,17 @@ theorem verifyChange_spec {obj : String} {cur : Config} {e : Entry} {next : Conf
     ∃ c, e.config = some c ∧ next = c.withHead e.seqno e.hash ∧ e.object = obj ∧
       e.prev = cur.hash ∧ expectedSeqno cur < seqnoLimit ∧ e.seqno = expectedSeqno cur ∧
       verifySignatures e cur = true ∧ next.validate = true := by
-  unfold verifyChange at h
-  split at h
-  · contradiction
-  · rename_i c hc
-    dsimp only at h
+  obtain ⟨object, seqno, config, sigs, prev, kind, hash, merge⟩ := e
+  cases config with
+  | none => simp [verifyChange] at h
+  | some c =>
+    simp only [verifyChange] at h
     split at h
     · rename_i hok
-      cases h
-      exact ⟨c, hc, rfl, hok⟩
+      split at h
+      · cases h
+        exact ⟨c, rfl, rfl, hok⟩
+      · contradiction
     · contradiction
 
 /--
@@ -341,9 +469,85 @@ theorem verifyChange_stale {obj : String} {cur : Config} {e : Entry} (hh : cur.h
 
 /-! ## Suffix verification -/
 
+/-- Configuration equality as Go compares it is symmetric. -/
+theorem Config.same_symm {a b : Config} (h : a.same b = true) : b.same a = true := by
+  simp only [Config.same, Bool.and_eq_true, beq_iff_eq, List.isPerm_iff] at h ⊢
+  obtain ⟨⟨hh, hs⟩, hp⟩ := h
+  exact ⟨⟨hh.symm, hs.symm⟩, hp.symm⟩
+
+/-- Validity does not depend on participant order. -/
+theorem Config.validate_perm {a b : Config} (hp : a.participants.Perm b.participants)
+    (hh : a.hash = b.hash) : a.validate = b.validate := by
+  have hall : ∀ f : Participant → Bool, a.participants.all f = b.participants.all f := by
+    intro f
+    apply Bool.eq_iff_iff.mpr
+    simp only [List.all_eq_true]
+    exact ⟨fun h x hx => h x (hp.mem_iff.2 hx), fun h x hx => h x (hp.mem_iff.1 hx)⟩
+  have hany : ∀ f : Participant → Bool, a.participants.any f = b.participants.any f := by
+    intro f
+    apply Bool.eq_iff_iff.mpr
+    simp only [List.any_eq_true]
+    exact ⟨fun ⟨x, hx, h⟩ => ⟨x, hp.mem_iff.1 hx, h⟩, fun ⟨x, hx, h⟩ => ⟨x, hp.mem_iff.2 hx, h⟩⟩
+  have hempty : a.participants.isEmpty = b.participants.isEmpty := by
+    apply Bool.eq_iff_iff.mpr
+    simp only [List.isEmpty_iff]
+    exact ⟨fun h => List.perm_nil.1 (h ▸ hp).symm, fun h => List.perm_nil.1 (h ▸ hp.symm).symm⟩
+  simp only [Config.validate, Config.hasOwner, hempty, hh, hp.length_eq, hall, hany,
+    (hp.map (·.peer)).nodup_iff]
+
+/-- Merging a change keeps a permutation of the target a permutation. -/
+theorem mergeParticipants_perm {t t' : List Participant} (hp : t.Perm t')
+    (parent next : List Participant) :
+    (mergeParticipants t parent next).Perm (mergeParticipants t' parent next) :=
+  (hp.filter _).append_right _
+
+/-- Absorbing a record depends on the merged configuration only up to Go's equality. -/
+theorem absorb_same {a b : Config} (h : a.same b = true) (d : Delta) :
+    (absorb a d).same (absorb b d) = true := by
+  have h' := h
+  simp only [Config.same, Bool.and_eq_true, beq_iff_eq, List.isPerm_iff] at h'
+  obtain ⟨⟨hh, hs⟩, hp⟩ := h'
+  have hmp := mergeParticipants_perm hp d.parent.participants d.next.participants
+  have hown : isOwner a = isOwner b := funext (isOwner_perm hp)
+  have hval := Config.validate_perm (a := { a with
+    participants := mergeParticipants a.participants d.parent.participants d.next.participants })
+    (b := { b with
+      participants := mergeParticipants b.participants d.parent.participants d.next.participants })
+    hmp hh
+  unfold absorb
+  simp only [hown, hval]
+  split
+  · simp only [Config.same, Bool.and_eq_true, beq_iff_eq, List.isPerm_iff]
+    exact ⟨⟨hh, hs⟩, hmp⟩
+  · exact h
+
+/-- Absorbing a branch depends on the merged configuration only up to Go's equality. -/
+theorem foldl_absorb_same {a b : Config} (h : a.same b = true) (ds : List Delta) :
+    (ds.foldl absorb a).same (ds.foldl absorb b) = true := by
+  induction ds generalizing a b with
+  | nil => exact h
+  | cons d ds ih => exact ih (absorb_same h d)
+
+/-- Merge verification depends on the held configuration only up to Go's equality. -/
+theorem mergeValid_congr {obj : String} {a b : Config} (h : a.same b = true) (kind : ChangeType)
+    (next : Config) (m : Merge) : mergeValid obj a kind next m = mergeValid obj b kind next m := by
+  cases m with
+  | none => rfl
+  | some fork branch =>
+    simp only [mergeValid]
+    congr 1
+    split
+    · rfl
+    · split
+      · apply Bool.eq_iff_iff.mpr
+        exact ⟨fun hx => Config.same_trans hx (foldl_absorb_same h _),
+          fun hx => Config.same_trans hx (Config.same_symm (foldl_absorb_same h _))⟩
+      · rfl
+
 /-- A suffix step depends on the configuration only up to Go's equality. -/
 theorem suffixStep_congr {obj : String} {a b : Config} (h : a.same b = true) (e : Entry) :
     suffixStep obj a e = suffixStep obj b e := by
+  have hm := mergeValid_congr (obj := obj) h
   simp only [Config.same, Bool.and_eq_true, beq_iff_eq, List.isPerm_iff] at h
   obtain ⟨⟨hh, hs⟩, hp⟩ := h
   unfold suffixStep
@@ -355,9 +559,12 @@ theorem suffixStep_congr {obj : String} {a b : Config} (h : a.same b = true) (e 
       intro heq
       simp [heq, ChangeType.selfEnrollPeer, ChangeType.addParticipant,
         ChangeType.removeParticipant, ChangeType.addInvite, ChangeType.revokeInvite,
-        ChangeType.incrementInviteUses, ChangeType.transferOwnership, ChangeType.setRoster] at hk
+        ChangeType.incrementInviteUses, ChangeType.transferOwnership, ChangeType.setRoster,
+        ChangeType.setSequencer, ChangeType.setControl, ChangeType.merge] at hk
+    obtain ⟨object, seqno, config, sigs, prev, kind, hash, merge⟩ := e
+    simp only at hk'
     simp [verifyChange, verifySignatures, signerAuthorized, expectedSeqno, hh, hs, hk',
-      isOwner_perm hp]
+      isOwner_perm hp, hm]
   · rfl
 
 /-- Folding a suffix in two parts equals folding it at once. -/
@@ -372,20 +579,51 @@ theorem applySuffix_congr {obj : String} {a b : Config} (h : a.same b = true) {y
   | nil => contradiction
   | cons e ys => simp [applySuffix, List.foldlM_cons, suffixStep_congr h]
 
+/-- Follows says a suffix starts at the head of `cur`, so no merge fork replaces it. -/
+def Follows (cur : Config) (es : List Entry) : Prop :=
+  ∀ e ∈ es.head?, e.prev = cur.hash
+
+/-- A suffix that follows the checkpoint starts there. -/
+theorem suffixBase_follows {cur : Config} {es : List Entry} (h : Follows cur es) :
+    suffixBase cur es = some cur := by
+  cases es with
+  | nil => rfl
+  | cons e es => simp [suffixBase, h e (by simp)]
+
+/-- Follows is the link test `verifySuffix` makes. -/
+theorem Follows.all {cur : Config} {es : List Entry} (h : Follows cur es) :
+    es.head?.all (·.prev == cur.hash) = true := by
+  cases es with
+  | nil => rfl
+  | cons e es => simp [h e (by simp)]
+
 /-- An empty suffix accepts only a candidate equal to the checkpoint. -/
 theorem verifySuffix_nil {obj : String} {a c : Config} (h : verifySuffix obj a c [] = true) :
     a.same c = true := by
-  simp [verifySuffix, applySuffix] at h
+  simp [verifySuffix, suffixBase, applySuffix] at h
   exact h.2
 
 /--
 Suffix verification composes: a verified path from `a` to `b` and one from `b`
-to `c` join into a verified path from `a` to `c`.
+to `c`, each following its checkpoint, join into a verified path from `a` to
+`c`.
 -/
 theorem verifySuffix_trans {obj : String} {a b c : Config} {xs ys : List Entry}
+    (hx : Follows a xs) (hy : Follows b ys)
     (hab : verifySuffix obj a b xs = true) (hbc : verifySuffix obj b c ys = true) :
     verifySuffix obj a c (xs ++ ys) = true := by
-  simp only [verifySuffix, Bool.and_eq_true] at hab hbc ⊢
+  -- The joined suffix follows `a`: through `xs`, or through `ys` when `xs` is empty.
+  have hxy : Follows a (xs ++ ys) := by
+    cases xs with
+    | cons x xs => simpa [Follows] using hx
+    | nil =>
+      have hsame := verifySuffix_nil hab
+      simp only [Config.same, Bool.and_eq_true, beq_iff_eq] at hsame
+      intro e he
+      rw [hy e (by simpa using he), ← hsame.1.1]
+  simp only [verifySuffix, suffixBase_follows hx, suffixBase_follows hy, suffixBase_follows hxy,
+    hx.all, hy.all, hxy.all, Bool.true_or, Bool.true_and, Option.bind_some,
+    Bool.and_eq_true] at hab hbc ⊢
   obtain ⟨hcheck, hab⟩ := hab
   obtain ⟨_, hbc⟩ := hbc
   refine ⟨hcheck, ?_⟩
