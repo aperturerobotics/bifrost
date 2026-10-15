@@ -486,7 +486,7 @@ class EngineWorldStateObject implements IObjectState {
         if (!obj && !ignoreNotFound) {
           throw new Error(`Object not found: ${this.objectKey}`)
         }
-        return obj?.getRootRef(signal)
+        return await obj?.getRootRef(signal)
       },
       abortSignal,
     )
