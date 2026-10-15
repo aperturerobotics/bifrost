@@ -393,16 +393,24 @@ func mountChatEngine(t *testing.T, ctx context.Context, tb *testbed.Testbed, ref
 	return engine
 }
 
-// waitOperationSet waits until the operation set of object satisfies cond and
-// returns the nonce of author's latest operation in it.
+// waitOperationSet waits until the operation set the World engine of object
+// replays satisfies cond and returns the nonce of author's latest operation in
+// it. The engine replays the admitted state, which the host publishes apart
+// from the durable state, so a durable snapshot can lead what the engine sees.
 func waitOperationSet(t *testing.T, ctx context.Context, object sobject.SharedObject, cond func(*sobject.SOOperationSet) bool, author string) uint64 {
-	// Watch for a snapshot whose operation set satisfies cond.
+	// Watch the admitted state.
 	t.Helper()
-	states, release, err := object.AccessSharedObjectState(ctx, nil)
+	publisher, ok := object.(sobject.StatePublisher)
+	if !ok {
+		t.Fatal("shared object does not publish its admitted state")
+	}
+	states, release, err := publisher.AccessAdmittedState(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer release()
+
+	// Wait for a snapshot whose operation set satisfies cond.
 	var nonce uint64
 	if _, err := states.WaitValueWithValidator(ctx, func(snapshot sobject.SharedObjectStateSnapshot) (bool, error) {
 		set, err := snapshot.GetOperationSet(ctx)

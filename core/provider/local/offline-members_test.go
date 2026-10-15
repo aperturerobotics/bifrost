@@ -320,12 +320,14 @@ func (m *offlineMember) requireObjects(ctx context.Context, keys ...string) {
 	}
 }
 
-// waitOperations waits until the Space holds n operations by author.
+// waitOperations waits until the state the World engine replays holds n
+// operations by author. The host publishes it apart from the durable state, so
+// a durable snapshot can lead what the engine sees.
 func (m *offlineMember) waitOperations(ctx context.Context, author string, n int) {
-	// Watch the readable state.
+	// Watch the admitted state.
 	t := m.t
 	t.Helper()
-	states, release, err := m.object.AccessSharedObjectState(ctx, nil)
+	states, release, err := m.object.AccessAdmittedState(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

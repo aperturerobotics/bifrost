@@ -355,10 +355,7 @@ func (w *spaceWorld) checkReplayedFile(ctx context.Context, t *testing.T) {
 		t.Fatal(err)
 	}
 	defer soRef.Release()
-	snap, err := so.GetSharedObjectState(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	snap := durableState(ctx, t, so)
 
 	// Replay it from the checkpoint.
 	le := logrus.NewEntry(logrus.New())
@@ -372,6 +369,57 @@ func (w *spaceWorld) checkReplayedFile(ctx context.Context, t *testing.T) {
 	if err := world.ExecTransaction(ctx, replayed, false, checkFile); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// durableState returns the durable state of so once it holds every operation
+// the World engine admitted. A commit returns before its publication's
+// receipt, so the durable state can lag the last write.
+func durableState(ctx context.Context, t *testing.T, so sobject.SharedObject) sobject.SharedObjectStateSnapshot {
+	// Watch the admitted state.
+	t.Helper()
+	publisher, ok := so.(sobject.StatePublisher)
+	if !ok {
+		t.Fatal("shared object does not publish its admitted state")
+	}
+	admittedStates, releaseAdmitted, err := publisher.AccessAdmittedState(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer releaseAdmitted()
+
+	// Read the operations the engine admitted.
+	admittedSnap, err := admittedStates.WaitValue(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	admitted, err := admittedSnap.GetOperationSet(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for a durable state that covers each of them.
+	states, release, err := so.AccessSharedObjectState(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	snap, err := states.WaitValueWithValidator(ctx, func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
+		set, err := snap.GetOperationSet(ctx)
+		if err != nil {
+			return false, err
+		}
+		for _, h := range admitted.Order() {
+			inner := admitted.Get(h)
+			if set.Get(h) == nil && !set.Covers(inner.GetPeerId(), inner.GetNonce()) {
+				return false, nil
+			}
+		}
+		return true, nil
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snap
 }
 
 // editRecord applies a mock object op to object "record", which reads the
@@ -423,10 +471,7 @@ func TestWorldEngineKeepsReplacedObjectRoots(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer soRef.Release()
-	snap, err := so.GetSharedObjectState(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	snap := durableState(ctx, t, so)
 
 	// Replay it from the checkpoint, as another member does.
 	le := logrus.NewEntry(logrus.New())

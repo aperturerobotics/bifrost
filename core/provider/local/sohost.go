@@ -186,16 +186,17 @@ func (l *LocalSOHost) detach(ctx context.Context) (context.Context, context.Canc
 // write is admitted to that publication, and QueueOperation returns the local
 // operation id once the admitted snapshot holds the operation, or the local
 // operation id with the publication's error once its receipt fails. Otherwise
-// it returns once the durable snapshot holds it.
+// it returns once the durable and the admitted snapshots hold it: the host
+// publishes them apart, and the World engine replays the admitted one.
 func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, error) {
 	// Capture the receipt of an admitted write: its failure removes the
 	// operation from the admitted state.
 	ctx, task := trace.NewTask(ctx, "alpha/local-so/queue-operation")
 	defer task.End()
 	var receipt *block.PublicationReceipt
-	snaps := l.stateSnapCtr
+	snaps := []*ccontainer.CContainer[sobject.SharedObjectStateSnapshot]{l.stateSnapCtr, l.admittedSnapCtr}
 	if publish := sobject.GetPublishState(ctx); publish != nil {
-		snaps = l.admittedSnapCtr
+		snaps = snaps[1:]
 		ctx = sobject.WithPublishState(ctx, func(ctx context.Context, head *block.AtomicHeadUpdate) (*block.PublicationReceipt, error) {
 			var err error
 			receipt, err = publish(ctx, head)
@@ -209,7 +210,7 @@ func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, er
 		return "", err
 	}
 
-	// Wait for the snapshot that holds the operation, or a later checkpoint.
+	// Wait for the snapshots that hold the operation, or a later checkpoint.
 	// The state write admitted or wrote the operation, so the wait ignores
 	// ctx's cancellation and the call reports the operation as added. It
 	// ends with the host's lifetime, and the outcome is then unknown, or with
@@ -227,7 +228,7 @@ func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, er
 			}
 		}()
 	}
-	_, err = snaps.WaitValueWithValidator(ctx, func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
+	holds := func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
 		// A snapshot holds the operation, or its checkpoint covers it.
 		if snap == nil {
 			return false, nil
@@ -238,7 +239,12 @@ func (l *LocalSOHost) QueueOperation(ctx context.Context, op []byte) (string, er
 		}
 		peerID := l.peerID.String()
 		return set.Find(peerID, localID) != nil || set.Covers(peerID, nonce), nil
-	}, nil)
+	}
+	for _, ctr := range snaps {
+		if _, err = ctr.WaitValueWithValidator(ctx, holds, nil); err != nil {
+			break
+		}
+	}
 	if err == nil {
 		return localID, nil
 	}
