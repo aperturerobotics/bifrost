@@ -16,6 +16,7 @@ import (
 	"github.com/s4wave/spacewave/bldr/core"
 	devtool_web "github.com/s4wave/spacewave/bldr/devtool/web"
 	devtool_web_entrypoint_controller "github.com/s4wave/spacewave/bldr/devtool/web/entrypoint/controller"
+	manifest_fetch_plugin "github.com/s4wave/spacewave/bldr/manifest/fetch/plugin"
 	manifest_fetch_rpc "github.com/s4wave/spacewave/bldr/manifest/fetch/rpc"
 	plugin_host_web "github.com/s4wave/spacewave/bldr/plugin/host/web"
 	default_storage "github.com/s4wave/spacewave/bldr/storage/default"
@@ -87,6 +88,7 @@ func main() {
 			le.Fatal(err.Error())
 		}
 
+		sr.AddFactory(manifest_fetch_plugin.NewFactory(b))
 		sr.AddFactory(manifest_fetch_rpc.NewFactory(b))
 		sr.AddFactory(plugin_host_web.NewFactory(b))
 		sr.AddFactory(web_entrypoint_browser.NewFactory(b))
