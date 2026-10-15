@@ -14,6 +14,7 @@ import type { SpaceContents } from '@s4wave/sdk/space/contents.js'
 import { VmState } from '@s4wave/sdk/vm/v86.pb.js'
 import {
   DEFAULT_WASIVM_INIT_PATH,
+  PRED_WASIVM_IMAGE,
   PRED_WASIVM_ROOTFS,
   SET_WASIVM_STATE_OP_ID,
   WasiVmHandle,
@@ -37,16 +38,17 @@ import { VmHeader, VmStopButton } from '@s4wave/app/vm/VmHeader.js'
 import { WasiVmDisplay, type WasiVmDisplayConnector } from './WasiVmDisplay.js'
 import { WasiVmMachineCard } from './WasiVmMachineCard.js'
 
-// readRootfsKey reads the key of the root filesystem the VM at objectKey
-// runs on, or "" when it has none.
-async function readRootfsKey(
+// readLinkedKey reads the key of the first object the VM at objectKey links to
+// with predicate, or "" when it has none.
+async function readLinkedKey(
   world: IWorldState,
   objectKey: string,
+  predicate: string,
   signal: AbortSignal,
 ): Promise<string> {
   const resp = await world.lookupGraphQuads(
     keyToIRI(objectKey),
-    PRED_WASIVM_ROOTFS,
+    predicate,
     undefined,
     undefined,
     1,
@@ -54,6 +56,22 @@ async function readRootfsKey(
   )
   const obj = resp.quads?.[0]?.obj
   return obj ? iriToKey(obj) : ''
+}
+
+// readRootfsKey reads the key of the object the VM at objectKey takes its
+// root filesystem from: its own root filesystem, else its image, else "".
+async function readRootfsKey(
+  world: IWorldState,
+  objectKey: string,
+  signal: AbortSignal,
+): Promise<string> {
+  const rootfs = await readLinkedKey(
+    world,
+    objectKey,
+    PRED_WASIVM_ROOTFS,
+    signal,
+  )
+  return rootfs || readLinkedKey(world, objectKey, PRED_WASIVM_IMAGE, signal)
 }
 
 // requestWasiVmState asks the VM at objectKey for a target state. A start
