@@ -12,18 +12,15 @@ import (
 
 // keypairTracker tracks a Keypair linked to the Worker.
 //
-// the keypair rev is incremented when a new object is linked
-// this notifies the worker watcher to re-scan for objects to track
+// Linking an object to the Keypair increments its revision, which wakes the
+// Worker to scan for objects to track.
 type keypairTracker struct {
 	// c is the controller
 	c *Controller
 	// objKey is the object key
 	objKey string
-
 	// objLoop is the object tracking loop
 	objLoop *world_control.WatchLoop
-	// the following fields are managed by processState
-	lastRev uint64
 }
 
 // newKeypairTracker constructs a new worker keypair tracker routine.
@@ -40,7 +37,7 @@ func (c *Controller) newKeypairTracker(key string) (keyed.Routine, *keypairTrack
 	return tr.execute, tr
 }
 
-// execute executes the job tracker.
+// execute executes the keypair tracker.
 func (t *keypairTracker) execute(ctx context.Context) error {
 	objKey, le := t.objKey, t.c.le
 
@@ -53,7 +50,7 @@ func (t *keypairTracker) execute(ctx context.Context) error {
 	)
 }
 
-// processState processes the state for the job.
+// processState wakes the Worker on each observed Keypair revision.
 func (t *keypairTracker) processState(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -61,12 +58,9 @@ func (t *keypairTracker) processState(
 	obj world.ObjectState, // may be nil if not found
 	rootRef *bucket.ObjectRef, rev uint64,
 ) (waitForChanges bool, err error) {
-	// wake the worker if the rev changes
-	lastRev := t.lastRev
-	if lastRev != 0 && lastRev < rev {
-		t.c.Wake()
-	}
-	t.lastRev = rev
+	// Wake on the first observation too: an object linked between the
+	// Worker's scan and this tracker's first read appears only here.
+	t.c.Wake()
 	return true, nil
 }
 
