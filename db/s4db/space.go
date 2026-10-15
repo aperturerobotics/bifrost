@@ -1,6 +1,7 @@
 package s4db
 
 import (
+	"cmp"
 	"encoding/binary"
 	"slices"
 
@@ -68,6 +69,8 @@ type space struct {
 	// released collects runs freed since the caller last drained it, for
 	// hole punching.
 	released []run
+	// releasedPages counts the pages of released.
+	releasedPages uint64
 	// marks are the highest release marks applied: value runs through
 	// marks.seq and page runs through marks.ckpt are free.
 	marks pin
@@ -169,6 +172,7 @@ func (s *space) addFree(r run) {
 		return
 	}
 	s.released = append(s.released, r)
+	s.releasedPages += r.n
 
 	// Merge with the free runs on either side.
 	if prev, ok := s.before(r.start); ok && prev.end() == r.start {
@@ -385,17 +389,30 @@ func (s *space) release(seq, ckpt uint64) {
 }
 
 // drain returns the parts of the runs released since the last drain that
-// are still free, and clears them. A released page taken again holds data,
-// so only the free map decides what may be punched.
+// are still free, merged into as few runs as the free map allows, and clears
+// them. A released page taken again holds data, so only the free map decides
+// what may be punched.
 func (s *space) drain() []run {
-	var out []run
+	// Merge released runs that touch or overlap, in place.
+	slices.SortFunc(s.released, func(a, b run) int { return cmp.Compare(a.start, b.start) })
+	merged := s.released[:0]
 	for _, r := range s.released {
+		if last := len(merged) - 1; last >= 0 && r.start <= merged[last].end() {
+			merged[last].n = max(merged[last].end(), r.end()) - merged[last].start
+			continue
+		}
+		merged = append(merged, r)
+	}
+	s.released, s.releasedPages = nil, 0
+
+	// Clip each merged run to the free runs it overlaps.
+	var out []run
+	for _, r := range merged {
 		for _, h := range s.overlaps(r) {
 			start := max(h.start, r.start)
 			out = append(out, run{start: start, n: min(h.end(), r.end()) - start})
 		}
 	}
-	s.released = nil
 	return out
 }
 

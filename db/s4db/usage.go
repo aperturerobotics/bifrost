@@ -6,8 +6,8 @@ import "context"
 type Usage struct {
 	// FileBytes is the file length.
 	FileBytes int64
-	// FreeBytes is the length of the free runs. They are punched, so they
-	// take no disk.
+	// FreeBytes is the length of the free runs. They are punched in batches,
+	// so they take little disk.
 	FreeBytes int64
 	// ValueBytes is the total length of the live values stored outside the
 	// index.

@@ -233,7 +233,8 @@ func (w *writer) replaySpace(st *state) error {
 		}
 	}
 
-	// Adopt the space; its writer already punched what it released.
+	// Adopt the space. Its writer punched what it released, except a last
+	// batch a crash cut short, whose pages stay allocated until reused.
 	sp.drain()
 	size, err := s.size()
 	if err != nil {
@@ -352,12 +353,17 @@ func (w *writer) commit(ctx context.Context, base *state, changes []tentry, orde
 		w.changed = append(w.changed, r)
 	}
 
-	// Arm the deadline flush of an ordered commit and release space. A
-	// durable commit flushes after the writer lock is released.
+	// Arm the deadline flush of an ordered commit and release space once a
+	// batch has built up. A durable commit flushes after the writer lock is
+	// released.
 	if ordered {
 		db.flush.ordered()
 	}
-	if err := w.punch(); err != nil {
+	release := w.truncate
+	if w.sp.releasedPages >= punchBatchPages {
+		release = w.punch
+	}
+	if err := release(); err != nil {
 		return err
 	}
 
@@ -434,6 +440,12 @@ func (w *writer) releaseSpace(ctx context.Context, base *state, r *record) error
 	return nil
 }
 
+// punchBatchPages is the released page count at which a commit punches.
+// Each punch is a file system call made under the writer lock, and
+// lowest-fit allocation soon takes freed runs again, so commits leave smaller
+// batches to the next checkpoint.
+const punchBatchPages = 8 << 20 / pageSize
+
 // punch deallocates released runs and shrinks the file to the space end.
 func (w *writer) punch() error {
 	// Deallocate released runs below the end.
@@ -448,8 +460,12 @@ func (w *writer) punch() error {
 			return err
 		}
 	}
+	return w.truncate()
+}
 
-	// Cut the file at the end.
+// truncate shrinks the file to the space end.
+func (w *writer) truncate() error {
+	db, sp := w.db, w.sp
 	if sp.end < w.fileEnd {
 		db.p.cache.drop(run{start: sp.end, n: w.fileEnd - sp.end})
 		if err := db.s.truncate(pageOff(sp.end)); err != nil {
