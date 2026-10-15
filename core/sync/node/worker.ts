@@ -88,7 +88,6 @@ async function serveWorker(openRuntime: OpenRuntime): Promise<void> {
                 error: failure,
               }),
             )
-            parent.close()
           })()
         } else {
           frame.port?.close()
@@ -124,6 +123,5 @@ export function runWorker(openRuntime: OpenRuntime): void {
         error: error instanceof Error ? error.message : String(error),
       }),
     )
-    parentPort?.close()
   })
 }
