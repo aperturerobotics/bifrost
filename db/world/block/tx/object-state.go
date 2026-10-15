@@ -88,7 +88,7 @@ func (t *ObjectState) SetRootRef(ctx context.Context, nref *bucket.ObjectRef) (u
 	}
 
 	// Record the successful object root change in the transaction batch.
-	t.w.txBatch.Txs = append(t.w.txBatch.Txs, tt)
+	t.w.recordLocked(tt, nil)
 	return seqno, nil
 }
 

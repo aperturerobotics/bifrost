@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/bucket"
 	unixfs_block "github.com/s4wave/spacewave/db/unixfs/block"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	world_block_tx "github.com/s4wave/spacewave/db/world/block/tx"
@@ -13,13 +14,14 @@ import (
 )
 
 // TestTxPayloadRefs checks that a replayed batch reports the payload of an
-// operation recorded as an object operation and as a World operation, since
-// replay keeps only the payloads it reports.
+// operation recorded as an object operation and as a World operation, and the
+// root a direct object set writes, since replay keeps only the payloads it
+// reports.
 func TestTxPayloadRefs(t *testing.T) {
 	// Build a write of one blob for each form.
 	var blobs []*block.BlockRef
 	var txs []*world_block_tx.Tx
-	for i, form := range []string{"object", "world"} {
+	for i, form := range []string{"object", "world", "set"} {
 		h, err := hash.Sum(hash.HashType_HashType_SHA256, []byte(form))
 		if err != nil {
 			t.Fatal(err.Error())
@@ -31,10 +33,13 @@ func TestTxPayloadRefs(t *testing.T) {
 
 		// Record it as the WorldState records each form.
 		var tx *world_block_tx.Tx
-		if i == 0 {
+		switch i {
+		case 0:
 			tx, err = world_block_tx.NewTxApplyObjectOp(op.GetOperationTypeId(), op, "fs", peer.ID(""))
-		} else {
+		case 1:
 			tx, err = world_block_tx.NewTxApplyWorldOp(op, peer.ID(""))
+		default:
+			tx, err = world_block_tx.NewTxObjectSet("fs", &bucket.ObjectRef{RootRef: blob})
 		}
 		if err != nil {
 			t.Fatal(err.Error())

@@ -114,14 +114,17 @@ func (t *Tx) LocateTx() (Transaction, error) {
 	}
 }
 
-// PayloadRefs returns the payload roots of the World and object operations in
-// the transaction, resolving operation types with lookupOp; see
-// world.PayloadOperation.
+// PayloadRefs returns the payload roots of the transaction, resolving
+// operation types with lookupOp: the roots of World and object operations,
+// see world.PayloadOperation, and the object root a create or set writes,
+// since replay restores that root without the graph beneath it.
 func (t *Tx) PayloadRefs(ctx context.Context, lookupOp world.LookupOp) ([]*block.BlockRef, error) {
 	// Decode the operation, or collect the roots of each batched transaction.
 	var op world.Operation
 	var err error
 	switch t.GetTxType() {
+	case TxType_TxType_CREATE_OBJECT, TxType_TxType_OBJECT_SET:
+		return t.objectRootPayload(), nil
 	case TxType_TxType_BATCH:
 		var refs []*block.BlockRef
 		for i, tx := range t.GetTxBatch().GetTxs() {
@@ -148,6 +151,22 @@ func (t *Tx) PayloadRefs(ctx context.Context, lookupOp world.LookupOp) ([]*block
 		return pop.GetPayloadRefs(), nil
 	}
 	return nil, nil
+}
+
+// objectRootPayload returns the object root a create or set writes, or nil
+// when it writes none.
+func (t *Tx) objectRootPayload() []*block.BlockRef {
+	var root *block.BlockRef
+	switch t.GetTxType() {
+	case TxType_TxType_CREATE_OBJECT:
+		root = t.GetTxCreateObject().GetRootRef().GetRootRef()
+	case TxType_TxType_OBJECT_SET:
+		root = t.GetTxObjectSet().GetRootRef().GetRootRef()
+	}
+	if root.GetEmpty() {
+		return nil
+	}
+	return []*block.BlockRef{root}
 }
 
 // MarshalBlock marshals the block to binary.

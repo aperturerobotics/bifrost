@@ -248,7 +248,7 @@ func (w *WorldState) CreateObject(ctx context.Context, key string, rootRef *buck
 	}
 
 	// Record the creation and return the transaction-aware object.
-	w.txBatch.Txs = append(w.txBatch.Txs, t)
+	w.recordLocked(t, nil)
 	return NewObjectState(w, key, obj), nil
 }
 
@@ -550,10 +550,12 @@ func (w *WorldState) TakePayloadRefs() []*block.BlockRef {
 	return payloads
 }
 
-// recordLocked appends the batch entry of an applied op and records its
-// payload roots. Caller holds mtx.
+// recordLocked appends the batch entry of an applied op, or of an object
+// create or set when op is nil, and records its payload roots. Caller holds
+// mtx.
 func (w *WorldState) recordLocked(entry *Tx, op world.Operation) {
 	w.txBatch.Txs = append(w.txBatch.Txs, entry)
+	w.payloads = append(w.payloads, entry.objectRootPayload()...)
 	if pop, ok := op.(world.PayloadOperation); ok {
 		w.payloads = append(w.payloads, pop.GetPayloadRefs()...)
 	}
