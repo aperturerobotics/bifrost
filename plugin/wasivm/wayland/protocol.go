@@ -143,10 +143,14 @@ const keymapXKBV1 = 1
 
 // wl_output.
 const (
-	outputGeometry = 0
-	outputMode     = 1
-	outputDone     = 2
-	outputScale    = 3
+	outputGeometry    = 0
+	outputMode        = 1
+	outputDone        = 2
+	outputScale       = 3
+	outputName        = 4
+	outputDescription = 5
+
+	outputRelease = 0
 )
 
 // wl_output mode flags: the mode is current and preferred.

@@ -166,7 +166,7 @@ func (tc *testCompositor) connect() *testClient {
 		{"wl_seat", 5, idSeat},
 		{"wl_subcompositor", 1, idSubcompositor},
 		{"zwlr_layer_shell_v1", 4, idLayerShell},
-		{"wl_output", 2, idOutput},
+		{"wl_output", 4, idOutput},
 		{"zxdg_output_manager_v1", 3, idXdgOutputs},
 	} {
 		c.request(newEvent(idRegistry, registryBind).uint(names[g.iface]).string(g.iface).uint(g.version).uint(g.id))
@@ -508,12 +508,19 @@ func TestLayerShell(t *testing.T) {
 	}
 }
 
-// TestXdgOutput checks an xdg output describes the screen's logical size and
-// name, and the output's done event ends the description.
+// TestXdgOutput checks the output and an xdg output name the screen, the xdg
+// output describes its logical size, and the output's done event ends the
+// description.
 func TestXdgOutput(t *testing.T) {
-	// Describe the output.
+	// The output names itself when bound.
 	tc := newTestCompositor(t, 160, 120)
 	c := tc.connect()
+	if name := c.await(idOutput, outputName).string(); name != "WASIVM-1" {
+		t.Fatalf("output name %q, want WASIVM-1", name)
+	}
+	c.await(idOutput, outputDone)
+
+	// Describe the output.
 	x := c.newID()
 	c.request(newEvent(idXdgOutputs, xdgOutputManagerGetXdgOutput).uint(x).uint(idOutput))
 

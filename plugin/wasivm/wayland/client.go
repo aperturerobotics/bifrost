@@ -42,7 +42,7 @@ var globals = []global{
 	{"wl_subcompositor", 1, (*client).bindSubcompositor},
 	{"wl_shm", 1, (*client).bindShm},
 	{"wl_seat", 5, (*client).bindSeat},
-	{"wl_output", 2, (*client).bindOutput},
+	{"wl_output", 4, (*client).bindOutput},
 	{"wl_data_device_manager", 3, (*client).bindDataDeviceManager},
 	{"xdg_wm_base", 1, (*client).bindWmBase},
 	{"zwlr_layer_shell_v1", 4, (*client).bindLayerShell},

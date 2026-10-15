@@ -1,19 +1,31 @@
 package wayland
 
-// output is a client's wl_output: the one screen. Version 2 has no requests.
+// The screen's output name and description.
+const (
+	outputNameText        = "WASIVM-1"
+	outputDescriptionText = "WasiVM display"
+)
+
+// output is a client's wl_output: the one screen.
 type output struct {
+	// c is the client.
+	c *client
 	// resource is the binding.
 	resource
 }
 
-// request ignores the request.
-func (output) request(uint16, *message) error {
+// request handles a wl_output request: release, from version 3.
+func (o output) request(op uint16, _ *message) error {
+	if op == outputRelease {
+		o.c.destroy(o.id)
+	}
 	return nil
 }
 
 // bindOutput binds wl_output and describes the screen.
 func (c *client) bindOutput(r resource) object {
-	// Describe the screen: its position, maker and model, then its one mode.
+	// Describe the screen: its position, maker and model, its one mode, and
+	// from version 4 its name, as the xdg output names it.
 	size := c.comp.screen.Size()
 	c.send(newEvent(r.id, outputGeometry).int(0).int(0).int(0).int(0).int(0).
 		string("WasiVM").string("display").int(0))
@@ -21,9 +33,15 @@ func (c *client) bindOutput(r resource) object {
 		int(int32(size.X)).int(int32(size.Y)).int(60000)) //nolint:gosec // screen sizes are small.
 	if r.version >= 2 {
 		c.send(newEvent(r.id, outputScale).int(1))
+	}
+	if r.version >= 4 {
+		c.send(newEvent(r.id, outputName).string(outputNameText))
+		c.send(newEvent(r.id, outputDescription).string(outputDescriptionText))
+	}
+	if r.version >= 2 {
 		c.send(newEvent(r.id, outputDone))
 	}
-	return output{r}
+	return output{c, r}
 }
 
 // bindXdgOutputManager binds zxdg_output_manager_v1, which describes an
@@ -61,8 +79,8 @@ func (c *client) describeXdgOutput(x resource, o output) {
 	c.send(newEvent(x.id, xdgOutputLogicalPosition).int(0).int(0))
 	c.send(newEvent(x.id, xdgOutputLogicalSize).int(int32(size.X)).int(int32(size.Y))) //nolint:gosec // screen sizes are small.
 	if x.version >= 2 {
-		c.send(newEvent(x.id, xdgOutputName).string("WASIVM-1"))
-		c.send(newEvent(x.id, xdgOutputDescription).string("WasiVM display"))
+		c.send(newEvent(x.id, xdgOutputName).string(outputNameText))
+		c.send(newEvent(x.id, xdgOutputDescription).string(outputDescriptionText))
 	}
 
 	// End the update.
