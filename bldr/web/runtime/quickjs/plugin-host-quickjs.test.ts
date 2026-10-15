@@ -1252,9 +1252,17 @@ describe('plugin-host-quickjs runner lifecycle', () => {
       },
     }
     hostMux.register(createHandler(MockDefinition, hostService))
+    // Route the boot harness resource streams to the plugin host. The inbound
+    // handler opens the nested StreamConn after capability registration.
+    const pluginHost = buildPluginHostResourceFixture()
+    let openStreamCalls = 0
     const api = {
       startInfo: { pluginId: 'quickjs-streamconn-nested-test' },
       openStream: vi.fn(async () => {
+        openStreamCalls++
+        if (openStreamCalls <= 2) {
+          return pluginHost.openStream()
+        }
         const [quickJSStream, hostStream] = buildPacketStreamPair()
         const hostConn = new StreamConn(new Server(hostMux.lookupMethod), {
           direction: 'inbound',
@@ -1291,7 +1299,13 @@ describe('plugin-host-quickjs runner lifecycle', () => {
 
     try {
       await Promise.race([
-        waitFor(() => ready, 'QuickJS nested StreamConn handler did not start'),
+        waitFor(
+          () =>
+            ready &&
+            pluginHost.completeInitialCapabilityRegistration.mock.calls
+              .length === 1,
+          'QuickJS nested StreamConn handler did not finish startup',
+        ),
         runner.then(
           () => {
             throw new Error('QuickJS runner exited before nested handler ready')
@@ -1328,6 +1342,11 @@ describe('plugin-host-quickjs runner lifecycle', () => {
       )
       expect([...responses[0]]).toEqual([7, 42])
       expect(events).toEqual(['nested-one', 'nested-two'])
+      expect(api.openStream).toHaveBeenCalledTimes(3)
+      expect(pluginHost.errors).toEqual([])
+      expect(
+        pluginHost.completeInitialCapabilityRegistration,
+      ).toHaveBeenCalledOnce()
     } finally {
       controller.abort()
       for (const conn of hostConns) {
