@@ -32,7 +32,6 @@ func TestCatchupBudgetsRejectWithoutMutation(t *testing.T) {
 		oversizedFrame bool
 	}{
 		{name: "page entries", count: maxHistoryPageEntries + 1, perPage: maxHistoryPageEntries + 1},
-		{name: "page bytes", count: 1, padding: maxHistoryPageBytes, perPage: 1},
 		{name: "suffix entries", count: sobject.MaxConfigSuffixEntries + 1, perPage: maxHistoryPageEntries},
 		{name: "suffix bytes", count: 33, padding: 256 * 1024, perPage: 3},
 		{name: "snapshot frame", oversizedFrame: true},

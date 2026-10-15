@@ -35,7 +35,9 @@ Committed revocation remains an error unless the later read is already ahead.
 
 namespace Spacewave.SObject.Sync
 
-def maxHistoryPageBytes : Nat := 1024 * 1024
+/-- maxMessageSize bounds every sync frame, a history page as well as the snapshot; the
+    stream session refuses a longer frame before reading it. -/
+def maxMessageSize : Nat := 10 * 1024 * 1024
 def maxHistoryPageEntries : Nat := 128
 def maxSuffixBytes : Nat := 8 * 1024 * 1024
 def maxSuffixEntries : Nat := 4096
@@ -95,11 +97,12 @@ def appendChanges (before : Receive) (changes : List HistoryChange) : ReceiveRes
       else if !change.hashOK then ⟨false, sized, false⟩
       else appendChanges {sized with cursor := change.entry.hash, changes := before.changes ++ [change]} rest
 
-/-- appendPage checks its pinned revision, current cursor and per-page budget first. -/
+/-- appendPage checks its pinned revision, current cursor and per-page entry budget first.
+    The stream session already bounds the frame by maxMessageSize. -/
 def appendPage (before : Receive) (page : Option HistoryPage) : ReceiveResult :=
   let page := page.getD ⟨0, "", [], 0⟩
   if page.revision != before.head.revision || page.cursor != before.cursor || page.changes.isEmpty then ⟨false, before, false⟩
-  else if page.bytes > maxHistoryPageBytes || page.changes.length > maxHistoryPageEntries then ⟨false, before, true⟩
+  else if page.changes.length > maxHistoryPageEntries then ⟨false, before, true⟩
   else appendChanges before page.changes
 
 /-- historyBytes counts the serialized retained entries without their page envelope. -/
@@ -136,7 +139,7 @@ structure Response where
 
 /-- prefixBytes reads the complete encoded page size for a proposed nonempty prefix. -/
 def prefixBytes (sizes : List Nat) (count : Nat) : Nat :=
-  (sizes[count - 1]?).getD (maxHistoryPageBytes + 1)
+  (sizes[count - 1]?).getD (maxMessageSize + 1)
 
 /-- PageBuild retains the accepted prefix even when the next primitive hash fails. -/
 structure PageBuild where
@@ -150,7 +153,7 @@ def buildPage (before : Response) (selected : List HistoryChange) (sizes : List 
   match _observed : before.changes with
   | [] => ⟨true, before, selected⟩
   | change :: rest =>
-    if selected.length ≥ maxHistoryPageEntries || prefixBytes sizes (selected.length + 1) > maxHistoryPageBytes then
+    if selected.length ≥ maxHistoryPageEntries || prefixBytes sizes (selected.length + 1) > maxMessageSize then
       ⟨true, before, selected⟩
     else if !change.hashOK then ⟨false, before, selected⟩
     else buildPage {before with cursor := change.entry.hash, changes := rest} (selected ++ [change]) sizes
@@ -270,7 +273,7 @@ theorem appendChanges_complete (before : Receive) (changes : List HistoryChange)
 theorem appendPage_exact {before : Receive} {page : HistoryPage}
     (accepted : (appendPage before (some page)).ok = true) :
     page.revision = before.head.revision ∧ page.cursor = before.cursor ∧ page.changes ≠ [] ∧
-    page.bytes ≤ maxHistoryPageBytes ∧ page.changes.length ≤ maxHistoryPageEntries ∧
+    page.changes.length ≤ maxHistoryPageEntries ∧
     (appendPage before (some page)).state.changes = before.changes ++ page.changes ∧
     (appendPage before (some page)).state.cursor = historyCursor before.cursor page.changes ∧ follows before.cursor page.changes = true := by
   unfold appendPage at accepted ⊢
@@ -289,12 +292,12 @@ theorem appendPage_exact {before : Receive} {page : HistoryPage}
 /-- Healthy bounded pages advance the receive buffer without an assumed acceptance result. -/
 theorem appendPage_complete (before : Receive) (page : HistoryPage)
     (revision : page.revision = before.head.revision) (cursor : page.cursor = before.cursor)
-    (nonempty : page.changes ≠ []) (pageBytes : page.bytes ≤ maxHistoryPageBytes)
+    (nonempty : page.changes ≠ [])
     (pageCount : page.changes.length ≤ maxHistoryPageEntries) (linked : follows before.cursor page.changes = true)
     (sized : before.bytes + historyBytes page.changes ≤ maxSuffixBytes)
     (counted : before.changes.length + page.changes.length ≤ maxSuffixEntries) :
     (appendPage before (some page)).ok = true := by
-  simpa [appendPage, revision, cursor, nonempty, Nat.not_lt.mpr pageBytes, Nat.not_lt.mpr pageCount]
+  simpa [appendPage, revision, cursor, nonempty, Nat.not_lt.mpr pageCount]
     using appendChanges_complete before page.changes linked sized counted
 
 /-- Page construction consumes a prefix without dropping or reordering any entry, including on error. -/
@@ -321,9 +324,9 @@ theorem buildPage_count (before : Response) (selected : List HistoryChange) (siz
 
 /-- Every nonempty selected prefix has passed the complete-frame byte check. -/
 theorem buildPage_bytes (before : Response) (selected : List HistoryChange) (sizes : List Nat)
-    (bounded : selected = [] ∨ prefixBytes sizes selected.length ≤ maxHistoryPageBytes) :
+    (bounded : selected = [] ∨ prefixBytes sizes selected.length ≤ maxMessageSize) :
     (buildPage before selected sizes).selected = [] ∨
-      prefixBytes sizes (buildPage before selected sizes).selected.length ≤ maxHistoryPageBytes := by
+      prefixBytes sizes (buildPage before selected sizes).selected.length ≤ maxMessageSize := by
   fun_induction buildPage
   all_goals simp_all
 
@@ -349,7 +352,7 @@ theorem buildPage_nonempty (before : Response) (selected : List HistoryChange) (
 /-- Healthy nonempty history with a fitting first entry can emit a page. -/
 theorem nextPage_available (before : Response) (sizes : List Nat)
     (nonempty : before.changes ≠ []) (hashed : before.changes.all (·.hashOK) = true)
-    (fits : prefixBytes sizes 1 ≤ maxHistoryPageBytes) :
+    (fits : prefixBytes sizes 1 ≤ maxMessageSize) :
     (nextPage before sizes).ok = true ∧ (nextPage before sizes).page.isSome = true := by
   rcases before with ⟨revision, cursor, changes, snapshot, branch⟩
   cases changes with
@@ -363,7 +366,7 @@ theorem nextPage_available (before : Response) (sizes : List Nat)
       rw [buildPage]
       simp only [List.length_nil, maxHistoryPageEntries, Nat.zero_add,
         show ¬(0 : Nat) ≥ 128 from by decide, decide_false, Bool.false_or,
-        show ¬prefixBytes sizes 1 > maxHistoryPageBytes from Nat.not_lt.mpr fits,
+        show ¬prefixBytes sizes 1 > maxMessageSize from Nat.not_lt.mpr fits,
         ↓reduceIte, firstHash, Bool.not_true, Bool.false_eq_true, List.nil_append]
       exact buildPage_nonempty _ [change] sizes (by simp)
     simp [nextPage, healthy, selected]
@@ -382,7 +385,7 @@ theorem nextPage_snapshot {before : Response} {sizes : List Nat}
 theorem nextPage_page {before : Response} {sizes : List Nat} {page : HistoryPage}
     (returned : (nextPage before sizes).page = some page) :
     page.revision = before.revision ∧ page.cursor = before.cursor ∧ page.changes ≠ [] ∧
-    page.changes.length ≤ maxHistoryPageEntries ∧ page.bytes ≤ maxHistoryPageBytes ∧
+    page.changes.length ≤ maxHistoryPageEntries ∧ page.bytes ≤ maxMessageSize ∧
     page.changes ++ (nextPage before sizes).state.changes = before.changes := by
   have partition := buildPage_partition before [] sizes
   have count := buildPage_count before [] sizes (by simp [maxHistoryPageEntries])
@@ -479,11 +482,11 @@ def prepareResponse (state : State) (request : Request) (history : Option (List 
     (branch : Option HistoryRead) (encode : State → Option String) (frameBytes : Snapshot → Nat) :
     Option Response := do
   let selected ← selectHistory state request history branch
-  if selected.1.changes.any (fun change => change.bytes + 256 > maxHistoryPageBytes) then none
+  if selected.1.changes.any (fun change => change.bytes + 256 > maxMessageSize) then none
   else
     let data ← encode (wireState state)
     let snapshot : Snapshot := ⟨data, request.revision, request.base⟩
-    if frameBytes snapshot > 10 * 1024 * 1024 then none
+    if frameBytes snapshot > maxMessageSize then none
     else some ⟨request.revision, selected.1.cursor, selected.1.changes, some snapshot, selected.2⟩
 
 /-- syncStateHash hashes stripped state of any size after requiring a checkpoint. -/
@@ -575,7 +578,7 @@ theorem prepareResponse_bound {state : State} {request : Request} {history : Opt
     response.revision = request.revision ∧ (response.branch = false → response.cursor = request.base) ∧
     ∃ snapshot, response.snapshot = some snapshot ∧ snapshot.revision = request.revision ∧
       snapshot.base = request.base ∧
-      encode (wireState state) = some snapshot.data ∧ frameBytes snapshot ≤ 10 * 1024 * 1024 := by
+      encode (wireState state) = some snapshot.data ∧ frameBytes snapshot ≤ maxMessageSize := by
   unfold prepareResponse at prepared
   cases selected : selectHistory state request history branch with
   | none => simp [selected] at prepared
@@ -751,9 +754,9 @@ theorem prepareResponse_local (state : State) (invites : List String)
 theorem prepareResponse_complete (state : State) (request : Request) (history : Option (List HistoryChange))
     (branch : Option HistoryRead) (encode : State → Option String) (frameBytes : Snapshot → Nat) (changes : List HistoryChange) (data : String)
     (read : retainedHistory state request history = some changes)
-    (entries : ∀ change ∈ changes, change.bytes + 256 ≤ maxHistoryPageBytes)
+    (entries : ∀ change ∈ changes, change.bytes + 256 ≤ maxMessageSize)
     (encoded : encode (wireState state) = some data)
-    (bounded : frameBytes ⟨data, request.revision, request.base⟩ ≤ 10 * 1024 * 1024) :
+    (bounded : frameBytes ⟨data, request.revision, request.base⟩ ≤ maxMessageSize) :
     prepareResponse state request history branch encode frameBytes =
       some ⟨request.revision, request.base, changes, some ⟨data, request.revision, request.base⟩, false⟩ := by
   simpa [prepareResponse, selectHistory, read, encoded, Nat.not_lt.mpr bounded] using entries
@@ -839,7 +842,7 @@ theorem responseSuffix_trans {tail middle head : Response}
 theorem drainPages_available (fuel : Nat) (before : Response) (sizes : Response → List Nat)
     (counted : before.changes.length ≤ fuel) (hashed : before.changes.all (·.hashOK) = true)
     (fits : ∀ response, responseSuffix response before → response.changes ≠ [] →
-      prefixBytes (sizes response) 1 ≤ maxHistoryPageBytes) :
+      prefixBytes (sizes response) 1 ≤ maxMessageSize) :
     ∃ pages snapshot, drainPages fuel before sizes = some (pages, snapshot) := by
   induction fuel generalizing before with
   | zero =>
@@ -867,7 +870,7 @@ def pageSequence (revision : Nat) (cursor : String) (changes : List HistoryChang
   | [] => changes = []
   | page :: pages =>
     page.revision = revision ∧ page.cursor = cursor ∧ page.changes ≠ [] ∧
-    page.bytes ≤ maxHistoryPageBytes ∧ page.changes.length ≤ maxHistoryPageEntries ∧
+    page.bytes ≤ maxMessageSize ∧ page.changes.length ≤ maxHistoryPageEntries ∧
     ∃ remaining, page.changes ++ remaining = changes ∧
       pageSequence revision (historyCursor cursor page.changes) remaining pages
 
@@ -966,7 +969,7 @@ theorem receivePages_exact {before after : Receive} {pages : List HistoryPage}
     · rename_i accepted
       obtain ⟨head, base, branch, entries, bytes, cursor⟩ := ih received
       have binding := appendPage_binding before (some page)
-      obtain ⟨_, _, _, _, _, firstEntries, firstCursor, _⟩ := appendPage_exact accepted
+      obtain ⟨_, _, _, _, firstEntries, firstCursor, _⟩ := appendPage_exact accepted
       refine ⟨head.trans binding.1, base.trans binding.2.1, branch.trans binding.2.2, ?_, ?_, ?_⟩
       · simpa [firstEntries, List.append_assoc] using entries
       · simpa [appendPage_bytes accepted, historyBytes_append, Nat.add_assoc] using bytes
@@ -983,16 +986,16 @@ theorem receivePages_complete (before : Receive) (changes : List HistoryChange) 
   induction pages generalizing before changes with
   | nil => exact ⟨before, rfl⟩
   | cons page pages ih =>
-    obtain ⟨revision, cursor, nonempty, pageBytes, pageCount, remaining, partition, tail⟩ := schedule
+    obtain ⟨revision, cursor, nonempty, _, pageCount, remaining, partition, tail⟩ := schedule
     rw [← partition, follows_append] at linked
     simp only [Bool.and_eq_true] at linked
     rw [← partition, historyBytes_append] at sized
     have length := congrArg List.length partition
     simp only [List.length_append] at length
-    have admitted := appendPage_complete before page revision cursor nonempty pageBytes pageCount linked.1
+    have admitted := appendPage_complete before page revision cursor nonempty pageCount linked.1
       (by omega) (by omega)
     have binding := appendPage_binding before (some page)
-    obtain ⟨_, _, _, _, _, entries, finish, _⟩ := appendPage_exact admitted
+    obtain ⟨_, _, _, _, entries, finish, _⟩ := appendPage_exact admitted
     have bytes := appendPage_bytes admitted
     obtain ⟨after, received⟩ := ih (appendPage before (some page)).state remaining
       (by simpa only [binding.1, finish] using tail)
@@ -1008,7 +1011,7 @@ theorem pagesExchange_complete (sender : Response) (receiver : Receive) (sizes :
     (sized : receiver.bytes + historyBytes sender.changes ≤ maxSuffixBytes)
     (counted : receiver.changes.length + sender.changes.length ≤ maxSuffixEntries)
     (fits : ∀ response, responseSuffix response sender → response.changes ≠ [] →
-      prefixBytes (sizes response) 1 ≤ maxHistoryPageBytes) :
+      prefixBytes (sizes response) 1 ≤ maxMessageSize) :
     ∃ pages snapshot after, drainPages sender.changes.length sender sizes = some (pages, snapshot) ∧
       receivePages receiver pages = some after ∧ after.head = receiver.head ∧ after.base = receiver.base ∧
       after.changes = receiver.changes ++ sender.changes ∧
@@ -1031,7 +1034,7 @@ theorem pagesExchange_imports (sender : Response) (input : AcceptanceInput) (siz
     (sized : input.receiving.bytes + historyBytes sender.changes ≤ maxSuffixBytes)
     (counted : input.receiving.changes.length + sender.changes.length ≤ maxSuffixEntries)
     (fits : ∀ response, responseSuffix response sender → response.changes ≠ [] →
-      prefixBytes (sizes response) 1 ≤ maxHistoryPageBytes)
+      prefixBytes (sizes response) 1 ≤ maxMessageSize)
     (empty : input.receiving.changes = []) (plain : input.receiving.branch = none)
     (pinned : sender.snapshot = input.snapshot)
     (present : input.snapshot = some snapshot) (decoded : input.decoded = some candidate)

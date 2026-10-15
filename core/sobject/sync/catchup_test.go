@@ -85,7 +85,7 @@ func TestAuthenticatedCatchupPinsPagesAndContinues(t *testing.T) {
 		message := <-observed.messages
 		if page := message.GetHistoryPage(); page != nil {
 			pageCount++
-			if len(page.GetChanges()) > maxHistoryPageEntries || message.SizeVT() > maxHistoryPageBytes {
+			if len(page.GetChanges()) > maxHistoryPageEntries || message.SizeVT() > maxMessageSize {
 				t.Fatal("sender exceeded a history page budget")
 			}
 		}
@@ -320,10 +320,19 @@ func TestUnverifiableCatchupRequiresRecovery(t *testing.T) {
 
 // TestConcurrentOwnerBranchesMerge proves two owners that each extended the
 // config while apart converge over a real stream: the owner whose head loses
-// merges its branch onto the other head, and both keep every participant.
+// merges its branch onto the other head, and both keep every participant. The
+// large branches yield a merge record above 1 MiB, which syncs in one page.
 func TestConcurrentOwnerBranchesMerge(t *testing.T) {
+	t.Run("small", func(t *testing.T) { testConcurrentOwnerBranchesMerge(t, 1, 0) })
+	t.Run("large", func(t *testing.T) { testConcurrentOwnerBranchesMerge(t, 40, 2048) })
+}
+
+// testConcurrentOwnerBranchesMerge runs the merge with a losing branch of
+// count records and a winning branch of count+1. Each added reader carries an
+// entity ID of padding bytes, so the records grow.
+func testConcurrentOwnerBranchesMerge(t *testing.T, count, padding int) {
 	// Two owners start from one config.
-	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	const soID = "concurrent-owner-merge"
 	ownerA, ownerB := mustKeyPair(t), mustKeyPair(t)
@@ -357,7 +366,7 @@ func TestConcurrentOwnerBranchesMerge(t *testing.T) {
 	}
 	a, b := newPeer(ownerA), newPeer(ownerB)
 
-	// While apart, A adds one reader and B adds two, so B's head wins.
+	// While apart, A adds count readers and B adds one more, so B's head wins.
 	addReader := func(s *SOSync, signer crypto.PrivKey) string {
 		// Add a new reader to the held config.
 		t.Helper()
@@ -367,7 +376,11 @@ func TestConcurrentOwnerBranchesMerge(t *testing.T) {
 		}
 		reader := mustPeerIDStr(t, mustKeyPair(t))
 		next := current.GetConfig().CloneVT()
-		next.Participants = append(next.Participants, participantCfg(reader, sobject.SOParticipantRole_SOParticipantRole_READER))
+		participant := participantCfg(reader, sobject.SOParticipantRole_SOParticipantRole_READER)
+		if padding != 0 {
+			participant.EntityId = reader + strings.Repeat("e", padding)
+		}
+		next.Participants = append(next.Participants, participant)
 
 		// Sign the change and apply it locally.
 		change, err := sobject.BuildSOConfigChange(soID, current.GetConfig(), next, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT, signer, nil)
@@ -379,7 +392,13 @@ func TestConcurrentOwnerBranchesMerge(t *testing.T) {
 		}
 		return reader
 	}
-	readers := []string{addReader(a, ownerA), addReader(b, ownerB), addReader(b, ownerB)}
+	var readers []string
+	for range count {
+		readers = append(readers, addReader(a, ownerA))
+	}
+	for range count + 1 {
+		readers = append(readers, addReader(b, ownerB))
+	}
 
 	// Sync until both hold the same head above both branches.
 	left, right := net.Pipe()
@@ -395,7 +414,7 @@ func TestConcurrentOwnerBranchesMerge(t *testing.T) {
 			t.Fatal(err)
 		}
 		state, err := states.WaitValueWithValidator(ctx, func(state *sobject.SOState) (bool, error) {
-			return state.GetConfig().GetConfigChainSeqno() == 3, nil
+			return state.GetConfig().GetConfigChainSeqno() == uint64(count+2), nil
 		}, done)
 		release()
 		if err != nil {
@@ -417,7 +436,10 @@ func TestConcurrentOwnerBranchesMerge(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if merge.GetChangeType() != sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_MERGE || len(merge.GetMerge().GetBranch()) != 1 {
-		t.Fatalf("head is %s absorbing %d records, want one merged record", merge.GetChangeType(), len(merge.GetMerge().GetBranch()))
+	if merge.GetChangeType() != sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_MERGE || len(merge.GetMerge().GetBranch()) != count {
+		t.Fatalf("head is %s absorbing %d records, want %d", merge.GetChangeType(), len(merge.GetMerge().GetBranch()), count)
+	}
+	if padding != 0 && merge.SizeVT() <= 1024*1024 {
+		t.Fatalf("merge record is %d bytes, want over 1 MiB", merge.SizeVT())
 	}
 }

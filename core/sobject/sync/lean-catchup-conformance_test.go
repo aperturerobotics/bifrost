@@ -278,7 +278,7 @@ func leanSyncCatchupCases(t *testing.T, seed uint64) []leanSyncCase {
 		case 4:
 			page.Changes[1].PreviousHash = nil
 		case 5:
-			page.Changes[0].Signatures[0].SigData = make([]byte, maxHistoryPageBytes)
+			page.Changes[0].Signatures[0].SigData = make([]byte, sobject.MaxConfigSuffixBytes/4)
 		case 6:
 			page.Changes = response.changes[:maxHistoryPageEntries+1]
 		case 7:
@@ -319,14 +319,14 @@ func leanSyncCatchupCases(t *testing.T, seed uint64) []leanSyncCase {
 		}
 		switch variant {
 		case 1:
-			pending.changes[0].Signatures[0].SigData = make([]byte, maxHistoryPageBytes)
+			pending.changes[0].Signatures[0].SigData = make([]byte, maxMessageSize)
 		case 2:
-			pending.changes[1].Signatures[0].SigData = make([]byte, maxHistoryPageBytes)
+			pending.changes[1].Signatures[0].SigData = make([]byte, maxMessageSize)
 		case 3:
 			pending.changes = pending.changes[:maxHistoryPageEntries]
 		case 4:
 			for _, change := range pending.changes[:4] {
-				change.Signatures[0].SigData = make([]byte, 400*1024)
+				change.Signatures[0].SigData = make([]byte, maxMessageSize/4+1)
 			}
 		case 7:
 			pending.snapshot = nil
@@ -335,10 +335,10 @@ func leanSyncCatchupCases(t *testing.T, seed uint64) []leanSyncCase {
 				Revision: pending.revision, Cursor: pending.cursor, Changes: pending.changes[:1],
 			}}}
 			for range 3 {
-				padding := len(pending.changes[0].Signatures[0].SigData) + maxHistoryPageBytes + variant - 5 - message.SizeVT()
+				padding := len(pending.changes[0].Signatures[0].SigData) + maxMessageSize + variant - 5 - message.SizeVT()
 				pending.changes[0].Signatures[0].SigData = make([]byte, padding)
 			}
-			if message.SizeVT() != maxHistoryPageBytes+variant-5 {
+			if message.SizeVT() != maxMessageSize+variant-5 {
 				t.Fatal("failed to construct the exact frame-size boundary")
 			}
 		}

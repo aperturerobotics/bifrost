@@ -502,7 +502,7 @@ func leanSyncExchangeCases(t *testing.T, seed uint64, withLoop bool) []leanSyncC
 			response.changes, response.snapshot = nil, nil
 			x.response = response
 		case 7:
-			response.changes[0].Signatures[0].SigData = bytes.Repeat([]byte{0x12}, maxHistoryPageBytes)
+			response.changes[0].Signatures[0].SigData = bytes.Repeat([]byte{0x12}, maxMessageSize)
 			x.response = response
 		case 8:
 			current = nil

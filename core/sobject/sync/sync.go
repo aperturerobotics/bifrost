@@ -26,7 +26,8 @@ const SyncProtocolID = protocol.ID("alpha/so-sync/2")
 
 const (
 	// maxMessageSize is the max message size for SO sync messages. A snapshot
-	// carries one whole state.
+	// carries one whole state, and a history page fills up to the same bound
+	// so a single large record, such as a merge, still fits.
 	maxMessageSize = sobject.MaxSyncStateSize
 	// syncRetryInitialInterval is the first delay after a recoverable stream
 	// failure.

@@ -16,9 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// maxHistoryPageBytes bounds each complete history frame, including its envelope.
-const maxHistoryPageBytes = 1024 * 1024
-
 // maxHistoryPageEntries bounds verification work in one history page.
 const maxHistoryPageEntries = 128
 
@@ -510,7 +507,7 @@ func (s *SOSync) prepareResponse(ctx context.Context, state *sobject.SOState, re
 		return nil, err
 	}
 	for _, change := range changes {
-		if change.SizeVT()+256 > maxHistoryPageBytes {
+		if change.SizeVT()+256 > maxMessageSize {
 			return nil, sobject.ErrConfigHistoryUnavailable
 		}
 	}
@@ -552,7 +549,7 @@ func (r *syncResponse) nextMessage() (*SOSyncMessage, error) {
 	message := &SOSyncMessage{Body: &SOSyncMessage_HistoryPage{HistoryPage: page}}
 	for len(r.changes) != 0 && len(page.Changes) < maxHistoryPageEntries {
 		page.Changes = append(page.Changes, r.changes[0])
-		if message.SizeVT() > maxHistoryPageBytes {
+		if message.SizeVT() > maxMessageSize {
 			page.Changes = page.Changes[:len(page.Changes)-1]
 			break
 		}
@@ -573,12 +570,13 @@ func (r *syncResponse) nextMessage() (*SOSyncMessage, error) {
 
 // appendPage checks target binding, cursor continuity and aggregate budgets.
 func (r *syncReceive) appendPage(message *SOSyncMessage) error {
-	// Bind the page to the pinned head and cursor and check its budget.
+	// Bind the page to the pinned head and cursor and check its entry budget.
+	// The stream session already bounds the frame by maxMessageSize.
 	page := message.GetHistoryPage()
 	if page.GetRevision() != r.head.GetRevision() || !bytes.Equal(page.GetCursor(), r.cursor) || len(page.GetChanges()) == 0 {
 		return errors.New("invalid history page")
 	}
-	if message.SizeVT() > maxHistoryPageBytes || len(page.GetChanges()) > maxHistoryPageEntries {
+	if len(page.GetChanges()) > maxHistoryPageEntries {
 		return sobject.ErrConfigHistoryUnavailable
 	}
 

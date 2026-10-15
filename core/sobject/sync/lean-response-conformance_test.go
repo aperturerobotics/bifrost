@@ -633,15 +633,15 @@ func leanSyncPreparedCases(t *testing.T, objectID string, sender *SOSync, target
 			readOK = false
 			req.BaseHash = state.Config.ConfigChainHash
 		case 3:
-			history[0].Signatures[0].SigData = make([]byte, maxHistoryPageBytes)
+			history[0].Signatures[0].SigData = make([]byte, maxMessageSize)
 		case 4:
 			state.Config.ConfigChainHash = nil
 		case 5:
 			for range 3 {
-				padding := len(history[0].Signatures[0].SigData) + maxHistoryPageBytes - 256 - history[0].SizeVT()
+				padding := len(history[0].Signatures[0].SigData) + maxMessageSize - 256 - history[0].SizeVT()
 				history[0].Signatures[0].SigData = make([]byte, padding)
 			}
-			if history[0].SizeVT()+256 != maxHistoryPageBytes {
+			if history[0].SizeVT()+256 != maxMessageSize {
 				t.Fatal("failed to construct prepareResponse entry boundary")
 			}
 		}
