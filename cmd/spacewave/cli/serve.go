@@ -212,6 +212,7 @@ func runServeCommand(
 		}
 	})
 	leaseOwned = false
+	setServeMemoryLimit(le)
 	serveCtx, serveCancel := context.WithCancel(ctx)
 	defer serveCancel()
 
