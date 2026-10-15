@@ -39,6 +39,16 @@ async function openEngine(directory: string, openRuntime: OpenRuntime) {
   }
 }
 
+// describeFailure renders a thrown value as text. An unrecovered Go panic is an
+// Error whose message reads "panic: <value>"; a compiled Go error that is not
+// an Error carries its text behind an Error() method, which may be async.
+async function describeFailure(reason: unknown): Promise<string> {
+  if (reason instanceof Error) return reason.message
+  const goError = reason as { Error?: () => unknown } | null | undefined
+  if (typeof goError?.Error === 'function') return String(await goError.Error())
+  return String(reason)
+}
+
 // serveWorker publishes readiness only after SQLite and the World are available.
 async function serveWorker(openRuntime: OpenRuntime): Promise<void> {
   if (!parentPort) throw new Error('Sync engine requires a Worker parent')
@@ -66,19 +76,17 @@ async function serveWorker(openRuntime: OpenRuntime): Promise<void> {
             try {
               await runtime.close()
             } catch (error) {
-              failure = error instanceof Error ? error.message : String(error)
+              failure = await describeFailure(error)
             } finally {
               try {
                 sqlite.close()
               } catch (error) {
-                failure ||=
-                  error instanceof Error ? error.message : String(error)
+                failure ||= await describeFailure(error)
               } finally {
                 try {
                   lock.close()
                 } catch (error) {
-                  failure ||=
-                    error instanceof Error ? error.message : String(error)
+                  failure ||= await describeFailure(error)
                 }
               }
             }
@@ -114,14 +122,20 @@ async function serveWorker(openRuntime: OpenRuntime): Promise<void> {
 }
 
 // runWorker starts the host after the generated entrypoint supplies its compiled binding.
+//
+// A failed start and an unrecovered panic in a compiled goroutine both reach
+// the host as FAILED with their message. A Go process exits on such a panic,
+// so the host ends the Worker when FAILED arrives.
 export function runWorker(openRuntime: OpenRuntime): void {
   if (isMainThread) throw new Error('Sync engine requires a Worker')
-  void serveWorker(openRuntime).catch((error: unknown) => {
-    parentPort?.postMessage(
-      RuntimeMessage.toBinary({
-        kind: RuntimeMessage_Kind.FAILED,
-        error: error instanceof Error ? error.message : String(error),
-      }),
+  const fail = (reason: unknown) => {
+    void describeFailure(reason).then((error) =>
+      parentPort?.postMessage(
+        RuntimeMessage.toBinary({ kind: RuntimeMessage_Kind.FAILED, error }),
+      ),
     )
-  })
+  }
+  process.on('uncaughtException', fail)
+  process.on('unhandledRejection', fail)
+  void serveWorker(openRuntime).catch(fail)
 }

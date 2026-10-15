@@ -50,7 +50,7 @@ export enum RuntimeMessage_Kind {
   CLOSED = 4,
 
   /**
-   * FAILED reports a startup or protocol failure before orderly shutdown.
+   * FAILED reports a startup, protocol, or panic failure that ends the runtime.
    *
    * @generated from enum value: FAILED = 5;
    */
