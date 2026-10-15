@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime/debug"
 	"slices"
 	"strings"
 	"time"
@@ -218,66 +217,14 @@ func GoListImportPath(ctx context.Context, workDir string, buildFlags []string, 
 	return importPath, nil
 }
 
-// ExecGoScriptCompile compiles Go packages to a GoScript TypeScript package tree.
+// ExecGoScriptCompile compiles Go packages to a GoScript TypeScript package
+// tree in a child process of the current executable, so the gigabytes of
+// syntax and type data the compiler holds return to the system when it exits.
+// The child receives opts.Env in its environment.
 func ExecGoScriptCompile(ctx context.Context, le *logrus.Entry, opts GoScriptCompileOptions) error {
-	// Validate the required compile options.
-	if strings.TrimSpace(opts.WorkDir) == "" {
-		return errors.New("goscript work dir cannot be empty")
-	}
-	if strings.TrimSpace(opts.OutputPath) == "" {
-		return errors.New("goscript output path cannot be empty")
-	}
-	if len(opts.Packages) == 0 {
-		return errors.New("goscript packages cannot be empty")
-	}
-	for _, env := range opts.Env {
-		if strings.TrimSpace(env) == "" {
-			return errors.New("goscript env cannot be empty")
-		}
-	}
-
-	// Build the compiler configuration from the options.
-	conf := &goscript_compiler.Config{
-		Dir:                       opts.WorkDir,
-		DeferredFunctions:         slices.Clone(opts.DeferredFunctions),
-		OutputPath:                opts.OutputPath,
-		ProtobufTypeScriptBinding: opts.ProtobufTypeScriptBinding,
-	}
-	if opts.CacheRoot != "" {
-		cacheRoot := strings.TrimSpace(opts.CacheRoot)
-		if cacheRoot == "" {
-			return errors.New("goscript cache root cannot be empty")
-		}
-		conf.CacheRoot = cacheRoot
-	}
-	packages := make([]string, 0, len(opts.Packages))
-	for _, pkg := range opts.Packages {
-		pkg = strings.TrimSpace(pkg)
-		if pkg == "" {
-			return errors.New("goscript package cannot be empty")
-		}
-		packages = append(packages, pkg)
-	}
-	for _, flag := range opts.BuildFlags {
-		flag = strings.TrimSpace(flag)
-		if flag == "" {
-			return errors.New("goscript build flag cannot be empty")
-		}
-		conf.BuildFlags = append(conf.BuildFlags, flag)
-	}
-	for _, dir := range opts.OverrideDirs {
-		dir = strings.TrimSpace(dir)
-		if dir == "" {
-			return errors.New("goscript override dir cannot be empty")
-		}
-		conf.OverrideDirs = append(conf.OverrideDirs, dir)
-	}
-	for _, root := range opts.BindingRoots {
-		root = strings.TrimSpace(root)
-		if root == "" {
-			return errors.New("goscript binding root cannot be empty")
-		}
-		conf.AdditionalBindingRoots = append(conf.AdditionalBindingRoots, root)
+	// Validate the options before waiting for the build budget.
+	if _, _, err := newGoScriptConfig(opts); err != nil {
+		return err
 	}
 
 	// Acquire a compile permit from the build budget.
@@ -292,18 +239,9 @@ func ExecGoScriptCompile(ctx context.Context, le *logrus.Entry, opts GoScriptCom
 	}
 	defer permit.Release()
 
-	// Return the compiler's memory once it finishes. A large program holds
-	// gigabytes of syntax and type data that become garbage at once; without
-	// this the collector keeps them as headroom until its next forced cycle.
-	defer debug.FreeOSMemory()
-
-	// Run the GoScript compiler over the packages and log the duration.
+	// Run the compile in a worker process and log the duration.
 	timeStart := time.Now()
-	comp, err := goscript_compiler.NewCompiler(conf, le, nil)
-	if err != nil {
-		return err
-	}
-	if _, err := comp.CompilePackages(ctx, packages...); err != nil {
+	if err := runGoScriptWorker(ctx, le, opts); err != nil {
 		return err
 	}
 	le.
@@ -312,4 +250,85 @@ func ExecGoScriptCompile(ctx context.Context, le *logrus.Entry, opts GoScriptCom
 		WithField("budget-wait", timeStart.Sub(waitStart).String()).
 		Info("compiled plugin TypeScript package tree")
 	return nil
+}
+
+// compileGoScript runs the GoScript compiler over the packages of opts in
+// this process.
+func compileGoScript(ctx context.Context, le *logrus.Entry, opts GoScriptCompileOptions) error {
+	// Build the configuration and compile the packages.
+	conf, packages, err := newGoScriptConfig(opts)
+	if err != nil {
+		return err
+	}
+	comp, err := goscript_compiler.NewCompiler(conf, le, nil)
+	if err != nil {
+		return err
+	}
+	_, err = comp.CompilePackages(ctx, packages...)
+	return err
+}
+
+// newGoScriptConfig validates opts and returns the compiler configuration and
+// the packages to compile.
+func newGoScriptConfig(opts GoScriptCompileOptions) (*goscript_compiler.Config, []string, error) {
+	// Validate the required compile options.
+	if strings.TrimSpace(opts.WorkDir) == "" {
+		return nil, nil, errors.New("goscript work dir cannot be empty")
+	}
+	if strings.TrimSpace(opts.OutputPath) == "" {
+		return nil, nil, errors.New("goscript output path cannot be empty")
+	}
+	if len(opts.Packages) == 0 {
+		return nil, nil, errors.New("goscript packages cannot be empty")
+	}
+	for _, env := range opts.Env {
+		if strings.TrimSpace(env) == "" {
+			return nil, nil, errors.New("goscript env cannot be empty")
+		}
+	}
+
+	// Build the compiler configuration from the options.
+	conf := &goscript_compiler.Config{
+		Dir:                       opts.WorkDir,
+		DeferredFunctions:         slices.Clone(opts.DeferredFunctions),
+		OutputPath:                opts.OutputPath,
+		ProtobufTypeScriptBinding: opts.ProtobufTypeScriptBinding,
+	}
+	if opts.CacheRoot != "" {
+		cacheRoot := strings.TrimSpace(opts.CacheRoot)
+		if cacheRoot == "" {
+			return nil, nil, errors.New("goscript cache root cannot be empty")
+		}
+		conf.CacheRoot = cacheRoot
+	}
+	packages := make([]string, 0, len(opts.Packages))
+	for _, pkg := range opts.Packages {
+		pkg = strings.TrimSpace(pkg)
+		if pkg == "" {
+			return nil, nil, errors.New("goscript package cannot be empty")
+		}
+		packages = append(packages, pkg)
+	}
+	for _, flag := range opts.BuildFlags {
+		flag = strings.TrimSpace(flag)
+		if flag == "" {
+			return nil, nil, errors.New("goscript build flag cannot be empty")
+		}
+		conf.BuildFlags = append(conf.BuildFlags, flag)
+	}
+	for _, dir := range opts.OverrideDirs {
+		dir = strings.TrimSpace(dir)
+		if dir == "" {
+			return nil, nil, errors.New("goscript override dir cannot be empty")
+		}
+		conf.OverrideDirs = append(conf.OverrideDirs, dir)
+	}
+	for _, root := range opts.BindingRoots {
+		root = strings.TrimSpace(root)
+		if root == "" {
+			return nil, nil, errors.New("goscript binding root cannot be empty")
+		}
+		conf.AdditionalBindingRoots = append(conf.AdditionalBindingRoots, root)
+	}
+	return conf, packages, nil
 }
