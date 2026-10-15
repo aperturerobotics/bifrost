@@ -40,9 +40,9 @@ func (b *StoreRW) MarkRootsComplete(ctx context.Context, roots []*BlockRef) erro
 	return MarkRootsComplete(ctx, b.writeHandle, roots)
 }
 
-// RootComplete checks the underlying World proof.
-func (b *StoreRW) RootComplete(ctx context.Context, ref *BlockRef) (bool, error) {
-	return RootComplete(ctx, b.writeHandle, ref)
+// RootsComplete checks the underlying World proofs.
+func (b *StoreRW) RootsComplete(ctx context.Context, refs []*BlockRef) ([]bool, error) {
+	return RootsComplete(ctx, b.writeHandle, refs)
 }
 
 // _ is a type assertion

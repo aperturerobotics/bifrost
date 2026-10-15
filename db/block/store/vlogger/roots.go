@@ -39,9 +39,9 @@ func (s *VLoggerStore) MarkRootsComplete(ctx context.Context, roots []*block.Blo
 	return block.MarkRootsComplete(ctx, s.st, roots)
 }
 
-// RootComplete checks the underlying World proof.
-func (s *VLoggerStore) RootComplete(ctx context.Context, ref *block.BlockRef) (bool, error) {
-	return block.RootComplete(ctx, s.st, ref)
+// RootsComplete checks the underlying World proofs.
+func (s *VLoggerStore) RootsComplete(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	return block.RootsComplete(ctx, s.st, refs)
 }
 
 // _ is a type assertion

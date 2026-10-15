@@ -242,15 +242,20 @@ func (p *retainProofs) known(ctx context.Context, refs []*block.BlockRef) ([]boo
 // subtree under the stage, so it outlives the copy's writes of its parents. A
 // proof read first keeps the stage closed for a copy that skips nothing.
 func (p *retainProofs) hold(ctx context.Context, refs []*block.BlockRef, known []bool, check []int) ([]bool, error) {
-	// Collect the refs whose proof reads present.
+	// Read the proofs of all checked refs in one transaction, and collect the
+	// refs whose proof reads present.
+	checked := make([]*block.BlockRef, len(check))
+	for j, i := range check {
+		checked[j] = refs[i]
+	}
+	complete, err := block.RootsComplete(ctx, p.store, checked)
+	if err != nil {
+		return nil, err
+	}
 	var proved []*block.BlockRef
 	var provedIdx []int
-	for _, i := range check {
-		complete, err := block.RootComplete(ctx, p.store, refs[i])
-		if err != nil {
-			return nil, err
-		}
-		if complete {
+	for j, i := range check {
+		if complete[j] {
 			proved = append(proved, refs[i])
 			provedIdx = append(provedIdx, i)
 		}

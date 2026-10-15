@@ -36,7 +36,9 @@ func (s *pinStore) ReleaseRoots(context.Context, []*BlockRef) error { return nil
 
 func (s *pinStore) MarkRootsComplete(context.Context, []*BlockRef) error { return nil }
 
-func (s *pinStore) RootComplete(context.Context, *BlockRef) (bool, error) { return false, nil }
+func (s *pinStore) RootsComplete(_ context.Context, refs []*BlockRef) ([]bool, error) {
+	return make([]bool, len(refs)), nil
+}
 
 // held returns the number of pins the store holds on ref.
 func (s *pinStore) held(t *testing.T, ref *BlockRef) int {

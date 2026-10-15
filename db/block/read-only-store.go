@@ -79,9 +79,9 @@ func (s *ReadOnlyStore) MarkRootsComplete(context.Context, []*BlockRef) error {
 	return tx.ErrNotWrite
 }
 
-// RootComplete checks the inner store's completion proof.
-func (s *ReadOnlyStore) RootComplete(ctx context.Context, ref *BlockRef) (bool, error) {
-	return RootComplete(ctx, s.StoreOps, ref)
+// RootsComplete checks the inner store's completion proofs.
+func (s *ReadOnlyStore) RootsComplete(ctx context.Context, refs []*BlockRef) ([]bool, error) {
+	return RootsComplete(ctx, s.StoreOps, refs)
 }
 
 // _ is a type assertion

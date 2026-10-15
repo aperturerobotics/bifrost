@@ -33,8 +33,9 @@ type bucketRootVolume interface {
 	HoldStageCompleteRoots(context.Context, string, []*block.BlockRef) ([]bool, error)
 	// MarkRootsComplete records completion proofs for stored roots.
 	MarkRootsComplete(context.Context, []*block.BlockRef) error
-	// RootComplete reports whether a root has a completion proof.
-	RootComplete(context.Context, *block.BlockRef) (bool, error)
+	// RootsComplete reports which roots have a completion proof, reading all
+	// of them in one transaction.
+	RootsComplete(context.Context, []*block.BlockRef) ([]bool, error)
 }
 
 // MarkRootsComplete records a fenced World in the volume ownership graph.
@@ -42,9 +43,9 @@ func (b *bucketHandle) MarkRootsComplete(ctx context.Context, roots []*block.Blo
 	return b.v.(bucketRootVolume).MarkRootsComplete(ctx, roots)
 }
 
-// RootComplete checks the volume's lifetime-bound World proof.
-func (b *bucketHandle) RootComplete(ctx context.Context, ref *block.BlockRef) (bool, error) {
-	return b.v.(bucketRootVolume).RootComplete(ctx, ref)
+// RootsComplete checks the volume's lifetime-bound World proofs.
+func (b *bucketHandle) RootsComplete(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	return b.v.(bucketRootVolume).RootsComplete(ctx, refs)
 }
 
 // SupportsRootRetention requires ownership and bytes in one physical transaction.

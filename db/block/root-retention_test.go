@@ -23,9 +23,13 @@ func (s *proofStore) MarkRootsComplete(_ context.Context, roots []*BlockRef) err
 	return nil
 }
 
-func (s *proofStore) RootComplete(_ context.Context, ref *BlockRef) (bool, error) {
-	key, _ := marshalRefKey(ref)
-	return s.proofs[key], nil
+func (s *proofStore) RootsComplete(_ context.Context, refs []*BlockRef) ([]bool, error) {
+	complete := make([]bool, len(refs))
+	for i, ref := range refs {
+		key, _ := marshalRefKey(ref)
+		complete[i] = s.proofs[key]
+	}
+	return complete, nil
 }
 
 func TestDerivedRootProofFollowsBase(t *testing.T) {
@@ -46,7 +50,7 @@ func TestDerivedRootProofFollowsBase(t *testing.T) {
 	if err := MarkDerivedRootsComplete(ctx, store, base, root); err != nil {
 		t.Fatal(err)
 	}
-	if complete, _ := store.RootComplete(ctx, root); complete {
+	if complete, _ := RootComplete(ctx, store, root); complete {
 		t.Fatal("root over an unproven base is proven")
 	}
 
@@ -59,7 +63,7 @@ func TestDerivedRootProofFollowsBase(t *testing.T) {
 		if err := MarkDerivedRootsComplete(ctx, store, base, root); err != nil {
 			t.Fatal(err)
 		}
-		if complete, _ := store.RootComplete(ctx, root); !complete {
+		if complete, _ := RootComplete(ctx, store, root); !complete {
 			t.Fatalf("root over base %v is unproven", base)
 		}
 	}

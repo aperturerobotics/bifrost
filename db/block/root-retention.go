@@ -23,8 +23,9 @@ type RootRetainer interface {
 	ReleaseRoots(context.Context, []*BlockRef) error
 	// MarkRootsComplete records that the graphs under the roots are stored.
 	MarkRootsComplete(context.Context, []*BlockRef) error
-	// RootComplete reports whether the graph under a root is recorded stored.
-	RootComplete(context.Context, *BlockRef) (bool, error)
+	// RootsComplete reports for each root whether the graph under it is
+	// recorded stored, reading all of them in one transaction.
+	RootsComplete(context.Context, []*BlockRef) ([]bool, error)
 }
 
 // CompleteRootHolder is implemented by a stage store whose volume checks
@@ -81,10 +82,21 @@ func MarkDerivedRootsComplete(ctx context.Context, store StoreOps, base *BlockRe
 
 // RootComplete checks a proof whose lifetime is the physical root's lifetime.
 func RootComplete(ctx context.Context, store StoreOps, ref *BlockRef) (bool, error) {
-	if ref.GetEmpty() || !SupportsRootRetention(store) {
-		return false, nil
+	complete, err := RootsComplete(ctx, store, []*BlockRef{ref})
+	if err != nil {
+		return false, err
 	}
-	return store.(RootRetainer).RootComplete(ctx, ref)
+	return complete[0], nil
+}
+
+// RootsComplete checks the proofs of a batch of roots in one transaction. It
+// reports the proof of each root in order; an empty root has none, and a store
+// without root ownership proves nothing.
+func RootsComplete(ctx context.Context, store StoreOps, refs []*BlockRef) ([]bool, error) {
+	if len(refs) == 0 || !SupportsRootRetention(store) {
+		return make([]bool, len(refs)), nil
+	}
+	return store.(RootRetainer).RootsComplete(ctx, refs)
 }
 
 // SupportsRootRetention reports whether a store implements root ownership.

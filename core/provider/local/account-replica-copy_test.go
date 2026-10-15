@@ -12,6 +12,7 @@ import (
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_world_engine "github.com/s4wave/spacewave/core/sobject/world/engine"
 	"github.com/s4wave/spacewave/db/block"
+	block_store "github.com/s4wave/spacewave/db/block/store"
 	"github.com/s4wave/spacewave/db/bucket"
 )
 
@@ -58,6 +59,52 @@ func TestAccountReplicaCopyRetainsCompletedSubtrees(t *testing.T) {
 	data, found, err := local.GetBlock(ctx, leaf)
 	if err != nil || !found || string(data) != string(payload) {
 		t.Fatalf("local leaf after copy: found=%v err=%v", found, err)
+	}
+}
+
+// TestAccountReplicaCopyBatchesProofReads copies a complete graph into a
+// separate volume that holds none of it. The copy checks each level of the
+// graph for completion proofs, so it reads one batch of proofs per level, not
+// one per reference.
+func TestAccountReplicaCopyBatchesProofReads(t *testing.T) {
+	// Mount a seeded source Space.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	account, so, head, leaf, payload := mountSeededReplicaSource(ctx, t)
+
+	// Mount an empty destination Space in a separate volume.
+	_, _, dstAccount, _, release := setupProviderAndSessionInternal(ctx, t)
+	defer release()
+	dstRef, err := dstAccount.CreateSharedObject(ctx, ulid.NewULID(), &sobject.SharedObjectMeta{BodyType: "space"}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dstSO, releaseDst, err := dstAccount.MountSharedObject(ctx, dstRef, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer releaseDst()
+
+	// Copy the source graph into the destination, counting proof reads.
+	counted := &proofCountingStore{Store: block_store.NewStore("destination", dstSO.GetBlockStore())}
+	destination := &replicaDestination{SharedObject: so, store: &BlockStore{
+		store: counted, readStore: so.GetBlockStore(),
+	}}
+	progress := &AccountReplicaCopyState{Head: head}
+	if err := account.copyAccountWorld(ctx, destination, progress, func() {}); err != nil {
+		t.Fatal(err)
+	}
+
+	// The destination holds the leaf, and the proofs came in fewer reads
+	// than the copy visited blocks.
+	data, found, err := dstSO.GetBlockStore().GetBlock(ctx, leaf)
+	if err != nil || !found || string(data) != string(payload) {
+		t.Fatalf("destination leaf after copy: found=%v err=%v", found, err)
+	}
+	reads := counted.reads.Load()
+	t.Logf("copied %d blocks with %d proof reads", progress.GetBlocks(), reads)
+	if reads == 0 || uint64(reads) >= progress.GetBlocks() {
+		t.Fatalf("copy of %d blocks made %d proof reads", progress.GetBlocks(), reads)
 	}
 }
 

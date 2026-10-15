@@ -145,9 +145,9 @@ func (s *BufferedStore) MarkRootsComplete(ctx context.Context, roots []*BlockRef
 	return MarkRootsComplete(ctx, s.inner, roots)
 }
 
-// RootComplete checks the underlying World proof.
-func (s *BufferedStore) RootComplete(ctx context.Context, ref *BlockRef) (bool, error) {
-	return RootComplete(ctx, s.inner, ref)
+// RootsComplete checks the underlying World proofs.
+func (s *BufferedStore) RootsComplete(ctx context.Context, refs []*BlockRef) ([]bool, error) {
+	return RootsComplete(ctx, s.inner, refs)
 }
 
 // _ is a type assertion

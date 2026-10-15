@@ -78,21 +78,45 @@ func (v *Volume) MarkRootsComplete(ctx context.Context, roots []*block.BlockRef)
 	}
 }
 
-// RootComplete checks for a pending proof, then for the proof in the volume
-// ownership graph.
-func (v *Volume) RootComplete(ctx context.Context, ref *block.BlockRef) (bool, error) {
-	// Accept a proof still waiting for a changing transaction.
-	node := block_gc.BlockIRI(ref)
+// RootsComplete checks each root for a pending proof, then for the proof in
+// the volume ownership graph. It reads the durable proofs of all roots in one
+// transaction.
+func (v *Volume) RootsComplete(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	// Accept the proofs still waiting for a changing transaction, and collect
+	// the roots that need their durable proof read.
+	complete := make([]bool, len(refs))
+	var durable []int
 	v.proofMu.Lock()
-	_, pending := v.rootProofs[node]
+	for i, ref := range refs {
+		if ref.GetEmpty() {
+			continue
+		}
+		if _, pending := v.rootProofs[block_gc.BlockIRI(ref)]; pending {
+			complete[i] = true
+		} else {
+			durable = append(durable, i)
+		}
+	}
 	v.proofMu.Unlock()
-	if pending {
-		return true, nil
+	if len(durable) == 0 {
+		return complete, nil
 	}
 
-	// Otherwise read the durable proof edge.
-	refs, err := v.refGraph.GetOutgoingRefs(ctx, node)
-	return slices.Contains(refs, completeWorldNode), err
+	// Read the durable proof edges in one transaction.
+	err := (&transactionRefGraph{volume: v}).read(ctx, func(rg *block_gc.RefGraph) error {
+		for _, i := range durable {
+			edges, err := rg.GetOutgoingRefs(ctx, block_gc.BlockIRI(refs[i]))
+			if err != nil {
+				return err
+			}
+			complete[i] = slices.Contains(edges, completeWorldNode)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return complete, nil
 }
 
 // rootCompleteTx checks a root's proof inside a direct transaction. A pending

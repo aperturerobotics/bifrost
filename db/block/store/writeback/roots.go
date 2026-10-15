@@ -47,9 +47,9 @@ func (m *MarkingStore) MarkRootsComplete(ctx context.Context, roots []*block.Blo
 	return block.MarkRootsComplete(ctx, m.store, roots)
 }
 
-// RootComplete checks the inner store's World proof.
-func (m *MarkingStore) RootComplete(ctx context.Context, ref *block.BlockRef) (bool, error) {
-	return block.RootComplete(ctx, m.store, ref)
+// RootsComplete checks the inner store's World proofs.
+func (m *MarkingStore) RootsComplete(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	return block.RootsComplete(ctx, m.store, refs)
 }
 
 // _ is a type assertion

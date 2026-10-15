@@ -1,6 +1,7 @@
 package kvtx
 
 import (
+	"context"
 	"slices"
 	"sync"
 	"testing"
@@ -8,6 +9,15 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
 )
+
+// rootComplete reads the proof of one root.
+func rootComplete(ctx context.Context, v *Volume, root *block.BlockRef) (bool, error) {
+	complete, err := v.RootsComplete(ctx, []*block.BlockRef{root})
+	if err != nil {
+		return false, err
+	}
+	return complete[0], nil
+}
 
 func TestRootRetentionOwnersReadersAndAbandonedPins(t *testing.T) {
 	// Prepare a retained root with a shared child block.
@@ -26,7 +36,7 @@ func TestRootRetentionOwnersReadersAndAbandonedPins(t *testing.T) {
 	if err := v.MarkRootsComplete(ctx, []*block.BlockRef{root}); err != nil {
 		t.Fatal(err)
 	}
-	if found, err := v.RootComplete(ctx, root); err != nil || !found {
+	if found, err := rootComplete(ctx, v, root); err != nil || !found {
 		t.Fatalf("root proof found=%v err=%v", found, err)
 	}
 
@@ -83,7 +93,7 @@ func TestRootRetentionOwnersReadersAndAbandonedPins(t *testing.T) {
 	// Release the last reader and verify collection removes the root and proof.
 	two()
 	collect(false)
-	if found, err := v.RootComplete(ctx, root); err != nil || found {
+	if found, err := rootComplete(ctx, v, root); err != nil || found {
 		t.Fatalf("collected root kept a completion proof: %v %v", found, err)
 	}
 
@@ -322,7 +332,7 @@ func TestRootRetentionDefersEditsToNextCommit(t *testing.T) {
 	if err := v.MarkRootsComplete(ctx, []*block.BlockRef{root}); err != nil {
 		t.Fatal(err)
 	}
-	if found, err := v.RootComplete(ctx, root); err != nil || !found {
+	if found, err := rootComplete(ctx, v, root); err != nil || !found {
 		t.Fatalf("pending root proof found=%v err=%v", found, err)
 	}
 	if _, existed, err := v.PrepareOwnedBlock(ctx, "bucket", []byte("deferred root"), nil); err != nil || !existed {
@@ -372,7 +382,7 @@ func TestRootRetentionSweepDropsPendingProof(t *testing.T) {
 	if err != nil || len(removed) != 1 {
 		t.Fatalf("sweep removed=%v err=%v", removed, err)
 	}
-	if found, err := v.RootComplete(ctx, root); err != nil || found {
+	if found, err := rootComplete(ctx, v, root); err != nil || found {
 		t.Fatalf("swept root kept a proof: %v %v", found, err)
 	}
 	if found, err := v.GetBlockExists(ctx, root); err != nil || found {
