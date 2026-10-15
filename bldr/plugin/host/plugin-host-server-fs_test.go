@@ -8,8 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/core"
 	plugin "github.com/s4wave/spacewave/bldr/plugin"
+	"github.com/s4wave/spacewave/db/unixfs"
+	unixfs_access "github.com/s4wave/spacewave/db/unixfs/access"
 	"github.com/s4wave/spacewave/net/hash"
 	"github.com/sirupsen/logrus"
 )
@@ -45,6 +48,57 @@ func TestMissingPluginFilesFailsWithoutWaitingForCaller(t *testing.T) {
 	// The retained failure must stay available to later waiters.
 	if _, err := tracker.resultPromiseCtr.Await(ctx); err == nil || !strings.Contains(err.Error(), "unavailable") {
 		t.Fatalf("retained failure: %v", err)
+	}
+}
+
+// TestPublishedPluginFilesServedWithoutLoad protects pinned asset reads of the
+// current execution: its published files serve the root without a second
+// execution, and withdrawing them ends the tracked execution.
+func TestPublishedPluginFilesServedWithoutLoad(t *testing.T) {
+	// Bound the test with a three second timeout.
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	le := logrus.NewEntry(logrus.New())
+	b, _, err := core.NewCoreBus(ctx, le)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Publish the files of the current execution under the artifact ID.
+	root, err := hash.Sum(hash.RecommendedHashType, []byte("current"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifactID := plugin.PluginArtifactID("colors", root.MarshalString())
+	assetsID := plugin.PluginAssetsFsId(artifactID)
+	files := unixfs_access.NewController(le, b,
+		controller.NewInfo("test/"+assetsID, controller.MustParseVersion("0.0.1"), "published plugin files"),
+		[]string{assetsID}, func(context.Context, func()) (*unixfs.FSHandle, func(), error) {
+			return nil, nil, errors.New("unused")
+		})
+	releaseFiles, err := b.AddController(ctx, files, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The tracker must publish its services without loading the plugin.
+	server := &PluginHostServer{b: b, pluginID: "caller"}
+	run, tracker := server.newPluginHostServerFsTracker(artifactID)
+	done := make(chan error, 1)
+	go func() { done <- run(ctx) }()
+	if _, err := tracker.resultPromiseCtr.Await(ctx); err != nil {
+		t.Fatalf("published plugin files: %v", err)
+	}
+
+	// Withdrawing the published files must end the execution.
+	releaseFiles()
+	select {
+	case err := <-done:
+		if err == nil || !strings.Contains(err.Error(), "released") {
+			t.Fatalf("withdrawn plugin files: %v", err)
+		}
+	case <-ctx.Done():
+		t.Fatal("tracker outlived the published plugin files")
 	}
 }
 

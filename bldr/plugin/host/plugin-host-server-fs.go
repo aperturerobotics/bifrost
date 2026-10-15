@@ -64,35 +64,14 @@ func (t *pluginHostServerFsTracker) execute(rctx context.Context) (rerr error) {
 	if err != nil {
 		return err
 	}
-	self := familyID == t.s.pluginID && (manifestRoot == "" || manifestRoot == t.s.manifestSnapshot.GetManifestRef().GetRootRef().GetHash().MarshalString())
+	selfRoot := t.s.manifestSnapshot.GetManifestRef().GetRootRef().GetHash().MarshalString()
+	self := familyID == t.s.pluginID && (manifestRoot == "" || manifestRoot == selfRoot)
 	if !self {
-		// Retain execution without waiting for startup: a worker needs these files
-		// before it can connect and report capability-registration completion.
-		var running atomic.Int32
-		load, pluginRef, err := t.s.b.AddDirective(
-			bldr_plugin.NewLoadPluginAtManifest(familyID, t.s.instanceKey, manifestRoot),
-			directive.NewCallbackHandler(
-				func(directive.AttachedValue) { running.Add(1) },
-				func(directive.AttachedValue) { running.Add(-1) },
-				func() { ctxCancel(errors.New("plugin file provider was released")) },
-			),
-		)
+		release, err := t.retainPlugin(ctx, ctxCancel, familyID, manifestRoot)
 		if err != nil {
 			return err
 		}
-		defer pluginRef.Release()
-		defer load.AddIdleCallback(func(idle bool, errs []error) {
-			if !idle || running.Load() != 0 {
-				return
-			}
-			for _, err := range errs {
-				if err != nil && !errors.Is(err, context.Canceled) {
-					ctxCancel(err)
-					return
-				}
-			}
-			ctxCancel(errors.New("plugin executable is unavailable: " + pluginID))
-		})()
+		defer release()
 	}
 
 	// Resolve filesystem providers without waiting for backend registration.
@@ -128,6 +107,69 @@ func (t *pluginHostServerFsTracker) execute(rctx context.Context) (rerr error) {
 	<-ctx.Done()
 
 	return context.Cause(ctx)
+}
+
+// retainPlugin retains the execution that serves the plugin files and returns
+// its release. A current execution publishes its files under the artifact ID
+// of its manifest root, so a request for that root retains those files instead
+// of starting a second execution of the same manifest. Otherwise it loads the
+// plugin at the manifest without waiting for startup: a worker needs these
+// files before it can connect and report capability-registration completion.
+//
+// Losing the retained files or a terminal load failure cancels the execution.
+func (t *pluginHostServerFsTracker) retainPlugin(
+	ctx context.Context,
+	cancel context.CancelCauseFunc,
+	familyID, manifestRoot string,
+) (func(), error) {
+	// Retain the files a current execution already publishes for the root.
+	if manifestRoot != "" {
+		_, filesRef, err := unixfs_access.ExAccessUnixFS(
+			ctx,
+			t.s.b,
+			bldr_plugin.PluginAssetsFsId(t.pluginID),
+			true,
+			func() { cancel(errors.New("published plugin files were released")) },
+		)
+		if err != nil {
+			return nil, err
+		}
+		if filesRef != nil {
+			return filesRef.Release, nil
+		}
+	}
+
+	// Load the plugin at the manifest and count its running instances.
+	var running atomic.Int32
+	load, pluginRef, err := t.s.b.AddDirective(
+		bldr_plugin.NewLoadPluginAtManifest(familyID, t.s.instanceKey, manifestRoot),
+		directive.NewCallbackHandler(
+			func(directive.AttachedValue) { running.Add(1) },
+			func(directive.AttachedValue) { running.Add(-1) },
+			func() { cancel(errors.New("plugin file provider was released")) },
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fail once the load idles with no running instance.
+	removeIdle := load.AddIdleCallback(func(idle bool, errs []error) {
+		if !idle || running.Load() != 0 {
+			return
+		}
+		for _, err := range errs {
+			if err != nil && !errors.Is(err, context.Canceled) {
+				cancel(err)
+				return
+			}
+		}
+		cancel(errors.New("plugin executable is unavailable: " + t.pluginID))
+	})
+	return func() {
+		removeIdle()
+		pluginRef.Release()
+	}, nil
 }
 
 // accessFiles binds filesystem acquisition to the tracked execution without waiting
