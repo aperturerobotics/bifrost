@@ -76,7 +76,7 @@ export function BlogCta() {
       try {
         // Pass Turnstile, then store the address.
         const turnstile = await waitForTurnstile()
-        const turnstileToken = await turnstile.getResponsePromise()
+        const turnstileToken = await turnstile.takeToken()
         if (!turnstileToken) throw new Error('Turnstile verification failed')
         const response = await fetch('/api/email/capture', {
           method: 'POST',

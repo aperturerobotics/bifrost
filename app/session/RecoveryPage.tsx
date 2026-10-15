@@ -151,7 +151,7 @@ export function RecoveryPage() {
     try {
       const turnstileToken = isDesktop
         ? ''
-        : ((await turnstileRef.current?.getResponsePromise()) ?? '')
+        : ((await turnstileRef.current?.takeToken()) ?? '')
       if (!isDesktop && !turnstileToken) {
         throw new Error('Turnstile verification failed')
       }

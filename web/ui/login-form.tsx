@@ -1162,7 +1162,7 @@ export function LoginForm({
 
   const getTurnstileToken = useCallback(async (): Promise<string> => {
     if (isDesktop) return ''
-    const token = (await turnstileRef.current?.getResponsePromise()) ?? ''
+    const token = (await turnstileRef.current?.takeToken()) ?? ''
     if (!token) throw new Error('Turnstile verification failed')
     return token
   }, [])

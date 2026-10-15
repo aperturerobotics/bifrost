@@ -8,9 +8,7 @@ import { EmailCaptureRequest } from '@s4wave/core/provider/spacewave/api/api.pb.
 import { BlogCta } from './BlogCta.js'
 
 interface MockTurnstileInstance {
-  getResponse(): string | undefined
-  getResponsePromise(): Promise<string>
-  reset(): void
+  takeToken(): Promise<string>
 }
 
 interface MockTurnstileProps {
@@ -20,9 +18,7 @@ interface MockTurnstileProps {
 
 const mockNavigate = vi.hoisted(() => vi.fn())
 const turnstileHarness = vi.hoisted(() => ({
-  getResponse: vi.fn<() => string | undefined>(),
-  getResponsePromise: vi.fn<() => Promise<string>>(),
-  reset: vi.fn<() => void>(),
+  takeToken: vi.fn<() => Promise<string>>(),
 }))
 
 vi.mock('@aptre/bldr', () => ({
@@ -38,11 +34,7 @@ vi.mock('@s4wave/web/router/router.js', () => ({
 vi.mock('@s4wave/web/ui/turnstile.js', () => ({
   TURNSTILE_PROD_SITE_KEY: 'production-site-key',
   Turnstile: ({ ref, siteKey }: MockTurnstileProps) => {
-    const instance = {
-      getResponse: turnstileHarness.getResponse,
-      getResponsePromise: turnstileHarness.getResponsePromise,
-      reset: turnstileHarness.reset,
-    }
+    const instance = { takeToken: turnstileHarness.takeToken }
 
     if (typeof ref === 'function') {
       ref(instance)
@@ -59,9 +51,7 @@ const originalFetch = globalThis.fetch
 describe('BlogCta', () => {
   beforeEach(() => {
     mockNavigate.mockReset()
-    turnstileHarness.getResponse.mockReset()
-    turnstileHarness.getResponsePromise.mockReset()
-    turnstileHarness.reset.mockReset()
+    turnstileHarness.takeToken.mockReset()
   })
 
   afterEach(() => {
@@ -81,7 +71,7 @@ describe('BlogCta', () => {
       (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
     >(() => Promise.resolve(new Response(new Uint8Array())))
     globalThis.fetch = fetchMock
-    turnstileHarness.getResponsePromise.mockReturnValue(turnstileToken)
+    turnstileHarness.takeToken.mockReturnValue(turnstileToken)
 
     render(<BlogCta />)
     expect(screen.queryByTestId('turnstile')).toBeNull()
@@ -90,7 +80,7 @@ describe('BlogCta', () => {
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
 
     await waitFor(() =>
-      expect(turnstileHarness.getResponsePromise).toHaveBeenCalledTimes(1),
+      expect(turnstileHarness.takeToken).toHaveBeenCalledTimes(1),
     )
     expect(screen.getByTestId('turnstile')).toBeDefined()
     expect(fetchMock).not.toHaveBeenCalled()

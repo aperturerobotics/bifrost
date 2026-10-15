@@ -13,9 +13,10 @@ export function isTurnstileBypassed(siteKey: string): boolean {
 
 // TurnstileInstance is the ref handle exposed by the Turnstile component.
 export interface TurnstileInstance {
-  getResponse(): string | undefined
-  getResponsePromise(timeout?: number): Promise<string>
-  reset(): void
+  // takeToken returns an unspent token, waiting up to timeout milliseconds for
+  // the widget to issue one. Cloudflare verifies a token once, so each token
+  // goes to one caller and the widget then solves again for the next request.
+  takeToken(timeout?: number): Promise<string>
 }
 
 // Minimal window.turnstile type surface.
@@ -28,7 +29,6 @@ interface TurnstileAPI {
       callback?: (token: string) => void
     },
   ): string | null | undefined
-  getResponse(widgetId: string): string | undefined
   remove(widgetId: string): void
   reset(widgetId: string): void
 }
@@ -75,6 +75,8 @@ interface TurnstileProps {
   size?: 'flexible' | 'invisible'
 }
 
+// PendingTurnstileRequest is a takeToken call waiting for the widget to issue
+// a token.
 interface PendingTurnstileRequest {
   reject(error: Error): void
   resolve(token: string): void
@@ -86,13 +88,12 @@ export function Turnstile({ ref, siteKey, size = 'flexible' }: TurnstileProps) {
   const bypass = isTurnstileBypassed(siteKey)
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | null>(null)
-  const solvedRef = useRef(false)
-  const responseRef = useRef<string | undefined>(undefined)
+  const tokenRef = useRef<string | undefined>(undefined)
   const pendingRef = useRef<PendingTurnstileRequest[]>([])
 
+  // Render the widget once the script loads, handing each token it issues to
+  // the oldest waiting caller, or keeping it for the next one.
   useEffect(() => {
-    solvedRef.current = bypass
-    responseRef.current = bypass ? TURNSTILE_TEST_TOKEN : undefined
     if (bypass) return
 
     let cancelled = false
@@ -103,14 +104,14 @@ export function Turnstile({ ref, siteKey, size = 'flexible' }: TurnstileProps) {
           sitekey: siteKey,
           size,
           callback: (token) => {
-            solvedRef.current = true
-            responseRef.current = token
-            const pending = pendingRef.current
-            pendingRef.current = []
-            pending.forEach(({ resolve, timer }) => {
-              clearTimeout(timer)
-              resolve(token)
-            })
+            const next = pendingRef.current.shift()
+            if (!next) {
+              tokenRef.current = token
+              return
+            }
+            clearTimeout(next.timer)
+            next.resolve(token)
+            spendToken()
           },
         })
         widgetIdRef.current = id ?? null
@@ -119,13 +120,13 @@ export function Turnstile({ ref, siteKey, size = 'flexible' }: TurnstileProps) {
         widgetIdRef.current = null
       })
     return () => {
+      // Remove the widget and fail the callers still waiting on it.
       cancelled = true
       if (widgetIdRef.current && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current)
         widgetIdRef.current = null
       }
-      solvedRef.current = false
-      responseRef.current = undefined
+      tokenRef.current = undefined
       const pending = pendingRef.current
       pendingRef.current = []
       pending.forEach(({ reject, timer }) => {
@@ -135,17 +136,25 @@ export function Turnstile({ ref, siteKey, size = 'flexible' }: TurnstileProps) {
     }
   }, [bypass, siteKey, size])
 
-  useImperativeHandle(ref, () => ({
-    getResponse() {
-      if (bypass) return TURNSTILE_TEST_TOKEN
-      if (responseRef.current) return responseRef.current
-      if (!widgetIdRef.current || !window.turnstile) return undefined
-      return window.turnstile.getResponse(widgetIdRef.current)
-    },
+  // spendToken drops the token just handed out and has the widget solve again.
+  function spendToken() {
+    tokenRef.current = undefined
+    if (widgetIdRef.current && window.turnstile) {
+      window.turnstile.reset(widgetIdRef.current)
+    }
+  }
 
-    async getResponsePromise(timeout = 30000) {
+  useImperativeHandle(ref, () => ({
+    async takeToken(timeout = 30000) {
+      // Hand out the token the widget already issued.
       if (bypass) return TURNSTILE_TEST_TOKEN
-      if (responseRef.current) return responseRef.current
+      const token = tokenRef.current
+      if (token) {
+        spendToken()
+        return token
+      }
+
+      // Wait for the widget to issue the next token.
       return await new Promise<string>((resolve, reject) => {
         const req: PendingTurnstileRequest = {
           resolve,
@@ -157,18 +166,6 @@ export function Turnstile({ ref, siteKey, size = 'flexible' }: TurnstileProps) {
         }
         pendingRef.current.push(req)
       })
-    },
-
-    reset() {
-      if (bypass) {
-        solvedRef.current = true
-        responseRef.current = TURNSTILE_TEST_TOKEN
-        return
-      }
-      if (!widgetIdRef.current || !window.turnstile) return
-      solvedRef.current = false
-      responseRef.current = undefined
-      window.turnstile.reset(widgetIdRef.current)
     },
   }))
 
