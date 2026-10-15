@@ -33,7 +33,7 @@ message SharedObjectListEntry {
   string source = 3;
   // UpdatedAt is when the provider last changed the object's metadata, in
   // Unix milliseconds, or zero when the provider does not track it.
-  int64 updated_at = 4;
+  int64 updated_at = 5;
 }
 
 // SharedObjectMeta is the contents of the provider_feature_meta field for a SharedObject.

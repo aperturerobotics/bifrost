@@ -588,7 +588,7 @@ type SharedObjectListEntry struct {
 	Source string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
 	// UpdatedAt is when the provider last changed the object's metadata, in
 	// Unix milliseconds, or zero when the provider does not track it.
-	UpdatedAt int64 `protobuf:"varint,4,opt,name=updated_at,json=updatedAt,proto3" json:"updatedAt,omitempty"`
+	UpdatedAt int64 `protobuf:"varint,5,opt,name=updated_at,json=updatedAt,proto3" json:"updatedAt,omitempty"`
 }
 
 func (x *SharedObjectListEntry) Reset() {
@@ -8705,7 +8705,7 @@ func (m *SharedObjectListEntry) MarshalToSizedBufferVT(dAtA []byte) (int, error)
 	if m.UpdatedAt != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.UpdatedAt))
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x28
 	}
 	if len(m.Source) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Source)
@@ -13442,7 +13442,7 @@ func (m *SharedObjectListEntry) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Source = v
-		case 4:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedAt", wireType)
 			}
