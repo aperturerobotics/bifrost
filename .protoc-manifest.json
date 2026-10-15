@@ -1537,7 +1537,7 @@
       ]
     },
     "github.com/s4wave/spacewave/core/sync/node": {
-      "hash": "7ec113ec498e47f3b0648dab5fa5d991306ea1dcbdc095d3ed05828ce823f35e",
+      "hash": "2282d489e62e474535b7c56fead03db01537f0b2dfdd3842b874851a9b704482",
       "generatedFiles": [
         "core/sync/node/node.pb.go",
         "core/sync/node/node.pb.ts"
