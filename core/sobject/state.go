@@ -458,7 +458,9 @@ func (s *SOState) AdoptCheckpoint(sharedObjectID string, next *SOCheckpoint) err
 // MergeKeyEpochs drops the held grants of peers that can no longer read, then
 // adds the grants in epochs that the state lacks, checking each against the
 // held config. A held grant for a recipient is kept unless its signer has left
-// and epochs carries a replacement.
+// and epochs carries a replacement. Epochs with one number carry one key: only
+// the cloud server admits a new epoch, and a host applies it after the server
+// accepts it, so merging concurrent config branches never meets two keys.
 func (s *SOState) MergeKeyEpochs(sharedObjectID string, epochs []*SOKeyEpoch) error {
 	// Drop the grants of removed readers.
 	cfg := s.GetConfig()
