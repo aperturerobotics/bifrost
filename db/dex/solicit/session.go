@@ -80,10 +80,6 @@ func (s *peerSession) start(ctx context.Context) {
 	s.runRoutine.SetContext(ctx, false)
 }
 
-func (s *peerSession) waitExited(ctx context.Context) error {
-	return s.runRoutine.WaitExited(ctx, true, nil)
-}
-
 // run starts the session, reading messages in a loop and dispatching
 // responses to pending requests, cancels to handled requests, and incoming
 // requests to new handlers.

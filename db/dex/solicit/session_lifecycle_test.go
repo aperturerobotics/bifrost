@@ -21,75 +21,41 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func TestControllerSamePeerReplacementWakesOldPendingAndKeepsNewSession(t *testing.T) {
-	// Keep replacement sessions within the test lifetime.
+func TestControllerSamePeerSessionsSurviveEachOther(t *testing.T) {
+	// Keep the peer sessions within the test lifetime.
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	// Prepare the controller and block requested from the replaced peer.
+	// Register a session with the peer over its first link.
 	c := newTestDexSolicitController()
 	remote := peer.ID("peer-a")
-	ref := testDexBlockRef(t, "replace")
-
-	// Register the first peer session and retain its remote endpoint.
 	firstMS, firstRemote, firstCleanup := newTestDexMountedStreamPair(remote)
 	defer firstCleanup()
 	c.handleSolicitedStream(ctx, link_solicit.NewSolicitMountedStream(firstMS))
 	first := waitTestDexSession(t, c, remote)
 
-	// Capture the block request sent over the first session.
-	remoteReq := make(chan *DexMessage, 1)
-	remoteErr := make(chan error, 1)
-	go func() {
-		var req DexMessage
-		if err := firstRemote.RecvMsg(&req); err != nil {
-			remoteErr <- err
-			return
-		}
-		remoteReq <- &req
-	}()
-
-	// Request a block whose response will be interrupted by replacement.
-	requestDone := make(chan error, 1)
-	go func() {
-		_, err := first.requestBlock(ctx, ref, 0)
-		requestDone <- err
-	}()
-
-	// Verify the old session assigned a request identity.
-	req := recvTestDexValue(t, remoteReq, "old session request")
-	if req.GetRequestId() == 0 {
-		t.Fatal("request id was not assigned")
-	}
-
-	// Replace the peer session and verify its identity changed.
+	// A session over a second link becomes current without closing the first,
+	// since the peer may have kept the first.
 	secondMS, secondRemote, secondCleanup := newTestDexMountedStreamPair(remote)
 	defer secondCleanup()
 	c.handleSolicitedStream(ctx, link_solicit.NewSolicitMountedStream(secondMS))
-	second := waitTestDexSession(t, c, remote)
-	if second == first {
-		t.Fatal("replacement kept old session")
+	waitTestDexCondition(t, "second session current", func() bool {
+		sess := getTestDexSession(c, remote)
+		return sess != nil && sess != first
+	})
+	if first.closed.Load() {
+		t.Fatal("second session closed the first")
 	}
 
-	// Verify replacement wakes the old request without a remote read failure.
-	err := recvTestDexValue(t, requestDone, "old pending request result")
-	if err == nil || !strings.Contains(err.Error(), "session closed") {
-		t.Fatalf("old request err = %v, want session closed", err)
-	}
-	select {
-	case err := <-remoteErr:
-		t.Fatalf("old remote read failed: %v", err)
-	default:
-	}
-
-	// Verify stale session cleanup preserves the replacement.
-	if err := first.waitExited(ctx); err != nil {
-		t.Fatal("old session exit:", err)
-	}
-	if current := getTestDexSession(c, remote); current != second {
-		t.Fatalf("stale cleanup removed replacement session: got %p, want %p", current, second)
-	}
+	// When the second link ends, requests fall back to the first session.
 	_ = secondRemote.Close()
+	waitTestDexCondition(t, "first session current", func() bool {
+		return getTestDexSession(c, remote) == first
+	})
+	_ = firstRemote.Close()
+	waitTestDexCondition(t, "no session", func() bool {
+		return getTestDexSession(c, remote) == nil
+	})
 }
 
 func TestPeerSessionCloseWakesPendingRequestsWithoutRunLoop(t *testing.T) {
@@ -323,7 +289,7 @@ func TestLookupResolverCompletesCurrentPeerMissOnce(t *testing.T) {
 	defer cleanup()
 	sess.start(ctx)
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		c.sessions[remoteID.String()] = sess
+		c.sessions[remoteID.String()] = []*peerSession{sess}
 		broadcast()
 	})
 
@@ -400,7 +366,7 @@ func TestLookupResolverReturnsPeerDataWithoutWritingStorage(t *testing.T) {
 	defer cleanup()
 	sess.start(ctx)
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		c.sessions[remoteID.String()] = sess
+		c.sessions[remoteID.String()] = []*peerSession{sess}
 		broadcast()
 	})
 
@@ -511,7 +477,7 @@ func TestStoreReadWaitsForPeerSession(t *testing.T) {
 		})
 	}()
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		c.sessions[remoteID.String()] = sess
+		c.sessions[remoteID.String()] = []*peerSession{sess}
 		broadcast()
 	})
 
@@ -542,7 +508,7 @@ func TestControllerForwardToPeersExcludesOrigin(t *testing.T) {
 
 	// Register the origin session as the sole forwarding candidate.
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		c.sessions["origin"] = origin
+		c.sessions["origin"] = []*peerSession{origin}
 		broadcast()
 	})
 
@@ -586,8 +552,8 @@ func TestControllerForwardToPeersCancelsLosersAfterFirstSuccess(t *testing.T) {
 
 	// Register fast and slow sessions as forwarding candidates.
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		c.sessions["fast"] = fast
-		c.sessions["slow"] = slow
+		c.sessions["fast"] = []*peerSession{fast}
+		c.sessions["slow"] = []*peerSession{slow}
 		broadcast()
 	})
 
@@ -799,7 +765,7 @@ func newTestDexSolicitController() *Controller {
 	return &Controller{
 		le:       logrus.NewEntry(logger),
 		cc:       &Config{MaxForwardHops: 1},
-		sessions: make(map[string]*peerSession),
+		sessions: make(map[string][]*peerSession),
 		settled:  true,
 	}
 }
@@ -819,7 +785,9 @@ func testDexBlockRef(t *testing.T, data string) *block.BlockRef {
 func getTestDexSession(c *Controller, remote peer.ID) *peerSession {
 	var sess *peerSession
 	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		sess = c.sessions[remote.String()]
+		if peerSessions := c.sessions[remote.String()]; len(peerSessions) != 0 {
+			sess = peerSessions[len(peerSessions)-1]
+		}
 	})
 	return sess
 }

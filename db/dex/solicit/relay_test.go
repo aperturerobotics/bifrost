@@ -229,8 +229,8 @@ func newTestRelayNode(
 func (c *Controller) snapshotSessions() []*peerSession {
 	var sessions []*peerSession
 	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		for _, s := range c.sessions {
-			sessions = append(sessions, s)
+		for _, peerSessions := range c.sessions {
+			sessions = append(sessions, peerSessions...)
 		}
 	})
 	return sessions

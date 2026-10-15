@@ -3,6 +3,7 @@ package dex_solicit
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -41,10 +42,12 @@ type Controller struct {
 	cc *Config
 
 	bcast broadcast.Broadcast
-	// sessions tracks active peer sessions.
-	// key: remote peer ID string
-	// guarded by bcast
-	sessions map[string]*peerSession
+	// sessions holds the live sessions with each remote peer, keyed by peer ID,
+	// oldest first, guarded by bcast. Requests use the newest. A peer reached
+	// over several links has a session on each, and the two sides may see
+	// them start in different orders, so a new session never closes an older
+	// one: each ends when its own stream does.
+	sessions map[string][]*peerSession
 	// sessionStarts counts the peer sessions started, guarded by bcast.
 	sessionStarts uint64
 	// settled reports that the solicitation has delivered a session for every
@@ -129,7 +132,7 @@ func NewController(le *logrus.Entry, b bus.Bus, cc *Config) (*Controller, error)
 		le:       le,
 		b:        b,
 		cc:       cc,
-		sessions: make(map[string]*peerSession),
+		sessions: make(map[string][]*peerSession),
 	}, nil
 }
 
@@ -190,20 +193,16 @@ func (c *Controller) handleSolicitedStream(ctx context.Context, sms link_solicit
 	remotePeer := ms.GetPeerID().String()
 	le := c.le.WithField("remote-peer", remotePeer)
 
-	// Construct the replacement session with cleanup bound to its identity.
+	// Construct the session with cleanup bound to its identity.
 	var sess *peerSession
 	sess = newPeerSession(c, le, ms, func() {
-		c.removeSessionIfCurrent(remotePeer, sess)
+		c.removeSession(remotePeer, sess)
 		le.Debug("dex peer session ended")
 	})
 
-	// Replace any previous session for this peer.
+	// Make it the newest session with this peer.
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		// Replace existing session if any.
-		if old, ok := c.sessions[remotePeer]; ok {
-			old.close()
-		}
-		c.sessions[remotePeer] = sess
+		c.sessions[remotePeer] = append(c.sessions[remotePeer], sess)
 		c.sessionStarts++
 		broadcast()
 	})
@@ -223,12 +222,19 @@ func (c *Controller) setSettled(settled bool) {
 	})
 }
 
-func (c *Controller) removeSessionIfCurrent(remotePeer string, sess *peerSession) {
+// removeSession removes an ended session with remotePeer, so requests fall
+// back to the newest session that remains.
+func (c *Controller) removeSession(remotePeer string, sess *peerSession) {
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-		if cur, ok := c.sessions[remotePeer]; ok && cur == sess {
+		peerSessions := slices.DeleteFunc(c.sessions[remotePeer], func(s *peerSession) bool {
+			return s == sess
+		})
+		if len(peerSessions) == 0 {
 			delete(c.sessions, remotePeer)
-			broadcast()
+		} else {
+			c.sessions[remotePeer] = peerSessions
 		}
+		broadcast()
 	})
 }
 
@@ -243,9 +249,10 @@ func (c *Controller) forwardToPeers(ctx context.Context, ref *block.BlockRef, ho
 	return peerBlockFanout{sessions: sessions, ref: ref, hops: hops}.run(ctx)
 }
 
-// waitSessions waits until the solicitation has settled and returns the peer
-// sessions other than exclude. A peer the solicitation is still negotiating
-// with may hold the block, so a read must not report a miss before then.
+// waitSessions waits until the solicitation has settled and returns the newest
+// session with each peer other than the peer of exclude. A peer the
+// solicitation is still negotiating with may hold the block, so a read must
+// not report a miss before then.
 //
 // When wantPeer is set it also waits until at least one such session exists.
 // The solicitation settles while no link is up, and a miss that no peer was
@@ -257,9 +264,9 @@ func (c *Controller) waitSessions(ctx context.Context, exclude *peerSession, wan
 			return false, nil
 		}
 		sessions = sessions[:0]
-		for _, s := range c.sessions {
-			if s != exclude {
-				sessions = append(sessions, s)
+		for _, peerSessions := range c.sessions {
+			if !slices.Contains(peerSessions, exclude) {
+				sessions = append(sessions, peerSessions[len(peerSessions)-1])
 			}
 		}
 		return !wantPeer || len(sessions) != 0, nil
