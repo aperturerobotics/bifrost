@@ -28,7 +28,7 @@ const (
 	RuntimeMessage_CLOSE RuntimeMessage_Kind = 3
 	// CLOSED reports completion of shutdown, including any failure.
 	RuntimeMessage_CLOSED RuntimeMessage_Kind = 4
-	// FAILED reports a startup or protocol failure before orderly shutdown.
+	// FAILED reports a startup, protocol, or panic failure that ends the runtime.
 	RuntimeMessage_FAILED RuntimeMessage_Kind = 5
 )
 

@@ -66,7 +66,7 @@ export async function openNodeEngine(directory: string): Promise<OwnedEngine> {
           void worker.terminate()
           break
         case RuntimeMessage_Kind.FAILED:
-          fail(new Error(message.error || 'Sync engine startup failed'))
+          fail(new Error(message.error || 'Sync engine failed'))
           void worker.terminate()
           break
         default:
@@ -148,7 +148,8 @@ export async function openNodeEngine(directory: string): Promise<OwnedEngine> {
     } catch {
       // Construction reports its original failure after joining the Worker.
     }
-    throw error
+    // An engine failure cancels the connection, so it is the root cause.
+    throw failure ?? error
   } finally {
     clearTimeout(timeout)
   }
