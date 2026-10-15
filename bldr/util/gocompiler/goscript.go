@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"time"
@@ -290,6 +291,11 @@ func ExecGoScriptCompile(ctx context.Context, le *logrus.Entry, opts GoScriptCom
 		return err
 	}
 	defer permit.Release()
+
+	// Return the compiler's memory once it finishes. A large program holds
+	// gigabytes of syntax and type data that become garbage at once; without
+	// this the collector keeps them as headroom until its next forced cycle.
+	defer debug.FreeOSMemory()
 
 	// Run the GoScript compiler over the packages and log the duration.
 	timeStart := time.Now()
