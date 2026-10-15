@@ -3,6 +3,11 @@ package world
 import (
 	"context"
 	"testing"
+
+	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/bucket"
+	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
+	"github.com/s4wave/spacewave/net/hash"
 )
 
 // readStubWorldState answers the reads ReadSet tracks with empty results.
@@ -23,6 +28,16 @@ func (readStubWorldState) IterateObjects(context.Context, string, bool) ObjectIt
 // LookupGraphQuads returns no quads.
 func (readStubWorldState) LookupGraphQuads(context.Context, GraphQuad, uint32) ([]GraphQuad, error) {
 	return nil, nil
+}
+
+// BuildStorageCursor returns no cursor.
+func (readStubWorldState) BuildStorageCursor(context.Context) (*bucket_lookup.Cursor, error) {
+	return nil, nil
+}
+
+// AccessWorldState calls cb without a cursor.
+func (readStubWorldState) AccessWorldState(_ context.Context, _ *bucket.ObjectRef, cb func(*bucket_lookup.Cursor) error) error {
+	return cb(nil)
 }
 
 // TestReadSetTouched checks which ChangeSets touch the reads of a view.
@@ -75,6 +90,40 @@ func TestReadSetTouched(t *testing.T) {
 		if got := reads.Touched(c.changes); got != c.touched {
 			t.Errorf("%s: touched = %v, want %v", c.name, got, c.touched)
 		}
+	}
+}
+
+// TestReadSetStorageReads checks that only a read of the root World state
+// touches every change. Blocks named by a ref never change.
+func TestReadSetStorageReads(t *testing.T) {
+	ctx := t.Context()
+	changes := &ChangeSet{Keys: []string{"other"}}
+	noop := func(*bucket_lookup.Cursor) error { return nil }
+
+	// Build a cursor and follow a ref.
+	reads := NewReadSet()
+	ws := reads.Track(readStubWorldState{})
+	if _, err := ws.BuildStorageCursor(ctx); err != nil {
+		t.Fatal(err)
+	}
+	h, err := hash.Sum(hash.HashType_HashType_SHA256, []byte("block"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := &bucket.ObjectRef{RootRef: &block.BlockRef{Hash: h}}
+	if err := ws.AccessWorldState(ctx, ref, noop); err != nil {
+		t.Fatal(err)
+	}
+	if reads.Touched(changes) {
+		t.Error("a read through a ref touched an unrelated change")
+	}
+
+	// Read the root World state.
+	if err := ws.AccessWorldState(ctx, nil, noop); err != nil {
+		t.Fatal(err)
+	}
+	if !reads.Touched(changes) {
+		t.Error("a read of the root World state missed a change")
 	}
 }
 

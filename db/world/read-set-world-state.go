@@ -15,19 +15,23 @@ type readSetWorldState struct {
 	reads *ReadSet
 }
 
-// BuildStorageCursor records a raw storage read.
+// BuildStorageCursor records nothing. The cursor starts at an empty ref, so it
+// reads only blocks named by refs the caller holds, and blocks never change.
 func (s *readSetWorldState) BuildStorageCursor(ctx context.Context) (*bucket_lookup.Cursor, error) {
-	s.reads.markAll()
 	return s.WorldState.BuildStorageCursor(ctx)
 }
 
-// AccessWorldState records a raw storage read.
+// AccessWorldState records a read of the whole World when ref is empty, since
+// the cursor then points at the root World state. A ref names blocks that
+// never change, so following it records nothing.
 func (s *readSetWorldState) AccessWorldState(
 	ctx context.Context,
 	ref *bucket.ObjectRef,
 	cb func(*bucket_lookup.Cursor) error,
 ) error {
-	s.reads.markAll()
+	if ref.GetEmpty() {
+		s.reads.markAll()
+	}
 	return s.WorldState.AccessWorldState(ctx, ref, cb)
 }
 
