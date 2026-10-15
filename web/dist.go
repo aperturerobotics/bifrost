@@ -66,7 +66,7 @@ import "embed"
 //go:embed ui/MenuButtonGroup.tsx ui/Menubar.tsx ui/ObjectKeySelector.tsx ui/OutputPanel.tsx ui/PanelHeader.tsx
 //go:embed ui/PanelSizeGate.tsx ui/Popover.tsx ui/RadioOption.tsx ui/SearchBox.tsx ui/StatCard.tsx
 //go:embed ui/StatsBar.tsx ui/StatusList.tsx ui/Window.tsx ui/badge.tsx ui/button-group.tsx ui/button.tsx
-//go:embed ui/card.tsx ui/command.tsx ui/credential/AuthProgressCard.tsx ui/credential/CredentialProofInput.tsx
+//go:embed ui/card.tsx ui/code-block.tsx ui/collapsible.tsx ui/command.tsx ui/credential/AuthProgressCard.tsx ui/credential/CredentialProofInput.tsx
 //go:embed ui/credential/auth-utils.ts ui/credential/useCredentialProof.ts ui/dialog.tsx ui/input.tsx
 //go:embed ui/label.tsx ui/list/List.tsx ui/list/ListItem.tsx ui/list/ListRow.tsx ui/list/ListState.tsx
 //go:embed ui/list/index.ts ui/loading/LoadingCard.tsx ui/loading/LoadingInline.tsx ui/loading/LoadingScreen.tsx
@@ -74,7 +74,7 @@ import "embed"
 //go:embed ui/loading/loading-screen-style.ts
 //go:embed ui/loading/useReducedMotion.ts ui/login-form.tsx ui/path/PathInput.tsx ui/path/index.ts
 //go:embed ui/range-slider.tsx ui/separator.tsx ui/sheet.tsx ui/shine-border.tsx ui/tabs.tsx ui/toaster.tsx
-//go:embed ui/tooltip.tsx ui/tree/Tree.tsx ui/tree/TreeNode.tsx ui/tree/TreeRow.tsx ui/tree/TreeState.tsx
+//go:embed ui/tooltip.tsx ui/trace.tsx ui/tree/Tree.tsx ui/tree/TreeNode.tsx ui/tree/TreeRow.tsx ui/tree/TreeState.tsx
 //go:embed ui/tree/index.ts ui/turnstile.tsx util/isEqual.ts
 //go:embed sync/index.ts sync/react.tsx sync/app-hooks.ts sync/useAppAttachment.ts sync/useObjectQuery.ts
 //go:embed react-css.d.ts
