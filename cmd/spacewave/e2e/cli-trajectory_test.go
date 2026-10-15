@@ -193,7 +193,7 @@ func runCommandLine(t *testing.T, path string, lineNo int, line string, st scrip
 	st.stdout = stdout.String()
 	st.stderr = stderr.String()
 	if ctx.Err() != nil {
-		t.Fatalf("%s:%d: command timed out: %s", path, lineNo, line)
+		t.Fatalf("%s:%d: command timed out: %s\nstdout:\n%s\nstderr:\n%s", path, lineNo, line, st.stdout, st.stderr)
 	}
 	if wantFailure {
 		if err == nil {

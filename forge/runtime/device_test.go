@@ -127,17 +127,21 @@ func TestDeviceAvailabilityExpiryAndNewEpoch(t *testing.T) {
 		t.Fatalf("initial claim = %+v", got)
 	}
 
-	// A renewal replaces the watch deadline without changing the owner epoch.
-	renewalTime := time.Now().Add(time.Second)
+	// A renewal within the lease replaces the watch deadline without changing
+	// the owner epoch.
+	renewalTime := time.Now().Add(time.Second / 2)
 	admission.SetTimeNow(func() time.Time { return renewalTime })
-	claim, err = admission.RenewWorkerClaim(ctx, "worker/a", selfRef)
+	renewal, err := admission.RenewWorkerClaim(ctx, "worker/a", selfRef)
 	admission.SetTimeNow(time.Now)
 	if err != nil {
 		t.Fatal(err)
 	}
+	if renewal.OwnerEpoch != claim.OwnerEpoch {
+		t.Fatalf("renewal epoch = %d, want %d", renewal.OwnerEpoch, claim.OwnerEpoch)
+	}
 	renewed := nextAvailabilityForTest(t, updates)
-	if renewed.State != DeviceAvailable || renewed.ClaimEpoch != claim.OwnerEpoch ||
-		!renewed.ExpiresAt.Equal(claim.OwnerLeaseExpiresAt.AsTime()) {
+	if renewed.State != DeviceAvailable || renewed.ClaimEpoch != renewal.OwnerEpoch ||
+		!renewed.ExpiresAt.Equal(renewal.OwnerLeaseExpiresAt.AsTime()) {
 		t.Fatalf("renewed claim = %+v", renewed)
 	}
 
@@ -148,8 +152,8 @@ func TestDeviceAvailabilityExpiryAndNewEpoch(t *testing.T) {
 	}
 	expired := nextAvailabilityForTest(t, updates)
 	if expired.State != DeviceUnavailable || expired.Reason != "forge worker owner claim expired at "+expired.ExpiresAt.UTC().Format(time.RFC3339) ||
-		expired.ClaimEpoch != claim.OwnerEpoch || expired.OwnerState != CapacityOwnerStateActive ||
-		!expired.ExpiresAt.Equal(claim.OwnerLeaseExpiresAt.AsTime()) || time.Now().Before(expired.ExpiresAt) {
+		expired.ClaimEpoch != renewal.OwnerEpoch || expired.OwnerState != CapacityOwnerStateActive ||
+		!expired.ExpiresAt.Equal(renewal.OwnerLeaseExpiresAt.AsTime()) || time.Now().Before(expired.ExpiresAt) {
 		t.Fatalf("expired claim = %+v", expired)
 	}
 
@@ -191,6 +195,8 @@ func TestDeviceAvailabilityNewEpochAfterCompletedDrain(t *testing.T) {
 		t.Fatal(err)
 	}
 	ws := world.NewEngineWorldState(eng, false)
+
+	// Replace the claim, then drain the replacement.
 	drained := WorkerClaimRef{DeviceObjectKey: selfRef.DeviceObjectKey, ClaimID: "drained"}
 	if _, err := admission.ClaimWorkerCapacity(ctx, "worker/a", drained); err != nil {
 		t.Fatal(err)
@@ -198,6 +204,8 @@ func TestDeviceAvailabilityNewEpochAfterCompletedDrain(t *testing.T) {
 	if err := admission.DrainWorker(ctx, "worker/a", drained, claim.OwnerEpoch+1); err != nil {
 		t.Fatal(err)
 	}
+
+	// The drain deleted the capacity record.
 	gone, err := LookupDeviceAvailability(ctx, ws, selfRef.DeviceObjectKey)
 	if err != nil {
 		t.Fatal(err)
