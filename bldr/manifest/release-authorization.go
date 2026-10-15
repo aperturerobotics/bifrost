@@ -24,12 +24,13 @@ func (m *ManifestRef) SignReleaseAuthorization(key crypto.PrivKey) error {
 		return errors.Wrap(err, "release authorization: manifest root")
 	}
 
-	// Sign the root in the executable-authorization context.
+	// Sign the root in the executable-authorization context with the
+	// recommended hash, which every build can verify, including GoScript.
 	data, err := (&ReleaseAuthorization{ManifestRoot: root}).MarshalVT()
 	if err != nil {
 		return err
 	}
-	signed, err := peer.NewSignedMsg(ReleaseAuthorizationContext, key, hash.HashType_HashType_BLAKE3, data)
+	signed, err := peer.NewSignedMsg(ReleaseAuthorizationContext, key, hash.RecommendedHashType, data)
 	if err != nil {
 		return err
 	}
