@@ -50,13 +50,19 @@ func leanSyncExchangeFrame(t *testing.T, a *fastjson.Arena, message *SOSyncMessa
 	v.Set("baseBytes", a.NewNumberInt(len(message.GetHistoryRequest().GetBaseHash())))
 	v.Set("page", leanSyncPage(t, a, message))
 
-	// Set via v.
+	// Record the snapshot and the revision of the frame that carries one.
 	v.Set("snapshot", leanSyncSnapshot(a, message.GetSnapshot()))
 	revision := message.GetAck().GetRevision()
 	if message.GetRecoveryRequired() != nil {
 		revision = message.GetRecoveryRequired().GetRevision()
 	}
+	if message.GetBranch() != nil {
+		revision = message.GetBranch().GetRevision()
+	}
 	v.Set("revision", a.NewNumberString(strconv.FormatUint(revision, 10)))
+
+	// Record the branch cursor and the authorization and recovery flags.
+	v.Set("cursor", a.NewString(hex.EncodeToString(message.GetBranch().GetCursor())))
 	v.Set("accepted", leanSyncBool(a, message.GetAuthorization().GetAccepted()))
 	v.Set("recoveryPresent", leanSyncBool(a, message.GetRecoveryRequired() != nil))
 	return v
@@ -247,6 +253,11 @@ func leanSyncExchangeCheck(t *testing.T, x *syncExchange, current *sobject.SOSta
 
 	// Record the admission view of the host.
 	accepted.Set("candidateBytes", a.NewNumberInt(candidate.SizeVT()))
+	floor, reads := leanSyncBranchReads(t, &a, x.sync.soHost, previous, receiving, nil)
+	accepted.Set("floor", floor)
+	accepted.Set("reads", reads)
+
+	// Record the held state and a host on which every call succeeds.
 	accepted.Set("beforeRead", leanSyncState(t, &a, previous))
 	accepted.Set("localPeer", a.NewString(x.sync.localObjectPeerID.String()))
 	for _, field := range []string{"lockOK", "accessOK", "writeOK"} {

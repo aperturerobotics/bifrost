@@ -55,13 +55,17 @@ structure HistoryChange where
   hashOK : Bool
   deriving DecidableEq, Repr
 
-/-- Receive owns only an untrusted suffix and its pinned advertisement. -/
+/--
+Receive owns only an untrusted suffix and its pinned advertisement. branch is the
+sender's announced record at the requested floor when the chains diverged.
+-/
 structure Receive where
   head : Head
   base : String
   cursor : String
   changes : List HistoryChange
   bytes : Nat
+  branch : Option String
   deriving DecidableEq, Repr
 
 /-- HistoryPage includes the serialized size of its complete message envelope. -/
@@ -184,29 +188,31 @@ theorem nextMessage_unannounced (before : Response) (sizes : List Nat) (announce
 /-- Every receive result preserves the pinned target and original trusted base. -/
 theorem appendChanges_binding (before : Receive) (changes : List HistoryChange) :
     (appendChanges before changes).state.head = before.head ∧
-    (appendChanges before changes).state.base = before.base := by
+    (appendChanges before changes).state.base = before.base ∧
+    (appendChanges before changes).state.branch = before.branch := by
   induction changes generalizing before with
   | nil => simp [appendChanges]
   | cons change rest ih =>
     unfold appendChanges
     split
-    · exact ⟨rfl, rfl⟩
+    · exact ⟨rfl, rfl, rfl⟩
     · dsimp only
       split
-      · exact ⟨rfl, rfl⟩
+      · exact ⟨rfl, rfl, rfl⟩
       · split
-        · exact ⟨rfl, rfl⟩
+        · exact ⟨rfl, rfl, rfl⟩
         · exact ih _
 
 /-- A page cannot change the pinned advertisement or the trusted checkpoint. -/
 theorem appendPage_binding (before : Receive) (page : Option HistoryPage) :
-    (appendPage before page).state.head = before.head ∧ (appendPage before page).state.base = before.base := by
+    (appendPage before page).state.head = before.head ∧ (appendPage before page).state.base = before.base ∧
+    (appendPage before page).state.branch = before.branch := by
   unfold appendPage
   dsimp only
   split
-  · exact ⟨rfl, rfl⟩
+  · exact ⟨rfl, rfl, rfl⟩
   · split
-    · exact ⟨rfl, rfl⟩
+    · exact ⟨rfl, rfl, rfl⟩
     · exact appendChanges_binding _ _
 
 /-- Successful accumulation retains every entry in order and its exact byte count and final cursor. -/
@@ -506,6 +512,10 @@ structure AcceptanceInput where
   decoded : Option State
   merged : Option State
   candidateBytes : Nat
+  /-- floor is `CheckpointFloor` of the held state. -/
+  floor : Nat
+  /-- reads are the host's observations when the response is a diverged branch. -/
+  reads : BranchReads
   beforeRead : Option State
   afterRead : Option State
   localPeer : String
@@ -519,6 +529,18 @@ structure AcceptanceResult where
   ok : Bool
   host : HostResult
   deriving DecidableEq, Repr
+
+/-- importReceived imports a suffix from the held head, or merges a diverged branch. -/
+def importReceived (input : AcceptanceInput) (candidate : State) : Option HostResult :=
+  let entries := input.receiving.changes.map (·.entry)
+  let bytes := historyBytes input.receiving.changes
+  match input.receiving.branch with
+  | none =>
+    importPeerSnapshot input.object input.previous candidate entries input.localPeer input.candidateBytes bytes
+      input.floor input.merged input.lockOK input.accessOK input.writeOK
+  | some cursor =>
+    mergePeerBranch input.object input.previous candidate cursor entries input.localPeer input.candidateBytes
+      bytes input.reads input.merged input.lockOK input.accessOK input.writeOK
 
 /-- acceptResponse checks the complete pinned response before invoking host authority. -/
 def acceptResponse (input : AcceptanceInput) : AcceptanceResult :=
@@ -535,9 +557,7 @@ def acceptResponse (input : AcceptanceInput) : AcceptanceResult :=
     | some candidate =>
       if candidate.config.seqno != input.receiving.head.configSeqno || candidate.config.hash != input.receiving.head.configHash then rejected
       else
-        let result := importPeerSnapshot input.object input.previous candidate (input.receiving.changes.map (·.entry))
-          input.localPeer input.candidateBytes (historyBytes input.receiving.changes) input.merged
-          input.lockOK input.accessOK input.writeOK
+        let result := importReceived input candidate
         let host := visibleHost input.previous result
         let failed := result.isNone || host.revoked
         ⟨!failed || responseObsolete input.afterRead input.receiving.head, host⟩
@@ -585,9 +605,7 @@ theorem responseObsolete_equal (state : State) (head : Head)
 theorem acceptResponse_publication {input : AcceptanceInput}
     (wrote : (acceptResponse input).host.wrote = true) :
     ∃ candidate, input.decoded = some candidate ∧
-      importPeerSnapshot input.object input.previous candidate (input.receiving.changes.map (·.entry))
-        input.localPeer input.candidateBytes (historyBytes input.receiving.changes) input.merged
-        input.lockOK input.accessOK input.writeOK = some (acceptResponse input).host := by
+      importReceived input candidate = some (acceptResponse input).host := by
   unfold acceptResponse at wrote ⊢
   dsimp only at wrote ⊢
   split at wrote
@@ -610,9 +628,7 @@ theorem acceptResponse_publication {input : AcceptanceInput}
           · contradiction
           · rename_i pinned
             simp only [pinned]
-            cases imported : importPeerSnapshot input.object input.previous candidate (input.receiving.changes.map (·.entry))
-              input.localPeer input.candidateBytes (historyBytes input.receiving.changes) input.merged
-              input.lockOK input.accessOK input.writeOK with
+            cases imported : importReceived input candidate with
             | none => simp [imported, visibleHost] at wrote
             | some host => exact ⟨candidate, rfl, by simp [imported, visibleHost]⟩
 
@@ -642,12 +658,34 @@ theorem acceptResponse_binding {input : AcceptanceInput}
 
 /-- An advertised content digest never grants configuration authority to a published state. -/
 theorem acceptResponse_authority {input : AcceptanceInput}
-    (wrote : (acceptResponse input).host.wrote = true) :
+    (plain : input.receiving.branch = none) (wrote : (acceptResponse input).host.wrote = true) :
     ∃ candidate, input.decoded = some candidate ∧
       verifySuffix input.object input.previous.config candidate.config
         (unappliedEntries input.previous.config.hash (input.receiving.changes.map (·.entry))) = true := by
   obtain ⟨candidate, decoded, imported⟩ := acceptResponse_publication wrote
+  simp only [importReceived, plain] at imported
   exact ⟨candidate, decoded, importPeerSnapshot_authority imported⟩
+
+/--
+A diverged branch publishes a configuration only from a verified suffix of the
+held head, or from a merge record on the winning candidate head that the local
+peer owns.
+-/
+theorem acceptResponse_branch_authority {input : AcceptanceInput} {cursor : String}
+    (diverged : input.receiving.branch = some cursor) (wrote : (acceptResponse input).host.wrote = true) :
+    ∃ candidate, input.decoded = some candidate ∧
+      ((acceptResponse input).host.state = input.previous ∨
+        (∃ theirs, verifySuffix input.object input.previous.config candidate.config theirs = true ∧
+          (acceptResponse input).host.state.config = candidate.config) ∨
+        (∃ entry, verifyChange input.object candidate.config entry = some (acceptResponse input).host.state.config ∧
+          isOwner candidate.config input.localPeer = true)) := by
+  obtain ⟨candidate, decoded, imported⟩ := acceptResponse_publication wrote
+  simp only [importReceived, diverged] at imported
+  refine ⟨candidate, decoded, ?_⟩
+  rcases mergePeerBranch_authority imported with same | ⟨theirs, _, verified, config⟩ | ⟨entry, verified, owner, _⟩
+  · exact Or.inl same
+  · exact Or.inr (Or.inl ⟨theirs, verified, config⟩)
+  · exact Or.inr (Or.inr ⟨entry, verified, owner⟩)
 
 /--
 Catch-up cannot publish a configuration rollback, including a committed removal
@@ -655,14 +693,21 @@ reported as an error, when the received entries carry their hashes.
 -/
 theorem acceptResponse_progress {input : AcceptanceInput}
     (hashes : ∀ change ∈ input.receiving.changes, change.entry.hash ≠ "")
+    (head : input.receiving.head.configHash ≠ "")
     (wrote : (acceptResponse input).host.wrote = true) :
     input.previous.config.seqno ≤ (acceptResponse input).host.state.config.seqno := by
-  obtain ⟨_, _, imported⟩ := acceptResponse_publication wrote
-  exact importPeerSnapshot_config_monotone (by simpa using hashes) imported
+  obtain ⟨_, _, _, _, candidate, decoded, _, configHash⟩ := acceptResponse_binding wrote
+  obtain ⟨_, decoded', imported⟩ := acceptResponse_publication wrote
+  rw [decoded] at decoded'
+  cases decoded'
+  unfold importReceived at imported
+  split at imported
+  · exact importPeerSnapshot_config_monotone (by simpa using hashes) imported
+  · exact mergePeerBranch_config_monotone (by simpa using hashes) (by rw [configHash]; exact head) imported
 
 /-- A complete readable response publishes the merge without assumed admission. -/
 theorem acceptResponse_complete (input : AcceptanceInput) (candidate merged : State) (snapshot : Snapshot)
-    (present : input.snapshot = some snapshot) (decoded : input.decoded = some candidate)
+    (plain : input.receiving.branch = none) (present : input.snapshot = some snapshot) (decoded : input.decoded = some candidate)
     (merge : input.merged = some merged)
     (revision : snapshot.revision = input.receiving.head.revision)
     (base : snapshot.base = input.receiving.base) (cursor : input.receiving.cursor = input.receiving.head.configHash)
@@ -680,10 +725,10 @@ theorem acceptResponse_complete (input : AcceptanceInput) (candidate merged : St
     (acceptResponse input).ok = true ∧ (acceptResponse input).host.wrote = true ∧
       (acceptResponse input).host.state =
         {merged with config := candidate.config, invites := input.previous.invites} := by
-  have imported := importPeerSnapshot_merged (bytes := input.candidateBytes)
+  have imported := importPeerSnapshot_merged (bytes := input.candidateBytes) (floor := input.floor)
     (by simpa using bounded) follows chain readable changed
   rw [← merge] at imported
-  simp [acceptResponse, present, decoded, revision, base, cursor, digest, current,
+  simp [acceptResponse, importReceived, plain, present, decoded, revision, base, cursor, digest, current,
     configSeq, configHash, lock, access, write, imported, visibleHost]
 
 /-- Local invitation changes cannot alter the disclosed projection. -/
@@ -907,7 +952,7 @@ def receivePages (before : Receive) : List HistoryPage → Option Receive
 /-- Successful page reception retains its pinned target and accumulates precisely the sent entries. -/
 theorem receivePages_exact {before after : Receive} {pages : List HistoryPage}
     (received : receivePages before pages = some after) :
-    after.head = before.head ∧ after.base = before.base ∧
+    after.head = before.head ∧ after.base = before.base ∧ after.branch = before.branch ∧
     after.changes = before.changes ++ pages.flatMap (·.changes) ∧
     after.bytes = before.bytes + historyBytes (pages.flatMap (·.changes)) ∧
     after.cursor = historyCursor before.cursor (pages.flatMap (·.changes)) := by
@@ -919,10 +964,10 @@ theorem receivePages_exact {before after : Receive} {pages : List HistoryPage}
     simp only [receivePages] at received
     split at received
     · rename_i accepted
-      obtain ⟨head, base, entries, bytes, cursor⟩ := ih received
+      obtain ⟨head, base, branch, entries, bytes, cursor⟩ := ih received
       have binding := appendPage_binding before (some page)
       obtain ⟨_, _, _, _, _, firstEntries, firstCursor, _⟩ := appendPage_exact accepted
-      refine ⟨head.trans binding.1, base.trans binding.2, ?_, ?_, ?_⟩
+      refine ⟨head.trans binding.1, base.trans binding.2.1, branch.trans binding.2.2, ?_, ?_, ?_⟩
       · simpa [firstEntries, List.append_assoc] using entries
       · simpa [appendPage_bytes accepted, historyBytes_append, Nat.add_assoc] using bytes
       · simpa [firstCursor, historyCursor, List.foldl_append] using cursor
@@ -973,7 +1018,7 @@ theorem pagesExchange_complete (sender : Response) (receiver : Receive) (sizes :
   have schedule := drainPages_schedule sent
   obtain ⟨after, received⟩ := receivePages_complete receiver sender.changes pages
     (by simpa only [revision, cursor] using schedule) (by simpa only [cursor] using linked) sized counted
-  obtain ⟨head, base, entries, _, finish⟩ := receivePages_exact received
+  obtain ⟨head, base, _, entries, _, finish⟩ := receivePages_exact received
   obtain ⟨complete, pinned⟩ := drainPages_exact sent
   exact ⟨pages, snapshot, after, sent, received, head, base,
     by simpa only [complete] using entries, by simpa only [complete, cursor] using finish, pinned⟩
@@ -987,7 +1032,8 @@ theorem pagesExchange_imports (sender : Response) (input : AcceptanceInput) (siz
     (counted : input.receiving.changes.length + sender.changes.length ≤ maxSuffixEntries)
     (fits : ∀ response, responseSuffix response sender → response.changes ≠ [] →
       prefixBytes (sizes response) 1 ≤ maxHistoryPageBytes)
-    (empty : input.receiving.changes = []) (pinned : sender.snapshot = input.snapshot)
+    (empty : input.receiving.changes = []) (plain : input.receiving.branch = none)
+    (pinned : sender.snapshot = input.snapshot)
     (present : input.snapshot = some snapshot) (decoded : input.decoded = some candidate)
     (merge : input.merged = some merged)
     (snapshotRevision : snapshot.revision = input.receiving.head.revision)
@@ -1011,6 +1057,7 @@ theorem pagesExchange_imports (sender : Response) (input : AcceptanceInput) (siz
         {merged with config := candidate.config, invites := input.previous.invites} := by
   obtain ⟨pages, final, after, sent, received, head, base, entries, finish, snapshotEq⟩ :=
     pagesExchange_complete sender input.receiving sizes revision cursor linked sized counted fits
+  have branch := (receivePages_exact received).2.2.1
   have changes : after.changes = sender.changes := by simpa only [empty, List.nil_append] using entries
   have bounded : input.candidateBytes ≤ 10 * 1024 * 1024 ∧ after.changes.length ≤ 4096 ∧
       historyBytes after.changes ≤ 8 * 1024 * 1024 := by
@@ -1019,8 +1066,8 @@ theorem pagesExchange_imports (sender : Response) (input : AcceptanceInput) (siz
     · rw [changes]
       dsimp [maxSuffixBytes] at sized
       omega
-  have imported := acceptResponse_complete {input with receiving := after} candidate merged snapshot present
-    decoded merge
+  have imported := acceptResponse_complete {input with receiving := after} candidate merged snapshot
+    (by simpa only [branch] using plain) present decoded merge
     (by simpa only [head] using snapshotRevision)
     (by simpa only [base] using snapshotBase)
     (by simpa only [head] using finish.trans targetCursor)
@@ -1144,6 +1191,8 @@ structure ExchangeFrame where
   page : Option HistoryPage := none
   snapshot : Option Snapshot := none
   revision : Nat := 0
+  /-- cursor is the hex projection of a branch announcement's cursor. -/
+  cursor : String := ""
   accepted : Bool := false
   recoveryPresent : Bool := false
   deriving DecidableEq, Repr
@@ -1210,7 +1259,9 @@ def prepareOutgoing (before : Exchange) (current : Option State) (input : Exchan
     let next := nextMessage response input.sizes
     let state := {before with
       response := some next.state
-      outgoing := if next.ok then some {kind := next.kind, page := next.page, snapshot := next.snapshot} else none}
+      outgoing := if !next.ok then none
+        else if next.kind == 11 then some {kind := 11, revision := response.revision, cursor := response.cursor}
+        else some {kind := next.kind, page := next.page, snapshot := next.snapshot}}
     if !next.ok then
       return ⟨false, state, none, none, none⟩
     return ⟨true, if next.snapshot.isSome then {state with response := none} else state, none, none, none⟩
@@ -1252,7 +1303,7 @@ def receiveExchange (before : Exchange) (current : State) (frame : ExchangeFrame
       if head.stateHash == digest || head.configSeqno < current.config.seqno then
         return {ok := true, state := {state with control := some {kind := 3, revision := head.revision}}, recovery := recovery}
       let base := current.config.hash
-      let receiving : Receive := ⟨head, base, base, [], 0⟩
+      let receiving : Receive := ⟨head, base, base, [], 0, none⟩
       let control : ExchangeFrame := {kind := 8, request := ⟨head.revision, base⟩, baseBytes := input.currentHashBytes}
       let state := {state with
         receiving := some receiving
@@ -1269,6 +1320,13 @@ def receiveExchange (before : Exchange) (current : State) (frame : ExchangeFrame
       if response.isNone then
         return ⟨true, {state with terminal := true, control := some {kind := 10, revision := before.revision, recoveryPresent := true}}, none, none, none⟩
       return ⟨true, state, none, none, none⟩
+    | 11 => Id.run do
+      let some receiving := before.receiving | return ⟨false, before, none, none, none⟩
+      if frame.revision != receiving.head.revision || receiving.branch.isSome || !receiving.changes.isEmpty ||
+          frame.cursor == "" || frame.cursor.length > 2 * 128 then
+        return ⟨false, before, none, none, none⟩
+      let receiving := {receiving with branch := some frame.cursor, cursor := frame.cursor}
+      return ⟨true, {before with receiving := some receiving}, none, none, none⟩
     | 9 => Id.run do
       let some receiving := before.receiving | return ⟨false, before, none, none, none⟩
       let page := appendPage receiving frame.page
@@ -1328,9 +1386,7 @@ theorem receiveExchange_publication {before : Exchange} {current : State} {frame
     (imported : (receiveExchange before current frame input).imported = some accepted)
     (wrote : accepted.host.wrote = true) :
     ∃ receiving candidate, before.receiving = some receiving ∧ input.acceptance.decoded = some candidate ∧
-      importPeerSnapshot input.acceptance.object input.acceptance.previous candidate (receiving.changes.map (·.entry))
-        input.acceptance.localPeer input.acceptance.candidateBytes (historyBytes receiving.changes)
-        input.acceptance.merged input.acceptance.lockOK input.acceptance.accessOK input.acceptance.writeOK = some accepted.host := by
+      importReceived {input.acceptance with receiving, snapshot := frame.snapshot} candidate = some accepted.host := by
   obtain ⟨_, _, _, receiving, retained, same⟩ := receiveExchange_import imported
   rw [same] at wrote ⊢
   obtain ⟨candidate, decoded, publication⟩ := acceptResponse_publication wrote
@@ -1379,7 +1435,7 @@ theorem receiveExchange_complete (before : Exchange) (current : State) (frame : 
     (input : ExchangePrimitives) (candidate merged : State) (snapshot : Snapshot)
     (kind : frame.kind = 1) (live : before.terminal = false) (control : before.control = none)
     (receiving : before.receiving = some input.acceptance.receiving)
-    (frameSnapshot : frame.snapshot = input.acceptance.snapshot)
+    (plain : input.acceptance.receiving.branch = none) (frameSnapshot : frame.snapshot = input.acceptance.snapshot)
     (present : input.acceptance.snapshot = some snapshot) (decoded : input.acceptance.decoded = some candidate)
     (merge : input.acceptance.merged = some merged)
     (revision : snapshot.revision = input.acceptance.receiving.head.revision)
@@ -1403,7 +1459,7 @@ theorem receiveExchange_complete (before : Exchange) (current : State) (frame : 
     ∃ accepted, (receiveExchange before current frame input).imported = some accepted ∧
       accepted.host.wrote = true ∧
         accepted.host.state = {merged with config := candidate.config, invites := input.acceptance.previous.invites} := by
-  have accepted := acceptResponse_complete input.acceptance candidate merged snapshot present decoded merge revision
+  have accepted := acceptResponse_complete input.acceptance candidate merged snapshot plain present decoded merge revision
     base cursor digest notObsolete configSeq configHash bounded follows chain readable changed lock access write
   have sameInput : {input.acceptance with receiving := input.acceptance.receiving, snapshot := frame.snapshot} = input.acceptance := by
     simp [frameSnapshot]
@@ -1517,9 +1573,8 @@ theorem advanceExchange_publication {before : Exchange} {localID remote : String
     (imported : result.exchange.imported = some accepted) (wrote : accepted.host.wrote = true) :
     ∃ receiving candidate, (prepareOutgoing before input.current input.preparation).state.receiving = some receiving ∧
       input.reception.acceptance.decoded = some candidate ∧
-      importPeerSnapshot input.reception.acceptance.object input.reception.acceptance.previous candidate (receiving.changes.map (·.entry))
-        input.reception.acceptance.localPeer input.reception.acceptance.candidateBytes (historyBytes receiving.changes)
-        input.reception.acceptance.merged input.reception.acceptance.lockOK input.reception.acceptance.accessOK input.reception.acceptance.writeOK = some accepted.host := by
+      importReceived {input.reception.acceptance with receiving, snapshot := frame.snapshot} candidate =
+        some accepted.host := by
   obtain ⟨_, _, _, _, current, _, same⟩ := advanceExchange_import advanced imported
   rw [same] at imported
   exact receiveExchange_publication imported wrote

@@ -126,7 +126,7 @@ inductive Branch where
 
 end
 
-deriving instance DecidableEq, Repr for Entry
+deriving instance DecidableEq, Repr for Entry, Merge, Branch
 
 /-- Participant.valid mirrors `SOParticipantConfig.Validate`. -/
 def Participant.valid (p : Participant) : Bool :=

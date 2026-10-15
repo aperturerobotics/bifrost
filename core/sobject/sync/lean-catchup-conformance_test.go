@@ -53,17 +53,30 @@ func leanSyncConfig(arena *fastjson.Arena, config *sobject.SharedObjectConfig) *
 	return value
 }
 
-// leanSyncChange projects canonical bytes, signature verification and the decoded entry.
+// leanSyncChange projects canonical bytes, the hash outcome and the decoded entry.
 func leanSyncChange(t *testing.T, arena *fastjson.Arena, change *sobject.SOConfigChange) *fastjson.Value {
-	// Hash the entry and project each signature.
+	// Check that the change hashes, then project it.
 	t.Helper()
+	hashOK := false
+	if change != nil {
+		_, err := sobject.HashSOConfigChange(change)
+		hashOK = err == nil
+	}
+	value := arena.NewObject()
+	value.Set("entry", leanSyncEntry(arena, change))
+	value.Set("bytes", arena.NewNumberInt(change.SizeVT()))
+	value.Set("hashOK", leanSyncBool(arena, hashOK))
+	return value
+}
+
+// leanSyncEntry projects a config change as the model's entry: its binding,
+// verified signatures, links, hash and any merge with the branch it absorbs.
+func leanSyncEntry(arena *fastjson.Arena, change *sobject.SOConfigChange) *fastjson.Value {
+	// Hash the entry and project each signature.
 	var digest []byte
-	var hashOK bool
 	sigs := arena.NewArray()
 	if change != nil {
-		var err error
-		digest, err = sobject.HashSOConfigChange(change)
-		hashOK = err == nil
+		digest, _ = sobject.HashSOConfigChange(change)
 		for i, sig := range change.GetSignatures() {
 			sigs.SetArrayItem(i, leanSyncSignature(arena, change, sig))
 		}
@@ -79,12 +92,19 @@ func leanSyncChange(t *testing.T, arena *fastjson.Arena, change *sobject.SOConfi
 	entry.Set("kind", arena.NewNumberInt(int(change.GetChangeType())))
 	entry.Set("hash", arena.NewString(hex.EncodeToString(digest)))
 
-	// Attach the measured size and hash outcome.
-	value := arena.NewObject()
-	value.Set("entry", entry)
-	value.Set("bytes", arena.NewNumberInt(change.SizeVT()))
-	value.Set("hashOK", leanSyncBool(arena, hashOK))
-	return value
+	// Project the merge and its branch.
+	entry.Set("merge", arena.NewNull())
+	if merge := change.GetMerge(); merge != nil {
+		branch := arena.NewArray()
+		for i, absorbed := range merge.GetBranch() {
+			branch.SetArrayItem(i, leanSyncEntry(arena, absorbed))
+		}
+		projected := arena.NewObject()
+		projected.Set("fork", leanSyncEntry(arena, merge.GetFork()))
+		projected.Set("branch", branch)
+		entry.Set("merge", projected)
+	}
+	return entry
 }
 
 // leanSyncSignature projects one config change signature as its signer, empty
@@ -97,7 +117,7 @@ func leanSyncSignature(arena *fastjson.Arena, change *sobject.SOConfigChange, si
 	if err == nil && public != nil {
 		id, idErr := peer.IDFromPublicKey(public)
 		unsigned := change.CloneVT()
-		unsigned.Signatures = nil
+		unsigned.Signatures, unsigned.Commit = nil, nil
 		data, encodeErr := unsigned.MarshalVT()
 		if idErr == nil && encodeErr == nil {
 			verified, verifyErr := sig.VerifyWithPublic("sobject config change", public, data)
@@ -124,8 +144,7 @@ func leanSyncChanges(t *testing.T, arena *fastjson.Arena, changes []*sobject.SOC
 
 // leanSyncHead retains every advertisement field used by the receiver.
 func leanSyncHead(arena *fastjson.Arena, head *SOSyncHead) *fastjson.Value {
-
-	// newObject value via arena.
+	// Project the revision, config head and content digest.
 	value := arena.NewObject()
 	value.Set("revision", arena.NewNumberString(strconv.FormatUint(head.GetRevision(), 10)))
 	value.Set("configHash", arena.NewString(hex.EncodeToString(head.GetConfigHash())))
@@ -136,8 +155,7 @@ func leanSyncHead(arena *fastjson.Arena, head *SOSyncHead) *fastjson.Value {
 
 // leanSyncReceive projects only the buffer owned by syncReceive; it has no held host state.
 func leanSyncReceive(t *testing.T, arena *fastjson.Arena, receiving *syncReceive) *fastjson.Value {
-
-	// helper.
+	// Project the pinned head and the received suffix.
 	t.Helper()
 	value := arena.NewObject()
 	value.Set("head", leanSyncHead(arena, receiving.head))
@@ -145,6 +163,13 @@ func leanSyncReceive(t *testing.T, arena *fastjson.Arena, receiving *syncReceive
 	value.Set("cursor", arena.NewString(hex.EncodeToString(receiving.cursor)))
 	value.Set("changes", leanSyncChanges(t, arena, receiving.changes))
 	value.Set("bytes", arena.NewNumberInt(receiving.size))
+
+	// Project the peer's branch cursor when the chains diverged.
+	branch := arena.NewNull()
+	if receiving.branch != nil {
+		branch = arena.NewString(hex.EncodeToString(receiving.branch))
+	}
+	value.Set("branch", branch)
 	return value
 }
 

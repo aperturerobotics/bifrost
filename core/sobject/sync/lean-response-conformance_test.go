@@ -11,6 +11,7 @@ import (
 	"github.com/aperturerobotics/fastjson"
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/s4wave/spacewave/core/sobject"
+	"github.com/s4wave/spacewave/net/crypto"
 	"github.com/s4wave/spacewave/net/peer"
 )
 
@@ -215,8 +216,7 @@ func leanSyncResponseCases(t *testing.T, seed uint64) []leanSyncCase {
 			receiving.changes = append(receiving.changes, entry.CloneVT())
 		}
 		snapshot := message.GetSnapshot().CloneVT()
-		lockOK, accessOK, writeOK, readOK := true, true, true, true
-		var advanced *sobject.SOState
+		controls := leanSyncHostControls()
 		switch variant {
 		case 1:
 			snapshot.Revision ^= 1
@@ -235,11 +235,11 @@ func leanSyncResponseCases(t *testing.T, seed uint64) []leanSyncCase {
 		case 10:
 			candidate.Checkpoint.Signatures[0].SigData = []byte("invalid checkpoint proof")
 		case 11:
-			accessOK = false
+			controls.accessOK = false
 		case 12:
-			lockOK = false
+			controls.lockOK = false
 		case 13:
-			writeOK = false
+			controls.writeOK = false
 		case 14:
 			previous = target.CloneVT()
 			previous.Config.ConfigChainSeqno++
@@ -269,11 +269,11 @@ func leanSyncResponseCases(t *testing.T, seed uint64) []leanSyncCase {
 			receiving.head.ConfigHash = candidate.Config.ConfigChainHash
 			receiving.head.ConfigSeqno = candidate.Config.ConfigChainSeqno
 		case 20:
-			writeOK = false
-			advanced = candidate.CloneVT()
-			advanced.Config.ConfigChainSeqno++
+			controls.writeOK = false
+			controls.advanced = candidate.CloneVT()
+			controls.advanced.Config.ConfigChainSeqno++
 		case 21:
-			readOK = false
+			controls.readOK = false
 		case 22:
 			candidate.Ops = append(candidate.Ops, &sobject.SOOperation{Inner: []byte("malformed operation")})
 		case 23:
@@ -308,93 +308,309 @@ func leanSyncResponseCases(t *testing.T, seed uint64) []leanSyncCase {
 		if variant == 4 {
 			receiving.head.StateHash = []byte("wrong digest")
 		}
-		candidate = &sobject.SOState{}
-		decodeErr := candidate.UnmarshalVT(snapshot.GetSoState())
-		published, wrote := previous, false
-		observed := ccontainer.NewCContainerVT(previous)
-		watch := func(context.Context, string, func()) (ccontainer.Watchable[*sobject.SOState], func(), error) {
-			if !readOK {
-				return nil, nil, errors.New("injected watch failure")
-			}
-			return observed, func() {}, nil
+		name := "acceptSyncResponse seed " + strconv.FormatUint(seed, 10) + " variant " + strconv.Itoa(variant)
+		cases = append(cases, leanSyncAcceptCase(t, name, objectID, reader, previous, receiving, snapshot, controls))
+	}
+	cases = append(cases, leanSyncPreparedCases(t, objectID, sender, target, request, changes)...)
+	cases = append(cases, leanSyncObsoleteCases(t, objectID, target)...)
+	return append(cases, leanSyncBranchCases(t, seed)...)
+}
+
+// leanSyncControls injects host failures and reads into one acceptance case.
+type leanSyncControls struct {
+	// lockOK, accessOK, writeOK and readOK fail the lock, access check, atomic
+	// write and state watch when false.
+	lockOK, accessOK, writeOK, readOK bool
+	// advanced replaces the observed state when the lock is taken.
+	advanced *sobject.SOState
+	// entry returns retained config changes by hash, or nil.
+	entry func(context.Context, string, []byte) (*sobject.SOConfigChange, error)
+}
+
+// leanSyncHostControls returns controls under which every host call succeeds.
+func leanSyncHostControls() leanSyncControls {
+	return leanSyncControls{lockOK: true, accessOK: true, writeOK: true, readOK: true}
+}
+
+// leanSyncAcceptCase runs acceptResponse on a host holding previous and
+// records the inputs the model reads and the publication the host made.
+func leanSyncAcceptCase(t *testing.T, name, objectID string, key crypto.PrivKey, previous *sobject.SOState,
+	receiving *syncReceive, snapshot *SOSyncSnapshot, controls leanSyncControls,
+) leanSyncCase {
+	// Decode the candidate as the receiver does.
+	t.Helper()
+	candidate := &sobject.SOState{}
+	decodeErr := candidate.UnmarshalVT(snapshot.GetSoState())
+
+	// Serve previous through a watch.
+	published, wrote := previous, false
+	var merge *sobject.SOConfigChange
+	observed := ccontainer.NewCContainerVT(previous)
+	watch := func(context.Context, string, func()) (ccontainer.Watchable[*sobject.SOState], func(), error) {
+		if !controls.readOK {
+			return nil, nil, errors.New("injected watch failure")
 		}
-		lock := func(context.Context, string) (sobject.SOStateLock, error) {
-			if advanced != nil {
-				observed.SetValue(advanced)
-			}
-			if !lockOK {
-				return nil, errors.New("injected lock failure")
-			}
-			return sobject.NewSOStateLock(previous, func(_ context.Context, state *sobject.SOState, _ ...*sobject.SOConfigChange) error {
-				if !writeOK {
-					return errors.New("injected atomic write failure")
-				}
-				published, wrote = state, true
-				observed.SetValue(state)
-				return nil
-			}, func() {}), nil
+		return observed, func() {}, nil
+	}
+
+	// Lock previous, recording the published state and any merge the host signed.
+	lock := func(context.Context, string) (sobject.SOStateLock, error) {
+		if controls.advanced != nil {
+			observed.SetValue(controls.advanced)
 		}
-		host := sobject.NewSOHost(t.Context(), watch, lock, objectID)
-		t.Cleanup(host.ClearContext)
-		localID, err := peer.IDFromPrivateKey(reader)
+		if !controls.lockOK {
+			return nil, errors.New("injected lock failure")
+		}
+		return sobject.NewSOStateLock(previous, func(_ context.Context, state *sobject.SOState, changes ...*sobject.SOConfigChange) error {
+			// Record a signed merge, then publish unless the write fails.
+			if len(changes) != 0 && changes[len(changes)-1].GetMerge() != nil {
+				merge = changes[len(changes)-1]
+			}
+			if !controls.writeOK {
+				return errors.New("injected atomic write failure")
+			}
+			published, wrote = state, true
+			observed.SetValue(state)
+			return nil
+		}, func() {}), nil
+	}
+	host := sobject.NewSOHost(t.Context(), watch, lock, objectID, &sobject.SOHostSyncFuncs{Entry: controls.entry})
+	t.Cleanup(host.ClearContext)
+	localID, err := peer.IDFromPrivateKey(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	local := NewSOSync(gateLogger(), nil, objectID, localID, key, host, nil,
+		func(context.Context, *sobject.SOState) error {
+			if !controls.accessOK {
+				return errors.New("injected access failure")
+			}
+			return nil
+		})
+
+	// Record the response the receiver holds.
+	var arena fastjson.Arena
+	digest := sha256.Sum256(snapshot.GetSoState())
+	input := arena.NewObject()
+	input.Set("object", arena.NewString(objectID))
+	input.Set("previous", leanSyncState(t, &arena, previous))
+	input.Set("receiving", leanSyncReceive(t, &arena, receiving))
+	input.Set("snapshot", leanSyncSnapshot(&arena, snapshot))
+	input.Set("digest", arena.NewString(hex.EncodeToString(digest[:])))
+
+	// Record the decoded candidate and its size.
+	projection := arena.NewNull()
+	if decodeErr == nil {
+		projection = leanSyncState(t, &arena, candidate)
+	}
+	input.Set("decoded", projection)
+	input.Set("candidateBytes", arena.NewNumberInt(candidate.SizeVT()))
+
+	// Record the host view before the import, then accept the response.
+	beforeRead := arena.NewNull()
+	if controls.readOK {
+		beforeRead = leanSyncState(t, &arena, previous)
+	}
+	input.Set("beforeRead", beforeRead)
+	input.Set("localPeer", arena.NewString(localID.String()))
+	input.Set("lockOK", leanSyncBool(&arena, controls.lockOK))
+	input.Set("accessOK", leanSyncBool(&arena, controls.accessOK))
+	input.Set("writeOK", leanSyncBool(&arena, controls.writeOK))
+	acceptErr := local.acceptResponse(t.Context(), receiving, snapshot)
+
+	// Record the merged candidate, with any merge the host signed.
+	merged := arena.NewNull()
+	if decodeErr == nil {
+		if merge != nil {
+			candidate = candidate.CloneVT()
+			if candidate.Config, err = sobject.VerifyConfigChange(objectID, candidate.Config, merge); err != nil {
+				t.Fatal(err)
+			}
+		}
+		merged = leanSyncMerged(t, &arena, objectID, previous, candidate)
+	}
+	input.Set("merged", merged)
+
+	// Record the host reads and the state after the import.
+	floor, reads := leanSyncBranchReads(t, &arena, host, previous, receiving, merge)
+	input.Set("floor", floor)
+	input.Set("reads", reads)
+	afterRead := arena.NewNull()
+	if controls.readOK {
+		afterRead = leanSyncState(t, &arena, observed.GetValue())
+	}
+	input.Set("afterRead", afterRead)
+
+	// Record the result and the publication.
+	req, expected, accepted, publication := arena.NewObject(), arena.NewObject(), arena.NewObject(), arena.NewObject()
+	req.Set("op", arena.NewString("acceptSyncResponse"))
+	req.Set("input", input)
+	expected.Set("ok", leanSyncBool(&arena, acceptErr == nil))
+	accepted.Set("ok", leanSyncBool(&arena, acceptErr == nil))
+
+	// Record the publication.
+	publication.Set("state", leanSyncState(t, &arena, published))
+	publication.Set("wrote", leanSyncBool(&arena, wrote))
+	publication.Set("revoked", leanSyncBool(&arena, errors.Is(acceptErr, sobject.ErrParticipantRevoked)))
+	accepted.Set("host", publication)
+	expected.Set("accepted", accepted)
+	return leanSyncCase{name: name, request: req.MarshalTo(nil), expected: expected.MarshalTo(nil)}
+}
+
+// leanSyncBranchReads projects the host reads the model takes as inputs: the
+// checkpoint floor and, for a diverged branch, the held branch above it, the
+// record at its cursor and merge, the record the host signed or nil.
+func leanSyncBranchReads(t *testing.T, a *fastjson.Arena, host *sobject.SOHost, previous *sobject.SOState,
+	receiving *syncReceive, merge *sobject.SOConfigChange,
+) (floor, reads *fastjson.Value) {
+	// Read the floor the host checks a fork against.
+	t.Helper()
+	floorSeqno := host.CheckpointFloor(t.Context(), previous)
+	floor = a.NewNumberString(strconv.FormatUint(floorSeqno, 10))
+
+	// Read the held branch and the record at its cursor for a diverged branch.
+	held, cursorEntry := a.NewNull(), a.NewNull()
+	if receiving.branch != nil {
+		cursor, branch, err := host.ReadConfigBranch(t.Context(), previous.GetConfig().GetConfigChainHash(), floorSeqno)
+		if err == nil {
+			// Project the branch with its cursor.
+			entries := a.NewArray()
+			for i, change := range branch {
+				entries.SetArrayItem(i, leanSyncEntry(a, change))
+			}
+			held = a.NewArray()
+			held.SetArrayItem(0, a.NewString(hex.EncodeToString(cursor)))
+			held.SetArrayItem(1, entries)
+
+			// Read the record at the cursor, the fork when no held record is shared.
+			if entry, err := host.ReadConfigEntry(t.Context(), cursor); err == nil {
+				cursorEntry = leanSyncEntry(a, entry)
+			}
+		}
+	}
+
+	// Project the signed merge and the reads.
+	signed := a.NewNull()
+	if merge != nil {
+		signed = leanSyncEntry(a, merge)
+	}
+	reads = a.NewObject()
+	reads.Set("held", held)
+	reads.Set("cursorEntry", cursorEntry)
+	reads.Set("merge", signed)
+	return floor, reads
+}
+
+// leanSyncBranchCases accepts responses whose config chain diverged from the
+// held one: two owners each extend the genesis apart, and the local owner
+// receives the other's branch.
+func leanSyncBranchCases(t *testing.T, seed uint64) []leanSyncCase {
+	// Two owners hold one genesis and its checkpoint.
+	t.Helper()
+	objectID := "lean-branch-" + strconv.FormatUint(seed, 10)
+	local, remote := mustKeyPair(t), mustKeyPair(t)
+	initial := &sobject.SOState{Config: &sobject.SharedObjectConfig{Participants: []*sobject.SOParticipantConfig{
+		participantCfg(mustPeerIDStr(t, local), sobject.SOParticipantRole_SOParticipantRole_OWNER),
+		participantCfg(mustPeerIDStr(t, remote), sobject.SOParticipantRole_SOParticipantRole_OWNER),
+	}}}
+
+	// Retain every record by hash for the host's entry reads.
+	history := make(map[string]*sobject.SOConfigChange)
+	retain := func(change *sobject.SOConfigChange) {
+		hash, err := sobject.HashSOConfigChange(change)
 		if err != nil {
 			t.Fatal(err)
 		}
-		local := NewSOSync(gateLogger(), nil, objectID, localID, reader, host, nil,
-			func(context.Context, *sobject.SOState) error {
-				if !accessOK {
-					return errors.New("injected access failure")
-				}
-				return nil
-			})
-		var arena fastjson.Arena
-		input := arena.NewObject()
-		input.Set("object", arena.NewString(objectID))
-		input.Set("previous", leanSyncState(t, &arena, previous))
-		input.Set("receiving", leanSyncReceive(t, &arena, receiving))
-		input.Set("snapshot", leanSyncSnapshot(&arena, snapshot))
-		input.Set("digest", arena.NewString(hex.EncodeToString(contentDigest[:])))
-		projection := arena.NewNull()
-		if decodeErr == nil {
-			projection = leanSyncState(t, &arena, candidate)
-		}
-		input.Set("decoded", projection)
-		merged := arena.NewNull()
-		if decodeErr == nil {
-			merged = leanSyncMerged(t, &arena, objectID, previous, candidate)
-		}
-		input.Set("merged", merged)
-		input.Set("candidateBytes", arena.NewNumberInt(candidate.SizeVT()))
-		beforeRead := arena.NewNull()
-		if readOK {
-			beforeRead = leanSyncState(t, &arena, previous)
-		}
-		input.Set("beforeRead", beforeRead)
-		input.Set("localPeer", arena.NewString(localID.String()))
-		input.Set("lockOK", leanSyncBool(&arena, lockOK))
-		input.Set("accessOK", leanSyncBool(&arena, accessOK))
-		input.Set("writeOK", leanSyncBool(&arena, writeOK))
-		err = local.acceptResponse(t.Context(), receiving, snapshot)
-		afterRead := arena.NewNull()
-		if readOK {
-			afterRead = leanSyncState(t, &arena, observed.GetValue())
-		}
-		input.Set("afterRead", afterRead)
-		req, expected, accepted, publication := arena.NewObject(), arena.NewObject(), arena.NewObject(), arena.NewObject()
-		req.Set("op", arena.NewString("acceptSyncResponse"))
-		req.Set("input", input)
-		expected.Set("ok", leanSyncBool(&arena, err == nil))
-		accepted.Set("ok", leanSyncBool(&arena, err == nil))
-		publication.Set("state", leanSyncState(t, &arena, published))
-		publication.Set("wrote", leanSyncBool(&arena, wrote))
-		publication.Set("revoked", leanSyncBool(&arena, errors.Is(err, sobject.ErrParticipantRevoked)))
-		accepted.Set("host", publication)
-		expected.Set("accepted", accepted)
-		cases = append(cases, leanSyncCase{name: "acceptSyncResponse seed " + strconv.FormatUint(seed, 10) + " variant " + strconv.Itoa(variant),
-			request: req.MarshalTo(nil), expected: expected.MarshalTo(nil)})
+		history[string(hash)] = change
 	}
-	cases = append(cases, leanSyncPreparedCases(t, objectID, sender, target, request, changes)...)
-	return append(cases, leanSyncObsoleteCases(t, objectID, target)...)
+	entry := func(_ context.Context, _ string, hash []byte) (*sobject.SOConfigChange, error) {
+		return history[string(hash)], nil
+	}
+
+	// Sign the genesis and its checkpoint.
+	genesis, err := sobject.BuildSOConfigChange(objectID, initial.Config, initial.Config, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_GENESIS, local, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retain(genesis)
+	if initial.Config, err = sobject.VerifyConfigChange(objectID, initial.Config, genesis); err != nil {
+		t.Fatal(err)
+	}
+	if initial.Checkpoint, err = sobject.BuildGenesisSOCheckpoint(local, objectID, initial.Config.GetConfigChainHash(), nil); err != nil {
+		t.Fatal(err)
+	}
+
+	// Apart, the local owner adds one reader and the remote owner adds two.
+	extend := func(state *sobject.SOState, signer crypto.PrivKey, count int) (*sobject.SOState, []*sobject.SOConfigChange) {
+		// Extend a copy of state by count records.
+		t.Helper()
+		state = state.CloneVT()
+		var changes []*sobject.SOConfigChange
+		for range count {
+			// Sign a record adding a new reader and apply it.
+			next := state.Config.CloneVT()
+			next.Participants = append(next.Participants, participantCfg(mustPeerIDStr(t, mustKeyPair(t)), sobject.SOParticipantRole_SOParticipantRole_READER))
+			change, err := sobject.BuildSOConfigChange(objectID, state.Config, next, sobject.SOConfigChangeType_SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT, signer, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			retain(change)
+			if state.Config, err = sobject.VerifyConfigChange(objectID, state.Config, change); err != nil {
+				t.Fatal(err)
+			}
+			changes = append(changes, change)
+		}
+		return state, changes
+	}
+	ours, oursChanges := extend(initial, local, 1)
+	theirs, theirsChanges := extend(initial, remote, 2)
+
+	// Each variant receives a branch from the genesis under one fault.
+	var cases []leanSyncCase
+	for variant := range 8 {
+		previous, candidate, changes := ours.CloneVT(), theirs.CloneVT(), theirsChanges
+		branch := initial.Config.GetConfigChainHash()
+		controls := leanSyncHostControls()
+		controls.entry = entry
+		switch variant {
+		case 1:
+			previous, candidate, changes = theirs.CloneVT(), ours.CloneVT(), oursChanges
+		case 2:
+			previous = initial.CloneVT()
+		case 3:
+			previous, candidate, changes = theirs.CloneVT(), theirs.CloneVT(), theirsChanges[:1]
+			if candidate.Config, err = sobject.VerifyConfigChange(objectID, initial.Config, changes[0]); err != nil {
+				t.Fatal(err)
+			}
+		case 4:
+			changes = []*sobject.SOConfigChange{theirsChanges[0].CloneVT(), theirsChanges[1]}
+			changes[0].Signatures[0].SigData = []byte("invalid signature")
+		case 5:
+			branch = []byte("unshared cursor")
+		case 6:
+			controls.writeOK = false
+		case 7:
+			controls.accessOK = false
+		}
+
+		// Receive the branch as the complete pages would leave it.
+		snapshot := &SOSyncSnapshot{SoState: leanSyncMarshal(t, candidate), Revision: 1, BaseHash: previous.Config.GetConfigChainHash()}
+		digest := sha256.Sum256(snapshot.GetSoState())
+		receiving := &syncReceive{
+			head: &SOSyncHead{Revision: 1, ConfigHash: candidate.Config.GetConfigChainHash(),
+				ConfigSeqno: candidate.Config.GetConfigChainSeqno(), StateHash: digest[:]},
+			base:    snapshot.GetBaseHash(),
+			cursor:  candidate.Config.GetConfigChainHash(),
+			branch:  branch,
+			changes: changes,
+		}
+		for _, change := range changes {
+			receiving.size += change.SizeVT()
+		}
+		name := "acceptSyncResponse branch seed " + strconv.FormatUint(seed, 10) + " variant " + strconv.Itoa(variant)
+		cases = append(cases, leanSyncAcceptCase(t, name, objectID, local, previous, receiving, snapshot, controls))
+	}
+	return cases
 }
 
 // leanSyncPreparedCases exercises the provider read, disclosure projection and complete-frame budget.

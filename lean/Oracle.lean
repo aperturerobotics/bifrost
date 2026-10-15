@@ -23,7 +23,7 @@ per line. A request names a model function in `op` and carries its inputs:
 - `orderOperations`: held `ops`, `checkpoint` author heads, `roster`; result
   `{"ok", "result": {"order", "stable"}}`.
 - `importPeerSnapshot`: `object`, `previous`, `candidate`, `entries`, `localPeer`,
-  `candidateBytes`, `historyBytes`, nullable `merged`, `lockOK`, `accessOK`, `writeOK`.
+  `candidateBytes`, `historyBytes`, `floor`, nullable `merged`, `lockOK`, `accessOK`, `writeOK`.
 - `advanceSyncExchange`: held-state reads and one selected production loop event.
 - `joinSyncWorkers`: optional routine exit channels and observed body acknowledgments.
 - `watchSyncAuthority`: host retention, current state reads and transport deadline observations.
@@ -104,7 +104,7 @@ end
 
 instance : ToJson Entry := ⟨entryToJson⟩
 instance : FromJson Entry := ⟨entryFromJson⟩
-deriving instance ToJson, FromJson for Grant, State, HostResult
+deriving instance ToJson, FromJson for Grant, State, HostResult, BranchReads
 
 deriving instance ToJson, FromJson for Order.Pos, Order.Op
 
@@ -262,7 +262,7 @@ def respond (req : Json) : Except String Json := do
       (← req.getObjValAs? State "candidate")
       (← req.getObjValAs? (List Entry) "entries") (← req.getObjValAs? String "localPeer")
       (← req.getObjValAs? Nat "candidateBytes") (← req.getObjValAs? Nat "historyBytes")
-      (← req.getObjValAs? (Option State) "merged") (← req.getObjValAs? Bool "lockOK") (← req.getObjValAs? Bool "accessOK")
+      (← req.getObjValAs? Nat "floor") (← req.getObjValAs? (Option State) "merged") (← req.getObjValAs? Bool "lockOK") (← req.getObjValAs? Bool "accessOK")
       (← req.getObjValAs? Bool "writeOK")
     return json% {ok: $(result.isSome), outcome: $(visibleHost previous result)}
   | "verifyChange" =>
