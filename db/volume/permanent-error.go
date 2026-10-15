@@ -7,9 +7,10 @@ import "errors"
 // The volume cannot be constructed in the current environment, so retrying the
 // constructor cannot succeed. The browser OPFS backend uses this to report a
 // storage-capability denial (a SecurityError on root acquisition) that survives
-// a site-data clear and only differs by browser profile. The volume controller
-// stops restarting on a permanent error and surfaces it to waiters instead of
-// looping forever.
+// a site-data clear and only differs by browser profile. A store format newer
+// than the binary supports is also permanent, since only a newer binary can
+// open it. The volume controller stops restarting on a permanent error and
+// surfaces it to waiters instead of looping forever.
 type PermanentError struct {
 	// Err is the underlying construction failure.
 	Err error

@@ -8,6 +8,7 @@ import (
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/s4wave/spacewave/db/kvtx"
 	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
+	"github.com/s4wave/spacewave/db/volume"
 )
 
 // formatMigration upgrades a store to store_kvkey.FormatVersion. It must
@@ -31,7 +32,8 @@ const migrateBatchBytes = 32 << 20
 const binaryBlockRefTag = 0x0a
 
 // upgradeFormat brings the store to store_kvkey.FormatVersion. A store at the
-// current version costs one read.
+// current version costs one read. A store newer than this binary supports fails
+// with a permanent error, since only a newer binary can open it.
 func upgradeFormat(ctx context.Context, store kvtx.Store, keys *store_kvkey.KVKey) error {
 	// Read the stored version. A store without one predates versioning.
 	version, err := readFormatVersion(ctx, store, keys)
@@ -42,7 +44,7 @@ func upgradeFormat(ctx context.Context, store kvtx.Store, keys *store_kvkey.KVKe
 		return nil
 	}
 	if version > store_kvkey.FormatVersion {
-		return fmt.Errorf("store format version %d is newer than supported version %d", version, store_kvkey.FormatVersion)
+		return volume.Permanent(fmt.Errorf("store format version %d is newer than supported version %d", version, store_kvkey.FormatVersion))
 	}
 
 	// Migrate, then record the version in a durable commit that also makes
@@ -61,10 +63,11 @@ func upgradeFormat(ctx context.Context, store kvtx.Store, keys *store_kvkey.KVKe
 	return tx.Commit(ctx)
 }
 
-// NeedsFormatUpgrade reports whether opening a Volume on store migrates it.
+// NeedsFormatUpgrade reports whether opening a Volume on store migrates it. A
+// newer store is not migrated: opening it fails.
 func NeedsFormatUpgrade(ctx context.Context, store kvtx.Store, keys *store_kvkey.KVKey) (bool, error) {
 	version, err := readFormatVersion(ctx, store, keys)
-	return version != store_kvkey.FormatVersion, err
+	return version < store_kvkey.FormatVersion, err
 }
 
 // readFormatVersion returns the store's format version, or 0 when unset.
