@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"golang.org/x/mod/modfile"
 )
 
 const identitySchemaVersion = 1
@@ -34,7 +35,8 @@ type Identity struct {
 
 // ComputeIdentity computes the release artifact identity from the current Git
 // working tree, including tracked edits, staged edits, deletions, and untracked
-// non-ignored files.
+// non-ignored files, and from the files of every module go.mod replaces with a
+// local directory.
 func ComputeIdentity(repoRoot string, inputs *BuildInputs) (*Identity, error) {
 	// Digest the compiler, mode, tools, and environment inputs.
 	buildDigest, err := inputs.digest()
@@ -43,21 +45,10 @@ func ComputeIdentity(repoRoot string, inputs *BuildInputs) (*Identity, error) {
 	}
 
 	// List tracked and unignored source paths from the working tree.
-	cmd := exec.Command("git", "ls-files", "--cached", "--others", "--exclude-standard", "-z")
-	cmd.Dir = repoRoot
-	out, err := cmd.Output()
+	paths, err := listSourceFiles(repoRoot)
 	if err != nil {
-		return nil, errors.Wrap(err, "list release artifact source files")
+		return nil, err
 	}
-
-	// Sort source paths to make their digest deterministic.
-	paths := make([]string, 0)
-	for raw := range bytes.SplitSeq(out, []byte{0}) {
-		if len(raw) != 0 {
-			paths = append(paths, string(raw))
-		}
-	}
-	slices.Sort(paths)
 
 	// Hash source files into source, lockfile, builder, and prerender groups.
 	sourceHash := sha256.New()
@@ -77,6 +68,12 @@ func ComputeIdentity(repoRoot string, inputs *BuildInputs) (*Identity, error) {
 		if err := hashFile(h, repoRoot, path, true); err != nil {
 			return nil, err
 		}
+	}
+
+	// A local replace builds the module from a directory outside the working
+	// tree, so its files are source inputs too.
+	if err := hashLocalReplaces(sourceHash, repoRoot); err != nil {
+		return nil, err
 	}
 
 	// Bind source and build digests into one artifact identity.
@@ -168,6 +165,75 @@ func (i *Identity) contentDigest() string {
 	writeDigestField(h, "bldr", i.BldrDigest)
 	writeDigestField(h, "prerender", i.PrerenderInputsDigest)
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// listSourceFiles returns the sorted tracked and unignored file paths under dir,
+// relative to dir.
+func listSourceFiles(dir string) ([]string, error) {
+	// List the files Git tracks or would track under dir.
+	cmd := exec.Command("git", "ls-files", "--cached", "--others", "--exclude-standard", "-z")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, errors.Wrapf(err, "list release artifact source files in %s", dir)
+	}
+
+	// Sort source paths to make their digest deterministic.
+	var paths []string
+	for raw := range bytes.SplitSeq(out, []byte{0}) {
+		if len(raw) != 0 {
+			paths = append(paths, string(raw))
+		}
+	}
+	slices.Sort(paths)
+	return paths, nil
+}
+
+// hashLocalReplaces hashes the source files of every module go.mod replaces
+// with a local directory outside repoRoot.
+func hashLocalReplaces(h hash.Hash, repoRoot string) error {
+	// Read the replace directives of the root module.
+	goModPath := filepath.Join(repoRoot, "go.mod")
+	data, err := os.ReadFile(goModPath) // #nosec G703 -- the caller-selected repo root's go.mod.
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return errors.Wrap(err, "read go.mod")
+	}
+	mod, err := modfile.Parse(goModPath, data, nil)
+	if err != nil {
+		return errors.Wrap(err, "parse go.mod")
+	}
+
+	// Hash each local replacement outside the working tree.
+	for _, replace := range mod.Replace {
+		// Skip module replacements and directories the working tree listing
+		// already covers.
+		dir := replace.New.Path
+		if !modfile.IsDirectoryPath(dir) {
+			continue
+		}
+		if !filepath.IsAbs(dir) {
+			dir = filepath.Join(repoRoot, dir)
+		}
+		if rel, err := filepath.Rel(repoRoot, dir); err == nil && filepath.IsLocal(rel) {
+			continue
+		}
+
+		// Hash the replacement's files under the module path it replaces.
+		paths, err := listSourceFiles(dir)
+		if err != nil {
+			return err
+		}
+		writeDigestField(h, "replace", replace.Old.Path)
+		for _, path := range paths {
+			if err := hashFile(h, dir, path, true); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func isLockfile(path string) bool {

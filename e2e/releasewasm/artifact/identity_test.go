@@ -67,6 +67,25 @@ func TestComputeIdentityTracksBldrAndPrerenderInputs(t *testing.T) {
 	}
 }
 
+func TestComputeIdentityTracksLocalReplaceSources(t *testing.T) {
+	// Replace a module with a local checkout outside the repository.
+	repoRoot := newIdentityTestRepo(t)
+	depRoot := t.TempDir()
+	writeTestFile(t, filepath.Join(depRoot, "go.mod"), "module example.com/dep\n\ngo 1.25\n")
+	writeTestFile(t, filepath.Join(depRoot, "dep.go"), "package dep\n\nconst Value = 1\n")
+	runTestGit(t, depRoot, "init")
+	writeTestFile(t, filepath.Join(repoRoot, "go.mod"), "module example.com/release-identity\n\ngo 1.25\n\nreplace example.com/dep => "+depRoot+"\n")
+	inputs := testBuildInputs()
+	base := computeTestIdentity(t, repoRoot, inputs)
+
+	// Verify that editing the replacement changes the artifact identity.
+	writeTestFile(t, filepath.Join(depRoot, "dep.go"), "package dep\n\nconst Value = 2\n")
+	depChanged := computeTestIdentity(t, repoRoot, inputs)
+	if depChanged.SourceDigest == base.SourceDigest || depChanged.Digest == base.Digest {
+		t.Fatal("local replace edit did not change release artifact identity")
+	}
+}
+
 func newIdentityTestRepo(t *testing.T) string {
 	// Create the source and build input fixture tree.
 	t.Helper()
