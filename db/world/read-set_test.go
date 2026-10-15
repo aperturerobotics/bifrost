@@ -40,6 +40,29 @@ func (readStubWorldState) AccessWorldState(_ context.Context, _ *bucket.ObjectRe
 	return cb(nil)
 }
 
+// countingBodyBatcher counts native object body batch reads.
+type countingBodyBatcher struct {
+	// WorldState is unused; the batch method supplies the bodies.
+	WorldState
+	// calls counts native batch reads.
+	calls int
+}
+
+// GetObject reports that no object exists, so a missed batch falls back here.
+func (*countingBodyBatcher) GetObject(context.Context, string) (ObjectState, bool, error) {
+	return nil, false, nil
+}
+
+// GetObjectBodiesBatch records one native batch and returns a body per key.
+func (b *countingBodyBatcher) GetObjectBodiesBatch(_ context.Context, keys []string) ([]*ObjectBody, error) {
+	b.calls++
+	out := make([]*ObjectBody, len(keys))
+	for i, key := range keys {
+		out[i] = &ObjectBody{ObjectKey: key, Body: []byte(key), Exists: true}
+	}
+	return out, nil
+}
+
 // TestReadSetTouched checks which ChangeSets touch the reads of a view.
 func TestReadSetTouched(t *testing.T) {
 	// Read key a and iterate prefix dir/.
@@ -96,6 +119,7 @@ func TestReadSetTouched(t *testing.T) {
 // TestReadSetStorageReads checks that only a read of the root World state
 // touches every change. Blocks named by a ref never change.
 func TestReadSetStorageReads(t *testing.T) {
+	// Prepare an unrelated change and an empty cursor callback.
 	ctx := t.Context()
 	changes := &ChangeSet{Keys: []string{"other"}}
 	noop := func(*bucket_lookup.Cursor) error { return nil }
@@ -135,5 +159,39 @@ func TestMatchGraphQuad(t *testing.T) {
 	}
 	if MatchGraphQuad(filter, NewGraphQuad("<s>", `"pred"`, "<o2>", "")) {
 		t.Error("filter matched another object")
+	}
+}
+
+// TestReadSetKeepsObjectBodyBatch checks that a tracked read uses one native
+// batch and records those keys.
+func TestReadSetKeepsObjectBodyBatch(t *testing.T) {
+	// Track a counting batcher.
+	ctx := t.Context()
+	batcher := &countingBodyBatcher{}
+	reads := NewReadSet()
+	tracked := reads.Track(batcher)
+
+	// Read several keys through the batch helper.
+	keys := []string{"read/a", "read/b", "read/c"}
+	bodies, err := GetObjectBodiesBatch(ctx, tracked, keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if batcher.calls != 1 || len(bodies) != len(keys) {
+		t.Fatalf("calls = %d, bodies = %d, want 1 call and %d bodies", batcher.calls, len(bodies), len(keys))
+	}
+	for i, key := range keys {
+		body := bodies[i]
+		if body.ObjectKey != key || !body.Exists || string(body.Body) != key {
+			t.Fatalf("body %d = %+v, want key %s from the batcher", i, body, key)
+		}
+	}
+
+	// A change to a read key touches the set; an unread key does not.
+	if !reads.Touched(&ChangeSet{Keys: []string{"read/b"}}) {
+		t.Error("a change to a read key did not touch the ReadSet")
+	}
+	if reads.Touched(&ChangeSet{Keys: []string{"unread"}}) {
+		t.Error("a change to an unread key touched the ReadSet")
 	}
 }

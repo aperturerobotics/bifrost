@@ -85,6 +85,13 @@ func (s *readSetWorldState) DeleteObject(ctx context.Context, key string) (bool,
 	return s.WorldState.DeleteObject(ctx, key)
 }
 
+// GetObjectBodiesBatch records the requested keys and reads their bodies
+// through the wrapped state's batcher when it has one.
+func (s *readSetWorldState) GetObjectBodiesBatch(ctx context.Context, keys []string) ([]*ObjectBody, error) {
+	s.reads.addKeys(keys...)
+	return GetObjectBodiesBatch(ctx, s.WorldState, keys)
+}
+
 // GetObjectBodiesBatchPage records the requested keys and pages their bodies
 // through the wrapped state.
 func (s *readSetWorldState) GetObjectBodiesBatchPage(ctx context.Context, keys []string, byteBudget int) ([]*ObjectBody, uint32, error) {
@@ -175,6 +182,7 @@ func (s *readSetWorldState) DeleteGraphObject(ctx context.Context, value string)
 // _ is a type assertion
 var (
 	_ WorldState                 = (*readSetWorldState)(nil)
+	_ ObjectBodyBatcher          = (*readSetWorldState)(nil)
 	_ ObjectBodyPageBatcher      = (*readSetWorldState)(nil)
 	_ ObjectBodyPageSeqnoBatcher = (*readSetWorldState)(nil)
 )
