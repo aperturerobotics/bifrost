@@ -48,6 +48,7 @@ var bldrSdkImports = []string{
 	"resource/resource.ts",
 	"resource/resource_srpc.pb.ts",
 	"resource/rpc-stream.ts",
+	"resource/shared-streams.ts",
 	"resource/server/attached-resource.ts",
 	"resource/server/context.ts",
 	"resource/server/index.ts",

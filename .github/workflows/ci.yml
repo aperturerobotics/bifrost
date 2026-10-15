@@ -383,6 +383,11 @@ jobs:
           go test -timeout=30s ./bldr/resource ./bldr/resource/server
           -run 'Test(PythonClientResourceLifecycleAgainstGoServer|PythonClientResourceLifecycleAgainstTypeScriptServer|TypeScriptClientResourceLifecycleAgainstPythonServer|GoClientResourceLifecycleAgainstPythonServer)$'
 
+      # The browser import map must name every bldr SDK module, or the web app
+      # fails to boot. No member job runs the bldr Go tests.
+      - name: Test bldr SDK import map
+        run: go test -timeout=30s ./bldr/web/pkg/external
+
       - name: Test Python Session journey
         env:
           RUN_PYTHON_SESSION_JOURNEY: '1'
