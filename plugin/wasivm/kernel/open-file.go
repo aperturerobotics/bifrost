@@ -41,6 +41,8 @@ type OpenFile struct {
 	timer *timerFile
 	// epoll is the interest list of an epoll file, or nil.
 	epoll *epollSet
+	// signals is the signal source of a signalfd file, or nil.
+	signals *signalFile
 
 	// data is a synthesized file's content, generated at open.
 	data []byte
@@ -114,6 +116,9 @@ func (of *OpenFile) readiness(write bool) (ready, hangup bool, change <-chan str
 	case of.counter != nil:
 		ready, change := of.counter.state(write)
 		return ready, false, change
+	case of.signals != nil:
+		ready, change := of.signals.state()
+		return ready && !write, false, change
 	case of.epoll != nil:
 		return false, false, nil
 	case write && of.tx != nil:

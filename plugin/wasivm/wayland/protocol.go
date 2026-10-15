@@ -152,6 +152,23 @@ const (
 // wl_output mode flags: the mode is current and preferred.
 const outputModeCurrentPreferred = 3
 
+// zxdg_output_manager_v1.
+const (
+	xdgOutputManagerDestroy      = 0
+	xdgOutputManagerGetXdgOutput = 1
+)
+
+// zxdg_output_v1.
+const (
+	xdgOutputDestroy = 0
+
+	xdgOutputLogicalPosition = 0
+	xdgOutputLogicalSize     = 1
+	xdgOutputDone            = 2
+	xdgOutputName            = 3
+	xdgOutputDescription     = 4
+)
+
 // wl_data_device_manager.
 const (
 	dataDeviceManagerCreateDataSource = 0

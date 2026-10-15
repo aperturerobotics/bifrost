@@ -473,6 +473,9 @@ func (k *Kernel) initVFS(cfg *Config) {
 	v.mkCharDev(dev, "ptmx", devPtmx)
 	k.pts, k.ptys = v.mkDir(dev, "pts"), make(map[int]*pty)
 
+	// Add the shared memory directory, where shm_open names its files.
+	v.mkDir(dev, "shm")
+
 	// Add the in-memory directories that overlay the root filesystem, and
 	// mount the root and the proc filesystem as Linux starts init.
 	v.mkDir(v.root, "tmp")

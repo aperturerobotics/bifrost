@@ -46,6 +46,7 @@ var globals = []global{
 	{"wl_data_device_manager", 3, (*client).bindDataDeviceManager},
 	{"xdg_wm_base", 1, (*client).bindWmBase},
 	{"zwlr_layer_shell_v1", 4, (*client).bindLayerShell},
+	{"zxdg_output_manager_v1", 3, (*client).bindXdgOutputManager},
 }
 
 // client is one connection to the compositor. Its serve goroutine reads and
@@ -477,21 +478,6 @@ func (c *client) pointerFrame(p resource) {
 	if p.version >= 5 {
 		c.send(newEvent(p.id, pointerFrame))
 	}
-}
-
-// bindOutput binds wl_output and describes the screen.
-func (c *client) bindOutput(r resource) object {
-	// Describe the screen: its position, maker and model, then its one mode.
-	size := c.comp.screen.Size()
-	c.send(newEvent(r.id, outputGeometry).int(0).int(0).int(0).int(0).int(0).
-		string("WasiVM").string("display").int(0))
-	c.send(newEvent(r.id, outputMode).uint(outputModeCurrentPreferred).
-		int(int32(size.X)).int(int32(size.Y)).int(60000)) //nolint:gosec // screen sizes are small.
-	if r.version >= 2 {
-		c.send(newEvent(r.id, outputScale).int(1))
-		c.send(newEvent(r.id, outputDone))
-	}
-	return noRequests
 }
 
 // bindDataDeviceManager binds wl_data_device_manager. Its devices never

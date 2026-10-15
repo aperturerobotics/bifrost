@@ -25,6 +25,8 @@ const (
 	idSeat          = 7
 	idSubcompositor = 8
 	idLayerShell    = 9
+	idOutput        = 10
+	idXdgOutputs    = 11
 	firstFreeID     = 20
 )
 
@@ -164,6 +166,8 @@ func (tc *testCompositor) connect() *testClient {
 		{"wl_seat", 5, idSeat},
 		{"wl_subcompositor", 1, idSubcompositor},
 		{"zwlr_layer_shell_v1", 4, idLayerShell},
+		{"wl_output", 2, idOutput},
+		{"zxdg_output_manager_v1", 3, idXdgOutputs},
 	} {
 		c.request(newEvent(idRegistry, registryBind).uint(names[g.iface]).string(g.iface).uint(g.version).uint(g.id))
 	}
@@ -502,4 +506,24 @@ func TestLayerShell(t *testing.T) {
 	if _, s := m.uint(), m.uint(); s != overlay {
 		t.Fatalf("keyboard entered %d, want the overlay %d", s, overlay)
 	}
+}
+
+// TestXdgOutput checks an xdg output describes the screen's logical size and
+// name, and the output's done event ends the description.
+func TestXdgOutput(t *testing.T) {
+	// Describe the output.
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	x := c.newID()
+	c.request(newEvent(idXdgOutputs, xdgOutputManagerGetXdgOutput).uint(x).uint(idOutput))
+
+	// It reads as the whole screen, then the output's done ends it.
+	m := c.await(x, xdgOutputLogicalSize)
+	if w, h := m.int(), m.int(); w != 160 || h != 120 {
+		t.Fatalf("logical size %dx%d, want 160x120", w, h)
+	}
+	if name := c.await(x, xdgOutputName).string(); name != "WASIVM-1" {
+		t.Fatalf("name %q, want WASIVM-1", name)
+	}
+	c.await(idOutput, outputDone)
 }

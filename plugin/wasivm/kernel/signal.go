@@ -328,39 +328,43 @@ func (p *Process) sysSigaltstack(ssPtr, oldSsPtr uint32) uint64 {
 // returning it), the timeout elapses (-EAGAIN), or ctx is canceled (-EINTR).
 // timeout < 0 waits forever; timeout == 0 polls without blocking.
 func (p *Process) waitForSignal(ctx context.Context, waitSet uint64, timeout time.Duration) uint64 {
-	// Start the timeout.
-	var timerC <-chan time.Time
-	if timeout > 0 {
-		t := time.NewTimer(timeout)
-		defer t.Stop()
-		timerC = t.C
+	// Take a signal within the timeout.
+	wctx := ctx
+	if timeout >= 0 {
+		var cancel context.CancelFunc
+		wctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
 	}
-	// Take a pending signal in waitSet, or wait for the next delivery.
+	if sig := p.takeSignal(wctx, waitSet); sig != 0 {
+		return uint64(sig)
+	}
+
+	// Report whether the timeout or ctx ended the wait.
+	if timeout == 0 || ctx.Err() == nil {
+		return negErrno(EAGAIN)
+	}
+	return negErrno(EINTR)
+}
+
+// takeSignal takes the lowest pending signal in set, waiting for one until
+// ctx ends. It returns 0 when ctx ends first, so a done ctx makes a take
+// that does not wait.
+func (p *Process) takeSignal(ctx context.Context, set uint64) uint32 {
 	for {
+		// Take a pending signal when there is one.
 		p.sigMu.Lock()
-		if got := p.sigPending & waitSet; got != 0 {
+		if got := p.sigPending & set; got != 0 {
 			sig := uint32(bits.TrailingZeros64(got)) + 1
 			p.sigPending &^= sigBit(sig)
 			p.sigMu.Unlock()
-			return uint64(sig)
+			return sig
 		}
 		ch := p.sigWaitChLocked()
 		p.sigMu.Unlock()
-		if timeout == 0 {
-			return negErrno(EAGAIN)
-		}
-		var res uint64
-		blocking(ctx, func() {
-			select {
-			case <-ctx.Done():
-				res = negErrno(EINTR)
-			case <-timerC:
-				res = negErrno(EAGAIN)
-			case <-ch:
-			}
-		})
-		if res != 0 {
-			return res
+
+		// Wait for the next delivery.
+		if !wait(ctx, ch) {
+			return 0
 		}
 	}
 }
