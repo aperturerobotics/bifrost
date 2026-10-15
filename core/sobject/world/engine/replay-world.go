@@ -6,6 +6,7 @@ import (
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
+	trace "github.com/s4wave/spacewave/db/traceutil"
 	world_block "github.com/s4wave/spacewave/db/world/block"
 )
 
@@ -71,6 +72,8 @@ func (w *replayWorld) close(ctx context.Context) error {
 	defer ws.Release()
 
 	// A completion proof lands only after the fence covers its writes.
+	ctx, task := trace.NewTask(ctx, "alpha/so-engine/replay/fence")
+	defer task.End()
 	if _, err := ws.bengine.Sync(ctx); err != nil {
 		return err
 	}

@@ -31,11 +31,16 @@ func (c *Controller) processOp(
 	opIdx int,
 	headState *InnerState,
 ) (*InnerState, *sobject.SOOperationResult, error) {
-	// Trace and decode the operation.
+	// Trace the operation through its result.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/process-op")
 	defer task.End()
+
+	// Decode the World operation.
+	_, decodeTask := trace.NewTask(ctx, "alpha/so-engine/process-op/decode")
 	op := &SOWorldOp{}
-	if err := op.UnmarshalVT(opData); err != nil {
+	err := op.UnmarshalVT(opData)
+	decodeTask.End()
+	if err != nil {
 		return rejectOp(le, peerID, nonce, "invalid operation data: "+err.Error())
 	}
 

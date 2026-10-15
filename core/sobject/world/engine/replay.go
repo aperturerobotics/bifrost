@@ -10,6 +10,7 @@ import (
 	"github.com/s4wave/spacewave/core/sobject"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/kvtx"
+	trace "github.com/s4wave/spacewave/db/traceutil"
 	"github.com/s4wave/spacewave/db/world"
 )
 
@@ -722,7 +723,9 @@ func (r *replayer) replayOp(
 	}
 
 	// Authorize and decode the operation as every member does.
-	writer, opData, reason, err := sobject.PrepareReplayOp(ctx, snap, inner)
+	taskCtx, task := trace.NewTask(ctx, "alpha/so-engine/replay/prepare-op")
+	writer, opData, reason, err := sobject.PrepareReplayOp(taskCtx, snap, inner)
+	task.End()
 	if err != nil || reason != "" {
 		outcome.reason = reason
 		return nil, outcome, err
@@ -751,7 +754,9 @@ func (r *replayer) replayOp(
 	// Keep the payload roots of a rejected operation too, since a later order
 	// may apply it. An operation that does not decode applied nothing and
 	// has none.
-	outcome.payloads, err = opPayloadRefs(ctx, r.lookupOp, opData)
+	taskCtx, task = trace.NewTask(ctx, "alpha/so-engine/replay/payload-refs")
+	outcome.payloads, err = opPayloadRefs(taskCtx, r.lookupOp, opData)
+	task.End()
 	if err != nil && res.GetSuccess() {
 		return nil, outcome, err
 	}
