@@ -77,7 +77,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.63.0
 	github.com/restic/chunker v0.5.0
-	github.com/s4wave/goscript v0.4.6-0.20261015193337-0cb552a46d98
+	github.com/s4wave/goscript v0.4.6-0.20261015205015-17939b2e2e3c
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0
