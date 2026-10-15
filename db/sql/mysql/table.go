@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/dolthub/go-mysql-server/sql"
+	"github.com/dolthub/go-mysql-server/sql/plan"
 	"github.com/dolthub/go-mysql-server/sql/types"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
@@ -165,11 +166,6 @@ func (t *Table) Name() string {
 	return t.name
 }
 
-// SetIndexLookup sets the index lookup.
-func (t *Table) SetIndexLookup(lookup *sql.IndexLookup) {
-	t.lookup = lookup
-}
-
 // String returns the table in string form.
 func (t *Table) String() string {
 	// based on String() at go-sql-server/memory/table.go *Table.String
@@ -224,14 +220,9 @@ func (t *Table) PartitionAtIndex(ix int) (*TablePartition, error) {
 		return nil, io.EOF
 	}
 
-	// Follow the partition block and carry the table index lookup into it.
-	pt := pts[ix]
+	// Follow the partition block.
 	bcs = bcs.FollowSubBlock(2).FollowSubBlock(uint32(ix)) //nolint:gosec
-	var indexLookup sql.IndexLookup
-	if t.lookup != nil {
-		indexLookup = *t.lookup
-	}
-	return NewTablePartition(ix, pt, bcs, t.schema.Schema, indexLookup)
+	return NewTablePartition(ix, pts[ix], bcs, t.schema.Schema)
 }
 
 // Collation returns the collation type ID.
@@ -245,12 +236,26 @@ func (t *Table) Partitions(ctx *sql.Context) (sql.PartitionIter, error) {
 }
 
 // PartitionRows returns a table iterator for the rows in a partition.
+//
+// With an index lookup it returns only the rows within the lookup ranges,
+// because a lookup join trusts the index to select the matching rows.
 func (t *Table) PartitionRows(ctx *sql.Context, part sql.Partition) (sql.RowIter, error) {
+	// Build the filter selecting the rows within the lookup ranges.
 	pt, ok := part.(*TablePartition)
 	if !ok {
 		return nil, ErrUnexpectedType
 	}
-	return pt.IterateRows(ctx)
+	filter, err := t.lookupFilter(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Iterate the partition rows through the filter.
+	rows, err := pt.IterateRows(ctx)
+	if err != nil || filter == nil {
+		return rows, err
+	}
+	return plan.NewFilterIter(filter, rows), nil
 }
 
 // SelectPartition selects the partition based on the index (round-robin).

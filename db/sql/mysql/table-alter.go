@@ -147,7 +147,7 @@ func (t *Table) rewriteRows(
 	cctx := GetDbContext(ctx)
 	for ix, ptRoot := range t.root.GetTablePartitions() {
 		ptBcs := t.bcs.FollowSubBlock(2).FollowSubBlock(uint32(ix)) //nolint:gosec
-		pt, err := NewTablePartition(ix, ptRoot, ptBcs, oldSchema.Schema, sql.IndexLookup{})
+		pt, err := NewTablePartition(ix, ptRoot, ptBcs, oldSchema.Schema)
 		if err != nil {
 			return err
 		}

@@ -623,6 +623,33 @@ func TestMysqlJoinRegression(t *testing.T) {
 	if seen != 2 {
 		t.Fatalf("unexpected left join row count: %d", seen)
 	}
+
+	// Add orders for both users so a join that ignores its ON condition
+	// returns their cross product.
+	execMysqlStatements(t, ctx, db,
+		"INSERT INTO orders (id, user_id, item) VALUES (11, 1, 'lamp')",
+		"INSERT INTO orders (id, user_id, item) VALUES (12, 2, 'pen')",
+	)
+
+	// Verify the primary-key lookup join returns each order with its user.
+	var pairs []string
+	joined, err := db.QueryContext(ctx, "SELECT orders.item, users.name FROM orders JOIN users ON users.id = orders.user_id ORDER BY orders.id")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer joined.Close()
+	for joined.Next() {
+		if err := joined.Scan(&item, &name); err != nil {
+			t.Fatal(err.Error())
+		}
+		pairs = append(pairs, item+":"+name)
+	}
+	if err := joined.Err(); err != nil {
+		t.Fatal(err.Error())
+	}
+	if got := strings.Join(pairs, " "); got != "book:alpha lamp:alpha pen:beta" {
+		t.Fatalf("unexpected lookup join rows: %s", got)
+	}
 }
 
 func TestMysqlDiscardChangesRollsBackFailedStatement(t *testing.T) {

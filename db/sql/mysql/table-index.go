@@ -18,8 +18,9 @@ type tableIndex struct {
 	primary bool
 }
 
-// IndexedAccess returns a scan-backed indexed table. PreciseMatch is false, so
-// the engine keeps predicate filters authoritative.
+// IndexedAccess returns a scan-backed indexed table that returns only the rows
+// within the lookup ranges. PreciseMatch is false, so the engine also keeps
+// its predicate filters.
 func (t *Table) IndexedAccess(ctx *sql.Context, lookup sql.IndexLookup) sql.IndexedTable {
 	indexed := *t
 	indexed.lookup = &lookup
@@ -60,10 +61,31 @@ func (t *Table) PreciseMatch() bool {
 }
 
 // LookupPartitions returns all partitions for scan-backed indexed access.
+// PartitionRows of the indexed table filters each by the lookup ranges.
 func (t *Table) LookupPartitions(ctx *sql.Context, lookup sql.IndexLookup) (sql.PartitionIter, error) {
 	indexed := *t
 	indexed.lookup = &lookup
 	return NewTablePartitionIter(&indexed), nil
+}
+
+// lookupFilter returns the expression selecting the rows within the ranges of
+// the table index lookup, or nil when the table has no lookup.
+func (t *Table) lookupFilter(ctx *sql.Context) (sql.Expression, error) {
+	// Resolve the lookup index and its ranges.
+	if t.lookup == nil {
+		return nil, nil
+	}
+	idx, ok := t.lookup.Index.(*tableIndex)
+	if !ok {
+		return nil, ErrUnexpectedType
+	}
+	ranges, ok := t.lookup.Ranges.(sql.MySQLRangeCollection)
+	if !ok {
+		return nil, ErrUnexpectedType
+	}
+
+	// Match each range against the indexed column expressions.
+	return expression.NewRangeFilterExpr(ctx, idx.expressions(), ranges)
 }
 
 // CreateIndex records secondary index metadata.

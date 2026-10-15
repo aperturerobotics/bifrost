@@ -20,19 +20,15 @@ type TablePartition struct {
 	idx int
 	// schema is the table schema
 	schema sql.Schema
-	// lookup looks up in an index
-	lookup sql.IndexLookup
 }
 
 // NewTablePartition constructs a table partition handle.
 //
 // bcs should be located at the TablePartitionRoot sub-block.
-// lookup can be nil
 func NewTablePartition(
 	idx int,
 	t *TablePartitionRoot, bcs *block.Cursor,
 	schema sql.Schema,
-	lookup sql.IndexLookup,
 ) (*TablePartition, error) {
 	// ensure the partition impl is supported
 	if err := t.Validate(); err != nil {
@@ -43,7 +39,6 @@ func NewTablePartition(
 		bcs:    bcs,
 		idx:    idx,
 		schema: schema,
-		lookup: lookup,
 	}, nil
 }
 
