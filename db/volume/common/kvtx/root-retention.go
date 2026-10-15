@@ -350,6 +350,7 @@ func (v *Volume) rootPinOwnerLocked(ctx context.Context) (string, error) {
 	}
 	v.rootPinOwner, v.rootPinLease = owner, lease
 	v.rootPins = make(map[string]*rootPin)
+	v.stages = make(map[string]*openStage)
 	return owner, nil
 }
 
@@ -382,22 +383,27 @@ type deferredEdits struct {
 	// unpins are the released pins whose edge removals the transaction carries,
 	// keyed by root node.
 	unpins map[string]*rootPin
+	// stages are the released stages whose edge removals the transaction
+	// carries.
+	stages []string
 	// proofs are the root nodes of the pending proofs the transaction carries.
 	proofs []string
 }
 
-// applyDeferred writes the removals of released reader pins and the pending
-// root proofs into a direct transaction. A proof whose root is gone is
+// applyDeferred writes the removals of released reader pins and stages and the
+// pending root proofs into a direct transaction. A proof whose root is gone is
 // dropped. The caller settles the returned edits once the transaction ends,
 // also on error.
 func (v *Volume) applyDeferred(ctx context.Context, blocks block.StoreOps, rg *block_gc.RefGraph) (deferredEdits, error) {
-	// Reserve the edge removals of released reader pins.
+	// Lock the reader pins and stages.
 	var edits deferredEdits
 	var adds, removes []block_gc.RefEdge
 	unlock, err := v.rootPinMu.Lock(ctx)
 	if err != nil {
 		return edits, err
 	}
+
+	// Reserve each released pin whose edge no transaction carries yet.
 	for node, pin := range v.rootPins {
 		if pin.count != 0 || pin.settled != nil {
 			continue
@@ -409,6 +415,9 @@ func (v *Volume) applyDeferred(ctx context.Context, blocks block.StoreOps, rg *b
 		edits.unpins[node] = pin
 		removes = append(removes, block_gc.RefEdge{Subject: v.rootPinOwner, Object: node})
 	}
+
+	// Remove the edges of released stages.
+	edits.stages, removes = v.releasedStagesLocked(removes)
 	unlock()
 
 	// Take the pending root proofs.
@@ -436,12 +445,21 @@ func (v *Volume) applyDeferred(ctx context.Context, blocks block.StoreOps, rg *b
 }
 
 // settleDeferred finishes a transaction's deferred edits. A committed
-// transaction forgets its released pins and pending proofs; otherwise the
-// next changing transaction carries them again.
+// transaction forgets its released pins, stages and pending proofs; otherwise
+// the next changing transaction carries them again.
 func (v *Volume) settleDeferred(edits deferredEdits, committed bool) {
 	// Settle the released pins, forgetting them only after a commit.
 	for node, pin := range edits.unpins {
 		v.settleRootPin(node, pin, committed)
+	}
+
+	// Forget the released stages a committed transaction removed.
+	if committed && len(edits.stages) != 0 {
+		unlock, _ := v.rootPinMu.Lock(context.Background())
+		for _, stage := range edits.stages {
+			delete(v.stages, stage)
+		}
+		unlock()
 	}
 
 	// Forget the proofs a committed transaction wrote.
@@ -464,6 +482,7 @@ func (v *Volume) closeRootPins() error {
 	v.rootPinsClosed = true
 	owner, lease := v.rootPinOwner, v.rootPinLease
 	clear(v.rootPins)
+	clear(v.stages)
 	unlock()
 	if lease == nil {
 		return nil

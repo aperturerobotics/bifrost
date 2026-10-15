@@ -12,47 +12,104 @@ import (
 // stagePrefix prefixes the node that owns the blocks written through one stage.
 const stagePrefix = "stage:"
 
-// OpenStage creates a stage node under the process owner of reader pins. Blocks
+// openStage is the in-process state of one stage.
+type openStage struct {
+	// written records that a transaction hung the stage under its process
+	// owner, which may have committed.
+	written bool
+	// released records that the stage was released after a write, so the next
+	// changing direct transaction removes its edge.
+	released bool
+}
+
+// OpenStage registers a stage under the process owner of reader pins. Blocks
 // written through the stage belong to it until a parent written outside the
-// stage references them. The release removes the stage, and the sweep collects
-// every block no other owner holds. Closing the volume releases its open
-// stages, and ReapRootPins releases those of a crashed process.
+// stage references them. The stage's first write hangs it under the owner in
+// the same transaction, so a stage that writes nothing costs no transaction.
+// The release leaves the stage's edge for the next changing direct
+// transaction to remove, like a reader pin, and the sweep collects every block
+// no other owner holds. Closing the volume releases its open stages, and
+// ReapRootPins releases those of a crashed process.
 func (v *Volume) OpenStage(ctx context.Context) (string, func(), error) {
-	// Reserve the process owner under its lease.
+	// Register the stage once the process owner holds its lease.
 	unlock, err := v.rootPinMu.Lock(ctx)
 	if err != nil {
 		return "", nil, err
 	}
-	owner, err := v.rootPinOwnerLocked(ctx)
-	unlock()
-	if err != nil {
+	defer unlock()
+	if _, err := v.rootPinOwnerLocked(ctx); err != nil {
 		return "", nil, err
 	}
-
-	// Hang the stage under the process owner.
 	stage := stagePrefix + ulid.NewULID()
-	err = v.withDirectAtomic(ctx, func(_ block.StoreOps, rg *block_gc.RefGraph) error {
-		return rg.ApplyRefBatch(ctx, []block_gc.RefEdge{
-			{Subject: block_gc.NodeGCRoot, Object: owner},
-			{Subject: owner, Object: stage},
-		}, nil)
-	})
-	if err != nil {
-		return "", nil, err
-	}
+	v.stages[stage] = &openStage{}
+	return stage, sync.OnceFunc(func() { v.releaseStage(stage) }), nil
+}
 
-	// A failed release leaves the stage until the volume closes or its owner
-	// is reaped.
-	release := sync.OnceFunc(func() {
-		ctx := context.Background()
-		_ = v.withDirectAtomic(ctx, func(_ block.StoreOps, rg *block_gc.RefGraph) error {
-			if _, err := rg.RemoveNodeRefs(ctx, stage, true); err != nil {
-				return err
-			}
-			return rg.RemoveRef(ctx, owner, stage)
-		})
-	})
-	return stage, release, nil
+// releaseStage forgets a stage that wrote nothing and marks a written stage
+// for the next changing direct transaction to remove.
+func (v *Volume) releaseStage(stage string) {
+	unlock, _ := v.rootPinMu.Lock(context.Background())
+	defer unlock()
+	st := v.stages[stage]
+	switch {
+	case st == nil:
+	case st.written:
+		st.released = true
+	default:
+		delete(v.stages, stage)
+	}
+}
+
+// useStage returns the process owner of an open stage, recording a write
+// through it when write is set. It returns block.ErrStageReleased after the
+// stage is released: a released stage's edges would hold blocks that nothing
+// can reach or sweep.
+func (v *Volume) useStage(ctx context.Context, stage string, write bool) (string, error) {
+	// Find the stage under the Volume pin lock.
+	unlock, err := v.rootPinMu.Lock(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer unlock()
+	st := v.stages[stage]
+	if st == nil || st.released {
+		return "", block.ErrStageReleased
+	}
+	if write {
+		st.written = true
+	}
+	return v.rootPinOwner, nil
+}
+
+// claimStage hangs an open stage under its process owner in the transaction
+// that writes through it, unless an earlier commit already did.
+func (v *Volume) claimStage(ctx context.Context, rg *block_gc.RefGraph, stage string) error {
+	// Record the write, then add the edges a committed write left out.
+	owner, err := v.useStage(ctx, stage, true)
+	if err != nil {
+		return err
+	}
+	held, err := rg.HasIncomingRefs(ctx, stage)
+	if err != nil || held {
+		return err
+	}
+	return rg.ApplyRefBatch(ctx, []block_gc.RefEdge{
+		{Subject: block_gc.NodeGCRoot, Object: owner},
+		{Subject: owner, Object: stage},
+	}, nil)
+}
+
+// releasedStagesLocked returns the released stages, and appends to removes the
+// edges a direct transaction removes to drop them. The caller holds rootPinMu.
+func (v *Volume) releasedStagesLocked(removes []block_gc.RefEdge) ([]string, []block_gc.RefEdge) {
+	var stages []string
+	for stage, st := range v.stages {
+		if st.released {
+			stages = append(stages, stage)
+			removes = append(removes, block_gc.RefEdge{Subject: v.rootPinOwner, Object: stage})
+		}
+	}
+	return stages, removes
 }
 
 // PrepareStagedBlock writes a block owned by an open stage, together with the
@@ -60,7 +117,7 @@ func (v *Volume) OpenStage(ctx context.Context) (string, func(), error) {
 // released.
 func (v *Volume) PrepareStagedBlock(ctx context.Context, stage string, data []byte, opts *block.PutOpts) (ref *block.BlockRef, existed bool, err error) {
 	putOpts, _ := block.PutOptsWithoutSync(opts)
-	err = v.prepareOwned(ctx, stage, claimStage, func(store block.StoreOps) error {
+	err = v.prepareOwned(ctx, stage, v.claimStage, func(store block.StoreOps) error {
 		ref, existed, err = store.PutBlock(ctx, data, putOpts)
 		return err
 	})
@@ -72,7 +129,7 @@ func (v *Volume) PrepareStagedBlockBatch(ctx context.Context, stage string, entr
 	if len(entries) == 0 {
 		return nil, nil
 	}
-	err = v.prepareOwned(ctx, stage, claimStage, func(store block.StoreOps) error {
+	err = v.prepareOwned(ctx, stage, v.claimStage, func(store block.StoreOps) error {
 		existed, err = store.PutBlockBatch(ctx, entries)
 		return err
 	})
@@ -86,8 +143,8 @@ func (v *Volume) PrepareStagedBlockBatch(ctx context.Context, stage string, entr
 func (v *Volume) HoldStageCompleteRoots(ctx context.Context, stage string, refs []*block.BlockRef) ([]bool, error) {
 	complete := make([]bool, len(refs))
 	err := v.withDirectAtomic(ctx, func(blocks block.StoreOps, rg *block_gc.RefGraph) error {
-		// Require the stage to still hang under its process owner.
-		if err := claimStage(ctx, rg, stage); err != nil {
+		// Require the stage to be open.
+		if _, err := v.useStage(ctx, stage, false); err != nil {
 			return err
 		}
 
@@ -109,23 +166,13 @@ func (v *Volume) HoldStageCompleteRoots(ctx context.Context, stage string, refs 
 		if len(adds) == 0 {
 			return nil
 		}
+		if err := v.claimStage(ctx, rg, stage); err != nil {
+			return err
+		}
 		return rg.ApplyRefBatch(ctx, adds, nil)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return complete, nil
-}
-
-// claimStage requires the stage to still hang under its process owner. A
-// released stage's edges would hold blocks that nothing can reach or sweep.
-func claimStage(ctx context.Context, rg *block_gc.RefGraph, stage string) error {
-	held, err := rg.HasIncomingRefs(ctx, stage)
-	if err != nil {
-		return err
-	}
-	if !held {
-		return block.ErrStageReleased
-	}
-	return nil
 }

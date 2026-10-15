@@ -82,6 +82,30 @@ func TestStageOwnsAndReleasesUnadoptedBuild(t *testing.T) {
 	}
 }
 
+func TestStageWithoutWritesLeavesNoEdges(t *testing.T) {
+	// Open and release a stage that writes nothing.
+	v, _ := newPublicationTestVolume(t)
+	ctx := t.Context()
+	stage, release, err := v.OpenStage(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	release()
+
+	// Neither the stage nor its process owner reached the graph.
+	for _, node := range []string{stage, v.rootPinOwner} {
+		owners, err := v.GetRefGraph().GetIncomingRefs(ctx, node)
+		if err != nil || len(owners) != 0 {
+			t.Fatalf("owners of %s: %v err=%v", node, owners, err)
+		}
+	}
+
+	// The released stage cannot own new writes.
+	if _, _, err := v.PrepareStagedBlock(ctx, stage, []byte("late"), nil); !errors.Is(err, block.ErrStageReleased) {
+		t.Fatalf("write after release: %v", err)
+	}
+}
+
 func TestStageReleaseKeepsAdoptedBuild(t *testing.T) {
 	// Build through a stage and adopt the root from a named bucket root.
 	v, _ := newPublicationTestVolume(t)

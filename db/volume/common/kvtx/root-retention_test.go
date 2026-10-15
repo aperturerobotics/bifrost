@@ -436,6 +436,9 @@ func TestHoldStageCompleteRootsKeepsProvedGraph(t *testing.T) {
 
 	// Releasing the stage lets the next sweep collect the graph.
 	release()
+	if err := v.ReapRootPins(ctx); err != nil {
+		t.Fatal(err)
+	}
 	collect()
 	exists(false, proved, leaf)
 }

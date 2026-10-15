@@ -76,7 +76,7 @@ type Volume struct {
 	directClosed bool
 	// closeErr stores the error from Close.
 	closeErr error
-	// rootPinMu guards reader pin counts and their volume lease. Direct
+	// rootPinMu guards reader pin counts, stages and their volume lease. Direct
 	// transactions take it to carry released pins, so it is never held while
 	// opening a volume transaction.
 	rootPinMu csync.Mutex
@@ -87,6 +87,9 @@ type Volume struct {
 	rootPinLease coord.WriteLease
 	// rootPins counts the reader pins by root node.
 	rootPins map[string]*rootPin
+	// stages are the open stages by node, and released stages whose edges no
+	// commit has removed yet.
+	stages map[string]*openStage
 	// rootPinsClosed records that Close released the reader pins.
 	rootPinsClosed bool
 	// proofMu guards the pending root proofs and the sweep count. It is never
