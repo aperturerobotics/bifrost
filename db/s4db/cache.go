@@ -8,8 +8,14 @@ import (
 // cacheShards is the number of independently locked cache shards.
 const cacheShards = 64
 
+// innerShare is the part of a shard's budget, in quarters, that inner pages
+// may hold ahead of leaves.
+const innerShare = 3
+
 // cache holds decoded pages within a memory budget, in shards that each
-// evict by CLOCK. Pages are never changed once written, and a page number is
+// evict by CLOCK. Every lookup passes through the inner pages above its leaf,
+// so a shard evicts leaves first while its inner pages fit in innerShare of
+// its budget. Pages are never changed once written, and a page number is
 // only reused after every snapshot that could read the old page has closed.
 // Freeing drops the entry in the freeing handle; other handles clear the
 // cache when they adopt the checkpoint that may reuse it.
@@ -35,6 +41,8 @@ type cacheShard struct {
 	hand int
 	// bytes is the cost of the cached pages.
 	bytes int
+	// inner is the cost of the cached inner pages.
+	inner int
 	// max bounds bytes.
 	max int
 }
@@ -88,7 +96,8 @@ func (c *cache) put(page uint64, n *node) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	if i, ok := s.index[page]; ok {
-		s.bytes += n.cost - s.ring[i].n.cost
+		s.charge(s.ring[i].n, -1)
+		s.charge(n, 1)
 		s.ring[i].n = n
 		return
 	}
@@ -108,7 +117,7 @@ func (c *cache) put(page uint64, n *node) {
 	}
 	s.ring[i] = cacheSlot{page: page, n: n}
 	s.index[page] = i
-	s.bytes += n.cost
+	s.charge(n, 1)
 }
 
 // drop removes freed pages.
@@ -135,14 +144,16 @@ func (c *cache) clear() {
 		s := &c.shards[i]
 		s.mtx.Lock()
 		clear(s.index)
-		s.ring, s.free, s.hand, s.bytes = nil, nil, 0, 0
+		s.ring, s.free, s.hand, s.bytes, s.inner = nil, nil, 0, 0, 0
 		s.mtx.Unlock()
 	}
 }
 
 // evict advances the clock to the first page unused since it last passed
-// and removes it. The caller holds mtx and the shard holds a page.
+// and removes it, passing inner pages while leaves remain and the inner pages
+// fit their share. The caller holds mtx and the shard holds a page.
 func (s *cacheShard) evict() {
+	keepInner := s.inner < s.bytes && s.inner <= s.max/4*innerShare
 	for {
 		i := s.hand
 		s.hand = (s.hand + 1) % len(s.ring)
@@ -150,6 +161,7 @@ func (s *cacheShard) evict() {
 		case s.ring[i].n == nil:
 		case s.ring[i].used:
 			s.ring[i].used = false
+		case keepInner && !s.ring[i].n.leaf:
 		default:
 			s.remove(i)
 			return
@@ -160,7 +172,16 @@ func (s *cacheShard) evict() {
 // remove empties slot i. The caller holds mtx.
 func (s *cacheShard) remove(i int) {
 	delete(s.index, s.ring[i].page)
-	s.bytes -= s.ring[i].n.cost
+	s.charge(s.ring[i].n, -1)
 	s.ring[i] = cacheSlot{}
 	s.free = append(s.free, i)
+}
+
+// charge adds sign times the cost of n to the shard's totals. The caller
+// holds mtx.
+func (s *cacheShard) charge(n *node, sign int) {
+	s.bytes += sign * n.cost
+	if !n.leaf {
+		s.inner += sign * n.cost
+	}
 }
