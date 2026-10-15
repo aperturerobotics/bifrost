@@ -145,7 +145,7 @@ func (r *replayer) sync(ctx context.Context, snap sobject.SharedObjectStateSnaps
 
 	// Restart from the checkpoint's World when it changed.
 	if err := r.rebase(ctx, snap); err != nil {
-		return nil, nil, err
+		return nil, nil, r.stopAt(peerWait, err)
 	}
 
 	// Replay the operation set from the shared prefix.
@@ -154,10 +154,17 @@ func (r *replayer) sync(ctx context.Context, snap sobject.SharedObjectStateSnaps
 		return nil, nil, err
 	}
 	state, outcomes, err := r.replay(ctx, snap, set, fork)
+	return state, outcomes, r.stopAt(peerWait, err)
+}
+
+// stopAt records in missing the block a read under peerWait skipped when err
+// reports a block not available, so the engine can wait for a peer to serve
+// it, and returns err.
+func (r *replayer) stopAt(peerWait *block.PeerWait, err error) error {
 	if block.IsNotAvailable(err) {
 		r.missing = peerWait.GetRef()
 	}
-	return state, outcomes, err
+	return err
 }
 
 // rebase makes the World of the checkpoint of snap the base when it changed,

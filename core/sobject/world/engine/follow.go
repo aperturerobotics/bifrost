@@ -61,12 +61,12 @@ func (e *soEngine) follows(ctx context.Context, snap sobject.SharedObjectStateSn
 // replays from the checkpoint.
 func (r *replayer) follow(ctx context.Context, snap sobject.SharedObjectStateSnapshot) (*InnerState, error) {
 	// Read without waiting for a peer, as sync does.
-	ctx, _ = block.WithoutPeerWait(ctx)
+	ctx, peerWait := block.WithoutPeerWait(ctx)
 	r.missing = nil
 
 	// Start from the checkpoint and drop the positions above it.
 	if err := r.rebase(ctx, snap); err != nil {
-		return nil, err
+		return nil, r.stopAt(peerWait, err)
 	}
 	set, err := snap.GetOperationSet(ctx)
 	if err != nil {
