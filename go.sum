@@ -52,10 +52,10 @@ github.com/aperturerobotics/go-protoc-gen-prost v0.0.0-20261003014807-d46d22154f
 github.com/aperturerobotics/go-protoc-gen-prost v0.0.0-20261003014807-d46d22154f35/go.mod h1:OBb/beWmr/pDIZAUfi86j/4tBh2v5ctTxKMqSnh9c/4=
 github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260808023521-7b1595380c3f h1:UszdpmKBfQd0LdOZjypeRGrHz2tcPpmKpw6SV3DYyN0=
 github.com/aperturerobotics/go-protoc-wasi v0.0.0-20260808023521-7b1595380c3f/go.mod h1:vEq8i7EKb32+KXGtIEZjjhNns+BdsL2dUMw4uhy3578=
-github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.2-0.20261014231848-67d2fa10e4a2 h1:iN4AsuQwhAmLeZwylT3cqE3QVi7khD2WjV9C2hVL65g=
-github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.2-0.20261014231848-67d2fa10e4a2/go.mod h1:tv9gTeRdrIQIsLeXQK+bsc7VrN5YHepfWsQ++/sALRQ=
-github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20261014231848-67d2fa10e4a2 h1:l2L14EjVkwr0IxFAPw7w5InXZTfZZ8f/QFv8HiZOTFw=
-github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20261014231848-67d2fa10e4a2/go.mod h1:YPUNAejo0sSHIFzZCnUbt0b3OR0Gw74cBxHIdv+yzkw=
+github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.2-0.20261015001203-22f94e89fe8f h1:4zQWUG+tVKmezEKAEuHSGVhMbvDPcZqaaVZ2+0ldf5c=
+github.com/aperturerobotics/go-quickjs-wasi-reactor v0.15.2-0.20261015001203-22f94e89fe8f/go.mod h1:tv9gTeRdrIQIsLeXQK+bsc7VrN5YHepfWsQ++/sALRQ=
+github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20261015001203-22f94e89fe8f h1:twQHEmyB/5iwMMJ6by10timzwifOXNLUccBagGjjmCc=
+github.com/aperturerobotics/go-quickjs-wasi-reactor/wazero-quickjs v0.0.0-20261015001203-22f94e89fe8f/go.mod h1:YPUNAejo0sSHIFzZCnUbt0b3OR0Gw74cBxHIdv+yzkw=
 github.com/aperturerobotics/go-websocket v1.8.15-0.20260910142736-349504d079da h1:xRS+FY1PAhIfHHcCRlNDy7DbOwA1TygcD7xJqNlNxOA=
 github.com/aperturerobotics/go-websocket v1.8.15-0.20260910142736-349504d079da/go.mod h1:9KnSGuqxSXbdB/Oi0I6vvfPLkclfJwMGAQaDDGVgGow=
 github.com/aperturerobotics/go-winjob v0.0.0-20260705010911-656e088d1b05 h1:u7Wqib6RFTGKIWKERYoenApCoMKRuqPEjn3x+9qmfic=

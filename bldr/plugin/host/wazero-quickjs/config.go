@@ -3,7 +3,10 @@
 package plugin_host_wazero_quickjs
 
 import (
+	"path/filepath"
+
 	"github.com/aperturerobotics/controllerbus/config"
+	"github.com/pkg/errors"
 )
 
 // ConfigID is the config identifier.
@@ -26,9 +29,11 @@ func (c *Config) EqualsConfig(other config.Config) bool {
 	return config.EqualsConfig(c, other)
 }
 
-// Validate validates the configuration.
-// This is a cursory validation to see if the values "look correct."
+// Validate checks that a set cache directory is an absolute path.
 func (c *Config) Validate() error {
+	if c.GetCacheDir() != "" && !filepath.IsAbs(c.GetCacheDir()) {
+		return errors.New("cache_dir must be an absolute path")
+	}
 	return nil
 }
 

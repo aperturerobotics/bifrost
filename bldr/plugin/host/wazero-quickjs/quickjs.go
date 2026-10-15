@@ -46,8 +46,8 @@ type Controller = host_controller.Controller
 var Version = controller.MustParseVersion("0.0.1")
 
 var (
-	// BootFsMount is the path we mount the quickjs vm entrypoint.
-	BootFsMount = "/boot"
+	// BootScriptPath is the file name of the quickjs vm entrypoint.
+	BootScriptPath = "/boot/plugin-quickjs.esm.js"
 
 	// DistFsMount is the path we mount the dist fs within the vm.
 	DistFsMount = "/dist"
@@ -77,6 +77,8 @@ type WazeroQuickJsHost struct {
 	// this is released after a timeout to free up memory if no plugins are running.
 	// shared between plugin instances to save memory and speed up startup time.
 	quickjsVmRc *refcount.RefCount[*quickjsVm]
+	// bytecode caches compiled plugin modules, nil when disabled.
+	bytecode *bytecodeCache
 }
 
 // quickjsVm contains the shared compilation cache for quickjs instances.
@@ -87,13 +89,17 @@ type quickjsVm struct {
 }
 
 // NewWazeroQuickJsHost constructs a new WazeroQuickJsHost.
-func NewWazeroQuickJsHost(b bus.Bus, le *logrus.Entry) (*WazeroQuickJsHost, error) {
+// cacheDir caches compiled module bytecode, and empty disables the cache.
+func NewWazeroQuickJsHost(b bus.Bus, le *logrus.Entry, cacheDir string) (*WazeroQuickJsHost, error) {
 	// determine the platform id for the host
 	platformID := bldr_platform.NewJsPlatform().GetPlatformID()
 	h := &WazeroQuickJsHost{
 		b:                b,
 		le:               le,
 		pluginPlatformID: platformID,
+	}
+	if cacheDir != "" {
+		h.bytecode = &bytecodeCache{dir: cacheDir}
 	}
 	h.quickjsVmRc = refcount.NewRefCount(nil, false, nil, nil, h.resolveQuickjsVm)
 	return h, nil
@@ -159,7 +165,7 @@ func NewWazeroQuickJsHostController(
 	if err := c.Validate(); err != nil {
 		return nil, nil, err
 	}
-	pluginHost, err := NewWazeroQuickJsHost(b, le)
+	pluginHost, err := NewWazeroQuickJsHost(b, le, c.GetCacheDir())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -338,9 +344,6 @@ func (h *WazeroQuickJsHost) ExecutePlugin(
 		// script is within dist
 		scriptPath := path.Join(DistFsMount, entrypoint)
 
-		// mount the boot js file to /boot/plugin-quickjs.esm.js
-		fsConfig = fsConfig.WithFSMount(PluginQuickjsBoot, BootFsMount)
-
 		// Create the stdin buffer.
 		stdinBuf := &wazerofs.StdinBuffer{}
 		defer stdinBuf.Close()
@@ -420,15 +423,24 @@ func (h *WazeroQuickJsHost) ExecutePlugin(
 		defer qjs.Close(ctx)
 		le.Debug("quickjs instance created")
 
-		// Initialize QuickJS with CLI args to load the boot harness.
-		// The boot harness reads BLDR_SCRIPT_PATH and BLDR_PLUGIN_START_INFO from env.
-		bootScript := path.Join(BootFsMount, "plugin-quickjs.esm.js")
-		le.
-			WithField("boot-script", bootScript).
-			WithField("script-path", scriptPath).
-			Debug("initializing quickjs plugin")
-		if err := qjs.Init(ctx, []string{"qjs", "--std", bootScript}); err != nil {
+		// Initialize QuickJS with the std globals the boot harness uses.
+		le.WithField("script-path", scriptPath).Debug("initializing quickjs plugin")
+		if err := qjs.Init(ctx, []string{"qjs", "--std"}); err != nil {
 			return errors.Wrap(err, "init quickjs")
+		}
+
+		// Register the dist modules from cached bytecode before the plugin
+		// imports them.
+		if h.bytecode != nil {
+			if err := h.bytecode.loadModules(ctx, le, qjs, pluginID, pluginDistIofs); err != nil {
+				return errors.Wrap(err, "load module bytecode")
+			}
+		}
+
+		// Run the boot harness, which reads BLDR_SCRIPT_PATH and
+		// BLDR_PLUGIN_START_INFO from env and imports the plugin.
+		if err := qjs.EvalWithFilename(ctx, pluginQuickjsBoot, BootScriptPath, true); err != nil {
+			return errors.Wrap(err, "run quickjs boot harness")
 		}
 		le.Debug("quickjs plugin initialized")
 
@@ -529,8 +541,10 @@ func runLoopWithStdin(ctx context.Context, qjs *quickjs.QuickJS, stdinBuf *wazer
 
 // DeletePlugin clears cached plugin data for the given plugin ID.
 func (h *WazeroQuickJsHost) DeletePlugin(ctx context.Context, pluginID string) error {
-	// TODO remove caches or local storage?
-	return nil
+	if h.bytecode == nil {
+		return nil
+	}
+	return h.bytecode.deletePlugin(pluginID)
 }
 
 // _ is a type assertion

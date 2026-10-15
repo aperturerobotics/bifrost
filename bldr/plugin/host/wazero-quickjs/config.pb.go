@@ -18,6 +18,9 @@ import (
 // Implements the "web" platform ID.
 type Config struct {
 	unknownFields []byte
+	// CacheDir is the directory caching compiled module bytecode.
+	// Empty disables the cache, so each start parses the plugin modules.
+	CacheDir string `protobuf:"bytes,1,opt,name=cache_dir,json=cacheDir,proto3" json:"cacheDir,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -26,11 +29,19 @@ func (x *Config) Reset() {
 
 func (*Config) ProtoMessage() {}
 
+func (x *Config) GetCacheDir() string {
+	if x != nil {
+		return x.CacheDir
+	}
+	return ""
+}
+
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
 	}
 	r := new(Config)
+	r.CacheDir = m.CacheDir
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -45,6 +56,9 @@ func (this *Config) EqualVT(that *Config) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
+		return false
+	}
+	if this.CacheDir != that.CacheDir {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -65,6 +79,12 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		return
 	}
 	s.WriteObjectStart()
+	var wroteField bool
+	if x.CacheDir != "" || s.HasField("cacheDir") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("cacheDir")
+		s.WriteString(x.CacheDir)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -79,7 +99,13 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		return
 	}
 	s.ReadObject(func(key string) {
-		// no fields
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "cache_dir", "cacheDir":
+			s.AddField("cache_dir")
+			x.CacheDir = s.ReadString()
+		}
 	})
 }
 
@@ -117,6 +143,11 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.CacheDir) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.CacheDir)
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -126,13 +157,18 @@ func (m *Config) SizeVT() (n int) {
 	}
 	var l int
 	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.CacheDir)
 	n += len(m.unknownFields)
 	return n
 }
 
 func (x *Config) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	protobuf_go_lite.TextStartMessage(&sb, "Config")
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "Config")
+	if x.CacheDir != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "cache_dir")
+		protobuf_go_lite.TextWriteString(&sb, x.CacheDir)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -160,6 +196,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			return fmt.Errorf("proto: Config: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CacheDir", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.CacheDir = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

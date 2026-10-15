@@ -122,7 +122,7 @@ func testPluginHostWazeroQuickjs(t *testing.T, inputFile string, external []stri
 	quickjsHost, _, quickjsHostRef, err := loader.WaitExecControllerRunningTyped[*plugin_host_wazero_quickjs.Controller](
 		ctx,
 		tb.GetBus(),
-		resolver.NewLoadControllerWithConfig(plugin_host_wazero_quickjs.NewConfig()),
+		resolver.NewLoadControllerWithConfig(&plugin_host_wazero_quickjs.Config{CacheDir: t.TempDir()}),
 		nil,
 	)
 	if err != nil {

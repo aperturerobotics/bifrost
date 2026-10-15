@@ -4,4 +4,8 @@ package plugin.host.wazero_quickjs;
 // Config is the Wazero QuickJS PluginHost controller configuration.
 // Uses QuickJS running as WASI in Wazero to execute JavaScript plugins.
 // Implements the "web" platform ID.
-message Config {}
+message Config {
+  // CacheDir is the directory caching compiled module bytecode.
+  // Empty disables the cache, so each start parses the plugin modules.
+  string cache_dir = 1;
+}

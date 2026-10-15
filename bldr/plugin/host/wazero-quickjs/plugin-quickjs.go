@@ -1,10 +1,9 @@
 package plugin_host_wazero_quickjs
 
-import "embed"
+import _ "embed"
 
-// PluginQuickjsBoot contains the js script for the entrypoint for quickjs plugins.
-// Mounted to /boot in the vm.
+// pluginQuickjsBoot is the boot harness that starts a quickjs plugin.
 //
 //go:generate go run -v ./gen/main.go
 //go:embed plugin-quickjs.esm.js
-var PluginQuickjsBoot embed.FS
+var pluginQuickjsBoot string

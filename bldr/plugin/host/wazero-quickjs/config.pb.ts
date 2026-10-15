@@ -3,7 +3,9 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the Wazero QuickJS PluginHost controller configuration.
@@ -12,10 +14,19 @@ import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
  *
  * @generated from message plugin.host.wazero_quickjs.Config
  */
-export interface Config {}
+export interface Config {
+  /**
+   * CacheDir is the directory caching compiled module bytecode.
+   * Empty disables the cache, so each start parses the plugin modules.
+   *
+   * @generated from field: string cache_dir = 1;
+   */
+  cacheDir?: string
+}
 
-export const Config: MessageType<Config> =
-  /* @__PURE__ */ createEmptyMessageType<Config>(
-    'plugin.host.wazero_quickjs.Config',
-    true,
-  )
+export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
+  typeName: 'plugin.host.wazero_quickjs.Config',
+  fields: [
+    { no: 1, name: 'cache_dir', kind: 'scalar', T: ScalarType.STRING },
+  ] satisfies readonly PartialFieldInfo[],
+})

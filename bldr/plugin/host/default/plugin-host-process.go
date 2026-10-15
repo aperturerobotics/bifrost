@@ -4,6 +4,7 @@ package plugin_host_default
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -13,6 +14,10 @@ import (
 	plugin_host_process "github.com/s4wave/spacewave/bldr/plugin/host/process"
 	plugin_host_quickjs "github.com/s4wave/spacewave/bldr/plugin/host/wazero-quickjs"
 )
+
+// quickjsCacheDir is the QuickJS host cache directory under the plugins state
+// root. A plugin id is a DNS label, so it never names this directory.
+const quickjsCacheDir = ".quickjs-cache"
 
 // PluginHostControllerFactories construct the plugin host controller factory.
 var PluginHostControllerFactories = [](func(bus bus.Bus) controller.Factory){
@@ -26,7 +31,9 @@ var PluginHostControllerFactories = [](func(bus bus.Bus) controller.Factory){
 
 // PluginHostController is an alias to the plugin host controller type.
 type PluginHostController struct {
+	// ProcessHost runs native plugins as processes.
 	ProcessHost *plugin_host_controller.Controller
+	// QuickjsHost runs js plugins under QuickJS in wazero.
 	QuickjsHost *plugin_host_controller.Controller
 }
 
@@ -56,6 +63,7 @@ func StartPluginHost(
 	// Start the QuickJS plugin host controller, releasing the process host on
 	// failure.
 	pluginHostQuickjsConf := plugin_host_quickjs.NewConfig()
+	pluginHostQuickjsConf.CacheDir = filepath.Join(pluginsStateRoot, quickjsCacheDir)
 	quickjsHostCtrl, _, quickjsHostRef, err := loader.WaitExecControllerRunningTyped[*plugin_host_controller.Controller](
 		ctx,
 		b,

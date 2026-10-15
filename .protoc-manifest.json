@@ -383,7 +383,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/plugin/host/wazero-quickjs": {
-      "hash": "87b6a455ad439d51a7f208fe5828665fa52803afdb6156762bdca0a1cd710761",
+      "hash": "2980e7b1504deb5d6e9d4d7e2aa4c9d76126601683cac2a4dc83359454fbbde5",
       "generatedFiles": [
         "bldr/plugin/host/wazero-quickjs/config.pb.go",
         "bldr/plugin/host/wazero-quickjs/config.pb.ts"
