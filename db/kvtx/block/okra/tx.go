@@ -1,7 +1,9 @@
 package kvtx_block_okra
 
 import (
+	"bytes"
 	"context"
+	"slices"
 	"sync/atomic"
 
 	"github.com/s4wave/spacewave/db/block"
@@ -208,6 +210,11 @@ func (t *Tx) GetBatch(ctx context.Context, keys [][]byte) ([][]byte, []bool, err
 	if t.root.GetSize() == 0 || len(lookups) == 0 {
 		return values, found, nil
 	}
+
+	// Sort the lookups so each child page covers one contiguous run.
+	slices.SortFunc(lookups, func(a, b batchLookup) int {
+		return bytes.Compare(a.key, b.key)
+	})
 
 	// Load the root page for the batch traversal.
 	page, pageCursor, err := t.getRootPage(ctx)

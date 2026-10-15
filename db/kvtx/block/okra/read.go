@@ -72,8 +72,9 @@ type batchLookup struct {
 }
 
 // findEntriesBatch resolves lookups below page into values and found, indexed
-// by each lookup's request position. Child pages load in key order, so a batch
-// reads the same blocks in the same order every time.
+// by each lookup's request position. The lookups are sorted by key, so the keys
+// under each child page form one contiguous run and child pages load in key
+// order. findEntriesBatch reorders lookups in place.
 func (t *Tx) findEntriesBatch(
 	ctx context.Context,
 	page *Page,
@@ -106,19 +107,19 @@ func (t *Tx) findEntriesBatch(
 		return nil
 	}
 
-	// Group requested keys by the child page that covers them.
-	groups := make([][]batchLookup, len(page.GetEntries()))
-	for _, lookup := range lookups {
-		idx := page.searchEntry(lookup.key)
-		if idx >= 0 {
-			groups[idx] = append(groups[idx], lookup)
+	// Resolve each run of keys covered by the same child page.
+	for len(lookups) != 0 {
+		// Take the run of keys under the first remaining key's child page.
+		idx := page.searchEntry(lookups[0].key)
+		n := 1
+		for n < len(lookups) && page.searchEntry(lookups[n].key) == idx {
+			n++
 		}
-	}
+		group := lookups[:n]
+		lookups = lookups[n:]
 
-	// Resolve each populated child group in page order.
-	for idx, group := range groups {
-		// Skip child pages with no requested keys.
-		if len(group) == 0 {
+		// Skip keys ordered before the page's first entry.
+		if idx < 0 {
 			continue
 		}
 
