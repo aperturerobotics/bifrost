@@ -68,6 +68,7 @@ import "embed"
 //go:embed sdk/unixfs/handle.pb.ts sdk/unixfs/handle.ts sdk/unixfs/handle_srpc.pb.ts sdk/unixfs/index.ts
 //go:embed sdk/unixfs/path.ts sdk/unixfs/type.ts sdk/viewer/registry/registry.pb.ts
 //go:embed sdk/viewer/registry/registry_srpc.pb.ts sdk/vm/v86-wizard.pb.ts sdk/vm/v86.pb.ts
+//go:embed sdk/vm/vmv86.ts
 //go:embed sdk/world/engine-state.ts sdk/world/engine.ts sdk/world/errors.ts sdk/world/graph-utils.ts
 //go:embed sdk/world/stage.ts
 //go:embed sdk/world/typed-object-grant-retired-error.ts
