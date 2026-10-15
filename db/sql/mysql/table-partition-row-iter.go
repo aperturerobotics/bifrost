@@ -36,8 +36,9 @@ func NewTablePartitionRowIter(
 	}, nil
 }
 
-// GetRow returns the row at the index.
-func (i *TablePartitionRowIter) GetRow() (sql.Row, error) {
+// GetRow returns the row at the iterator position, checked against the table
+// schema in the SQL context of the query.
+func (i *TablePartitionRowIter) GetRow(sctx *sql.Context) (sql.Row, error) {
 	// Require a valid partition iterator before decoding its row.
 	if err := i.it.Err(); err != nil {
 		return nil, err
@@ -72,7 +73,7 @@ func (i *TablePartitionRowIter) GetRow() (sql.Row, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := i.schema.CheckRow(sql.NewContext(i.ctx), sqlRow); err != nil {
+	if err := i.schema.CheckRow(sctx, sqlRow); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +95,7 @@ func (i *TablePartitionRowIter) Next(sctx *sql.Context) (sql.Row, error) {
 	}
 
 	// Decode the table row at the advanced iterator position.
-	row, err := i.GetRow()
+	row, err := i.GetRow(sctx)
 	if err != nil {
 		return nil, err
 	}
