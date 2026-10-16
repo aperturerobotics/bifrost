@@ -423,7 +423,7 @@ func (r *TerminalResource) persistState(ctx context.Context, state *Terminal) er
 }
 
 func readTerminalObject(ctx context.Context, objState world.ObjectState) (*Terminal, error) {
-	state, err := s4wave_world.ReadWorldBlock[*Terminal](ctx, objState, NewTerminalBlock)
+	state, err := s4wave_world.ReadWorldBlock[Terminal](ctx, objState)
 	if err != nil {
 		return nil, err
 	}

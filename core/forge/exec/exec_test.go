@@ -189,7 +189,7 @@ func TestBridgeFactoryConstruct(t *testing.T) {
 	if err := sec.UnmarshalJSON(testJSON); err != nil {
 		t.Fatal(err)
 	}
-	data, err := sec.MarshalBlock()
+	data, err := sec.MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,10 +233,10 @@ func TestSpaceExecConfigRoundTrip(t *testing.T) {
 
 	// Block roundtrip.
 	blockData := []byte("some-block-data")
-	if err := sec.UnmarshalBlock(blockData); err != nil {
+	if err := sec.UnmarshalVT(blockData); err != nil {
 		t.Fatal(err)
 	}
-	out, err = sec.MarshalBlock()
+	out, err = sec.MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}

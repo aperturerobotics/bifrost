@@ -99,7 +99,7 @@ func readyEnrolledDevice(ctx context.Context, engine world.Engine, authenticated
 	if err := world_types.CheckObjectType(ctx, tx, key, s4wave_device.DeviceTypeID); err != nil {
 		return "", err
 	}
-	device, objectState, err := world.LookupObject[*s4wave_device.Device](ctx, tx, key, s4wave_device.NewDeviceBlock)
+	device, objectState, err := world.LookupObject[s4wave_device.Device](ctx, tx, key)
 	world.ReleaseObjectState(objectState)
 	if err != nil {
 		return "", err

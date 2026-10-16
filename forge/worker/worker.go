@@ -29,7 +29,7 @@ func LookupWorkerOp(ctx context.Context, opTypeID string) (world.Operation, erro
 
 // UnmarshalWorker unmarshals a worker block from the cursor.
 func UnmarshalWorker(ctx context.Context, bcs *block.Cursor) (*Worker, error) {
-	return block.UnmarshalBlock[*Worker](ctx, bcs, NewWorkerBlock)
+	return block.UnmarshalBlock[Worker](ctx, bcs)
 }
 
 // Validate performs cursory checks of the Worker object.
@@ -38,18 +38,6 @@ func (e *Worker) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *Worker) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *Worker) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
 }
 
 // _ is a type assertion

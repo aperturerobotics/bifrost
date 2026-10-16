@@ -79,7 +79,7 @@ func (t *Table) loadRootState(ctx context.Context, root *TableRoot) error {
 // replaceRoot adopts a complete detached table graph, including uncommitted rows.
 func (t *Table) replaceRoot(ctx context.Context, cursor *block.Cursor) error {
 	// Resolve the replacement root and its loaded child graphs before detaching them.
-	root, err := block.UnmarshalBlock[*TableRoot](ctx, cursor, NewTableRootBlock)
+	root, err := block.UnmarshalBlock[TableRoot](ctx, cursor)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (t *Table) replaceRoot(ctx context.Context, cursor *block.Cursor) error {
 // LoadTable constructs a new table handle, loading the root block.
 func LoadTable(ctx context.Context, name string, bcs *block.Cursor) (*Table, error) {
 	// Decode the table root before loading its schema and counters.
-	dbr, err := block.UnmarshalBlock[*TableRoot](ctx, bcs, NewTableRootBlock)
+	dbr, err := block.UnmarshalBlock[TableRoot](ctx, bcs)
 	if err != nil {
 		return nil, err
 	}

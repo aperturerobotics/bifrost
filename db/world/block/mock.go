@@ -76,12 +76,7 @@ func BuildMockObject(ctx context.Context, ws world.WorldState, objKey string) (w
 // MockObject is the mock object block.
 type MockObject = block_mock.Example
 
-// NewMockObjectBlock constructs a new mock object block.
-func NewMockObjectBlock() block.Block {
-	return block_mock.NewExampleBlock()
-}
-
 // UnmarshalMockObject unmarshals a block from a block cursor.
 func UnmarshalMockObject(ctx context.Context, bcs *block.Cursor) (*block_mock.Example, error) {
-	return block.UnmarshalBlock[*block_mock.Example](ctx, bcs, block_mock.NewExampleBlock)
+	return block.UnmarshalBlock[block_mock.Example](ctx, bcs)
 }

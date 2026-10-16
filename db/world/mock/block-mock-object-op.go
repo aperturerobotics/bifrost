@@ -18,11 +18,6 @@ func NewMockObjectOp(msg string) *MockObjectOp {
 	return &MockObjectOp{NextMsg: msg}
 }
 
-// NewMockObjectOpBlock constructs a new MockObjectOp block.
-func NewMockObjectOpBlock() block.Block {
-	return &MockObjectOp{}
-}
-
 // LookupMockObjectOp performs the lookup operation for the mock object op.
 func LookupMockObjectOp(ctx context.Context, opTypeID string) (world.Operation, error) {
 	if opTypeID != MockObjectOpId {
@@ -83,18 +78,6 @@ func (m *MockObjectOp) ApplyWorldObjectOp(
 	})
 
 	return true, err
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (m *MockObjectOp) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (m *MockObjectOp) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
 }
 
 // _ is a type assertion

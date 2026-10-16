@@ -16,11 +16,6 @@ var InitChatDemoOpId = "chat/init-chat-demo"
 // GeneralChannelKey is the default channel object key.
 const GeneralChannelKey = "chat/channel/general"
 
-// NewInitChatDemoOpBlock creates an empty block for deserialization.
-func NewInitChatDemoOpBlock() block.Block {
-	return &InitChatDemoOp{}
-}
-
 // GetOperationTypeId returns the operation type ID.
 func (o *InitChatDemoOp) GetOperationTypeId() string {
 	return InitChatDemoOpId
@@ -29,16 +24,6 @@ func (o *InitChatDemoOp) GetOperationTypeId() string {
 // Validate validates the operation.
 func (o *InitChatDemoOp) Validate() error {
 	return nil
-}
-
-// MarshalBlock marshals the operation to bytes.
-func (o *InitChatDemoOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the operation from bytes.
-func (o *InitChatDemoOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // ApplyWorldOp applies the init chat demo operation.

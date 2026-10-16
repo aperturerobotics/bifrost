@@ -145,11 +145,10 @@ func (h *connectorHarness) awaitSnapshot(
 		if err != nil {
 			t.Fatalf("GetSeqno: %v", err)
 		}
-		snapshot, err := world.LookupObjectBody[*s4wave_appconnector.AppSnapshot](
+		snapshot, err := world.LookupObjectBody[s4wave_appconnector.AppSnapshot](
 			ctx,
 			ws,
 			s4wave_appconnector.SnapshotObjectKey(connectorKey),
-			s4wave_appconnector.NewAppSnapshotBlock,
 		)
 		if err != nil {
 			t.Fatalf("read snapshot: %v", err)

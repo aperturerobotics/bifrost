@@ -11,11 +11,6 @@ import (
 // SqlSchemaTypeID is the world ObjectType id for SQL schemas.
 const SqlSchemaTypeID = "sql/schema"
 
-// NewSchemaBlock constructs a SQL schema block.
-func NewSchemaBlock() block.Block {
-	return &Schema{}
-}
-
 // ReadSchemaRoot reads a SQL schema object's root.
 func ReadSchemaRoot(ctx context.Context, ws world.WorldState, objectKey string) (*Schema, error) {
 	obj, err := world.MustGetObject(ctx, ws, objectKey)
@@ -32,7 +27,7 @@ func ReadSchemaObjectRoot(ctx context.Context, obj world.ObjectState) (*Schema, 
 	_, _, err := world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
 		// Decode the schema root from the cursor.
 		var err error
-		schema, err = block.UnmarshalBlock[*Schema](ctx, bcs, NewSchemaBlock)
+		schema, err = block.UnmarshalBlock[Schema](ctx, bcs)
 		if err != nil {
 			return err
 		}
@@ -76,16 +71,6 @@ func SyncSchemaGraphQuads(ctx context.Context, ws world.WorldState, objectKey st
 		schema.GetTargetDbObjectKey(),
 		"",
 	))
-}
-
-// MarshalBlock marshals the SQL schema root.
-func (s *Schema) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SQL schema root.
-func (s *Schema) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the SQL schema root.

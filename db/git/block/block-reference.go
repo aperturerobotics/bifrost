@@ -106,16 +106,6 @@ func (r *Reference) ToReference() (*plumbing.Reference, error) {
 	}
 }
 
-// MarshalBlock marshals the block to binary.
-func (r *Reference) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *Reference) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var (
 	_ block.Block         = (*Reference)(nil)

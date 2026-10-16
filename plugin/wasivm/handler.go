@@ -206,7 +206,7 @@ func unmarshalOp(ctx context.Context, opTypeID string, data []byte) (world.Opera
 	if err != nil {
 		return nil, errors.Wrapf(err, "wasivm plugin: operation %s", opTypeID)
 	}
-	if err := op.UnmarshalBlock(data); err != nil {
+	if err := op.UnmarshalVT(data); err != nil {
 		return nil, err
 	}
 	return op, nil

@@ -32,16 +32,6 @@ func (r *EncodedObjectStore) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the block to binary.
-func (r *EncodedObjectStore) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *EncodedObjectStore) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // BuildObjectTree builds the iavl tree.
 //
 // Bcs should be located at EncodedObjectStore.

@@ -253,7 +253,7 @@ func (h *SQLHandler) unmarshalSQLOp(ctx context.Context, opTypeID string, data [
 	if op == nil {
 		return nil, errors.Errorf("lookup SQL world op %s: unhandled operation type", opTypeID)
 	}
-	if err := op.UnmarshalBlock(data); err != nil {
+	if err := op.UnmarshalVT(data); err != nil {
 		return nil, err
 	}
 	return op, nil
@@ -273,17 +273,17 @@ func lookupSQLWorldOp(ctx context.Context, opTypeID string) (world.Operation, er
 func lookupSQLBlockType(typeID string) (blocktype.BlockType, error) {
 	switch typeID {
 	case s4wave_sql_world.SqlDbTypeID:
-		return blocktype.NewBlockType(typeID, sql_mysql.NewRootBlock), nil
+		return blocktype.New[sql_mysql.Root](typeID), nil
 	case s4wave_sql_query.SqlQueryTypeID, s4wave_sql_query.SqlQueryBlockTypeID:
 		return s4wave_sql_query.SqlQueryBlockType, nil
 	case s4wave_sql_workbench.SqlWorkbenchTypeID, s4wave_sql_workbench.SqlWorkbenchBlockTypeID:
 		return s4wave_sql_workbench.SqlWorkbenchBlockType, nil
 	case s4wave_sql_query_result.SqlQueryResultTypeID:
-		return blocktype.NewBlockType(typeID, s4wave_sql_query_result.NewQueryResultBlock), nil
+		return blocktype.New[s4wave_sql_query_result.QueryResult](typeID), nil
 	case s4wave_sql_schema.SqlSchemaTypeID:
-		return blocktype.NewBlockType(typeID, s4wave_sql_schema.NewSchemaBlock), nil
+		return blocktype.New[s4wave_sql_schema.Schema](typeID), nil
 	case s4wave_sql_table_view.SqlTableViewTypeID:
-		return blocktype.NewBlockType(typeID, s4wave_sql_table_view.NewTableViewBlock), nil
+		return blocktype.New[s4wave_sql_table_view.TableView](typeID), nil
 	default:
 		return nil, nil
 	}

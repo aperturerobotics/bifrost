@@ -196,7 +196,7 @@ func TestValidateCopiedManifestRejectsMetadataMismatchAndCancellation(t *testing
 	// Persist a manifest block for metadata and cancellation validation.
 	ctx := context.Background()
 	meta := &bldr_manifest.ManifestMeta{ManifestId: "gizmo-core", BuildType: "production", PlatformId: "js", Rev: 1}
-	data, err := bldr_manifest.NewManifest(meta, "entrypoint").MarshalBlock()
+	data, err := bldr_manifest.NewManifest(meta, "entrypoint").MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}

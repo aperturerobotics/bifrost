@@ -948,7 +948,7 @@ func buildBatchEntry(t *testing.T, msg string) *block.PutBatchEntry {
 	// Encode the mock block payload for a batch entry.
 	t.Helper()
 	ex := block_mock.NewExample(msg)
-	data, err := ex.MarshalBlock()
+	data, err := ex.MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}

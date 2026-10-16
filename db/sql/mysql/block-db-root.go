@@ -75,18 +75,6 @@ func (r *DatabaseRootTable) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (r *DatabaseRoot) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (r *DatabaseRoot) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (r *DatabaseRoot) ApplySubBlock(id uint32, next block.SubBlock) error {
 	// noop

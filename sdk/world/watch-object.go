@@ -15,15 +15,14 @@ type watchValue[T any] interface {
 
 // ReadWorldBlock reads one block of type T from an object state. It returns
 // a nil T without error when the object carries no block yet.
-func ReadWorldBlock[T block.Block](
+func ReadWorldBlock[T any, PT block.Ptr[T]](
 	ctx context.Context,
 	objState world.ObjectState,
-	ctor func() block.Block,
-) (T, error) {
-	var out T
+) (PT, error) {
+	var out PT
 	_, _, err := world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 		var uerr error
-		out, uerr = block.UnmarshalBlock[T](ctx, bcs, ctor)
+		out, uerr = block.UnmarshalBlock[T, PT](ctx, bcs)
 		return uerr
 	})
 	return out, err

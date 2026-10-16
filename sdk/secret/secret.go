@@ -102,11 +102,6 @@ func NewSecretBlock() block.Block {
 	return &Secret{}
 }
 
-// NewSecretPayloadBlock constructs a new SecretPayload block.
-func NewSecretPayloadBlock() block.Block {
-	return &SecretPayload{}
-}
-
 // NewSharedObjectMeta constructs Secret nested SharedObject metadata.
 func NewSharedObjectMeta() *sobject.SharedObjectMeta {
 	return &sobject.SharedObjectMeta{
@@ -418,27 +413,7 @@ func RemoveSecretParticipant(
 
 // UnmarshalSecret unmarshals a Secret from a cursor.
 func UnmarshalSecret(ctx context.Context, bcs *block.Cursor) (*Secret, error) {
-	return block.UnmarshalBlock[*Secret](ctx, bcs, NewSecretBlock)
-}
-
-// MarshalBlock marshals the Secret to binary.
-func (s *Secret) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the Secret from binary.
-func (s *Secret) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
-}
-
-// MarshalBlock marshals the SecretPayload to binary.
-func (p *SecretPayload) MarshalBlock() ([]byte, error) {
-	return p.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SecretPayload from binary.
-func (p *SecretPayload) UnmarshalBlock(data []byte) error {
-	return p.UnmarshalVT(data)
+	return block.UnmarshalBlock[Secret](ctx, bcs)
 }
 
 func (r *SecretResource) readSecret(ctx context.Context) (*Secret, error) {

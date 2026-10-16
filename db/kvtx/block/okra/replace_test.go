@@ -122,7 +122,7 @@ func TestReplaceAllBlocksMatchesIncrementalTree(t *testing.T) {
 	}
 
 	// Decode the example block reached through its value cursor.
-	value, err := block.UnmarshalBlock[*block_mock.Example](ctx, cursor, block_mock.NewExampleBlock)
+	value, err := block.UnmarshalBlock[block_mock.Example](ctx, cursor)
 	if err != nil {
 		t.Fatal(err)
 	}

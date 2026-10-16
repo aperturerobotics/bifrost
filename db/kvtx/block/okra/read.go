@@ -11,7 +11,7 @@ import (
 
 // loadPage returns the validated Okra page stored at cursor.
 func loadPage(ctx context.Context, cursor *block.Cursor) (*Page, error) {
-	page, err := block.UnmarshalBlock[*Page](ctx, cursor, NewPageBlock)
+	page, err := block.UnmarshalBlock[Page](ctx, cursor)
 	if err != nil {
 		return nil, err
 	}

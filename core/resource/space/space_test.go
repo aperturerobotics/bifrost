@@ -649,11 +649,11 @@ func assertSpaceChatSender(t *testing.T, ctx context.Context, engine world.Engin
 	var message *spacewave_chat.ChatMessage
 	_, _, err = world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
 		var err error
-		message, err = block.UnmarshalBlock[*spacewave_chat.ChatMessage](ctx, bcs, spacewave_chat.NewChatMessageBlock)
+		message, err = block.UnmarshalBlock[spacewave_chat.ChatMessage](ctx, bcs)
 		return err
 	})
 	if err != nil {
-		t.Fatalf("UnmarshalBlock(%s): %v", messageKey, err)
+		t.Fatalf("UnmarshalVT(%s): %v", messageKey, err)
 	}
 
 	// Verify the chat message carries the expected signer.

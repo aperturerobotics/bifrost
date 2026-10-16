@@ -168,11 +168,10 @@ func (r *connectorResource) loadInputs(ctx context.Context) (*s4wave_appconnecto
 	defer tx.Discard()
 
 	// Load the connector and require it to be well formed.
-	conn, err := world.LookupObjectBody[*s4wave_appconnector.AppConnector](
+	conn, err := world.LookupObjectBody[s4wave_appconnector.AppConnector](
 		ctx,
 		tx,
 		r.objectKey,
-		s4wave_appconnector.NewAppConnectorBlock,
 	)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "load app connector")
@@ -186,7 +185,7 @@ func (r *connectorResource) loadInputs(ctx context.Context) (*s4wave_appconnecto
 	if err := world_types.CheckObjectType(ctx, tx, tokenKey, s4wave_secret.SecretTypeID); err != nil {
 		return conn, "", errors.Wrap(err, "token secret")
 	}
-	secret, err := world.LookupObjectBody[*s4wave_secret.Secret](ctx, tx, tokenKey, s4wave_secret.NewSecretBlock)
+	secret, err := world.LookupObjectBody[s4wave_secret.Secret](ctx, tx, tokenKey)
 	if err != nil {
 		return conn, "", errors.Wrap(err, "token secret")
 	}

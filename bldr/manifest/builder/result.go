@@ -25,14 +25,9 @@ func NewBuilderResult(
 	}
 }
 
-// NewBuilderResultBlock constructs a new BuilderResult block.
-func NewBuilderResultBlock() block.Block {
-	return &BuilderResult{}
-}
-
 // UnmarshalBuilderResult unmarshals a BuilderResult block from the cursor.
 func UnmarshalBuilderResult(ctx context.Context, bcs *block.Cursor) (*BuilderResult, error) {
-	return block.UnmarshalBlock[*BuilderResult](ctx, bcs, NewBuilderResultBlock)
+	return block.UnmarshalBlock[BuilderResult](ctx, bcs)
 }
 
 // Validate validates the BuilderResult.
@@ -112,16 +107,6 @@ func (r *BuilderResult) GetBlockRefCtor(id uint32) block.Ctor {
 		return block_transform.NewTransformConfigBlock
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (r *BuilderResult) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *BuilderResult) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // Validate validates the InputManifest.

@@ -40,37 +40,37 @@ import (
 // applicationBlockTypes supplies the same persisted roots used by application
 // resources. Plugin-specific roots continue through their registered controller.
 var applicationBlockTypes = map[string]blocktype.BlockType{
-	identity_world.KeypairTypeID:             blocktype.NewBlockType(identity_world.KeypairTypeID, identity.NewKeypairBlock),
-	bldr_manifest_world.ManifestTypeID:       blocktype.NewBlockType(bldr_manifest_world.ManifestTypeID, bldr_manifest.NewManifestBlock),
-	bldr_manifest_world.ManifestBundleTypeID: blocktype.NewBlockType(bldr_manifest_world.ManifestBundleTypeID, bldr_manifest.NewManifestBundleBlock),
-	resultworld.ManifestBuildResultTypeID:    blocktype.NewBlockType(resultworld.ManifestBuildResultTypeID, bldr_manifest_builder.NewBuilderResultBlock),
-	forge_dashboard.ForgeDashboardTypeID:     blocktype.NewBlockType(forge_dashboard.ForgeDashboardTypeID, func() *forge_dashboard.ForgeDashboard { return &forge_dashboard.ForgeDashboard{} }),
-	forge_cluster.ClusterTypeID:              blocktype.NewBlockType(forge_cluster.ClusterTypeID, forge_cluster.NewClusterBlock),
-	forge_execution.ExecutionTypeID:          blocktype.NewBlockType(forge_execution.ExecutionTypeID, forge_execution.NewExecutionBlock),
-	forge_job.JobTypeID:                      blocktype.NewBlockType(forge_job.JobTypeID, forge_job.NewJobBlock),
-	forge_pass.PassTypeID:                    blocktype.NewBlockType(forge_pass.PassTypeID, forge_pass.NewPassBlock),
-	forge_task.TaskTypeID:                    blocktype.NewBlockType(forge_task.TaskTypeID, forge_task.NewTaskBlock),
-	forge_worker.WorkerTypeID:                blocktype.NewBlockType(forge_worker.WorkerTypeID, forge_worker.NewWorkerBlock),
-	s4wave_apt.AptRepositoryTypeID:           blocktype.NewBlockType(s4wave_apt.AptRepositoryTypeID, s4wave_apt.NewAptRepositoryBlock),
-	s4wave_apt.AptPackageTypeID:              blocktype.NewBlockType(s4wave_apt.AptPackageTypeID, s4wave_apt.NewAptPackageBlock),
-	s4wave_apt.AptBuildSpecTypeID:            blocktype.NewBlockType(s4wave_apt.AptBuildSpecTypeID, s4wave_apt.NewAptBuildSpecBlock),
-	"canvas":                                 blocktype.NewBlockType("canvas", s4wave_canvas.NewCanvasStorageBlock),
-	"kv/store":                               blocktype.NewBlockType("kv/store", kvtx_block.NewKeyValueStoreBlock),
-	git_world.GitRepoTypeID:                  blocktype.NewBlockType(git_world.GitRepoTypeID, git_block.NewRepoBlock),
-	git_world.GitWorktreeTypeID:              blocktype.NewBlockType(git_world.GitWorktreeTypeID, git_world.NewWorktreeBlock),
-	s4wave_chat.ChatChannelTypeID:            blocktype.NewBlockType(s4wave_chat.ChatChannelTypeID, s4wave_chat.NewChatChannelBlock),
-	s4wave_chat.ChatMessageTypeID:            blocktype.NewBlockType(s4wave_chat.ChatMessageTypeID, s4wave_chat.NewChatMessageBlock),
-	s4wave_chat.ChatMessagePageTypeID:        blocktype.NewBlockType(s4wave_chat.ChatMessagePageTypeID, s4wave_chat.NewChatMessagePageBlock),
-	s4wave_chat.ChatThreadTypeID:             blocktype.NewBlockType(s4wave_chat.ChatThreadTypeID, s4wave_chat.NewChatThreadBlock),
-	s4wave_device.DeviceTypeID:               blocktype.NewBlockType(s4wave_device.DeviceTypeID, s4wave_device.NewDeviceBlock),
-	s4wave_device.ComputersDashboardTypeID:   blocktype.NewBlockType(s4wave_device.ComputersDashboardTypeID, func() *s4wave_device.ComputersDashboard { return &s4wave_device.ComputersDashboard{} }),
-	s4wave_org.OrganizationTypeID:            blocktype.NewBlockType(s4wave_org.OrganizationTypeID, s4wave_org.NewOrgStateBlock),
-	s4wave_appconnector.AppConnectorTypeID:   blocktype.NewBlockType(s4wave_appconnector.AppConnectorTypeID, s4wave_appconnector.NewAppConnectorBlock),
-	s4wave_appconnector.AppSnapshotTypeID:    blocktype.NewBlockType(s4wave_appconnector.AppSnapshotTypeID, s4wave_appconnector.NewAppSnapshotBlock),
-	s4wave_secret.SecretTypeID:               blocktype.NewBlockType(s4wave_secret.SecretTypeID, s4wave_secret.NewSecretBlock),
-	s4wave_sshhost.SshHostTypeID:             blocktype.NewBlockType(s4wave_sshhost.SshHostTypeID, s4wave_sshhost.NewSshHostBlock),
-	s4wave_terminal.TerminalTypeID:           blocktype.NewBlockType(s4wave_terminal.TerminalTypeID, s4wave_terminal.NewTerminalBlock),
-	s4wave_vm.VmV86TypeID:                    blocktype.NewBlockType(s4wave_vm.VmV86TypeID, func() *s4wave_vm.VmV86 { return &s4wave_vm.VmV86{} }),
+	identity_world.KeypairTypeID:             blocktype.New[identity.Keypair](identity_world.KeypairTypeID),
+	bldr_manifest_world.ManifestTypeID:       blocktype.New[bldr_manifest.Manifest](bldr_manifest_world.ManifestTypeID),
+	bldr_manifest_world.ManifestBundleTypeID: blocktype.New[bldr_manifest.ManifestBundle](bldr_manifest_world.ManifestBundleTypeID),
+	resultworld.ManifestBuildResultTypeID:    blocktype.New[bldr_manifest_builder.BuilderResult](resultworld.ManifestBuildResultTypeID),
+	forge_dashboard.ForgeDashboardTypeID:     blocktype.New[forge_dashboard.ForgeDashboard](forge_dashboard.ForgeDashboardTypeID),
+	forge_cluster.ClusterTypeID:              blocktype.New[forge_cluster.Cluster](forge_cluster.ClusterTypeID),
+	forge_execution.ExecutionTypeID:          blocktype.New[forge_execution.Execution](forge_execution.ExecutionTypeID),
+	forge_job.JobTypeID:                      blocktype.New[forge_job.Job](forge_job.JobTypeID),
+	forge_pass.PassTypeID:                    blocktype.New[forge_pass.Pass](forge_pass.PassTypeID),
+	forge_task.TaskTypeID:                    blocktype.New[forge_task.Task](forge_task.TaskTypeID),
+	forge_worker.WorkerTypeID:                blocktype.New[forge_worker.Worker](forge_worker.WorkerTypeID),
+	s4wave_apt.AptRepositoryTypeID:           blocktype.New[s4wave_apt.AptRepository](s4wave_apt.AptRepositoryTypeID),
+	s4wave_apt.AptPackageTypeID:              blocktype.New[s4wave_apt.AptPackage](s4wave_apt.AptPackageTypeID),
+	s4wave_apt.AptBuildSpecTypeID:            blocktype.New[s4wave_apt.AptBuildSpec](s4wave_apt.AptBuildSpecTypeID),
+	"canvas":                                 blocktype.New[s4wave_canvas.CanvasStorage]("canvas"),
+	"kv/store":                               blocktype.New[kvtx_block.KeyValueStore]("kv/store"),
+	git_world.GitRepoTypeID:                  blocktype.New[git_block.Repo](git_world.GitRepoTypeID),
+	git_world.GitWorktreeTypeID:              blocktype.New[git_world.Worktree](git_world.GitWorktreeTypeID),
+	s4wave_chat.ChatChannelTypeID:            blocktype.New[s4wave_chat.ChatChannel](s4wave_chat.ChatChannelTypeID),
+	s4wave_chat.ChatMessageTypeID:            blocktype.New[s4wave_chat.ChatMessage](s4wave_chat.ChatMessageTypeID),
+	s4wave_chat.ChatMessagePageTypeID:        blocktype.New[s4wave_chat.ChatMessagePage](s4wave_chat.ChatMessagePageTypeID),
+	s4wave_chat.ChatThreadTypeID:             blocktype.New[s4wave_chat.ChatThread](s4wave_chat.ChatThreadTypeID),
+	s4wave_device.DeviceTypeID:               blocktype.New[s4wave_device.Device](s4wave_device.DeviceTypeID),
+	s4wave_device.ComputersDashboardTypeID:   blocktype.New[s4wave_device.ComputersDashboard](s4wave_device.ComputersDashboardTypeID),
+	s4wave_org.OrganizationTypeID:            blocktype.New[s4wave_org.OrgState](s4wave_org.OrganizationTypeID),
+	s4wave_appconnector.AppConnectorTypeID:   blocktype.New[s4wave_appconnector.AppConnector](s4wave_appconnector.AppConnectorTypeID),
+	s4wave_appconnector.AppSnapshotTypeID:    blocktype.New[s4wave_appconnector.AppSnapshot](s4wave_appconnector.AppSnapshotTypeID),
+	s4wave_secret.SecretTypeID:               blocktype.New[s4wave_secret.Secret](s4wave_secret.SecretTypeID),
+	s4wave_sshhost.SshHostTypeID:             blocktype.New[s4wave_sshhost.SshHost](s4wave_sshhost.SshHostTypeID),
+	s4wave_terminal.TerminalTypeID:           blocktype.New[s4wave_terminal.Terminal](s4wave_terminal.TerminalTypeID),
+	s4wave_vm.VmV86TypeID:                    blocktype.New[s4wave_vm.VmV86](s4wave_vm.VmV86TypeID),
 }
 
 // lookupApplicationBlockType resolves application object roots for block traversal.
@@ -78,10 +78,10 @@ func lookupApplicationBlockType(_ context.Context, typeID string) (blocktype.Blo
 	// SDK app bindings are JSON leaves. Collections and immutable executables
 	// have their own typed World objects, so decoding never needs plugin code.
 	if strings.HasPrefix(typeID, "sync/app/") {
-		return blocktype.NewBlockType(typeID, byteslice.NewByteSliceBlock), nil
+		return blocktype.New[byteslice.ByteSlice](typeID), nil
 	}
 	if strings.HasPrefix(typeID, "wizard/") {
-		return blocktype.NewBlockType(typeID, s4wave_wizard.NewWizardStateBlock), nil
+		return blocktype.New[s4wave_wizard.WizardState](typeID), nil
 	}
 	return applicationBlockTypes[typeID], nil
 }

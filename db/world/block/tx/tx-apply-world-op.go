@@ -18,7 +18,7 @@ func NewTxApplyWorldOp(op world.Operation, opSender peer.ID) (*Tx, error) {
 	}
 
 	// Encode the World operation body for transaction replay.
-	opBody, err := op.MarshalBlock()
+	opBody, err := op.MarshalVT()
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func decodeOperation(ctx context.Context, lookupOp world.LookupOp, opTypeID stri
 	if err != nil {
 		return nil, err
 	}
-	if err := op.UnmarshalBlock(body); err != nil {
+	if err := op.UnmarshalVT(body); err != nil {
 		return nil, err
 	}
 	return op, nil

@@ -46,7 +46,7 @@ func (r *ChatResource) ListThreads(
 		if err != nil {
 			return nil, err
 		}
-		message, err := world.LookupObjectBody[*ChatMessage](ctx, r.ws, messageKey, NewChatMessageBlock)
+		message, err := world.LookupObjectBody[ChatMessage](ctx, r.ws, messageKey)
 		if err != nil {
 			return nil, err
 		}
@@ -119,7 +119,7 @@ func (r *ChatResource) ListThreads(
 // indexAppendedMessage advances the current index with one newly retained message.
 func (r *ChatResource) indexAppendedMessage(ctx context.Context, ws world.WorldState, messageKey string, message *ChatMessage) error {
 	// Require the channel index to end immediately before the appended message.
-	channel, err := world.LookupObjectBody[*ChatChannel](ctx, ws, r.objectKey, NewChatChannelBlock)
+	channel, err := world.LookupObjectBody[ChatChannel](ctx, ws, r.objectKey)
 	if err != nil {
 		return err
 	}
@@ -301,7 +301,7 @@ func chatMessageRelation(message *ChatMessage) *ChatRelation {
 // readMessageKeyAt resolves one stable history position through its bounded page.
 func (r *ChatResource) readMessageKeyAt(ctx context.Context, ws world.WorldState, index uint64) (string, error) {
 	// Load the bounded history page containing the requested message.
-	page, err := world.LookupObjectBody[*ChatMessagePage](ctx, ws, r.messagePageKey(index/chatMessagePageSize), NewChatMessagePageBlock)
+	page, err := world.LookupObjectBody[ChatMessagePage](ctx, ws, r.messagePageKey(index/chatMessagePageSize))
 	if err != nil {
 		return "", err
 	}
@@ -316,7 +316,7 @@ func (r *ChatResource) readMessageKeyAt(ctx context.Context, ws world.WorldState
 
 // readThread loads one bounded thread summary.
 func (r *ChatResource) readThread(ctx context.Context, ws world.WorldState, key string) (*ChatThread, error) {
-	return world.LookupObjectBody[*ChatThread](ctx, ws, key, NewChatThreadBlock)
+	return world.LookupObjectBody[ChatThread](ctx, ws, key)
 }
 
 // writeThread creates or replaces one thread summary inside the caller's transaction.

@@ -35,11 +35,6 @@ func NewCreateWizardObjectOp(
 	}
 }
 
-// NewCreateWizardObjectOpBlock constructs a new CreateWizardObjectOp block.
-func NewCreateWizardObjectOpBlock() block.Block {
-	return &CreateWizardObjectOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *CreateWizardObjectOp) Validate() error {
 	// Require the wizard object key, type identifiers and valid timestamp.
@@ -110,16 +105,6 @@ func (o *CreateWizardObjectOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CreateWizardObjectOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CreateWizardObjectOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCreateWizardObjectOp looks up a CreateWizardObjectOp operation type.

@@ -237,7 +237,7 @@ func BuildKVFilePushMetadata(ctx context.Context, data []byte) (*KVFilePushMetad
 	}
 
 	// Pack identity covers the bytes, key set, and storage policy together.
-	bloomBytes, err := bloom.NewBloom(bf).MarshalBlock()
+	bloomBytes, err := bloom.NewBloom(bf).MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal bloom filter")
 	}

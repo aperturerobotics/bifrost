@@ -256,16 +256,15 @@ func (p *Provider) CreateSpacewaveAccountAndSession(
 	turnstileToken string,
 	sessionCtrl session.SessionController,
 ) (*session.SessionListEntry, error) {
+	// Derive the entity keypair and auth parameters from the password.
 	params, privKey, err := auth_method_password.BuildParametersWithUsernamePassword(username, password)
 	if err != nil {
 		return nil, errors.Wrap(err, "derive entity keypair")
 	}
-
-	authParams, err := params.MarshalBlock()
+	authParams, err := params.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal auth params")
 	}
-
 	peerID, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "derive peer id")
@@ -285,7 +284,6 @@ func (p *Provider) CreateSpacewaveAccountAndSession(
 	if err != nil {
 		return nil, errors.Wrap(err, "register account")
 	}
-
 	p.le.WithField("account-id", accountID).Debug("registered spacewave account")
 
 	// Store entity private key so the account tracker can use it.
@@ -360,21 +358,21 @@ func (p *Provider) LoginOrCreateAccount(
 	password []byte,
 	sessionCtrl session.SessionController,
 ) (*session.SessionListEntry, bool, error) {
+	// Derive the entity keypair and auth parameters from the password.
 	params, privKey, err := auth_method_password.BuildParametersWithUsernamePassword(username, password)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "derive entity keypair")
 	}
-
-	authParams, err := params.MarshalBlock()
+	authParams, err := params.MarshalVT()
 	if err != nil {
 		return nil, false, errors.Wrap(err, "marshal auth params")
 	}
-
 	peerID, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "derive peer id")
 	}
 
+	// Build entity client with derived key.
 	entityCli := NewEntityClientDirect(
 		p.httpCli,
 		p.endpoint,
@@ -400,7 +398,6 @@ func (p *Provider) LoginOrCreateAccount(
 		}
 		return sessEntry, false, nil
 	}
-
 	p.le.WithField("account-id", accountID).Debug("registered spacewave account")
 
 	// New account: mount session.

@@ -88,7 +88,7 @@ func TestUpdateSnapshotPreservesHistoryAndCopiesFinalBlocks(t *testing.T) {
 			defer state.Discard()
 
 			// Verify the change object's body matches each root's revision.
-			body, err := world.LookupObjectBody[*block_mock.Example](ctx, state, "change", block_mock.NewExampleBlock)
+			body, err := world.LookupObjectBody[block_mock.Example](ctx, state, "change")
 			if err != nil {
 				return fmt.Errorf("read change body from next=%v: %w", ref == next, err)
 			}
@@ -104,7 +104,7 @@ func TestUpdateSnapshotPreservesHistoryAndCopiesFinalBlocks(t *testing.T) {
 
 			// Verify the added object exists only in the updated root.
 			if ref == next {
-				added, err := world.LookupObjectBody[*block_mock.Example](ctx, state, "added", block_mock.NewExampleBlock)
+				added, err := world.LookupObjectBody[block_mock.Example](ctx, state, "added")
 				if err != nil {
 					return fmt.Errorf("read added body: %w", err)
 				}

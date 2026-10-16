@@ -27,11 +27,6 @@ func NewCreateVmV86Op(objKey, name, imageObjectKey string, ts time.Time) *Create
 	}
 }
 
-// NewCreateVmV86OpBlock constructs a new CreateVmV86Op block.
-func NewCreateVmV86OpBlock() block.Block {
-	return &CreateVmV86Op{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateVmV86Op) GetOperationTypeId() string {
 	return CreateVmV86OpId
@@ -120,16 +115,6 @@ func (o *CreateVmV86Op) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *CreateVmV86Op) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CreateVmV86Op) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupCreateVmV86Op looks up a CreateVmV86Op operation type.
 func LookupCreateVmV86Op(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == CreateVmV86OpId {
@@ -147,11 +132,6 @@ func NewSetV86ConfigOp(objKey string, config *V86Config) *SetV86ConfigOp {
 		ObjectKey: objKey,
 		Config:    config,
 	}
-}
-
-// NewSetV86ConfigOpBlock constructs a new SetV86ConfigOp block.
-func NewSetV86ConfigOpBlock() block.Block {
-	return &SetV86ConfigOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -220,9 +200,7 @@ func (o *SetV86ConfigOp) ApplyWorldOp(
 	// Replace the VM's configuration in its retained block.
 	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
 		// Decode the VM block and require its retained metadata.
-		vm, unmarshalErr := block.UnmarshalBlock[*VmV86](ctx, bcs, func() block.Block {
-			return &VmV86{}
-		})
+		vm, unmarshalErr := block.UnmarshalBlock[VmV86](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}
@@ -252,16 +230,6 @@ func (o *SetV86ConfigOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *SetV86ConfigOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *SetV86ConfigOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupSetV86ConfigOp looks up a SetV86ConfigOp operation type.
 func LookupSetV86ConfigOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == SetV86ConfigOpId {
@@ -280,11 +248,6 @@ func NewSetV86StateOp(objKey string, state VmState, errorMessage string) *SetV86
 		State:        state,
 		ErrorMessage: errorMessage,
 	}
-}
-
-// NewSetV86StateOpBlock constructs a new SetV86StateOp block.
-func NewSetV86StateOpBlock() block.Block {
-	return &SetV86StateOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -323,9 +286,7 @@ func (o *SetV86StateOp) ApplyWorldOp(
 	// Begin a new run generation toward the requested state.
 	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
 		// Decode the VM block and require its retained execution state.
-		vm, unmarshalErr := block.UnmarshalBlock[*VmV86](ctx, bcs, func() block.Block {
-			return &VmV86{}
-		})
+		vm, unmarshalErr := block.UnmarshalBlock[VmV86](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}
@@ -360,16 +321,6 @@ func (o *SetV86StateOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *SetV86StateOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *SetV86StateOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupSetV86StateOp looks up a SetV86StateOp operation type.

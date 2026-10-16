@@ -102,7 +102,7 @@ func (os *ObjectState) AccessWorldState(ctx context.Context, ref *bucket.ObjectR
 // If sysErr is set, the error is treated as a transient system error.
 func (os *ObjectState) ApplyObjectOp(ctx context.Context, op world.Operation, sender peer.ID) (uint64, bool, error) {
 	// Marshal the operation block for the RPC request.
-	opData, err := op.MarshalBlock()
+	opData, err := op.MarshalVT()
 	if err != nil {
 		return 0, false, err
 	}

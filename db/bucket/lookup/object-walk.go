@@ -394,7 +394,7 @@ func (e *WalkObjectBlocksEntry) decodeBlock(alwaysDecode bool, readXfrm block.Tr
 	e.XfrmData = dat
 
 	// unmarshal the block
-	if err := decodeBlk.UnmarshalBlock(dat); err != nil {
+	if err := decodeBlk.UnmarshalVT(dat); err != nil {
 		if err != context.Canceled {
 			err = errors.Wrapf(err, "unmarshal block: %s", e.Ref.MarshalString())
 		}

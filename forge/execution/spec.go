@@ -32,16 +32,6 @@ func (s *Spec) AssignTarget(bcs *block.Cursor, tgt *forge_target.Target) {
 	}
 }
 
-// MarshalBlock marshals the block to binary.
-func (s *Spec) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (s *Spec) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
-}
-
 // ApplyBlockRef applies a ref change with a field id.
 func (s *Spec) ApplyBlockRef(id uint32, ptr *block.BlockRef) error {
 	switch id {

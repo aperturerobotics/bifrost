@@ -118,7 +118,7 @@ func CreateExecutionWithTarget(
 // The caller must hold a write transaction; the body and graph commit together.
 func BindExecutionWorker(ctx context.Context, ws world.WorldState, objKey string, placement *forge_worker.Placement) (bool, error) {
 	// Read current custody from the caller's transaction, not a watched snapshot.
-	execution, err := world.LookupObjectBody[*Execution](ctx, ws, objKey, NewExecutionBlock)
+	execution, err := world.LookupObjectBody[Execution](ctx, ws, objKey)
 	if err != nil {
 		return false, err
 	}
@@ -160,7 +160,7 @@ func BindExecutionWorker(ctx context.Context, ws world.WorldState, objKey string
 
 // UnmarshalExecution unmarshals an execution block from the cursor.
 func UnmarshalExecution(ctx context.Context, bcs *block.Cursor) (*Execution, error) {
-	return block.UnmarshalBlock[*Execution](ctx, bcs, NewExecutionBlock)
+	return block.UnmarshalBlock[Execution](ctx, bcs)
 }
 
 // Validate performs cursory checks of the execution object.
@@ -250,18 +250,6 @@ func (e *Execution) CheckPeerID(id peer.ID) error {
 // Returns an empty peer ID if not set.
 func (e *Execution) ParsePeerID() (peer.ID, error) {
 	return confparse.ParsePeerID(e.GetPeerId())
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *Execution) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *Execution) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

@@ -15,11 +15,11 @@ type releaseTestBlock struct {
 	Value string
 }
 
-func (b *releaseTestBlock) MarshalBlock() ([]byte, error) {
+func (b *releaseTestBlock) MarshalVT() ([]byte, error) {
 	return []byte(b.Value), nil
 }
 
-func (b *releaseTestBlock) UnmarshalBlock(data []byte) error {
+func (b *releaseTestBlock) UnmarshalVT(data []byte) error {
 	b.Value = string(data)
 	return nil
 }
@@ -89,10 +89,9 @@ func TestListCollectObjectsWithTypeReleasesStates(t *testing.T) {
 	// Count state releases through a wrapper around the World testbed.
 	var released int
 	cws := &countingWorldState{WorldState: tb.WorldState, released: &released}
-	ctor := func() block.Block { return &releaseTestBlock{} }
 
 	// Collect both typed bodies through the release-counting World wrapper.
-	objs, objKeys, err := world_types.ListCollectObjectsWithType[*releaseTestBlock](ctx, cws, typeID, ctor)
+	objs, objKeys, err := world_types.ListCollectObjectsWithType[releaseTestBlock](ctx, cws, typeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,11 +109,10 @@ func TestListCollectObjectsWithTypeReleasesStates(t *testing.T) {
 
 	// CollectObjectBodies returns ErrNotFound for a missing key and hands the
 	// found states to the caller, which releases them.
-	objs2, states, err := world.CollectObjectBodies[*releaseTestBlock](
+	objs2, states, err := world.CollectObjectBodies[releaseTestBlock](
 		ctx,
 		cws,
 		[]string{"test/one", "test/gone"},
-		ctor,
 	)
 
 	// Verify the missing body is reported while the found body remains available.

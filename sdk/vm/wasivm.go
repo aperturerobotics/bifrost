@@ -23,16 +23,6 @@ func (v *WasiVm) GetBlockTypeId() string {
 	return WasiVmTypeID
 }
 
-// MarshalBlock marshals the block to binary.
-func (v *WasiVm) MarshalBlock() ([]byte, error) {
-	return v.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (v *WasiVm) UnmarshalBlock(data []byte) error {
-	return v.UnmarshalVT(data)
-}
-
 // Validate performs cursory checks on the WasiVm.
 func (v *WasiVm) Validate() error {
 	return nil

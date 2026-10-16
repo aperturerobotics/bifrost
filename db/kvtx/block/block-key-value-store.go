@@ -6,11 +6,6 @@ import (
 	okra "github.com/s4wave/spacewave/db/kvtx/block/okra"
 )
 
-// NewKeyValueStoreBlock constructs a new KeyValueStore block.
-func NewKeyValueStoreBlock() block.Block {
-	return &KeyValueStore{}
-}
-
 // DecodedBlockCacheTypeKey returns the decoded-block cache type key.
 func (k *KeyValueStore) DecodedBlockCacheTypeKey() string {
 	return "db/kvtx/block.KeyValueStore"
@@ -24,18 +19,6 @@ func NewKeyValueStoreSubBlockCtor(r **KeyValueStore) block.SubBlockCtor {
 // IsNil checks if the object is nil.
 func (k *KeyValueStore) IsNil() bool {
 	return k == nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (k *KeyValueStore) MarshalBlock() ([]byte, error) {
-	return k.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (k *KeyValueStore) UnmarshalBlock(data []byte) error {
-	return k.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

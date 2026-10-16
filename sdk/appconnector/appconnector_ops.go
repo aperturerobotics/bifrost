@@ -41,11 +41,6 @@ func NewCreateAppConnectorOp(
 	}
 }
 
-// NewCreateAppConnectorOpBlock constructs a CreateAppConnectorOp block.
-func NewCreateAppConnectorOpBlock() block.Block {
-	return &CreateAppConnectorOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateAppConnectorOp) GetOperationTypeId() string {
 	return CreateAppConnectorOpId
@@ -127,16 +122,6 @@ func (o *CreateAppConnectorOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *CreateAppConnectorOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *CreateAppConnectorOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupCreateAppConnectorOp looks up a CreateAppConnectorOp operation type.
 func LookupCreateAppConnectorOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == CreateAppConnectorOpId {
@@ -178,7 +163,7 @@ func validateTokenSecret(ctx context.Context, ws world.WorldState, objKey string
 	}
 
 	// Require the Secret to hold an API token.
-	secret, err := world.LookupObjectBody[*s4wave_secret.Secret](ctx, ws, objKey, s4wave_secret.NewSecretBlock)
+	secret, err := world.LookupObjectBody[s4wave_secret.Secret](ctx, ws, objKey)
 	if err != nil {
 		return errors.Wrap(err, "app connector token secret")
 	}

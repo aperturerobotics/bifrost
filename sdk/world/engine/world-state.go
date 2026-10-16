@@ -583,7 +583,7 @@ func (ws *SDKWorldState) ApplyWorldOp(ctx context.Context, op world.Operation, s
 	}
 
 	// Encode the World operation for the resource service.
-	opData, err := op.MarshalBlock()
+	opData, err := op.MarshalVT()
 	if err != nil {
 		return 0, false, err
 	}

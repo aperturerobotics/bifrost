@@ -36,7 +36,7 @@ func (c *Cursor) SetBlock(b any, dirty bool)  // expects block.Block, not []byte
 
 **Why This Matters:**
 
-The `block.Block` interface requires implementation of `MarshalBlock()` and `UnmarshalBlock()` methods. When Go code calls `SetBlock` with a typed block, the cursor can:
+The `block.Block` interface requires implementation of `MarshalVT()` and `UnmarshalVT()` methods. When Go code calls `SetBlock` with a typed block, the cursor can:
 
 1. Validate the block structure
 2. Handle block references correctly
@@ -130,7 +130,7 @@ func (r *BlockCursorResource) SetBlock(ctx context.Context, req *s4wave_block_cu
 	blk := blockType.Constructor()
 
 	// Unmarshal data into the typed block
-	if err := blk.UnmarshalBlock(req.GetData()); err != nil {
+	if err := blk.UnmarshalVT(req.GetData()); err != nil {
 		return nil, err
 	}
 
@@ -161,40 +161,16 @@ message SetBlockRequest {
 ```go
 package block_mock
 
-import "github.com/s4wave/spacewave/db/block"
+import "github.com/s4wave/spacewave/db/blocktype"
 
-// MockRootBlockType implements BlockType for Root.
-type MockRootBlockType struct{}
-
-func (t *MockRootBlockType) Constructor() block.Block {
-	return &Root{}
-}
-
-func (t *MockRootBlockType) GetBlockTypeID() string {
-	return "github.com/s4wave/spacewave/db/block/mock.Root"
-}
-
-func (t *MockRootBlockType) MatchesBlockType(b block.Block) bool {
-	_, ok := b.(*Root)
-	return ok
-}
-
-var _ BlockType = (*MockRootBlockType)(nil)
+// MockRootBlockType is the BlockType of Root.
+var MockRootBlockType = blocktype.New[Root]("github.com/s4wave/spacewave/db/block/mock.Root")
 ```
 
-**3. Implement block.Block interface** (`vendor/github.com/s4wave/spacewave/db/block/mock/mock.go`):
+**3. Implement block.Block interface**: a protobuf-go-lite message already
+does, through its generated `MarshalVT` and `UnmarshalVT` methods.
 
 ```go
-// MarshalBlock marshals the block to binary.
-func (r *Root) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (r *Root) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 var _ block.Block = (*Root)(nil)
 ```
 
@@ -260,10 +236,10 @@ await cursor.setBlock(
 ## The Pattern
 
 ```go
-// AccessWorldObject => callback with cursor => UnmarshalBlock => SetBlock
+// AccessWorldObject => callback with cursor => Unmarshal => SetBlock
 _, _, err = world.AccessWorldObject(ctx, worldHandle, objKey, create, func(bcs *block.Cursor) error {
     // 1. Read existing data (returns zero value if not found)
-    existing, err := UnmarshalBlock(ctx, bcs)
+    existing, err := unmarshalState(ctx, bcs)
     if err != nil {
         return err
     }
@@ -333,7 +309,7 @@ func AccessWorldObject(
 
 ```go
 // Read current block data
-func UnmarshalBlock[T Block](ctx context.Context, bcs *block.Cursor, factory func() Block) (T, error)
+func UnmarshalBlock[T any, PT Ptr[T]](ctx context.Context, bcs *block.Cursor) (PT, error)
 
 // Write block data
 func (bcs *block.Cursor) SetBlock(b Block, markDirty bool)
@@ -350,22 +326,14 @@ Your data structure must implement:
 
 ```go
 type Block interface {
-    MarshalBlock() ([]byte, error)   // Serialize to bytes
-    UnmarshalBlock([]byte) error     // Deserialize from bytes
+    MarshalVT() ([]byte, error)   // Serialize to bytes
+    UnmarshalVT([]byte) error     // Deserialize from bytes
 }
 ```
 
-**Example** (`core/bstore/world/bstore.go:24-34`):
+Every protobuf-go-lite message implements it through its generated methods:
 
 ```go
-func (i *BlockStoreState) MarshalBlock() ([]byte, error) {
-    return i.MarshalVT()  // Uses vtprotobuf
-}
-
-func (i *BlockStoreState) UnmarshalBlock(data []byte) error {
-    return i.UnmarshalVT(data)
-}
-
 var _ block.Block = ((*BlockStoreState)(nil))  // Type assertion
 ```
 
@@ -425,7 +393,7 @@ world.AccessWorldObject(ctx, w, key, false, func(bcs *block.Cursor) error {
 
 1. **Always compare before SetBlock** → avoid unnecessary merkle updates
 2. **Clone data structures** → prevent aliasing issues (`CloneVT()`)
-3. **Use UnmarshalBlock helpers** → handles missing blocks gracefully
+3. **Use block.UnmarshalBlock helpers** → handles missing blocks gracefully
 4. **Mark dirty when state changes** → ensures persistence
 5. **Transactions handle complexity** → focus on your update logic
 6. **Pass typed blocks to SetBlock** → not raw bytes (requires refactoring)

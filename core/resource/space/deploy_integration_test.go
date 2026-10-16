@@ -128,7 +128,7 @@ func integrationRef(t *testing.T, id, platform string, rev uint64, entry string)
 	// Encode a manifest and calculate its deployment block reference.
 	t.Helper()
 	meta := &bldr_manifest.ManifestMeta{ManifestId: id, BuildType: "production", PlatformId: platform, Rev: rev}
-	data, err := bldr_manifest.NewManifest(meta, entry).MarshalBlock()
+	data, err := bldr_manifest.NewManifest(meta, entry).MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}

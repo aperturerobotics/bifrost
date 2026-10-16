@@ -239,7 +239,7 @@ func (r *WorldStateResource) OpenNestedWorld(ctx context.Context, req *s4wave_wo
 	if typeID == "" {
 		return nil, errors.Errorf("object %s is not typed", key)
 	}
-	outer, err := world.LookupObjectBody[*world_block.NestedWorld](ctx, r.ws, key, world_block.NewNestedWorldBlock)
+	outer, err := world.LookupObjectBody[world_block.NestedWorld](ctx, r.ws, key)
 	if err != nil {
 		return nil, err
 	}
@@ -923,7 +923,7 @@ func (r *WorldStateResource) ApplyWorldOp(ctx context.Context, req *s4wave_world
 	}
 
 	// Decode the World operation payload before execution.
-	err = op.UnmarshalBlock(req.GetOpData())
+	err = op.UnmarshalVT(req.GetOpData())
 	if err != nil {
 		return nil, err
 	}

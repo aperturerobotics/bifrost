@@ -5,11 +5,6 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 )
 
-// NewIndexBlock builds a new index block.
-func NewIndexBlock() block.Block {
-	return &Index{}
-}
-
 // IsNil returns if the object is nil.
 func (i *Index) IsNil() bool {
 	return i == nil
@@ -29,18 +24,6 @@ func (i *Index) Validate() error {
 		return errors.Wrap(err, "cache")
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (i *Index) MarshalBlock() ([]byte, error) {
-	return i.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (i *Index) UnmarshalBlock(data []byte) error {
-	return i.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

@@ -86,7 +86,7 @@ func TestSetBlockWithSqlRootBlockTypesWritesBrowserSeededRoots(t *testing.T) {
 		DialectHint:       "mysql",
 		TargetDbObjectKey: "sql/db",
 	}
-	queryData, err := querySeed.MarshalBlock()
+	queryData, err := querySeed.MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -109,7 +109,7 @@ func TestSetBlockWithSqlRootBlockTypesWritesBrowserSeededRoots(t *testing.T) {
 		s4wave_sql_query.SqlQueryBlockTypeID,
 		querySeed,
 	)
-	query, err := block.UnmarshalBlock[*s4wave_sql_query.Query](ctx, queryRoot, s4wave_sql_query.NewQueryBlock)
+	query, err := block.UnmarshalBlock[s4wave_sql_query.Query](ctx, queryRoot)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -136,7 +136,7 @@ func TestSetBlockWithSqlRootBlockTypesWritesBrowserSeededRoots(t *testing.T) {
 		s4wave_sql_workbench.SqlWorkbenchBlockTypeID,
 		workbenchSeed,
 	)
-	workbench, err := block.UnmarshalBlock[*s4wave_sql_workbench.Workbench](ctx, workbenchRoot, s4wave_sql_workbench.NewWorkbenchBlock)
+	workbench, err := block.UnmarshalBlock[s4wave_sql_workbench.Workbench](ctx, workbenchRoot)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -152,9 +152,7 @@ func addExampleBlockTypeController(t *testing.T, ctx context.Context, tb *testbe
 	t.Helper()
 	controller := blocktype_controller.NewController(func(ctx context.Context, typeID string) (blocktype.BlockType, error) {
 		if typeID == exampleBlockTypeID {
-			return blocktype.NewBlockType(exampleBlockTypeID, func() *block_mock.Example {
-				return &block_mock.Example{}
-			}), nil
+			return blocktype.New[block_mock.Example](exampleBlockTypeID), nil
 		}
 		return nil, nil
 	})
@@ -195,7 +193,7 @@ func writeTypedSqlRoot(
 ) *block.Cursor {
 	// Encode the SQL root seed before creating its resource cursor.
 	t.Helper()
-	data, err := root.MarshalBlock()
+	data, err := root.MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -226,7 +224,7 @@ func writeTypedSqlRoot(
 func assertExampleResponse(t *testing.T, data []byte, want string) {
 	t.Helper()
 	example := &block_mock.Example{}
-	if err := example.UnmarshalBlock(data); err != nil {
+	if err := example.UnmarshalVT(data); err != nil {
 		t.Fatal(err.Error())
 	}
 	if example.GetMsg() != want {

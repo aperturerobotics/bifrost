@@ -31,7 +31,7 @@ func NewChangeLogLLSubBlockCtor(r **ChangeLogLL) block.SubBlockCtor {
 // UnmarshalChangeLogLL unmarshals a changelog entry from a cursor.
 // Returns nil, nil if the cursor is empty.
 func UnmarshalChangeLogLL(ctx context.Context, bcs *block.Cursor) (*ChangeLogLL, error) {
-	return block.UnmarshalBlock[*ChangeLogLL](ctx, bcs, NewChangeLogLLBlock)
+	return block.UnmarshalBlock[ChangeLogLL](ctx, bcs)
 }
 
 // AppendChangeLogLL appends world changes as the changelog entry at seqno,
@@ -118,18 +118,6 @@ func (w *ChangeLogLL) Clone() *ChangeLogLL {
 		ChangeBatch: w.ChangeBatch,
 		ChangeType:  w.ChangeType,
 	}
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (w *ChangeLogLL) MarshalBlock() ([]byte, error) {
-	return w.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (w *ChangeLogLL) UnmarshalBlock(data []byte) error {
-	return w.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

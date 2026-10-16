@@ -84,14 +84,14 @@ func TestController(t *testing.T) {
 
 	// Serialize a populated SpaceSettings value through the block interface.
 	spaceSettings.IndexPath = "/test"
-	data, err := spaceSettings.MarshalBlock()
+	data, err := spaceSettings.MarshalVT()
 	if err != nil {
 		t.Fatalf("failed to marshal block: %v", err)
 	}
 
 	// Decode the serialized block into a fresh SpaceSettings value.
 	spaceSettings2 := &space_world.SpaceSettings{}
-	if err := spaceSettings2.UnmarshalBlock(data); err != nil {
+	if err := spaceSettings2.UnmarshalVT(data); err != nil {
 		t.Fatalf("failed to unmarshal block: %v", err)
 	}
 

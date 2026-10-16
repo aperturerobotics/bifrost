@@ -30,11 +30,6 @@ func NewCreateWasiVmOp(objKey, name, rootfsObjectKey, imageObjectKey string, ts 
 	}
 }
 
-// NewCreateWasiVmOpBlock constructs a new CreateWasiVmOp block.
-func NewCreateWasiVmOpBlock() block.Block {
-	return &CreateWasiVmOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateWasiVmOp) GetOperationTypeId() string {
 	return CreateWasiVmOpId
@@ -114,16 +109,6 @@ func (o *CreateWasiVmOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *CreateWasiVmOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CreateWasiVmOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupCreateWasiVmOp looks up a CreateWasiVmOp operation type.
 func LookupCreateWasiVmOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == CreateWasiVmOpId {
@@ -138,11 +123,6 @@ var SetWasiVmStateOpId = "vm/wasivm/set-state"
 // NewSetWasiVmStateOp constructs a new SetWasiVmStateOp.
 func NewSetWasiVmStateOp(objKey string, state VmState) *SetWasiVmStateOp {
 	return &SetWasiVmStateOp{ObjectKey: objKey, State: state}
-}
-
-// NewSetWasiVmStateOpBlock constructs a new SetWasiVmStateOp block.
-func NewSetWasiVmStateOpBlock() block.Block {
-	return &SetWasiVmStateOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -179,9 +159,7 @@ func (o *SetWasiVmStateOp) ApplyWorldOp(
 	// Begin a new run generation toward the requested state.
 	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
 		// Decode the VM block.
-		vm, unmarshalErr := block.UnmarshalBlock[*WasiVm](ctx, bcs, func() block.Block {
-			return &WasiVm{}
-		})
+		vm, unmarshalErr := block.UnmarshalBlock[WasiVm](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}
@@ -215,16 +193,6 @@ func (o *SetWasiVmStateOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *SetWasiVmStateOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *SetWasiVmStateOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupSetWasiVmStateOp looks up a SetWasiVmStateOp operation type.

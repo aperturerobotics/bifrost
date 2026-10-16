@@ -22,7 +22,7 @@ func NewFlowgraphRunBlock() block.Block {
 
 // UnmarshalFlowgraphRun reads a run from a block cursor.
 func UnmarshalFlowgraphRun(ctx context.Context, cursor *block.Cursor) (*FlowgraphRun, error) {
-	return block.UnmarshalBlock[*FlowgraphRun](ctx, cursor, NewFlowgraphRunBlock)
+	return block.UnmarshalBlock[FlowgraphRun](ctx, cursor)
 }
 
 // FollowGraph reads the pinned Flowgraph body. cursor points to the run.
@@ -46,16 +46,6 @@ func (r *FlowgraphRun) SetGraph(cursor *block.Cursor, graph *Flowgraph, revision
 	graphCursor.SetBlock(graph, true)
 	r.GraphRef = nil
 	r.FlowgraphRevision = revision
-}
-
-// MarshalBlock encodes the run state.
-func (r *FlowgraphRun) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock decodes the run state.
-func (r *FlowgraphRun) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies the pinned graph reference.

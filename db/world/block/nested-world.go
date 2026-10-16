@@ -27,11 +27,6 @@ func NewNestedWorld(bucketID string, worldRef, payloadRef *bucket.ObjectRef) (*N
 	return &NestedWorld{WorldRef: local(worldRef), PayloadRef: local(payloadRef)}, nil
 }
 
-// NewNestedWorldBlock constructs a nested World block.
-func NewNestedWorldBlock() block.Block {
-	return &NestedWorld{}
-}
-
 // DecodedBlockCacheTypeKey returns the decoded-block cache type key.
 func (n *NestedWorld) DecodedBlockCacheTypeKey() string {
 	return "db/world/block.NestedWorld"
@@ -39,17 +34,7 @@ func (n *NestedWorld) DecodedBlockCacheTypeKey() string {
 
 // UnmarshalNestedWorld unmarshals a nested World block from a cursor.
 func UnmarshalNestedWorld(ctx context.Context, cursor *block.Cursor) (*NestedWorld, error) {
-	return block.UnmarshalBlock[*NestedWorld](ctx, cursor, NewNestedWorldBlock)
-}
-
-// MarshalBlock marshals the block to binary.
-func (n *NestedWorld) MarshalBlock() ([]byte, error) {
-	return n.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (n *NestedWorld) UnmarshalBlock(data []byte) error {
-	return n.UnmarshalVT(data)
+	return block.UnmarshalBlock[NestedWorld](ctx, cursor)
 }
 
 // ApplySubBlock replaces the nested World or app-specific payload reference.

@@ -91,16 +91,6 @@ func (o *SqlQueryResultSetRootOp) ApplyWorldObjectOp(
 	return false, err
 }
 
-// MarshalBlock marshals the SQL query result set-root operation.
-func (o *SqlQueryResultSetRootOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SQL query result set-root operation.
-func (o *SqlQueryResultSetRootOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupSqlQueryResultSetRootOp returns an empty SQL query result set-root op for lookup.
 func LookupSqlQueryResultSetRootOp(_ context.Context, opTypeID string) (world.Operation, error) {
 	if opTypeID == SqlQueryResultSetRootOpId {

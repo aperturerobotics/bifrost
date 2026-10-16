@@ -161,9 +161,7 @@ func readVm(ctx context.Context, objState world.ObjectState) (*s4wave_vm.WasiVm,
 	var vm *s4wave_vm.WasiVm
 	_, _, err := world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 		var err error
-		vm, err = block.UnmarshalBlock[*s4wave_vm.WasiVm](ctx, bcs, func() block.Block {
-			return &s4wave_vm.WasiVm{}
-		})
+		vm, err = block.UnmarshalBlock[s4wave_vm.WasiVm](ctx, bcs)
 		return err
 	})
 	if err == nil && vm == nil {
@@ -267,9 +265,7 @@ func (r *vmResource) updateRun(
 	// Update the VM block when the run generation matches.
 	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
 		// Read the block, leaving another generation's run untouched.
-		vm, err := block.UnmarshalBlock[*s4wave_vm.WasiVm](ctx, bcs, func() block.Block {
-			return &s4wave_vm.WasiVm{}
-		})
+		vm, err := block.UnmarshalBlock[s4wave_vm.WasiVm](ctx, bcs)
 		if err != nil || vm == nil || vm.GetRunGeneration() != generation {
 			return err
 		}

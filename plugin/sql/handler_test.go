@@ -149,9 +149,9 @@ func TestSQLHandlerValidateOpUnmarshalsEverySQLOperation(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Encode the SQL operation payload for validation.
-			data, err := tc.op.MarshalBlock()
+			data, err := tc.op.MarshalVT()
 			if err != nil {
-				t.Fatalf("MarshalBlock: %v", err)
+				t.Fatalf("MarshalVT: %v", err)
 			}
 
 			// Validate the encoded SQL operation through the handler.

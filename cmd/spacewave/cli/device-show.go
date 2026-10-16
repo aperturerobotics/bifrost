@@ -82,7 +82,7 @@ func (a *deviceShowArgs) Run(c *cli.Context) error {
 		return errors.Wrap(err, "read device world")
 	}
 	defer tx.Discard()
-	device, err := world.LookupObjectBody[*s4wave_device.Device](c.Context, tx, mount.objectKey, s4wave_device.NewDeviceBlock)
+	device, err := world.LookupObjectBody[s4wave_device.Device](c.Context, tx, mount.objectKey)
 	if err != nil {
 		return errors.Wrap(err, "read device state")
 	}

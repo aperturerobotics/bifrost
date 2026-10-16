@@ -11,11 +11,6 @@ import (
 // SqlTableViewTypeID is the world ObjectType id for SQL table views.
 const SqlTableViewTypeID = "sql/table-view"
 
-// NewTableViewBlock constructs a SQL table view block.
-func NewTableViewBlock() block.Block {
-	return &TableView{}
-}
-
 // ReadTableViewRoot reads a SQL table view object's root.
 func ReadTableViewRoot(ctx context.Context, ws world.WorldState, objectKey string) (*TableView, error) {
 	obj, err := world.MustGetObject(ctx, ws, objectKey)
@@ -32,7 +27,7 @@ func ReadTableViewObjectRoot(ctx context.Context, obj world.ObjectState) (*Table
 	_, _, err := world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
 		// Decode the table view root from the object block cursor.
 		var err error
-		tableView, err = block.UnmarshalBlock[*TableView](ctx, bcs, NewTableViewBlock)
+		tableView, err = block.UnmarshalBlock[TableView](ctx, bcs)
 		if err != nil {
 			return err
 		}
@@ -86,16 +81,6 @@ func SyncTableViewGraphQuads(ctx context.Context, ws world.WorldState, objectKey
 		tableView.GetTargetSchemaObjectKey(),
 		"",
 	))
-}
-
-// MarshalBlock marshals the SQL table view root.
-func (v *TableView) MarshalBlock() ([]byte, error) {
-	return v.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SQL table view root.
-func (v *TableView) UnmarshalBlock(data []byte) error {
-	return v.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the SQL table view root.

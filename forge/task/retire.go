@@ -89,7 +89,7 @@ func ReconcileRetiredObject(ctx context.Context, ws world.WorldState, objectKey 
 		}
 		complete = body.IsComplete()
 	case forge_execution.ExecutionTypeID:
-		body, err := world.LookupObjectBody[*forge_execution.Execution](ctx, ws, objectKey, forge_execution.NewExecutionBlock)
+		body, err := world.LookupObjectBody[forge_execution.Execution](ctx, ws, objectKey)
 		if err != nil {
 			return false, err
 		}

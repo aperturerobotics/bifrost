@@ -212,7 +212,7 @@ func TestNestedAppRuntime(t *testing.T) {
 		}()
 
 		// Encode the World operation for the transaction RPC.
-		data, err := op.MarshalBlock()
+		data, err := op.MarshalVT()
 		if err != nil {
 			t.Fatal(err)
 		}

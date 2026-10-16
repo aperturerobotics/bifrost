@@ -33,7 +33,7 @@ func NewBlockStoreStateKey(providerID, providerAccID, bstoreID string) string {
 // LookupBlockStoreState looks up a local bstore object with the given object key.
 // returns nil, nil, ErrObjectNotFound if not found.
 func LookupBlockStoreState(ctx context.Context, w world.WorldState, objKey string) (*BlockStoreState, world.ObjectState, error) {
-	return world.LookupObject[*BlockStoreState](ctx, w, objKey, NewBlockStoreStateBlock)
+	return world.LookupObject[BlockStoreState](ctx, w, objKey)
 }
 
 // ListBlockStoreStates returns all BlockStoreState objects in the world by object key.
@@ -44,5 +44,5 @@ func ListBlockStoreStates(ctx context.Context, w world.WorldState) ([]string, er
 
 // CollectBlockStoreStates collects all local bstore objects in the world.
 func CollectBlockStoreStates(ctx context.Context, w world.WorldState) ([]*BlockStoreState, []string, error) {
-	return world_types.ListCollectObjectsWithType[*BlockStoreState](ctx, w, BlockStoreStateTypeID, NewBlockStoreStateBlock)
+	return world_types.ListCollectObjectsWithType[BlockStoreState](ctx, w, BlockStoreStateTypeID)
 }

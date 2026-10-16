@@ -22,11 +22,6 @@ func NewCanvasRemoveNodeOp(objKey string, nodeIDs []string) *CanvasRemoveNodeOp 
 	}
 }
 
-// NewCanvasRemoveNodeOpBlock constructs a new CanvasRemoveNodeOp block.
-func NewCanvasRemoveNodeOpBlock() block.Block {
-	return &CanvasRemoveNodeOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *CanvasRemoveNodeOp) Validate() error {
 	if len(o.GetObjectKey()) == 0 {
@@ -112,16 +107,6 @@ func (o *CanvasRemoveNodeOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CanvasRemoveNodeOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CanvasRemoveNodeOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCanvasRemoveNodeOp looks up a CanvasRemoveNodeOp operation type.

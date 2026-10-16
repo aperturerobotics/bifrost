@@ -21,7 +21,7 @@ func ReadFlowgraph(ctx context.Context, ws world.WorldState, key string) (*Flowg
 	if !found {
 		return nil, world.ErrObjectNotFound
 	}
-	state, err := s4wave_world.ReadWorldBlock[*Flowgraph](ctx, obj, NewFlowgraphBlock)
+	state, err := s4wave_world.ReadWorldBlock[Flowgraph](ctx, obj)
 	if err != nil {
 		return nil, err
 	}

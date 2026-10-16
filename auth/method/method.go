@@ -11,8 +11,8 @@ import (
 //
 // Parameters are stored in a user record.
 type Parameters interface {
-	// MarshalBlock marshals the block to binary.
-	MarshalBlock() ([]byte, error)
+	// MarshalVT marshals the block to binary.
+	MarshalVT() ([]byte, error)
 	// Validate validates the parameters (cursory).
 	Validate() error
 }

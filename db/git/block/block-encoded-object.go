@@ -41,23 +41,13 @@ func (r *EncodedObject) ValidateFull(ctx context.Context, bcs *block.Cursor) err
 // FollowDataBlob attempts to follow the blob field.
 func (r *EncodedObject) FollowDataBlob(ctx context.Context, bcs *block.Cursor) (*blob.Blob, *block.Cursor, error) {
 	dataBlobBcs := bcs.FollowSubBlock(1)
-	bl, err := block.UnmarshalBlock[*blob.Blob](ctx, dataBlobBcs, blob.NewBlobBlock)
+	bl, err := block.UnmarshalBlock[blob.Blob](ctx, dataBlobBcs)
 	return bl, dataBlobBcs, err
 }
 
 // BuildDataBlobReader builds the data blob reader.
 func (r *EncodedObject) BuildDataBlobReader(ctx context.Context, bcs *block.Cursor) (*blob.Reader, error) {
 	return blob.NewReader(ctx, bcs.FollowSubBlock(1))
-}
-
-// MarshalBlock marshals the block to binary.
-func (r *EncodedObject) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *EncodedObject) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

@@ -19,9 +19,8 @@ import (
 const WasiVmImageTypeID = "vm/image/wasivm"
 
 // WasiVmImageBlockType constructs WasiVmImage blocks for typed cursor reads.
-var WasiVmImageBlockType = blocktype.NewBlockType(
+var WasiVmImageBlockType = blocktype.New[WasiVmImage](
 	WasiVmImageTypeID,
-	func() *WasiVmImage { return &WasiVmImage{} },
 )
 
 // PredWasiVmImageRootfs is the graph predicate linking a WasiVmImage to the
@@ -31,16 +30,6 @@ var PredWasiVmImageRootfs = quad.IRI("wasivmimage/rootfs")
 // GetBlockTypeId returns the block type identifier.
 func (v *WasiVmImage) GetBlockTypeId() string {
 	return WasiVmImageTypeID
-}
-
-// MarshalBlock marshals the block to binary.
-func (v *WasiVmImage) MarshalBlock() ([]byte, error) {
-	return v.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (v *WasiVmImage) UnmarshalBlock(data []byte) error {
-	return v.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the WasiVmImage.
@@ -61,11 +50,6 @@ func NewCreateWasiVmImageOp(objKey string, img *WasiVmImage, ts time.Time) *Crea
 		Image:     img,
 		Timestamp: timestamppb.New(ts),
 	}
-}
-
-// NewCreateWasiVmImageOpBlock constructs a new CreateWasiVmImageOp block.
-func NewCreateWasiVmImageOpBlock() block.Block {
-	return &CreateWasiVmImageOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -127,16 +111,6 @@ func (o *CreateWasiVmImageOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CreateWasiVmImageOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CreateWasiVmImageOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCreateWasiVmImageOp looks up a CreateWasiVmImageOp operation type.

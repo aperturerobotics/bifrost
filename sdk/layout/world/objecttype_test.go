@@ -245,7 +245,7 @@ func TestObjectLayoutFactorySharesExternalWorldUpdates(t *testing.T) {
 	// Apply the updated layout model to the object state.
 	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
 		// Decode the current layout root before updating it.
-		cur, uerr := block.UnmarshalBlock[*s4wave_layout_world.ObjectLayout](ctx, bcs, s4wave_layout_world.NewObjectLayoutBlock)
+		cur, uerr := block.UnmarshalBlock[s4wave_layout_world.ObjectLayout](ctx, bcs)
 		if uerr != nil {
 			return uerr
 		}

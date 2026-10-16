@@ -9,11 +9,6 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-// NewMsgpackBlobBlock constructs a new db root block.
-func NewMsgpackBlobBlock() block.Block {
-	return &MsgpackBlob{}
-}
-
 // BuildMsgpackBlob packs an object into a blob, storing the object into the cursor.
 //
 // opts can be nil
@@ -52,7 +47,7 @@ func BuildMsgpackBlob(
 // UnmarshalMsgpackBlob loads a msgpack blob at a cursor.
 // may return nil
 func UnmarshalMsgpackBlob(ctx context.Context, bcs *block.Cursor) (*MsgpackBlob, error) {
-	return block.UnmarshalBlock[*MsgpackBlob](ctx, bcs, NewMsgpackBlobBlock)
+	return block.UnmarshalBlock[MsgpackBlob](ctx, bcs)
 }
 
 // IsNil returns if the object is nil.
@@ -74,18 +69,6 @@ func (m *MsgpackBlob) IsEmpty() bool {
 }
 
 // Decode: blob.UnmarshalObject() -> object interface{}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (m *MsgpackBlob) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (m *MsgpackBlob) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
-}
 
 // BuildMsgpackDecoder builds a streaming decoder for the blob.
 //

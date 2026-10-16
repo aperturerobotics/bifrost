@@ -58,18 +58,6 @@ func (n *Root) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (n *Root) MarshalBlock() ([]byte, error) {
-	return n.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (n *Root) UnmarshalBlock(data []byte) error {
-	return n.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (n *Root) ApplySubBlock(id uint32, next block.SubBlock) error {
 	switch id {

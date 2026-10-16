@@ -25,7 +25,7 @@ func NewFSHostVolumeBlock() block.Block {
 // UnmarshalFSHostVolume unmarshals a filesystem node from a cursor.
 // If empty, returns nil, nil
 func UnmarshalFSHostVolume(ctx context.Context, bcs *block.Cursor) (*FSHostVolume, error) {
-	return block.UnmarshalBlock[*FSHostVolume](ctx, bcs, NewFSHostVolumeBlock)
+	return block.UnmarshalBlock[FSHostVolume](ctx, bcs)
 }
 
 // Validate checks the HostVolume.
@@ -34,18 +34,6 @@ func (n *FSHostVolume) Validate() error {
 		return errors.New("volume id cannot be empty")
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (n *FSHostVolume) MarshalBlock() ([]byte, error) {
-	return n.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (n *FSHostVolume) UnmarshalBlock(data []byte) error {
-	return n.UnmarshalVT(data)
 }
 
 // _ is a type assertion

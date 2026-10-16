@@ -34,16 +34,6 @@ func (r *ReferencesStore) BuildRefTree(ctx context.Context, bcs *block.Cursor) (
 	return block_kvtx.BuildKvTransaction(ctx, bcs.FollowSubBlock(1), true)
 }
 
-// MarshalBlock marshals the block to binary.
-func (r *ReferencesStore) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *ReferencesStore) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (r *ReferencesStore) ApplySubBlock(id uint32, next block.SubBlock) error {
 	switch id {

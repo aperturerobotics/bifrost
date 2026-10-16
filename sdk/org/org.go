@@ -30,24 +30,9 @@ func OrgDisplayNameFromMeta(meta *sobject.SharedObjectMeta) string {
 	return string(meta.GetBodyMeta())
 }
 
-// NewOrgStateBlock constructs a new OrgState block.
-func NewOrgStateBlock() block.Block {
-	return &OrgState{}
-}
-
 // UnmarshalOrgState unmarshals an org state from a cursor.
 func UnmarshalOrgState(ctx context.Context, bcs *block.Cursor) (*OrgState, error) {
-	return block.UnmarshalBlock[*OrgState](ctx, bcs, NewOrgStateBlock)
-}
-
-// MarshalBlock marshals the OrgState to bytes.
-func (o *OrgState) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the OrgState from bytes.
-func (o *OrgState) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
+	return block.UnmarshalBlock[OrgState](ctx, bcs)
 }
 
 // Validate performs cursory checks on the OrgState.

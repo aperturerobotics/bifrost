@@ -21,11 +21,6 @@ func NewCanvasRemoveEdgeOp(objKey string, edgeIDs []string) *CanvasRemoveEdgeOp 
 	}
 }
 
-// NewCanvasRemoveEdgeOpBlock constructs a new CanvasRemoveEdgeOp block.
-func NewCanvasRemoveEdgeOpBlock() block.Block {
-	return &CanvasRemoveEdgeOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *CanvasRemoveEdgeOp) Validate() error {
 	if len(o.GetObjectKey()) == 0 {
@@ -115,16 +110,6 @@ func (o *CanvasRemoveEdgeOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CanvasRemoveEdgeOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CanvasRemoveEdgeOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCanvasRemoveEdgeOp looks up a CanvasRemoveEdgeOp operation type.

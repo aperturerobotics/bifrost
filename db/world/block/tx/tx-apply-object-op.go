@@ -11,7 +11,7 @@ import (
 
 // NewTxApplyObjectOp constructs a new APPLY_OBJECT_OP transaction.
 func NewTxApplyObjectOp(operationTypeID string, op world.Operation, objKey string, opSender peer.ID) (*Tx, error) {
-	opBody, err := op.MarshalBlock()
+	opBody, err := op.MarshalVT()
 	if err != nil {
 		return nil, err
 	}

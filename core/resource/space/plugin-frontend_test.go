@@ -50,8 +50,8 @@ func TestPluginFrontendResource(t *testing.T) {
 	t.Cleanup(func() { resources.ReleaseResource(opened.GetResourceId()) })
 
 	// The accepted job retains the exact author and the route supplied to Vite.
-	execution, object, err := world.LookupObject[*forge_execution.Execution](ctx, tb.WorldState,
-		opened.GetExecutionKey(), forge_execution.NewExecutionBlock)
+	execution, object, err := world.LookupObject[forge_execution.Execution](ctx, tb.WorldState,
+		opened.GetExecutionKey())
 	world.ReleaseObjectState(object)
 	if err != nil {
 		t.Fatal(err)
@@ -132,8 +132,8 @@ func TestPluginFrontendResource(t *testing.T) {
 	}
 
 	// Resource release cancels a job even before a device claims it.
-	execution, object, err = world.LookupObject[*forge_execution.Execution](ctx, tb.WorldState,
-		opened.GetExecutionKey(), forge_execution.NewExecutionBlock)
+	execution, object, err = world.LookupObject[forge_execution.Execution](ctx, tb.WorldState,
+		opened.GetExecutionKey())
 	world.ReleaseObjectState(object)
 	if err != nil {
 		t.Fatal(err)

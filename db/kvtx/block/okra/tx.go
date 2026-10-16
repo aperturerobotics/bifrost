@@ -40,7 +40,7 @@ func NewTx(
 
 	// Decode the Okra root from the supplied block cursor.
 	taskCtx, subtask := trace.NewTask(ctx, "hydra/kvtx-block-okra/new-tx/unmarshal-root")
-	root, err := block.UnmarshalBlock[*Root](taskCtx, bcs, NewRootBlock)
+	root, err := block.UnmarshalBlock[Root](taskCtx, bcs)
 	subtask.End()
 	if err != nil {
 		return nil, err

@@ -55,11 +55,10 @@ func ValidateSshHostCredentialSecrets(ctx context.Context, ws world.WorldState, 
 		if err := world_types.CheckObjectType(ctx, ws, exp.ObjectKey, s4wave_secret.SecretTypeID); err != nil {
 			return errors.Wrapf(err, "ssh host credential %s", exp.Field)
 		}
-		secret, err := world.LookupObjectBody[*s4wave_secret.Secret](
+		secret, err := world.LookupObjectBody[s4wave_secret.Secret](
 			ctx,
 			ws,
 			exp.ObjectKey,
-			s4wave_secret.NewSecretBlock,
 		)
 		if err != nil {
 			return errors.Wrapf(err, "ssh host credential %s", exp.Field)

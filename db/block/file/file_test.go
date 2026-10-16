@@ -70,7 +70,7 @@ func TestFile_Basic(t *testing.T) {
 	_, bcs = oc.BuildTransaction(nil)
 
 	// Decode the published file root.
-	fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

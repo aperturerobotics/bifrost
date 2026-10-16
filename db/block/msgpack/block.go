@@ -21,16 +21,32 @@ func NewMsgpackBlock[T any](obj T) *MsgpackBlock[T] {
 }
 
 // UnmarshalMsgpackBlock loads a msgpack block at a cursor.
-// if ctor is nil, uses the empty value of T.
-// may return nil
+//
+// If ctor is nil, uses the empty value of T. May return nil.
 func UnmarshalMsgpackBlock[T any](ctx context.Context, bcs *block.Cursor, ctor func() T) (*MsgpackBlock[T], error) {
-	return block.UnmarshalBlock[*MsgpackBlock[T]](ctx, bcs, func() block.Block {
+	// Return a nil block for an absent cursor.
+	if bcs == nil {
+		return nil, nil
+	}
+
+	// Decode into a block wrapping the constructed value.
+	blk, err := bcs.Unmarshal(ctx, func() block.Block {
 		if ctor == nil {
 			var empty T
 			return NewMsgpackBlock(empty)
 		}
 		return NewMsgpackBlock(ctor())
 	})
+	if err != nil || blk == nil {
+		return nil, err
+	}
+
+	// Require the cursor block to be a msgpack block of T.
+	out, ok := blk.(*MsgpackBlock[T])
+	if !ok {
+		return nil, block.ErrUnexpectedType
+	}
+	return out, nil
 }
 
 // ObjectToBlock converts a given object into a msgpack block at bcs.
@@ -44,8 +60,9 @@ func ObjectToBlock[T any](bcs *block.Cursor, obj T) error {
 }
 
 // BlockToObject converts the given block cursor into an object.
-// T and dest can be a nil interface{} to unmarshal a dynamic type.
-// if bcs is nil returns dest, nil
+//
+// T and dest can be a nil interface{} to unmarshal a dynamic type. If bcs is
+// nil, returns dest, nil.
 func BlockToObject[T comparable](ctx context.Context, bcs *block.Cursor, dest T) (T, error) {
 	// Preserve the destination when no block cursor was supplied.
 	if bcs == nil {
@@ -74,7 +91,7 @@ func BlockToObject[T comparable](ctx context.Context, bcs *block.Cursor, dest T)
 
 		// Decode the fetched bytes into the supplied destination.
 		b = &MsgpackBlock[T]{obj: dest}
-		err = b.UnmarshalBlock(data)
+		err = b.UnmarshalVT(data)
 		if err != nil {
 			return dest, err
 		}
@@ -108,15 +125,15 @@ func (b *MsgpackBlock[T]) SetObj(obj T) {
 	b.obj = obj
 }
 
-// MarshalBlock marshals the block to binary.
+// MarshalVT marshals the block to binary.
 // This is the initial step of marshaling, before transformations.
-func (b *MsgpackBlock[T]) MarshalBlock() ([]byte, error) {
+func (b *MsgpackBlock[T]) MarshalVT() ([]byte, error) {
 	return msgpack.Marshal(b.obj)
 }
 
-// UnmarshalBlock unmarshals the block to the object.
+// UnmarshalVT unmarshals the block to the object.
 // This is the final step of decoding, after transformations.
-func (b *MsgpackBlock[T]) UnmarshalBlock(data []byte) error {
+func (b *MsgpackBlock[T]) UnmarshalVT(data []byte) error {
 	return msgpack.Unmarshal(data, &b.obj)
 }
 

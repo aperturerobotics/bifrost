@@ -33,15 +33,5 @@ func (c *PluginExecConfig) EqualsConfig(other config.Config) bool {
 	return c.EqualVT(oc)
 }
 
-// MarshalBlock marshals the config as protobuf bytes.
-func (c *PluginExecConfig) MarshalBlock() ([]byte, error) {
-	return c.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the config from protobuf bytes.
-func (c *PluginExecConfig) UnmarshalBlock(data []byte) error {
-	return c.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var _ config.Config = (*PluginExecConfig)(nil)

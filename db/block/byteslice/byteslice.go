@@ -38,7 +38,7 @@ func ByteSliceToRef(ctx context.Context, bcs *block.Cursor, apply bool) (*block.
 	if nr, ok := nodRefi.(*ByteSlice); ok && nr != nil {
 		br := &block.BlockRef{}
 		if len(nr.GetBytes()) != 0 {
-			if err := br.UnmarshalBlock(nr.GetBytes()); err != nil {
+			if err := br.UnmarshalVT(nr.GetBytes()); err != nil {
 				return nil, err
 			}
 			if err := br.Validate(false); err != nil {
@@ -85,9 +85,9 @@ func (b *ByteSlice) CloneBlock() (block.Block, error) {
 	return &ByteSlice{sl: &clone}, nil
 }
 
-// MarshalBlock marshals the block to binary.
+// MarshalVT marshals the block to binary.
 // This is the initial step of marshaling, before transformations.
-func (b *ByteSlice) MarshalBlock() ([]byte, error) {
+func (b *ByteSlice) MarshalVT() ([]byte, error) {
 	// Encode an absent ByteSlice as empty block data.
 	if b == nil || b.sl == nil {
 		return nil, nil
@@ -100,9 +100,9 @@ func (b *ByteSlice) MarshalBlock() ([]byte, error) {
 	return d, nil
 }
 
-// UnmarshalBlock unmarshals the block to the object.
+// UnmarshalVT unmarshals the block to the object.
 // This is the final step of decoding, after transformations.
-func (b *ByteSlice) UnmarshalBlock(data []byte) error {
+func (b *ByteSlice) UnmarshalVT(data []byte) error {
 	if b.sl != nil {
 		*b.sl = data
 	} else {

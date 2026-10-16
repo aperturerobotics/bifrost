@@ -63,18 +63,6 @@ func (s *WorldObjectSnapshot) ToBucketRef() (*bucket.ObjectRef, error) {
 	return s.GetRootRef(), nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (s *WorldObjectSnapshot) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (s *WorldObjectSnapshot) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (s *WorldObjectSnapshot) ApplySubBlock(id uint32, next block.SubBlock) error {
 	switch id {

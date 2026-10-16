@@ -531,7 +531,7 @@ func decodeRefRepairNode(n refRepairNode, data []byte) (any, error) {
 		}
 	}
 	blk := n.ctor()
-	return blk, blk.UnmarshalBlock(data)
+	return blk, blk.UnmarshalVT(data)
 }
 
 // recordEdges plans each edge from the block at iri to refs that have, the

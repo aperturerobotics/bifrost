@@ -400,7 +400,7 @@ func TestCdnBlockStoreInvalidateClearsDecodedBlockCache(t *testing.T) {
 	// Serve a packed example block through the initial CDN pointer.
 	ctx := context.Background()
 	example := &block_mock.Example{Msg: "old pointer"}
-	raw, err := example.MarshalBlock()
+	raw, err := example.MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -719,7 +719,7 @@ func TestCdnBlockStorePointerTTLRefreshClearsDecodedBlockCache(t *testing.T) {
 	// Serve a packed example block through a pointer with a short lifetime.
 	ctx := context.Background()
 	example := &block_mock.Example{Msg: "old ttl pointer"}
-	raw, err := example.MarshalBlock()
+	raw, err := example.MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}

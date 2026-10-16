@@ -65,14 +65,4 @@ func (o *SetSpaceIndexPathOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock encodes the operation.
-func (o *SetSpaceIndexPathOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock decodes the operation.
-func (o *SetSpaceIndexPathOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 var _ world.Operation = (*SetSpaceIndexPathOp)(nil)

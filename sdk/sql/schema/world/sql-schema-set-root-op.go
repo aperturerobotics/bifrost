@@ -90,16 +90,6 @@ func (o *SqlSchemaSetRootOp) ApplyWorldObjectOp(
 	return false, err
 }
 
-// MarshalBlock marshals the SQL schema set-root operation.
-func (o *SqlSchemaSetRootOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SQL schema set-root operation.
-func (o *SqlSchemaSetRootOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupSqlSchemaSetRootOp returns an empty SQL schema set-root op for lookup.
 func LookupSqlSchemaSetRootOp(_ context.Context, opTypeID string) (world.Operation, error) {
 	if opTypeID == SqlSchemaSetRootOpId {

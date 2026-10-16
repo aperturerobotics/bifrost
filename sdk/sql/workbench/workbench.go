@@ -17,15 +17,9 @@ const SqlWorkbenchTypeID = "sql/workbench"
 const SqlWorkbenchBlockTypeID = "github.com/s4wave/spacewave/sdk/sql/workbench.Workbench"
 
 // SqlWorkbenchBlockType constructs SQL workbench root blocks for typed cursor writes.
-var SqlWorkbenchBlockType = blocktype.NewBlockType(
+var SqlWorkbenchBlockType = blocktype.New[Workbench](
 	SqlWorkbenchBlockTypeID,
-	func() *Workbench { return &Workbench{} },
 )
-
-// NewWorkbenchBlock constructs a SQL workbench block.
-func NewWorkbenchBlock() block.Block {
-	return &Workbench{}
-}
 
 // ReadWorkbenchRoot reads a SQL workbench object's root.
 func ReadWorkbenchRoot(ctx context.Context, ws world.WorldState, objectKey string) (*Workbench, error) {
@@ -43,7 +37,7 @@ func ReadWorkbenchObjectRoot(ctx context.Context, obj world.ObjectState) (*Workb
 	_, _, err := world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
 		// Decode the workbench root from the cursor.
 		var err error
-		workbench, err = block.UnmarshalBlock[*Workbench](ctx, bcs, NewWorkbenchBlock)
+		workbench, err = block.UnmarshalBlock[Workbench](ctx, bcs)
 		if err != nil {
 			return err
 		}
@@ -126,16 +120,6 @@ func SyncWorkbenchGraphQuads(ctx context.Context, ws world.WorldState, objectKey
 		}
 	}
 	return nil
-}
-
-// MarshalBlock marshals the SQL workbench root.
-func (w *Workbench) MarshalBlock() ([]byte, error) {
-	return w.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SQL workbench root.
-func (w *Workbench) UnmarshalBlock(data []byte) error {
-	return w.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the SQL workbench root.

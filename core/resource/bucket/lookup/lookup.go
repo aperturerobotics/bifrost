@@ -263,7 +263,7 @@ func (r *BucketLookupCursorResource) Unmarshal(ctx context.Context, req *s4wave_
 		if blk == nil {
 			return &s4wave_bucket_lookup.UnmarshalResponse{Found: false}, nil
 		}
-		data, err := blk.MarshalBlock()
+		data, err := blk.MarshalVT()
 		if err != nil {
 			return nil, err
 		}

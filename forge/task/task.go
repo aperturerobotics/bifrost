@@ -42,7 +42,7 @@ func NewTaskBlock() block.Block {
 
 // UnmarshalTask unmarshals a task block from the cursor.
 func UnmarshalTask(ctx context.Context, bcs *block.Cursor) (*Task, error) {
-	return block.UnmarshalBlock[*Task](ctx, bcs, NewTaskBlock)
+	return block.UnmarshalBlock[Task](ctx, bcs)
 }
 
 // NewTaskToTargetQuad creates a quad linking a Task to a Target.
@@ -283,18 +283,6 @@ func (e *Task) SetTarget(bcs *block.Cursor, tgt *forge_target.Target) {
 	tgtCs.ClearAllRefs()
 	tgtCs.SetBlock(tgt, true)
 	e.TargetRef = nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *Task) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *Task) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

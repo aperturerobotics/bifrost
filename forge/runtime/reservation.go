@@ -25,11 +25,6 @@ func BuildReservationObjectKey(executionObjectKey string) string {
 	return reservationObjectKeyPrefix + hex.EncodeToString(hash[:12])
 }
 
-// NewReservationBlock constructs an empty Reservation block.
-func NewReservationBlock() block.Block {
-	return &Reservation{}
-}
-
 // Reservation records one generation-fenced and lease-fenced capacity grant.
 // The record is the durable truth: a Worker restart reconciles by reading it.
 type Reservation struct {
@@ -125,13 +120,13 @@ func (r *Reservation) Reset() {
 	*r = Reservation{}
 }
 
-// MarshalBlock marshals the block to binary.
-func (r *Reservation) MarshalBlock() ([]byte, error) {
+// MarshalVT marshals the block to binary.
+func (r *Reservation) MarshalVT() ([]byte, error) {
 	return r.MarshalJSON()
 }
 
-// UnmarshalBlock unmarshals the block from binary.
-func (r *Reservation) UnmarshalBlock(data []byte) error {
+// UnmarshalVT unmarshals the block from binary.
+func (r *Reservation) UnmarshalVT(data []byte) error {
 	return r.UnmarshalJSON(data)
 }
 
@@ -266,7 +261,7 @@ func (r *Reservation) UnmarshalJSON(data []byte) error {
 // The loaded record is validated before use.
 func LookupReservation(ctx context.Context, ws world.WorldState, objKey string) (*Reservation, error) {
 	// Load the reservation and translate a missing World object.
-	res, err := world.LookupObjectBody[*Reservation](ctx, ws, objKey, NewReservationBlock)
+	res, err := world.LookupObjectBody[Reservation](ctx, ws, objKey)
 	if errors.Is(err, world.ErrObjectNotFound) {
 		return nil, ErrReservationNotFound
 	}

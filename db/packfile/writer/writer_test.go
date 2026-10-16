@@ -103,7 +103,7 @@ func TestPackBlocks(t *testing.T) {
 
 	// Verify bloom filter contains all hashes.
 	var pbf bloom.BloomFilter
-	if err := pbf.UnmarshalBlock(result.BloomFilter); err != nil {
+	if err := pbf.UnmarshalVT(result.BloomFilter); err != nil {
 		t.Fatal(err)
 	}
 	bf := pbf.ToBloomFilter()
@@ -208,7 +208,7 @@ func testPackBlocksFalsePositiveRate(t *testing.T, policy Policy, blockCount int
 
 	// Decode the packed bloom filter for membership and rate checks.
 	var pbf bloom.BloomFilter
-	if err := pbf.UnmarshalBlock(result.BloomFilter); err != nil {
+	if err := pbf.UnmarshalVT(result.BloomFilter); err != nil {
 		t.Fatal(err)
 	}
 	bf := pbf.ToBloomFilter()

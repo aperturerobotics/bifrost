@@ -43,7 +43,7 @@ func (e *EntityKeypairSet) AppendKeypair(privKey crypto.PrivKey, ekp *EntityKeyp
 	}
 
 	// Sign the keypair data with the private key.
-	kpData, err := ekp.MarshalBlock()
+	kpData, err := ekp.MarshalVT()
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (e *EntityKeypairSet) AppendKeypair(privKey crypto.PrivKey, ekp *EntityKeyp
 	for i, kpData := range e.GetEntityKeypairs() {
 		ekp := &EntityKeypair{}
 		var peerID peer.ID
-		err := ekp.UnmarshalBlock(kpData)
+		err := ekp.UnmarshalVT(kpData)
 		if err == nil {
 			peerID, err = ekp.GetKeypair().ParsePeerID()
 		}
@@ -104,7 +104,7 @@ func (e *EntityKeypairSet) UnmarshalVerifyKeypairs(ent *Entity) ([]*EntityKeypai
 	keypairVals := make([]*EntityKeypair, len(keypairs))
 	for i, kpData := range keypairs {
 		ekp := &EntityKeypair{}
-		if err := ekp.UnmarshalBlock(kpData); err != nil {
+		if err := ekp.UnmarshalVT(kpData); err != nil {
 			return nil, errors.Wrapf(err, "keypairs[%d]", i)
 		}
 		if err := ekp.Validate(); err != nil {
@@ -146,18 +146,6 @@ func (e *EntityKeypairSet) UnmarshalVerifyKeypairs(ent *Entity) ([]*EntityKeypai
 		}
 	}
 	return keypairVals, nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *EntityKeypairSet) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *EntityKeypairSet) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
 }
 
 // Validate validates the EntityKeypairSet.

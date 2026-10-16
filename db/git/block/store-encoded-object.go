@@ -248,7 +248,7 @@ func (r *Store) EncodedObject(ot plumbing.ObjectType, oh plumbing.Hash) (plumbin
 	// Check bulk index for objects written but not yet committed to IAVL.
 	if r.objIndex != nil {
 		if cs := r.lookupBulkObject(oh); cs != nil {
-			encObj, err := block.UnmarshalBlock[*EncodedObject](r.ctx, cs, NewEncodedObjectBlock)
+			encObj, err := block.UnmarshalBlock[EncodedObject](r.ctx, cs)
 			if err != nil {
 				return nil, err
 			}
@@ -499,7 +499,7 @@ func (o *StoreEncodedObject) Reader() (io.ReadCloser, error) {
 	}
 
 	// Open a lazy reader over the stored data blob.
-	blk, err := block.UnmarshalBlock[*EncodedObject](o.r.ctx, o.bcs, NewEncodedObjectBlock)
+	blk, err := block.UnmarshalBlock[EncodedObject](o.r.ctx, o.bcs)
 	if err != nil {
 		return nil, err
 	}
@@ -531,7 +531,7 @@ func (r *Store) buildEncodedObjectKey(ot plumbing.ObjectType, h plumbing.Hash) (
 // unmarshalEncodedObject unmarshals the EncodedObject block.
 // It returns nil, nil for an empty cursor.
 func (o *StoreEncodedObject) unmarshalEncodedObject() (*EncodedObject, error) {
-	return block.UnmarshalBlock[*EncodedObject](o.r.ctx, o.bcs, NewEncodedObjectBlock)
+	return block.UnmarshalBlock[EncodedObject](o.r.ctx, o.bcs)
 }
 
 // lookupEncodedObject tries to build the EncodedObject from a key.

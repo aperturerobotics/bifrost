@@ -5,7 +5,6 @@ import (
 	"time"
 
 	timestamp "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
-	"github.com/s4wave/spacewave/db/block"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/peer"
@@ -37,11 +36,6 @@ func NewInitUnixFSOp(
 		ObjectKey: objKey,
 		Timestamp: timestamp.New(ts),
 	}
-}
-
-// NewInitUnixFSOpBlock constructs a new InitUnixFSOp block.
-func NewInitUnixFSOpBlock() block.Block {
-	return &InitUnixFSOp{}
 }
 
 // Validate performs cursory checks on the op.
@@ -102,16 +96,6 @@ func (o *InitUnixFSOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *InitUnixFSOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *InitUnixFSOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupInitUnixFSOp looks up a InitUnixFSOp operation type.

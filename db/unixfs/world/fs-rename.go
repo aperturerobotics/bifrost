@@ -64,11 +64,6 @@ func NewFsRenameOp(
 	}
 }
 
-// NewFsRenameOpBlock constructs a new FsRenameOp block.
-func NewFsRenameOpBlock() block.Block {
-	return &FsRenameOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *FsRenameOp) GetOperationTypeId() string {
 	return FsRenameOpId
@@ -145,16 +140,6 @@ func (o *FsRenameOp) ApplyWorldObjectOp(
 		}
 	})
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsRenameOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsRenameOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

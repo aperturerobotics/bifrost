@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/s4wave/spacewave/db/block"
 	unixfs_block "github.com/s4wave/spacewave/db/unixfs/block"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/peer"
@@ -47,11 +46,6 @@ func NewFsSymlinkOp(
 		Symlink:   lnk,
 		Timestamp: unixfs_block.ToTimestamp(ts, true),
 	}
-}
-
-// NewFsSymlinkOpBlock constructs a new FsSymlinkOp block.
-func NewFsSymlinkOpBlock() block.Block {
-	return &FsSymlinkOp{}
 }
 
 // Validate performs cursory checks on the op.
@@ -115,16 +109,6 @@ func (o *FsSymlinkOp) ApplyWorldObjectOp(
 	}, nil)
 
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsSymlinkOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsSymlinkOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

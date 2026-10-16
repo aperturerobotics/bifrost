@@ -48,7 +48,7 @@ func TestAccessObjectReturnsStorageOpArgs(t *testing.T) {
 	}
 
 	// Read the saved object root and verify its body.
-	example, err := world.LookupObjectRef[*block_mock.Example](ctx, ws.AccessWorldState, ref, block_mock.NewExampleBlock)
+	example, err := world.LookupObjectRef[block_mock.Example](ctx, ws.AccessWorldState, ref)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,11 +80,10 @@ func TestLookupObjectBodyReleasesObjectState(t *testing.T) {
 
 	// Observe object state releases while reading or accessing its body.
 	wrapped := &releaseCountingWorldState{WorldState: ws}
-	example, err := world.LookupObjectBody[*block_mock.Example](
+	example, err := world.LookupObjectBody[block_mock.Example](
 		ctx,
 		wrapped,
 		"example/body-release",
-		block_mock.NewExampleBlock,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -129,7 +128,7 @@ func TestLookupObjectBodiesPreservesKeysAndMissingMarkers(t *testing.T) {
 	}
 
 	// Read object bodies in an order containing missing and repeated keys.
-	results, err := world.LookupObjectBodies[*block_mock.Example](
+	results, err := world.LookupObjectBodies[block_mock.Example](
 		ctx,
 		ws,
 		[]string{
@@ -138,7 +137,6 @@ func TestLookupObjectBodiesPreservesKeysAndMissingMarkers(t *testing.T) {
 			"example/batch-alpha",
 			"example/batch-alpha",
 		},
-		block_mock.NewExampleBlock,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -361,11 +359,10 @@ func TestLookupObjectReleasesDecodeErrorState(t *testing.T) {
 
 	// Observe object state releases while reading or accessing its body.
 	wrapped := &releaseCountingWorldState{WorldState: ws}
-	value, obj, err := world.LookupObject[*releaseTestBlock](
+	value, obj, err := world.LookupObject[releaseTestBlock](
 		ctx,
 		wrapped,
 		key,
-		func() block.Block { return &releaseTestBlock{} },
 	)
 	if err == nil {
 		t.Fatal("expected decode error")
@@ -410,11 +407,10 @@ func TestCollectObjectBodiesReleasesPartialFailureStates(t *testing.T) {
 
 	// Observe object state releases while reading or accessing its body.
 	wrapped := &releaseCountingWorldState{WorldState: ws}
-	values, states, err := world.CollectObjectBodies[*releaseTestBlock](
+	values, states, err := world.CollectObjectBodies[releaseTestBlock](
 		ctx,
 		wrapped,
 		[]string{"example/collect-good", "example/collect-bad"},
-		func() block.Block { return &releaseTestBlock{} },
 	)
 	if err == nil {
 		t.Fatal("expected partial collection decode error")
@@ -591,11 +587,11 @@ type releaseTestBlock struct {
 	data string
 }
 
-func (b *releaseTestBlock) MarshalBlock() ([]byte, error) {
+func (b *releaseTestBlock) MarshalVT() ([]byte, error) {
 	return []byte(b.data), nil
 }
 
-func (b *releaseTestBlock) UnmarshalBlock(data []byte) error {
+func (b *releaseTestBlock) UnmarshalVT(data []byte) error {
 	b.data = string(data)
 	if b.data == "bad" {
 		return errors.New("decode failed")

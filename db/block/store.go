@@ -119,7 +119,7 @@ type BlockStat struct {
 // PutBlock marshals b and puts it into bk with the refs it holds.
 func PutBlock(ctx context.Context, bk StoreOps, b Block) (*BlockRef, bool, error) {
 	// Marshal the block with its outgoing references for storage.
-	dat, err := b.MarshalBlock()
+	dat, err := b.MarshalVT()
 	if err != nil {
 		return nil, false, err
 	}

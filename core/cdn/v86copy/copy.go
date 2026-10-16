@@ -309,9 +309,7 @@ func readCdnV86Image(ctx context.Context, ws world.WorldState, objKey string) (*
 	var img *s4wave_vm.V86Image
 	_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 		// Decode the V86 image block and retain its metadata independently of the cursor.
-		current, unmarshalErr := block.UnmarshalBlock[*s4wave_vm.V86Image](ctx, bcs, func() block.Block {
-			return &s4wave_vm.V86Image{}
-		})
+		current, unmarshalErr := block.UnmarshalBlock[s4wave_vm.V86Image](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}

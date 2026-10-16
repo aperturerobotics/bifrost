@@ -36,7 +36,7 @@ func TestChatMessageRewriteKeepsAuthor(t *testing.T) {
 
 	// Verify the rewrite moved only the reply key.
 	rewritten := &s4wave_chat.ChatMessage{}
-	if err := rewritten.UnmarshalBlock(result.Payload); err != nil {
+	if err := rewritten.UnmarshalVT(result.Payload); err != nil {
 		t.Fatal(err)
 	}
 	if rewritten.GetSenderPeerId() != "peer" || rewritten.GetPersonId() != "alice" || rewritten.GetAuthor() != "deadlock" || rewritten.GetReplyToKey() != "moved" {

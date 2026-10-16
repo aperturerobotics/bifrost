@@ -133,10 +133,5 @@ func (p *Parameters) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the parameters to binary.
-func (p *Parameters) MarshalBlock() ([]byte, error) {
-	return p.MarshalVT()
-}
-
 // _ is a type assertion.
 var _ auth_method.Parameters = (*Parameters)(nil)

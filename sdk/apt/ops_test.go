@@ -59,24 +59,18 @@ func TestAptWorldOpsCreateTypedEntitiesAndRepositoryEdges(t *testing.T) {
 	assertObjectType(t, ctx, ws, buildSpecKey, AptBuildSpecTypeID)
 
 	// Read back the repository, package, and build specification records.
-	repository := readAptBlock[*AptRepository](t, ctx, ws, repositoryKey, func() block.Block {
-		return &AptRepository{}
-	})
+	repository := readAptBlock[AptRepository](t, ctx, ws, repositoryKey)
 	if repository.GetDistribution() != "stable" {
 		t.Fatalf("repository distribution = %q, want stable", repository.GetDistribution())
 	}
-	storedPackage := readAptBlock[*AptPackage](t, ctx, ws, packageKey, func() block.Block {
-		return &AptPackage{}
-	})
+	storedPackage := readAptBlock[AptPackage](t, ctx, ws, packageKey)
 	if storedPackage.GetName() != "busybox" {
 		t.Fatalf("package name = %q, want busybox", storedPackage.GetName())
 	}
 	if !storedPackage.GetDebRef().EqualsRef(debRef) {
 		t.Fatalf("package deb_ref = %s, want %s", storedPackage.GetDebRef().MarshalString(), debRef.MarshalString())
 	}
-	buildSpec := readAptBlock[*AptBuildSpec](t, ctx, ws, buildSpecKey, func() block.Block {
-		return &AptBuildSpec{}
-	})
+	buildSpec := readAptBlock[AptBuildSpec](t, ctx, ws, buildSpecKey)
 	if buildSpec.GetSourcePackage() != "busybox" {
 		t.Fatalf("build spec source package = %q, want busybox", buildSpec.GetSourcePackage())
 	}
@@ -149,9 +143,7 @@ func TestAptPublishPackageOpTransitionsBuiltPackage(t *testing.T) {
 	}
 
 	// Read back the package and verify its published state.
-	aptPackage := readAptBlock[*AptPackage](t, ctx, ws, packageKey, func() block.Block {
-		return &AptPackage{}
-	})
+	aptPackage := readAptBlock[AptPackage](t, ctx, ws, packageKey)
 	if got := aptPackage.GetState(); got != AptPackageState_AptPackageState_PUBLISHED {
 		t.Fatalf("package state = %s, want PUBLISHED", got.String())
 	}
@@ -179,9 +171,7 @@ func TestAptPublishPackageOpRejectsInvalidSourceState(t *testing.T) {
 	}
 
 	// Read back the package and verify its importing state.
-	aptPackage := readAptBlock[*AptPackage](t, ctx, ws, packageKey, func() block.Block {
-		return &AptPackage{}
-	})
+	aptPackage := readAptBlock[AptPackage](t, ctx, ws, packageKey)
 	if got := aptPackage.GetState(); got != AptPackageState_AptPackageState_IMPORTING {
 		t.Fatalf("package state = %s, want IMPORTING", got.String())
 	}
@@ -200,9 +190,7 @@ func TestAptSupersedePackageOpTransitionsPublishedPackage(t *testing.T) {
 	}
 
 	// Read back the package and verify its superseded state.
-	aptPackage := readAptBlock[*AptPackage](t, ctx, ws, packageKey, func() block.Block {
-		return &AptPackage{}
-	})
+	aptPackage := readAptBlock[AptPackage](t, ctx, ws, packageKey)
 	if got := aptPackage.GetState(); got != AptPackageState_AptPackageState_SUPERSEDED {
 		t.Fatalf("package state = %s, want SUPERSEDED", got.String())
 	}
@@ -216,9 +204,7 @@ func TestAptSupersedePackageOpRejectsInvalidSourceState(t *testing.T) {
 	}
 
 	// Read back the package and verify its built state.
-	aptPackage := readAptBlock[*AptPackage](t, ctx, ws, packageKey, func() block.Block {
-		return &AptPackage{}
-	})
+	aptPackage := readAptBlock[AptPackage](t, ctx, ws, packageKey)
 	if got := aptPackage.GetState(); got != AptPackageState_AptPackageState_BUILT {
 		t.Fatalf("package state = %s, want BUILT", got.String())
 	}
@@ -309,33 +295,16 @@ func assertObjectType(t *testing.T, ctx context.Context, ws world.WorldState, ob
 	}
 }
 
-func readAptBlock[T block.Block](
+func readAptBlock[T any, PT block.Ptr[T]](
 	t *testing.T,
 	ctx context.Context,
 	ws world.WorldState,
 	objectKey string,
-	ctor func() block.Block,
-) T {
-	// Acquire the requested World object for block readback.
+) PT {
 	t.Helper()
-	objectState, found, err := ws.GetObject(ctx, objectKey)
-	defer world.ReleaseObjectState(objectState)
+	out, err := world.LookupObjectBody[T, PT](ctx, ws, objectKey)
 	if err != nil {
-		t.Fatalf("GetObject(%s): %v", objectKey, err)
-	}
-	if !found {
-		t.Fatalf("object %s not found", objectKey)
-	}
-
-	// Decode the World object block and check the read result.
-	var out T
-	_, _, err = world.AccessObjectState(ctx, objectState, false, func(bcs *block.Cursor) error {
-		var unmarshalErr error
-		out, unmarshalErr = block.UnmarshalBlock[T](ctx, bcs, ctor)
-		return unmarshalErr
-	})
-	if err != nil {
-		t.Fatalf("AccessObjectState(%s): %v", objectKey, err)
+		t.Fatalf("LookupObjectBody(%s): %v", objectKey, err)
 	}
 	return out
 }

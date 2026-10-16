@@ -25,11 +25,10 @@ func NewSpaceSettingsBlock() block.Block {
 // LookupSpaceSettings looks up the SpaceSettings object in the world.
 // Returns nil, nil, nil if the settings object does not exist.
 func LookupSpaceSettings(ctx context.Context, ws world.WorldState) (*SpaceSettings, world.ObjectState, error) {
-	settings, state, err := world.LookupObject[*SpaceSettings](
+	settings, state, err := world.LookupObject[SpaceSettings](
 		ctx,
 		ws,
 		SpaceSettingsObjectKey,
-		NewSpaceSettingsBlock,
 	)
 	if errors.Is(err, world.ErrObjectNotFound) {
 		world.ReleaseObjectState(state)
@@ -41,11 +40,10 @@ func LookupSpaceSettings(ctx context.Context, ws world.WorldState) (*SpaceSettin
 // LookupSpaceSettingsBody looks up the SpaceSettings body in the world.
 // Returns nil, nil if the settings object does not exist.
 func LookupSpaceSettingsBody(ctx context.Context, ws world.WorldState) (*SpaceSettings, error) {
-	settings, err := world.LookupObjectBody[*SpaceSettings](
+	settings, err := world.LookupObjectBody[SpaceSettings](
 		ctx,
 		ws,
 		SpaceSettingsObjectKey,
-		NewSpaceSettingsBlock,
 	)
 	if errors.Is(err, world.ErrObjectNotFound) {
 		return nil, nil
@@ -122,16 +120,6 @@ func LookupSpaceIndexObjectType(ctx context.Context, ws world.WorldState) (strin
 		return "", nil
 	}
 	return metadata[0].TypeID, nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (s *SpaceSettings) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (s *SpaceSettings) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
 }
 
 var _ block.Block = (*SpaceSettings)(nil)

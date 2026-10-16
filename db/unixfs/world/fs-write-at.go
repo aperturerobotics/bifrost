@@ -75,11 +75,6 @@ func NewFsWriteAtOp(
 	}
 }
 
-// NewFsWriteAtOpBlock constructs a new FsWriteAtOp block.
-func NewFsWriteAtOpBlock() block.Block {
-	return &FsWriteAtOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *FsWriteAtOp) Validate() error {
 	if err := o.GetFsType().Validate(true); err != nil {
@@ -166,16 +161,6 @@ func (o *FsWriteAtOp) ApplyWorldObjectOp(
 // GetPayloadRefs returns the written data blob.
 func (o *FsWriteAtOp) GetPayloadRefs() []*block.BlockRef {
 	return []*block.BlockRef{o.GetBlobRef()}
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsWriteAtOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsWriteAtOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

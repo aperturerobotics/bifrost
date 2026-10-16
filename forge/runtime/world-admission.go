@@ -541,7 +541,7 @@ func (a *WorldRuntimeAdmission) ScanOwnedCapacity(
 			return err
 		}
 		for _, objKey := range keys {
-			capacity, err := world.LookupObjectBody[*WorkerCapacity](ctx, ws, objKey, NewWorkerCapacityBlock)
+			capacity, err := world.LookupObjectBody[WorkerCapacity](ctx, ws, objKey)
 			if errors.Is(err, world.ErrObjectNotFound) {
 				continue
 			}

@@ -9,11 +9,6 @@ import (
 	forge_value "github.com/s4wave/spacewave/forge/value"
 )
 
-// NewConfigInputBlock constructs a new ConfigInput block.
-func NewConfigInputBlock() block.Block {
-	return &ConfigInput{}
-}
-
 // FetchConfigInput fetches the ConfigInput block from the Value.
 func FetchConfigInput(
 	ctx context.Context,
@@ -39,19 +34,7 @@ func FetchConfigInput(
 
 // UnmarshalConfigInput unmarshals a config input block from the cursor.
 func UnmarshalConfigInput(ctx context.Context, bcs *block.Cursor) (*ConfigInput, error) {
-	return block.UnmarshalBlock[*ConfigInput](ctx, bcs, NewConfigInputBlock)
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (b *ConfigInput) MarshalBlock() ([]byte, error) {
-	return b.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (b *ConfigInput) UnmarshalBlock(data []byte) error {
-	return b.UnmarshalVT(data)
+	return block.UnmarshalBlock[ConfigInput](ctx, bcs)
 }
 
 // _ is a type assertion

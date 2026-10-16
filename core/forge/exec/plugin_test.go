@@ -188,12 +188,12 @@ func TestPluginExecConfigRoundTrip(t *testing.T) {
 	}
 
 	// Decode the plugin config and compare its typed fields.
-	data, err := conf.MarshalBlock()
+	data, err := conf.MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}
 	out := &PluginExecConfig{}
-	if err := out.UnmarshalBlock(data); err != nil {
+	if err := out.UnmarshalVT(data); err != nil {
 		t.Fatal(err)
 	}
 	if !conf.EqualsConfig(out) {

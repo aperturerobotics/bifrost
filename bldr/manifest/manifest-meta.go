@@ -68,16 +68,6 @@ func (m *ManifestMeta) MarshalB58() string {
 	return b58.Encode(dat)
 }
 
-// MarshalBlock marshals the block to binary.
-func (m *ManifestMeta) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (m *ManifestMeta) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
-}
-
 // Logger adds logging fields for the meta.
 func (m *ManifestMeta) Logger(le *logrus.Entry) *logrus.Entry {
 	// Collect the populated manifest metadata fields for the logger.

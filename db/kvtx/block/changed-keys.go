@@ -274,7 +274,7 @@ func (n *diffTreeNode) load(ctx context.Context) error {
 	n.loaded = true
 	if n.kind == KVImplType_KV_IMPL_TYPE_IAVL {
 		// Read and validate the IAVL frontier node.
-		node, err := block.UnmarshalBlock[*iavl.Node](ctx, n.cursor, iavl.NewNodeBlock)
+		node, err := block.UnmarshalBlock[iavl.Node](ctx, n.cursor)
 		if err != nil {
 			return err
 		}
@@ -302,7 +302,7 @@ func (n *diffTreeNode) load(ctx context.Context) error {
 	}
 
 	// Read the Okra frontier page, which decoding already validated.
-	page, err := block.UnmarshalBlock[*okra.Page](ctx, n.cursor, okra.NewPageBlock)
+	page, err := block.UnmarshalBlock[okra.Page](ctx, n.cursor)
 	if err != nil {
 		return err
 	}

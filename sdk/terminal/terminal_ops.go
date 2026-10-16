@@ -44,11 +44,6 @@ func NewCreateSshHostTerminalOp(objKey, name, sshHostObjKey string, ts time.Time
 	}
 }
 
-// NewCreateTerminalOpBlock constructs a CreateTerminalOp block.
-func NewCreateTerminalOpBlock() block.Block {
-	return &CreateTerminalOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateTerminalOp) GetOperationTypeId() string {
 	return CreateTerminalOpId
@@ -146,16 +141,6 @@ func (o *CreateTerminalOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CreateTerminalOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *CreateTerminalOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCreateTerminalOp looks up a CreateTerminalOp operation type.

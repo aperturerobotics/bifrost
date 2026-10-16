@@ -9,24 +9,9 @@ import (
 // AptRepositoryTypeID is the type identifier for AptRepository objects.
 const AptRepositoryTypeID = "spacewave-vm/apt/repository"
 
-// NewAptRepositoryBlock constructs a new AptRepository block.
-func NewAptRepositoryBlock() block.Block {
-	return &AptRepository{}
-}
-
 // GetBlockTypeId returns the block type identifier.
 func (r *AptRepository) GetBlockTypeId() string {
 	return AptRepositoryTypeID
-}
-
-// MarshalBlock marshals the block to binary.
-func (r *AptRepository) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (r *AptRepository) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the AptRepository.

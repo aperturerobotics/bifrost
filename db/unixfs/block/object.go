@@ -26,18 +26,6 @@ func (o *FSObject) FollowFSNode(bcs *block.Cursor) (*FSNode, *block.Cursor, erro
 	return o.GetFsNode(), bcs.FollowSubBlock(1), nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (o *FSObject) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (o *FSObject) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (o *FSObject) ApplySubBlock(id uint32, next block.SubBlock) error {
 	var ok bool

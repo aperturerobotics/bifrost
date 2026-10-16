@@ -146,7 +146,7 @@ func (e *NestedEngine) head(ctx context.Context) (uint64, *bucket.ObjectRef, err
 		}
 
 		// Read the nested World root from the same revision.
-		nested, err := world.LookupObjectBody[*NestedWorld](ctx, ws, e.key, NewNestedWorldBlock)
+		nested, err := world.LookupObjectBody[NestedWorld](ctx, ws, e.key)
 		if err != nil {
 			return err
 		}

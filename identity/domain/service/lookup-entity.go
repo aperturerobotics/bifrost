@@ -79,7 +79,7 @@ func (r *LookupEntityReq) SignReq(privKey crypto.PrivKey) (*peer.SignedMsg, erro
 		return nil, err
 	}
 
-	dat, err := r.MarshalBlock()
+	dat, err := r.MarshalVT()
 	if err != nil {
 		return nil, err
 	}
@@ -92,22 +92,10 @@ func (r *LookupEntityReq) UnmarshalFrom(req *peer.SignedMsg) (crypto.PubKey, err
 	if err != nil {
 		return nil, err
 	}
-	if err := r.UnmarshalBlock(req.GetData()); err != nil {
+	if err := r.UnmarshalVT(req.GetData()); err != nil {
 		return pubKey, err
 	}
 	return pubKey, r.Validate()
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (r *LookupEntityReq) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (r *LookupEntityReq) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 var _ block.Block = (*LookupEntityReq)(nil)

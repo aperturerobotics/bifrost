@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
-	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	sql_mysql "github.com/s4wave/spacewave/db/sql/mysql"
@@ -35,11 +34,6 @@ func NewSqlSetRootOp(
 		RootRef:    rootRef.Clone(),
 		Statements: cloneSqlStatements(statements),
 	}
-}
-
-// NewSqlSetRootOpBlock constructs a SqlSetRootOp block.
-func NewSqlSetRootOpBlock() block.Block {
-	return &SqlSetRootOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -294,16 +288,6 @@ func cloneSqlStatements(statements []*SqlStatement) []*SqlStatement {
 		out[i] = statement.CloneVT()
 	}
 	return out
-}
-
-// MarshalBlock marshals the operation block.
-func (o *SqlSetRootOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the operation block.
-func (o *SqlSetRootOp) UnmarshalBlock(b []byte) error {
-	return o.UnmarshalVT(b)
 }
 
 // LookupSqlSetRootOp constructs a sql/db root update operation from its id.

@@ -144,7 +144,7 @@ func loginDormantCloudSession(
 	if err != nil {
 		t.Fatal(err)
 	}
-	authParams, err := params.MarshalBlock()
+	authParams, err := params.MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}

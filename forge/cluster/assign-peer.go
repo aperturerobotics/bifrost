@@ -167,17 +167,5 @@ func (o *ClusterAssignPeerOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (o *ClusterAssignPeerOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (o *ClusterAssignPeerOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var _ world.Operation = (*ClusterAssignPeerOp)(nil)

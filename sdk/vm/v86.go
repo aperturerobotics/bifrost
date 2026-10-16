@@ -35,16 +35,6 @@ func (v *VmV86) GetBlockTypeId() string {
 	return VmV86TypeID
 }
 
-// MarshalBlock marshals the block to binary.
-func (v *VmV86) MarshalBlock() ([]byte, error) {
-	return v.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (v *VmV86) UnmarshalBlock(data []byte) error {
-	return v.UnmarshalVT(data)
-}
-
 // Validate performs cursory checks on the VmV86.
 func (v *VmV86) Validate() error {
 	return nil

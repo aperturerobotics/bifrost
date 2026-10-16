@@ -169,18 +169,6 @@ func (t *Tx) objectRootPayload() []*block.BlockRef {
 	return []*block.BlockRef{root}
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (t *Tx) MarshalBlock() ([]byte, error) {
-	return t.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (t *Tx) UnmarshalBlock(data []byte) error {
-	return t.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (t *Tx) ApplySubBlock(id uint32, next block.SubBlock) error {
 	switch id {

@@ -94,11 +94,11 @@ func newDriveRatioBenchmarkBlock(i int) *driveRatioBenchmarkBlock {
 	return &driveRatioBenchmarkBlock{msg: "drive-ratio-block-" + strconv.Itoa(i)}
 }
 
-func (blk *driveRatioBenchmarkBlock) MarshalBlock() ([]byte, error) {
+func (blk *driveRatioBenchmarkBlock) MarshalVT() ([]byte, error) {
 	return []byte(blk.msg), nil
 }
 
-func (blk *driveRatioBenchmarkBlock) UnmarshalBlock(data []byte) error {
+func (blk *driveRatioBenchmarkBlock) UnmarshalVT(data []byte) error {
 	blk.msg = string(data)
 	return nil
 }

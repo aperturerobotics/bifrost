@@ -78,15 +78,5 @@ func (o *GitStageOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *GitStageOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *GitStageOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var _ world.Operation = (*GitStageOp)(nil)

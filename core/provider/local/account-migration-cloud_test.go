@@ -81,7 +81,7 @@ func TestAccountMergeCloudProviders(t *testing.T) {
 			// Install the replica-payload block type decoder.
 			decoder := blocktype_controller.NewController(func(_ context.Context, typeID string) (blocktype.BlockType, error) {
 				if typeID == "test/replica-payload" {
-					return blocktype.NewBlockType(typeID, block_mock.NewRootBlock), nil
+					return blocktype.New[block_mock.Root](typeID), nil
 				}
 				return nil, nil
 			})

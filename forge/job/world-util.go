@@ -22,12 +22,12 @@ const jobGraphPathLimit uint32 = 1_000_000
 
 // LookupJob looks up a Job in the world.
 func LookupJob(ctx context.Context, ws world.WorldState, objKey string) (*Job, world.ObjectState, error) {
-	return world.LookupObject[*Job](ctx, ws, objKey, NewJobBlock)
+	return world.LookupObject[Job](ctx, ws, objKey)
 }
 
 // LookupJobBody looks up a Job body in the world.
 func LookupJobBody(ctx context.Context, ws world.WorldState, objKey string) (*Job, error) {
-	return world.LookupObjectBody[*Job](ctx, ws, objKey, NewJobBlock)
+	return world.LookupObjectBody[Job](ctx, ws, objKey)
 }
 
 // CheckJobType checks the type graph quad for a job.
@@ -214,7 +214,7 @@ func CollectJobTasks(
 	}
 
 	// Load the linked Task bodies and reject missing objects.
-	bodies, err := world.LookupObjectBodies[*forge_task.Task](ctx, ws, kpObjectKeys, forge_task.NewTaskBlock)
+	bodies, err := world.LookupObjectBodies[forge_task.Task](ctx, ws, kpObjectKeys)
 	if err != nil {
 		return nil, nil, err
 	}

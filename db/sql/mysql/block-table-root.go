@@ -92,18 +92,6 @@ func (r *TableRoot) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (r *TableRoot) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (r *TableRoot) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // FetchAutoIncrVal fetches and checks the auto-increment value.
 //
 // bcs should be located at the table root.

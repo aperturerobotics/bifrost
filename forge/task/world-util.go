@@ -20,12 +20,12 @@ func CheckTaskType(ctx context.Context, ws world.WorldState, objKey string) erro
 
 // LookupTask looks up a task in the world.
 func LookupTask(ctx context.Context, ws world.WorldState, objKey string) (*Task, world.ObjectState, error) {
-	return world.LookupObject[*Task](ctx, ws, objKey, NewTaskBlock)
+	return world.LookupObject[Task](ctx, ws, objKey)
 }
 
 // LookupTaskBody looks up a Task body in the world.
 func LookupTaskBody(ctx context.Context, ws world.WorldState, objKey string) (*Task, error) {
-	return world.LookupObjectBody[*Task](ctx, ws, objKey, NewTaskBlock)
+	return world.LookupObjectBody[Task](ctx, ws, objKey)
 }
 
 // ListTaskPasses lists all Pass object keys that are linked to by the Task.

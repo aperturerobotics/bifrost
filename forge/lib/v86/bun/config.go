@@ -28,16 +28,6 @@ func (c *Config) EqualsConfig(other config.Config) bool {
 	return ok && c.EqualVT(oc)
 }
 
-// MarshalBlock marshals the block to binary.
-func (c *Config) MarshalBlock() ([]byte, error) {
-	return c.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (c *Config) UnmarshalBlock(data []byte) error {
-	return c.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var (
 	_ config.Config = (*Config)(nil)

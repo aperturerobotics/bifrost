@@ -56,17 +56,7 @@ func NewFlowgraphBlock() block.Block {
 
 // UnmarshalFlowgraph reads a Flowgraph from a block cursor.
 func UnmarshalFlowgraph(ctx context.Context, cursor *block.Cursor) (*Flowgraph, error) {
-	return block.UnmarshalBlock[*Flowgraph](ctx, cursor, NewFlowgraphBlock)
-}
-
-// MarshalBlock encodes the authored body.
-func (g *Flowgraph) MarshalBlock() ([]byte, error) {
-	return g.MarshalVT()
-}
-
-// UnmarshalBlock decodes the authored body.
-func (g *Flowgraph) UnmarshalBlock(data []byte) error {
-	return g.UnmarshalVT(data)
+	return block.UnmarshalBlock[Flowgraph](ctx, cursor)
 }
 
 // Validate checks node identities, port contracts, and connection endpoints.

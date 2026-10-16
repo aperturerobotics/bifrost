@@ -56,13 +56,13 @@ func TestAptPackageTypeIDPredicatesAndBlock(t *testing.T) {
 	}
 
 	// Verify the package block survives binary encoding and decoding.
-	data, err := pkg.MarshalBlock()
+	data, err := pkg.MarshalVT()
 	if err != nil {
-		t.Fatalf("MarshalBlock: %v", err)
+		t.Fatalf("MarshalVT: %v", err)
 	}
 	var decoded AptPackage
-	if err := decoded.UnmarshalBlock(data); err != nil {
-		t.Fatalf("UnmarshalBlock: %v", err)
+	if err := decoded.UnmarshalVT(data); err != nil {
+		t.Fatalf("UnmarshalVT: %v", err)
 	}
 	if !decoded.EqualVT(pkg) {
 		t.Fatalf("decoded package does not match original: got=%s want=%s", decoded.String(), pkg.String())

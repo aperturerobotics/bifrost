@@ -24,19 +24,7 @@ func (e *Example) DecodedBlockCacheTypeKey() string {
 // UnmarshalExample unmarshals the example block.
 // Returns nil, nil if empty
 func UnmarshalExample(ctx context.Context, bcs *block.Cursor) (*Example, error) {
-	return block.UnmarshalBlock[*Example](ctx, bcs, NewExampleBlock)
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *Example) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *Example) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
+	return block.UnmarshalBlock[Example](ctx, bcs)
 }
 
 // _ is a type assertion

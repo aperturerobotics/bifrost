@@ -23,11 +23,6 @@ func NewEndOfIndexEntry(e *index.EndOfIndexEntry) (*EndOfIndexEntry, error) {
 	}, nil
 }
 
-// NewEndOfIndexEntryBlock builds a new repo root block.
-func NewEndOfIndexEntryBlock() block.Block {
-	return &EndOfIndexEntry{}
-}
-
 // IsNil returns if the object is nil.
 func (r *EndOfIndexEntry) IsNil() bool {
 	return r == nil
@@ -54,16 +49,6 @@ func (r *EndOfIndexEntry) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (r *EndOfIndexEntry) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *EndOfIndexEntry) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

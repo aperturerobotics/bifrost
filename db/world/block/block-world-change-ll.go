@@ -74,7 +74,7 @@ func AppendWorldChangeLL(
 // UnmarshalWorldChangeLL unmarshals a world change ll from a cursor.
 // If empty, returns nil, nil
 func UnmarshalWorldChangeLL(ctx context.Context, bcs *block.Cursor) (*WorldChangeLL, error) {
-	return block.UnmarshalBlock[*WorldChangeLL](ctx, bcs, NewWorldChangeLLBlock)
+	return block.UnmarshalBlock[WorldChangeLL](ctx, bcs)
 }
 
 // IsNil returns if the object is nil.
@@ -132,18 +132,6 @@ func (w *WorldChangeLL) AppendWorldChange(ch *WorldChange, bcs *block.Cursor) *b
 	w.Changes = append(w.Changes, ch)
 	_, nbcs := subBlock.Get(nidx)
 	return nbcs
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (w *WorldChangeLL) MarshalBlock() ([]byte, error) {
-	return w.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (w *WorldChangeLL) UnmarshalBlock(data []byte) error {
-	return w.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

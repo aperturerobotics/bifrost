@@ -47,15 +47,10 @@ func EntitiesToKeypairs(ents []*Entity) ([]*Keypair, error) {
 	return EntityKeypairsToKeypairs(ekps), nil
 }
 
-// NewKeypairBlock constructs a new Entity block
-func NewKeypairBlock() block.Block {
-	return &Keypair{}
-}
-
 // UnmarshalKeypair unmarshals a Keypair from a cursor.
 // If empty, returns nil, nil
 func UnmarshalKeypair(ctx context.Context, bcs *block.Cursor) (*Keypair, error) {
-	return block.UnmarshalBlock[*Keypair](ctx, bcs, NewKeypairBlock)
+	return block.UnmarshalBlock[Keypair](ctx, bcs)
 }
 
 // Validate validates the keypair.
@@ -109,18 +104,6 @@ func (k *Keypair) ParsePeerID() (peer.ID, error) {
 // ParsePubKey parses the public key field.
 func (k *Keypair) ParsePubKey() (crypto.PubKey, error) {
 	return confparse.ParsePublicKey(k.GetPubKey())
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (k *Keypair) MarshalBlock() ([]byte, error) {
-	return k.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (k *Keypair) UnmarshalBlock(data []byte) error {
-	return k.UnmarshalVT(data)
 }
 
 // _ is a type assertion

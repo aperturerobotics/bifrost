@@ -16,7 +16,7 @@ func NewTargetBlock() block.Block {
 
 // UnmarshalTarget unmarshals an target block from the cursor.
 func UnmarshalTarget(ctx context.Context, bcs *block.Cursor) (*Target, error) {
-	return block.UnmarshalBlock[*Target](ctx, bcs, NewTargetBlock)
+	return block.UnmarshalBlock[Target](ctx, bcs)
 }
 
 // CreateTarget writes the Target to a world object.
@@ -55,18 +55,6 @@ func (t *Target) Validate() error {
 		return errors.Wrap(err, "exec")
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (t *Target) MarshalBlock() ([]byte, error) {
-	return t.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (t *Target) UnmarshalBlock(data []byte) error {
-	return t.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

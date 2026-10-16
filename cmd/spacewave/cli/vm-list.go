@@ -282,7 +282,7 @@ func readVM(c *cli.Context, statePath string, sessionIdx uint32, spaceID, key st
 func readVMFromTx(ctx context.Context, tx world.WorldState, key, typeID string) (vmCLIEntry, error) {
 	// Read a v86 VM and its image and override edges.
 	if typeID == s4wave_vm.VmV86TypeID {
-		vm, err := readVMBlock(ctx, tx, key, func() *s4wave_vm.VmV86 { return &s4wave_vm.VmV86{} })
+		vm, err := readVMBlock[s4wave_vm.VmV86](ctx, tx, key)
 		if err != nil {
 			return nil, err
 		}
@@ -294,7 +294,7 @@ func readVMFromTx(ctx context.Context, tx world.WorldState, key, typeID string) 
 	}
 
 	// Read the WasiVM and its root filesystem edge.
-	vm, err := readVMBlock(ctx, tx, key, func() *s4wave_vm.WasiVm { return &s4wave_vm.WasiVm{} })
+	vm, err := readVMBlock[s4wave_vm.WasiVm](ctx, tx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -307,35 +307,22 @@ func readVMFromTx(ctx context.Context, tx world.WorldState, key, typeID string) 
 
 // vmBlock is a VM block that copies itself.
 type vmBlock[T any] interface {
-	block.Block
+	block.Ptr[T]
 
 	// CloneVT returns a deep copy of the block.
-	CloneVT() T
+	CloneVT() *T
 }
 
 // readVMBlock reads a copy of the block of the VM object at key.
-func readVMBlock[T vmBlock[T]](ctx context.Context, tx world.WorldState, key string, ctor func() T) (T, error) {
-	// Load the VM object and require that it exists.
-	var vm T
-	obj, found, err := tx.GetObject(ctx, key)
-	defer world.ReleaseObjectState(obj)
+func readVMBlock[T any, PT vmBlock[T]](ctx context.Context, tx world.WorldState, key string) (PT, error) {
+	vm, err := world.LookupObjectBody[T, PT](ctx, tx, key)
+	if errors.Is(err, world.ErrObjectNotFound) {
+		return nil, errors.Errorf("VM %q not found", key)
+	}
 	if err != nil {
-		return vm, errors.Wrap(err, "get VM")
+		return nil, errors.Wrap(err, "read VM block")
 	}
-	if !found {
-		return vm, errors.Errorf("VM %q not found", key)
-	}
-
-	// Decode the VM block and copy it out of the transaction.
-	_, _, err = world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
-		current, err := block.UnmarshalBlock[T](ctx, bcs, func() block.Block { return ctor() })
-		if err != nil {
-			return err
-		}
-		vm = current.CloneVT()
-		return nil
-	})
-	return vm, errors.Wrap(err, "read VM block")
+	return vm.CloneVT(), nil
 }
 
 // readVMEdges reads the target of each named edge of the VM at key, or ""

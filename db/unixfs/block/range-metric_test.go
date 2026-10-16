@@ -124,11 +124,11 @@ func TestUnixFSBlockRangeMetricWriteAtWriteBlobTruncate(t *testing.T) {
 		}
 
 		// Decode and serialize the file range metadata for measurement.
-		rootFile, err := block.UnmarshalBlock[*file.File](ctx, fh.GetCursor(), file.NewFileBlock)
+		rootFile, err := block.UnmarshalBlock[file.File](ctx, fh.GetCursor())
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-		metadataBytes, err := rootFile.MarshalBlock()
+		metadataBytes, err := rootFile.MarshalVT()
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -249,11 +249,11 @@ func TestUnixFSBlockRangeMetricRandomOverwrite(t *testing.T) {
 	}
 
 	// Decode and serialize the overwritten file range metadata.
-	rootFile, err := block.UnmarshalBlock[*file.File](ctx, fh.GetCursor(), file.NewFileBlock)
+	rootFile, err := block.UnmarshalBlock[file.File](ctx, fh.GetCursor())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	metadataBytes, err := rootFile.MarshalBlock()
+	metadataBytes, err := rootFile.MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}

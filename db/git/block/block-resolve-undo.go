@@ -22,11 +22,6 @@ func NewResolveUndo(u *index.ResolveUndo) (*ResolveUndo, error) {
 	return &ResolveUndo{Entries: entries}, nil
 }
 
-// NewResolveUndoBlock builds a new resolve undo block.
-func NewResolveUndoBlock() block.Block {
-	return &ResolveUndo{}
-}
-
 // IsNil returns if the object is nil.
 func (i *ResolveUndo) IsNil() bool {
 	return i == nil
@@ -59,18 +54,6 @@ func (i *ResolveUndo) ToGitResolveUndo() (*index.ResolveUndo, error) {
 	return &index.ResolveUndo{
 		Entries: out,
 	}, nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (i *ResolveUndo) MarshalBlock() ([]byte, error) {
-	return i.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (i *ResolveUndo) UnmarshalBlock(data []byte) error {
-	return i.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

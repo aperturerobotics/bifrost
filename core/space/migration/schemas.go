@@ -38,7 +38,7 @@ import (
 
 func inspectSpaceSettings(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
 	// Decode the SpaceSettings payload and require a readable body.
-	settings, err := world.LookupObjectBody[*space_world.SpaceSettings](ctx, object.World, object.ObjectKey, space_world.NewSpaceSettingsBlock)
+	settings, err := world.LookupObjectBody[space_world.SpaceSettings](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode SpaceSettings payload")
 	}
@@ -76,7 +76,7 @@ func inspectCanvas(ctx context.Context, object *ObjectDescriptor) (*Inspection, 
 }
 
 func inspectObjectLayout(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	layoutObject, err := world.LookupObjectBody[*s4wave_layout_world.ObjectLayout](ctx, object.World, object.ObjectKey, s4wave_layout_world.NewObjectLayoutBlock)
+	layoutObject, err := world.LookupObjectBody[s4wave_layout_world.ObjectLayout](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode ObjectLayout payload")
 	}
@@ -124,7 +124,7 @@ func inspectLayoutTabs(tabs []*s4wave_layout.TabDef, out *Inspection) error {
 }
 
 func inspectSecret(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	secret, err := world.LookupObjectBody[*s4wave_secret.Secret](ctx, object.World, object.ObjectKey, s4wave_secret.NewSecretBlock)
+	secret, err := world.LookupObjectBody[s4wave_secret.Secret](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Secret envelope")
 	}
@@ -132,7 +132,7 @@ func inspectSecret(ctx context.Context, object *ObjectDescriptor) (*Inspection, 
 }
 
 func inspectDevice(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	device, err := world.LookupObjectBody[*s4wave_device.Device](ctx, object.World, object.ObjectKey, s4wave_device.NewDeviceBlock)
+	device, err := world.LookupObjectBody[s4wave_device.Device](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Device payload")
 	}
@@ -141,7 +141,7 @@ func inspectDevice(ctx context.Context, object *ObjectDescriptor) (*Inspection, 
 
 func inspectFlowgraph(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
 	// Decode the Flowgraph payload before collecting its references.
-	graph, err := world.LookupObjectBody[*s4wave_flowgraph.Flowgraph](ctx, object.World, object.ObjectKey, s4wave_flowgraph.NewFlowgraphBlock)
+	graph, err := world.LookupObjectBody[s4wave_flowgraph.Flowgraph](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Flowgraph payload")
 	}
@@ -155,11 +155,11 @@ func inspectFlowgraph(ctx context.Context, object *ObjectDescriptor) (*Inspectio
 }
 
 func inspectFlowgraphRun(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectForgePayload[*s4wave_flowgraph.FlowgraphRun](ctx, object, s4wave_flowgraph.NewFlowgraphRunBlock, "Flowgraph run", inspectFlowgraphRunFields)
+	return inspectForgePayload[s4wave_flowgraph.FlowgraphRun](ctx, object, "Flowgraph run", inspectFlowgraphRunFields)
 }
 
 func inspectTerminal(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	terminal, err := world.LookupObjectBody[*s4wave_terminal.Terminal](ctx, object.World, object.ObjectKey, s4wave_terminal.NewTerminalBlock)
+	terminal, err := world.LookupObjectBody[s4wave_terminal.Terminal](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Terminal payload")
 	}
@@ -167,7 +167,7 @@ func inspectTerminal(ctx context.Context, object *ObjectDescriptor) (*Inspection
 }
 
 func inspectSSHHost(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	host, err := world.LookupObjectBody[*s4wave_sshhost.SshHost](ctx, object.World, object.ObjectKey, s4wave_sshhost.NewSshHostBlock)
+	host, err := world.LookupObjectBody[s4wave_sshhost.SshHost](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode SSH Host payload")
 	}
@@ -175,7 +175,7 @@ func inspectSSHHost(ctx context.Context, object *ObjectDescriptor) (*Inspection,
 }
 
 func inspectAppConnector(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	conn, err := world.LookupObjectBody[*s4wave_appconnector.AppConnector](ctx, object.World, object.ObjectKey, s4wave_appconnector.NewAppConnectorBlock)
+	conn, err := world.LookupObjectBody[s4wave_appconnector.AppConnector](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode AppConnector payload")
 	}
@@ -184,14 +184,14 @@ func inspectAppConnector(ctx context.Context, object *ObjectDescriptor) (*Inspec
 
 func inspectAppSnapshot(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
 	// A snapshot holds fetched bodies and references nothing; require a decodable payload.
-	if _, err := world.LookupObjectBody[*s4wave_appconnector.AppSnapshot](ctx, object.World, object.ObjectKey, s4wave_appconnector.NewAppSnapshotBlock); err != nil {
+	if _, err := world.LookupObjectBody[s4wave_appconnector.AppSnapshot](ctx, object.World, object.ObjectKey); err != nil {
 		return nil, errors.Wrap(err, "decode AppSnapshot payload")
 	}
 	return &Inspection{}, nil
 }
 
 func inspectChatMessage(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	message, err := world.LookupObjectBody[*s4wave_chat.ChatMessage](ctx, object.World, object.ObjectKey, s4wave_chat.NewChatMessageBlock)
+	message, err := world.LookupObjectBody[s4wave_chat.ChatMessage](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode chat message payload")
 	}
@@ -498,8 +498,8 @@ func inspectChatMessagePayload(message *s4wave_chat.ChatMessage) (*Inspection, e
 	return out, nil
 }
 
-func inspectPayload[T block.Block](ctx context.Context, object *ObjectDescriptor, ctor block.Ctor, label string) (*Inspection, error) {
-	_, err := world.LookupObjectBody[T](ctx, object.World, object.ObjectKey, ctor)
+func inspectPayload[T any, PT block.Ptr[T]](ctx context.Context, object *ObjectDescriptor, label string) (*Inspection, error) {
+	_, err := world.LookupObjectBody[T, PT](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode "+label+" payload")
 	}
@@ -523,18 +523,18 @@ func validateDecodedPayload(payload any, label string) error {
 	return nil
 }
 
-func rewritePayload[T block.Block](ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap, ctor block.Ctor, label string) (*RewriteResult, error) {
+func rewritePayload[T any, PT block.Ptr[T]](ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap, label string) (*RewriteResult, error) {
 	// Decode and require the registered payload before rewriting it.
-	payload, err := world.LookupObjectBody[T](ctx, object.World, object.ObjectKey, ctor)
+	payload, err := world.LookupObjectBody[T, PT](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode "+label+" payload")
 	}
-	if any(payload) == nil {
+	if payload == nil {
 		return nil, errors.Wrapf(ErrPayloadSchemaRefused, "%s payload is missing", label)
 	}
 
 	// Serialize the registered payload for the migration result.
-	data, err := payload.MarshalBlock()
+	data, err := payload.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal "+label+" payload")
 	}
@@ -602,7 +602,7 @@ func remapObjectPath(mapping *IdentityMap, value string) (string, error) {
 
 func rewriteSpaceSettings(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the SpaceSettings payload for rewriting.
-	settings, err := world.LookupObjectBody[*space_world.SpaceSettings](ctx, object.World, object.ObjectKey, space_world.NewSpaceSettingsBlock)
+	settings, err := world.LookupObjectBody[space_world.SpaceSettings](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode SpaceSettings payload")
 	}
@@ -620,7 +620,7 @@ func rewriteSpaceSettings(ctx context.Context, object *ObjectDescriptor, mapping
 	}
 
 	// Serialize the rewritten SpaceSettings payload.
-	data, err := settings.MarshalBlock()
+	data, err := settings.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal SpaceSettings payload")
 	}
@@ -699,7 +699,7 @@ func rewriteCanvas(ctx context.Context, object *ObjectDescriptor, mapping *Ident
 
 	// Migration rewrites use the logical CanvasState transport payload. Durable
 	// Canvas objects use CanvasStorage and must be created through WriteCanvasState.
-	data, err := state.MarshalBlock()
+	data, err := state.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal Canvas payload")
 	}
@@ -714,7 +714,7 @@ func rewriteCanvas(ctx context.Context, object *ObjectDescriptor, mapping *Ident
 
 func rewriteObjectLayout(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the ObjectLayout payload for rewriting.
-	layoutObject, err := world.LookupObjectBody[*s4wave_layout_world.ObjectLayout](ctx, object.World, object.ObjectKey, s4wave_layout_world.NewObjectLayoutBlock)
+	layoutObject, err := world.LookupObjectBody[s4wave_layout_world.ObjectLayout](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode ObjectLayout payload")
 	}
@@ -738,7 +738,7 @@ func rewriteObjectLayout(ctx context.Context, object *ObjectDescriptor, mapping 
 	}
 
 	// Serialize the rewritten ObjectLayout payload.
-	data, err := layoutObject.MarshalBlock()
+	data, err := layoutObject.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal ObjectLayout payload")
 	}
@@ -802,7 +802,7 @@ func rewriteLayoutTabs(tabs []*s4wave_layout.TabDef, mapping *IdentityMap) error
 
 func rewriteSecret(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the Secret envelope for rewriting.
-	secret, err := world.LookupObjectBody[*s4wave_secret.Secret](ctx, object.World, object.ObjectKey, s4wave_secret.NewSecretBlock)
+	secret, err := world.LookupObjectBody[s4wave_secret.Secret](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Secret envelope")
 	}
@@ -829,7 +829,7 @@ func rewriteSecret(ctx context.Context, object *ObjectDescriptor, mapping *Ident
 	}
 
 	// Serialize the rewritten Secret envelope.
-	data, err := secret.MarshalBlock()
+	data, err := secret.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal Secret envelope")
 	}
@@ -844,7 +844,7 @@ func rewriteSecret(ctx context.Context, object *ObjectDescriptor, mapping *Ident
 
 func rewriteDevice(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the Device payload for rewriting.
-	device, err := world.LookupObjectBody[*s4wave_device.Device](ctx, object.World, object.ObjectKey, s4wave_device.NewDeviceBlock)
+	device, err := world.LookupObjectBody[s4wave_device.Device](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Device payload")
 	}
@@ -865,7 +865,7 @@ func rewriteDevice(ctx context.Context, object *ObjectDescriptor, mapping *Ident
 	}
 
 	// Serialize the rewritten Device payload.
-	data, err := device.MarshalBlock()
+	data, err := device.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal Device payload")
 	}
@@ -880,7 +880,7 @@ func rewriteDevice(ctx context.Context, object *ObjectDescriptor, mapping *Ident
 
 func rewriteFlowgraph(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the Flowgraph payload for rewriting.
-	graph, err := world.LookupObjectBody[*s4wave_flowgraph.Flowgraph](ctx, object.World, object.ObjectKey, s4wave_flowgraph.NewFlowgraphBlock)
+	graph, err := world.LookupObjectBody[s4wave_flowgraph.Flowgraph](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Flowgraph payload")
 	}
@@ -908,7 +908,7 @@ func rewriteFlowgraph(ctx context.Context, object *ObjectDescriptor, mapping *Id
 	}
 
 	// Serialize the rewritten Flowgraph payload.
-	data, err := graph.MarshalBlock()
+	data, err := graph.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal Flowgraph payload")
 	}
@@ -926,12 +926,12 @@ func rewriteFlowgraph(ctx context.Context, object *ObjectDescriptor, mapping *Id
 }
 
 func rewriteFlowgraphRun(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewriteForgePayload[*s4wave_flowgraph.FlowgraphRun](ctx, object, mapping, s4wave_flowgraph.NewFlowgraphRunBlock, "Flowgraph run", rewriteFlowgraphRunFields, inspectFlowgraphRunFields)
+	return rewriteForgePayload[s4wave_flowgraph.FlowgraphRun](ctx, object, mapping, "Flowgraph run", rewriteFlowgraphRunFields, inspectFlowgraphRunFields)
 }
 
 func rewriteTerminal(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the Terminal payload for rewriting.
-	terminal, err := world.LookupObjectBody[*s4wave_terminal.Terminal](ctx, object.World, object.ObjectKey, s4wave_terminal.NewTerminalBlock)
+	terminal, err := world.LookupObjectBody[s4wave_terminal.Terminal](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Terminal payload")
 	}
@@ -956,7 +956,7 @@ func rewriteTerminal(ctx context.Context, object *ObjectDescriptor, mapping *Ide
 	}
 
 	// Serialize the rewritten Terminal payload.
-	data, err := terminal.MarshalBlock()
+	data, err := terminal.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal Terminal payload")
 	}
@@ -971,7 +971,7 @@ func rewriteTerminal(ctx context.Context, object *ObjectDescriptor, mapping *Ide
 
 func rewriteAppConnector(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the AppConnector payload for rewriting.
-	conn, err := world.LookupObjectBody[*s4wave_appconnector.AppConnector](ctx, object.World, object.ObjectKey, s4wave_appconnector.NewAppConnectorBlock)
+	conn, err := world.LookupObjectBody[s4wave_appconnector.AppConnector](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode AppConnector payload")
 	}
@@ -988,7 +988,7 @@ func rewriteAppConnector(ctx context.Context, object *ObjectDescriptor, mapping 
 	}
 
 	// Serialize the rewritten AppConnector payload.
-	data, err := conn.MarshalBlock()
+	data, err := conn.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal AppConnector payload")
 	}
@@ -1003,7 +1003,7 @@ func rewriteAppConnector(ctx context.Context, object *ObjectDescriptor, mapping 
 
 func rewriteAppSnapshot(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the AppSnapshot payload for rewriting.
-	snapshot, err := world.LookupObjectBody[*s4wave_appconnector.AppSnapshot](ctx, object.World, object.ObjectKey, s4wave_appconnector.NewAppSnapshotBlock)
+	snapshot, err := world.LookupObjectBody[s4wave_appconnector.AppSnapshot](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode AppSnapshot payload")
 	}
@@ -1012,7 +1012,7 @@ func rewriteAppSnapshot(ctx context.Context, object *ObjectDescriptor, mapping *
 	}
 
 	// Carry the snapshot over unchanged: it references nothing.
-	data, err := snapshot.MarshalBlock()
+	data, err := snapshot.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal AppSnapshot payload")
 	}
@@ -1021,7 +1021,7 @@ func rewriteAppSnapshot(ctx context.Context, object *ObjectDescriptor, mapping *
 
 func rewriteSSHHost(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the SSH Host payload for rewriting.
-	host, err := world.LookupObjectBody[*s4wave_sshhost.SshHost](ctx, object.World, object.ObjectKey, s4wave_sshhost.NewSshHostBlock)
+	host, err := world.LookupObjectBody[s4wave_sshhost.SshHost](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode SSH Host payload")
 	}
@@ -1044,7 +1044,7 @@ func rewriteSSHHost(ctx context.Context, object *ObjectDescriptor, mapping *Iden
 	}
 
 	// Serialize the rewritten SSH Host payload.
-	data, err := host.MarshalBlock()
+	data, err := host.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal SSH Host payload")
 	}
@@ -1059,7 +1059,7 @@ func rewriteSSHHost(ctx context.Context, object *ObjectDescriptor, mapping *Iden
 
 func rewriteChatMessage(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the chat message payload for rewriting.
-	message, err := world.LookupObjectBody[*s4wave_chat.ChatMessage](ctx, object.World, object.ObjectKey, s4wave_chat.NewChatMessageBlock)
+	message, err := world.LookupObjectBody[s4wave_chat.ChatMessage](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode chat message payload")
 	}
@@ -1076,7 +1076,7 @@ func rewriteChatMessage(ctx context.Context, object *ObjectDescriptor, mapping *
 	}
 
 	// Serialize the rewritten chat message payload.
-	data, err := message.MarshalBlock()
+	data, err := message.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal chat message payload")
 	}
@@ -1089,20 +1089,20 @@ func rewriteChatMessage(ctx context.Context, object *ObjectDescriptor, mapping *
 	return &RewriteResult{Payload: data, References: inspection.References}, nil
 }
 
-func decodeForgePayload[T block.Block](ctx context.Context, object *ObjectDescriptor, ctor block.Ctor, label string) (T, error) {
-	payload, err := world.LookupObjectBody[T](ctx, object.World, object.ObjectKey, ctor)
+func decodeForgePayload[T any, PT block.Ptr[T]](ctx context.Context, object *ObjectDescriptor, label string) (PT, error) {
+	payload, err := world.LookupObjectBody[T, PT](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return payload, errors.Wrap(err, "decode "+label+" payload")
 	}
-	if any(payload) == nil {
+	if payload == nil {
 		return payload, errors.Wrapf(ErrPayloadSchemaRefused, "%s payload is missing", label)
 	}
 	return payload, nil
 }
 
-func inspectForgePayload[T block.Block](ctx context.Context, object *ObjectDescriptor, ctor block.Ctor, label string, inspect func(T, *Inspection) error) (*Inspection, error) {
+func inspectForgePayload[T any, PT block.Ptr[T]](ctx context.Context, object *ObjectDescriptor, label string, inspect func(PT, *Inspection) error) (*Inspection, error) {
 	// Decode the Forge payload before inspecting its references.
-	payload, err := decodeForgePayload[T](ctx, object, ctor, label)
+	payload, err := decodeForgePayload[T, PT](ctx, object, label)
 	if err != nil {
 		return nil, err
 	}
@@ -1117,9 +1117,9 @@ func inspectForgePayload[T block.Block](ctx context.Context, object *ObjectDescr
 	return out, nil
 }
 
-func rewriteForgePayload[T block.Block](ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap, ctor block.Ctor, label string, rewrite func(T, *IdentityMap) error, inspect func(T, *Inspection) error) (*RewriteResult, error) {
+func rewriteForgePayload[T any, PT block.Ptr[T]](ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap, label string, rewrite func(PT, *IdentityMap) error, inspect func(PT, *Inspection) error) (*RewriteResult, error) {
 	// Decode the Forge payload before rewriting its references.
-	payload, err := decodeForgePayload[T](ctx, object, ctor, label)
+	payload, err := decodeForgePayload[T, PT](ctx, object, label)
 	if err != nil {
 		return nil, err
 	}
@@ -1132,7 +1132,7 @@ func rewriteForgePayload[T block.Block](ctx context.Context, object *ObjectDescr
 	}
 
 	// Serialize the rewritten Forge payload.
-	data, err := payload.MarshalBlock()
+	data, err := payload.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal "+label+" payload")
 	}
@@ -1249,7 +1249,7 @@ func rewriteForgeValues(values []*forge_value.Value, mapping *IdentityMap) error
 
 func decodeKV(ctx context.Context, object *ObjectDescriptor) (*kvtx_block.KeyValueStore, error) {
 	// Decode the KV store payload from its World object.
-	payload, err := world.LookupObjectBody[*kvtx_block.KeyValueStore](ctx, object.World, object.ObjectKey, kvtx_block.NewKeyValueStoreBlock)
+	payload, err := world.LookupObjectBody[kvtx_block.KeyValueStore](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode KV store payload")
 	}
@@ -1281,7 +1281,7 @@ func rewriteKV(ctx context.Context, object *ObjectDescriptor, mapping *IdentityM
 	}
 
 	// Serialize the KV store payload for the migration result.
-	data, err := payload.MarshalBlock()
+	data, err := payload.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal KV store payload")
 	}
@@ -1289,32 +1289,32 @@ func rewriteKV(ctx context.Context, object *ObjectDescriptor, mapping *IdentityM
 }
 
 func inspectChatChannel(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectPayload[*s4wave_chat.ChatChannel](ctx, object, s4wave_chat.NewChatChannelBlock, "chat channel")
+	return inspectPayload[s4wave_chat.ChatChannel](ctx, object, "chat channel")
 }
 
 func rewriteChatChannel(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewritePayload[*s4wave_chat.ChatChannel](ctx, object, mapping, s4wave_chat.NewChatChannelBlock, "chat channel")
+	return rewritePayload[s4wave_chat.ChatChannel](ctx, object, mapping, "chat channel")
 }
 
 func inspectUnixFS(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectPayload[*unixfs_block.FSNode](ctx, object, unixfs_block.NewFSNodeBlock, "UnixFS")
+	return inspectPayload[unixfs_block.FSNode](ctx, object, "UnixFS")
 }
 
 func rewriteUnixFS(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewritePayload[*unixfs_block.FSNode](ctx, object, mapping, unixfs_block.NewFSNodeBlock, "UnixFS")
+	return rewritePayload[unixfs_block.FSNode](ctx, object, mapping, "UnixFS")
 }
 
 func inspectGitRepo(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectPayload[*git_block.Repo](ctx, object, git_block.NewRepoBlock, "Git repository")
+	return inspectPayload[git_block.Repo](ctx, object, "Git repository")
 }
 
 func rewriteGitRepo(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewritePayload[*git_block.Repo](ctx, object, mapping, git_block.NewRepoBlock, "Git repository")
+	return rewritePayload[git_block.Repo](ctx, object, mapping, "Git repository")
 }
 
 func inspectGitWorktree(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
 	// Decode the Git worktree payload before inspecting graph references.
-	_, err := world.LookupObjectBody[*git_world.Worktree](ctx, object.World, object.ObjectKey, git_world.NewWorktreeBlock)
+	_, err := world.LookupObjectBody[git_world.Worktree](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Git worktree payload")
 	}
@@ -1341,7 +1341,7 @@ func inspectGitWorktree(ctx context.Context, object *ObjectDescriptor) (*Inspect
 
 func rewriteGitWorktree(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
 	// Decode and require the Git worktree payload for rewriting.
-	payload, err := world.LookupObjectBody[*git_world.Worktree](ctx, object.World, object.ObjectKey, git_world.NewWorktreeBlock)
+	payload, err := world.LookupObjectBody[git_world.Worktree](ctx, object.World, object.ObjectKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode Git worktree payload")
 	}
@@ -1350,7 +1350,7 @@ func rewriteGitWorktree(ctx context.Context, object *ObjectDescriptor, mapping *
 	}
 
 	// Serialize the Git worktree payload for the migration result.
-	data, err := payload.MarshalBlock()
+	data, err := payload.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal Git worktree payload")
 	}
@@ -1450,57 +1450,57 @@ func rewriteForgeExecutionFields(payload *forge_execution.Execution, mapping *Id
 }
 
 func inspectForgeCluster(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectForgePayload[*forge_cluster.Cluster](ctx, object, forge_cluster.NewClusterBlock, "Forge cluster", inspectForgeClusterFields)
+	return inspectForgePayload[forge_cluster.Cluster](ctx, object, "Forge cluster", inspectForgeClusterFields)
 }
 
 func inspectForgeJob(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectForgePayload[*forge_job.Job](ctx, object, forge_job.NewJobBlock, "Forge job", inspectForgeJobFields)
+	return inspectForgePayload[forge_job.Job](ctx, object, "Forge job", inspectForgeJobFields)
 }
 
 func inspectForgeTask(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectForgePayload[*forge_task.Task](ctx, object, forge_task.NewTaskBlock, "Forge task", inspectForgeTaskFields)
+	return inspectForgePayload[forge_task.Task](ctx, object, "Forge task", inspectForgeTaskFields)
 }
 
 func inspectForgePass(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectForgePayload[*forge_pass.Pass](ctx, object, forge_pass.NewPassBlock, "Forge pass", inspectForgePassFields)
+	return inspectForgePayload[forge_pass.Pass](ctx, object, "Forge pass", inspectForgePassFields)
 }
 
 func inspectForgeExecution(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectForgePayload[*forge_execution.Execution](ctx, object, forge_execution.NewExecutionBlock, "Forge execution", inspectForgeExecutionFields)
+	return inspectForgePayload[forge_execution.Execution](ctx, object, "Forge execution", inspectForgeExecutionFields)
 }
 
 func inspectForgeWorker(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectForgePayload[*forge_worker.Worker](ctx, object, forge_worker.NewWorkerBlock, "Forge worker", inspectForgeWorkerFields)
+	return inspectForgePayload[forge_worker.Worker](ctx, object, "Forge worker", inspectForgeWorkerFields)
 }
 
 func inspectForgeDashboard(ctx context.Context, object *ObjectDescriptor) (*Inspection, error) {
-	return inspectForgePayload[*forge_dashboard.ForgeDashboard](ctx, object, func() block.Block { return &forge_dashboard.ForgeDashboard{} }, "Forge dashboard", inspectForgeDashboardFields)
+	return inspectForgePayload[forge_dashboard.ForgeDashboard](ctx, object, "Forge dashboard", inspectForgeDashboardFields)
 }
 
 func rewriteForgeCluster(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewriteForgePayload[*forge_cluster.Cluster](ctx, object, mapping, forge_cluster.NewClusterBlock, "Forge cluster", nil, inspectForgeClusterFields)
+	return rewriteForgePayload[forge_cluster.Cluster](ctx, object, mapping, "Forge cluster", nil, inspectForgeClusterFields)
 }
 
 func rewriteForgeJob(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewriteForgePayload[*forge_job.Job](ctx, object, mapping, forge_job.NewJobBlock, "Forge job", nil, inspectForgeJobFields)
+	return rewriteForgePayload[forge_job.Job](ctx, object, mapping, "Forge job", nil, inspectForgeJobFields)
 }
 
 func rewriteForgeTask(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewriteForgePayload[*forge_task.Task](ctx, object, mapping, forge_task.NewTaskBlock, "Forge task", rewriteForgeTaskFields, inspectForgeTaskFields)
+	return rewriteForgePayload[forge_task.Task](ctx, object, mapping, "Forge task", rewriteForgeTaskFields, inspectForgeTaskFields)
 }
 
 func rewriteForgePass(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewriteForgePayload[*forge_pass.Pass](ctx, object, mapping, forge_pass.NewPassBlock, "Forge pass", rewriteForgePassFields, inspectForgePassFields)
+	return rewriteForgePayload[forge_pass.Pass](ctx, object, mapping, "Forge pass", rewriteForgePassFields, inspectForgePassFields)
 }
 
 func rewriteForgeExecution(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewriteForgePayload[*forge_execution.Execution](ctx, object, mapping, forge_execution.NewExecutionBlock, "Forge execution", rewriteForgeExecutionFields, inspectForgeExecutionFields)
+	return rewriteForgePayload[forge_execution.Execution](ctx, object, mapping, "Forge execution", rewriteForgeExecutionFields, inspectForgeExecutionFields)
 }
 
 func rewriteForgeWorker(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewriteForgePayload[*forge_worker.Worker](ctx, object, mapping, forge_worker.NewWorkerBlock, "Forge worker", nil, inspectForgeWorkerFields)
+	return rewriteForgePayload[forge_worker.Worker](ctx, object, mapping, "Forge worker", nil, inspectForgeWorkerFields)
 }
 
 func rewriteForgeDashboard(ctx context.Context, object *ObjectDescriptor, mapping *IdentityMap) (*RewriteResult, error) {
-	return rewriteForgePayload[*forge_dashboard.ForgeDashboard](ctx, object, mapping, func() block.Block { return &forge_dashboard.ForgeDashboard{} }, "Forge dashboard", nil, inspectForgeDashboardFields)
+	return rewriteForgePayload[forge_dashboard.ForgeDashboard](ctx, object, mapping, "Forge dashboard", nil, inspectForgeDashboardFields)
 }

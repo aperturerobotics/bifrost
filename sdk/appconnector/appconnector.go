@@ -71,16 +71,6 @@ func NewAppConnectorBlock() block.Block {
 	return &AppConnector{}
 }
 
-// MarshalBlock marshals the AppConnector to bytes.
-func (c *AppConnector) MarshalBlock() ([]byte, error) {
-	return c.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the AppConnector from bytes.
-func (c *AppConnector) UnmarshalBlock(data []byte) error {
-	return c.UnmarshalVT(data)
-}
-
 // Validate performs cursory checks on the AppConnector block.
 func (c *AppConnector) Validate() error {
 	// Require a label and a Secret holding the API token.
@@ -138,17 +128,7 @@ func NewAppSnapshotBlock() block.Block {
 
 // UnmarshalAppSnapshot unmarshals an AppSnapshot from a cursor.
 func UnmarshalAppSnapshot(ctx context.Context, bcs *block.Cursor) (*AppSnapshot, error) {
-	return block.UnmarshalBlock[*AppSnapshot](ctx, bcs, NewAppSnapshotBlock)
-}
-
-// MarshalBlock marshals the AppSnapshot to bytes.
-func (s *AppSnapshot) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the AppSnapshot from bytes.
-func (s *AppSnapshot) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
+	return block.UnmarshalBlock[AppSnapshot](ctx, bcs)
 }
 
 var (

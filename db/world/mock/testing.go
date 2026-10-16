@@ -408,7 +408,7 @@ func TestWorldEngine_Basic(ctx context.Context, le *logrus.Entry, eng world.Engi
 		// _, _, err = world.AccessWorldObject(ctx, ws, objKey, false, func(bcs *block.Cursor) error {
 		_, _, err = world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
 			// Read the current example block and retain its message for revision updates.
-			eb, err := block.UnmarshalBlock[*block_mock.Example](ctx, bcs, block_mock.NewExampleBlock)
+			eb, err := block.UnmarshalBlock[block_mock.Example](ctx, bcs)
 			if err != nil {
 				return err
 			}

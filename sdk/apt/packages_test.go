@@ -306,9 +306,7 @@ func TestGeneratePackagesFileFromPublishedWorldPackage(t *testing.T) {
 	if _, _, err := ws.ApplyWorldOp(ctx, NewAptPublishPackageOp(packageKey), ""); err != nil {
 		t.Fatalf("ApplyWorldOp(publish): %v", err)
 	}
-	pkg := readAptBlock[*AptPackage](t, ctx, ws, packageKey, func() block.Block {
-		return &AptPackage{}
-	})
+	pkg := readAptBlock[AptPackage](t, ctx, ws, packageKey)
 	data, err := GeneratePackagesFile([]*AptPackage{pkg})
 	if err != nil {
 		t.Fatalf("GeneratePackagesFile: %v", err)

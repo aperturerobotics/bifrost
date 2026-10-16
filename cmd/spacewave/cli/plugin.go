@@ -280,7 +280,7 @@ func copyManifestBlock(
 			}
 		}
 		blk = ctor()
-		if err := blk.UnmarshalBlock(decoded); err != nil {
+		if err := blk.UnmarshalVT(decoded); err != nil {
 			return errors.Wrapf(err, "unmarshal block: %s", refStr)
 		}
 	}

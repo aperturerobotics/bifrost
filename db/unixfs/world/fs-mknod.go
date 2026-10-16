@@ -54,11 +54,6 @@ func NewFsMknodOp(
 	}
 }
 
-// NewFsMknodOpBlock constructs a new FsMknodOp block.
-func NewFsMknodOpBlock() block.Block {
-	return &FsMknodOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *FsMknodOp) Validate() error {
 	if err := unixfs_block.ValidateMknod(o.GetPaths(), o.GetNodeType()); err != nil {
@@ -128,16 +123,6 @@ func (o *FsMknodOp) ApplyWorldObjectOp(
 		}
 	})
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsMknodOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsMknodOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

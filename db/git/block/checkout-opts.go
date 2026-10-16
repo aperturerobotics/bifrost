@@ -65,17 +65,5 @@ func (o *CheckoutOpts) BuildCheckoutOpts() (*git.CheckoutOptions, error) {
 	}, nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (o *CheckoutOpts) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (o *CheckoutOpts) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var _ block.Block = (*CheckoutOpts)(nil)

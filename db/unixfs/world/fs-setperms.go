@@ -49,11 +49,6 @@ func NewFsSetPermissionsOp(
 	}
 }
 
-// NewFsSetPermissionsOpBlock constructs a new FsSetPermissionsOp block.
-func NewFsSetPermissionsOpBlock() block.Block {
-	return &FsSetPermissionsOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *FsSetPermissionsOp) Validate() error {
 	if err := unixfs_block.ValidateSetPermissions(o.GetPaths(), o.GetPermissions()); err != nil {
@@ -119,16 +114,6 @@ func (o *FsSetPermissionsOp) ApplyWorldObjectOp(
 		}
 	})
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsSetPermissionsOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsSetPermissionsOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

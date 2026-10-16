@@ -151,11 +151,11 @@ type rejectingParent struct {
 	err error
 }
 
-// MarshalBlock encodes a nonempty root payload.
-func (*rejectingParent) MarshalBlock() ([]byte, error) { return []byte{1}, nil }
+// MarshalVT encodes a nonempty root payload.
+func (*rejectingParent) MarshalVT() ([]byte, error) { return []byte{1}, nil }
 
-// UnmarshalBlock accepts the root payload.
-func (*rejectingParent) UnmarshalBlock([]byte) error { return nil }
+// UnmarshalVT accepts the root payload.
+func (*rejectingParent) UnmarshalVT([]byte) error { return nil }
 
 // GetBlockRefs declares the two sibling dependencies.
 func (*rejectingParent) GetBlockRefs() (map[uint32]*block.BlockRef, error) {

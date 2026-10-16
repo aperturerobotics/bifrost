@@ -32,11 +32,6 @@ func NewGitWorktreeCheckoutOp(
 	}
 }
 
-// NewGitWorktreeCheckoutOpBlock constructs a new GitWorktreeCheckoutOp block.
-func NewGitWorktreeCheckoutOpBlock() block.Block {
-	return &GitWorktreeCheckoutOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *GitWorktreeCheckoutOp) GetOperationTypeId() string {
 	return GitWorktreeCheckoutOpId
@@ -169,18 +164,6 @@ func (o *GitWorktreeCheckoutOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (o *GitWorktreeCheckoutOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (o *GitWorktreeCheckoutOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

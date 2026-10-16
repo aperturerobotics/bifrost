@@ -5,7 +5,6 @@ import (
 	"time"
 
 	timestamp "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
-	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
 	unixfs_block "github.com/s4wave/spacewave/db/unixfs/block"
 	"github.com/s4wave/spacewave/db/world"
@@ -55,11 +54,6 @@ func NewFsInitOp(
 		FsOverwrite: overwrite,
 		Timestamp:   unixfs_block.ToTimestamp(ts, true),
 	}
-}
-
-// NewFsInitOpBlock constructs a new FsInitOp block.
-func NewFsInitOpBlock() block.Block {
-	return &FsInitOp{}
 }
 
 // Validate performs cursory checks on the op.
@@ -160,16 +154,6 @@ func (o *FsInitOp) ApplyWorldObjectOp(
 	// update the object
 	_, err = objectHandle.SetRootRef(ctx, fsRef)
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsInitOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsInitOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

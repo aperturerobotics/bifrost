@@ -28,11 +28,6 @@ func NewCreateForgeDashboardOp(objKey, name string, ts time.Time) *CreateForgeDa
 	}
 }
 
-// NewCreateForgeDashboardOpBlock constructs a new CreateForgeDashboardOp block.
-func NewCreateForgeDashboardOpBlock() block.Block {
-	return &CreateForgeDashboardOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateForgeDashboardOp) GetOperationTypeId() string {
 	return CreateForgeDashboardOpId
@@ -97,16 +92,6 @@ func (o *CreateForgeDashboardOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *CreateForgeDashboardOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CreateForgeDashboardOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupCreateForgeDashboardOp looks up a CreateForgeDashboardOp operation type.
 func LookupCreateForgeDashboardOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == CreateForgeDashboardOpId {
@@ -121,11 +106,6 @@ func NewLinkForgeDashboardOp(dashboardKey, entityKey string) *LinkForgeDashboard
 		DashboardKey: dashboardKey,
 		EntityKey:    entityKey,
 	}
-}
-
-// NewLinkForgeDashboardOpBlock constructs a new LinkForgeDashboardOp block.
-func NewLinkForgeDashboardOpBlock() block.Block {
-	return &LinkForgeDashboardOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -176,16 +156,6 @@ func (o *LinkForgeDashboardOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *LinkForgeDashboardOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *LinkForgeDashboardOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupLinkForgeDashboardOp looks up a LinkForgeDashboardOp operation type.

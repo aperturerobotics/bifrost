@@ -40,7 +40,7 @@ func EnsureDevice(ctx context.Context, state world.WorldState, authenticatedPeer
 		if err := world_types.CheckObjectType(ctx, state, key, s4wave_device.DeviceTypeID); err != nil {
 			return "", nil, err
 		}
-		device, err := world.LookupObjectBody[*s4wave_device.Device](ctx, state, key, s4wave_device.NewDeviceBlock)
+		device, err := world.LookupObjectBody[s4wave_device.Device](ctx, state, key)
 		if err != nil {
 			return "", nil, err
 		}

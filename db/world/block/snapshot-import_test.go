@@ -93,7 +93,7 @@ func TestImportSnapshotPreservesWorld(t *testing.T) {
 		}
 
 		// Check a packed body reads back with its original content.
-		body, err := world.LookupObjectBody[*block_mock.Example](ctx, state, "object-4198", block_mock.NewExampleBlock)
+		body, err := world.LookupObjectBody[block_mock.Example](ctx, state, "object-4198")
 		if err != nil || body.GetMsg() != "object-4198" {
 			t.Fatalf("body %v, error %v", body, err)
 		}

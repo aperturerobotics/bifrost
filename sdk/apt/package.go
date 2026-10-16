@@ -8,24 +8,9 @@ import (
 // AptPackageTypeID is the type identifier for AptPackage objects.
 const AptPackageTypeID = "spacewave-vm/apt/package"
 
-// NewAptPackageBlock constructs a new AptPackage block.
-func NewAptPackageBlock() block.Block {
-	return &AptPackage{}
-}
-
 // GetBlockTypeId returns the block type identifier.
 func (p *AptPackage) GetBlockTypeId() string {
 	return AptPackageTypeID
-}
-
-// MarshalBlock marshals the block to binary.
-func (p *AptPackage) MarshalBlock() ([]byte, error) {
-	return p.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (p *AptPackage) UnmarshalBlock(data []byte) error {
-	return p.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the AptPackage.

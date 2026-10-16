@@ -22,17 +22,7 @@ func NewSshHostBlock() block.Block {
 
 // UnmarshalSshHost unmarshals an SSH Host from a cursor.
 func UnmarshalSshHost(ctx context.Context, bcs *block.Cursor) (*SshHost, error) {
-	return block.UnmarshalBlock[*SshHost](ctx, bcs, NewSshHostBlock)
-}
-
-// MarshalBlock marshals the SSH Host to bytes.
-func (h *SshHost) MarshalBlock() ([]byte, error) {
-	return h.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SSH Host from bytes.
-func (h *SshHost) UnmarshalBlock(data []byte) error {
-	return h.UnmarshalVT(data)
+	return block.UnmarshalBlock[SshHost](ctx, bcs)
 }
 
 // NormalizeSshHostEndpoint fills endpoint defaults without changing identity.

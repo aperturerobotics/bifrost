@@ -64,11 +64,6 @@ func NewFsCopyOp(
 	}
 }
 
-// NewFsCopyOpBlock constructs a new FsCopyOp block.
-func NewFsCopyOpBlock() block.Block {
-	return &FsCopyOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *FsCopyOp) GetOperationTypeId() string {
 	return FsCopyOpId
@@ -145,16 +140,6 @@ func (o *FsCopyOp) ApplyWorldObjectOp(
 		}
 	})
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsCopyOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsCopyOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

@@ -461,11 +461,11 @@ func setupRemoteWorldState(ctx context.Context, t *testing.T) world.WorldState {
 
 type unhandledWorldOp struct{}
 
-func (*unhandledWorldOp) MarshalBlock() ([]byte, error) {
+func (*unhandledWorldOp) MarshalVT() ([]byte, error) {
 	return nil, nil
 }
 
-func (*unhandledWorldOp) UnmarshalBlock([]byte) error {
+func (*unhandledWorldOp) UnmarshalVT([]byte) error {
 	return nil
 }
 

@@ -100,17 +100,5 @@ func (r *Result) Equals(ot *Result) bool {
 	return r.EqualVT(ot)
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (r *Result) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (r *Result) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var _ block.Block = (*Result)(nil)

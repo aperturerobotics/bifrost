@@ -47,18 +47,6 @@ func (r *Root) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (r *Root) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (r *Root) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // ApplyBlockRef applies a ref change with a field id.
 func (r *Root) ApplyBlockRef(id uint32, ptr *block.BlockRef) error {
 	switch id {

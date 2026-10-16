@@ -89,12 +89,12 @@ func TestSqlDbFactoryCommitsWorldBackedRootAndReplaysOp(t *testing.T) {
 
 	// Round-trip the SQL root operation and replay it against the World object.
 	op := s4wave_sql_world.NewSqlSetRootOp(objectKey, afterRoot, afterRoot, nil)
-	data, err := op.MarshalBlock()
+	data, err := op.MarshalVT()
 	if err != nil {
-		t.Fatalf("MarshalBlock: %v", err)
+		t.Fatalf("MarshalVT: %v", err)
 	}
-	if err := lookupOp.UnmarshalBlock(data); err != nil {
-		t.Fatalf("UnmarshalBlock: %v", err)
+	if err := lookupOp.UnmarshalVT(data); err != nil {
+		t.Fatalf("UnmarshalVT: %v", err)
 	}
 	if !lookupOp.(*s4wave_sql_world.SqlSetRootOp).GetRootRef().EqualsRef(afterRoot) {
 		t.Fatal("replayed SqlSetRootOp root ref did not round-trip")

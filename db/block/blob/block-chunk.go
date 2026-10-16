@@ -14,11 +14,6 @@ func NewChunk(dataRef *block.BlockRef, size, start uint64) *Chunk {
 	return &Chunk{DataRef: dataRef, Size: size, Start: start}
 }
 
-// NewChunkBlock builds a new repo ref block.
-func NewChunkBlock() block.Block {
-	return &Chunk{}
-}
-
 // IsNil returns if the object is nil.
 func (r *Chunk) IsNil() bool {
 	return r == nil
@@ -111,16 +106,6 @@ func (r *Chunk) fetchData(ctx context.Context, bcs *block.Cursor, copyBuf bool, 
 // FollowDataRef follows the data reference.
 func (r *Chunk) FollowDataRef(bcs *block.Cursor) *block.Cursor {
 	return bcs.FollowRef(1, r.GetDataRef())
-}
-
-// MarshalBlock marshals the block to binary.
-func (r *Chunk) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *Chunk) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

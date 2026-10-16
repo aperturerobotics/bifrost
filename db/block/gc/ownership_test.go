@@ -72,7 +72,7 @@ func TestGCStoreOpsDeduplicatedBlockRetainsBucketOwner(t *testing.T) {
 			bucketA := block_gc.NewGCStoreOpsWithParent(vol, rg, bucketAIRI)
 			bucketB := block_gc.NewGCStoreOpsWithParent(vol, rg, bucketBIRI)
 			example := block_mock.NewExample("shared bucket block")
-			data, err := example.MarshalBlock()
+			data, err := example.MarshalVT()
 			if err != nil {
 				t.Fatalf("marshal block: %v", err)
 			}

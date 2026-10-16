@@ -69,7 +69,7 @@ func LookupClusterOp(ctx context.Context, opTypeID string) (world.Operation, err
 
 // UnmarshalCluster unmarshals a Cluster block from the cursor.
 func UnmarshalCluster(ctx context.Context, bcs *block.Cursor) (*Cluster, error) {
-	return block.UnmarshalBlock[*Cluster](ctx, bcs, NewClusterBlock)
+	return block.UnmarshalBlock[Cluster](ctx, bcs)
 }
 
 // Validate performs cursory checks of the Cluster object.
@@ -91,18 +91,6 @@ func (e *Cluster) Validate() error {
 // ParsePeerID parses the peer ID field.
 func (e *Cluster) ParsePeerID() (peer.ID, error) {
 	return confparse.ParsePeerID(e.GetPeerId())
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *Cluster) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *Cluster) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
 }
 
 // _ is a type assertion

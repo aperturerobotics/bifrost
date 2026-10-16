@@ -25,18 +25,6 @@ func (c *Config) EqualsConfig(other config.Config) bool {
 	return ok && c.EqualVT(oc)
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (c *Config) MarshalBlock() ([]byte, error) {
-	return c.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (c *Config) UnmarshalBlock(data []byte) error {
-	return c.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var (
 	_ config.Config = (*Config)(nil)

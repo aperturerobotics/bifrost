@@ -8,11 +8,6 @@ import (
 	transform "github.com/s4wave/spacewave/db/block/transform"
 )
 
-// NewObjectRefBlock constructs a new object ref block.
-func NewObjectRefBlock() block.Block {
-	return &ObjectRef{}
-}
-
 // NewObjectRefSubBlock constructs a new object ref sub-block constructor.
 func NewObjectRefSubBlockCtor(r **ObjectRef) block.SubBlockCtor {
 	if r == nil {
@@ -201,18 +196,6 @@ func (o *ObjectRef) UnmarshalB58(ref string) error {
 	}
 
 	return o.UnmarshalVT(dat)
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (o *ObjectRef) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (o *ObjectRef) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

@@ -41,7 +41,7 @@ type DeviceAvailability struct {
 // claim at the current time. A missing Device or claim is unavailable.
 func LookupDeviceAvailability(ctx context.Context, ws world.WorldState, deviceObjectKey string) (DeviceAvailability, error) {
 	// Read the Device that identifies the Worker whose claim controls availability.
-	dev, err := world.LookupObjectBody[*s4wave_device.Device](ctx, ws, deviceObjectKey, s4wave_device.NewDeviceBlock)
+	dev, err := world.LookupObjectBody[s4wave_device.Device](ctx, ws, deviceObjectKey)
 	if errors.Is(err, world.ErrObjectNotFound) {
 		return DeviceAvailability{State: DeviceUnavailable, Reason: "device not found"}, nil
 	}

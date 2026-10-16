@@ -31,15 +31,5 @@ func (b *BitSet) Clone() *BitSet {
 	}
 }
 
-// MarshalBlock marshals the block to binary.
-func (b *BitSet) MarshalBlock() ([]byte, error) {
-	return b.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (b *BitSet) UnmarshalBlock(data []byte) error {
-	return b.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var _ block.Block = (*BitSet)(nil)

@@ -68,15 +68,10 @@ func KeypairsToEntityKeypairs(kps []*Keypair, domainID, entityID string) []*Enti
 	return ekps
 }
 
-// NewEntityKeypairBlock constructs a new Entity block
-func NewEntityKeypairBlock() block.Block {
-	return &EntityKeypair{}
-}
-
 // UnmarshalEntityKeypair unmarshals a EntityKeypair from a cursor.
 // If empty, returns nil, nil
 func UnmarshalEntityKeypair(ctx context.Context, bcs *block.Cursor) (*EntityKeypair, error) {
-	return block.UnmarshalBlock[*EntityKeypair](ctx, bcs, NewEntityKeypairBlock)
+	return block.UnmarshalBlock[EntityKeypair](ctx, bcs)
 }
 
 // Validate validates the keypair.
@@ -127,18 +122,6 @@ func (k *EntityKeypair) ValidateMatchesEntity(e *Entity) error {
 func (k *EntityKeypair) CheckMatchesEntity(e *Entity) bool {
 	return k.GetEntityId() == e.GetEntityId() &&
 		k.GetDomainId() == e.GetDomainId()
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (k *EntityKeypair) MarshalBlock() ([]byte, error) {
-	return k.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (k *EntityKeypair) UnmarshalBlock(data []byte) error {
-	return k.UnmarshalVT(data)
 }
 
 // _ is a type assertion

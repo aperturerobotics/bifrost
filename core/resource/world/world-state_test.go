@@ -905,7 +905,7 @@ func TestWorldStateResourceGetObjectBodiesBatch(t *testing.T) {
 			return
 		}
 		decoded := block_mock.NewExample("")
-		if err := decoded.UnmarshalBlock(body.Body); err != nil {
+		if err := decoded.UnmarshalVT(body.Body); err != nil {
 			t.Fatalf("decode body %d: %v", index, err)
 		}
 		if decoded.GetMsg() != msg {

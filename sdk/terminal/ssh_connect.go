@@ -174,11 +174,10 @@ func (r *TerminalResource) lookupSshHost(ctx context.Context, objectKey string) 
 	}
 
 	// Read and validate the SSH Host and its credential references.
-	host, err := world.LookupObjectBody[*s4wave_sshhost.SshHost](
+	host, err := world.LookupObjectBody[s4wave_sshhost.SshHost](
 		ctx,
 		r.ws,
 		objectKey,
-		s4wave_sshhost.NewSshHostBlock,
 	)
 	if err != nil {
 		return nil, err
@@ -288,11 +287,10 @@ func (r *TerminalResource) readSshCredentialPayload(ctx context.Context, objectK
 	if err := world_types.CheckObjectType(ctx, r.ws, objectKey, s4wave_secret.SecretTypeID); err != nil {
 		return nil, err
 	}
-	secret, err := world.LookupObjectBody[*s4wave_secret.Secret](
+	secret, err := world.LookupObjectBody[s4wave_secret.Secret](
 		ctx,
 		r.ws,
 		objectKey,
-		s4wave_secret.NewSecretBlock,
 	)
 	if err != nil {
 		return nil, err

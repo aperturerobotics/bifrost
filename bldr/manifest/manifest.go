@@ -103,7 +103,7 @@ func NewManifestKey(baseObjKey string, manifestMeta *ManifestMeta) string {
 
 // UnmarshalManifest unmarshals a Manifest block from the cursor.
 func UnmarshalManifest(ctx context.Context, bcs *block.Cursor) (*Manifest, error) {
-	return block.UnmarshalBlock[*Manifest](ctx, bcs, NewManifestBlock)
+	return block.UnmarshalBlock[Manifest](ctx, bcs)
 }
 
 // CreateManifestWithBilly writes the manifest at the block cursor with billy
@@ -164,16 +164,6 @@ func (m *Manifest) Validate() error {
 		}
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (m *Manifest) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (m *Manifest) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

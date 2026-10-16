@@ -143,9 +143,7 @@ func TestAptImportDebCommitsAndReadsBack(t *testing.T) {
 	var aptPackage *s4wave_apt.AptPackage
 	_, _, err = world.AccessObjectState(ctx, objectState, false, func(cursor *block.Cursor) error {
 		var unmarshalErr error
-		aptPackage, unmarshalErr = block.UnmarshalBlock[*s4wave_apt.AptPackage](ctx, cursor, func() block.Block {
-			return &s4wave_apt.AptPackage{}
-		})
+		aptPackage, unmarshalErr = block.UnmarshalBlock[s4wave_apt.AptPackage](ctx, cursor)
 		return unmarshalErr
 	})
 	if err != nil {

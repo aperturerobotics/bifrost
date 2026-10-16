@@ -227,7 +227,7 @@ func readObject(ctx context.Context, ws world.WorldState, key string, cb world.A
 func checkExample(ctx context.Context, ws world.WorldState, key, msg string) error {
 	return readObject(ctx, ws, key, func(cursor *block.Cursor) error {
 		// Read the example and compare its message.
-		ex, err := block.UnmarshalBlock[*block_mock.Example](ctx, cursor, block_mock.NewExampleBlock)
+		ex, err := block.UnmarshalBlock[block_mock.Example](ctx, cursor)
 		if err != nil {
 			return err
 		}

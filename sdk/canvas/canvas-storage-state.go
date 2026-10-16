@@ -45,7 +45,7 @@ func materializeCanvasStorage(
 	it := nodes.BlockIterate(ctx, nil, false, false)
 	defer it.Close()
 	for it.Next() {
-		node, err := block.UnmarshalBlock[*CanvasNode](ctx, it.ValueCursor(), NewCanvasNodeBlock)
+		node, err := block.UnmarshalBlock[CanvasNode](ctx, it.ValueCursor())
 		if err != nil {
 			return nil, err
 		}

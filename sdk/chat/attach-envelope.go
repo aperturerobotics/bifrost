@@ -33,12 +33,6 @@ func (o *AttachChatEnvelopeOp) Validate() error {
 	return o.GetEnvelope().Validate()
 }
 
-// MarshalBlock serializes the attachment.
-func (o *AttachChatEnvelopeOp) MarshalBlock() ([]byte, error) { return o.MarshalVT() }
-
-// UnmarshalBlock restores the attachment.
-func (o *AttachChatEnvelopeOp) UnmarshalBlock(data []byte) error { return o.UnmarshalVT(data) }
-
 // ApplyWorldOp attaches the envelope in replay order unless the message holds one.
 func (o *AttachChatEnvelopeOp) ApplyWorldOp(ctx context.Context, _ *logrus.Entry, ws world.WorldState, _ peer.ID) (bool, error) {
 	// Validate the attachment before reading the message.
@@ -47,7 +41,7 @@ func (o *AttachChatEnvelopeOp) ApplyWorldOp(ctx context.Context, _ *logrus.Entry
 	}
 
 	// An envelope the message already holds stands.
-	message, err := world.LookupObjectBody[*ChatMessage](ctx, ws, o.GetMessageKey(), NewChatMessageBlock)
+	message, err := world.LookupObjectBody[ChatMessage](ctx, ws, o.GetMessageKey())
 	if err != nil {
 		return false, err
 	}

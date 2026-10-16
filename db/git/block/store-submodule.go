@@ -56,7 +56,7 @@ func (r *Store) LookupSubmodule(name string) (*Submodule, *block.Cursor, error) 
 	}
 
 	// Decode the submodule reference at its stored cursor.
-	sub, err := block.UnmarshalBlock[*Submodule](r.ctx, refCs, NewSubmoduleBlock)
+	sub, err := block.UnmarshalBlock[Submodule](r.ctx, refCs)
 	return sub, refCs, err
 }
 

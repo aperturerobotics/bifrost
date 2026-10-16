@@ -84,6 +84,6 @@ func (t *Mysql) fetchRoot(ctx context.Context) (
 	err error,
 ) {
 	btx, bcs = t.rootCursor.BuildTransaction(nil)
-	rn, err = block.UnmarshalBlock[*Root](ctx, bcs, NewRootBlock)
+	rn, err = block.UnmarshalBlock[Root](ctx, bcs)
 	return
 }

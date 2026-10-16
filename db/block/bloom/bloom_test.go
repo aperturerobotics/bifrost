@@ -39,7 +39,7 @@ func TestBloom(t *testing.T) {
 
 	// Encode the populated bloom filter as a block.
 	dataBlk := NewBloom(bl)
-	md, err := dataBlk.MarshalBlock()
+	md, err := dataBlk.MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -47,7 +47,7 @@ func TestBloom(t *testing.T) {
 
 	// Decode the serialized bloom block into a fresh object.
 	outBlk := NewBloomBlock().(*BloomFilter)
-	err = outBlk.UnmarshalBlock(md)
+	err = outBlk.UnmarshalVT(md)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

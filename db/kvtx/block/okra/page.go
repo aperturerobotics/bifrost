@@ -130,18 +130,9 @@ func (p *Page) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the block to binary.
-func (p *Page) MarshalBlock() ([]byte, error) {
-	return p.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// The page is validated here, so a page served from the decoded-block cache
-// was validated once when it was decoded.
-func (p *Page) UnmarshalBlock(data []byte) error {
-	if err := p.UnmarshalVT(data); err != nil {
-		return err
-	}
+// ValidateDecodedBlock validates the page once when a cursor decodes it, so a
+// page served from the decoded-block cache was validated when it was decoded.
+func (p *Page) ValidateDecodedBlock() error {
 	return p.Validate()
 }
 
@@ -257,4 +248,5 @@ var (
 	_ block.BlockWithRefs         = (*Page)(nil)
 	_ block.BlockWithSubBlocks    = (*Page)(nil)
 	_ block.DecodedBlockShareable = (*Page)(nil)
+	_ block.DecodedBlockValidator = (*Page)(nil)
 )

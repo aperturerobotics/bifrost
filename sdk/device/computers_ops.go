@@ -24,11 +24,6 @@ func NewCreateComputersDashboardOp(objKey, name string, ts time.Time) *CreateCom
 	}
 }
 
-// NewCreateComputersDashboardOpBlock constructs a CreateComputersDashboardOp block.
-func NewCreateComputersDashboardOpBlock() block.Block {
-	return &CreateComputersDashboardOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateComputersDashboardOp) GetOperationTypeId() string {
 	return CreateComputersDashboardOpId
@@ -91,16 +86,6 @@ func (o *CreateComputersDashboardOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CreateComputersDashboardOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *CreateComputersDashboardOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCreateComputersDashboardOp looks up a CreateComputersDashboardOp operation type.

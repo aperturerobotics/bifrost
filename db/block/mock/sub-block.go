@@ -14,18 +14,6 @@ func (r *SubBlock) IsNil() bool {
 	return r == nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (r *SubBlock) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (r *SubBlock) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // ApplyBlockRef applies a ref change with a field id.
 func (r *SubBlock) ApplyBlockRef(id uint32, ptr *block.BlockRef) error {
 	switch id {

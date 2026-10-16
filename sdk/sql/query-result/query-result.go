@@ -11,11 +11,6 @@ import (
 // SqlQueryResultTypeID is the world ObjectType id for SQL query results.
 const SqlQueryResultTypeID = "sql/query-result"
 
-// NewQueryResultBlock constructs a SQL query result block.
-func NewQueryResultBlock() block.Block {
-	return &QueryResult{}
-}
-
 // ReadQueryResultRoot reads a SQL query result object's root.
 func ReadQueryResultRoot(ctx context.Context, ws world.WorldState, objectKey string) (*QueryResult, error) {
 	obj, err := world.MustGetObject(ctx, ws, objectKey)
@@ -32,7 +27,7 @@ func ReadQueryResultObjectRoot(ctx context.Context, obj world.ObjectState) (*Que
 	_, _, err := world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
 		// Decode the query result block from the object root.
 		var err error
-		result, err = block.UnmarshalBlock[*QueryResult](ctx, bcs, NewQueryResultBlock)
+		result, err = block.UnmarshalBlock[QueryResult](ctx, bcs)
 		if err != nil {
 			return err
 		}
@@ -87,16 +82,6 @@ func SyncResultGraphQuads(ctx context.Context, ws world.WorldState, objectKey st
 		result.GetTargetDbObjectKey(),
 		"",
 	))
-}
-
-// MarshalBlock marshals the SQL query result root.
-func (r *QueryResult) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SQL query result root.
-func (r *QueryResult) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the SQL query result root.
