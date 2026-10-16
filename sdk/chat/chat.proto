@@ -5,6 +5,7 @@ import "google/protobuf/timestamp.proto";
 import "github.com/s4wave/spacewave/sdk/chat/content/content.proto";
 import "github.com/s4wave/spacewave/sdk/chat/rpc/rpc.proto";
 import "github.com/s4wave/spacewave/sdk/chat/state/state.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/chat;spacewave_chat";
 
@@ -87,6 +88,8 @@ message ChatThread {
 
 // InitChatDemoOp creates a "General" channel on space quickstart.
 message InitChatDemoOp {
+  option (typeid.id) = "chat/init-chat-demo";
+
   // ChannelObjectKey is the key for the channel object.
   string channel_object_key = 1;
   // Timestamp is the creation timestamp.
@@ -95,6 +98,8 @@ message InitChatDemoOp {
 
 // CreateChatChannelOp creates a new chat channel.
 message CreateChatChannelOp {
+  option (typeid.id) = "spacewave-chat/channel/create";
+
   // ObjectKey is the key to create the channel at.
   string object_key = 1;
   // Name is the channel name.
@@ -112,6 +117,8 @@ message CreateChatChannelOp {
 
 // SendChatMessageOp appends a message against the accepted World history.
 message SendChatMessageOp {
+  option (typeid.id) = "spacewave-chat/message/send";
+
   // ObjectKey selects the channel to append to.
   string object_key = 1;
   // Request retains the send intent and its stable transaction ID.
@@ -123,6 +130,8 @@ message SendChatMessageOp {
 // AttachChatEnvelopeOp gives a message without an envelope its wire form in
 // another protocol on accepted World replay.
 message AttachChatEnvelopeOp {
+  option (typeid.id) = "spacewave-chat/envelope/attach";
+
   // ObjectKey selects the channel holding the message.
   string object_key = 1;
   // MessageKey identifies the message.
@@ -133,6 +142,8 @@ message AttachChatEnvelopeOp {
 
 // UpdateChatReadPositionOp advances a receipt on accepted World replay.
 message UpdateChatReadPositionOp {
+  option (typeid.id) = "spacewave-chat/read-position/update";
+
   // ObjectKey selects the channel whose receipt advances.
   string object_key = 1;
   // NextIndex is the first unread message index.

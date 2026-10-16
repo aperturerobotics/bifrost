@@ -3,6 +3,7 @@ package s4wave.sql.world;
 
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
 import "github.com/s4wave/spacewave/db/sql/sql.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/sql/world;s4wave_sql_world";
 
@@ -40,6 +41,8 @@ message SqlStatement {
 
 // SqlSetRootOp advances a sql/db world object's root after a SQL commit.
 message SqlSetRootOp {
+  option (typeid.id) = "sql/db/set-root";
+
   // ObjectKey is the sql/db object key to update.
   string object_key = 1;
   // RootRef is the committed SQL root reference.

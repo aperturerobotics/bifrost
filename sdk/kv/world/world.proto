@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.kv.world;
 
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/kv/world;s4wave_kv_world";
 
@@ -27,6 +28,8 @@ message KvMutation {
 
 // KvSetRootOp advances a kv/store world object's root after a KVTX commit.
 message KvSetRootOp {
+  option (typeid.id) = "kv/store/set-root";
+
   // ObjectKey is the kv/store object key to update.
   string object_key = 1;
   // RootRef is the committed KVTX root reference.

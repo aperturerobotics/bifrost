@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.terminal;
 
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/terminal;s4wave_terminal";
 
@@ -121,6 +122,8 @@ message TerminalFrame {
 
 // CreateTerminalOp creates a Terminal world object.
 message CreateTerminalOp {
+  option (typeid.id) = "spacewave/terminal/create";
+
   // ObjectKey is the key to create the Terminal at.
   string object_key = 1;
   // Name is the Terminal display name.

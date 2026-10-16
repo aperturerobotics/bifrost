@@ -5,9 +5,12 @@ import "github.com/s4wave/spacewave/forge/execution/execution.proto";
 import "github.com/s4wave/spacewave/forge/value/value.proto";
 import "github.com/s4wave/spacewave/forge/worker/worker.proto";
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // Tx is the on-the-wire representation of a transaction.
 message Tx {
+  option (typeid.id) = "forge/execution/tx";
+
   // TxType is the kind of transaction this is.
   TxType tx_type = 1;
 

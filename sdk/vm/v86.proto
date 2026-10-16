@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.vm;
 
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/vm;s4wave_vm";
 
@@ -95,6 +96,8 @@ message VmV86 {
 // rootfs). Optional per-asset =*_override_object_key= fields override the
 // corresponding asset at resolve time without rewriting the V86Image.
 message CreateVmV86Op {
+  option (typeid.id) = "vm/v86/create";
+
   // ObjectKey is the key to create the VM at.
   string object_key = 1;
   // Name is the display name.
@@ -122,6 +125,8 @@ message CreateVmV86Op {
 // SetV86ConfigOp mutates the mutable V86Config on an existing VmV86 object.
 // Immutable fields (name, created_at) on the VmV86 block are preserved.
 message SetV86ConfigOp {
+  option (typeid.id) = "vm/v86/set-config";
+
   // ObjectKey is the object key of the VmV86 to update.
   string object_key = 1;
   // Config is the new configuration to apply. Replaces the stored Config.
@@ -132,6 +137,8 @@ message SetV86ConfigOp {
 // STARTING and STOPPING are accepted as compatibility aliases for RUNNING
 // and STOPPED.
 message SetV86StateOp {
+  option (typeid.id) = "vm/v86/set-state";
+
   // ObjectKey is the object key of the VmV86 to update.
   string object_key = 1;
   // State is the target state to transition to.
@@ -218,6 +225,8 @@ message VmImageCdnSource {
 // CreateV86ImageOp creates a new V86Image world object. Metadata is supplied
 // inline; the five UnixFS edges are set separately via SetGraphQuad.
 message CreateV86ImageOp {
+  option (typeid.id) = "vm/image/v86/create";
+
   // ObjectKey is the key to create the V86Image at.
   string object_key = 1;
   // Image carries the metadata for the new V86Image. Name / platform / tags
@@ -231,6 +240,8 @@ message CreateV86ImageOp {
 // The four UnixFS edges are immutable post-create; use graph-quad ops on a
 // fresh V86Image to change asset bindings.
 message SetV86ImageMetadataOp {
+  option (typeid.id) = "vm/image/v86/set-metadata";
+
   // ObjectKey is the key of the V86Image to update.
   string object_key = 1;
   // Image carries the new metadata. CreatedAt is preserved from the stored

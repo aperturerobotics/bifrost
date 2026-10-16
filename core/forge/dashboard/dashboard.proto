@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.forge.dashboard;
 
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/core/forge/dashboard;forge_dashboard";
 
@@ -16,6 +17,8 @@ message ForgeDashboard {
 
 // CreateForgeDashboardOp creates a new ForgeDashboard world object.
 message CreateForgeDashboardOp {
+  option (typeid.id) = "spacewave/forge/dashboard/create";
+
   // ObjectKey is the key to create the dashboard at.
   string object_key = 1;
   // Name is the display name of the dashboard.
@@ -26,6 +29,8 @@ message CreateForgeDashboardOp {
 
 // LinkForgeDashboardOp links a Forge entity to a ForgeDashboard.
 message LinkForgeDashboardOp {
+  option (typeid.id) = "spacewave/forge/dashboard/link";
+
   // DashboardKey is the dashboard object key.
   string dashboard_key = 1;
   // EntityKey is the Forge entity object key to link.
@@ -36,6 +41,8 @@ message LinkForgeDashboardOp {
 // ObjectLayout with dashboard tab, cluster, sample job with tasks, and
 // optionally a worker linked to the session peer.
 message InitForgeQuickstartOp {
+  option (typeid.id) = "spacewave/forge/quickstart/init";
+
   // LayoutKey is the object key for the ObjectLayout.
   string layout_key = 1;
   // DashboardKey is the object key for the Forge Dashboard.

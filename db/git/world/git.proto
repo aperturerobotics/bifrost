@@ -5,10 +5,13 @@ import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
 import "github.com/s4wave/spacewave/db/git/block/git.proto";
 import "github.com/s4wave/spacewave/db/unixfs/world/unixfs.proto";
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // GitInitOp is an operation to create a repo with a root ref or empty.
 // If applied as an object op, skips checkout step.
 message GitInitOp {
+  option (typeid.id) = "hydra/git/init";
+
   // ObjectKey is the object key to create as a Repo.
   string object_key = 1;
   // RepoRef contains the object ref to the Repo.
@@ -50,6 +53,8 @@ message HeadRefStore {
 // GitCreateWorktreeOp creates a Git worktree attached to a Repo.
 // Note: cannot be run as a Object-specific op.
 message GitCreateWorktreeOp {
+  option (typeid.id) = "hydra/git/create-worktree";
+
   // ObjectKey is the object key to create as a Worktree.
   string object_key = 1;
   // RepoObjectKey is the key of the repository object.
@@ -68,6 +73,8 @@ message GitCreateWorktreeOp {
 
 // GitFetchOp is an operation to fetch updates into an existing repo.
 message GitFetchOp {
+  option (typeid.id) = "hydra/git/fetch";
+
   // ObjectKey is the object key of the existing Repo to fetch into.
   string object_key = 1;
   // FetchOpts contains the fetch options.
@@ -77,6 +84,8 @@ message GitFetchOp {
 // GitCloneOp is an operation to clone a git repo into the world.
 // Clones objects from a remote, then runs GitInitOp to register the repo.
 message GitCloneOp {
+  option (typeid.id) = "hydra/git/clone";
+
   // ObjectKey is the object key to create as a Repo.
   string object_key = 1;
   // CloneOpts contains the clone options (URL, ref, etc).
@@ -95,6 +104,8 @@ message GitCloneOp {
 // GitWorktreeCheckoutOp checks out a git revision in a worktree.
 // Note: cannot be run as a Object-specific op.
 message GitWorktreeCheckoutOp {
+  option (typeid.id) = "hydra/git/worktree/checkout";
+
   // ObjectKey is the object key of the Worktree.
   string object_key = 1;
   // RepoObjectKey is the key of the repository object.
@@ -107,6 +118,8 @@ message GitWorktreeCheckoutOp {
 
 // GitStageOp stages files in a worktree's git index.
 message GitStageOp {
+  option (typeid.id) = "hydra/git/stage";
+
   // ObjectKey is the object key of the Worktree.
   string object_key = 1;
   // RepoObjectKey is the key of the repository object.
@@ -119,6 +132,8 @@ message GitStageOp {
 
 // GitUnstageOp unstages files from a worktree's git index.
 message GitUnstageOp {
+  option (typeid.id) = "hydra/git/unstage";
+
   // ObjectKey is the object key of the Worktree.
   string object_key = 1;
   // RepoObjectKey is the key of the repository object.

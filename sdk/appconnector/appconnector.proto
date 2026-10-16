@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.appconnector;
 
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/appconnector;s4wave_appconnector";
 
@@ -65,6 +66,8 @@ message AppSnapshot {
 
 // CreateAppConnectorOp creates an AppConnector and its AppSnapshot.
 message CreateAppConnectorOp {
+  option (typeid.id) = "spacewave/app-connector/create";
+
   // ObjectKey is the key to create the connector at. The snapshot lives at
   // ObjectKey + "/snapshot".
   string object_key = 1;
