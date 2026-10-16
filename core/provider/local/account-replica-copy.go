@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -23,11 +24,14 @@ import (
 // Cached blocks survive cancellation and restart; a persisted completion record
 // is valid only for its exact immutable head.
 //
-// A block that no connected peer holds, or holds only without its refs, is not
-// a failure: the copy logs it once and waits for a new state, or for a peer
-// session to start on exchange that may hold the block. exchange is nil when
-// the bucket has no DEX controller. Any other failure is published as the
-// object's copy error before the routine retries.
+// The copier finishes each head before it takes the newest, so a writer that
+// publishes faster than a copy completes does not restart it. A block that no
+// connected peer holds, or holds only without its refs, is not a failure: the
+// copy logs it once and waits for a newer head, which replaces it, or for a peer
+// session to start on exchange that may hold the block. So a missing old block
+// cannot pin replication to an old head. exchange is nil when the bucket has no
+// DEX controller. Any other failure is published as the object's copy error
+// before the routine retries.
 func (a *ProviderAccount) runAccountReplicaCopy(
 	ctx context.Context,
 	so sobject.SharedObject,
@@ -57,9 +61,12 @@ func (a *ProviderAccount) runAccountReplicaCopy(
 	}
 	defer releaseStates()
 
-	// Replacing the head cancels and joins the previous copy before starting
-	// the next one. A missing old block cannot pin replication to an old head.
+	// Copy the newest published graph in latest, then each newer one.
+	latest := ccontainer.NewCContainer[*replicaHead](nil)
 	copier := routine.NewRoutineContainerWithLogger(a.le.WithField("routine", "copy-world-head"), routine.WithRetry(providerBackoff))
+	copier.SetRoutine(func(ctx context.Context) error {
+		return publishErr(ctx, a.copyAccountWorldHeads(ctx, so, state, local, latest, exchange))
+	})
 	copier.SetContext(ctx, false)
 	defer func() {
 		if exited, _ := copier.SetRoutine(nil); exited != nil {
@@ -67,7 +74,7 @@ func (a *ProviderAccount) runAccountReplicaCopy(
 		}
 	}()
 
-	// Copy each new published graph as its state arrives.
+	// Hand each new published graph to the copier as its state arrives.
 	var snapshot sobject.SharedObjectStateSnapshot
 	var previous *block.BlockRef
 	for {
@@ -86,32 +93,62 @@ func (a *ProviderAccount) runAccountReplicaCopy(
 			continue
 		}
 		previous = root
-
-		// Store the span block on each attempt, so a sweep between attempts
-		// cannot leave the copy without its root.
-		head := &bucket.ObjectRef{RootRef: root}
-		copier.SetRoutine(func(ctx context.Context) error {
-			if span != nil {
-				if _, err := so.GetBlockStore().PutBlockBatch(ctx, []*block.PutBatchEntry{span}); err != nil {
-					return publishErr(ctx, err)
-				}
-			}
-			return publishErr(ctx, a.copyAccountWorldHead(ctx, so, state, local, head, exchange))
-		})
+		latest.SetValue(&replicaHead{span: span, head: &bucket.ObjectRef{RootRef: root}})
 	}
 }
 
-// copyAccountWorldHead copies head until it completes. A block that no
-// reachable source holds, or holds only without its refs, does not appear by
-// retrying the same head: the copy logs it once and retries when a peer
-// session starts on exchange. Without exchange it waits for the next head,
-// which cancels this routine.
+// replicaHead is a published graph for the account replica copy.
+type replicaHead struct {
+	// span is the published span block, or nil.
+	span *block.PutBatchEntry
+	// head references the published World root.
+	head *bucket.ObjectRef
+}
+
+// copyAccountWorldHeads copies the head in latest, then each newer one, until
+// ctx ends or a copy fails. It stores the span block on each attempt, so a
+// sweep between attempts cannot leave the copy without its root.
+func (a *ProviderAccount) copyAccountWorldHeads(
+	ctx context.Context,
+	so sobject.SharedObject,
+	state *p2pSyncState,
+	local kvtx.Store,
+	latest *ccontainer.CContainer[*replicaHead],
+	exchange *dex_solicit.Controller,
+) error {
+	var copied *replicaHead
+	for {
+		// Take the newest head.
+		next, err := latest.WaitValueChange(ctx, copied, nil)
+		if err != nil {
+			return err
+		}
+
+		// Store its span block and copy it.
+		if next.span != nil {
+			if _, err := so.GetBlockStore().PutBlockBatch(ctx, []*block.PutBatchEntry{next.span}); err != nil {
+				return err
+			}
+		}
+		if err := a.copyAccountWorldHead(ctx, so, state, local, latest, next, exchange); err != nil {
+			return err
+		}
+		copied = next
+	}
+}
+
+// copyAccountWorldHead copies cur until it completes or latest holds a newer
+// head. A block that no reachable source holds, or holds only without its
+// refs, does not appear by retrying the same head: the copy logs it once and
+// retries when a peer session starts on exchange. It returns nil when a newer
+// head arrives first, which the caller copies next.
 func (a *ProviderAccount) copyAccountWorldHead(
 	ctx context.Context,
 	so sobject.SharedObject,
 	state *p2pSyncState,
 	local kvtx.Store,
-	head *bucket.ObjectRef,
+	latest *ccontainer.CContainer[*replicaHead],
+	cur *replicaHead,
 	exchange *dex_solicit.Controller,
 ) error {
 	for logged := false; ; logged = true {
@@ -121,20 +158,34 @@ func (a *ProviderAccount) copyAccountWorldHead(
 		if exchange != nil {
 			starts = exchange.GetSessionStarts()
 		}
-		err := a.copyAndPersistAccountWorld(ctx, so, state, local, head)
+		err := a.copyAndPersistAccountWorld(ctx, so, state, local, cur.head)
 		if !errors.Is(err, block.ErrNotFound) && !errors.Is(err, block.ErrRefsUnknown) {
 			return err
 		}
 
-		// Wait for a source that may hold the block with its refs.
+		// Wait for a source that may hold the block with its refs, or for a
+		// newer head.
 		if !logged {
 			a.le.WithError(err).Info("waiting for a peer that holds a World block with its refs")
 		}
-		if exchange == nil {
-			<-ctx.Done()
+		waitCtx, cancel := context.WithCancel(ctx)
+		go func() {
+			_, _ = latest.WaitValueChange(waitCtx, cur, nil)
+			cancel()
+		}()
+		if exchange != nil {
+			err = exchange.WaitSessionStart(waitCtx, starts)
+		} else {
+			<-waitCtx.Done()
+		}
+		cancel()
+		if ctx.Err() != nil {
 			return context.Cause(ctx)
 		}
-		if err := exchange.WaitSessionStart(ctx, starts); err != nil {
+		if latest.GetValue() != cur {
+			return nil
+		}
+		if err != nil {
 			return err
 		}
 	}
