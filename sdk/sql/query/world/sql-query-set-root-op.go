@@ -13,9 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SqlQuerySetRootOpId is the world op id for advancing a sql/query root.
-const SqlQuerySetRootOpId = "sql/query/set-root"
-
 // NewSqlQuerySetRootOp constructs a SQL query set-root operation.
 func NewSqlQuerySetRootOp(objectKey string, rootRef *bucket.ObjectRef) *SqlQuerySetRootOp {
 	return &SqlQuerySetRootOp{ObjectKey: objectKey, RootRef: rootRef.Clone()}
@@ -24,11 +21,6 @@ func NewSqlQuerySetRootOp(objectKey string, rootRef *bucket.ObjectRef) *SqlQuery
 // NewSqlQueryInitializeRootOp constructs a create-once SQL query root operation.
 func NewSqlQueryInitializeRootOp(objectKey string, rootRef *bucket.ObjectRef) *SqlQuerySetRootOp {
 	return &SqlQuerySetRootOp{ObjectKey: objectKey, RootRef: rootRef.Clone(), InitializeOnly: true}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SqlQuerySetRootOp) GetOperationTypeId() string {
-	return SqlQuerySetRootOpId
 }
 
 // Validate performs cursory checks on the operation.
@@ -102,14 +94,6 @@ func (o *SqlQuerySetRootOp) ApplyWorldObjectOp(
 	// Advance the query object to the requested root reference.
 	_, err := os.SetRootRef(ctx, o.GetRootRef())
 	return false, err
-}
-
-// LookupSqlQuerySetRootOp returns an empty SQL query set-root op for lookup.
-func LookupSqlQuerySetRootOp(_ context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == SqlQuerySetRootOpId {
-		return &SqlQuerySetRootOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ block.Block = (*SqlQuerySetRootOp)(nil)

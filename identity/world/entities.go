@@ -75,15 +75,6 @@ func FollowEntity(
 	return entity, nil
 }
 
-// LookupEntityOp performs the lookup operation for the Entity op types.
-func LookupEntityOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	switch opTypeID {
-	case EntityUpdateOpId:
-		return &EntityUpdateOp{}, nil
-	}
-	return nil, nil
-}
-
 // LookupEntity looks up an entity with the given key.
 // returns nil, nil, nil if not found.
 func LookupEntity(ctx context.Context, w world.WorldState, objKey string) (*identity.Entity, world.ObjectState, error) {

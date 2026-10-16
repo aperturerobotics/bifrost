@@ -15,9 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateAppConnectorOpId is the operation id for CreateAppConnectorOp.
-var CreateAppConnectorOpId = "spacewave/app-connector/create"
-
 // NewCreateAppConnectorOp constructs a new CreateAppConnectorOp.
 func NewCreateAppConnectorOp(
 	objKey string,
@@ -39,11 +36,6 @@ func NewCreateAppConnectorOp(
 		MaxBodyBytes:         maxBodyBytes,
 		Timestamp:            timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateAppConnectorOp) GetOperationTypeId() string {
-	return CreateAppConnectorOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -110,24 +102,6 @@ func (o *CreateAppConnectorOp) ApplyWorldOp(
 		return true, err
 	}
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateAppConnectorOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateAppConnectorOp looks up a CreateAppConnectorOp operation type.
-func LookupCreateAppConnectorOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateAppConnectorOpId {
-		return &CreateAppConnectorOp{}, nil
-	}
-	return nil, nil
 }
 
 // buildAppConnector builds the connector block with create-path defaults applied.

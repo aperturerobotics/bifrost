@@ -131,7 +131,7 @@ func (o *ObjectState) ApplyObjectOp(
 	if op == nil {
 		return 0, false, world.ErrEmptyOp
 	}
-	if err := op.Validate(); err != nil {
+	if err := world.ValidateOp(op); err != nil {
 		return 0, false, err
 	}
 
@@ -140,7 +140,7 @@ func (o *ObjectState) ApplyObjectOp(
 	defer subCtxCancel()
 
 	// Apply the object operation.
-	sysErr, err := op.ApplyWorldObjectOp(ctx, o.w.le, o, opSender)
+	sysErr, err := world.ApplyWorldObjectOp(ctx, o.w.le, op, o, opSender)
 	if err != nil {
 		return 0, sysErr, err
 	}

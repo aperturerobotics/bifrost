@@ -10,14 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DeleteOrganizationOpID is the operation type ID.
-var DeleteOrganizationOpID = "org/delete-organization"
-
-// GetOperationTypeId returns the operation type ID.
-func (o *DeleteOrganizationOp) GetOperationTypeId() string {
-	return DeleteOrganizationOpID
-}
-
 // Validate validates the operation.
 func (o *DeleteOrganizationOp) Validate() error {
 	if o.GetOrgObjectKey() == "" {
@@ -66,24 +58,6 @@ func (o *DeleteOrganizationOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp is not supported for this operation.
-func (o *DeleteOrganizationOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (bool, error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupDeleteOrganizationOp looks up the delete organization operation.
-func LookupDeleteOrganizationOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == DeleteOrganizationOpID {
-		return &DeleteOrganizationOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.Operation = (*DeleteOrganizationOp)(nil)

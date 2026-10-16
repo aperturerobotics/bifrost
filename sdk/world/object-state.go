@@ -109,7 +109,7 @@ func (os *ObjectState) ApplyObjectOp(ctx context.Context, op world.Operation, se
 
 	// Apply the operation over RPC and check for system errors.
 	resp, err := os.service.ApplyObjectOp(ctx, &ApplyObjectOpRequest{
-		OpTypeId: op.GetOperationTypeId(),
+		OpTypeId: op.TypeID(),
 		OpData:   opData,
 		OpSender: sender.String(),
 	})

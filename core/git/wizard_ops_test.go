@@ -25,7 +25,7 @@ func setupGitWizardWorld(t *testing.T) (context.Context, *world_testbed.Testbed,
 	t.Cleanup(tb.Release)
 
 	// Attach the Git operation controller used by the repository wizard.
-	gitOpc := world.NewLookupOpController("test-alpha-git-wizard-ops", tb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-alpha-git-wizard-ops", tb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := tb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}

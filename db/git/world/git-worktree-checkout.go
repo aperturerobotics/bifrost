@@ -15,9 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GitWorktreeCheckoutOpId is the git init operation id.
-var GitWorktreeCheckoutOpId = "hydra/git/worktree/checkout"
-
 // NewGitWorktreeCheckoutOp constructs a new GitWorktreeCheckoutOp block.
 // workdirObjKey, workdirPath, and ref can be empty.
 func NewGitWorktreeCheckoutOp(
@@ -30,11 +27,6 @@ func NewGitWorktreeCheckoutOp(
 		RepoObjectKey: repoObjKey,
 		CheckoutOpts:  checkoutOpts,
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *GitWorktreeCheckoutOp) GetOperationTypeId() string {
-	return GitWorktreeCheckoutOpId
 }
 
 // Validate checks the create worktree operation.
@@ -154,16 +146,6 @@ func (o *GitWorktreeCheckoutOp) ApplyWorldOp(
 		return false, err
 	}
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *GitWorktreeCheckoutOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

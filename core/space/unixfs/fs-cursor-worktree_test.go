@@ -38,13 +38,13 @@ func TestFSCursorProjectsGitWorktreePaths(t *testing.T) {
 	defer wtb.Release()
 
 	// Register UnixFS operations for the worktree directory.
-	unixfsOpc := world.NewLookupOpController("test-space-projection-git-unixfs", wtb.EngineID, unixfs_world.LookupFsOp)
+	unixfsOpc := world.NewLookupOpController("test-space-projection-git-unixfs", wtb.EngineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, unixfsOpc, nil); err != nil {
 		t.Fatal(err)
 	}
 
 	// Register Git operations for the World worktree.
-	gitOpc := world.NewLookupOpController("test-space-projection-git", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-space-projection-git", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}

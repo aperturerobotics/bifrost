@@ -43,7 +43,7 @@ func TestReadPositionReplaySharesPerson(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := replayed.ExecuteTx(world.WithOperationPerson(ctx, "person"), device, LookupUpdateChatReadPositionOp, ws); err != nil {
+		if _, err := replayed.ExecuteTx(world.WithOperationPerson(ctx, "person"), device, world.NewSchema(ChatTypes).LookupOp, ws); err != nil {
 			t.Fatal(err)
 		}
 	}

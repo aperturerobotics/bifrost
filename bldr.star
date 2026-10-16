@@ -142,7 +142,7 @@ def spacewave_core_config(
     return {
         "goPkgs": core_go_pkgs(),
         "goscriptDeferredFunctions": [
-            "github.com/s4wave/spacewave/core/git.LookupCreateGitRepoWizardOp",
+            "github.com/s4wave/spacewave/core/git.NewCreateGitRepoWizardOp",
             "github.com/s4wave/spacewave/core/cdn/v86copy.CopyV86ImageFromCdnWithProgress",
             "github.com/s4wave/spacewave/sdk/world/wizard/resource.LookupWizardObjectType",
         ],

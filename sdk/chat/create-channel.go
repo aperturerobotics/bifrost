@@ -11,14 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateChatChannelOpId is the operation id for CreateChatChannelOp.
-var CreateChatChannelOpId = "spacewave-chat/channel/create"
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateChatChannelOp) GetOperationTypeId() string {
-	return CreateChatChannelOpId
-}
-
 // AuthenticatedOperation selects the verified transaction signer on replay.
 func (o *CreateChatChannelOp) AuthenticatedOperation() {}
 
@@ -98,24 +90,6 @@ func (o *CreateChatChannelOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object.
-func (o *CreateChatChannelOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateChatChannelOp looks up a CreateChatChannelOp operation type.
-func LookupCreateChatChannelOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateChatChannelOpId {
-		return &CreateChatChannelOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.AuthenticatedOperation = (*CreateChatChannelOp)(nil)

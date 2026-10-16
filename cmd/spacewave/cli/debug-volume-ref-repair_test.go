@@ -114,7 +114,7 @@ func TestDebugRefRepair(t *testing.T) {
 		base.GetTransformConf(),
 	)
 	defer cursor.Release()
-	eng, err := world_block.NewEngine(ctx, le, cursor, unixfs_world.LookupFsOp, nil, false)
+	eng, err := world_block.NewEngine(ctx, le, cursor, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}

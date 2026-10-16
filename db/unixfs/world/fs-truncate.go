@@ -27,9 +27,6 @@ func FsTruncate(
 	return obj.ApplyObjectOp(ctx, wOp, sender)
 }
 
-// FsTruncateOpId is the operation id.
-var FsTruncateOpId = "hydra/unixfs/truncate"
-
 // NewFsTruncateOp constructs a new FsTruncateOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsTruncateOp(
@@ -60,11 +57,6 @@ func (o *FsTruncateOp) Validate() error {
 		return errors.Errorf("file size cannot be less than zero: %d", o.GetFileSize())
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsTruncateOp) GetOperationTypeId() string {
-	return FsTruncateOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

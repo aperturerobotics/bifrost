@@ -8,14 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// UpdateChatReadPositionOpID identifies a replayable chat receipt.
-const UpdateChatReadPositionOpID = "spacewave-chat/read-position/update"
-
 // AuthenticatedOperation selects the verified transaction signer on replay.
 func (o *UpdateChatReadPositionOp) AuthenticatedOperation() {}
-
-// GetOperationTypeId identifies the receipt operation for World replay.
-func (o *UpdateChatReadPositionOp) GetOperationTypeId() string { return UpdateChatReadPositionOpID }
 
 // Validate requires a channel, a valid author and a valid receipt timestamp.
 func (o *UpdateChatReadPositionOp) Validate() error {
@@ -38,19 +32,6 @@ func (o *UpdateChatReadPositionOp) ApplyWorldOp(ctx context.Context, _ *logrus.E
 		return false, err
 	}
 	return false, resource.applyReadPosition(ctx, ws, o.GetAuthor(), o.GetNextIndex(), o.ThreadRootKey, o.GetTimestamp())
-}
-
-// ApplyWorldObjectOp rejects object-only replay for channel receipts.
-func (o *UpdateChatReadPositionOp) ApplyWorldObjectOp(context.Context, *logrus.Entry, world.ObjectState, peer.ID) (bool, error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupUpdateChatReadPositionOp resolves the replayable receipt operation.
-func LookupUpdateChatReadPositionOp(_ context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == UpdateChatReadPositionOpID {
-		return &UpdateChatReadPositionOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.AuthenticatedOperation = (*UpdateChatReadPositionOp)(nil)

@@ -67,7 +67,7 @@ func (tb *Testbed) RunPassWithTarget(
 	opc := world.NewLookupOpController(
 		"pass-tx-ops",
 		tb.EngineID,
-		pass_transaction.LookupWorldOp,
+		world.NewSchema(pass_transaction.TxTypes).LookupOp,
 	)
 	releaseOpCtrl, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {
@@ -101,7 +101,7 @@ func (tb *Testbed) RunPassWithTarget(
 	opc = world.NewLookupOpController(
 		"exec-tx-ops",
 		tb.EngineID,
-		exec_transaction.LookupWorldOp,
+		world.NewSchema(exec_transaction.TxTypes).LookupOp,
 	)
 	releaseExecOpCtrl, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {

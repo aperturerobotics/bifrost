@@ -44,9 +44,6 @@ func FsCopy(
 	return rev, false, nil
 }
 
-// FsCopyOpId is the unixfs copy op id.
-var FsCopyOpId = "hydra/unixfs/copy"
-
 // NewFsCopyOp constructs a new FsCopyOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsCopyOp(
@@ -62,11 +59,6 @@ func NewFsCopyOp(
 		DestPath:  destPath,
 		Timestamp: unixfs_block.ToTimestamp(ts, true),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsCopyOp) GetOperationTypeId() string {
-	return FsCopyOpId
 }
 
 // Validate performs cursory checks on the op.

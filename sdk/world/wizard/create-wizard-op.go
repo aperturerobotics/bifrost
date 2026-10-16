@@ -13,9 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateWizardObjectOpId is the operation id for CreateWizardObjectOp.
-var CreateWizardObjectOpId = "spacewave/wizard/create"
-
 // NewCreateWizardObjectOp constructs a new CreateWizardObjectOp.
 func NewCreateWizardObjectOp(
 	objKey string,
@@ -51,11 +48,6 @@ func (o *CreateWizardObjectOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateWizardObjectOp) GetOperationTypeId() string {
-	return CreateWizardObjectOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -95,24 +87,6 @@ func (o *CreateWizardObjectOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateWizardObjectOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateWizardObjectOp looks up a CreateWizardObjectOp operation type.
-func LookupCreateWizardObjectOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateWizardObjectOpId {
-		return &CreateWizardObjectOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.Operation = (*CreateWizardObjectOp)(nil)

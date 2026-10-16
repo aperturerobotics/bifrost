@@ -23,26 +23,29 @@ import (
 
 // TestGitCloneOp tests cloning a repo via GitCloneOp through ApplyWorldOp.
 func TestGitCloneOp(t *testing.T) {
+	// Log at debug level for the clone and fetch progress.
 	ctx := context.Background()
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(log)
 
+	// Start the storage testbed with the block engine factory.
 	tb, err := testbed.NewTestbed(ctx, le)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	tb.StaticResolver.AddFactory(world_block_engine.NewFactory(tb.Bus))
 
+	// Name the World engine and its storage.
 	vol := tb.Volume
 	volumeID := vol.GetID()
 	engineID := "test-clone-op-engine"
 	objectStoreID := "test-clone-op-store"
 	bucketID := tb.BucketId
 
+	// Derive the object store key and compress stored blocks.
 	encKey := make([]byte, 32)
 	blake3.DeriveKey("hydra/test/git: git-clone-op_test.go", []byte(objectStoreID), encKey)
-
 	xfrmConf, err := block_transform.NewConfig([]config.Config{
 		&transform_gzip.Config{},
 	})
@@ -50,11 +53,11 @@ func TestGitCloneOp(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
+	// Start the World engine over the testbed bucket.
 	initWorldRef := &bucket.ObjectRef{
 		BucketId:      bucketID,
 		TransformConf: xfrmConf,
 	}
-
 	_, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
 		ctx,
 		tb.Bus,
@@ -73,7 +76,7 @@ func TestGitCloneOp(t *testing.T) {
 	defer worldCtrlRef.Release()
 
 	// register git ops on the bus
-	opc := world.NewLookupOpController("test-git-ops", engineID, LookupGitOp)
+	opc := world.NewLookupOpController("test-git-ops", engineID, world.NewSchema(GitTypes).LookupOp)
 	go func() {
 		_ = tb.Bus.ExecuteController(ctx, opc)
 	}()
@@ -83,6 +86,7 @@ func TestGitCloneOp(t *testing.T) {
 	case <-time.After(time.Millisecond * 100):
 	}
 
+	// Open the World state through the bus.
 	busEngine := world.NewBusEngine(ctx, tb.Bus, engineID)
 	ws := world.NewEngineWorldState(busEngine, true)
 	sender := tb.Volume.GetPeerID()
@@ -97,7 +101,6 @@ func TestGitCloneOp(t *testing.T) {
 		},
 		DisableCheckout: true,
 	}
-
 	t.Log("cloning via GitCloneOp...")
 	seqno, _, err := ws.ApplyWorldOp(ctx, cloneOp, sender)
 	if err != nil {
@@ -143,7 +146,6 @@ func TestGitCloneOp(t *testing.T) {
 	fetchOp := NewGitFetchOp(objKey, &git_block.FetchOpts{
 		RemoteUrl: "../../",
 	})
-
 	t.Log("fetching via GitFetchOp...")
 	seqno2, _, err := ws.ApplyWorldOp(ctx, fetchOp, sender)
 	if err != nil {

@@ -388,7 +388,7 @@ func BuildDistBus(
 	worldState := world.NewEngineWorldState(eng, true)
 
 	// register the world operation types for manifests
-	lookupOpCtrl := world.NewLookupOpController("bldr-manifest-ops", engineID, bldr_manifest_world.LookupOp)
+	lookupOpCtrl := world.NewLookupOpController("bldr-manifest-ops", engineID, world.NewSchema(bldr_manifest_world.WorldTypes).LookupOp)
 	relLookupCtrl, err := b.AddController(ctx, lookupOpCtrl, nil)
 	if err != nil {
 		rel()

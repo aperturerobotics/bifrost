@@ -28,9 +28,6 @@ func InitObjectLayout(
 	return ws.ApplyWorldOp(ctx, op, sender)
 }
 
-// InitObjectLayoutOpId is the operation id for InitObjectLayoutOp.
-var InitObjectLayoutOpId = "space/world/init-object-layout"
-
 // NewInitObjectLayoutOp constructs a new InitObjectLayoutOp block.
 func NewInitObjectLayoutOp(
 	objKey string,
@@ -49,11 +46,6 @@ func (o *InitObjectLayoutOp) Validate() error {
 		return world.ErrEmptyObjectKey
 	}
 	return o.GetTimestamp().Validate(false)
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *InitObjectLayoutOp) GetOperationTypeId() string {
-	return InitObjectLayoutOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -122,24 +114,6 @@ func (o *InitObjectLayoutOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *InitObjectLayoutOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupInitObjectLayoutOp looks up a InitObjectLayoutOp operation type.
-func LookupInitObjectLayoutOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == InitObjectLayoutOpId {
-		return &InitObjectLayoutOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

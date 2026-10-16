@@ -60,15 +60,6 @@ func FollowDomainInfo(
 	return domain, nil
 }
 
-// LookupDomainInfoOp performs the lookup operation for the DomainInfo op types.
-func LookupDomainInfoOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	switch opTypeID {
-	case DomainInfoUpdateOpId:
-		return &DomainInfoUpdateOp{}, nil
-	}
-	return nil, nil
-}
-
 // LookupDomainInfo looks up an entity with the given key.
 // returns nil, nil, nil if not found.
 func LookupDomainInfo(ctx context.Context, w world.WorldState, objKey string) (*identity_domain.DomainInfo, world.ObjectState, error) {

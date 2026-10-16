@@ -77,7 +77,7 @@ func TestBatchFSWriter_CommitWritesBlobsWithTree(t *testing.T) {
 	defer cursor.Release()
 
 	// Start the World engine on the counting bucket cursor.
-	eng, err := world_block.NewEngine(ctx, le, cursor, unixfs_world.LookupFsOp, nil, false)
+	eng, err := world_block.NewEngine(ctx, le, cursor, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}

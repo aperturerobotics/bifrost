@@ -116,7 +116,7 @@ func newDeployIntegrationEngine(t *testing.T, ctx context.Context) (*testbed.Tes
 		tb.Release()
 		t.Fatal(err)
 	}
-	eng, err := world_block.NewEngine(ctx, tb.Logger, cursor, bldr_manifest_world.LookupOp, nil, false)
+	eng, err := world_block.NewEngine(ctx, tb.Logger, cursor, world.NewSchema(bldr_manifest_world.WorldTypes).LookupOp, nil, false)
 	if err != nil {
 		tb.Release()
 		t.Fatal(err)

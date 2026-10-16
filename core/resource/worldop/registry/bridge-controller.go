@@ -132,8 +132,8 @@ func newBridgeOperation(
 	}
 }
 
-// GetOperationTypeId returns the operation type identifier.
-func (o *bridgeOperation) GetOperationTypeId() string {
+// TypeID returns the operation type identifier.
+func (o *bridgeOperation) TypeID() string {
 	return o.opTypeID
 }
 

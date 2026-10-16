@@ -32,7 +32,7 @@ func setupGitWorld(t *testing.T) (context.Context, *world_testbed.Testbed, world
 	t.Cleanup(tb.Release)
 
 	// Attach the Git operation controller to the testbed's engine.
-	gitOpc := world.NewLookupOpController("test-alpha-git-ops", tb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-alpha-git-ops", tb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := tb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}

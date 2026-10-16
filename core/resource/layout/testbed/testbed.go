@@ -239,7 +239,7 @@ func (t *Testbed) SetupLayoutEngine(ctx context.Context, objectKey string) (*Set
 	}
 
 	// Apply the layout initialization operation to the write transaction.
-	_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpId, opData, "")
+	_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpTypeID, opData, "")
 	if err != nil {
 		sdkTx.Release()
 		engine.Release()

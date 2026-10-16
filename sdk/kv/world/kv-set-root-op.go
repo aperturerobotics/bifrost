@@ -13,9 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// KvSetRootOpId is the replayable operation id for kv/store root advances.
-var KvSetRootOpId = "kv/store/set-root"
-
 const kvSetRootMaxCASAttempts = 16
 
 // NewKvSetRootOp constructs a root-advance operation.
@@ -31,11 +28,6 @@ func NewKvSetRootOp(
 		RootRef:   rootRef.Clone(),
 		Mutations: cloneKvMutations(mutations),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *KvSetRootOp) GetOperationTypeId() string {
-	return KvSetRootOpId
 }
 
 // Validate performs cursory checks on the operation.
@@ -220,14 +212,6 @@ func cloneKvMutations(mutations []*KvMutation) []*KvMutation {
 		out[i] = mutation.CloneVT()
 	}
 	return out
-}
-
-// LookupKvSetRootOp looks up a KvSetRootOp operation type.
-func LookupKvSetRootOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == KvSetRootOpId {
-		return &KvSetRootOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.Operation = (*KvSetRootOp)(nil)

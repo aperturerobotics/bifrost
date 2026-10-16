@@ -27,9 +27,6 @@ func InitCanvasDemo(
 	return ws.ApplyWorldOp(ctx, op, sender)
 }
 
-// InitCanvasDemoOpId is the operation id for InitCanvasDemoOp.
-var InitCanvasDemoOpId = "space/world/init-canvas-demo"
-
 // NewInitCanvasDemoOp constructs a new InitCanvasDemoOp block.
 func NewInitCanvasDemoOp(
 	objKey string,
@@ -51,11 +48,6 @@ func (o *InitCanvasDemoOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *InitCanvasDemoOp) GetOperationTypeId() string {
-	return InitCanvasDemoOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -102,24 +94,6 @@ func (o *InitCanvasDemoOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *InitCanvasDemoOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupInitCanvasDemoOp looks up a InitCanvasDemoOp operation type.
-func LookupInitCanvasDemoOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == InitCanvasDemoOpId {
-		return &InitCanvasDemoOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

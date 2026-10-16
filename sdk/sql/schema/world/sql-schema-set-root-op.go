@@ -13,17 +13,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SqlSchemaSetRootOpId is the world op id for advancing a sql/schema root.
-const SqlSchemaSetRootOpId = "sql/schema/set-root"
-
 // NewSqlSchemaSetRootOp constructs a SQL schema set-root operation.
 func NewSqlSchemaSetRootOp(objectKey string, rootRef *bucket.ObjectRef) *SqlSchemaSetRootOp {
 	return &SqlSchemaSetRootOp{ObjectKey: objectKey, RootRef: rootRef.Clone()}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SqlSchemaSetRootOp) GetOperationTypeId() string {
-	return SqlSchemaSetRootOpId
 }
 
 // Validate performs cursory checks on the operation.
@@ -88,14 +80,6 @@ func (o *SqlSchemaSetRootOp) ApplyWorldObjectOp(
 	// Publish the root reference on the matching SQL schema object.
 	_, err := os.SetRootRef(ctx, o.GetRootRef())
 	return false, err
-}
-
-// LookupSqlSchemaSetRootOp returns an empty SQL schema set-root op for lookup.
-func LookupSqlSchemaSetRootOp(_ context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == SqlSchemaSetRootOpId {
-		return &SqlSchemaSetRootOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ block.Block = (*SqlSchemaSetRootOp)(nil)

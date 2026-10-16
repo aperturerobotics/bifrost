@@ -219,7 +219,7 @@ func (h *testQuickstartHandler) SeedQuickstart(
 
 	// Apply the settings operation to the attached World transaction.
 	applyResp, err := worldState.ApplyWorldOp(ctx, &s4wave_world.ApplyWorldOpRequest{
-		OpTypeId: settingsOp.GetOperationTypeId(),
+		OpTypeId: settingsOp.TypeID(),
 		OpData:   settingsData,
 		OpSender: h.sender,
 	})

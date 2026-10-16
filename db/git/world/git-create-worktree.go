@@ -14,9 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GitCreateWorktreeOpId is the git init operation id.
-var GitCreateWorktreeOpId = "hydra/git/create-worktree"
-
 // GitCreateWorktree creates a new git worktree attached to a repo and workdir.
 func GitCreateWorktree(
 	ctx context.Context,
@@ -54,11 +51,6 @@ func NewGitCreateWorktreeOp(
 		DisableCheckout: disableCheckout,
 		Timestamp:       unixfs_block.ToTimestamp(ts, false),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *GitCreateWorktreeOp) GetOperationTypeId() string {
-	return GitCreateWorktreeOpId
 }
 
 // Validate checks the create worktree operation.
@@ -123,16 +115,6 @@ func (o *GitCreateWorktreeOp) ApplyWorldOp(
 
 	// Report successful worktree creation.
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *GitCreateWorktreeOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

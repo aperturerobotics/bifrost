@@ -171,16 +171,6 @@ func TestTerminalSshHostTargetDoesNotStoreCredentialMaterial(t *testing.T) {
 	}
 }
 
-func TestLookupCreateTerminalOp(t *testing.T) {
-	op, err := LookupCreateTerminalOp(context.Background(), CreateTerminalOpId)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := op.(*CreateTerminalOp); !ok {
-		t.Fatalf("expected CreateTerminalOp, got %T", op)
-	}
-}
-
 func TestForwardClientFramesSendsCloseWithoutCompleting(t *testing.T) {
 	// Open a paired terminal transport and close both ends after the test.
 	serverConn, clientConn := net.Pipe()

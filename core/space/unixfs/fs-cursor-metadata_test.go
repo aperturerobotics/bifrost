@@ -34,7 +34,7 @@ func TestFSCursorProjectsGitRepoMetadataPaths(t *testing.T) {
 	defer wtb.Release()
 
 	// Register Git operations on the World engine.
-	gitOpc := world.NewLookupOpController("test-space-projection-git-repo", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-space-projection-git-repo", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}

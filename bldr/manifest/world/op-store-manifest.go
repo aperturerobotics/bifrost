@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// StoreManifestOpId is the operation ID for StoreManifest.
-var StoreManifestOpId = "bldr/manifest/store"
-
 // ExStoreManifestOp stores a manifest to an object key and links it from
 // linkObjKeys. A ManifestRef carrying a release authorization is stored as a
 // ManifestRef object, any other as a Manifest object. It applies no operation
@@ -103,11 +100,6 @@ func (o *StoreManifestOp) Validate() error {
 	return nil
 }
 
-// GetOperationTypeId returns the operation type identifier.
-func (o *StoreManifestOp) GetOperationTypeId() string {
-	return StoreManifestOpId
-}
-
 // ApplyWorldOp applies the operation as a world operation.
 func (o *StoreManifestOp) ApplyWorldOp(
 	ctx context.Context,
@@ -162,16 +154,6 @@ func (o *StoreManifestOp) ApplyWorldOp(
 // ManifestRef.
 func (o *StoreManifestOp) hasReleaseAuthorization() bool {
 	return o.GetManifestRef().GetReleaseAuthorization() != nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *StoreManifestOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

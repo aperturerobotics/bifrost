@@ -121,7 +121,7 @@ func testEngineStopsReplayAtBlockGap(t *testing.T, store *hidingBlockStore, want
 	defer cancel()
 	privA, pidA := newReplayTestKey(t)
 	space := newReplayTestSpace(t, pidA)
-	space.c.SetStaticLookupOp(world_mock.LookupMockObjectOp)
+	space.c.SetStaticLookupOp(world_mock.LookupMockOp)
 
 	// Write the block the fourth operation's object uses as its root.
 	transformConf := space.genesis.GetHeadRef().GetTransformConf()
@@ -142,7 +142,7 @@ func testEngineStopsReplayAtBlockGap(t *testing.T, store *hidingBlockStore, want
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	edit, err := world_block_tx.NewTxApplyObjectOp(world_mock.MockObjectOpId, world_mock.NewMockObjectOp("edited"), "ghost", pidA)
+	edit, err := world_block_tx.NewTxApplyObjectOp(world_mock.MockObjectOpTypeID, world_mock.NewMockObjectOp("edited"), "ghost", pidA)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -226,7 +226,7 @@ func testEngineStopsReplayAtBlockGap(t *testing.T, store *hidingBlockStore, want
 					tx.Discard()
 				}
 				t.Fatalf("%s with a missing block = %v; want %v", name, err, want)
-			} else if op := world_mock.MockObjectOpId + " on ghost"; !strings.Contains(err.Error(), op) {
+			} else if op := world_mock.MockObjectOpTypeID + " on ghost"; !strings.Contains(err.Error(), op) {
 				t.Fatalf("%s with a missing block = %v; want it to name %q", name, err, op)
 			}
 			return

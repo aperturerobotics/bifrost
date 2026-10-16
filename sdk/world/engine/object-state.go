@@ -112,7 +112,7 @@ func (os *SDKObjectState) ApplyObjectOp(ctx context.Context, op world.Operation,
 
 	// Apply the encoded operation to the remote object and return its outcome.
 	resp, err := os.service.ApplyObjectOp(ctx, &s4wave_world.ApplyObjectOpRequest{
-		OpTypeId: op.GetOperationTypeId(),
+		OpTypeId: op.TypeID(),
 		OpData:   opData,
 		OpSender: sender.String(),
 	})

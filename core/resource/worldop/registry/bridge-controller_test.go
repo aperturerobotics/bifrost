@@ -172,7 +172,7 @@ func TestWorldOpRegistryBridgeControllerAppliesPluginWorldAndObjectOps(t *testin
 	}
 
 	// Apply the plugin operation to the acquired target object.
-	sysErr, err = op.ApplyWorldObjectOp(ctx, le, obj, sender)
+	sysErr, err = world.ApplyWorldObjectOp(ctx, le, op, obj, sender)
 	if err != nil {
 		objectTx.Discard()
 		t.Fatalf("ApplyWorldObjectOp: %v", err)
@@ -481,7 +481,7 @@ func (h *testWorldOpHandler) ApplyWorldObjectOp(
 
 	// Apply the nested settings operation and verify its returned revision.
 	applyResp, err := objectState.ApplyObjectOp(ctx, &s4wave_world.ApplyObjectOpRequest{
-		OpTypeId: nestedOp.GetOperationTypeId(),
+		OpTypeId: nestedOp.TypeID(),
 		OpData:   opData,
 		OpSender: "caller-chosen-invalid-peer",
 	})

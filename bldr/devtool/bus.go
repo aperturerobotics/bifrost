@@ -297,7 +297,7 @@ func BuildDevtoolBus(
 	worldState := world.NewEngineWorldState(eng, true)
 
 	// Register the plugin host's World operation types.
-	lookupOpCtrl := world.NewLookupOpController("bldr-plugin-host-ops", engineID, bldr_manifest_world.LookupOp)
+	lookupOpCtrl := world.NewLookupOpController("bldr-plugin-host-ops", engineID, world.NewSchema(bldr_manifest_world.WorldTypes).LookupOp)
 	relLookupCtrl, err := b.AddController(ctx, lookupOpCtrl, nil)
 	if err != nil {
 		rel()

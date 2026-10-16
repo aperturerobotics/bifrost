@@ -8,6 +8,7 @@ import (
 	"github.com/s4wave/spacewave/db/bucket"
 	unixfs_block "github.com/s4wave/spacewave/db/unixfs/block"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
+	"github.com/s4wave/spacewave/db/world"
 	world_block_tx "github.com/s4wave/spacewave/db/world/block/tx"
 	"github.com/s4wave/spacewave/net/hash"
 	"github.com/s4wave/spacewave/net/peer"
@@ -35,7 +36,7 @@ func TestTxPayloadRefs(t *testing.T) {
 		var tx *world_block_tx.Tx
 		switch i {
 		case 0:
-			tx, err = world_block_tx.NewTxApplyObjectOp(op.GetOperationTypeId(), op, "fs", peer.ID(""))
+			tx, err = world_block_tx.NewTxApplyObjectOp(op.TypeID(), op, "fs", peer.ID(""))
 		case 1:
 			tx, err = world_block_tx.NewTxApplyWorldOp(op, peer.ID(""))
 		default:
@@ -52,7 +53,7 @@ func TestTxPayloadRefs(t *testing.T) {
 	}
 
 	// Report both blobs in order.
-	refs, err := batch.PayloadRefs(t.Context(), unixfs_world.LookupFsOp)
+	refs, err := batch.PayloadRefs(t.Context(), world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

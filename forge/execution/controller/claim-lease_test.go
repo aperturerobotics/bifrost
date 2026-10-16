@@ -45,7 +45,7 @@ func testPeerReclaimsExecutionAfterWorkerDies(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(tb.Release)
-	op := world.NewLookupOpController("forge-lease-ops", tb.EngineID, forge_world.LookupWorldOp)
+	op := world.NewLookupOpController("forge-lease-ops", tb.EngineID, world.NewSchema(forge_world.Types).LookupOp)
 	stopOp, err := tb.Bus.AddController(ctx, op, nil)
 	if err != nil {
 		t.Fatal(err)

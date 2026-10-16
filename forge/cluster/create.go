@@ -12,9 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ClusterCreateOpId is the Cluster create operation id.
-var ClusterCreateOpId = ClusterTypeID + "/create"
-
 // NewClusterCreateOp constructs a new ClusterCreateOp block.
 func NewClusterCreateOp(clusterKey, name string, peerID peer.ID) *ClusterCreateOp {
 	return &ClusterCreateOp{
@@ -49,11 +46,6 @@ func (o *ClusterCreateOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *ClusterCreateOp) GetOperationTypeId() string {
-	return ClusterCreateOpId
 }
 
 // BuildCluster builds the Cluster object from the create op.
@@ -114,16 +106,6 @@ func (o *ClusterCreateOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *ClusterCreateOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

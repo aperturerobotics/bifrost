@@ -11,9 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// KeypairUpdateOpId is the keypair update operation id.
-var KeypairUpdateOpId = KeypairTypeID + "/update"
-
 // NewKeypairUpdateOp constructs a new KeypairUpdateOp block.
 func NewKeypairUpdateOp(keypairRef *bucket.ObjectRef) *KeypairUpdateOp {
 	return &KeypairUpdateOp{
@@ -144,11 +141,6 @@ func (o *KeypairUpdateOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *KeypairUpdateOp) GetOperationTypeId() string {
-	return KeypairUpdateOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

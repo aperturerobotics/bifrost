@@ -1092,7 +1092,7 @@ func TestWizardResourcePersistsState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTransaction(write): %v", err)
 	}
-	_, _, err = writeTx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpId, createOpData, "")
+	_, _, err = writeTx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpTypeID, createOpData, "")
 	if err != nil {
 		writeTx.Release()
 		t.Fatalf("ApplyWorldOp: %v", err)
@@ -1199,7 +1199,7 @@ func TestClusterWizardFinalize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTransaction(create wizard): %v", err)
 	}
-	_, _, err = writeTx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpId, wizardOpData, "")
+	_, _, err = writeTx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpTypeID, wizardOpData, "")
 	if err != nil {
 		writeTx.Release()
 		t.Fatalf("ApplyWorldOp(create wizard): %v", err)
@@ -1228,7 +1228,7 @@ func TestClusterWizardFinalize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTransaction(create cluster): %v", err)
 	}
-	_, _, err = writeTx2.ApplyWorldOp(ctx, forge_cluster.ClusterCreateOpId, clusterOpData, senderPeerID.String())
+	_, _, err = writeTx2.ApplyWorldOp(ctx, forge_cluster.ClusterCreateOpTypeID, clusterOpData, senderPeerID.String())
 	if err != nil {
 		writeTx2.Release()
 		t.Fatalf("ApplyWorldOp(create cluster): %v", err)
@@ -1319,7 +1319,7 @@ func TestForgeWizardChain(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewTransaction(cluster wizard create): %v", err)
 		}
-		_, _, err = tx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpId, wizardData, "")
+		_, _, err = tx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpTypeID, wizardData, "")
 		if err != nil {
 			tx.Release()
 			t.Fatalf("ApplyWorldOp(cluster wizard): %v", err)
@@ -1343,7 +1343,7 @@ func TestForgeWizardChain(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewTransaction(cluster finalize): %v", err)
 		}
-		_, _, err = tx.ApplyWorldOp(ctx, forge_cluster.ClusterCreateOpId, clusterData, sender)
+		_, _, err = tx.ApplyWorldOp(ctx, forge_cluster.ClusterCreateOpTypeID, clusterData, sender)
 		if err != nil {
 			tx.Release()
 			t.Fatalf("ApplyWorldOp(cluster create): %v", err)
@@ -1375,7 +1375,7 @@ func TestForgeWizardChain(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewTransaction(job wizard create): %v", err)
 		}
-		_, _, err = tx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpId, wizardData, "")
+		_, _, err = tx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpTypeID, wizardData, "")
 		if err != nil {
 			tx.Release()
 			t.Fatalf("ApplyWorldOp(job wizard): %v", err)
@@ -1401,7 +1401,7 @@ func TestForgeWizardChain(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewTransaction(job finalize): %v", err)
 		}
-		_, _, err = tx.ApplyWorldOp(ctx, forge_job_ops.ForgeJobCreateOpId, jobData, sender)
+		_, _, err = tx.ApplyWorldOp(ctx, forge_job_ops.ForgeJobCreateOpTypeID, jobData, sender)
 		if err != nil {
 			tx.Release()
 			t.Fatalf("ApplyWorldOp(job create): %v", err)
@@ -1433,7 +1433,7 @@ func TestForgeWizardChain(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewTransaction(task wizard create): %v", err)
 		}
-		_, _, err = tx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpId, wizardData, "")
+		_, _, err = tx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpTypeID, wizardData, "")
 		if err != nil {
 			tx.Release()
 			t.Fatalf("ApplyWorldOp(task wizard): %v", err)
@@ -1459,7 +1459,7 @@ func TestForgeWizardChain(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewTransaction(task finalize): %v", err)
 		}
-		_, _, err = tx.ApplyWorldOp(ctx, forge_task_ops.ForgeTaskCreateOpId, taskData, sender)
+		_, _, err = tx.ApplyWorldOp(ctx, forge_task_ops.ForgeTaskCreateOpTypeID, taskData, sender)
 		if err != nil {
 			tx.Release()
 			t.Fatalf("ApplyWorldOp(task create): %v", err)
@@ -1583,30 +1583,6 @@ func TestGitRepoWizardOp(t *testing.T) {
 		}
 	})
 
-	// Verify Git repository wizard operation lookup.
-	t.Run("lookup", func(t *testing.T) {
-		// Look up the Git repository wizard operation by its matching ID.
-		op, err := s4wave_git.LookupCreateGitRepoWizardOp(ctx, s4wave_git.CreateGitRepoWizardOpId)
-		if err != nil {
-			t.Fatalf("LookupCreateGitRepoWizardOp: %v", err)
-		}
-		if op == nil {
-			t.Fatal("LookupCreateGitRepoWizardOp returned nil for matching ID")
-		}
-		if op.GetOperationTypeId() != s4wave_git.CreateGitRepoWizardOpId {
-			t.Fatalf("expected type ID %q, got %q", s4wave_git.CreateGitRepoWizardOpId, op.GetOperationTypeId())
-		}
-
-		// Non-matching ID returns nil.
-		op, err = s4wave_git.LookupCreateGitRepoWizardOp(ctx, "other/op")
-		if err != nil {
-			t.Fatalf("LookupCreateGitRepoWizardOp(other): %v", err)
-		}
-		if op != nil {
-			t.Fatal("expected nil for non-matching ID")
-		}
-	})
-
 	// Verify Git repository wizard operation encoding preserves clone options.
 	t.Run("marshal-roundtrip", func(t *testing.T) {
 		// Encode a Git repository wizard operation with clone options.
@@ -1675,7 +1651,7 @@ func TestGitRepoWizardOp(t *testing.T) {
 		if err != nil {
 			t.Fatalf("NewTransaction(create): %v", err)
 		}
-		_, _, err = tx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpId, wizardData, "")
+		_, _, err = tx.ApplyWorldOp(ctx, s4wave_wizard.CreateWizardObjectOpTypeID, wizardData, "")
 		if err != nil {
 			tx.Release()
 			t.Fatalf("ApplyWorldOp(create wizard): %v", err)

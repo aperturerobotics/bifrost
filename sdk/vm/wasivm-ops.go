@@ -14,9 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateWasiVmOpId is the operation id for CreateWasiVmOp.
-var CreateWasiVmOpId = "vm/wasivm/create"
-
 // NewCreateWasiVmOp constructs a new CreateWasiVmOp. rootfsObjectKey points at
 // the UnixFS object holding the root filesystem and imageObjectKey at the
 // WasiVmImage supplying it; at least one is required.
@@ -28,11 +25,6 @@ func NewCreateWasiVmOp(objKey, name, rootfsObjectKey, imageObjectKey string, ts 
 		ImageObjectKey:  imageObjectKey,
 		Timestamp:       timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateWasiVmOp) GetOperationTypeId() string {
-	return CreateWasiVmOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -99,35 +91,9 @@ func (o *CreateWasiVmOp) ApplyWorldOp(
 	return false, nil
 }
 
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateWasiVmOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateWasiVmOp looks up a CreateWasiVmOp operation type.
-func LookupCreateWasiVmOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateWasiVmOpId {
-		return &CreateWasiVmOp{}, nil
-	}
-	return nil, nil
-}
-
-// SetWasiVmStateOpId is the operation id for SetWasiVmStateOp.
-var SetWasiVmStateOpId = "vm/wasivm/set-state"
-
 // NewSetWasiVmStateOp constructs a new SetWasiVmStateOp.
 func NewSetWasiVmStateOp(objKey string, state VmState) *SetWasiVmStateOp {
 	return &SetWasiVmStateOp{ObjectKey: objKey, State: state}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SetWasiVmStateOp) GetOperationTypeId() string {
-	return SetWasiVmStateOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -183,24 +149,6 @@ func (o *SetWasiVmStateOp) ApplyWorldOp(
 		return true, err
 	}
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *SetWasiVmStateOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupSetWasiVmStateOp looks up a SetWasiVmStateOp operation type.
-func LookupSetWasiVmStateOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == SetWasiVmStateOpId {
-		return &SetWasiVmStateOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

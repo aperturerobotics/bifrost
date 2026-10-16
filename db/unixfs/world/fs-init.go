@@ -35,9 +35,6 @@ func FsInit(
 	return ws.ApplyWorldOp(ctx, initOp, sender)
 }
 
-// FsInitOpId is the unixfs init operation id.
-var FsInitOpId = "hydra/unixfs/init"
-
 // NewFsInitOp constructs a new FsInitOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsInitOp(
@@ -68,11 +65,6 @@ func (o *FsInitOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsInitOp) GetOperationTypeId() string {
-	return FsInitOpId
 }
 
 // ValidateOrCreateFs validates or creates the fs.

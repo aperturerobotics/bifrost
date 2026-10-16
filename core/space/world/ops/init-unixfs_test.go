@@ -36,7 +36,7 @@ func TestInitUnixFSCreatesEmptyRoot(t *testing.T) {
 	defer wtb.Release()
 
 	// Register the space operation controller with the World engine.
-	opc := world.NewLookupOpController("test-space-ops", wtb.EngineID, LookupWorldOp)
+	opc := world.NewLookupOpController("test-space-ops", wtb.EngineID, world.NewSchema(Types).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, opc, nil); err != nil {
 		t.Fatal(err)
 	}

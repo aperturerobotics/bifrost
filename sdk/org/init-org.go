@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// InitOrganizationOpID is the operation type ID.
-var InitOrganizationOpID = "org/init-organization"
-
 // OrgObjectKey is the default organization object key within the SO world.
 const OrgObjectKey = "org/state"
 
@@ -21,16 +18,6 @@ const OrgRoleOwner = "Owner"
 
 // OrgRoleMember is the display role for organization members.
 const OrgRoleMember = "Member"
-
-// GetOperationTypeId returns the operation type ID.
-func (o *InitOrganizationOp) GetOperationTypeId() string {
-	return InitOrganizationOpID
-}
-
-// Validate validates the operation.
-func (o *InitOrganizationOp) Validate() error {
-	return nil
-}
 
 // ApplyWorldOp applies the init organization operation.
 func (o *InitOrganizationOp) ApplyWorldOp(
@@ -74,24 +61,6 @@ func (o *InitOrganizationOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp is not supported for this operation.
-func (o *InitOrganizationOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (bool, error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupInitOrganizationOp looks up the init organization operation.
-func LookupInitOrganizationOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == InitOrganizationOpID {
-		return &InitOrganizationOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.Operation = (*InitOrganizationOp)(nil)

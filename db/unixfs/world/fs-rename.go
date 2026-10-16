@@ -44,9 +44,6 @@ func FsRename(
 	return rev, false, nil
 }
 
-// FsRenameOpId is the unixfs rename op id.
-var FsRenameOpId = "hydra/unixfs/rename"
-
 // NewFsRenameOp constructs a new FsRenameOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsRenameOp(
@@ -62,11 +59,6 @@ func NewFsRenameOp(
 		DestPath:  destPath,
 		Timestamp: unixfs_block.ToTimestamp(ts, true),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsRenameOp) GetOperationTypeId() string {
-	return FsRenameOpId
 }
 
 // Validate performs cursory checks on the op.

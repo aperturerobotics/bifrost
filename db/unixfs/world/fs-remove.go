@@ -26,9 +26,6 @@ func FsRemove(
 	return obj.ApplyObjectOp(ctx, wOp, sender)
 }
 
-// FsRemoveOpId is the unixfs remove op id.
-var FsRemoveOpId = "hydra/unixfs/remove"
-
 // NewFsRemoveOp constructs a new FsRemoveOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsRemoveOp(
@@ -43,11 +40,6 @@ func NewFsRemoveOp(
 		Paths:     paths,
 		Timestamp: unixfs_block.ToTimestamp(ts, true),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsRemoveOp) GetOperationTypeId() string {
-	return FsRemoveOpId
 }
 
 // Validate performs cursory checks on the op.

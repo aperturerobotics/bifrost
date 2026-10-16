@@ -10,21 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// InitChatDemoOpId is the operation type ID.
-var InitChatDemoOpId = "chat/init-chat-demo"
-
 // GeneralChannelKey is the default channel object key.
 const GeneralChannelKey = "chat/channel/general"
-
-// GetOperationTypeId returns the operation type ID.
-func (o *InitChatDemoOp) GetOperationTypeId() string {
-	return InitChatDemoOpId
-}
-
-// Validate validates the operation.
-func (o *InitChatDemoOp) Validate() error {
-	return nil
-}
 
 // ApplyWorldOp applies the init chat demo operation.
 func (o *InitChatDemoOp) ApplyWorldOp(
@@ -60,24 +47,6 @@ func (o *InitChatDemoOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp is not supported for this operation.
-func (o *InitChatDemoOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (bool, error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupInitChatDemoOp looks up the init chat demo operation.
-func LookupInitChatDemoOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == InitChatDemoOpId {
-		return &InitChatDemoOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.Operation = (*InitChatDemoOp)(nil)

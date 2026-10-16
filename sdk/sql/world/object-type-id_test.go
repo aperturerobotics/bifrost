@@ -1,33 +1,17 @@
 package s4wave_sql_world_test
 
 import (
-	"context"
 	"testing"
 
 	s4wave_sql_world "github.com/s4wave/spacewave/sdk/sql/world"
 )
 
-// TestSqlDbTypeIDResolvesWithoutFactory proves the SQL database type id and the
-// SqlSetRootOp world operation resolve without the SRPC-server-backed factory.
-// This file carries no build constraint, so the assertion compiles under
-// TinyGo browser builds that exclude objecttype.go; it guards the regression
-// where SqlDbTypeID lived in that gated file and went undefined in the
-// unconstrained SqlSetRootOp under -tags=tinygo.
+// TestSqlDbTypeIDResolvesWithoutFactory proves the SQL database type id
+// resolves without the SRPC-server-backed factory. This file carries no build
+// constraint, so the assertion compiles under TinyGo browser builds that
+// exclude objecttype.go.
 func TestSqlDbTypeIDResolvesWithoutFactory(t *testing.T) {
-	// Verify the SQL database type identifier is available without the factory.
 	if s4wave_sql_world.SqlDbTypeID != "sql/db" {
 		t.Fatalf("unexpected SqlDbTypeID %q", s4wave_sql_world.SqlDbTypeID)
-	}
-
-	// Resolve the SQL root operation and verify its registered identifier.
-	op, err := s4wave_sql_world.LookupSqlSetRootOp(context.Background(), s4wave_sql_world.SqlSetRootOpId)
-	if err != nil {
-		t.Fatalf("lookup sql set root op: %v", err)
-	}
-	if op == nil {
-		t.Fatal("sql set root op not found")
-	}
-	if op.GetOperationTypeId() != s4wave_sql_world.SqlSetRootOpId {
-		t.Fatalf("unexpected op type id %q", op.GetOperationTypeId())
 	}
 }

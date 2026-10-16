@@ -85,7 +85,7 @@ func TestInitUnixFSDemo(t *testing.T) {
 	defer worldCtrlRef.Release()
 
 	// provide op handlers to bus
-	opc := world.NewLookupOpController("test-unixfs-demo-ops", engineID, LookupInitUnixFSDemoOp)
+	opc := world.NewLookupOpController("test-unixfs-demo-ops", engineID, world.NewSchema(InitUnixfsDemoTypes).LookupOp)
 	_, err = tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {
 		t.Fatal(err.Error())

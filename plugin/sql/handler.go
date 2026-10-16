@@ -55,12 +55,12 @@ var sqlObjectTypeIDs = []string{
 }
 
 var sqlWorldOpIDs = []string{
-	s4wave_sql_world.SqlSetRootOpId,
-	s4wave_sql_query_world.SqlQuerySetRootOpId,
-	s4wave_sql_query_result_world.SqlQueryResultSetRootOpId,
-	s4wave_sql_schema_world.SqlSchemaSetRootOpId,
-	s4wave_sql_table_view_world.SqlTableViewSetRootOpId,
-	s4wave_sql_workbench_world.SqlWorkbenchSetRootOpId,
+	s4wave_sql_world.SqlSetRootOpTypeID,
+	s4wave_sql_query_world.SqlQuerySetRootOpTypeID,
+	s4wave_sql_query_result_world.SqlQueryResultSetRootOpTypeID,
+	s4wave_sql_schema_world.SqlSchemaSetRootOpTypeID,
+	s4wave_sql_table_view_world.SqlTableViewSetRootOpTypeID,
+	s4wave_sql_workbench_world.SqlWorkbenchSetRootOpTypeID,
 }
 
 var sqlViewerRegistrations []*s4wave_viewer_registry.ViewerRegistration
@@ -222,7 +222,7 @@ func (h *SQLHandler) ApplyWorldObjectOp(
 	if err != nil {
 		return nil, err
 	}
-	sysErr, err := op.ApplyWorldObjectOp(ctx, h.le, os, peer.ID(""))
+	sysErr, err := world.ApplyWorldObjectOp(ctx, h.le, op, os, peer.ID(""))
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +238,7 @@ func (h *SQLHandler) ValidateOp(
 	if err != nil {
 		return &s4wave_worldop_registry.ValidateOpResponse{Error: err.Error()}, nil
 	}
-	if err := op.Validate(); err != nil {
+	if err := world.ValidateOp(op); err != nil {
 		return &s4wave_worldop_registry.ValidateOpResponse{Error: err.Error()}, nil
 	}
 	return &s4wave_worldop_registry.ValidateOpResponse{}, nil
@@ -260,15 +260,18 @@ func (h *SQLHandler) unmarshalSQLOp(ctx context.Context, opTypeID string, data [
 }
 
 func lookupSQLWorldOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	return world.LookupOpSlice([]world.LookupOp{
-		s4wave_sql_world.LookupSqlSetRootOp,
-		s4wave_sql_query_world.LookupSqlQuerySetRootOp,
-		s4wave_sql_query_result_world.LookupSqlQueryResultSetRootOp,
-		s4wave_sql_schema_world.LookupSqlSchemaSetRootOp,
-		s4wave_sql_table_view_world.LookupSqlTableViewSetRootOp,
-		s4wave_sql_workbench_world.LookupSqlWorkbenchSetRootOp,
-	}).LookupOp(ctx, opTypeID)
+	return sqlSchema.LookupOp(ctx, opTypeID)
 }
+
+// sqlSchema declares the SQL world operations.
+var sqlSchema = world.NewSchema(
+	s4wave_sql_world.WorldTypes,
+	s4wave_sql_query_world.WorldTypes,
+	s4wave_sql_query_result_world.WorldTypes,
+	s4wave_sql_schema_world.WorldTypes,
+	s4wave_sql_table_view_world.WorldTypes,
+	s4wave_sql_workbench_world.WorldTypes,
+)
 
 func lookupSQLBlockType(typeID string) (blocktype.BlockType, error) {
 	switch typeID {

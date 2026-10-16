@@ -178,7 +178,7 @@ func setupFSHandleResourceClient(
 	opc := world.NewLookupOpController(
 		"test-fs-ops",
 		wtb.EngineID,
-		unixfs_world.LookupFsOp,
+		world.NewSchema(unixfs_world.UnixfsTypes).LookupOp,
 	)
 	if _, err := wtb.Bus.AddController(ctx, opc, nil); err != nil {
 		t.Fatal(err)

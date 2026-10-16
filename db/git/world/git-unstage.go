@@ -11,14 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GitUnstageOpId is the git unstage operation id.
-var GitUnstageOpId = "hydra/git/unstage"
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *GitUnstageOp) GetOperationTypeId() string {
-	return GitUnstageOpId
-}
-
 // Validate checks the unstage operation.
 func (o *GitUnstageOp) Validate() error {
 	if o.GetObjectKey() == "" {
@@ -70,16 +62,6 @@ func (o *GitUnstageOp) ApplyWorldOp(
 			})
 		},
 	)
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *GitUnstageOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

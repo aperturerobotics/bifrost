@@ -13,12 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateForgeDashboardOpId is the operation id for CreateForgeDashboardOp.
-var CreateForgeDashboardOpId = "spacewave/forge/dashboard/create"
-
-// LinkForgeDashboardOpId is the operation id for LinkForgeDashboardOp.
-var LinkForgeDashboardOpId = "spacewave/forge/dashboard/link"
-
 // NewCreateForgeDashboardOp constructs a new CreateForgeDashboardOp.
 func NewCreateForgeDashboardOp(objKey, name string, ts time.Time) *CreateForgeDashboardOp {
 	return &CreateForgeDashboardOp{
@@ -26,11 +20,6 @@ func NewCreateForgeDashboardOp(objKey, name string, ts time.Time) *CreateForgeDa
 		Name:      name,
 		Timestamp: timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateForgeDashboardOp) GetOperationTypeId() string {
-	return CreateForgeDashboardOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -82,35 +71,12 @@ func (o *CreateForgeDashboardOp) ApplyWorldOp(
 	return false, nil
 }
 
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateForgeDashboardOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateForgeDashboardOp looks up a CreateForgeDashboardOp operation type.
-func LookupCreateForgeDashboardOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateForgeDashboardOpId {
-		return &CreateForgeDashboardOp{}, nil
-	}
-	return nil, nil
-}
-
 // NewLinkForgeDashboardOp constructs a new LinkForgeDashboardOp.
 func NewLinkForgeDashboardOp(dashboardKey, entityKey string) *LinkForgeDashboardOp {
 	return &LinkForgeDashboardOp{
 		DashboardKey: dashboardKey,
 		EntityKey:    entityKey,
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *LinkForgeDashboardOp) GetOperationTypeId() string {
-	return LinkForgeDashboardOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -146,24 +112,6 @@ func (o *LinkForgeDashboardOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *LinkForgeDashboardOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupLinkForgeDashboardOp looks up a LinkForgeDashboardOp operation type.
-func LookupLinkForgeDashboardOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == LinkForgeDashboardOpId {
-		return &LinkForgeDashboardOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

@@ -9,17 +9,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GitCloneOpId is the git clone operation id.
-var GitCloneOpId = "hydra/git/clone"
-
 // NewGitCloneOp constructs a new GitCloneOp.
 func NewGitCloneOp(op *GitCloneOp) *GitCloneOp {
 	return op
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *GitCloneOp) GetOperationTypeId() string {
-	return GitCloneOpId
 }
 
 // Validate checks the clone operation.
@@ -64,16 +56,6 @@ func (o *GitCloneOp) ApplyWorldOp(
 		o.GetTimestamp(),
 	)
 	return false, err
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *GitCloneOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

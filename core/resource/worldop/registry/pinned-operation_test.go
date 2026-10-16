@@ -90,7 +90,7 @@ func TestPinnedOperationReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if op.GetOperationTypeId() != id {
+	if op.TypeID() != id {
 		t.Fatal("operation lost its immutable identity")
 	}
 

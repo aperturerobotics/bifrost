@@ -13,9 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SqlWorkbenchSetRootOpId is the world op id for advancing a sql/workbench root.
-const SqlWorkbenchSetRootOpId = "sql/workbench/set-root"
-
 // NewSqlWorkbenchSetRootOp constructs a SQL workbench set-root operation.
 func NewSqlWorkbenchSetRootOp(objectKey string, rootRef *bucket.ObjectRef) *SqlWorkbenchSetRootOp {
 	return &SqlWorkbenchSetRootOp{ObjectKey: objectKey, RootRef: rootRef.Clone()}
@@ -24,11 +21,6 @@ func NewSqlWorkbenchSetRootOp(objectKey string, rootRef *bucket.ObjectRef) *SqlW
 // NewSqlWorkbenchInitializeRootOp constructs a create-once SQL workbench root operation.
 func NewSqlWorkbenchInitializeRootOp(objectKey string, rootRef *bucket.ObjectRef) *SqlWorkbenchSetRootOp {
 	return &SqlWorkbenchSetRootOp{ObjectKey: objectKey, RootRef: rootRef.Clone(), InitializeOnly: true}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SqlWorkbenchSetRootOp) GetOperationTypeId() string {
-	return SqlWorkbenchSetRootOpId
 }
 
 // Validate performs cursory checks on the operation.
@@ -105,14 +97,6 @@ func (o *SqlWorkbenchSetRootOp) ApplyWorldObjectOp(
 	// Replace the workbench object root with the requested reference.
 	_, err := os.SetRootRef(ctx, o.GetRootRef())
 	return false, err
-}
-
-// LookupSqlWorkbenchSetRootOp returns an empty SQL workbench set-root op for lookup.
-func LookupSqlWorkbenchSetRootOp(_ context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == SqlWorkbenchSetRootOpId {
-		return &SqlWorkbenchSetRootOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ block.Block = (*SqlWorkbenchSetRootOp)(nil)

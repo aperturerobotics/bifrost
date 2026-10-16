@@ -112,9 +112,9 @@ func TestKvStoreFactoryCommitsWorldBackedRootAndReplaysOp(t *testing.T) {
 	}
 
 	// Resolve the registered KV root operation for replay.
-	lookupOp, err := optypes.LookupWorldOp(ctx, s4wave_kv_world.KvSetRootOpId)
+	lookupOp, err := optypes.LookupWorldOp(ctx, s4wave_kv_world.KvSetRootOpTypeID)
 	if err != nil {
-		t.Fatalf("LookupWorldOp(%s): %v", s4wave_kv_world.KvSetRootOpId, err)
+		t.Fatalf("LookupWorldOp(%s): %v", s4wave_kv_world.KvSetRootOpTypeID, err)
 	}
 	if _, ok := lookupOp.(*s4wave_kv_world.KvSetRootOp); !ok {
 		t.Fatalf("LookupWorldOp returned %T, want *KvSetRootOp", lookupOp)

@@ -13,9 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateVmV86OpId is the operation id for CreateVmV86Op.
-var CreateVmV86OpId = "vm/v86/create"
-
 // NewCreateVmV86Op constructs a new CreateVmV86Op. imageObjectKey points at
 // the V86Image that supplies default asset edges and is required.
 func NewCreateVmV86Op(objKey, name, imageObjectKey string, ts time.Time) *CreateVmV86Op {
@@ -25,11 +22,6 @@ func NewCreateVmV86Op(objKey, name, imageObjectKey string, ts time.Time) *Create
 		ImageObjectKey: imageObjectKey,
 		Timestamp:      timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateVmV86Op) GetOperationTypeId() string {
-	return CreateVmV86OpId
 }
 
 // Validate performs cursory checks on the op.
@@ -105,38 +97,12 @@ func (o *CreateVmV86Op) ApplyWorldOp(
 	return false, nil
 }
 
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateVmV86Op) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateVmV86Op looks up a CreateVmV86Op operation type.
-func LookupCreateVmV86Op(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateVmV86OpId {
-		return &CreateVmV86Op{}, nil
-	}
-	return nil, nil
-}
-
-// SetV86ConfigOpId is the operation id for SetV86ConfigOp.
-var SetV86ConfigOpId = "vm/v86/set-config"
-
 // NewSetV86ConfigOp constructs a new SetV86ConfigOp.
 func NewSetV86ConfigOp(objKey string, config *V86Config) *SetV86ConfigOp {
 	return &SetV86ConfigOp{
 		ObjectKey: objKey,
 		Config:    config,
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SetV86ConfigOp) GetOperationTypeId() string {
-	return SetV86ConfigOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -220,27 +186,6 @@ func (o *SetV86ConfigOp) ApplyWorldOp(
 	return false, nil
 }
 
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *SetV86ConfigOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupSetV86ConfigOp looks up a SetV86ConfigOp operation type.
-func LookupSetV86ConfigOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == SetV86ConfigOpId {
-		return &SetV86ConfigOp{}, nil
-	}
-	return nil, nil
-}
-
-// SetV86StateOpId is the operation id for SetV86StateOp.
-var SetV86StateOpId = "vm/v86/set-state"
-
 // NewSetV86StateOp constructs a new SetV86StateOp.
 func NewSetV86StateOp(objKey string, state VmState, errorMessage string) *SetV86StateOp {
 	return &SetV86StateOp{
@@ -248,11 +193,6 @@ func NewSetV86StateOp(objKey string, state VmState, errorMessage string) *SetV86
 		State:        state,
 		ErrorMessage: errorMessage,
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SetV86StateOp) GetOperationTypeId() string {
-	return SetV86StateOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -311,24 +251,6 @@ func (o *SetV86StateOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *SetV86StateOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupSetV86StateOp looks up a SetV86StateOp operation type.
-func LookupSetV86StateOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == SetV86StateOpId {
-		return &SetV86StateOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion.

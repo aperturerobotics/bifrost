@@ -84,7 +84,7 @@ func TestRemoteSharedObjectWorldApplyPreservesExecutionClaim(t *testing.T) {
 	t.Cleanup(engineControllerRef.Release)
 
 	// Register the execution operations on the engine.
-	opController := world.NewLookupOpController("remote-execution-ops", engineID, execution_tx.LookupWorldOp)
+	opController := world.NewLookupOpController("remote-execution-ops", engineID, world.NewSchema(execution_tx.TxTypes).LookupOp)
 	releaseOps, err := tb.Bus.AddController(ctx, opController, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -217,7 +217,7 @@ func newRemoteSharedObjectEngine(
 		tb.Logger,
 		tb.Bus,
 		engine,
-		execution_tx.LookupWorldOp,
+		world.NewSchema(execution_tx.TxTypes).LookupOp,
 		nil,
 	)
 	mux := srpc.NewMux()

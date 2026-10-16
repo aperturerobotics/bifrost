@@ -87,11 +87,11 @@ func TestGitWorktreeResourceStatusStageUnstageUsesWorkdir(t *testing.T) {
 	defer wtb.Release()
 
 	// Register the filesystem and Git operations used by the worktree.
-	unixfsOpc := world.NewLookupOpController("test-git-worktree-resource-unixfs", wtb.EngineID, unixfs_world.LookupFsOp)
+	unixfsOpc := world.NewLookupOpController("test-git-worktree-resource-unixfs", wtb.EngineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, unixfsOpc, nil); err != nil {
 		t.Fatal(err)
 	}
-	gitOpc := world.NewLookupOpController("test-git-worktree-resource-git", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-git-worktree-resource-git", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}

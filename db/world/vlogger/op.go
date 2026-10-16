@@ -23,7 +23,12 @@ func NewOperation(le *logrus.Entry, op world.Operation) *Operation {
 
 // le returns a logger with operation fields
 func (o *Operation) le() *logrus.Entry {
-	return o.ble.WithField("op-type", o.GetOperationTypeId())
+	return o.ble.WithField("op-type", o.TypeID())
+}
+
+// Validate validates the underlying operation when it has validation.
+func (o *Operation) Validate() error {
+	return world.ValidateOp(o.Operation)
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -73,8 +78,8 @@ func (o *Operation) ApplyWorldObjectOp(
 		objectHandle = NewObjectState(o.le(), objectHandle)
 	}
 
-	return o.Operation.ApplyWorldObjectOp(ctx, le, objectHandle, sender)
+	return world.ApplyWorldObjectOp(ctx, le, o.Operation, objectHandle, sender)
 }
 
 // _ is a type assertion
-var _ world.Operation = (*Operation)(nil)
+var _ world.ObjectOperation = (*Operation)(nil)

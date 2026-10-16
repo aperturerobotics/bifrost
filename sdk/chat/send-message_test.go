@@ -21,7 +21,7 @@ func TestChatOperationsRequireSigner(t *testing.T) {
 		&CreateChatChannelOp{ObjectKey: GeneralChannelKey, Timestamp: timestamppb.Now(), InitialState: []*ChatStateChange{{Type: "m.room.create", ContentJson: `{}`}}},
 	} {
 		if _, err := op.ApplyWorldOp(ctx, nil, nil, ""); !errors.Is(err, ErrChatAuthorIdentityRequired) {
-			t.Fatalf("%s without signer: %v", op.GetOperationTypeId(), err)
+			t.Fatalf("%s without signer: %v", op.TypeID(), err)
 		}
 	}
 }
@@ -66,7 +66,7 @@ func TestSendChatMessageReplay(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := replayed.ExecuteTx(world.WithOperationPerson(ctx, send.person), peer.ID(send.device), LookupSendChatMessageOp, ws); err != nil {
+		if _, err := replayed.ExecuteTx(world.WithOperationPerson(ctx, send.person), peer.ID(send.device), world.NewSchema(ChatTypes).LookupOp, ws); err != nil {
 			t.Fatal(err)
 		}
 	}

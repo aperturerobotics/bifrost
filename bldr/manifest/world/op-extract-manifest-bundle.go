@@ -9,9 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ExtractManifestBundleOpId is the operation ID for ExtractManifestBundle.
-var ExtractManifestBundleOpId = "bldr/manifest/bundle/extract"
-
 // ExExtractManifestBundleOp extracts a manifest bundle with an operation.
 func ExExtractManifestBundleOp(
 	ctx context.Context,
@@ -54,11 +51,6 @@ func (o *ExtractManifestBundleOp) Validate() error {
 	return nil
 }
 
-// GetOperationTypeId returns the operation type identifier.
-func (o *ExtractManifestBundleOp) GetOperationTypeId() string {
-	return ExtractManifestBundleOpId
-}
-
 // ApplyWorldOp applies the operation as a world operation.
 func (o *ExtractManifestBundleOp) ApplyWorldOp(
 	ctx context.Context,
@@ -83,16 +75,6 @@ func (o *ExtractManifestBundleOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *ExtractManifestBundleOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

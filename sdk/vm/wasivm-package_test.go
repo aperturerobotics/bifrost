@@ -19,7 +19,7 @@ func TestResolveWasiVmPackages(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(tb.Release)
-	opc := world.NewLookupOpController("test-wasivm-ops", tb.EngineID, LookupCreateWasiVmPackageOp)
+	opc := world.NewLookupOpController("test-wasivm-ops", tb.EngineID, world.NewSchema(WasivmTypes).LookupOp)
 	if _, err := tb.Bus.AddController(ctx, opc, nil); err != nil {
 		t.Fatal(err)
 	}

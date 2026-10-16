@@ -473,7 +473,7 @@ func (*unhandledWorldOp) Validate() error {
 	return nil
 }
 
-func (*unhandledWorldOp) GetOperationTypeId() string {
+func (*unhandledWorldOp) TypeID() string {
 	return "test/unhandled-world-op"
 }
 

@@ -15,14 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// UpdateOrgOpID is the operation type ID.
-var UpdateOrgOpID = "org/update-organization"
-
-// GetOperationTypeId returns the operation type ID.
-func (o *UpdateOrgOp) GetOperationTypeId() string {
-	return UpdateOrgOpID
-}
-
 // Validate validates the operation.
 func (o *UpdateOrgOp) Validate() error {
 	if o.GetOrgObjectKey() == "" {
@@ -80,24 +72,6 @@ func (o *UpdateOrgOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp is not supported for this operation.
-func (o *UpdateOrgOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (bool, error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupUpdateOrgOp looks up the update organization operation.
-func LookupUpdateOrgOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == UpdateOrgOpID {
-		return &UpdateOrgOp{}, nil
-	}
-	return nil, nil
 }
 
 // generateInvite creates an OrgInvite from a CreateOrgInviteOp.

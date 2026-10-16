@@ -12,17 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ObjectOperationTypeID is the transaction object operation type id.
-var ObjectOperationTypeID = "forge/execution/tx"
-
-// LookupWorldOp decodes Execution transaction operations.
-func LookupWorldOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == ObjectOperationTypeID {
-		return &Tx{}, nil
-	}
-	return nil, nil
-}
-
 // Transaction is an instance of a transaction object.
 type Transaction interface {
 	// MarshalVT marshals to binary.
@@ -130,11 +119,6 @@ func ByteSliceToTx(blk block.Block) (*Tx, error) {
 	return out, nil
 }
 
-// GetOperationTypeId returns the operation type identifier.
-func (t *Tx) GetOperationTypeId() string {
-	return ObjectOperationTypeID
-}
-
 // ApplyWorldOp reclaims an Execution and its placement in one World operation.
 // Other transitions remain object operations.
 func (t *Tx) ApplyWorldOp(
@@ -192,6 +176,3 @@ func (t *Tx) ApplyWorldObjectOp(
 
 // _ is a type assertion
 var _ world.Operation = (*Tx)(nil)
-
-// _ is a type assertion
-var _ world.LookupOp = LookupWorldOp

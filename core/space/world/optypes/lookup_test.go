@@ -51,7 +51,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	lookupOp := BuildSpaceLookupOp(nil, nil, "space/local/test")
 
 	// Resolve and type-check the built-in UnixFS initializer.
-	op, err := lookupOp(context.Background(), space_world_ops.InitUnixFSOpId)
+	op, err := lookupOp(context.Background(), space_world_ops.InitUnixFSOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the built-in Git initializer.
-	op, err = lookupOp(context.Background(), git_world.GitInitOpId)
+	op, err = lookupOp(context.Background(), git_world.GitInitOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the built-in Git worktree operation.
-	op, err = lookupOp(context.Background(), git_world.GitCreateWorktreeOpId)
+	op, err = lookupOp(context.Background(), git_world.GitCreateWorktreeOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the Git repository wizard.
-	op, err = lookupOp(context.Background(), s4wave_git.CreateGitRepoWizardOpId)
+	op, err = lookupOp(context.Background(), s4wave_git.CreateGitRepoWizardOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the wizard object operation.
-	op, err = lookupOp(context.Background(), s4wave_wizard.CreateWizardObjectOpId)
+	op, err = lookupOp(context.Background(), s4wave_wizard.CreateWizardObjectOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +96,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the computers dashboard operation.
-	op, err = lookupOp(context.Background(), s4wave_device.CreateComputersDashboardOpId)
+	op, err = lookupOp(context.Background(), s4wave_device.CreateComputersDashboardOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the terminal operation.
-	op, err = lookupOp(context.Background(), s4wave_terminal.CreateTerminalOpId)
+	op, err = lookupOp(context.Background(), s4wave_terminal.CreateTerminalOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the chat demo initializer.
-	op, err = lookupOp(context.Background(), spacewave_chat.InitChatDemoOpId)
+	op, err = lookupOp(context.Background(), spacewave_chat.InitChatDemoOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the chat channel operation.
-	op, err = lookupOp(context.Background(), spacewave_chat.CreateChatChannelOpId)
+	op, err = lookupOp(context.Background(), spacewave_chat.CreateChatChannelOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +132,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the SSH host operation.
-	op, err = lookupOp(context.Background(), s4wave_sshhost.CreateSshHostOpId)
+	op, err = lookupOp(context.Background(), s4wave_sshhost.CreateSshHostOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the app connector operation.
-	op, err = lookupOp(context.Background(), s4wave_appconnector.CreateAppConnectorOpId)
+	op, err = lookupOp(context.Background(), s4wave_appconnector.CreateAppConnectorOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 	}
 
 	// Resolve and type-check the key-value root operation.
-	op, err = lookupOp(context.Background(), s4wave_kv_world.KvSetRootOpId)
+	op, err = lookupOp(context.Background(), s4wave_kv_world.KvSetRootOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,25 +161,25 @@ func TestBuildSpaceLookupOpResolvesBuiltInWithoutBus(t *testing.T) {
 
 func TestBuildSpaceLookupOpAndLookupWorldOpResolveForgeQuickstartOps(t *testing.T) {
 	// Resolve identity and dashboard operations through both lookup APIs.
-	requireLookupWorldAndBuildSpaceOp[*identity_world.KeypairUpdateOp](t, identity_world.KeypairUpdateOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_dashboard.CreateForgeDashboardOp](t, forge_dashboard.CreateForgeDashboardOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_dashboard.LinkForgeDashboardOp](t, forge_dashboard.LinkForgeDashboardOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_dashboard.InitForgeQuickstartOp](t, forge_dashboard.InitForgeQuickstartOpId)
+	requireLookupWorldAndBuildSpaceOp[*identity_world.KeypairUpdateOp](t, identity_world.KeypairUpdateOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_dashboard.CreateForgeDashboardOp](t, forge_dashboard.CreateForgeDashboardOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_dashboard.LinkForgeDashboardOp](t, forge_dashboard.LinkForgeDashboardOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_dashboard.InitForgeQuickstartOp](t, forge_dashboard.InitForgeQuickstartOpTypeID)
 
 	// Resolve Forge job and task creation operations through both lookup APIs.
-	requireLookupWorldAndBuildSpaceOp[*forge_job_ops.ForgeJobCreateOp](t, forge_job_ops.ForgeJobCreateOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_task_ops.ForgeTaskCreateOp](t, forge_task_ops.ForgeTaskCreateOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterCreateOp](t, forge_cluster.ClusterCreateOpId)
+	requireLookupWorldAndBuildSpaceOp[*forge_job_ops.ForgeJobCreateOp](t, forge_job_ops.ForgeJobCreateOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_task_ops.ForgeTaskCreateOp](t, forge_task_ops.ForgeTaskCreateOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterCreateOp](t, forge_cluster.ClusterCreateOpTypeID)
 
 	// Resolve cluster assignment and transaction operations through both lookup APIs.
-	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterAssignJobOp](t, forge_cluster.ClusterAssignJobOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterAssignWorkerOp](t, forge_cluster.ClusterAssignWorkerOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterAssignTaskOp](t, forge_cluster.ClusterAssignTaskOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterAssignPeerOp](t, forge_cluster.ClusterAssignPeerOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_worker.WorkerCreateOp](t, forge_worker.WorkerCreateOpId)
-	requireLookupWorldAndBuildSpaceOp[*forge_execution_tx.Tx](t, forge_execution_tx.ObjectOperationTypeID)
-	requireLookupWorldAndBuildSpaceOp[*forge_pass_tx.Tx](t, forge_pass_tx.WorldOperationTypeID)
-	requireLookupWorldAndBuildSpaceOp[*forge_task_tx.Tx](t, forge_task_tx.WorldOperationTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterAssignJobOp](t, forge_cluster.ClusterAssignJobOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterAssignWorkerOp](t, forge_cluster.ClusterAssignWorkerOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterAssignTaskOp](t, forge_cluster.ClusterAssignTaskOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_cluster.ClusterAssignPeerOp](t, forge_cluster.ClusterAssignPeerOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_worker.WorkerCreateOp](t, forge_worker.WorkerCreateOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_execution_tx.Tx](t, forge_execution_tx.TxTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_pass_tx.Tx](t, forge_pass_tx.TxTypeID)
+	requireLookupWorldAndBuildSpaceOp[*forge_task_tx.Tx](t, forge_task_tx.TxTypeID)
 }
 
 func TestBuildSpaceLookupOpReturnsNilForUnknownWithoutBus(t *testing.T) {
@@ -201,8 +201,8 @@ func TestBuildSpaceLookupOpExcludesRemoteGitOpsUnderGoScript(t *testing.T) {
 
 	lookupOp := BuildSpaceLookupOp(nil, nil, "space/local/test")
 	for _, opTypeID := range []string{
-		git_world.GitCloneOpId,
-		git_world.GitFetchOpId,
+		git_world.GitCloneOpTypeID,
+		git_world.GitFetchOpTypeID,
 	} {
 		op, err := lookupOp(context.Background(), opTypeID)
 		if err != nil {

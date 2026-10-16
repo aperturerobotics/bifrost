@@ -10,14 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// AttachChatEnvelopeOpID identifies a replayable envelope attachment.
-const AttachChatEnvelopeOpID = "spacewave-chat/envelope/attach"
-
 // AuthenticatedOperation selects the verified transaction signer on replay.
 func (o *AttachChatEnvelopeOp) AuthenticatedOperation() {}
-
-// GetOperationTypeId identifies the attachment for World replay.
-func (o *AttachChatEnvelopeOp) GetOperationTypeId() string { return AttachChatEnvelopeOpID }
 
 // Validate requires a message of the channel and a valid envelope.
 func (o *AttachChatEnvelopeOp) Validate() error {
@@ -73,19 +67,6 @@ func (o *AttachChatEnvelopeOp) ApplyWorldOp(ctx context.Context, _ *logrus.Entry
 		return false, err
 	}
 	return false, writeObjectBody(ctx, ws, o.GetMessageKey(), message)
-}
-
-// ApplyWorldObjectOp rejects object-only replay for envelope attachment.
-func (o *AttachChatEnvelopeOp) ApplyWorldObjectOp(context.Context, *logrus.Entry, world.ObjectState, peer.ID) (bool, error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupAttachChatEnvelopeOp resolves the replayable attachment operation.
-func LookupAttachChatEnvelopeOp(_ context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == AttachChatEnvelopeOpID {
-		return &AttachChatEnvelopeOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.AuthenticatedOperation = (*AttachChatEnvelopeOp)(nil)

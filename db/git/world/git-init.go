@@ -13,9 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GitInitOpId is the git init operation id.
-var GitInitOpId = "hydra/git/init"
-
 // NewGitInitOp constructs a new GitInitOp block.
 // repoRef, worktreeArgs, ts can be empty
 func NewGitInitOp(
@@ -35,11 +32,6 @@ func NewGitInitOp(
 		CreateWorktree:  worktreeArgs,
 		Timestamp:       ts,
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *GitInitOp) GetOperationTypeId() string {
-	return GitInitOpId
 }
 
 // Validate checks the init operation.

@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CanvasSetNodeOpId is the operation id for CanvasSetNodeOp.
-var CanvasSetNodeOpId = "space/world/canvas-set-node"
-
 // NewCanvasSetNodeOp constructs a new CanvasSetNodeOp block.
 func NewCanvasSetNodeOp(objKey string, node *s4wave_canvas.CanvasNode) *CanvasSetNodeOp {
 	return &CanvasSetNodeOp{
@@ -35,11 +32,6 @@ func (o *CanvasSetNodeOp) Validate() error {
 		return ErrNodeIdRequired
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CanvasSetNodeOp) GetOperationTypeId() string {
-	return CanvasSetNodeOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -83,24 +75,6 @@ func (o *CanvasSetNodeOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CanvasSetNodeOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCanvasSetNodeOp looks up a CanvasSetNodeOp operation type.
-func LookupCanvasSetNodeOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CanvasSetNodeOpId {
-		return &CanvasSetNodeOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

@@ -79,9 +79,9 @@ func TestSqlDbFactoryCommitsWorldBackedRootAndReplaysOp(t *testing.T) {
 	}
 
 	// Resolve the SQL root operation by its registered identifier.
-	lookupOp, err := s4wave_sql_world.LookupSqlSetRootOp(ctx, s4wave_sql_world.SqlSetRootOpId)
+	lookupOp, err := world.NewSchema(s4wave_sql_world.WorldTypes).LookupOp(ctx, s4wave_sql_world.SqlSetRootOpTypeID)
 	if err != nil {
-		t.Fatalf("LookupSqlSetRootOp(%s): %v", s4wave_sql_world.SqlSetRootOpId, err)
+		t.Fatalf("LookupSqlSetRootOp(%s): %v", s4wave_sql_world.SqlSetRootOpTypeID, err)
 	}
 	if _, ok := lookupOp.(*s4wave_sql_world.SqlSetRootOp); !ok {
 		t.Fatalf("LookupSqlSetRootOp returned %T, want *SqlSetRootOp", lookupOp)

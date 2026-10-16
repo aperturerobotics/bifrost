@@ -220,7 +220,7 @@ func TestNestedAppRuntime(t *testing.T) {
 		// Apply the World operation and verify the operation reports success.
 		worldRPC := s4wave_world.NewSRPCWorldStateResourceServiceClient(txRPC)
 		applied, err := worldRPC.ApplyWorldOp(ctx,
-			&s4wave_world.ApplyWorldOpRequest{OpTypeId: op.GetOperationTypeId(), OpData: data})
+			&s4wave_world.ApplyWorldOpRequest{OpTypeId: op.TypeID(), OpData: data})
 		if err != nil {
 			t.Fatal(err)
 		}

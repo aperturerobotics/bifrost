@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ClusterAssignWorkerOpId is the cluster assign worker operation id.
-var ClusterAssignWorkerOpId = ClusterTypeID + "/assign-worker"
-
 // NewClusterAssignWorkerOp constructs a new ClusterAssignWorkerOp block.
 func NewClusterAssignWorkerOp(clusterKey, workerKey string) *ClusterAssignWorkerOp {
 	return &ClusterAssignWorkerOp{
@@ -45,11 +42,6 @@ func (o *ClusterAssignWorkerOp) Validate() error {
 	return nil
 }
 
-// GetOperationTypeId returns the operation type identifier.
-func (o *ClusterAssignWorkerOp) GetOperationTypeId() string {
-	return ClusterAssignWorkerOpId
-}
-
 // ApplyWorldOp applies the operation as a world operation.
 func (o *ClusterAssignWorkerOp) ApplyWorldOp(
 	ctx context.Context,
@@ -80,16 +72,6 @@ func (o *ClusterAssignWorkerOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *ClusterAssignWorkerOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

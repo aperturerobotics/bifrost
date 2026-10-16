@@ -17,7 +17,7 @@ func TestBrowserReleaseOverridesKeepDeferredFunctions(t *testing.T) {
 	// Assert the core plugin keeps both deferred function boundaries.
 	core := mustGoPluginConfig(t, result.Config.GetManifests()["spacewave-core"].GetBuilder().GetConfig())
 	for _, fn := range []string{
-		"github.com/s4wave/spacewave/core/git.LookupCreateGitRepoWizardOp",
+		"github.com/s4wave/spacewave/core/git.NewCreateGitRepoWizardOp",
 		"github.com/s4wave/spacewave/sdk/world/wizard/resource.LookupWizardObjectType",
 	} {
 		if !slices.Contains(core.GetGoscriptDeferredFunctions(), fn) {

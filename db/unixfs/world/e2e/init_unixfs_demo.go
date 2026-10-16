@@ -25,9 +25,6 @@ func InitUnixFSDemo(
 	return ws.ApplyWorldOp(ctx, op, sender)
 }
 
-// InitUnixFSDemoOpId is the init UnixFS demo operation id.
-var InitUnixFSDemoOpId = "space/world/init-unixfs-demo"
-
 // DefaultUnixFSObjectKey is the default object key for UnixFS demo filesystem.
 const DefaultUnixFSObjectKey = "unixfs"
 
@@ -59,11 +56,6 @@ func (o *InitUnixFSDemoOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *InitUnixFSDemoOp) GetOperationTypeId() string {
-	return InitUnixFSDemoOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -134,24 +126,6 @@ func (o *InitUnixFSDemoOp) ApplyWorldOp(
 		return false, err
 	}
 	return false, helloTxtFsh.Sync(ctx)
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *InitUnixFSDemoOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupInitUnixFSDemoOp looks up a InitUnixFSDemoOp operation type.
-func LookupInitUnixFSDemoOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == InitUnixFSDemoOpId {
-		return &InitUnixFSDemoOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

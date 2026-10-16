@@ -14,9 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateTerminalOpId is the operation id for CreateTerminalOp.
-var CreateTerminalOpId = "spacewave/terminal/create"
-
 // NewCreateTerminalOp constructs a new CreateTerminalOp.
 func NewCreateTerminalOp(objKey, name, deviceObjKey, devicePeerID string, ts time.Time) *CreateTerminalOp {
 	return &CreateTerminalOp{
@@ -42,11 +39,6 @@ func NewCreateSshHostTerminalOp(objKey, name, sshHostObjKey string, ts time.Time
 		Rows:             DefaultTerminalRows,
 		Timestamp:        timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateTerminalOp) GetOperationTypeId() string {
-	return CreateTerminalOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -131,24 +123,6 @@ func (o *CreateTerminalOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateTerminalOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateTerminalOp looks up a CreateTerminalOp operation type.
-func LookupCreateTerminalOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateTerminalOpId {
-		return &CreateTerminalOp{}, nil
-	}
-	return nil, nil
 }
 
 func effectiveCreateTerminalOpTargetKind(o *CreateTerminalOp) TerminalTargetKind {

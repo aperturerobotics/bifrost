@@ -13,9 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// WorkerCreateOpId is the worker create operation id.
-var WorkerCreateOpId = WorkerTypeID + "/create"
-
 // NewWorkerCreateOp constructs a new WorkerCreateOp block.
 func NewWorkerCreateOp(objectKey, name string, keypairs []*identity.Keypair) *WorkerCreateOp {
 	return &WorkerCreateOp{
@@ -47,11 +44,6 @@ func (o *WorkerCreateOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *WorkerCreateOp) GetOperationTypeId() string {
-	return WorkerCreateOpId
 }
 
 // BuildWorker builds the worker object from the create op.
@@ -111,16 +103,6 @@ func (o *WorkerCreateOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *WorkerCreateOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

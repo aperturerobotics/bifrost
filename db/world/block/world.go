@@ -352,7 +352,7 @@ func (t *WorldState) ApplyWorldOp(
 	}
 
 	// Validate the world operation.
-	if err := op.Validate(); err != nil {
+	if err := world.ValidateOp(op); err != nil {
 		return 0, false, err
 	}
 

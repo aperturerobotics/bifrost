@@ -121,7 +121,7 @@ func newSpaceWorld(ctx context.Context, t *testing.T) *spaceWorld {
 	t.Cleanup(ctrlRef.Release)
 
 	// Register the mock and file operations and get the engine.
-	lookupOp := world.NewLookupOpFromSlice(world.LookupOpSlice{world_mock.LookupMockOp, unixfs_world.LookupFsOp})
+	lookupOp := world.NewLookupOpFromSlice(world.LookupOpSlice{world_mock.LookupMockOp, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp})
 	relOpc, err := tb.Bus.AddController(ctx, world.NewLookupOpController("file-gc-ops", engineID, lookupOp), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -359,7 +359,7 @@ func (w *spaceWorld) checkReplayedFile(ctx context.Context, t *testing.T) {
 
 	// Replay it from the checkpoint.
 	le := logrus.NewEntry(logrus.New())
-	replayed, release, err := sobject_world_engine.OpenReadCheckpoint(ctx, le, w.bus, freshMember{so}, w.engineID, unixfs_world.LookupFsOp, snap)
+	replayed, release, err := sobject_world_engine.OpenReadCheckpoint(ctx, le, w.bus, freshMember{so}, w.engineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp, snap)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,7 +475,7 @@ func TestWorldEngineKeepsReplacedObjectRoots(t *testing.T) {
 
 	// Replay it from the checkpoint, as another member does.
 	le := logrus.NewEntry(logrus.New())
-	replayed, release, err := sobject_world_engine.OpenReadCheckpoint(ctx, le, w.bus, freshMember{so}, w.engineID, world_mock.LookupMockObjectOp, snap)
+	replayed, release, err := sobject_world_engine.OpenReadCheckpoint(ctx, le, w.bus, freshMember{so}, w.engineID, world_mock.LookupMockOp, snap)
 	if err != nil {
 		t.Fatal(err)
 	}

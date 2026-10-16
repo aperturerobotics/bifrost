@@ -16,9 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SqlSetRootOpId is the world operation id for sql/db root updates.
-var SqlSetRootOpId = "sql/db/set-root"
-
 const sqlSetRootMaxCASAttempts = 16
 
 // NewSqlSetRootOp constructs a sql/db root update operation.
@@ -34,11 +31,6 @@ func NewSqlSetRootOp(
 		RootRef:    rootRef.Clone(),
 		Statements: cloneSqlStatements(statements),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SqlSetRootOp) GetOperationTypeId() string {
-	return SqlSetRootOpId
 }
 
 // Validate performs cursory checks on the operation.
@@ -288,14 +280,6 @@ func cloneSqlStatements(statements []*SqlStatement) []*SqlStatement {
 		out[i] = statement.CloneVT()
 	}
 	return out
-}
-
-// LookupSqlSetRootOp constructs a sql/db root update operation from its id.
-func LookupSqlSetRootOp(ctx context.Context, id string) (world.Operation, error) {
-	if id == SqlSetRootOpId {
-		return &SqlSetRootOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.Operation = (*SqlSetRootOp)(nil)

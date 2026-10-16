@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/s4wave/spacewave/db/block"
-	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/identity"
 )
 
@@ -16,15 +15,6 @@ const (
 // NewWorkerBlock constructs a new Worker block.
 func NewWorkerBlock() block.Block {
 	return &Worker{}
-}
-
-// LookupWorkerOp performs the lookup operation for the Worker op types.
-func LookupWorkerOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	switch opTypeID {
-	case WorkerCreateOpId:
-		return &WorkerCreateOp{}, nil
-	}
-	return nil, nil
 }
 
 // UnmarshalWorker unmarshals a worker block from the cursor.

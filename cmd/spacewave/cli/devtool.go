@@ -180,7 +180,7 @@ func openDevtoolWorldEngine(
 		ctx,
 		le,
 		cursor,
-		bldr_manifest_world.LookupOp,
+		world.NewSchema(bldr_manifest_world.WorldTypes).LookupOp,
 		commitFn,
 		false,
 	)
