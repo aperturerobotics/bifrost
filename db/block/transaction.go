@@ -426,6 +426,7 @@ func (t *Transaction) WriteAtRoot(ctx context.Context, clearTree bool, subRoot *
 
 	// Order encodes after their referenced blocks and shared marshal aliases.
 	t.addMarshalAliasWaits(reachable)
+	encodeWaits := t.resolveEncodeWaits(reachable)
 	_, subtask = trace.NewTask(ctx, "hydra/block/transaction/write-at-root/topo-sort")
 	nods, err := SortBlockGraph(t.blockGraph)
 	subtask.End()
@@ -501,51 +502,30 @@ func (t *Transaction) WriteAtRoot(ctx context.Context, clearTree bool, subRoot *
 			continue
 		}
 
-		// skip if not reachable from the write root
+		// Skip nodes unreachable from the write root; nothing waits on them.
 		reachableNod, blkReachable := reachable[nodID]
 		if !blkReachable {
-			// we can skip closing encodeDone here since nobody waits on this node.
 			continue
 		}
 
-		// A non-dirty node still anchors block memory that a dirty
-		// descendant mutates during this write: a child's encode applies
-		// its computed ref into the parent block via ApplyBlockRef /
-		// ApplySubBlock, and an FSNode's Dirent entries are the same
-		// *Dirent objects exposed as sub-blocks. The node may be non-dirty
-		// because the sub-block handle was materialized after markDirty ran,
-		// so dirtiness never propagated through it. Its encodeDone must not
-		// close until its subtree finishes, or a parent marshaling this
-		// node's shared block races the descendant's ref application
-		// (concurrent SizeVT / MarshalToSizedBufferVT on one *Dirent). Gate
-		// the close on the subtree off the bounded encode pool so a pure
-		// waiter never starves an encode worker.
+		// A clean node encodes nothing; its parents wait on its dirty
+		// descendants instead (see resolveEncodeWaits).
 		if !bn.dirty {
-			go func() {
-				defer close(reachableNod.encodeDone)
-				for _, childID := range reachableNod.from {
-					select {
-					case <-ctx.Done():
-						return
-					case <-reachable[childID].encodeDone:
-					}
-				}
-			}()
 			continue
 		}
 		dirtyNodes++
+		waits := encodeWaits[nodID]
 
 		// Use the same encoder for inline leaves and queued graph nodes.
 		encode := func() {
 			// Signal completion even when a dependency or hook fails.
 			defer close(reachableNod.encodeDone)
-			for _, nodID := range reachableNod.from {
-				rnod := reachable[nodID]
+			for _, wait := range waits {
 				select {
 				case <-ctx.Done():
 					handleErr(context.Canceled)
 					return
-				case <-rnod.encodeDone:
+				case <-wait:
 				}
 			}
 
@@ -826,6 +806,68 @@ func (t *Transaction) addMarshalAliasWaits(reachable map[int64]transactionReacha
 		slices.Sort(next.from)
 		reachable[nodeID] = next
 	}
+}
+
+// resolveEncodeWaits returns, for each dirty reachable node, the encodes that
+// must finish before it marshals. A dirty child contributes its own encode.
+// A clean child encodes nothing, but it still anchors block memory that its
+// dirty descendants mutate: a child's encode applies its new ref into the
+// parent block through ApplyBlockRef or ApplySubBlock, and an FSNode's Dirent
+// entries are the same *Dirent objects exposed as sub-blocks. A sub-block
+// handle materialized after markDirty stays clean while its descendants
+// change, so a parent marshaling it waits on the clean child's dirty
+// descendants instead. Resolve the waits before any encode runs, since encodes
+// clear the dirty flags they read.
+func (t *Transaction) resolveEncodeWaits(reachable map[int64]transactionReachableNode) map[int64][]chan struct{} {
+	// Read dirtiness from the graph's handles.
+	isDirty := func(nodeID int64) bool {
+		h, _ := t.blockGraph.Node(nodeID).(*handle)
+		return h != nil && h.dirty
+	}
+
+	// Memoize each clean node's dirty frontier. Alias waits may point at a
+	// node not yet visited, so resolve by recursion rather than graph order.
+	cleanWaits := make(map[int64][]chan struct{})
+	var childWaits func(nodeID int64) []chan struct{}
+	childWaits = func(nodeID int64) []chan struct{} {
+		// Collect each wait once, since diamonds reach a frontier twice.
+		var waits []chan struct{}
+		seen := make(map[chan struct{}]struct{})
+		add := func(wait chan struct{}) {
+			if _, ok := seen[wait]; !ok {
+				seen[wait] = struct{}{}
+				waits = append(waits, wait)
+			}
+		}
+
+		// A dirty child is its own wait; a clean child passes its frontier up.
+		for _, childID := range reachable[nodeID].from {
+			if isDirty(childID) {
+				add(reachable[childID].encodeDone)
+				continue
+			}
+			frontier, ok := cleanWaits[childID]
+			if !ok {
+				// Mark the node first so a cycle contributes no waits.
+				cleanWaits[childID] = nil
+				frontier = childWaits(childID)
+				cleanWaits[childID] = frontier
+			}
+			for _, wait := range frontier {
+				add(wait)
+			}
+		}
+		return waits
+	}
+
+	// Resolve the waits of every node that will encode.
+	waits := make(map[int64][]chan struct{})
+	for nodeID := range reachable {
+		if isDirty(nodeID) {
+			waits[nodeID] = childWaits(nodeID)
+		}
+	}
+	return waits
 }
 
 // blockAliasIdentity returns the alias identity token of a block value,
