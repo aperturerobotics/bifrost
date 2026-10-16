@@ -1625,12 +1625,19 @@ func TestCollectStartupManifestEligibilityClassifiesRetainedCandidates(t *testin
 	for _, candidate := range got {
 		byKey[candidate.ObjectKey] = candidate
 	}
+
+	// Check each candidate's classification and reason.
 	assertStartupEligibility(t, byKey, exactRefKey, StartupManifestEligibilityEligible, "exact-label")
 	assertStartupEligibility(t, byKey, legacyRefKey, StartupManifestEligibilityCompatibleLegacy, "legacy-empty-label")
 	assertStartupEligibility(t, byKey, wrongIDRefKey, StartupManifestEligibilityQuarantined, "manifest-id-mismatch:other-plugin")
 	assertStartupEligibility(t, byKey, wrongPlatformRefKey, StartupManifestEligibilityIgnored, "platform-filtered:desktop/linux/amd64")
 	assertStartupEligibility(t, byKey, nestedStoreKey, StartupManifestEligibilityIgnored, "intermediate:bldr/manifest-store")
 	assertStartupEligibility(t, byKey, missingBucketRefKey, StartupManifestEligibilityUnsafe, "manifest-ref-unreadable:")
+
+	// The unreadable ref names the bucket its selection waits on.
+	if got := byKey[missingBucketRefKey].UnmountedBucketID; got != "missing-retained-bucket" {
+		t.Fatalf("unmounted bucket = %q, want missing-retained-bucket", got)
+	}
 
 	// Summarize the eligibility classification results.
 	summary := SummarizeStartupManifestEligibility(got, 3)

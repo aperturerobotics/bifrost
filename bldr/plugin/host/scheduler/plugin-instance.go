@@ -65,6 +65,9 @@ type pluginInstance struct {
 	// manifestSelectionFingerprint is the last input set fully processed by
 	// watchWorldManifestRoutine.
 	manifestSelectionFingerprint atomic.Pointer[manifestSelectionInput]
+	// bucketMounts wakes the running World manifest watch when a bucket an
+	// unreadable candidate names mounts. Nil while no watch runs.
+	bucketMounts atomic.Pointer[bucketMountWake]
 	// announcedManifests holds the manifest keys FetchManifest offered when it
 	// last went idle, or nil before it first went idle.
 	announcedManifests atomic.Pointer[[]string]

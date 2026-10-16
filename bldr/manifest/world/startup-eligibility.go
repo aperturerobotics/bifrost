@@ -55,6 +55,10 @@ type StartupManifestCandidateEligibility struct {
 	ObjectRef *bucket.ObjectRef
 	// ManifestRef is the referenced manifest object when known.
 	ManifestRef *bucket.ObjectRef
+	// UnmountedBucketID names the bucket of an unreadable manifest ref when no
+	// store serves that bucket yet. The candidate may become readable once
+	// the bucket mounts, without any change to the World.
+	UnmountedBucketID string
 }
 
 // CollectStartupManifestEligibilityAtRoot reads only the requested executable.
@@ -346,6 +350,9 @@ func classifyManifestRefStartupEligibility(
 			return nil, ctxErr
 		}
 		snapshotMeta(StartupManifestEligibilityUnsafe, "manifest-ref-unreadable:"+err.Error())
+		if errors.Is(err, bucket.ErrBucketNotFound) {
+			candidate.UnmountedBucketID = candidate.ManifestRef.GetBucketId()
+		}
 		return candidate, nil
 	}
 	candidate.Manifest = manifest

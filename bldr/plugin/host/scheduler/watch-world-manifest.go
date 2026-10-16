@@ -59,6 +59,11 @@ func (t *pluginInstance) execWatchWorldManifest(ctx context.Context, hosts *plug
 		},
 	)
 
+	// Re-run selection when a bucket an unreadable candidate names mounts.
+	mounts := newBucketMountWake(ctx, t.c.bus, objLoop.Wake)
+	t.bucketMounts.Store(mounts)
+	defer t.bucketMounts.CompareAndSwap(mounts, nil)
+
 	return objLoop.Execute(ctx, ws)
 }
 
@@ -104,6 +109,14 @@ func (t *pluginInstance) processManifestWorldStateCore(
 	)
 	if err != nil {
 		return true, nil, err
+	}
+
+	// Watch the buckets of candidates that read as unmounted, since their
+	// mount wakes no World watch.
+	if mounts := t.bucketMounts.Load(); mounts != nil {
+		if err := mounts.watch(candidateEligibility); err != nil {
+			return true, nil, err
+		}
 	}
 
 	// Hold the first selection until FetchManifest settles, so startup runs
