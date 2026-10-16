@@ -1,6 +1,8 @@
 syntax = "proto3";
 package forge.cluster;
 
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
+
 // Cluster associates a set of Worker with a list of Jobs.
 // The name is used for API calls and command-line / UI tools.
 //
@@ -26,6 +28,8 @@ message Cluster {
 
 // ClusterCreateOp creates a new Cluster.
 message ClusterCreateOp {
+  option (typeid.id) = "forge/cluster/create";
+
   // ClusterKey is the object key for the new Cluster.
   string cluster_key = 1;
   // Name is the name to create.
@@ -39,6 +43,8 @@ message ClusterCreateOp {
 // ClusterAssignPeerOp sets the peer_id for the Cluster controller.
 // Creates and/or links to a Keypair for the peer id.
 message ClusterAssignPeerOp {
+  option (typeid.id) = "forge/cluster/assign-peer";
+
   // ClusterKey is the object key for the Cluster.
   string cluster_key = 1;
   // PeerId is the updated peer id for the cluster.
@@ -48,6 +54,8 @@ message ClusterAssignPeerOp {
 
 // ClusterAssignJobOp assigns a Job to a Cluster.
 message ClusterAssignJobOp {
+  option (typeid.id) = "forge/cluster/assign-job";
+
   // ClusterKey is the object key for the Cluster.
   string cluster_key = 1;
   // JobKey is the object key for the Job.
@@ -56,6 +64,8 @@ message ClusterAssignJobOp {
 
 // ClusterAssignWorkerOp assigns a Worker to a Cluster.
 message ClusterAssignWorkerOp {
+  option (typeid.id) = "forge/cluster/assign-worker";
+
   // ClusterKey is the object key for the Cluster.
   string cluster_key = 1;
   // WorkerKey is the object key for the Worker.
@@ -64,6 +74,8 @@ message ClusterAssignWorkerOp {
 
 // ClusterStartJobOp transitions a assigned Job from PENDING to RUNNING.
 message ClusterStartJobOp {
+  option (typeid.id) = "forge/cluster/start-job";
+
   // ClusterKey is the object key for the Cluster.
   string cluster_key = 1;
   // JobKey is the object key for the Job.
@@ -73,6 +85,8 @@ message ClusterStartJobOp {
 // ClusterAssignTaskOp sets the peer_id for a Task to the Cluster peer ID.
 // Verifies that the cluster, job, and task are linked properly.
 message ClusterAssignTaskOp {
+  option (typeid.id) = "forge/cluster/assign-task";
+
   // ClusterKey is the object key for the Cluster.
   string cluster_key = 1;
   // JobKey is the object key for the Job.
@@ -87,6 +101,8 @@ message ClusterAssignTaskOp {
 // All assigned Task must be in COMPLETE state.
 // If any failed, the Job will also fail.
 message ClusterCompleteJobOp {
+  option (typeid.id) = "forge/cluster/complete-job";
+
   // ClusterKey is the object key for the Cluster.
   string cluster_key = 1;
   // JobKey is the object key for the Job.

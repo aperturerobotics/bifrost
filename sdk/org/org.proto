@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.org;
 
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/org;s4wave_org";
 
@@ -73,6 +74,8 @@ message OrgInvite {
 
 // InitOrganizationOp initializes an organization world object on space quickstart.
 message InitOrganizationOp {
+  option (typeid.id) = "org/init-organization";
+
   // OrgObjectKey is the key for the organization object.
   string org_object_key = 1;
   // DisplayName is the organization display name.
@@ -85,6 +88,8 @@ message InitOrganizationOp {
 
 // UpdateOrgOp applies a mutation to an existing organization object.
 message UpdateOrgOp {
+  option (typeid.id) = "org/update-organization";
+
   // OrgObjectKey is the key for the organization object.
   string org_object_key = 1;
   // Body is the mutation to apply.
@@ -171,6 +176,8 @@ message JoinOrgViaInviteOp {
 // DeleteOrganizationOp marks an organization as deleted.
 // Blocked if child_shared_objects is non-empty.
 message DeleteOrganizationOp {
+  option (typeid.id) = "org/delete-organization";
+
   // OrgObjectKey is the key for the organization object.
   string org_object_key = 1;
 }

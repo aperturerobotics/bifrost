@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.sshhost;
 
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/sshhost;s4wave_sshhost";
 
@@ -81,6 +82,8 @@ message SshHost {
 
 // CreateSshHostOp creates an SSH Host world object.
 message CreateSshHostOp {
+  option (typeid.id) = "spacewave/ssh-host/create";
+
   // ObjectKey is the key to create the SSH Host at.
   string object_key = 1;
   // Label is the operator-visible Host label.

@@ -2,6 +2,7 @@ syntax = "proto3";
 package identity.world;
 
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // EntityUpdateOp updates an entity and links to other objects.
 // Operation verifies signatures on/for the Entity.
@@ -9,18 +10,24 @@ import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
 // Adds links between the Entity and the Keypair.
 // Can only be applied as a world op.
 message EntityUpdateOp {
+  option (typeid.id) = "identity/entity/update";
+
   // EntityRef is the reference to the latest Entity object.
   .bucket.ObjectRef entity_ref = 1;
 }
 
 // KeypairUpdateOp updates a Keypair.
 message KeypairUpdateOp {
+  option (typeid.id) = "identity/keypair/update";
+
   // KeypairRef is the reference to the Keypair object.
   .bucket.ObjectRef keypair_ref = 1;
 }
 
 // DomainInfoUpdateOp updates a DomainInfo.
 message DomainInfoUpdateOp {
+  option (typeid.id) = "identity/domain/update";
+
   // DomainInfoRef is the reference to the DomainInfo object.
   .bucket.ObjectRef domain_info_ref = 1;
 }

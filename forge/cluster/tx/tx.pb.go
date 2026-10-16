@@ -10,6 +10,7 @@ import (
 	slices "slices"
 	strconv "strconv"
 
+	_ "github.com/aperturerobotics/common/typeid"
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 )

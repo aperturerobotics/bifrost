@@ -3,6 +3,7 @@ package s4wave.apt;
 
 import "github.com/s4wave/spacewave/db/block/block.proto";
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/apt;s4wave_apt";
 
@@ -104,6 +105,8 @@ message AptBuildSpec {
 
 // CreateAptRepositoryOp creates a new AptRepository world object.
 message CreateAptRepositoryOp {
+  option (typeid.id) = "spacewave-vm/apt/repository/create";
+
   // ObjectKey is the key to create the repository at.
   string object_key = 1;
   // Repository carries the metadata for the new AptRepository.
@@ -112,6 +115,8 @@ message CreateAptRepositoryOp {
 
 // AddAptPackageOp creates an AptPackage and links it to an AptRepository.
 message AddAptPackageOp {
+  option (typeid.id) = "spacewave-vm/apt/package/add";
+
   // RepositoryKey is the AptRepository object key.
   string repository_key = 1;
   // PackageKey is the key to create the AptPackage at.
@@ -122,18 +127,24 @@ message AddAptPackageOp {
 
 // AptPublishPackageOp publishes a built AptPackage into the repository index.
 message AptPublishPackageOp {
+  option (typeid.id) = "spacewave-vm/apt/package/publish";
+
   // PackageKey is the AptPackage object key.
   string package_key = 1;
 }
 
 // AptSupersedePackageOp marks a published AptPackage as superseded.
 message AptSupersedePackageOp {
+  option (typeid.id) = "spacewave-vm/apt/package/supersede";
+
   // PackageKey is the AptPackage object key.
   string package_key = 1;
 }
 
 // AddAptBuildSpecOp creates an AptBuildSpec and links it to an AptRepository.
 message AddAptBuildSpecOp {
+  option (typeid.id) = "spacewave-vm/apt/build-spec/add";
+
   // RepositoryKey is the AptRepository object key.
   string repository_key = 1;
   // BuildSpecKey is the key to create the AptBuildSpec at.

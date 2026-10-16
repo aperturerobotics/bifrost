@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.wizard;
 
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/world/wizard;s4wave_wizard";
 
@@ -182,6 +183,8 @@ message WizardState {
 
 // CreateWizardObjectOp creates a persistent wizard object in the world.
 message CreateWizardObjectOp {
+  option (typeid.id) = "spacewave/wizard/create";
+
   // ObjectKey is the object key for the wizard object.
   string object_key = 1;
   // WizardTypeId is the wizard type ID (e.g., "wizard/git/repo").

@@ -2,6 +2,7 @@ syntax = "proto3";
 package s4wave.device;
 
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/device;s4wave_device";
 
@@ -227,6 +228,8 @@ message ComputersDashboard {
 
 // CreateComputersDashboardOp creates a ComputersDashboard world object.
 message CreateComputersDashboardOp {
+  option (typeid.id) = "spacewave/computers/create";
+
   // ObjectKey is the key to create the dashboard at.
   string object_key = 1;
   // Name is the display name of the dashboard.

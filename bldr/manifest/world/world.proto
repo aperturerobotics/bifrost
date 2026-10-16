@@ -3,9 +3,12 @@ package bldr.manifest.world;
 
 import "github.com/s4wave/spacewave/bldr/manifest/manifest.proto";
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // StoreManifestOp stores a Manifest to an object key.
 message StoreManifestOp {
+  option (typeid.id) = "bldr/manifest/store";
+
   // ObjectKey is the object key to set.
   string object_key = 1;
   // LinkObjectKeys is the list of keys to link from with the <manifest> predicate.
@@ -17,6 +20,8 @@ message StoreManifestOp {
 // ExtractManifestBundleOp stores a ManifestBundle to an object key.
 // Extracts the manifests to Manifest objects with <manifest> links.
 message ExtractManifestBundleOp {
+  option (typeid.id) = "bldr/manifest/bundle/extract";
+
   // ObjectKey is the object key to set.
   string object_key = 1;
   // LinkObjectKeys is the list of keys to link from with the <manifest> predicate.

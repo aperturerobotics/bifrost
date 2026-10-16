@@ -11,6 +11,7 @@ import (
 	slices "slices"
 	strconv "strconv"
 
+	_ "github.com/aperturerobotics/common/typeid"
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	block "github.com/s4wave/spacewave/db/block"

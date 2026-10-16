@@ -9,6 +9,7 @@ import (
 	io "io"
 	slices "slices"
 
+	_ "github.com/aperturerobotics/common/typeid"
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	manifest "github.com/s4wave/spacewave/bldr/manifest"

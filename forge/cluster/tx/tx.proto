@@ -1,8 +1,12 @@
 syntax = "proto3";
 package cluster.tx;
 
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
+
 // Tx is the on-the-wire representation of a transaction.
 message Tx {
+  option (typeid.id) = "forge/cluster/tx";
+
   // TxType is the kind of transaction this is.
   TxType tx_type = 1;
   // ClusterObjectKey is the Cluster object ID this is associated with.

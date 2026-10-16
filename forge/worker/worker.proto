@@ -2,6 +2,7 @@ syntax = "proto3";
 package forge.worker;
 
 import "github.com/s4wave/spacewave/identity/identity.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // Worker associates a set of keypairs with a worker name.
 // The name is used for API calls and command-line / UI tools.
@@ -29,6 +30,8 @@ message Placement {
 
 // WorkerCreateOp creates a Worker.
 message WorkerCreateOp {
+  option (typeid.id) = "forge/worker/create";
+
   // ObjectKey is the object key to create the Worker.
   string object_key = 1;
   // Name is the worker name to create.

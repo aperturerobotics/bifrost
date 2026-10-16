@@ -2,11 +2,14 @@ syntax = "proto3";
 package s4wave.sql.workbench.world;
 
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/sql/workbench/world;s4wave_sql_workbench_world";
 
 // SqlWorkbenchSetRootOp advances a sql/workbench world object's root.
 message SqlWorkbenchSetRootOp {
+  option (typeid.id) = "sql/workbench/set-root";
+
   // ObjectKey is the sql/workbench object key to update.
   string object_key = 1;
   // RootRef is the committed workbench root reference.

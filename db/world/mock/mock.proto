@@ -1,14 +1,20 @@
 syntax = "proto3";
 package world.mock;
 
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
+
 // MockObjectOp is a mock object operation.
 message MockObjectOp {
+  option (typeid.id) = "hydra/world/mock/mock-object-op";
+
   // NextMsg sets the next message on the mock object.
   string next_msg = 1;
 }
 
 // MockWorldOp is a mock world operation.
 message MockWorldOp {
+  option (typeid.id) = "hydra/world/mock/mock-world-op";
+
   // ObjectKey is the object key to apply to.
   string object_key = 1;
   // NextMsg sets the next message on the mock object.

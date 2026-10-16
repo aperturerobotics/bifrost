@@ -4,6 +4,7 @@ package s4wave.vm;
 import "github.com/s4wave/spacewave/sdk/terminal/terminal.proto";
 import "github.com/s4wave/spacewave/sdk/vm/v86.proto";
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/vm;s4wave_vm";
 
@@ -42,6 +43,8 @@ message WasiVm {
 // CreateWasiVmOp creates a new WasiVm world object linked to its root
 // filesystem. At least one of rootfs_object_key and image_object_key is set.
 message CreateWasiVmOp {
+  option (typeid.id) = "vm/wasivm/create";
+
   // ObjectKey is the key to create the VM at.
   string object_key = 1;
   // Name is the display name.
@@ -82,6 +85,8 @@ message WasiVmImage {
 // CreateWasiVmImageOp creates a new WasiVmImage world object. Its rootfs edge,
 // when the image has one, is set separately via SetGraphQuad.
 message CreateWasiVmImageOp {
+  option (typeid.id) = "vm/image/wasivm/create";
+
   // ObjectKey is the key to create the image at.
   string object_key = 1;
   // Image carries the metadata of the new image. Name is required.
@@ -114,6 +119,8 @@ message WasiVmPackage {
 // CreateWasiVmPackageOp creates a new WasiVmPackage world object. Its layer and
 // dependency edges are set separately via SetGraphQuad.
 message CreateWasiVmPackageOp {
+  option (typeid.id) = "vm/package/wasivm/create";
+
   // ObjectKey is the key to create the package at.
   string object_key = 1;
   // Package carries the metadata of the new package. Name and version are
@@ -125,6 +132,8 @@ message CreateWasiVmPackageOp {
 
 // SetWasiVmStateOp changes the desired state of an existing WasiVm object.
 message SetWasiVmStateOp {
+  option (typeid.id) = "vm/wasivm/set-state";
+
   // ObjectKey is the object key of the WasiVm to update.
   string object_key = 1;
   // State is the target state: VmState_RUNNING or VmState_STOPPED.

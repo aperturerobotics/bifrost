@@ -5,6 +5,7 @@ import "github.com/s4wave/spacewave/db/block/block.proto";
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
 import "github.com/s4wave/spacewave/db/unixfs/block/fstree.proto";
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // FSType indicates the type of unixfs reference.
 enum FSType {
@@ -35,6 +36,8 @@ message UnixfsRef {
 // FsInitOp is an operation to create a unixfs filesystem with a root ref or empty.
 // Can be applied as either an object op or a world op.
 message FsInitOp {
+  option (typeid.id) = "hydra/unixfs/init";
+
   // ObjectKey is the object key to create as a UnixFS.
   string object_key = 1;
   // FsType sets the filesystem object type to create.
@@ -53,6 +56,8 @@ message FsInitOp {
 // FsMknodOp is an operation to create one or more inodes at paths.
 // Can be applied as either an object op or a world op.
 message FsMknodOp {
+  option (typeid.id) = "hydra/unixfs/mknod";
+
   // ObjectKey is the object key to start at.
   // Ignored if applied as an object op.
   string object_key = 1;
@@ -74,6 +79,8 @@ message FsMknodOp {
 // FsSymlinkOp is an operation to create a symbolic link.
 // Can be applied as either an object op or a world op.
 message FsSymlinkOp {
+  option (typeid.id) = "hydra/unixfs/symlink";
+
   // ObjectKey is the object key to start at.
   // Ignored if applied as an object op.
   string object_key = 1;
@@ -93,6 +100,8 @@ message FsSymlinkOp {
 // The file mode portion of the permissions bitset will be ignored.
 // Can be applied as either an object op or a world op.
 message FsSetPermissionsOp {
+  option (typeid.id) = "hydra/unixfs/set-permissions";
+
   // ObjectKey is the object key to start at.
   // Ignored if applied as an object op.
   string object_key = 1;
@@ -111,6 +120,8 @@ message FsSetPermissionsOp {
 // FsSetModTimestampOp is an operation to set the modification timestamp at the paths.
 // Can be applied as either an object op or a world op.
 message FsSetModTimestampOp {
+  option (typeid.id) = "hydra/unixfs/set-mod-timestamp";
+
   // ObjectKey is the object key to start at.
   // Ignored if applied as an object op.
   string object_key = 1;
@@ -127,6 +138,8 @@ message FsSetModTimestampOp {
 // FsWriteAtOp is an operation to write some data to a file.
 // Can be applied as either an object op or a world op.
 message FsWriteAtOp {
+  option (typeid.id) = "hydra/unixfs/write-at";
+
   // ObjectKey is the object key to start at.
   // Ignored if applied as an object op.
   string object_key = 1;
@@ -148,6 +161,8 @@ message FsWriteAtOp {
 // The extended part will be a sparse range (hole) reading as zeros.
 // Can be applied as either an object op or a world op.
 message FsTruncateOp {
+  option (typeid.id) = "hydra/unixfs/truncate";
+
   // ObjectKey is the object key to start at.
   // Ignored if applied as an object op.
   string object_key = 1;
@@ -167,6 +182,8 @@ message FsTruncateOp {
 // Note: this does not allow cross-FS copy.
 // Can be applied as either an object op or a world op.
 message FsCopyOp {
+  option (typeid.id) = "hydra/unixfs/copy";
+
   // ObjectKey is the object key to copy from.
   // Ignored if applied as an object op.
   string object_key = 1;
@@ -188,6 +205,8 @@ message FsCopyOp {
 // Note: this does not allow cross-FS rename.
 // Can be applied as either an object op or a world op.
 message FsRenameOp {
+  option (typeid.id) = "hydra/unixfs/rename";
+
   // ObjectKey is the object key to copy from.
   // Ignored if applied as an object op.
   string object_key = 1;
@@ -209,6 +228,8 @@ message FsRenameOp {
 // The op creates the file entry and writes the blob content in a single commit.
 // Can be applied as either an object op or a world op.
 message FsMknodWithContentOp {
+  option (typeid.id) = "hydra/unixfs/mknod-with-content";
+
   // ObjectKey is the object key to start at.
   // Ignored if applied as an object op.
   string object_key = 1;
@@ -232,6 +253,8 @@ message FsMknodWithContentOp {
 // FsRemoveOp is an operation to delete inodes from the tree.
 // Can be applied as either an object op or a world op.
 message FsRemoveOp {
+  option (typeid.id) = "hydra/unixfs/remove";
+
   // ObjectKey is the object key to start at.
   // Ignored if applied as an object op.
   string object_key = 1;
