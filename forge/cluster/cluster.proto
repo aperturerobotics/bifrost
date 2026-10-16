@@ -16,6 +16,8 @@ import "github.com/aperturerobotics/common/typeid/typeid.proto";
 // - Cluster: assigned peer ID can submit forge/cluster/tx w/ validation.
 // - Cluster: can be updated w/ ops: ClusterCreate, ClusterAssignJob, ClusterDelete
 message Cluster {
+  option (typeid.id) = "forge/cluster";
+
   // Name is the cluster name.
   // Should be user-readable: like "my-cluster-1"
   // Must be a valid DNS label as defined in RFC 1123.

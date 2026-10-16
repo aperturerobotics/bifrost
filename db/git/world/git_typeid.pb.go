@@ -15,6 +15,14 @@ func (*GitInitOp) TypeID() string {
 	return GitInitOpTypeID
 }
 
+// WorktreeTypeID is the type ID of Worktree.
+const WorktreeTypeID = "git/worktree"
+
+// TypeID returns the type ID of Worktree.
+func (*Worktree) TypeID() string {
+	return WorktreeTypeID
+}
+
 // GitCreateWorktreeOpTypeID is the type ID of GitCreateWorktreeOp.
 const GitCreateWorktreeOpTypeID = "hydra/git/create-worktree"
 
@@ -66,6 +74,7 @@ func (*GitUnstageOp) TypeID() string {
 // GitTypes lists the typed messages of git.proto.
 var GitTypes = []typeid.Type{
 	{ID: GitInitOpTypeID, New: func() any { return new(GitInitOp) }},
+	{ID: WorktreeTypeID, New: func() any { return new(Worktree) }},
 	{ID: GitCreateWorktreeOpTypeID, New: func() any { return new(GitCreateWorktreeOp) }},
 	{ID: GitFetchOpTypeID, New: func() any { return new(GitFetchOp) }},
 	{ID: GitCloneOpTypeID, New: func() any { return new(GitCloneOp) }},

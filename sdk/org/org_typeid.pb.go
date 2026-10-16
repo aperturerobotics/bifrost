@@ -7,6 +7,14 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// OrgStateTypeID is the type ID of OrgState.
+const OrgStateTypeID = "spacewave/organization"
+
+// TypeID returns the type ID of OrgState.
+func (*OrgState) TypeID() string {
+	return OrgStateTypeID
+}
+
 // InitOrganizationOpTypeID is the type ID of InitOrganizationOp.
 const InitOrganizationOpTypeID = "org/init-organization"
 
@@ -33,6 +41,7 @@ func (*DeleteOrganizationOp) TypeID() string {
 
 // OrgTypes lists the typed messages of org.proto.
 var OrgTypes = []typeid.Type{
+	{ID: OrgStateTypeID, New: func() any { return new(OrgState) }},
 	{ID: InitOrganizationOpTypeID, New: func() any { return new(InitOrganizationOp) }},
 	{ID: UpdateOrgOpTypeID, New: func() any { return new(UpdateOrgOp) }},
 	{ID: DeleteOrganizationOpTypeID, New: func() any { return new(DeleteOrganizationOp) }},

@@ -9,6 +9,8 @@ option go_package = "github.com/s4wave/spacewave/sdk/org;s4wave_org";
 // OrgState is the state of an Organization SharedObject.
 // Stored as the organization's world block.
 message OrgState {
+  option (typeid.id) = "spacewave/organization";
+
   // DisplayName is the organization display name.
   string display_name = 1;
   // CreatedAt is the organization creation timestamp.

@@ -6,10 +6,13 @@ import "github.com/s4wave/spacewave/forge/value/value.proto";
 import "github.com/s4wave/spacewave/forge/worker/worker.proto";
 import "github.com/s4wave/spacewave/db/block/block.proto";
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // World graph links:
 //  - <parent> -> usually a Pass which created the Execution
 message Execution {
+  option (typeid.id) = "forge/execution";
+
   // ExecutionState is the current state of the execution.
   State execution_state = 1;
   // PeerId is the identifier of the peer assigned to the execution.

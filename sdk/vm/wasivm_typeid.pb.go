@@ -7,6 +7,14 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// WasiVmTypeID is the type ID of WasiVm.
+const WasiVmTypeID = "vm/wasivm"
+
+// TypeID returns the type ID of WasiVm.
+func (*WasiVm) TypeID() string {
+	return WasiVmTypeID
+}
+
 // CreateWasiVmOpTypeID is the type ID of CreateWasiVmOp.
 const CreateWasiVmOpTypeID = "vm/wasivm/create"
 
@@ -15,12 +23,28 @@ func (*CreateWasiVmOp) TypeID() string {
 	return CreateWasiVmOpTypeID
 }
 
+// WasiVmImageTypeID is the type ID of WasiVmImage.
+const WasiVmImageTypeID = "vm/image/wasivm"
+
+// TypeID returns the type ID of WasiVmImage.
+func (*WasiVmImage) TypeID() string {
+	return WasiVmImageTypeID
+}
+
 // CreateWasiVmImageOpTypeID is the type ID of CreateWasiVmImageOp.
 const CreateWasiVmImageOpTypeID = "vm/image/wasivm/create"
 
 // TypeID returns the type ID of CreateWasiVmImageOp.
 func (*CreateWasiVmImageOp) TypeID() string {
 	return CreateWasiVmImageOpTypeID
+}
+
+// WasiVmPackageTypeID is the type ID of WasiVmPackage.
+const WasiVmPackageTypeID = "vm/package/wasivm"
+
+// TypeID returns the type ID of WasiVmPackage.
+func (*WasiVmPackage) TypeID() string {
+	return WasiVmPackageTypeID
 }
 
 // CreateWasiVmPackageOpTypeID is the type ID of CreateWasiVmPackageOp.
@@ -41,8 +65,11 @@ func (*SetWasiVmStateOp) TypeID() string {
 
 // WasivmTypes lists the typed messages of wasivm.proto.
 var WasivmTypes = []typeid.Type{
+	{ID: WasiVmTypeID, New: func() any { return new(WasiVm) }},
 	{ID: CreateWasiVmOpTypeID, New: func() any { return new(CreateWasiVmOp) }},
+	{ID: WasiVmImageTypeID, New: func() any { return new(WasiVmImage) }},
 	{ID: CreateWasiVmImageOpTypeID, New: func() any { return new(CreateWasiVmImageOp) }},
+	{ID: WasiVmPackageTypeID, New: func() any { return new(WasiVmPackage) }},
 	{ID: CreateWasiVmPackageOpTypeID, New: func() any { return new(CreateWasiVmPackageOp) }},
 	{ID: SetWasiVmStateOpTypeID, New: func() any { return new(SetWasiVmStateOp) }},
 }

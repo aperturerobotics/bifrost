@@ -6,10 +6,13 @@ import "github.com/s4wave/spacewave/db/block/block.proto";
 import "github.com/s4wave/spacewave/db/block/blob/blob.proto";
 import "github.com/s4wave/spacewave/db/kvtx/block/kvtx.proto";
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // Repo contains a Git repository.
 // Changes are transactional and deterministic.
 message Repo {
+  option (typeid.id) = "git/repo";
+
   // ReferencesStore contains the named references store.
   ReferencesStore references_store = 1;
   // ModuleReferencesStore contains the named submodules store.

@@ -7,6 +7,14 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// ForgeDashboardTypeID is the type ID of ForgeDashboard.
+const ForgeDashboardTypeID = "spacewave/forge/dashboard"
+
+// TypeID returns the type ID of ForgeDashboard.
+func (*ForgeDashboard) TypeID() string {
+	return ForgeDashboardTypeID
+}
+
 // CreateForgeDashboardOpTypeID is the type ID of CreateForgeDashboardOp.
 const CreateForgeDashboardOpTypeID = "spacewave/forge/dashboard/create"
 
@@ -33,6 +41,7 @@ func (*InitForgeQuickstartOp) TypeID() string {
 
 // DashboardTypes lists the typed messages of dashboard.proto.
 var DashboardTypes = []typeid.Type{
+	{ID: ForgeDashboardTypeID, New: func() any { return new(ForgeDashboard) }},
 	{ID: CreateForgeDashboardOpTypeID, New: func() any { return new(CreateForgeDashboardOp) }},
 	{ID: LinkForgeDashboardOpTypeID, New: func() any { return new(LinkForgeDashboardOp) }},
 	{ID: InitForgeQuickstartOpTypeID, New: func() any { return new(InitForgeQuickstartOp) }},

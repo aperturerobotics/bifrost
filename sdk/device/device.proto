@@ -195,6 +195,8 @@ message ForgeWorkerDeclaration {
 
 // Device is the world-block state for a Spacewave-managed Device object.
 message Device {
+  option (typeid.id) = "spacewave/device";
+
   // PeerId is the daemon DEVICE session peer ID.
   string peer_id = 1;
   // Label is the operator-visible Device label.
@@ -220,6 +222,8 @@ message Device {
 // ComputersDashboard is the Space-local dashboard for managed Devices and
 // future host entries.
 message ComputersDashboard {
+  option (typeid.id) = "spacewave/computers";
+
   // Name is the display name of this dashboard.
   string name = 1;
   // CreatedAt is the time this dashboard was created.

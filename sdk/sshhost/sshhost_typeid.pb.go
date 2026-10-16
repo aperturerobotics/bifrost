@@ -7,6 +7,14 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// SshHostTypeID is the type ID of SshHost.
+const SshHostTypeID = "spacewave/ssh-host"
+
+// TypeID returns the type ID of SshHost.
+func (*SshHost) TypeID() string {
+	return SshHostTypeID
+}
+
 // CreateSshHostOpTypeID is the type ID of CreateSshHostOp.
 const CreateSshHostOpTypeID = "spacewave/ssh-host/create"
 
@@ -17,5 +25,6 @@ func (*CreateSshHostOp) TypeID() string {
 
 // SshhostTypes lists the typed messages of sshhost.proto.
 var SshhostTypes = []typeid.Type{
+	{ID: SshHostTypeID, New: func() any { return new(SshHost) }},
 	{ID: CreateSshHostOpTypeID, New: func() any { return new(CreateSshHostOp) }},
 }

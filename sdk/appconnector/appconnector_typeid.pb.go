@@ -7,6 +7,22 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// AppConnectorTypeID is the type ID of AppConnector.
+const AppConnectorTypeID = "spacewave/app-connector"
+
+// TypeID returns the type ID of AppConnector.
+func (*AppConnector) TypeID() string {
+	return AppConnectorTypeID
+}
+
+// AppSnapshotTypeID is the type ID of AppSnapshot.
+const AppSnapshotTypeID = "spacewave/app-snapshot"
+
+// TypeID returns the type ID of AppSnapshot.
+func (*AppSnapshot) TypeID() string {
+	return AppSnapshotTypeID
+}
+
 // CreateAppConnectorOpTypeID is the type ID of CreateAppConnectorOp.
 const CreateAppConnectorOpTypeID = "spacewave/app-connector/create"
 
@@ -17,5 +33,7 @@ func (*CreateAppConnectorOp) TypeID() string {
 
 // AppconnectorTypes lists the typed messages of appconnector.proto.
 var AppconnectorTypes = []typeid.Type{
+	{ID: AppConnectorTypeID, New: func() any { return new(AppConnector) }},
+	{ID: AppSnapshotTypeID, New: func() any { return new(AppSnapshot) }},
 	{ID: CreateAppConnectorOpTypeID, New: func() any { return new(CreateAppConnectorOp) }},
 }

@@ -142,12 +142,13 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/manifest": {
-      "hash": "4b94ef827db75b8180fb06339b1909e49df345357c0b155a83bce57761abe6a4",
+      "hash": "b204a772a6eff51a91171e3e2214120138d94c432b93706374694b802db54c13",
       "generatedFiles": [
         "bldr/manifest/manifest.pb.go",
         "bldr/manifest/manifest.pb.ts",
         "bldr/manifest/manifest_srpc.pb.go",
-        "bldr/manifest/manifest_srpc.pb.ts"
+        "bldr/manifest/manifest_srpc.pb.ts",
+        "bldr/manifest/manifest_typeid.pb.go"
       ],
       "protoFiles": [
         "bldr/manifest/manifest.proto"
@@ -164,10 +165,11 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/manifest/builder": {
-      "hash": "609edbcb1f7f30bccb7f92d203673022c5751d87abc4debbac1fcd5464880067",
+      "hash": "90055f6a397ddbf16e7377003e4fd750f5ae3d4b37cf33edde404ce868d9f584",
       "generatedFiles": [
         "bldr/manifest/builder/builder.pb.go",
-        "bldr/manifest/builder/builder.pb.ts"
+        "bldr/manifest/builder/builder.pb.ts",
+        "bldr/manifest/builder/builder_typeid.pb.go"
       ],
       "protoFiles": [
         "bldr/manifest/builder/builder.proto"
@@ -1082,7 +1084,7 @@
       ]
     },
     "github.com/s4wave/spacewave/core/forge/dashboard": {
-      "hash": "5a2c1525b382ec213d0fb670b4ff610963ed7ffd6674fc7d2a9417db5c52e0de",
+      "hash": "b560eb002f765968b3a40cb74dac5891bb05a4db99607e4cb585f229c9175532",
       "generatedFiles": [
         "core/forge/dashboard/dashboard.pb.go",
         "core/forge/dashboard/dashboard.pb.ts",
@@ -1513,10 +1515,11 @@
       ]
     },
     "github.com/s4wave/spacewave/core/space/world": {
-      "hash": "4debaecd712e61ff20e0d2c552fe48d231736fcf12f457b3643c83366559ec0c",
+      "hash": "4f6ced47720af787cde3ad7c684f938f7372687a30b97bb5d05a86e778021bd3",
       "generatedFiles": [
         "core/space/world/world.pb.go",
-        "core/space/world/world.pb.ts"
+        "core/space/world/world.pb.ts",
+        "core/space/world/world_typeid.pb.go"
       ],
       "protoFiles": [
         "core/space/world/world.proto"
@@ -2041,17 +2044,18 @@
       ]
     },
     "github.com/s4wave/spacewave/db/git/block": {
-      "hash": "1104a1c3423843a40d92f0a876acf5e766d3b3e3f751459af3b080a1261173f7",
+      "hash": "41734d17e035b65acbd1f5ec285264b1a03f61ecdb6befe6be01283537b32fe7",
       "generatedFiles": [
         "db/git/block/git.pb.go",
-        "db/git/block/git.pb.ts"
+        "db/git/block/git.pb.ts",
+        "db/git/block/git_typeid.pb.go"
       ],
       "protoFiles": [
         "db/git/block/git.proto"
       ]
     },
     "github.com/s4wave/spacewave/db/git/world": {
-      "hash": "87238386d0fb889a1ccdff52cc92c4fd1cb452f01f05d74ab7485813ec1599e5",
+      "hash": "2a8ed643d165981316f4712c767a520dadb9590769f953ee2f610c5058c993f4",
       "generatedFiles": [
         "db/git/world/git.pb.go",
         "db/git/world/git.pb.ts",
@@ -2062,10 +2066,11 @@
       ]
     },
     "github.com/s4wave/spacewave/db/kvtx/block": {
-      "hash": "981ff72e2cebc9f153363c12f441f9e4f2e235fa3d3fc05561cd14436c509936",
+      "hash": "f32c7afd77e8aa686d435546399d608028aaa49049efc1503e94b1e3c36d7e2f",
       "generatedFiles": [
         "db/kvtx/block/kvtx.pb.go",
-        "db/kvtx/block/kvtx.pb.ts"
+        "db/kvtx/block/kvtx.pb.ts",
+        "db/kvtx/block/kvtx_typeid.pb.go"
       ],
       "protoFiles": [
         "db/kvtx/block/kvtx.proto"
@@ -2270,10 +2275,11 @@
       ]
     },
     "github.com/s4wave/spacewave/db/unixfs/block": {
-      "hash": "6f170e25b008209c1be4bb03862c6e44e743af0c536091d3fe6226ec8943dbc6",
+      "hash": "f4490cb7d66f989f35e2c4be0300e7206f0b70bb9358eeb26103be7cba1e115f",
       "generatedFiles": [
         "db/unixfs/block/fstree.pb.go",
-        "db/unixfs/block/fstree.pb.ts"
+        "db/unixfs/block/fstree.pb.ts",
+        "db/unixfs/block/fstree_typeid.pb.go"
       ],
       "protoFiles": [
         "db/unixfs/block/fstree.proto"
@@ -2587,7 +2593,7 @@
       ]
     },
     "github.com/s4wave/spacewave/forge/cluster": {
-      "hash": "8fb09dee1c4ae024772af982ccbf163d5803c92f2cf9d3c06111f29daa35b73f",
+      "hash": "362513abd3b18ce32d4ea4a4602dec6618589d325594ba0dd1dcf46156bf69f4",
       "generatedFiles": [
         "forge/cluster/cluster.pb.go",
         "forge/cluster/cluster.pb.ts",
@@ -2641,10 +2647,11 @@
       ]
     },
     "github.com/s4wave/spacewave/forge/execution": {
-      "hash": "47e13e7f712ebd3bec9d209081ffd6f2b5549e3b15a7cf5253a3f7999ad07b28",
+      "hash": "5f0a128657a0947ba4e28151a91470fc6522bae4b9e57ce257bbda6cdc6d1ece",
       "generatedFiles": [
         "forge/execution/execution.pb.go",
-        "forge/execution/execution.pb.ts"
+        "forge/execution/execution.pb.ts",
+        "forge/execution/execution_typeid.pb.go"
       ],
       "protoFiles": [
         "forge/execution/execution.proto"
@@ -2672,10 +2679,11 @@
       ]
     },
     "github.com/s4wave/spacewave/forge/job": {
-      "hash": "40e0b63d54faf1e8b15f879bb2712bc88bf2f641d0f5db2e647a31180adc8517",
+      "hash": "f83509b6865fa2d62396316ca564f887fe57134da615b747438650907286b651",
       "generatedFiles": [
         "forge/job/job.pb.go",
-        "forge/job/job.pb.ts"
+        "forge/job/job.pb.ts",
+        "forge/job/job_typeid.pb.go"
       ],
       "protoFiles": [
         "forge/job/job.proto"
@@ -2742,10 +2750,11 @@
       ]
     },
     "github.com/s4wave/spacewave/forge/pass": {
-      "hash": "872ef8c94f272f30e636d44448c6862ce62e7a590e921fecefd269243c42524f",
+      "hash": "7db6169ba936cdbc4b3203b7028205b568850060913af7136e81daecf585cd33",
       "generatedFiles": [
         "forge/pass/pass.pb.go",
-        "forge/pass/pass.pb.ts"
+        "forge/pass/pass.pb.ts",
+        "forge/pass/pass_typeid.pb.go"
       ],
       "protoFiles": [
         "forge/pass/pass.proto"
@@ -2783,10 +2792,11 @@
       ]
     },
     "github.com/s4wave/spacewave/forge/task": {
-      "hash": "7e236179c0efa5cd98e07751cc6de4916f4a8894320f93974f87b026e04e7c2f",
+      "hash": "308f45d2a64358ed3a2ce0f32dba31caa8833730100943d321baca43774f7aca",
       "generatedFiles": [
         "forge/task/task.pb.go",
-        "forge/task/task.pb.ts"
+        "forge/task/task.pb.ts",
+        "forge/task/task_typeid.pb.go"
       ],
       "protoFiles": [
         "forge/task/task.proto"
@@ -2824,7 +2834,7 @@
       ]
     },
     "github.com/s4wave/spacewave/forge/worker": {
-      "hash": "e5ab5a16f4ce23585030267e4506672ebe348e4fb565a07d8d5a42979f3d4d12",
+      "hash": "aa7e81701d62e5ad48a39b7268b35cfc8e9c882387eeb5636590cc62e0d66b24",
       "generatedFiles": [
         "forge/worker/worker.pb.go",
         "forge/worker/worker.pb.ts",
@@ -2845,10 +2855,11 @@
       ]
     },
     "github.com/s4wave/spacewave/identity": {
-      "hash": "85f02e1d0a08c32b101b666fd9bad9a7715f3eba38bc680e62af0f0a396669c8",
+      "hash": "3a8141dd2e6e107cf2c216365c7c995f58b430184f02c5eb8c364880558faa17",
       "generatedFiles": [
         "identity/identity.pb.go",
-        "identity/identity.pb.ts"
+        "identity/identity.pb.ts",
+        "identity/identity_typeid.pb.go"
       ],
       "protoFiles": [
         "identity/identity.proto"
@@ -3498,7 +3509,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/appconnector": {
-      "hash": "1b1a0efcb2ffdf4fe535153f418f4fc38b583d6df5cf80ddc94a95005356c514",
+      "hash": "96f8c8e5cdfcf87e24379a2e66d3716e63d014d7fe8ced26d86e32fb46e5efdd",
       "generatedFiles": [
         "sdk/appconnector/appconnector.pb.go",
         "sdk/appconnector/appconnector.pb.ts",
@@ -3509,7 +3520,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/apt": {
-      "hash": "159f1e45f9ea146e8d13528122552c0805bcb6cb10b1d3ae9820506ba9032997",
+      "hash": "466080a818835c7d8a6f8661e9b16fc630c005da471e1bd8576235754560883a",
       "generatedFiles": [
         "sdk/apt/repository.pb.go",
         "sdk/apt/repository.pb.ts",
@@ -3556,14 +3567,15 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/canvas": {
-      "hash": "72ec08064cd7a550ede7a92a38699aaf678af0ce15f03073427e4287629d5530",
+      "hash": "e582e680a6a98d26b3f735bdd7d4976b4203352df77b9d10a2b079f30f069bd6",
       "generatedFiles": [
         "sdk/canvas/canvas.pb.go",
         "sdk/canvas/canvas.pb.ts",
         "sdk/canvas/canvas_srpc.pb.go",
         "sdk/canvas/canvas_srpc.pb.ts",
         "sdk/canvas/storage.pb.go",
-        "sdk/canvas/storage.pb.ts"
+        "sdk/canvas/storage.pb.ts",
+        "sdk/canvas/storage_typeid.pb.go"
       ],
       "protoFiles": [
         "sdk/canvas/canvas.proto",
@@ -3583,7 +3595,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/chat": {
-      "hash": "773f7660eb8793a1366c48451bf6f4871f1056cbbef2c534a945664dd0a98936",
+      "hash": "c155ac84362b9ef2ee94dc74b752f19d282b0e4cc8d02c08c2df8ec0fb6e1208",
       "generatedFiles": [
         "sdk/chat/chat.pb.go",
         "sdk/chat/chat.pb.ts",
@@ -3706,7 +3718,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/device": {
-      "hash": "34d17f0878243d0006401260fe477756eb81c760d597fa6a1697673727f219f1",
+      "hash": "5b54f8644ccb6dbc8256058ca25e33e54e4aac38a94f3db94fe809b3c225c708",
       "generatedFiles": [
         "sdk/device/device.pb.go",
         "sdk/device/device.pb.ts",
@@ -3804,10 +3816,11 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/layout/world": {
-      "hash": "df4e1a4662be3a4cc6bcdc417dfb2c7df8a5423c2c86ad5e89b4949d5effb182",
+      "hash": "670f5119d63b6cff9c02e1a279666e9b4a7c08d8aa3c929a8b0af3b25bf08f64",
       "generatedFiles": [
         "sdk/layout/world/world.pb.go",
-        "sdk/layout/world/world.pb.ts"
+        "sdk/layout/world/world.pb.ts",
+        "sdk/layout/world/world_typeid.pb.go"
       ],
       "protoFiles": [
         "sdk/layout/world/world.proto"
@@ -3826,7 +3839,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/org": {
-      "hash": "9e9ada30e8df4d5afc9d187636648277a0a6715339413ea5702e253659aa5eef",
+      "hash": "bd836e1384bf883cc2775f5232108ad035432b1cc906f3389a104c72783cae71",
       "generatedFiles": [
         "sdk/org/org.pb.go",
         "sdk/org/org.pb.ts",
@@ -3989,24 +4002,26 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/sql/query": {
-      "hash": "798bd44ee664c23c35e0a158ec3dd20ed1bb856128857b4702c5384f5bce3eb5",
+      "hash": "2245d07d19c2487f30e7dc547a3a0b77178a3340e01a17281666cd0623ceda9a",
       "generatedFiles": [
         "sdk/sql/query/query.pb.go",
         "sdk/sql/query/query.pb.ts",
         "sdk/sql/query/query_srpc.pb.go",
-        "sdk/sql/query/query_srpc.pb.ts"
+        "sdk/sql/query/query_srpc.pb.ts",
+        "sdk/sql/query/query_typeid.pb.go"
       ],
       "protoFiles": [
         "sdk/sql/query/query.proto"
       ]
     },
     "github.com/s4wave/spacewave/sdk/sql/query-result": {
-      "hash": "3e59406297e6dcc9dc8b476e28225a6fd8b512a507c4a4d38ca1839f773d13d7",
+      "hash": "fb60d63034c345f1e37644b1a8704c7fd02b9b82e1f12d0ee4df32c6b0e2fa4c",
       "generatedFiles": [
         "sdk/sql/query-result/query-result.pb.go",
         "sdk/sql/query-result/query-result.pb.ts",
         "sdk/sql/query-result/query-result_srpc.pb.go",
-        "sdk/sql/query-result/query-result_srpc.pb.ts"
+        "sdk/sql/query-result/query-result_srpc.pb.ts",
+        "sdk/sql/query-result/query-result_typeid.pb.go"
       ],
       "protoFiles": [
         "sdk/sql/query-result/query-result.proto"
@@ -4035,12 +4050,13 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/sql/schema": {
-      "hash": "a29770e87d9542ff77d034ce4b8b78b58d140e6fdcd68086cdca73a3109e1c79",
+      "hash": "e214b299de05d23562d9363cf3aed8cf5a2d7fbdfad7f04ea131d3b0919eacea",
       "generatedFiles": [
         "sdk/sql/schema/schema.pb.go",
         "sdk/sql/schema/schema.pb.ts",
         "sdk/sql/schema/schema_srpc.pb.go",
-        "sdk/sql/schema/schema_srpc.pb.ts"
+        "sdk/sql/schema/schema_srpc.pb.ts",
+        "sdk/sql/schema/schema_typeid.pb.go"
       ],
       "protoFiles": [
         "sdk/sql/schema/schema.proto"
@@ -4058,12 +4074,13 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/sql/table-view": {
-      "hash": "2f3da559eccff52e59eac6686b07e9625610747bf094645eaa639310e0d7f3e0",
+      "hash": "11561182416c0ff96a53aab4bfc64ac641415be721dc582372a5bd0ba902c6c5",
       "generatedFiles": [
         "sdk/sql/table-view/table-view.pb.go",
         "sdk/sql/table-view/table-view.pb.ts",
         "sdk/sql/table-view/table-view_srpc.pb.go",
-        "sdk/sql/table-view/table-view_srpc.pb.ts"
+        "sdk/sql/table-view/table-view_srpc.pb.ts",
+        "sdk/sql/table-view/table-view_typeid.pb.go"
       ],
       "protoFiles": [
         "sdk/sql/table-view/table-view.proto"
@@ -4081,12 +4098,13 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/sql/workbench": {
-      "hash": "6eebb398b7ee42a1a503d0a9b6c794aef40d20637a8a8424c9e4fe8281ccd09f",
+      "hash": "158f6258670aa5904dad92551ffc1b86292916b1e6f5df5f297faa636238b066",
       "generatedFiles": [
         "sdk/sql/workbench/workbench.pb.go",
         "sdk/sql/workbench/workbench.pb.ts",
         "sdk/sql/workbench/workbench_srpc.pb.go",
-        "sdk/sql/workbench/workbench_srpc.pb.ts"
+        "sdk/sql/workbench/workbench_srpc.pb.ts",
+        "sdk/sql/workbench/workbench_typeid.pb.go"
       ],
       "protoFiles": [
         "sdk/sql/workbench/workbench.proto"
@@ -4115,7 +4133,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/sshhost": {
-      "hash": "6a9352be99a41d78a1c5d9bb34fe85bc1e663b50583c2c082bad34993b1094d9",
+      "hash": "2e636492dff8d3ae63f4151837a98a64f1cc386815719e1a8f36e874d940a9bc",
       "generatedFiles": [
         "sdk/sshhost/sshhost.pb.go",
         "sdk/sshhost/sshhost.pb.ts",
@@ -4152,7 +4170,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/terminal": {
-      "hash": "7aa6e5dca970d527b8fdee18f86cd973f40354535d16bb2add7f27c99452bef3",
+      "hash": "b8a48bd46fc1cce6670671fcf242e46214df0d6fef6863538cfd869d5d1f9915",
       "generatedFiles": [
         "sdk/terminal/terminal.pb.go",
         "sdk/terminal/terminal.pb.ts",
@@ -4213,7 +4231,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/vm": {
-      "hash": "a6e53f3af2ba3926bdf11ae09c8ea3339cc6853382275e7923c68f3761102f91",
+      "hash": "073cb64f87b2c1d032d50065a7d7aeb61eaafdcc80a4c78231071918585cf981",
       "generatedFiles": [
         "sdk/vm/v86-wizard.pb.go",
         "sdk/vm/v86-wizard.pb.ts",

@@ -2,11 +2,14 @@ syntax = "proto3";
 package s4wave.sql.query;
 
 import "github.com/s4wave/spacewave/db/sql/sql.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/sql/query;s4wave_sql_query";
 
 // Query is a standalone SQL query world object.
 message Query {
+  option (typeid.id) = "sql/query";
+
   // SqlText is the SQL text executed by Run.
   string sql_text = 1;
   // Parameters are positional SQL bind arguments.

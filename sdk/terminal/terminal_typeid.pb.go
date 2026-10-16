@@ -7,6 +7,14 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// TerminalTypeID is the type ID of Terminal.
+const TerminalTypeID = "spacewave/terminal"
+
+// TypeID returns the type ID of Terminal.
+func (*Terminal) TypeID() string {
+	return TerminalTypeID
+}
+
 // CreateTerminalOpTypeID is the type ID of CreateTerminalOp.
 const CreateTerminalOpTypeID = "spacewave/terminal/create"
 
@@ -17,5 +25,6 @@ func (*CreateTerminalOp) TypeID() string {
 
 // TerminalTypes lists the typed messages of terminal.proto.
 var TerminalTypes = []typeid.Type{
+	{ID: TerminalTypeID, New: func() any { return new(Terminal) }},
 	{ID: CreateTerminalOpTypeID, New: func() any { return new(CreateTerminalOp) }},
 }

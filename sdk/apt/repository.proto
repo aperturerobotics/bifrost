@@ -21,6 +21,8 @@ enum AptRepositoryState {
 
 // AptRepository stores apt repository metadata and index roots.
 message AptRepository {
+  option (typeid.id) = "spacewave-vm/apt/repository";
+
   // State is the current repository index lifecycle state.
   AptRepositoryState state = 1;
   // Distribution is the apt distribution name, e.g. "stable".
@@ -57,6 +59,8 @@ message AptPackageChecksum {
 
 // AptPackage stores apt package metadata and the .deb payload reference.
 message AptPackage {
+  option (typeid.id) = "spacewave-vm/apt/package";
+
   // State is the package publication lifecycle state.
   AptPackageState state = 1;
   // Name is the binary package name, e.g. "busybox".
@@ -91,6 +95,8 @@ message AptBuildConfig {
 
 // AptBuildSpec stores the build recipe for an apt source package.
 message AptBuildSpec {
+  option (typeid.id) = "spacewave-vm/apt/build-spec";
+
   // SourcePackage is the Debian source package name, e.g. "busybox".
   string source_package = 1;
   // SourceRef points at the source tree used for builds.
