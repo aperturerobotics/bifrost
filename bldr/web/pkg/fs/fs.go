@@ -12,10 +12,8 @@ import (
 )
 
 // GetWebPkg wraps ifs in a WebPkgGetter for the package identified by webPkgID.
-// A non-empty assetBasePath is the immutable URL prefix that serves the package
-// files; module requests redirect there. It returns nil, nil, nil when
-// webPkgID does not exist.
-func GetWebPkg(ctx context.Context, ifs fs.FS, webPkgID, assetBasePath string) (web_pkg.LookupWebPkgValue, func(), error) {
+// It returns nil, nil, nil when webPkgID does not exist.
+func GetWebPkg(ctx context.Context, ifs fs.FS, webPkgID string) (web_pkg.LookupWebPkgValue, func(), error) {
 	// Find the package directory and treat a missing package as an empty result.
 	fi, err := fs.Stat(ifs, webPkgID)
 	if err != nil {
@@ -50,7 +48,7 @@ func GetWebPkg(ctx context.Context, ifs fs.FS, webPkgID, assetBasePath string) (
 
 	// Build the static web package from the releasable filesystem handle.
 	spkg, err := web_pkg_static.NewStaticWebPkg(
-		&web_pkg.WebPkgInfo{Id: webPkgID, AssetBasePath: assetBasePath},
+		&web_pkg.WebPkgInfo{Id: webPkgID},
 		fsHandle.Clone,
 	)
 	if err != nil {
