@@ -2,11 +2,11 @@ package provider_local
 
 import (
 	"context"
-	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/ulid"
 	"github.com/s4wave/spacewave/core/bstore"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -190,7 +190,7 @@ func mountEmptyReplicaDestination(ctx context.Context, t *testing.T) sobject.Sha
 
 // TestAccountReplicaCopyWaitsOnUnknownRefs copies from a source that holds
 // every block without its refs. Retrying the same head cannot succeed, so the
-// copy makes one attempt and waits for the next head.
+// copy makes one attempt and waits for the next head, which ends it.
 func TestAccountReplicaCopyWaitsOnUnknownRefs(t *testing.T) {
 	// Mount a seeded source Space.
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
@@ -208,20 +208,21 @@ func TestAccountReplicaCopyWaitsOnUnknownRefs(t *testing.T) {
 	}
 	defer releaseLocal()
 
-	// Without a peer exchange, the copy waits until the next head cancels it.
-	copyCtx, cancelCopy := context.WithCancel(ctx)
+	// Without a peer exchange, the copy waits until the next head arrives.
+	cur := &replicaHead{head: head}
+	latest := ccontainer.NewCContainer(cur)
 	done := make(chan error, 1)
 	go func() {
-		done <- account.copyAccountWorldHead(copyCtx, destination, &p2pSyncState{}, local, head, nil)
+		done <- account.copyAccountWorldHead(ctx, destination, &p2pSyncState{}, local, latest, cur, nil)
 	}()
 	select {
 	case err := <-done:
 		t.Fatalf("copy returned %v before the next head", err)
 	case <-time.After(500 * time.Millisecond):
 	}
-	cancelCopy()
-	if err := <-done; !errors.Is(err, context.Canceled) {
-		t.Fatalf("canceled copy returned %v", err)
+	latest.SetValue(&replicaHead{head: head.CloneVT()})
+	if err := <-done; err != nil {
+		t.Fatalf("copy returned %v after the next head", err)
 	}
 	if reads := source.reads.Load(); reads != 1 {
 		t.Fatalf("copy read the source %d times, want one attempt", reads)
