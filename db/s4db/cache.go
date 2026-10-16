@@ -94,6 +94,18 @@ func (c *cache) get(page uint64) *node {
 	return slot.n
 }
 
+// size returns the cost of the cached pages.
+func (c *cache) size() int {
+	var n int
+	for i := range c.shards {
+		s := &c.shards[i]
+		s.mtx.RLock()
+		n += s.bytes
+		s.mtx.RUnlock()
+	}
+	return n
+}
+
 // put caches a page. A full shard evicts the pages the clock finds unused
 // since it last passed until the page fits, so pages read once leave before
 // pages read again.

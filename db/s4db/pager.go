@@ -6,6 +6,7 @@ import (
 	"io"
 	"slices"
 	"sync"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 )
@@ -23,6 +24,9 @@ type pager struct {
 	r io.ReaderAt
 	// cache holds decoded index pages.
 	cache *cache
+	// reads counts the index pages node read from the file, each a cache
+	// miss.
+	reads atomic.Int64
 }
 
 // node returns a decoded index page.
@@ -33,6 +37,7 @@ func (p *pager) node(page uint64) (*node, error) {
 	}
 
 	// Read, decode, and cache it.
+	p.reads.Add(1)
 	b := make([]byte, pageSize)
 	if _, err := p.r.ReadAt(b, pageOff(page)); err != nil {
 		return nil, err
