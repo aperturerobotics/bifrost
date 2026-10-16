@@ -579,7 +579,7 @@ func decodedBlockCacheCost(cacheKey string, blk Block, size int) (int64, bool) {
 		decodedCost = int64(sizer.SizeVT())
 	}
 	if decodedCost <= 0 {
-		decodedData, err := blk.MarshalBlock()
+		decodedData, err := blk.MarshalVT()
 		if err != nil {
 			return 0, false
 		}

@@ -75,7 +75,7 @@ func (r *BlockCursorResource) SetBlock(ctx context.Context, req *s4wave_block_cu
 	}
 
 	// Unmarshal data into block
-	if err := blk.UnmarshalBlock(req.GetData()); err != nil {
+	if err := blk.UnmarshalVT(req.GetData()); err != nil {
 		return nil, err
 	}
 
@@ -133,7 +133,7 @@ func (r *BlockCursorResource) GetBlock(ctx context.Context, req *s4wave_block_cu
 	if blk != nil {
 		if marshaler, ok := blk.(block.Block); ok {
 			var err error
-			data, err = marshaler.MarshalBlock()
+			data, err = marshaler.MarshalVT()
 			if err != nil {
 				return nil, err
 			}
@@ -171,7 +171,7 @@ func (r *BlockCursorResource) Unmarshal(ctx context.Context, req *s4wave_block_c
 		if blk == nil {
 			return &s4wave_block_cursor.UnmarshalResponse{Found: false}, nil
 		}
-		data, err := blk.MarshalBlock()
+		data, err := blk.MarshalVT()
 		if err != nil {
 			return nil, err
 		}

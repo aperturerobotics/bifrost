@@ -330,7 +330,7 @@ func TestNativeApplicationPlugin(t *testing.T) {
 
 		// Decode the operation envelope before applying it.
 		data := operation.MarshalTo(nil)
-		if err := op.UnmarshalBlock(data); err != nil {
+		if err := op.UnmarshalVT(data); err != nil {
 			return err
 		}
 

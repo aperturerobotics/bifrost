@@ -760,11 +760,10 @@ func readSelectedReleaseMetadata(
 	}
 
 	// Validate the channel directory before resolving its selected release.
-	directory, err := readReleaseMetadataBlock[*spacewave_release.ChannelDirectory](
+	directory, err := world.LookupObjectBody[spacewave_release.ChannelDirectory](
 		ctx,
 		ws,
 		releaseMetadataDirectoryObjectKey,
-		func() block.Block { return &spacewave_release.ChannelDirectory{} },
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "read release channel directory")
@@ -786,11 +785,10 @@ func readSelectedReleaseMetadata(
 	}
 
 	// Validate the selected record and its channel identity.
-	metadata, err := readReleaseMetadataBlock[*spacewave_release.ReleaseMetadata](
+	metadata, err := world.LookupObjectBody[spacewave_release.ReleaseMetadata](
 		ctx,
 		ws,
 		releaseMetadataObjectKey(channelKey),
-		func() block.Block { return &spacewave_release.ReleaseMetadata{} },
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "read release metadata for channel "+channelKey)
@@ -802,39 +800,6 @@ func readSelectedReleaseMetadata(
 		return nil, errors.New("release metadata channel key mismatch")
 	}
 	return metadata, nil
-}
-
-// readReleaseMetadataBlock decodes a typed release object within the caller's read scope.
-func readReleaseMetadataBlock[T block.Block](
-	ctx context.Context,
-	ws world.WorldState,
-	objKey string,
-	ctor func() block.Block,
-) (T, error) {
-	// Hold the typed metadata object through its read scope.
-	obj, err := world.MustGetObject(ctx, ws, objKey)
-	defer world.ReleaseObjectState(obj)
-	var zero T
-	if err != nil {
-		return zero, err
-	}
-
-	// Decode through the existing object read scope.
-	var out T
-	_, _, err = world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
-		// Decode and require the requested metadata block type.
-		blk, err := block.UnmarshalBlock[block.Block](ctx, bcs, ctor)
-		if err != nil {
-			return err
-		}
-		typed, ok := blk.(T)
-		if !ok {
-			return errors.New("release metadata block type mismatch")
-		}
-		out = typed
-		return nil
-	})
-	return out, err
 }
 
 // releaseMetadataObjectKey locates one channel in the release metadata directory.

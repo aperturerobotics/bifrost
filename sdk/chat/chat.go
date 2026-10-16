@@ -66,39 +66,9 @@ func NewChatMessageBlock() block.Block {
 	return &ChatMessage{}
 }
 
-// NewChatMessagePageBlock constructs a new ChatMessagePage block.
-func NewChatMessagePageBlock() block.Block {
-	return &ChatMessagePage{}
-}
-
-// NewChatThreadBlock constructs a new ChatThread block.
-func NewChatThreadBlock() block.Block {
-	return &ChatThread{}
-}
-
-// MarshalBlock marshals the ChatChannel to bytes.
-func (c *ChatChannel) MarshalBlock() ([]byte, error) {
-	return c.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the ChatChannel from bytes.
-func (c *ChatChannel) UnmarshalBlock(data []byte) error {
-	return c.UnmarshalVT(data)
-}
-
 // Validate performs cursory checks on the ChatChannel.
 func (c *ChatChannel) Validate() error {
 	return nil
-}
-
-// MarshalBlock marshals the ChatMessage to bytes.
-func (m *ChatMessage) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the ChatMessage from bytes.
-func (m *ChatMessage) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the ChatMessage.
@@ -106,29 +76,9 @@ func (m *ChatMessage) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the ChatMessagePage to bytes.
-func (m *ChatMessagePage) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the ChatMessagePage from bytes.
-func (m *ChatMessagePage) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
-}
-
 // Validate performs cursory checks on the ChatMessagePage.
 func (m *ChatMessagePage) Validate() error {
 	return nil
-}
-
-// MarshalBlock marshals the ChatThread to bytes.
-func (t *ChatThread) MarshalBlock() ([]byte, error) {
-	return t.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the ChatThread from bytes.
-func (t *ChatThread) UnmarshalBlock(data []byte) error {
-	return t.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the ChatThread.

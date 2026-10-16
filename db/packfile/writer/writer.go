@@ -81,7 +81,7 @@ func PackBlocks(w io.Writer, iter BlockIterator) (*PackResult, error) {
 	for _, key := range keys {
 		bf.Add(key)
 	}
-	bloomBytes, err := bloom.NewBloom(bf).MarshalBlock()
+	bloomBytes, err := bloom.NewBloom(bf).MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshaling bloom filter")
 	}

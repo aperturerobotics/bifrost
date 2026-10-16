@@ -24,7 +24,7 @@ func NewManifestBundleBlock() block.Block {
 
 // UnmarshalManifestBundle unmarshals a ManifestBundle block from the cursor.
 func UnmarshalManifestBundle(ctx context.Context, bcs *block.Cursor) (*ManifestBundle, error) {
-	return block.UnmarshalBlock[*ManifestBundle](ctx, bcs, NewManifestBundleBlock)
+	return block.UnmarshalBlock[ManifestBundle](ctx, bcs)
 }
 
 // NewManifestBundleEntryKey builds a ObjectKey for an entry in a bundle.
@@ -68,16 +68,6 @@ func (m *ManifestBundle) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (m *ManifestBundle) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (m *ManifestBundle) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
 }
 
 // FollowManifestRefs follows the ManifestRefs sub-block.

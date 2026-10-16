@@ -136,7 +136,7 @@ func TestEnsureDevice(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer ready.Discard()
-	device, err := world.LookupObjectBody[*s4wave_device.Device](ctx, ready, key, s4wave_device.NewDeviceBlock)
+	device, err := world.LookupObjectBody[s4wave_device.Device](ctx, ready, key)
 	if err != nil {
 		t.Fatal(err)
 	}

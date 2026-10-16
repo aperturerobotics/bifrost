@@ -3,7 +3,6 @@ package volume_world
 import (
 	"context"
 
-	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
 	world_types "github.com/s4wave/spacewave/db/world/types"
 )
@@ -17,12 +16,6 @@ const (
 	KVObjectTypeID = "kv/store"
 )
 
-// MarshalBlock encodes the Volume's backing selection.
-func (b *Backing) MarshalBlock() ([]byte, error) { return b.MarshalVT() }
-
-// UnmarshalBlock decodes the Volume's backing selection.
-func (b *Backing) UnmarshalBlock(data []byte) error { return b.UnmarshalVT(data) }
-
 // LoadBacking reads a typed Volume's backing selection.
 func LoadBacking(ctx context.Context, ws world.WorldState, key string) (*Backing, error) {
 	// Validate the Volume type before reading its backing selection.
@@ -31,7 +24,7 @@ func LoadBacking(ctx context.Context, ws world.WorldState, key string) (*Backing
 	}
 
 	// Load the Volume backing and validate its referenced KV object.
-	backing, err := world.LookupObjectBody[*Backing](ctx, ws, key, func() block.Block { return &Backing{} })
+	backing, err := world.LookupObjectBody[Backing](ctx, ws, key)
 	if err != nil {
 		return nil, err
 	}

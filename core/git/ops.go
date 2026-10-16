@@ -74,16 +74,6 @@ func (o *CreateGitRepoWizardOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *CreateGitRepoWizardOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CreateGitRepoWizardOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupCreateGitRepoWizardOp looks up a CreateGitRepoWizardOp operation type.
 func LookupCreateGitRepoWizardOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == CreateGitRepoWizardOpId {

@@ -55,7 +55,7 @@ func TestBasicReader(t *testing.T) {
 	// Reopen the published file root for readback.
 	// root index is eves[len(eves)-1]
 	_, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -92,7 +92,7 @@ func TestInlineRootBlobReader(t *testing.T) {
 
 	// root index is eves[len(eves)-1]
 	_, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -141,7 +141,7 @@ func TestRangeBlobGenericTraversal(t *testing.T) {
 
 	// Reopen the ranged file root for traversal.
 	_, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -302,7 +302,7 @@ func TestMultiRangeReader(t *testing.T) {
 	// Reopen the published file root for readback.
 	// root index is eves[len(eves)-1]
 	_, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -381,7 +381,7 @@ func TestOverlappingRangeReadResumesAfterHigherNonceSpan(t *testing.T) {
 
 	// Reopen the published file root for overlap readback.
 	_, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

@@ -14,12 +14,12 @@ const clusterGraphPathLimit uint32 = 1_000_000
 
 // LookupCluster looks up a cluster in the world.
 func LookupCluster(ctx context.Context, ws world.WorldState, objKey string) (*Cluster, world.ObjectState, error) {
-	return world.LookupObject[*Cluster](ctx, ws, objKey, NewClusterBlock)
+	return world.LookupObject[Cluster](ctx, ws, objKey)
 }
 
 // LookupClusterBody looks up a Cluster body in the world.
 func LookupClusterBody(ctx context.Context, ws world.WorldState, objKey string) (*Cluster, error) {
-	return world.LookupObjectBody[*Cluster](ctx, ws, objKey, NewClusterBlock)
+	return world.LookupObjectBody[Cluster](ctx, ws, objKey)
 }
 
 // CheckClusterType checks the type graph quad for a cluster.
@@ -132,7 +132,7 @@ func CollectClusterWorkers(
 	// Load each linked worker body.
 	states := make([]*forge_worker.Worker, len(kpObjectKeys))
 	for i, objKey := range kpObjectKeys {
-		states[i], err = world.LookupObjectBody[*forge_worker.Worker](ctx, ws, objKey, forge_worker.NewWorkerBlock)
+		states[i], err = world.LookupObjectBody[forge_worker.Worker](ctx, ws, objKey)
 		if err != nil {
 			return nil, nil, err
 		}

@@ -89,16 +89,6 @@ func (o *ForgeTaskCreateOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *ForgeTaskCreateOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *ForgeTaskCreateOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupForgeTaskCreateOp looks up a ForgeTaskCreateOp operation type.
 func LookupForgeTaskCreateOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == ForgeTaskCreateOpId {

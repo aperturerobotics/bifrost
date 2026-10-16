@@ -67,16 +67,6 @@ func (r *Packfile) FollowIdxBlob(ctx context.Context, bcs *block.Cursor) (*blob.
 	return nv, cs, nil
 }
 
-// MarshalBlock marshals the block to binary.
-func (r *Packfile) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *Packfile) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (r *Packfile) ApplySubBlock(id uint32, next block.SubBlock) error {
 	switch id {

@@ -162,7 +162,7 @@ func TestDeviceAvailabilityExpiryAndNewEpoch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dev, err := world.LookupObjectBody[*s4wave_device.Device](ctx, ws, selfRef.DeviceObjectKey, s4wave_device.NewDeviceBlock)
+	dev, err := world.LookupObjectBody[s4wave_device.Device](ctx, ws, selfRef.DeviceObjectKey)
 	if err != nil {
 		t.Fatal(err)
 	}

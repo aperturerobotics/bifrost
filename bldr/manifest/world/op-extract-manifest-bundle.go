@@ -3,7 +3,6 @@ package bldr_manifest_world
 import (
 	"context"
 
-	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/peer"
@@ -42,11 +41,6 @@ func NewExtractManifestBundleOp(
 		LinkObjectKeys: linkObjectKeys,
 		ManifestBundle: manifestBundleRef,
 	}
-}
-
-// NewExtractManifestBundleOpBlock constructs a new ExtractManifestBundleOp block.
-func NewExtractManifestBundleOpBlock() block.Block {
-	return &ExtractManifestBundleOp{}
 }
 
 // Validate performs cursory checks on the op.
@@ -99,16 +93,6 @@ func (o *ExtractManifestBundleOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *ExtractManifestBundleOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *ExtractManifestBundleOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

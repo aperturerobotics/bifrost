@@ -651,7 +651,7 @@ func appendChatMessageKey(t *testing.T, ctx context.Context, ws world.WorldState
 	// Advance the channel metadata to include the fixture message.
 	_, _, err = world.AccessObjectState(ctx, channelObj, true, func(bcs *block.Cursor) error {
 		// Retain the fixture's history extent in the channel block.
-		channel, err := block.UnmarshalBlock[*ChatChannel](ctx, bcs, NewChatChannelBlock)
+		channel, err := block.UnmarshalBlock[ChatChannel](ctx, bcs)
 		if err != nil {
 			return err
 		}
@@ -683,7 +683,7 @@ func appendChatMessageKey(t *testing.T, ctx context.Context, ws world.WorldState
 	// Append the fixture message key to its history page.
 	_, _, err = world.AccessObjectState(ctx, pageObj, true, func(bcs *block.Cursor) error {
 		// Load or initialize the page block and retain its message key.
-		page, err := block.UnmarshalBlock[*ChatMessagePage](ctx, bcs, NewChatMessagePageBlock)
+		page, err := block.UnmarshalBlock[ChatMessagePage](ctx, bcs)
 		if err != nil {
 			return err
 		}

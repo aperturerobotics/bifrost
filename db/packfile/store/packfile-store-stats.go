@@ -242,7 +242,7 @@ func manifestEntryBloomFilter(entry *packfile.PackfileEntry) *bloom.Filter {
 
 	// Decode the manifest bloom record into its lookup filter.
 	var pbf bloom.BloomFilter
-	if err := pbf.UnmarshalBlock(bloomData); err != nil {
+	if err := pbf.UnmarshalVT(bloomData); err != nil {
 		return nil
 	}
 	return pbf.ToBloomFilter()

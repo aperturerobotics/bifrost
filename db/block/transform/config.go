@@ -48,18 +48,6 @@ func (c *Config) GetEmpty() bool {
 	return len(c.GetSteps()) == 0
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (c *Config) MarshalBlock() ([]byte, error) {
-	return c.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (c *Config) UnmarshalBlock(data []byte) error {
-	return c.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (c *Config) ApplySubBlock(id uint32, next block.SubBlock) error {
 	// no-op

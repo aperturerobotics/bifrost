@@ -83,11 +83,11 @@ func (r *aliasRaceRoot) BlockAliasIdentity() *AliasIdentityToken {
 	return &r.alias
 }
 
-func (r *aliasRaceRoot) MarshalBlock() ([]byte, error) {
+func (r *aliasRaceRoot) MarshalVT() ([]byte, error) {
 	return []byte{1}, nil
 }
 
-func (r *aliasRaceRoot) UnmarshalBlock([]byte) error {
+func (r *aliasRaceRoot) UnmarshalVT([]byte) error {
 	return nil
 }
 
@@ -146,7 +146,7 @@ func (i *aliasRaceInline) IsNil() bool {
 	return i == nil
 }
 
-func (i *aliasRaceInline) MarshalBlock() ([]byte, error) {
+func (i *aliasRaceInline) MarshalVT() ([]byte, error) {
 	i.shared.waitStart()
 	deadline := time.Now().Add(200 * time.Millisecond)
 	for time.Now().Before(deadline) {
@@ -156,7 +156,7 @@ func (i *aliasRaceInline) MarshalBlock() ([]byte, error) {
 	return []byte{2}, nil
 }
 
-func (i *aliasRaceInline) UnmarshalBlock([]byte) error {
+func (i *aliasRaceInline) UnmarshalVT([]byte) error {
 	return nil
 }
 
@@ -245,11 +245,11 @@ func (d *aliasRaceDirent) GetBlockRefCtor(uint32) Ctor {
 
 type aliasRaceLeaf struct{}
 
-func (l *aliasRaceLeaf) MarshalBlock() ([]byte, error) {
+func (l *aliasRaceLeaf) MarshalVT() ([]byte, error) {
 	return []byte{3}, nil
 }
 
-func (l *aliasRaceLeaf) UnmarshalBlock([]byte) error {
+func (l *aliasRaceLeaf) UnmarshalVT([]byte) error {
 	return nil
 }
 

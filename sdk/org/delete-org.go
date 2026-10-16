@@ -13,11 +13,6 @@ import (
 // DeleteOrganizationOpID is the operation type ID.
 var DeleteOrganizationOpID = "org/delete-organization"
 
-// NewDeleteOrganizationOpBlock creates an empty block for deserialization.
-func NewDeleteOrganizationOpBlock() block.Block {
-	return &DeleteOrganizationOp{}
-}
-
 // GetOperationTypeId returns the operation type ID.
 func (o *DeleteOrganizationOp) GetOperationTypeId() string {
 	return DeleteOrganizationOpID
@@ -29,16 +24,6 @@ func (o *DeleteOrganizationOp) Validate() error {
 		return errors.New("org_object_key is required")
 	}
 	return nil
-}
-
-// MarshalBlock marshals the operation to bytes.
-func (o *DeleteOrganizationOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the operation from bytes.
-func (o *DeleteOrganizationOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // ApplyWorldOp applies the delete organization operation.

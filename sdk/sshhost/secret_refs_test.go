@@ -96,9 +96,9 @@ func TestCredentialMaterialAbsentFromHostDeviceTerminalComputersBlocks(t *testin
 		"computers": computers,
 	} {
 		// Serialize the current block through its production interface.
-		data, err := block.MarshalBlock()
+		data, err := block.MarshalVT()
 		if err != nil {
-			t.Fatalf("%s MarshalBlock: %v", name, err)
+			t.Fatalf("%s MarshalVT: %v", name, err)
 		}
 
 		// Verify the serialized block excludes the raw SSH private key.

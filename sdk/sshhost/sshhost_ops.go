@@ -36,11 +36,6 @@ func NewCreateSshHostOp(
 	}
 }
 
-// NewCreateSshHostOpBlock constructs a CreateSshHostOp block.
-func NewCreateSshHostOpBlock() block.Block {
-	return &CreateSshHostOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateSshHostOp) GetOperationTypeId() string {
 	return CreateSshHostOpId
@@ -107,16 +102,6 @@ func (o *CreateSshHostOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CreateSshHostOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *CreateSshHostOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCreateSshHostOp looks up a CreateSshHostOp operation type.

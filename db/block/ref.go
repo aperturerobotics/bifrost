@@ -37,7 +37,7 @@ func NewBlockRefBlock() Block {
 
 // UnmarshalBlockRefBlock unmarshals a BlockRef from a block cursor.
 func UnmarshalBlockRefBlock(ctx context.Context, bcs *Cursor) (*BlockRef, error) {
-	return UnmarshalBlock[*BlockRef](ctx, bcs, NewBlockRefBlock)
+	return UnmarshalBlock[BlockRef](ctx, bcs)
 }
 
 // BuildBlockRef builds a block ref from put opts by hashing the data.
@@ -188,18 +188,6 @@ func (b *BlockRef) MarshalLog() string {
 		ref = "<nil>"
 	}
 	return ref
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (b *BlockRef) MarshalBlock() ([]byte, error) {
-	return b.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (b *BlockRef) UnmarshalBlock(data []byte) error {
-	return b.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

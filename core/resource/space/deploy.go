@@ -287,7 +287,7 @@ func validateCopiedManifest(
 		}
 	}
 	manifest := bldr_manifest.NewManifest(nil, "")
-	if err := manifest.UnmarshalBlock(data); err != nil {
+	if err := manifest.UnmarshalVT(data); err != nil {
 		return err
 	}
 	if !manifest.GetMeta().EqualVT(meta) {
@@ -392,7 +392,7 @@ func copyBlockWithTransform(
 			}
 		}
 		blk = ctor()
-		if err := blk.UnmarshalBlock(decoded); err != nil {
+		if err := blk.UnmarshalVT(decoded); err != nil {
 			return errors.Wrapf(err, "unmarshal block: %s", refStr)
 		}
 	}

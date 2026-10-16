@@ -10,21 +10,16 @@ import (
 	"github.com/s4wave/spacewave/db/block/blob"
 )
 
-// NewFileBlock builds a new file root block.
-func NewFileBlock() block.Block {
-	return &File{}
-}
-
 // UnmarshalFile unmarshals the File block.
 // Returns nil, nil if empty
 func UnmarshalFile(ctx context.Context, bcs *block.Cursor) (*File, error) {
-	return block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	return block.UnmarshalBlock[File](ctx, bcs)
 }
 
 // FetchToBuffer fetches a full File to a buffer.
 func FetchToBuffer(ctx context.Context, bcs *block.Cursor, buf *bytes.Buffer) error {
 	// Load the file root and skip fetching an empty file.
-	root, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	root, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		return err
 	}
@@ -85,18 +80,6 @@ func (f *File) Validate() error {
 		}
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (f *File) MarshalBlock() ([]byte, error) {
-	return f.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (f *File) UnmarshalBlock(data []byte) error {
-	return f.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

@@ -21,18 +21,6 @@ func (e *Exec) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *Exec) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *Exec) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var (
 	_ block.Block = (*Exec)(nil)

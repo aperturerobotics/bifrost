@@ -164,18 +164,6 @@ func (v *Value) ToBucketRef() (*bucket.ObjectRef, error) {
 	}
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (v *Value) MarshalBlock() ([]byte, error) {
-	return v.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (v *Value) UnmarshalBlock(data []byte) error {
-	return v.UnmarshalVT(data)
-}
-
 // ApplyBlockRef applies a ref change with a field id.
 // The reference may be nil if the child block is nil.
 func (v *Value) ApplyBlockRef(id uint32, ptr *block.BlockRef) error {

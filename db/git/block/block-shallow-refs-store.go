@@ -19,15 +19,5 @@ func NewShallowRefsStoreBlock() block.Block {
 	return &ShallowRefsStore{}
 }
 
-// MarshalBlock marshals the block to binary.
-func (r *ShallowRefsStore) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *ShallowRefsStore) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var _ block.Block = (*ShallowRefsStore)(nil)

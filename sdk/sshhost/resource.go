@@ -56,7 +56,7 @@ func (r *SshHostResource) WatchSshHostState(_ *WatchSshHostStateRequest, strm SR
 }
 
 func readSshHostObject(ctx context.Context, objState world.ObjectState) (*SshHost, error) {
-	state, err := s4wave_world.ReadWorldBlock[*SshHost](ctx, objState, NewSshHostBlock)
+	state, err := s4wave_world.ReadWorldBlock[SshHost](ctx, objState)
 	if err != nil {
 		return nil, err
 	}

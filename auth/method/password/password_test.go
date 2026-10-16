@@ -108,7 +108,7 @@ func TestAuthenticate(t *testing.T) {
 
 	// Round-trip the parameters through the method's parameter codec.
 	m := NewPasswordMethod()
-	paramsBytes, err := params.MarshalBlock()
+	paramsBytes, err := params.MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}

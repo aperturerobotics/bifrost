@@ -383,9 +383,7 @@ func readV86States(ctx context.Context, ws world.WorldState, objectKey string) (
 	var desired, observed s4wave_vm.VmState
 	_, _, err = world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
 		// Decode the VM block and require its retained state.
-		vm, err := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-			return &s4wave_vm.VmV86{}
-		})
+		vm, err := block.UnmarshalBlock[s4wave_vm.VmV86](ctx, bcs)
 		if err != nil {
 			return err
 		}

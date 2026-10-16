@@ -117,11 +117,10 @@ func TestExecuteQuickstartPassesAttachedEngineResourceToPlugin(t *testing.T) {
 	}
 
 	// Verify the recursive World operation committed the Space settings.
-	settings, objectState2, err := world.LookupObject[*space_world.SpaceSettings](
+	settings, objectState2, err := world.LookupObject[space_world.SpaceSettings](
 		ctx,
 		readTx,
 		"quickstart/settings",
-		space_world.NewSpaceSettingsBlock,
 	)
 	world.ReleaseObjectState(objectState2)
 	if err != nil {
@@ -213,7 +212,7 @@ func (h *testQuickstartHandler) SeedQuickstart(
 		true,
 		time.Unix(1, 0),
 	)
-	settingsData, err := settingsOp.MarshalBlock()
+	settingsData, err := settingsOp.MarshalVT()
 	if err != nil {
 		return nil, err
 	}

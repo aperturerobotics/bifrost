@@ -241,10 +241,10 @@ func ListObjectsWithType(ctx context.Context, ws ObjectTypeLister, typeID string
 // ListCollectObjectsWithType returns the list of object keys with the given type id.
 // Unmarshals the bodies of the matched objects.
 //
-// ctor must return an object of type T.
 // Returns two slices of length len(objKeys). If any objects are not found,
-// their entries are nil and ErrNotFound is returned after all states release.
-func ListCollectObjectsWithType[T block.Block](ctx context.Context, ws world.WorldState, typeID string, ctor func() block.Block) ([]T, []string, error) {
+// their entries are nil and ErrObjectNotFound is returned after all states
+// release.
+func ListCollectObjectsWithType[T any, PT block.Ptr[T]](ctx context.Context, ws world.WorldState, typeID string) ([]PT, []string, error) {
 	// Resolve the object keys whose bodies belong to the requested type.
 	objKeys, err := ListObjectsWithType(ctx, ws, typeID)
 	if err != nil {
@@ -252,7 +252,7 @@ func ListCollectObjectsWithType[T block.Block](ctx context.Context, ws world.Wor
 	}
 
 	// Decode the matching bodies and release every acquired object state.
-	objs, states, err := world.CollectObjectBodies[T](ctx, ws, objKeys, ctor)
+	objs, states, err := world.CollectObjectBodies[T, PT](ctx, ws, objKeys)
 	for _, state := range states {
 		world.ReleaseObjectState(state)
 	}

@@ -17,15 +17,9 @@ const SqlQueryTypeID = "sql/query"
 const SqlQueryBlockTypeID = "github.com/s4wave/spacewave/sdk/sql/query.Query"
 
 // SqlQueryBlockType constructs SQL query root blocks for typed cursor writes.
-var SqlQueryBlockType = blocktype.NewBlockType(
+var SqlQueryBlockType = blocktype.New[Query](
 	SqlQueryBlockTypeID,
-	func() *Query { return &Query{} },
 )
-
-// NewQueryBlock constructs a SQL query block.
-func NewQueryBlock() block.Block {
-	return &Query{}
-}
 
 // ReadQueryRoot reads a SQL query object's root.
 func ReadQueryRoot(ctx context.Context, ws world.WorldState, objectKey string) (*Query, error) {
@@ -43,7 +37,7 @@ func ReadQueryObjectRoot(ctx context.Context, obj world.ObjectState) (*Query, er
 	_, _, err := world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
 		// Decode the query root from the object block cursor.
 		var err error
-		query, err = block.UnmarshalBlock[*Query](ctx, bcs, NewQueryBlock)
+		query, err = block.UnmarshalBlock[Query](ctx, bcs)
 		if err != nil {
 			return err
 		}
@@ -106,16 +100,6 @@ func SyncTargetDbQuad(ctx context.Context, ws world.WorldState, objectKey string
 		query.GetTargetDbObjectKey(),
 		"",
 	))
-}
-
-// MarshalBlock marshals the SQL query root.
-func (q *Query) MarshalBlock() ([]byte, error) {
-	return q.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SQL query root.
-func (q *Query) UnmarshalBlock(data []byte) error {
-	return q.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the SQL query root.

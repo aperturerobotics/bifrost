@@ -103,7 +103,7 @@ func newDecodedBlockCacheTestEntry(
 	// Create the decoded-cache test block, serialized bytes, and reference.
 	t.Helper()
 	blk := &decodedBlockCacheTestBlock{data: []byte(contents)}
-	data, err := blk.MarshalBlock()
+	data, err := blk.MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -147,11 +147,11 @@ type decodedBlockCacheTestBlock struct {
 	data []byte
 }
 
-func (b *decodedBlockCacheTestBlock) MarshalBlock() ([]byte, error) {
+func (b *decodedBlockCacheTestBlock) MarshalVT() ([]byte, error) {
 	return append([]byte(nil), b.data...), nil
 }
 
-func (b *decodedBlockCacheTestBlock) UnmarshalBlock(data []byte) error {
+func (b *decodedBlockCacheTestBlock) UnmarshalVT(data []byte) error {
 	b.data = append(b.data[:0], data...)
 	return nil
 }

@@ -11,11 +11,6 @@ func NewValueSet() *ValueSet {
 	return &ValueSet{}
 }
 
-// NewValueSetBlock constructs a new value set block.
-func NewValueSetBlock() block.Block {
-	return NewValueSet()
-}
-
 // NewValueSetSubBlockCtor returns the sub-block constructor.
 func NewValueSetSubBlockCtor(r **ValueSet) block.SubBlockCtor {
 	if r == nil {
@@ -113,18 +108,6 @@ func (v *ValueSet) LookupOutput(name string) (*forge_value.Value, int) {
 		}
 	}
 	return nil, -1
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (v *ValueSet) MarshalBlock() ([]byte, error) {
-	return v.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (v *ValueSet) UnmarshalBlock(data []byte) error {
-	return v.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

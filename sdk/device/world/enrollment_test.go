@@ -47,7 +47,7 @@ func TestEnsureEnrolledDevice(t *testing.T) {
 	}
 
 	// Verify enrollment retained the peer identity and made the Device selectable.
-	device, objectState, err := world.LookupObject[*s4wave_device.Device](ctx, tx, key, s4wave_device.NewDeviceBlock)
+	device, objectState, err := world.LookupObject[s4wave_device.Device](ctx, tx, key)
 	world.ReleaseObjectState(objectState)
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +83,7 @@ func TestEnsureEnrolledDevice(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(read.Discard)
-	updated, objectState2, err := world.LookupObject[*s4wave_device.Device](ctx, read, key, s4wave_device.NewDeviceBlock)
+	updated, objectState2, err := world.LookupObject[s4wave_device.Device](ctx, read, key)
 	world.ReleaseObjectState(objectState2)
 	read.Discard()
 	if err != nil {
@@ -164,7 +164,7 @@ func TestEnsureEnrolledDeviceAcceptedAfterRejectedCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(read.Discard)
-	device, objectState, err := world.LookupObject[*s4wave_device.Device](ctx, read, key, s4wave_device.NewDeviceBlock)
+	device, objectState, err := world.LookupObject[s4wave_device.Device](ctx, read, key)
 	world.ReleaseObjectState(objectState)
 	read.Discard()
 	if err != nil {

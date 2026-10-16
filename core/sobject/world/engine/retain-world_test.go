@@ -81,7 +81,7 @@ func TestRetainPublicationWorldRecoversPeerDependencies(t *testing.T) {
 
 	// Register the nested block type locally.
 	release, err := local.Bus.AddController(ctx, blocktype_controller.NewController(func(context.Context, string) (blocktype.BlockType, error) {
-		return blocktype.NewBlockType("test/nested", block_mock.NewRootBlock), nil
+		return blocktype.New[block_mock.Root]("test/nested"), nil
 	}), nil)
 	if err != nil {
 		t.Fatal(err)

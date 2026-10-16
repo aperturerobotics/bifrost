@@ -29,19 +29,7 @@ func (w *World) DecodedBlockCacheTypeKey() string {
 // UnmarshalWorld unmarshals a world block from a cursor.
 // Returns nil, nil if the cursor is empty.
 func UnmarshalWorld(ctx context.Context, bcs *block.Cursor) (*World, error) {
-	return block.UnmarshalBlock[*World](ctx, bcs, NewWorldBlock)
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (w *World) MarshalBlock() ([]byte, error) {
-	return w.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (w *World) UnmarshalBlock(data []byte) error {
-	return w.UnmarshalVT(data)
+	return block.UnmarshalBlock[World](ctx, bcs)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

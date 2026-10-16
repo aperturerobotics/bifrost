@@ -31,17 +31,7 @@ func NewDeviceBlock() block.Block {
 
 // UnmarshalDevice unmarshals a Device from a cursor.
 func UnmarshalDevice(ctx context.Context, bcs *block.Cursor) (*Device, error) {
-	return block.UnmarshalBlock[*Device](ctx, bcs, NewDeviceBlock)
-}
-
-// MarshalBlock marshals the Device to bytes.
-func (d *Device) MarshalBlock() ([]byte, error) {
-	return d.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the Device from bytes.
-func (d *Device) UnmarshalBlock(data []byte) error {
-	return d.UnmarshalVT(data)
+	return block.UnmarshalBlock[Device](ctx, bcs)
 }
 
 // Validate performs cursory checks on the Device block.

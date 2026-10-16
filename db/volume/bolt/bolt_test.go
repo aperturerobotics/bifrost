@@ -576,7 +576,7 @@ func boltGraphStore(vol *volume_bolt.Bolt, useGC bool) block.StoreOps {
 func readBoltGraph(ctx context.Context, store block.StoreOps, ref *block.BlockRef, want string) error {
 	// Read and validate the graph root.
 	_, cursor := block.NewTransaction(store, nil, ref, nil)
-	root, err := block.UnmarshalBlock[*block_mock.Root](ctx, cursor, block_mock.NewRootBlock)
+	root, err := block.UnmarshalBlock[block_mock.Root](ctx, cursor)
 	if err != nil {
 		return err
 	}

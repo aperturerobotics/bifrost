@@ -293,7 +293,7 @@ func runAuthTester(c *cli.Context) error {
 	var selectedKeypair *identity.Keypair
 	for i, kpd := range entity.GetEntityKeypairSet().GetEntityKeypairs() {
 		ekp := &identity.EntityKeypair{}
-		if err := ekp.UnmarshalBlock(kpd); err != nil {
+		if err := ekp.UnmarshalVT(kpd); err != nil {
 			le.WithError(err).Warnf("entity_keypairs[%d]: cannot unmarshal", i)
 			continue
 		}

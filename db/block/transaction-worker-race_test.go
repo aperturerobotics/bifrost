@@ -56,13 +56,13 @@ type transactionWorkerBlock struct {
 	marshal func() ([]byte, error)
 }
 
-// MarshalBlock delegates to the controlled encoder, or emits an empty root.
-func (b *transactionWorkerBlock) MarshalBlock() ([]byte, error) {
+// MarshalVT delegates to the controlled encoder, or emits an empty root.
+func (b *transactionWorkerBlock) MarshalVT() ([]byte, error) {
 	if b.marshal != nil {
 		return b.marshal()
 	}
 	return nil, nil
 }
 
-// UnmarshalBlock accepts the empty test payload.
-func (*transactionWorkerBlock) UnmarshalBlock([]byte) error { return nil }
+// UnmarshalVT accepts the empty test payload.
+func (*transactionWorkerBlock) UnmarshalVT([]byte) error { return nil }

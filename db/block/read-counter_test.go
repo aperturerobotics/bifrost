@@ -169,7 +169,7 @@ func TestDecodedBlockCacheRejectsRefVerificationMismatch(t *testing.T) {
 	}
 
 	// Encode corrupt bytes that do not match the stored reference.
-	poison, err := (&block_mock.Example{Msg: "poison"}).MarshalBlock()
+	poison, err := (&block_mock.Example{Msg: "poison"}).MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -348,7 +348,7 @@ func TestDecodedBlockCacheUsesDecodedEntryCostAboveRawBytes(t *testing.T) {
 	ctx := context.Background()
 	store := block_mock.NewMockStore(0)
 	want := &block_mock.Example{Msg: "decoded-cost"}
-	rawData, err := want.MarshalBlock()
+	rawData, err := want.MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -506,13 +506,13 @@ func (e *alternateExample) DecodedBlockCacheTypeKey() string {
 	return "db/block/mock.AlternateExample"
 }
 
-func (e *alternateExample) MarshalBlock() ([]byte, error) {
-	return (&block_mock.Example{Msg: e.msg}).MarshalBlock()
+func (e *alternateExample) MarshalVT() ([]byte, error) {
+	return (&block_mock.Example{Msg: e.msg}).MarshalVT()
 }
 
-func (e *alternateExample) UnmarshalBlock(data []byte) error {
+func (e *alternateExample) UnmarshalVT(data []byte) error {
 	example := &block_mock.Example{}
-	if err := example.UnmarshalBlock(data); err != nil {
+	if err := example.UnmarshalVT(data); err != nil {
 		return err
 	}
 	e.msg = example.GetMsg()

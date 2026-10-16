@@ -45,11 +45,6 @@ func NewFsRemoveOp(
 	}
 }
 
-// NewFsRemoveOpBlock constructs a new FsRemoveOp block.
-func NewFsRemoveOpBlock() block.Block {
-	return &FsRemoveOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *FsRemoveOp) GetOperationTypeId() string {
 	return FsRemoveOpId
@@ -118,16 +113,6 @@ func (o *FsRemoveOp) ApplyWorldObjectOp(
 		}
 	})
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsRemoveOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsRemoveOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

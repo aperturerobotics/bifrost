@@ -74,7 +74,7 @@ func StageChannel(ctx context.Context, ws world.WorldState, manifestKey string, 
 	}
 	if exists {
 		_, _, err := world.AccessWorldObject(ctx, ws, ChannelDirectoryKey, false, func(cursor *block.Cursor) error {
-			value, err := block.UnmarshalBlock[*release.ChannelDirectory](ctx, cursor, func() block.Block { return &release.ChannelDirectory{} })
+			value, err := block.UnmarshalBlock[release.ChannelDirectory](ctx, cursor)
 			directory = value
 			return err
 		})

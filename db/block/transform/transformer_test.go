@@ -120,7 +120,7 @@ func TestCursorFetchReturnsDecodedProductionTransformedBytes(t *testing.T) {
 
 	// Decode the fetched example and verify its saved message.
 	example := &block_mock.Example{}
-	if err := example.UnmarshalBlock(data); err != nil {
+	if err := example.UnmarshalVT(data); err != nil {
 		t.Fatal(err.Error())
 	}
 	if got := example.GetMsg(); got != "fetch-transform" {
@@ -211,7 +211,7 @@ func TestDecodedBlockCacheRejectsTransformedRefVerificationMismatch(t *testing.T
 	}
 
 	// Encode a different example to replace the bytes returned for the saved reference.
-	poison, err := (&block_mock.Example{Msg: "transformed-poison"}).MarshalBlock()
+	poison, err := (&block_mock.Example{Msg: "transformed-poison"}).MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}

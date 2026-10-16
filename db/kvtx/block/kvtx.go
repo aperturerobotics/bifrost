@@ -72,7 +72,7 @@ func LoadKeyValueStore(ctx context.Context, bcs *block.Cursor) (*KeyValueStore, 
 
 	// Decode the KeyValueStore and resolve its legacy implementation.
 	taskCtx, subtask := trace.NewTask(ctx, "hydra/kvtx-block/load-key-value-store/unmarshal")
-	b, err := block.UnmarshalBlock[*KeyValueStore](taskCtx, bcs, NewKeyValueStoreBlock)
+	b, err := block.UnmarshalBlock[KeyValueStore](taskCtx, bcs)
 	subtask.End()
 	if err != nil {
 		return nil, err

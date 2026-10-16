@@ -112,7 +112,7 @@ func (r *ObjectStateResource) ApplyObjectOp(ctx context.Context, req *s4wave_wor
 	}
 
 	// Decode the operation payload into the resolved operation.
-	err = op.UnmarshalBlock(req.GetOpData())
+	err = op.UnmarshalVT(req.GetOpData())
 	if err != nil {
 		return nil, err
 	}

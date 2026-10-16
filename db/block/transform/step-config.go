@@ -22,18 +22,6 @@ func (c *StepConfig) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (c *StepConfig) MarshalBlock() ([]byte, error) {
-	return c.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (c *StepConfig) UnmarshalBlock(data []byte) error {
-	return c.UnmarshalVT(data)
-}
-
 // MarshalProtoJSON marshals the ControllerConfig message to JSON.
 func (c *StepConfig) MarshalProtoJSON(s *json.MarshalState) {
 	// Represent an absent step configuration as JSON null.

@@ -111,7 +111,7 @@ func TestEngineWorldFilesystemSurvivesConcurrentWriteAndSync(t *testing.T) {
 
 	// Reopen from the engine and prove that neither writer lost the other.
 	freshWS := world.NewEngineWorldState(wtb.Engine, false)
-	unrelated, err := world.LookupObjectBody[*block_mock.Example](ctx, freshWS, unrelatedKey, block_mock.NewExampleBlock)
+	unrelated, err := world.LookupObjectBody[block_mock.Example](ctx, freshWS, unrelatedKey)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -45,7 +45,7 @@ func TestGCStoreOpsGetStoredBlockUntracked(t *testing.T) {
 		t.Fatalf("untracked block = %+v/%v, want unknown refs", stored, err)
 	}
 	decoded := &block_mock.Root{}
-	if err := decoded.UnmarshalBlock(stored.Data); err != nil {
+	if err := decoded.UnmarshalVT(stored.Data); err != nil {
 		t.Fatal(err)
 	}
 	refs, err := block.ExtractBlockRefs(decoded)

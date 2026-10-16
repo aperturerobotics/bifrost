@@ -66,11 +66,6 @@ func NewSetSpaceSettingsOp(
 	}
 }
 
-// NewSetSpaceSettingsOpBlock constructs a new SetSpaceSettingsOp block.
-func NewSetSpaceSettingsOpBlock() block.Block {
-	return &SetSpaceSettingsOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *SetSpaceSettingsOp) Validate() error {
 	if err := o.GetTimestamp().Validate(false); err != nil {
@@ -235,16 +230,6 @@ func (o *SetSpaceSettingsOp) mergeKeybindingSettings(
 	next := current.CloneVT()
 	next.KeybindingOverrides = merged
 	return next, nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *SetSpaceSettingsOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *SetSpaceSettingsOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupSetSpaceSettingsOp looks up Space settings operations.

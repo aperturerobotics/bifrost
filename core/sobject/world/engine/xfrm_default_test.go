@@ -76,7 +76,7 @@ func TestDefaultWorldTransformEncryptsStoredWorldBlock(t *testing.T) {
 		t.Fatalf("decode with participant transform key: %v", err)
 	}
 	obj := &world_block.Object{}
-	if err := obj.UnmarshalBlock(decoded); err != nil {
+	if err := obj.UnmarshalVT(decoded); err != nil {
 		t.Fatalf("unmarshal decrypted world block: %v", err)
 	}
 	if obj.GetKey() != marker {

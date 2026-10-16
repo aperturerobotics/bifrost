@@ -105,7 +105,7 @@ func (os *SDKObjectState) ApplyObjectOp(ctx context.Context, op world.Operation,
 	}
 
 	// Encode the object operation for the resource service.
-	opData, err := op.MarshalBlock()
+	opData, err := op.MarshalVT()
 	if err != nil {
 		return 0, false, err
 	}

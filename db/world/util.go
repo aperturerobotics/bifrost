@@ -92,12 +92,11 @@ func LookupRootRef(ctx context.Context, eng Engine, key string) (*bucket.ObjectR
 }
 
 // LookupObject looks up & unmarshals an object from the world.
-func LookupObject[T block.Block](
+func LookupObject[T any, PT block.Ptr[T]](
 	ctx context.Context,
 	ws WorldState,
 	objKey string,
-	ctor func() block.Block,
-) (out T, objRef ObjectState, err error) {
+) (out PT, objRef ObjectState, err error) {
 	// Acquire the object state that supplies the requested body.
 	obj, err := MustGetObject(ctx, ws, objKey)
 	if err != nil {
@@ -107,7 +106,7 @@ func LookupObject[T block.Block](
 
 	// Decode the acquired object body and release its state on failure.
 	_, _, err = AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
-		out, err = block.UnmarshalBlock[T](ctx, bcs, ctor)
+		out, err = block.UnmarshalBlock[T, PT](ctx, bcs)
 		return err
 	})
 	if err != nil {
@@ -117,7 +116,9 @@ func LookupObject[T block.Block](
 	return out, obj, err
 }
 
+// releasableObjectState is an ObjectState that holds resources until released.
 type releasableObjectState interface {
+	// Release releases the object state.
 	Release()
 }
 
@@ -134,19 +135,18 @@ func ReleaseObjectState(obj ObjectState) {
 
 // LookupObjectBody looks up and unmarshals an object without returning the
 // object-state handle.
-func LookupObjectBody[T block.Block](
+func LookupObjectBody[T any, PT block.Ptr[T]](
 	ctx context.Context,
 	ws WorldState,
 	objKey string,
-	ctor func() block.Block,
-) (out T, err error) {
+) (out PT, err error) {
 	// Read bytes directly when the transport can return the body in one response.
-	bodies, err := LookupObjectBodies[T](ctx, ws, []string{objKey}, ctor)
+	bodies, err := LookupObjectBodies[T, PT](ctx, ws, []string{objKey})
 	if err != nil {
 		// A batch RPC may reject a valid block larger than its response envelope.
 		// Remote errors need not retain their Go type; the object read remains authoritative.
 		var state ObjectState
-		out, state, err = LookupObject[T](ctx, ws, objKey, ctor)
+		out, state, err = LookupObject[T, PT](ctx, ws, objKey)
 		ReleaseObjectState(state)
 		return out, err
 	}
@@ -204,37 +204,14 @@ func LookupObjectBodyBytesWithRev(
 	return body, rev, true, err
 }
 
-func decodeObjectBody[T block.Block](data []byte, ctor func() block.Block) (out T, err error) {
-	// Construct and decode the object body, requiring the requested block type.
-	if ctor == nil {
-		return out, nil
-	}
-	blk := ctor()
-	if blk == nil {
-		return out, nil
-	}
-	if data != nil {
-		if err := blk.UnmarshalBlock(data); err != nil {
-			return out, err
-		}
-	}
-	var ok bool
-	out, ok = blk.(T)
-	if !ok {
-		return out, block.ErrUnexpectedType
-	}
-	return out, nil
-}
-
 // LookupObjectRef looks up & unmarshals an object ref from the world.
-func LookupObjectRef[T block.Block](
+func LookupObjectRef[T any, PT block.Ptr[T]](
 	ctx context.Context,
 	access AccessWorldStateFunc,
 	ref *bucket.ObjectRef,
-	ctor func() block.Block,
-) (out T, err error) {
+) (out PT, err error) {
 	_, err = AccessObject(ctx, access, ref, func(bcs *block.Cursor) error {
-		out, err = block.UnmarshalBlock[T](ctx, bcs, ctor)
+		out, err = block.UnmarshalBlock[T, PT](ctx, bcs)
 		return err
 	})
 	return out, err
@@ -242,22 +219,20 @@ func LookupObjectRef[T block.Block](
 
 // CollectObjectBodies looks up and unmarshals the objects with the given keys.
 //
-// ctor must return an object of type T
-// returns two slices of length objKeys
-// if any objects are not found, returns nil for that object state / value and objs, objsStates, ErrNotFound
-// returns nil, nil, err for any other error
-func CollectObjectBodies[T block.Block](
+// Returns two slices of length len(objKeys). If any objects are not found,
+// their entries are nil and ErrObjectNotFound is returned with the rest.
+// Returns nil, nil, err for any other error.
+func CollectObjectBodies[T any, PT block.Ptr[T]](
 	ctx context.Context,
 	ws WorldState,
 	objKeys []string,
-	ctor func() block.Block,
-) ([]T, []ObjectState, error) {
+) ([]PT, []ObjectState, error) {
 	// Collect object bodies and states, releasing acquired states on failure.
-	objs := make([]T, len(objKeys))
+	objs := make([]PT, len(objKeys))
 	objStates := make([]ObjectState, len(objKeys))
 	var retErr error
 	for i, objKey := range objKeys {
-		obj, objState, err := LookupObject[T](ctx, ws, objKey, ctor)
+		obj, objState, err := LookupObject[T, PT](ctx, ws, objKey)
 		if err != nil {
 			ReleaseObjectState(objState)
 			if err == ErrObjectNotFound {

@@ -50,9 +50,7 @@ func registerV86ConfigMounts(
 	// Read the VM mount configuration from its block state.
 	var cfg *s4wave_vm.V86Config
 	_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
-		vm, unmarshalErr := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-			return &s4wave_vm.VmV86{}
-		})
+		vm, unmarshalErr := block.UnmarshalBlock[s4wave_vm.VmV86](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}
@@ -150,9 +148,7 @@ func ensureHomeMount(
 	// Read the VM configuration before resolving its home mount.
 	var cfg *s4wave_vm.V86Config
 	_, _, err = world.AccessObjectState(ctx, vmObjState, false, func(bcs *block.Cursor) error {
-		vm, unmarshalErr := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-			return &s4wave_vm.VmV86{}
-		})
+		vm, unmarshalErr := block.UnmarshalBlock[s4wave_vm.VmV86](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}

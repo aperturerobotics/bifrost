@@ -33,7 +33,7 @@ func TestBasicCreateRootBlob(t *testing.T) {
 	// Reopen the published file root for readback.
 	// root index is eves[len(eves)-1]
 	_, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

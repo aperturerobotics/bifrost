@@ -898,7 +898,7 @@ func canvasStorageNodeDagRefs(
 		// Read each Canvas node to load its block references.
 		it := nodes.BlockIterate(ctx, nil, false, false)
 		for it.Next() {
-			if _, err := block.UnmarshalBlock[*CanvasNode](ctx, it.ValueCursor(), NewCanvasNodeBlock); err != nil {
+			if _, err := block.UnmarshalBlock[CanvasNode](ctx, it.ValueCursor()); err != nil {
 				it.Close()
 				return err
 			}

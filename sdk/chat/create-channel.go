@@ -14,11 +14,6 @@ import (
 // CreateChatChannelOpId is the operation id for CreateChatChannelOp.
 var CreateChatChannelOpId = "spacewave-chat/channel/create"
 
-// NewCreateChatChannelOpBlock constructs a new CreateChatChannelOp block.
-func NewCreateChatChannelOpBlock() block.Block {
-	return &CreateChatChannelOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateChatChannelOp) GetOperationTypeId() string {
 	return CreateChatChannelOpId
@@ -41,16 +36,6 @@ func (o *CreateChatChannelOp) Validate() error {
 		}
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CreateChatChannelOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CreateChatChannelOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // ApplyWorldOp applies the operation as a world operation.

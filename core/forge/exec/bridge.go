@@ -67,7 +67,7 @@ func (f *BridgeFactory) Construct(
 	if !ok {
 		return nil, errors.New("exec handler config does not implement block.Block")
 	}
-	configData, err := blk.MarshalBlock()
+	configData, err := blk.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal exec handler config")
 	}

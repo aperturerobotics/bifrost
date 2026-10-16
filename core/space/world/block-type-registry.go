@@ -29,11 +29,11 @@ func LookupBlockType(
 	case s4wave_vm.WasiVmImageTypeID:
 		return s4wave_vm.WasiVmImageBlockType, nil
 	case unixfs_world.FSNodeTypeID:
-		return blocktype.NewBlockType(typeID, unixfs_block.NewFSNodeBlock), nil
+		return blocktype.New[unixfs_block.FSNode](typeID), nil
 	case unixfs_world.FSObjectTypeID:
-		return blocktype.NewBlockType(typeID, unixfs_block.NewFSObjectBlock), nil
+		return blocktype.New[unixfs_block.FSObject](typeID), nil
 	case unixfs_world.FSHostVolumeTypeID:
-		return blocktype.NewBlockType(typeID, unixfs_block.NewFSHostVolumeBlock), nil
+		return blocktype.New[unixfs_block.FSHostVolume](typeID), nil
 	default:
 		return lookupApplicationBlockType(ctx, typeID)
 	}

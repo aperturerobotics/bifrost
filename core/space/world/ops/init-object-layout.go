@@ -42,11 +42,6 @@ func NewInitObjectLayoutOp(
 	}
 }
 
-// NewInitObjectLayoutOpBlock constructs a new InitObjectLayoutOp block.
-func NewInitObjectLayoutOpBlock() block.Block {
-	return &InitObjectLayoutOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *InitObjectLayoutOp) Validate() error {
 	objKey := o.GetObjectKey()
@@ -137,16 +132,6 @@ func (o *InitObjectLayoutOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *InitObjectLayoutOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *InitObjectLayoutOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupInitObjectLayoutOp looks up a InitObjectLayoutOp operation type.

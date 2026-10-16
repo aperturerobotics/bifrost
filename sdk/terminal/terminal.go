@@ -29,17 +29,7 @@ func NewTerminalBlock() block.Block {
 
 // UnmarshalTerminal unmarshals a Terminal from a cursor.
 func UnmarshalTerminal(ctx context.Context, bcs *block.Cursor) (*Terminal, error) {
-	return block.UnmarshalBlock[*Terminal](ctx, bcs, NewTerminalBlock)
-}
-
-// MarshalBlock marshals the Terminal to bytes.
-func (t *Terminal) MarshalBlock() ([]byte, error) {
-	return t.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the Terminal from bytes.
-func (t *Terminal) UnmarshalBlock(data []byte) error {
-	return t.UnmarshalVT(data)
+	return block.UnmarshalBlock[Terminal](ctx, bcs)
 }
 
 // Validate performs cursory checks on the Terminal block.

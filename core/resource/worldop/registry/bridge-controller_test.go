@@ -131,8 +131,8 @@ func TestWorldOpRegistryBridgeControllerAppliesPluginWorldAndObjectOps(t *testin
 	if engineID != tb.EngineID {
 		t.Fatalf("expected engineID %q, got %q", tb.EngineID, engineID)
 	}
-	if err := op.UnmarshalBlock([]byte("op-data")); err != nil {
-		t.Fatalf("UnmarshalBlock: %v", err)
+	if err := op.UnmarshalVT([]byte("op-data")); err != nil {
+		t.Fatalf("UnmarshalVT: %v", err)
 	}
 
 	// Open the supplied World transaction for the plugin operation.
@@ -250,8 +250,8 @@ func TestWorldOpRegistryBridgeControllerValidatesBeforeMutation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lookup op: %v", err)
 	}
-	if err := op.UnmarshalBlock([]byte("op-data")); err != nil {
-		t.Fatalf("UnmarshalBlock: %v", err)
+	if err := op.UnmarshalVT([]byte("op-data")); err != nil {
+		t.Fatalf("UnmarshalVT: %v", err)
 	}
 
 	// Apply the rejected operation and verify the World remains unchanged.
@@ -340,11 +340,10 @@ func assertObjectSettingsIndexPath(t *testing.T, ctx context.Context, engine wor
 	defer readTx.Discard()
 
 	// Read the committed settings and compare their index path.
-	settings, objectState, err := world.LookupObject[*space_world.SpaceSettings](
+	settings, objectState, err := world.LookupObject[space_world.SpaceSettings](
 		ctx,
 		readTx,
 		key,
-		space_world.NewSpaceSettingsBlock,
 	)
 	world.ReleaseObjectState(objectState)
 	if err != nil {
@@ -475,7 +474,7 @@ func (h *testWorldOpHandler) ApplyWorldObjectOp(
 		true,
 		time.Unix(1, 0),
 	)
-	opData, err := nestedOp.MarshalBlock()
+	opData, err := nestedOp.MarshalVT()
 	if err != nil {
 		return nil, err
 	}

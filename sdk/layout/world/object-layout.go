@@ -31,17 +31,17 @@ func NewObjectLayoutBlock() block.Block {
 // UnmarshalObjectLayout unmarshals a object layout from a cursor.
 // If empty, returns nil, nil.
 func UnmarshalObjectLayout(ctx context.Context, bcs *block.Cursor) (*ObjectLayout, error) {
-	return block.UnmarshalBlock[*ObjectLayout](ctx, bcs, NewObjectLayoutBlock)
+	return block.UnmarshalBlock[ObjectLayout](ctx, bcs)
 }
 
 // LookupObjectLayout looks up the object layout in the world.
 func LookupObjectLayout(ctx context.Context, ws world.WorldState, objKey string) (*ObjectLayout, world.ObjectState, error) {
-	return world.LookupObject[*ObjectLayout](ctx, ws, objKey, NewObjectLayoutBlock)
+	return world.LookupObject[ObjectLayout](ctx, ws, objKey)
 }
 
 // AccessObjectLayout accesses the object layout object at a specific ref.
 func AccessObjectLayout(ctx context.Context, access world.AccessWorldStateFunc, objRef *bucket.ObjectRef) (*ObjectLayout, error) {
-	return world.LookupObjectRef[*ObjectLayout](ctx, access, objRef, NewObjectLayoutBlock)
+	return world.LookupObjectRef[ObjectLayout](ctx, access, objRef)
 }
 
 // Clone clones the layout object.
@@ -83,18 +83,6 @@ func (s *ObjectLayout) Validate() error {
 		return errors.Wrap(err, "layout_model")
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (s *ObjectLayout) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (s *ObjectLayout) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
 }
 
 // Marshal marshals the ObjectLayoutTab assuming no errors will be returned.

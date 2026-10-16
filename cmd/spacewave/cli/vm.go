@@ -735,17 +735,13 @@ func readVMRunState(ctx context.Context, obj world.ObjectState, typeID string) (
 	var vm vmRunState
 	_, _, err := world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
 		if typeID == s4wave_vm.VmV86TypeID {
-			v86, err := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-				return &s4wave_vm.VmV86{}
-			})
+			v86, err := block.UnmarshalBlock[s4wave_vm.VmV86](ctx, bcs)
 			if v86 != nil {
 				vm = v86
 			}
 			return err
 		}
-		wasiVm, err := block.UnmarshalBlock[*s4wave_vm.WasiVm](ctx, bcs, func() block.Block {
-			return &s4wave_vm.WasiVm{}
-		})
+		wasiVm, err := block.UnmarshalBlock[s4wave_vm.WasiVm](ctx, bcs)
 		if wasiVm != nil {
 			vm = wasiVm
 		}
@@ -1202,9 +1198,7 @@ func readV86ImageFromTx(c *cli.Context, tx world.WorldState, key string) (*v86Im
 	// Decode the image block and read its asset edges.
 	var img *s4wave_vm.V86Image
 	_, _, err = world.AccessObjectState(ctx, obj, false, func(bcs *block.Cursor) error {
-		current, err := block.UnmarshalBlock[*s4wave_vm.V86Image](ctx, bcs, func() block.Block {
-			return &s4wave_vm.V86Image{}
-		})
+		current, err := block.UnmarshalBlock[s4wave_vm.V86Image](ctx, bcs)
 		if err != nil {
 			return err
 		}

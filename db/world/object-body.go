@@ -212,12 +212,11 @@ type ObjectBodyResult[T block.Block] struct {
 // LookupObjectBodies looks up and unmarshals object bodies for the given keys.
 // Results preserve the requested key order and include a zero Body with
 // Exists=false for missing objects.
-func LookupObjectBodies[T block.Block](
+func LookupObjectBodies[T any, PT block.Ptr[T]](
 	ctx context.Context,
 	ws WorldState,
 	objKeys []string,
-	ctor func() block.Block,
-) ([]*ObjectBodyResult[T], error) {
+) ([]*ObjectBodyResult[PT], error) {
 	// Fetch serialized object bodies in the requested key order.
 	bodies, err := GetObjectBodiesBatch(ctx, ws, objKeys)
 	if err != nil {
@@ -225,15 +224,17 @@ func LookupObjectBodies[T block.Block](
 	}
 
 	// Decode existing object bodies while retaining missing markers.
-	results := make([]*ObjectBodyResult[T], len(bodies))
+	results := make([]*ObjectBodyResult[PT], len(bodies))
 	for i, body := range bodies {
-		result := &ObjectBodyResult[T]{
+		result := &ObjectBodyResult[PT]{
 			ObjectKey: body.ObjectKey,
 			Exists:    body.Exists,
 		}
 		if body.Exists {
-			result.Body, err = decodeObjectBody[T](body.Body, ctor)
-			if err != nil {
+			result.Body = PT(new(T))
+		}
+		if body.Exists && body.Body != nil {
+			if err := result.Body.UnmarshalVT(body.Body); err != nil {
 				return nil, err
 			}
 		}

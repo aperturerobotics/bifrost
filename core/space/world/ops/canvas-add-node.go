@@ -21,11 +21,6 @@ func NewCanvasAddNodeOp(objKey string, node *s4wave_canvas.CanvasNode) *CanvasAd
 	}
 }
 
-// NewCanvasAddNodeOpBlock constructs a new CanvasAddNodeOp block.
-func NewCanvasAddNodeOpBlock() block.Block {
-	return &CanvasAddNodeOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *CanvasAddNodeOp) Validate() error {
 	// Require a target object and a canvas node with an ID.
@@ -97,16 +92,6 @@ func (o *CanvasAddNodeOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CanvasAddNodeOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CanvasAddNodeOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCanvasAddNodeOp looks up a CanvasAddNodeOp operation type.

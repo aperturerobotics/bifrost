@@ -76,7 +76,7 @@ func FetchCheckFSNode(ctx context.Context, bcs *block.Cursor, nt NodeType) (*FSN
 // UnmarshalFSNode unmarshals a filesystem node from a cursor.
 // If empty, returns nil, nil
 func UnmarshalFSNode(ctx context.Context, bcs *block.Cursor) (*FSNode, error) {
-	return block.UnmarshalBlock[*FSNode](ctx, bcs, NewFSNodeBlock)
+	return block.UnmarshalBlock[FSNode](ctx, bcs)
 }
 
 // IsNil returns if the object is nil.
@@ -133,18 +133,6 @@ func (n *FSNode) SetPermissions(perms fs.FileMode) {
 		perms = perms & fs.ModePerm
 		n.Permissions = uint32(perms)
 	}
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (n *FSNode) MarshalBlock() ([]byte, error) {
-	return n.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (n *FSNode) UnmarshalBlock(data []byte) error {
-	return n.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

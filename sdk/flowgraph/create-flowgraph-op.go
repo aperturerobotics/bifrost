@@ -50,16 +50,6 @@ func (o *CreateFlowgraphOp) ApplyWorldObjectOp(context.Context, *logrus.Entry, w
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock encodes the creation request.
-func (o *CreateFlowgraphOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock decodes the creation request.
-func (o *CreateFlowgraphOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupCreateFlowgraphOp resolves the Flowgraph creation operation.
 func LookupCreateFlowgraphOp(_ context.Context, id string) (world.Operation, error) {
 	if id == CreateFlowgraphOpID {

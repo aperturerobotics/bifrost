@@ -118,7 +118,7 @@ func ObjectLayoutFactory(
 		var model *s4wave_layout.LayoutModel
 		_, _, err = world.AccessObjectState(ctx, writeState, true, func(bcs *block.Cursor) error {
 			// Decode the stored layout, starting from an empty one.
-			cur, err := block.UnmarshalBlock[*ObjectLayout](ctx, bcs, NewObjectLayoutBlock)
+			cur, err := block.UnmarshalBlock[ObjectLayout](ctx, bcs)
 			if err != nil {
 				return err
 			}
@@ -273,7 +273,7 @@ func readLayout(ctx context.Context, ws world.WorldState, objectKey string) (*Ob
 	var layout *ObjectLayout
 	_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 		var err error
-		layout, err = block.UnmarshalBlock[*ObjectLayout](ctx, bcs, NewObjectLayoutBlock)
+		layout, err = block.UnmarshalBlock[ObjectLayout](ctx, bcs)
 		return err
 	})
 	return layout, rev, err

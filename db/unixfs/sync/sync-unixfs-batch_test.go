@@ -128,7 +128,7 @@ func readWorldUnixFSMetricFile(t *testing.T, ctx context.Context, wtb *world_tes
 	}
 
 	// Decode the file metadata for range measurements.
-	rootFile, err := block.UnmarshalBlock[*file.File](ctx, fh.GetCursor(), file.NewFileBlock)
+	rootFile, err := block.UnmarshalBlock[file.File](ctx, fh.GetCursor())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -211,7 +211,7 @@ func TestSyncToUnixfsBatch_MetricExistingFileRewrite(t *testing.T) {
 	}
 
 	// Encode the rewritten file metadata for size measurements.
-	metadataBytes, err := rootFile.MarshalBlock()
+	metadataBytes, err := rootFile.MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}

@@ -8,11 +8,6 @@ import (
 	block_kvtx "github.com/s4wave/spacewave/db/kvtx/block"
 )
 
-// NewCanvasStorageBlock constructs a Canvas storage root block.
-func NewCanvasStorageBlock() block.Block {
-	return &CanvasStorage{}
-}
-
 // NewCanvasStorage constructs an empty Canvas storage DAG.
 func NewCanvasStorage() *CanvasStorage {
 	return &CanvasStorage{
@@ -31,16 +26,6 @@ func (s *CanvasStorage) Validate() error {
 		return errors.New("Canvas storage node index is missing")
 	}
 	return s.GetNodes().Validate()
-}
-
-// MarshalBlock marshals the storage root to binary.
-func (s *CanvasStorage) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the storage root from binary.
-func (s *CanvasStorage) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a Canvas storage sub-block change.
@@ -82,7 +67,7 @@ func (s *CanvasStorage) GetSubBlockCtor(id uint32) block.SubBlockCtor {
 
 // UnmarshalCanvasStorage unmarshals a Canvas storage root from a cursor.
 func UnmarshalCanvasStorage(ctx context.Context, bcs *block.Cursor) (*CanvasStorage, error) {
-	return block.UnmarshalBlock[*CanvasStorage](ctx, bcs, NewCanvasStorageBlock)
+	return block.UnmarshalBlock[CanvasStorage](ctx, bcs)
 }
 
 var (

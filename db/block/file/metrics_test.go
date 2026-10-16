@@ -385,7 +385,7 @@ func TestFileMetricAppendHeavyLargeFile(t *testing.T) {
 	}
 
 	// Report append metadata size, store activity, and blob metrics.
-	metadataBytes, err := root.GetRootBlob().MarshalBlock()
+	metadataBytes, err := root.GetRootBlob().MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -494,7 +494,7 @@ func TestFileMetricRandomOverwrite(t *testing.T) {
 	store.reset()
 	openStarted := time.Now()
 	_, readBcs := block.NewTransaction(store, nil, rootRef, nil)
-	root, err = block.UnmarshalBlock[*File](ctx, readBcs, NewFileBlock)
+	root, err = block.UnmarshalBlock[File](ctx, readBcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -544,7 +544,7 @@ func TestFileRangeCompactionPreservesSparseZeroOverwrite(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	_, readBcs := block.NewTransaction(btx.GetStoreOps(), nil, rootRef, nil)
-	readRoot, err := block.UnmarshalBlock[*File](ctx, readBcs, NewFileBlock)
+	readRoot, err := block.UnmarshalBlock[File](ctx, readBcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -607,7 +607,7 @@ func TestFileMetricOverlappingRangeReadback(t *testing.T) {
 	store.reset()
 	openStarted := time.Now()
 	_, readBcs := block.NewTransaction(store, nil, rootRef, nil)
-	readRoot, err := block.UnmarshalBlock[*File](ctx, readBcs, NewFileBlock)
+	readRoot, err := block.UnmarshalBlock[File](ctx, readBcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -731,7 +731,7 @@ func TestFileMetricSequentialOpenDownload(t *testing.T) {
 		// Reopen the download file with fresh store metrics.
 		store.reset()
 		_, readBcs := block.NewTransaction(store, nil, rootRef, nil)
-		readRoot, err := block.UnmarshalBlock[*File](ctx, readBcs, NewFileBlock)
+		readRoot, err := block.UnmarshalBlock[File](ctx, readBcs)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -787,12 +787,12 @@ func TestFileMetricChunkMetadataOverhead(t *testing.T) {
 			TotalSize: rootBlob.GetTotalSize(),
 			RootBlob:  rootBlob,
 		}
-		metadataBytes, err := rootBlob.MarshalBlock()
+		metadataBytes, err := rootBlob.MarshalVT()
 		if err != nil {
 			t.Fatal(err.Error())
 		}
 		appendedBlob := syntheticFlatChunkBlob(t, chunkCount+1, chunkSize)
-		appendedMetadataBytes, err := appendedBlob.MarshalBlock()
+		appendedMetadataBytes, err := appendedBlob.MarshalVT()
 		if err != nil {
 			t.Fatal(err.Error())
 		}

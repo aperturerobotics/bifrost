@@ -111,7 +111,7 @@ func ByteSliceToTx(blk block.Block) (*Tx, error) {
 	nr, ok := blk.(*byteslice.ByteSlice)
 	if ok && nr != nil {
 		out = &Tx{}
-		if err := out.UnmarshalBlock(nr.GetBytes()); err != nil {
+		if err := out.UnmarshalVT(nr.GetBytes()); err != nil {
 			return nil, err
 		}
 		return out, nil
@@ -169,18 +169,6 @@ func (t *Tx) ApplyWorldOp(
 func (t *Tx) ApplyWorldObjectOp(ctx context.Context, le *logrus.Entry, objectHandle world.ObjectState, sender peer.ID) (sysErr bool, err error) {
 	// world operation only
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (t *Tx) MarshalBlock() ([]byte, error) {
-	return t.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (t *Tx) UnmarshalBlock(data []byte) error {
-	return t.UnmarshalVT(data)
 }
 
 // _ is a type assertion

@@ -66,7 +66,7 @@ func TestUnmarshalUsesCursorRefWhenRequestRefEmpty(t *testing.T) {
 
 	// Verify the bucket response contains the saved example block.
 	example := &block_mock.Example{}
-	if err := example.UnmarshalBlock(got.GetData()); err != nil {
+	if err := example.UnmarshalVT(got.GetData()); err != nil {
 		t.Fatal(err.Error())
 	}
 	if example.GetMsg() != want.GetMsg() {
@@ -641,9 +641,7 @@ func addExampleBlockTypeController(t *testing.T, ctx context.Context, tb *testbe
 	t.Helper()
 	controller := blocktype_controller.NewController(func(ctx context.Context, typeID string) (blocktype.BlockType, error) {
 		if typeID == exampleBlockTypeID {
-			return blocktype.NewBlockType(exampleBlockTypeID, func() *block_mock.Example {
-				return &block_mock.Example{}
-			}), nil
+			return blocktype.New[block_mock.Example](exampleBlockTypeID), nil
 		}
 		return nil, nil
 	})
@@ -666,7 +664,7 @@ func newResourceTransformConfig(t *testing.T, steps ...config.Config) *block_tra
 func assertExampleResponse(t *testing.T, data []byte, want string) {
 	t.Helper()
 	example := &block_mock.Example{}
-	if err := example.UnmarshalBlock(data); err != nil {
+	if err := example.UnmarshalVT(data); err != nil {
 		t.Fatal(err.Error())
 	}
 	if example.GetMsg() != want {

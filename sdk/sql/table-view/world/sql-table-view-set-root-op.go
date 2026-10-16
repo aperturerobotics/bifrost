@@ -93,16 +93,6 @@ func (o *SqlTableViewSetRootOp) ApplyWorldObjectOp(
 	return false, err
 }
 
-// MarshalBlock marshals the SQL table view set-root operation.
-func (o *SqlTableViewSetRootOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SQL table view set-root operation.
-func (o *SqlTableViewSetRootOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupSqlTableViewSetRootOp returns an empty SQL table view set-root op for lookup.
 func LookupSqlTableViewSetRootOp(_ context.Context, opTypeID string) (world.Operation, error) {
 	if opTypeID == SqlTableViewSetRootOpId {

@@ -122,7 +122,7 @@ func TestPublishPreservesRootAfterUploadFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, _, err = world.AccessWorldObject(ctx, tx, ChannelDirectoryKey, false, func(cursor *block.Cursor) error {
-		directory, err := block.UnmarshalBlock[*release.ChannelDirectory](ctx, cursor, func() block.Block { return &release.ChannelDirectory{} })
+		directory, err := block.UnmarshalBlock[release.ChannelDirectory](ctx, cursor)
 		if err == nil && len(directory.GetChannels()) != 2 {
 			return errors.New("staging replaced another channel")
 		}

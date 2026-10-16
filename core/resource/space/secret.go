@@ -131,7 +131,7 @@ func (r *SpaceResource) ReadSecretPayload(
 	if err := world_types.CheckObjectType(ctx, wtx, req.GetObjectKey(), s4wave_secret.SecretTypeID); err != nil {
 		return nil, err
 	}
-	secret, err := world.LookupObjectBody[*s4wave_secret.Secret](ctx, wtx, req.GetObjectKey(), s4wave_secret.NewSecretBlock)
+	secret, err := world.LookupObjectBody[s4wave_secret.Secret](ctx, wtx, req.GetObjectKey())
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (r *SpaceResource) WriteSecretPayload(ctx context.Context, req *s4wave_spac
 	if err := world_types.CheckObjectType(ctx, tx, req.GetObjectKey(), s4wave_secret.SecretTypeID); err != nil {
 		return nil, err
 	}
-	secret, err := world.LookupObjectBody[*s4wave_secret.Secret](ctx, tx, req.GetObjectKey(), s4wave_secret.NewSecretBlock)
+	secret, err := world.LookupObjectBody[s4wave_secret.Secret](ctx, tx, req.GetObjectKey())
 	if err != nil {
 		return nil, err
 	}

@@ -7,27 +7,10 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 )
 
-// NewTableRowBlock constructs a new db root block.
-func NewTableRowBlock() block.Block {
-	return &TableRow{}
-}
-
 // UnmarshalTableRow unmarshals the TableRow block.
 // Returns nil, nil if empty
 func UnmarshalTableRow(ctx context.Context, bcs *block.Cursor) (*TableRow, error) {
-	return block.UnmarshalBlock[*TableRow](ctx, bcs, NewTableRowBlock)
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (r *TableRow) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (r *TableRow) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
+	return block.UnmarshalBlock[TableRow](ctx, bcs)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

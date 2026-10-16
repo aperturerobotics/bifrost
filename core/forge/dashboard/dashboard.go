@@ -16,16 +16,6 @@ func (d *ForgeDashboard) GetBlockTypeId() string {
 	return ForgeDashboardTypeID
 }
 
-// MarshalBlock marshals the block to binary.
-func (d *ForgeDashboard) MarshalBlock() ([]byte, error) {
-	return d.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (d *ForgeDashboard) UnmarshalBlock(data []byte) error {
-	return d.UnmarshalVT(data)
-}
-
 // Validate performs cursory checks on the ForgeDashboard.
 func (d *ForgeDashboard) Validate() error {
 	return nil

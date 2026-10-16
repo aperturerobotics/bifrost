@@ -32,18 +32,6 @@ func (e *ResolveUndoEntry) IsNil() bool {
 	return e == nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *ResolveUndoEntry) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *ResolveUndoEntry) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (e *ResolveUndoEntry) ApplySubBlock(id uint32, next block.SubBlock) error {
 	if id == 2 {

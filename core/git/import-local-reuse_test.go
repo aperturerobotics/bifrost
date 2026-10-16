@@ -310,7 +310,7 @@ func importedPacks(t *testing.T, ctx context.Context, ws world.WorldState, ref *
 
 		// Retain only metadata for pack-sharing and object-count assertions.
 		for iter.Next() {
-			pack, err := block.UnmarshalBlock[*git_block.Packfile](ctx, iter.ValueCursor(), git_block.NewPackfileBlock)
+			pack, err := block.UnmarshalBlock[git_block.Packfile](ctx, iter.ValueCursor())
 			if err != nil {
 				t.Fatal(err)
 			}

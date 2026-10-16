@@ -118,7 +118,7 @@ func runDemo() error {
 
 	// Read the committed AVL root for graph traversal.
 	btx, bcs := oc.BuildTransactionAtRef(nil, tr.GetRootNodeRef().GetRootRef())
-	rn, err := block.UnmarshalBlock[*iavl.Node](ctx, bcs, iavl.NewNodeBlock)
+	rn, err := block.UnmarshalBlock[iavl.Node](ctx, bcs)
 	if err != nil {
 		return err
 	}

@@ -272,7 +272,7 @@ func (h *HTTPBlockServer) ServePutBlock(ctx context.Context, rw http.ResponseWri
 // writeResponse writes a response message.
 func (h *HTTPBlockServer) writeResponse(rw http.ResponseWriter, msg block.Block, notFound bool) {
 	// Encode the block-store response or report an encoding failure.
-	respData, err := msg.MarshalBlock()
+	respData, err := msg.MarshalVT()
 	if err != nil {
 		rw.WriteHeader(500)
 		_, _ = rw.Write([]byte(err.Error()))

@@ -112,10 +112,10 @@ func (obj *lookupReleaseObjectState) Release() {
 
 type invalidTargetBlock struct{}
 
-func (b *invalidTargetBlock) MarshalBlock() ([]byte, error) {
+func (b *invalidTargetBlock) MarshalVT() ([]byte, error) {
 	return []byte{0x80}, nil
 }
 
-func (b *invalidTargetBlock) UnmarshalBlock([]byte) error {
+func (b *invalidTargetBlock) UnmarshalVT([]byte) error {
 	return nil
 }

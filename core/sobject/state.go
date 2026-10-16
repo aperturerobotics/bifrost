@@ -12,26 +12,9 @@ import (
 	"github.com/s4wave/spacewave/net/peer"
 )
 
-// NewSOStateBlock constructs a new SOState block.
-func NewSOStateBlock() block.Block {
-	return &SOState{}
-}
-
 // UnmarshalSOState unmarshals a SOState from a block cursor.
 func UnmarshalSOState(ctx context.Context, bcs *block.Cursor) (*SOState, error) {
-	return block.UnmarshalBlock[*SOState](ctx, bcs, NewSOStateBlock)
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (s *SOState) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (s *SOState) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
+	return block.UnmarshalBlock[SOState](ctx, bcs)
 }
 
 // Validate checks the configuration, checkpoint, key epochs, operations,

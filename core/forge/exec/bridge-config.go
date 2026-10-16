@@ -86,16 +86,5 @@ func (c *SpaceExecConfig) Reset() {
 	c.data = c.data[:0]
 }
 
-// MarshalBlock returns the raw data for block storage.
-func (c *SpaceExecConfig) MarshalBlock() ([]byte, error) {
-	return c.data, nil
-}
-
-// UnmarshalBlock stores the raw block data.
-func (c *SpaceExecConfig) UnmarshalBlock(data []byte) error {
-	c.data = append(c.data[:0], data...)
-	return nil
-}
-
 // _ is a type assertion
 var _ config.Config = (*SpaceExecConfig)(nil)

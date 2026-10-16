@@ -518,7 +518,7 @@ func (r *ChatResource) commitEnvelope(ctx context.Context, req *spacewave_chat_r
 		return nil, err
 	}
 	defer tx.Discard()
-	message, err := world.LookupObjectBody[*ChatMessage](ctx, tx, req.GetMessageKey(), NewChatMessageBlock)
+	message, err := world.LookupObjectBody[ChatMessage](ctx, tx, req.GetMessageKey())
 	if err != nil {
 		return nil, err
 	}
@@ -532,7 +532,7 @@ func (r *ChatResource) commitEnvelope(ctx context.Context, req *spacewave_chat_r
 	if _, _, err := tx.ApplyWorldOp(ctx, op, r.device); err != nil {
 		return nil, err
 	}
-	message, err = world.LookupObjectBody[*ChatMessage](ctx, tx, req.GetMessageKey(), NewChatMessageBlock)
+	message, err = world.LookupObjectBody[ChatMessage](ctx, tx, req.GetMessageKey())
 	if err != nil {
 		return nil, err
 	}
@@ -546,7 +546,7 @@ func (r *ChatResource) commitEnvelope(ctx context.Context, req *spacewave_chat_r
 // Channel creation uses the same append path and supplies its operation timestamp.
 func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, req *spacewave_chat_rpc.SendMessageRequest, timestamp *timestamppb.Timestamp) (*spacewave_chat_rpc.SendMessageResponse, error) {
 	// Read the policy and history extent inside the caller's transaction.
-	channel, err := world.LookupObjectBody[*ChatChannel](ctx, wtx, r.objectKey, NewChatChannelBlock)
+	channel, err := world.LookupObjectBody[ChatChannel](ctx, wtx, r.objectKey)
 	if err != nil {
 		return nil, err
 	}
@@ -574,7 +574,7 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		return nil, err
 	}
 	if msgKey != "" {
-		prior, err := world.LookupObjectBody[*ChatMessage](ctx, wtx, msgKey, NewChatMessageBlock)
+		prior, err := world.LookupObjectBody[ChatMessage](ctx, wtx, msgKey)
 		if err != nil && !errors.Is(err, world.ErrObjectNotFound) {
 			return nil, err
 		}
@@ -609,7 +609,7 @@ func (r *ChatResource) appendMessage(ctx context.Context, wtx world.WorldState, 
 		if key == content.GetRedaction().GetTargetKey() {
 			continue
 		}
-		if _, err := world.LookupObjectBody[*ChatMessage](ctx, wtx, key, NewChatMessageBlock); err != nil {
+		if _, err := world.LookupObjectBody[ChatMessage](ctx, wtx, key); err != nil {
 			return nil, errors.Wrap(err, "resolve chat relation target")
 		}
 	}
@@ -767,7 +767,7 @@ func (r *ChatResource) resolveRedactionTarget(ctx context.Context, ws world.Worl
 	}
 
 	// Look up the target, deferring a moderator's redaction of one not held yet.
-	target, err := world.LookupObjectBody[*ChatMessage](ctx, ws, targetKey, NewChatMessageBlock)
+	target, err := world.LookupObjectBody[ChatMessage](ctx, ws, targetKey)
 	if errors.Is(err, world.ErrObjectNotFound) && redaction.GetTargetEnvelopeId() != "" {
 		if !moderated {
 			return nil, false, ErrChatRedactionForbidden
@@ -899,7 +899,7 @@ func (r *ChatResource) resolveMessageState(ctx context.Context, ws world.WorldSt
 		if err != nil {
 			return nil, "", err
 		}
-		prior, err := world.LookupObjectBody[*ChatMessage](ctx, ws, key, NewChatMessageBlock)
+		prior, err := world.LookupObjectBody[ChatMessage](ctx, ws, key)
 		if err != nil {
 			return nil, "", err
 		}
@@ -966,7 +966,7 @@ func (r *ChatResource) commitReadPosition(ctx context.Context, req *spacewave_ch
 		return nil, err
 	}
 	defer tx.Discard()
-	channel, err := world.LookupObjectBody[*ChatChannel](ctx, tx, r.objectKey, NewChatChannelBlock)
+	channel, err := world.LookupObjectBody[ChatChannel](ctx, tx, r.objectKey)
 	if err != nil {
 		return nil, err
 	}
@@ -990,7 +990,7 @@ func (r *ChatResource) commitReadPosition(ctx context.Context, req *spacewave_ch
 	if _, _, err := tx.ApplyWorldOp(ctx, op, r.device); err != nil {
 		return nil, err
 	}
-	channel, err = world.LookupObjectBody[*ChatChannel](ctx, tx, r.objectKey, NewChatChannelBlock)
+	channel, err = world.LookupObjectBody[ChatChannel](ctx, tx, r.objectKey)
 	if err != nil {
 		return nil, err
 	}
@@ -1025,7 +1025,7 @@ func validateAuthor(author string) error {
 // positions it subsumes; otherwise only that timeline advances.
 func (r *ChatResource) applyReadPosition(ctx context.Context, tx world.WorldState, author string, nextIndex uint64, threadRootKey *string, timestamp *timestamppb.Timestamp) error {
 	// Validate the receipt against the channel history and thread root.
-	channel, err := world.LookupObjectBody[*ChatChannel](ctx, tx, r.objectKey, NewChatChannelBlock)
+	channel, err := world.LookupObjectBody[ChatChannel](ctx, tx, r.objectKey)
 	if err != nil {
 		return err
 	}
@@ -1036,7 +1036,7 @@ func (r *ChatResource) applyReadPosition(ctx context.Context, tx world.WorldStat
 		if _, err := r.chatThreadKey(*threadRootKey); err != nil {
 			return err
 		}
-		if _, err := world.LookupObjectBody[*ChatMessage](ctx, tx, *threadRootKey, NewChatMessageBlock); err != nil {
+		if _, err := world.LookupObjectBody[ChatMessage](ctx, tx, *threadRootKey); err != nil {
 			return errors.Wrap(err, "resolve thread root")
 		}
 	}
@@ -1126,7 +1126,7 @@ func (r *ChatResource) appendChannelMessageKey(ctx context.Context, ws world.Wor
 	var index uint64
 	_, _, err = world.AccessObjectState(ctx, obj, true, func(bcs *block.Cursor) error {
 		// Load the mutable channel and apply the message's state change.
-		channel, err := block.UnmarshalBlock[*ChatChannel](ctx, bcs, NewChatChannelBlock)
+		channel, err := block.UnmarshalBlock[ChatChannel](ctx, bcs)
 		if err != nil {
 			return err
 		}
@@ -1180,7 +1180,7 @@ func (r *ChatResource) appendMessagePageKey(ctx context.Context, ws world.WorldS
 	// Append within the fixed-size page selected by the channel position.
 	_, _, err = world.AccessObjectState(ctx, obj, true, func(bcs *block.Cursor) error {
 		// Load the history page or initialize its first block.
-		page, err := block.UnmarshalBlock[*ChatMessagePage](ctx, bcs, NewChatMessagePageBlock)
+		page, err := block.UnmarshalBlock[ChatMessagePage](ctx, bcs)
 		if err != nil {
 			return err
 		}
@@ -1201,7 +1201,7 @@ func (r *ChatResource) readChannel(ctx context.Context) (*ChatChannel, error) {
 	if r.ws == nil {
 		return nil, errors.New("chat resource requires world state")
 	}
-	return world.LookupObjectBody[*ChatChannel](ctx, r.ws, r.objectKey, NewChatChannelBlock)
+	return world.LookupObjectBody[ChatChannel](ctx, r.ws, r.objectKey)
 }
 
 // readChannelRoot reads the channel object's root and revision.
@@ -1269,7 +1269,7 @@ func (r *ChatResource) readMessageKeys(ctx context.Context, startIndex, endIndex
 
 // readMessagePage reads one bounded history page.
 func (r *ChatResource) readMessagePage(ctx context.Context, pageIndex uint64) (*ChatMessagePage, error) {
-	page, err := world.LookupObjectBody[*ChatMessagePage](ctx, r.ws, r.messagePageKey(pageIndex), NewChatMessagePageBlock)
+	page, err := world.LookupObjectBody[ChatMessagePage](ctx, r.ws, r.messagePageKey(pageIndex))
 	if errors.Is(err, world.ErrObjectNotFound) {
 		return &ChatMessagePage{}, nil
 	}
@@ -1279,7 +1279,7 @@ func (r *ChatResource) readMessagePage(ctx context.Context, pageIndex uint64) (*
 // readMessage projects an accepted message without retaining an object handle.
 func (r *ChatResource) readMessage(ctx context.Context, key string) (*spacewave_chat_rpc.ChatMessageInfo, error) {
 	// Read the stored message, including its stable history position.
-	msg, err := world.LookupObjectBody[*ChatMessage](ctx, r.ws, key, NewChatMessageBlock)
+	msg, err := world.LookupObjectBody[ChatMessage](ctx, r.ws, key)
 	if errors.Is(err, world.ErrObjectNotFound) {
 		return nil, nil
 	}

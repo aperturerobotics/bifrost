@@ -147,9 +147,7 @@ func TestV86RuntimeStatusGenerationFence(t *testing.T) {
 	// Read the persisted VM block after runtime status updates.
 	var vm *s4wave_vm.VmV86
 	_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
-		blockValue, unmarshalErr := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-			return &s4wave_vm.VmV86{}
-		})
+		blockValue, unmarshalErr := block.UnmarshalBlock[s4wave_vm.VmV86](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}

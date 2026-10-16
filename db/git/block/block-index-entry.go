@@ -36,11 +36,6 @@ func NewIndexEntry(e *index.Entry) (*IndexEntry, error) {
 	}, nil
 }
 
-// NewIndexEntryBlock builds a new index entry block.
-func NewIndexEntryBlock() block.Block {
-	return &IndexEntry{}
-}
-
 // IsNil returns if the object is nil.
 func (i *IndexEntry) IsNil() bool {
 	return i == nil
@@ -58,18 +53,6 @@ func (i *IndexEntry) Validate() error {
 		return errors.Wrap(err, "modified_at")
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (i *IndexEntry) MarshalBlock() ([]byte, error) {
-	return i.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (i *IndexEntry) UnmarshalBlock(data []byte) error {
-	return i.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

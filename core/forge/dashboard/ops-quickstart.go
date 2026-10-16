@@ -211,16 +211,6 @@ func (o *InitForgeQuickstartOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *InitForgeQuickstartOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *InitForgeQuickstartOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupInitForgeQuickstartOp looks up an InitForgeQuickstartOp operation type.
 func LookupInitForgeQuickstartOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == InitForgeQuickstartOpId {

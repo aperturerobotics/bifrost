@@ -34,11 +34,6 @@ func NewCreateAptRepositoryOp(objectKey string, repository *AptRepository) *Crea
 	}
 }
 
-// NewCreateAptRepositoryOpBlock constructs a new CreateAptRepositoryOp block.
-func NewCreateAptRepositoryOpBlock() block.Block {
-	return &CreateAptRepositoryOp{}
-}
-
 // GetOperationTypeId returns the operation type identifier.
 func (o *CreateAptRepositoryOp) GetOperationTypeId() string {
 	return CreateAptRepositoryOpId
@@ -105,16 +100,6 @@ func (o *CreateAptRepositoryOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *CreateAptRepositoryOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *CreateAptRepositoryOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupCreateAptRepositoryOp looks up a CreateAptRepositoryOp operation type.
 func LookupCreateAptRepositoryOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == CreateAptRepositoryOpId {
@@ -130,11 +115,6 @@ func NewAddAptPackageOp(repositoryKey, packageKey string, aptPackage *AptPackage
 		PackageKey:    packageKey,
 		AptPackage:    aptPackage,
 	}
-}
-
-// NewAddAptPackageOpBlock constructs a new AddAptPackageOp block.
-func NewAddAptPackageOpBlock() block.Block {
-	return &AddAptPackageOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -217,16 +197,6 @@ func (o *AddAptPackageOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *AddAptPackageOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *AddAptPackageOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupAddAptPackageOp looks up an AddAptPackageOp operation type.
 func LookupAddAptPackageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == AddAptPackageOpId {
@@ -238,11 +208,6 @@ func LookupAddAptPackageOp(ctx context.Context, operationTypeID string) (world.O
 // NewAptPublishPackageOp constructs a new AptPublishPackageOp.
 func NewAptPublishPackageOp(packageKey string) *AptPublishPackageOp {
 	return &AptPublishPackageOp{PackageKey: packageKey}
-}
-
-// NewAptPublishPackageOpBlock constructs a new AptPublishPackageOp block.
-func NewAptPublishPackageOpBlock() block.Block {
-	return &AptPublishPackageOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -282,16 +247,6 @@ func (o *AptPublishPackageOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *AptPublishPackageOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *AptPublishPackageOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupAptPublishPackageOp looks up an AptPublishPackageOp operation type.
 func LookupAptPublishPackageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == AptPublishPackageOpId {
@@ -303,11 +258,6 @@ func LookupAptPublishPackageOp(ctx context.Context, operationTypeID string) (wor
 // NewAptSupersedePackageOp constructs a new AptSupersedePackageOp.
 func NewAptSupersedePackageOp(packageKey string) *AptSupersedePackageOp {
 	return &AptSupersedePackageOp{PackageKey: packageKey}
-}
-
-// NewAptSupersedePackageOpBlock constructs a new AptSupersedePackageOp block.
-func NewAptSupersedePackageOpBlock() block.Block {
-	return &AptSupersedePackageOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -347,16 +297,6 @@ func (o *AptSupersedePackageOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *AptSupersedePackageOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *AptSupersedePackageOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupAptSupersedePackageOp looks up an AptSupersedePackageOp operation type.
 func LookupAptSupersedePackageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == AptSupersedePackageOpId {
@@ -384,9 +324,7 @@ func applyAptPackageStateTransition(
 	// Apply the package transition and persist its updated record.
 	_, _, err = world.AccessObjectState(ctx, objectState, true, func(bcs *block.Cursor) error {
 		// Decode the package record before changing its state.
-		aptPackage, err := block.UnmarshalBlock[*AptPackage](ctx, bcs, func() block.Block {
-			return &AptPackage{}
-		})
+		aptPackage, err := block.UnmarshalBlock[AptPackage](ctx, bcs)
 		if err != nil {
 			return err
 		}
@@ -408,11 +346,6 @@ func NewAddAptBuildSpecOp(repositoryKey, buildSpecKey string, buildSpec *AptBuil
 		BuildSpecKey:  buildSpecKey,
 		BuildSpec:     buildSpec,
 	}
-}
-
-// NewAddAptBuildSpecOpBlock constructs a new AddAptBuildSpecOp block.
-func NewAddAptBuildSpecOpBlock() block.Block {
-	return &AddAptBuildSpecOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -487,16 +420,6 @@ func (o *AddAptBuildSpecOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *AddAptBuildSpecOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *AddAptBuildSpecOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupAddAptBuildSpecOp looks up an AddAptBuildSpecOp operation type.

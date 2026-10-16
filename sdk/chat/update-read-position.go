@@ -28,12 +28,6 @@ func (o *UpdateChatReadPositionOp) Validate() error {
 	return o.GetTimestamp().Validate(false)
 }
 
-// MarshalBlock serializes the receipt intent.
-func (o *UpdateChatReadPositionOp) MarshalBlock() ([]byte, error) { return o.MarshalVT() }
-
-// UnmarshalBlock restores the receipt intent.
-func (o *UpdateChatReadPositionOp) UnmarshalBlock(data []byte) error { return o.UnmarshalVT(data) }
-
 // ApplyWorldOp advances the accepted person's receipt in replay order.
 func (o *UpdateChatReadPositionOp) ApplyWorldOp(ctx context.Context, _ *logrus.Entry, ws world.WorldState, sender peer.ID) (bool, error) {
 	if err := o.Validate(); err != nil {

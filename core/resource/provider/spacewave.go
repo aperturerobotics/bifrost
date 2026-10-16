@@ -836,7 +836,7 @@ func (s *SpacewaveProviderResource) RecoverExecute(
 	}
 
 	// Encode the replacement password authentication parameters.
-	authParams, err := params.MarshalBlock()
+	authParams, err := params.MarshalVT()
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal auth params")
 	}

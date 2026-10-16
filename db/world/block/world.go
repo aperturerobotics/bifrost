@@ -444,7 +444,7 @@ func (t *WorldState) setBlockTransaction(
 
 	// Unmarshal the World root.
 	taskCtx, subtask := trace.NewTask(ctx, "hydra/world-block/world-state/set-block-transaction/unmarshal-root")
-	root, err := block.UnmarshalBlock[*World](taskCtx, bcs, NewWorldBlock)
+	root, err := block.UnmarshalBlock[World](taskCtx, bcs)
 	subtask.End()
 	if err != nil {
 		return err

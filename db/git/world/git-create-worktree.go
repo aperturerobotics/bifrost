@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-git/go-git/v6"
 	"github.com/pkg/errors"
-	"github.com/s4wave/spacewave/db/block"
 	git_block "github.com/s4wave/spacewave/db/git/block"
 	unixfs_block "github.com/s4wave/spacewave/db/unixfs/block"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
@@ -55,11 +54,6 @@ func NewGitCreateWorktreeOp(
 		DisableCheckout: disableCheckout,
 		Timestamp:       unixfs_block.ToTimestamp(ts, false),
 	}
-}
-
-// NewGitCreateWorktreeOpBlock constructs a new GitCreateWorktreeOp block.
-func NewGitCreateWorktreeOpBlock() block.Block {
-	return &GitCreateWorktreeOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -139,18 +133,6 @@ func (o *GitCreateWorktreeOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (o *GitCreateWorktreeOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (o *GitCreateWorktreeOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

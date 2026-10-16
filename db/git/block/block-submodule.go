@@ -13,11 +13,6 @@ func NewSubmodule(name string, ref *block.BlockRef) *Submodule {
 	}
 }
 
-// NewSubmoduleBlock builds a new repo ref block.
-func NewSubmoduleBlock() block.Block {
-	return &Submodule{}
-}
-
 // IsNil returns if the object is nil.
 func (r *Submodule) IsNil() bool {
 	return r == nil
@@ -36,16 +31,6 @@ func (r *Submodule) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (r *Submodule) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *Submodule) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

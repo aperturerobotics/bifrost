@@ -86,11 +86,6 @@ func BuildObjectKey(ownerObjectKey, repoObjectKey, baseCommitHash, pathFamily st
 	return "forge/git/allocation/" + hex.EncodeToString(hash[:12])
 }
 
-// NewAllocationBlock constructs an empty Allocation block.
-func NewAllocationBlock() block.Block {
-	return &Allocation{}
-}
-
 // CreateOrReuse creates an allocation object or returns the existing matching allocation.
 func CreateOrReuse(
 	ctx context.Context,
@@ -194,7 +189,7 @@ func CreateOrReuse(
 
 // Lookup loads an Allocation by object key.
 func Lookup(ctx context.Context, ws world.WorldState, objKey string) (*Allocation, error) {
-	return world.LookupObjectBody[*Allocation](ctx, ws, objKey, NewAllocationBlock)
+	return world.LookupObjectBody[Allocation](ctx, ws, objKey)
 }
 
 // ListExecutionAllocations lists allocation object keys linked to Executions.
@@ -426,13 +421,13 @@ func (a *Allocation) Reset() {
 	*a = Allocation{}
 }
 
-// MarshalBlock marshals the block to binary.
-func (a *Allocation) MarshalBlock() ([]byte, error) {
+// MarshalVT marshals the block to binary.
+func (a *Allocation) MarshalVT() ([]byte, error) {
 	return a.MarshalJSON()
 }
 
-// UnmarshalBlock unmarshals the block from binary.
-func (a *Allocation) UnmarshalBlock(data []byte) error {
+// UnmarshalVT unmarshals the block from binary.
+func (a *Allocation) UnmarshalVT(data []byte) error {
 	return a.UnmarshalJSON(data)
 }
 
@@ -614,7 +609,7 @@ func setAllocationQuads(ctx context.Context, ws world.WorldState, objKey string,
 
 // UnmarshalAllocation unmarshals an Allocation from a block cursor.
 func UnmarshalAllocation(ctx context.Context, bcs *block.Cursor) (*Allocation, error) {
-	return block.UnmarshalBlock[*Allocation](ctx, bcs, NewAllocationBlock)
+	return block.UnmarshalBlock[Allocation](ctx, bcs)
 }
 
 // RecordCleanup records the terminal runtime cleanup receipt on one

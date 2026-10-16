@@ -107,16 +107,6 @@ func (o *SqlWorkbenchSetRootOp) ApplyWorldObjectOp(
 	return false, err
 }
 
-// MarshalBlock marshals the SQL workbench set-root operation.
-func (o *SqlWorkbenchSetRootOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the SQL workbench set-root operation.
-func (o *SqlWorkbenchSetRootOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupSqlWorkbenchSetRootOp returns an empty SQL workbench set-root op for lookup.
 func LookupSqlWorkbenchSetRootOp(_ context.Context, opTypeID string) (world.Operation, error) {
 	if opTypeID == SqlWorkbenchSetRootOpId {

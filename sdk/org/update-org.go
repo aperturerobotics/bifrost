@@ -18,11 +18,6 @@ import (
 // UpdateOrgOpID is the operation type ID.
 var UpdateOrgOpID = "org/update-organization"
 
-// NewUpdateOrgOpBlock creates an empty block for deserialization.
-func NewUpdateOrgOpBlock() block.Block {
-	return &UpdateOrgOp{}
-}
-
 // GetOperationTypeId returns the operation type ID.
 func (o *UpdateOrgOp) GetOperationTypeId() string {
 	return UpdateOrgOpID
@@ -34,16 +29,6 @@ func (o *UpdateOrgOp) Validate() error {
 		return errors.New("org_object_key is required")
 	}
 	return nil
-}
-
-// MarshalBlock marshals the operation to bytes.
-func (o *UpdateOrgOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the operation from bytes.
-func (o *UpdateOrgOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // ApplyWorldOp applies the update organization operation.

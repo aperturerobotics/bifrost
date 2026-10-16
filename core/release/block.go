@@ -12,14 +12,6 @@ const (
 	browserAssetContentRef   = 1
 )
 
-func (d *ChannelDirectory) MarshalBlock() ([]byte, error) {
-	return d.MarshalVT()
-}
-
-func (d *ChannelDirectory) UnmarshalBlock(data []byte) error {
-	return d.UnmarshalVT(data)
-}
-
 func (d *ChannelDirectory) ApplyBlockRef(id uint32, ref *block.BlockRef) error {
 	idx := int(id) - channelDirectoryRefBase
 	if idx < 0 || idx >= len(d.GetChannels()) {
@@ -39,14 +31,6 @@ func (d *ChannelDirectory) GetBlockRefs() (map[uint32]*block.BlockRef, error) {
 
 func (d *ChannelDirectory) GetBlockRefCtor(uint32) block.Ctor {
 	return nil
-}
-
-func (m *ReleaseMetadata) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-func (m *ReleaseMetadata) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
 }
 
 func (m *ReleaseMetadata) ApplyBlockRef(id uint32, ref *block.BlockRef) error {
@@ -72,14 +56,6 @@ func (m *ReleaseMetadata) GetBlockRefCtor(uint32) block.Ctor {
 	return nil
 }
 
-func (m *BrowserShellMetadata) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-func (m *BrowserShellMetadata) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
-}
-
 func (m *BrowserShellMetadata) ApplyBlockRef(id uint32, ref *block.BlockRef) error {
 	idx := int(id) - browserShellAssetRefBase
 	if idx < 0 || idx >= len(m.GetAssets()) {
@@ -103,14 +79,6 @@ func (m *BrowserShellMetadata) GetBlockRefCtor(uint32) block.Ctor {
 	return nil
 }
 
-func (a *BrowserAsset) MarshalBlock() ([]byte, error) {
-	return a.MarshalVT()
-}
-
-func (a *BrowserAsset) UnmarshalBlock(data []byte) error {
-	return a.UnmarshalVT(data)
-}
-
 func (a *BrowserAsset) ApplyBlockRef(id uint32, ref *block.BlockRef) error {
 	if id != browserAssetContentRef {
 		return errors.Errorf("unknown browser asset ref id %d", id)
@@ -128,14 +96,6 @@ func (a *BrowserAsset) GetBlockRefs() (map[uint32]*block.BlockRef, error) {
 
 func (a *BrowserAsset) GetBlockRefCtor(uint32) block.Ctor {
 	return nil
-}
-
-func (n *UpdateNotification) MarshalBlock() ([]byte, error) {
-	return n.MarshalVT()
-}
-
-func (n *UpdateNotification) UnmarshalBlock(data []byte) error {
-	return n.UnmarshalVT(data)
 }
 
 var (

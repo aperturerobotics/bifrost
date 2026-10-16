@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	manifest "github.com/s4wave/spacewave/bldr/manifest"
-	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/sirupsen/logrus"
@@ -93,11 +92,6 @@ func NewStoreManifestOp(
 	}
 }
 
-// NewStoreManifestOpBlock constructs a new StoreManifestOp block.
-func NewStoreManifestOpBlock() block.Block {
-	return &StoreManifestOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *StoreManifestOp) Validate() error {
 	if len(o.GetObjectKey()) == 0 {
@@ -178,16 +172,6 @@ func (o *StoreManifestOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *StoreManifestOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *StoreManifestOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

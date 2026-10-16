@@ -26,11 +26,6 @@ func BuildWorkerCapacityObjectKey(workerObjectKey string) string {
 	return workerCapacityObjectKeyPrefix + hex.EncodeToString(hash[:12])
 }
 
-// NewWorkerCapacityBlock constructs an empty WorkerCapacity block.
-func NewWorkerCapacityBlock() block.Block {
-	return &WorkerCapacity{}
-}
-
 // CapacityOwnerState describes the lifecycle state of a capacity record's
 // durable owner claim.
 type CapacityOwnerState uint8
@@ -148,13 +143,13 @@ func (w *WorkerCapacity) Reset() {
 	*w = WorkerCapacity{}
 }
 
-// MarshalBlock marshals the block to binary.
-func (w *WorkerCapacity) MarshalBlock() ([]byte, error) {
+// MarshalVT marshals the block to binary.
+func (w *WorkerCapacity) MarshalVT() ([]byte, error) {
 	return w.MarshalJSON()
 }
 
-// UnmarshalBlock unmarshals the block from binary.
-func (w *WorkerCapacity) UnmarshalBlock(data []byte) error {
+// UnmarshalVT unmarshals the block from binary.
+func (w *WorkerCapacity) UnmarshalVT(data []byte) error {
 	return w.UnmarshalJSON(data)
 }
 
@@ -257,11 +252,10 @@ func (w *WorkerCapacity) UnmarshalJSON(data []byte) error {
 
 // LookupWorkerCapacity loads one Worker capacity record or ErrWorkerNotObserved.
 func LookupWorkerCapacity(ctx context.Context, ws world.WorldState, workerObjectKey string) (*WorkerCapacity, error) {
-	capacity, err := world.LookupObjectBody[*WorkerCapacity](
+	capacity, err := world.LookupObjectBody[WorkerCapacity](
 		ctx,
 		ws,
 		BuildWorkerCapacityObjectKey(workerObjectKey),
-		NewWorkerCapacityBlock,
 	)
 	if errors.Is(err, world.ErrObjectNotFound) {
 		return nil, ErrWorkerNotObserved

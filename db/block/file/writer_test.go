@@ -26,7 +26,7 @@ func TestBasicWriter(t *testing.T) {
 	// Reopen the empty file root for writing.
 	// root index is eves[len(eves)-1]
 	btx, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -58,7 +58,7 @@ func TestBasicWriter(t *testing.T) {
 	// Reopen the file root published by the writer.
 	w1Ref := writer.GetRef()
 	btx, bcs = block.NewTransaction(bkt, nil, w1Ref, nil)
-	fi, err = block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err = block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -141,7 +141,7 @@ func TestAppend(t *testing.T) {
 
 	// Reopen the file root for appending.
 	btx, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	rootFile, err = block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	rootFile, err = block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -229,7 +229,7 @@ func TestMoveRangeToRootBlob(t *testing.T) {
 
 	// Reopen the file root for a partial overwrite.
 	btx, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	rootFile, err = block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	rootFile, err = block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -299,7 +299,7 @@ func TestWriteStoredRawBlobKeepsReference(t *testing.T) {
 
 	// Reopen the file root and verify its stored blob reference.
 	_, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-	fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+	fi, err := block.UnmarshalBlock[File](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -376,7 +376,7 @@ func TestTruncateRootBlobThenPartialWrite(t *testing.T) {
 
 			// Reopen the published file root for readback.
 			_, bcs = block.NewTransaction(bkt, nil, rootRef, nil)
-			fi, err := block.UnmarshalBlock[*File](ctx, bcs, NewFileBlock)
+			fi, err := block.UnmarshalBlock[File](ctx, bcs)
 			if err != nil {
 				t.Fatal(err.Error())
 			}

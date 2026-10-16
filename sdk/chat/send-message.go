@@ -29,12 +29,6 @@ func (o *SendChatMessageOp) Validate() error {
 	return o.GetTimestamp().Validate(false)
 }
 
-// MarshalBlock retains the append intent for World replay.
-func (o *SendChatMessageOp) MarshalBlock() ([]byte, error) { return o.MarshalVT() }
-
-// UnmarshalBlock restores the append intent without assigning a history index.
-func (o *SendChatMessageOp) UnmarshalBlock(data []byte) error { return o.UnmarshalVT(data) }
-
 // ApplyWorldOp appends against the World history accepted before this operation.
 func (o *SendChatMessageOp) ApplyWorldOp(ctx context.Context, _ *logrus.Entry, ws world.WorldState, sender peer.ID) (bool, error) {
 	// Validate the replayed append intent.

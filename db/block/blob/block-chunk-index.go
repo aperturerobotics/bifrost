@@ -13,15 +13,10 @@ func NewChunkIndex(chunks []*Chunk) *ChunkIndex {
 	return &ChunkIndex{Chunks: chunks}
 }
 
-// NewChunkIndexBlock builds a new repo ref block.
-func NewChunkIndexBlock() block.Block {
-	return &ChunkIndex{}
-}
-
 // UnmarshalChunkIndex unmarshals a chunk index from a cursor.
 // If empty, returns nil, nil
 func UnmarshalChunkIndex(ctx context.Context, bcs *block.Cursor) (*ChunkIndex, error) {
-	return block.UnmarshalBlock[*ChunkIndex](ctx, bcs, NewChunkIndexBlock)
+	return block.UnmarshalBlock[ChunkIndex](ctx, bcs)
 }
 
 // IsNil returns if the object is nil.
@@ -71,16 +66,6 @@ func (r *ChunkIndex) GetEnd() uint64 {
 	}
 	last := chunks[len(chunks)-1]
 	return last.GetStart() + last.GetSize()
-}
-
-// MarshalBlock marshals the block to binary.
-func (r *ChunkIndex) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *ChunkIndex) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

@@ -576,7 +576,7 @@ func (t *Transaction) WriteAtRoot(ctx context.Context, clearTree bool, subRoot *
 						handleErr(err)
 						return
 					}
-					dat, err := bk.MarshalBlock()
+					dat, err := bk.MarshalVT()
 					if err != nil {
 						handleErr(err)
 						return

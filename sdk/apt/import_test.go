@@ -39,9 +39,7 @@ func TestImportDebPackageStoresBlockAndCreatesBuiltPackage(t *testing.T) {
 	assertStoredDebBlock(t, ctx, ws, debRef, deb)
 
 	// Verify the persisted package record, object type, and repository edge.
-	stored := readAptBlock[*AptPackage](t, ctx, ws, packageKey, func() block.Block {
-		return &AptPackage{}
-	})
+	stored := readAptBlock[AptPackage](t, ctx, ws, packageKey)
 	if !stored.EqualVT(aptPackage) {
 		t.Fatalf("stored package = %s, want %s", stored.String(), aptPackage.String())
 	}

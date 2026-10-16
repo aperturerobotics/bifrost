@@ -38,13 +38,13 @@ func TestAptBuildSpecTypeIDAndBlock(t *testing.T) {
 	}
 
 	// Verify the build specification survives binary encoding and decoding.
-	data, err := spec.MarshalBlock()
+	data, err := spec.MarshalVT()
 	if err != nil {
-		t.Fatalf("MarshalBlock: %v", err)
+		t.Fatalf("MarshalVT: %v", err)
 	}
 	var decoded AptBuildSpec
-	if err := decoded.UnmarshalBlock(data); err != nil {
-		t.Fatalf("UnmarshalBlock: %v", err)
+	if err := decoded.UnmarshalVT(data); err != nil {
+		t.Fatalf("UnmarshalVT: %v", err)
 	}
 	if !decoded.EqualVT(spec) {
 		t.Fatalf("decoded build spec does not match original: got=%s want=%s", decoded.String(), spec.String())

@@ -46,7 +46,7 @@ func NewJobTaskKey(jobKey, taskName string) string {
 
 // UnmarshalJob unmarshals a Job block from the cursor.
 func UnmarshalJob(ctx context.Context, bcs *block.Cursor) (*Job, error) {
-	return block.UnmarshalBlock[*Job](ctx, bcs, NewJobBlock)
+	return block.UnmarshalBlock[Job](ctx, bcs)
 }
 
 // IsComplete checks if the job is in the COMPLETE state.
@@ -81,16 +81,6 @@ func (e *Job) Validate() error {
 		}
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (e *Job) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (e *Job) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

@@ -83,7 +83,7 @@ func TestPlotToFileWritesRequestedPath(t *testing.T) {
 
 	// Load the committed tree root into a block graph transaction.
 	btx, bcs := oc.BuildTransactionAtRef(nil, tr.GetRootNodeRef().GetRootRef())
-	rn, err := block.UnmarshalBlock[*iavl.Node](ctx, bcs, iavl.NewNodeBlock)
+	rn, err := block.UnmarshalBlock[iavl.Node](ctx, bcs)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

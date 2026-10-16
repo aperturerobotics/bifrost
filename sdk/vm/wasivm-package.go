@@ -44,16 +44,6 @@ func (p *WasiVmPackage) GetBlockTypeId() string {
 	return WasiVmPackageTypeID
 }
 
-// MarshalBlock marshals the block to binary.
-func (p *WasiVmPackage) MarshalBlock() ([]byte, error) {
-	return p.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (p *WasiVmPackage) UnmarshalBlock(data []byte) error {
-	return p.UnmarshalVT(data)
-}
-
 // Validate performs cursory checks on the WasiVmPackage.
 func (p *WasiVmPackage) Validate() error {
 	if !strings.Contains(p.GetName(), "/") {
@@ -75,11 +65,6 @@ func NewCreateWasiVmPackageOp(objKey string, pkg *WasiVmPackage, ts time.Time) *
 		Package:   pkg,
 		Timestamp: timestamppb.New(ts),
 	}
-}
-
-// NewCreateWasiVmPackageOpBlock constructs a new CreateWasiVmPackageOp block.
-func NewCreateWasiVmPackageOpBlock() block.Block {
-	return &CreateWasiVmPackageOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -141,16 +126,6 @@ func (o *CreateWasiVmPackageOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CreateWasiVmPackageOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CreateWasiVmPackageOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCreateWasiVmPackageOp looks up a CreateWasiVmPackageOp operation type.

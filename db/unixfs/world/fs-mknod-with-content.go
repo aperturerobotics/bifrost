@@ -84,11 +84,6 @@ func NewFsMknodWithContentOp(
 	}
 }
 
-// NewFsMknodWithContentOpBlock constructs a new FsMknodWithContentOp block.
-func NewFsMknodWithContentOpBlock() block.Block {
-	return &FsMknodWithContentOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *FsMknodWithContentOp) Validate() error {
 	// Validate the file path, timestamp, filesystem type, and content reference.
@@ -169,16 +164,6 @@ func (o *FsMknodWithContentOp) ApplyWorldObjectOp(
 // GetPayloadRefs returns the file content blob.
 func (o *FsMknodWithContentOp) GetPayloadRefs() []*block.BlockRef {
 	return []*block.BlockRef{o.GetBlobRef()}
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsMknodWithContentOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsMknodWithContentOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

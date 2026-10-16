@@ -145,7 +145,7 @@ func TestRetireTaskPreservesDrainAndHistory(t *testing.T) {
 	if err != nil || !slices.Equal(executions, []string{executionKey}) {
 		t.Fatalf("Execution history = %v, %v", executions, err)
 	}
-	body, err := world.LookupObjectBody[*forge_execution.Execution](ctx, tb.WorldState, executionKey, forge_execution.NewExecutionBlock)
+	body, err := world.LookupObjectBody[forge_execution.Execution](ctx, tb.WorldState, executionKey)
 	if err != nil {
 		t.Fatal(err)
 	}

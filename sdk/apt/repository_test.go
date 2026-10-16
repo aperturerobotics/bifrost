@@ -34,13 +34,13 @@ func TestAptRepositoryTypeIDAndBlock(t *testing.T) {
 	}
 
 	// Verify the repository block survives binary encoding and decoding.
-	data, err := repo.MarshalBlock()
+	data, err := repo.MarshalVT()
 	if err != nil {
-		t.Fatalf("MarshalBlock: %v", err)
+		t.Fatalf("MarshalVT: %v", err)
 	}
 	var decoded AptRepository
-	if err := decoded.UnmarshalBlock(data); err != nil {
-		t.Fatalf("UnmarshalBlock: %v", err)
+	if err := decoded.UnmarshalVT(data); err != nil {
+		t.Fatalf("UnmarshalVT: %v", err)
 	}
 	if !decoded.EqualVT(repo) {
 		t.Fatalf("decoded repository does not match original: got=%s want=%s", decoded.String(), repo.String())

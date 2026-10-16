@@ -8,15 +8,10 @@ import (
 	"github.com/s4wave/spacewave/identity"
 )
 
-// NewDomainInfoBlock constructs a new Entity block
-func NewDomainInfoBlock() block.Block {
-	return &DomainInfo{}
-}
-
 // UnmarshalDomainInfo unmarshals a DomainInfo from a cursor.
 // If empty, returns nil, nil
 func UnmarshalDomainInfo(ctx context.Context, bcs *block.Cursor) (*DomainInfo, error) {
-	return block.UnmarshalBlock[*DomainInfo](ctx, bcs, NewDomainInfoBlock)
+	return block.UnmarshalBlock[DomainInfo](ctx, bcs)
 }
 
 // Filter value is the value we use when filtering against this item when
@@ -37,18 +32,6 @@ func (d *DomainInfo) Validate() error {
 		return errors.New("name cannot be empty")
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (d *DomainInfo) MarshalBlock() ([]byte, error) {
-	return d.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (d *DomainInfo) UnmarshalBlock(data []byte) error {
-	return d.UnmarshalVT(data)
 }
 
 // _ is a type assertion

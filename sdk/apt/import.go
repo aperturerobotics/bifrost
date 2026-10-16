@@ -177,9 +177,7 @@ func readAptPackageObject(ctx context.Context, objectState world.ObjectState) (*
 	var aptPackage *AptPackage
 	_, _, err := world.AccessObjectState(ctx, objectState, false, func(bcs *block.Cursor) error {
 		var unmarshalErr error
-		aptPackage, unmarshalErr = block.UnmarshalBlock[*AptPackage](ctx, bcs, func() block.Block {
-			return &AptPackage{}
-		})
+		aptPackage, unmarshalErr = block.UnmarshalBlock[AptPackage](ctx, bcs)
 		return unmarshalErr
 	})
 	return aptPackage, err

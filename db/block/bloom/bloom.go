@@ -105,18 +105,6 @@ func (b *BloomFilter) ToBloomFilter() *Filter {
 	return From(b.GetBitSet().GetSet(), m, k)
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (b *BloomFilter) MarshalBlock() ([]byte, error) {
-	return b.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (b *BloomFilter) UnmarshalBlock(data []byte) error {
-	return b.UnmarshalVT(data)
-}
-
 // _ is a type assertion
 var _ block.Block = (*BloomFilter)(nil)
 

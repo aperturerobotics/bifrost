@@ -30,7 +30,7 @@ func newManifestTree() *btree.BTreeG[*manifestEntry] {
 func parseManifestEntry(entry *packfile.PackfileEntry) *manifestEntry {
 	item := &manifestEntry{entry: entry.CloneVT()}
 	var encoded bloom.BloomFilter
-	if err := encoded.UnmarshalBlock(item.entry.GetBloomFilter()); err == nil {
+	if err := encoded.UnmarshalVT(item.entry.GetBloomFilter()); err == nil {
 		item.filter = encoded.ToBloomFilter()
 	}
 	return item

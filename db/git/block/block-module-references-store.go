@@ -34,16 +34,6 @@ func (r *ModuleReferencesStore) BuildModRefTree(ctx context.Context, bcs *block.
 	return block_kvtx.BuildKvTransaction(ctx, bcs.FollowSubBlock(1), true)
 }
 
-// MarshalBlock marshals the block to binary.
-func (r *ModuleReferencesStore) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *ModuleReferencesStore) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (r *ModuleReferencesStore) ApplySubBlock(id uint32, next block.SubBlock) error {
 	switch id {

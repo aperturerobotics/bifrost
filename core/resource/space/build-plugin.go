@@ -225,7 +225,7 @@ func lookupDevice(ctx context.Context, tx world.WorldState, key string) (*s4wave
 	}
 
 	// Read the Device block.
-	device, object, err := world.LookupObject[*s4wave_device.Device](ctx, tx, key, s4wave_device.NewDeviceBlock)
+	device, object, err := world.LookupObject[s4wave_device.Device](ctx, tx, key)
 	world.ReleaseObjectState(object)
 	return device, err
 }

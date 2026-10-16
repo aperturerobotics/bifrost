@@ -8,11 +8,6 @@ import (
 	"github.com/s4wave/spacewave/net/util/labels"
 )
 
-// NewProviderAccountInfoBlock constructs a new ProviderAccountInfo block.
-func NewProviderAccountInfoBlock() block.Block {
-	return &ProviderAccountInfo{}
-}
-
 // ValidateProviderAccountID validates a provider identifier.
 func ValidateProviderAccountID(id string) error {
 	if id == "" {
@@ -26,7 +21,7 @@ func ValidateProviderAccountID(id string) error {
 
 // UnmarshalProviderAccountInfo unmarshals a ProviderAccountInfo from a block cursor.
 func UnmarshalProviderAccountInfo(ctx context.Context, bcs *block.Cursor) (*ProviderAccountInfo, error) {
-	return block.UnmarshalBlock[*ProviderAccountInfo](ctx, bcs, NewProviderAccountInfoBlock)
+	return block.UnmarshalBlock[ProviderAccountInfo](ctx, bcs)
 }
 
 // Validate validates the ProviderAccountInfo.
@@ -38,18 +33,6 @@ func (i *ProviderAccountInfo) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (i *ProviderAccountInfo) MarshalBlock() ([]byte, error) {
-	return i.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (i *ProviderAccountInfo) UnmarshalBlock(data []byte) error {
-	return i.UnmarshalVT(data)
 }
 
 // _ is a type assertion

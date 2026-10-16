@@ -205,7 +205,7 @@ func (r *DeviceResource) writeWorldState() (world.WorldState, error) {
 }
 
 func readDeviceObject(ctx context.Context, objState world.ObjectState) (*Device, error) {
-	state, err := s4wave_world.ReadWorldBlock[*Device](ctx, objState, NewDeviceBlock)
+	state, err := s4wave_world.ReadWorldBlock[Device](ctx, objState)
 	if err != nil {
 		return nil, err
 	}

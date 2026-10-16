@@ -22,11 +22,6 @@ const OrgRoleOwner = "Owner"
 // OrgRoleMember is the display role for organization members.
 const OrgRoleMember = "Member"
 
-// NewInitOrganizationOpBlock creates an empty block for deserialization.
-func NewInitOrganizationOpBlock() block.Block {
-	return &InitOrganizationOp{}
-}
-
 // GetOperationTypeId returns the operation type ID.
 func (o *InitOrganizationOp) GetOperationTypeId() string {
 	return InitOrganizationOpID
@@ -35,16 +30,6 @@ func (o *InitOrganizationOp) GetOperationTypeId() string {
 // Validate validates the operation.
 func (o *InitOrganizationOp) Validate() error {
 	return nil
-}
-
-// MarshalBlock marshals the operation to bytes.
-func (o *InitOrganizationOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the operation from bytes.
-func (o *InitOrganizationOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // ApplyWorldOp applies the init organization operation.

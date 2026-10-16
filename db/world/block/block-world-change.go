@@ -6,11 +6,6 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 )
 
-// NewWorldChangeBlock is the world change block constructor.
-func NewWorldChangeBlock() block.Block {
-	return &WorldChange{}
-}
-
 // NewWorldChangeSubBlockCtor returns the sub-block constructor.
 func NewWorldChangeSubBlockCtor(r **WorldChange) block.SubBlockCtor {
 	if r == nil {
@@ -29,7 +24,7 @@ func NewWorldChangeSubBlockCtor(r **WorldChange) block.SubBlockCtor {
 // UnmarshalWorldChange unmarshals a world change from a cursor.
 // If empty, returns nil, nil
 func UnmarshalWorldChange(ctx context.Context, bcs *block.Cursor) (*WorldChange, error) {
-	return block.UnmarshalBlock[*WorldChange](ctx, bcs, NewWorldChangeBlock)
+	return block.UnmarshalBlock[WorldChange](ctx, bcs)
 }
 
 // IsNil returns if the object is nil.
@@ -40,18 +35,6 @@ func (w *WorldChange) IsNil() bool {
 // IsEmpty checks if the world change is empty.
 func (w *WorldChange) IsEmpty() bool {
 	return w.GetChangeType() == WorldChangeType_WorldChange_INVALID
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (w *WorldChange) MarshalBlock() ([]byte, error) {
-	return w.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (w *WorldChange) UnmarshalBlock(data []byte) error {
-	return w.UnmarshalVT(data)
 }
 
 // ApplyBlockRef applies a ref change with a field id.

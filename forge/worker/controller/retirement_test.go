@@ -113,7 +113,7 @@ func TestWorkerRetiresExecutionAfterFinalResult(t *testing.T) {
 	}
 
 	// Detachment requires the durable result and preserves assigned peer authority.
-	body, err := world.LookupObjectBody[*forge_execution.Execution](ctx, tb.WorldState, executions[0], forge_execution.NewExecutionBlock)
+	body, err := world.LookupObjectBody[forge_execution.Execution](ctx, tb.WorldState, executions[0])
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -45,11 +45,6 @@ func NewFsSetModTimestampOp(
 	}
 }
 
-// NewFsSetModTimestampOpBlock constructs a new FsSetModTimestampOp block.
-func NewFsSetModTimestampOpBlock() block.Block {
-	return &FsSetModTimestampOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *FsSetModTimestampOp) Validate() error {
 	if err := unixfs_block.ValidateSetModTimestamp(o.GetPaths()); err != nil {
@@ -115,16 +110,6 @@ func (o *FsSetModTimestampOp) ApplyWorldObjectOp(
 		}
 	})
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsSetModTimestampOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsSetModTimestampOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

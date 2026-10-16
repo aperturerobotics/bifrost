@@ -744,9 +744,13 @@ func (c *Cursor) Unmarshal(ctx context.Context, ctor func() Block) (Block, error
 	if datFound {
 		// Decode the fetched bytes into the requested block type.
 		recordDecodedBlockUnmarshal(ctx, len(dat))
-		err := b.UnmarshalBlock(dat)
-		if err != nil {
+		if err := b.UnmarshalVT(dat); err != nil {
 			return nil, err
+		}
+		if v, ok := b.(DecodedBlockValidator); ok {
+			if err := v.ValidateDecodedBlock(); err != nil {
+				return nil, err
+			}
 		}
 
 		// Cache the decoded block of verified stored bytes.

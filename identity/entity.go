@@ -49,15 +49,10 @@ func EntityWithPrivKey(
 	return ent, nil
 }
 
-// NewEntityBlock constructs a new Entity block
-func NewEntityBlock() block.Block {
-	return &Entity{}
-}
-
 // UnmarshalEntity unmarshals a Entity from a cursor.
 // If empty, returns nil, nil
 func UnmarshalEntity(ctx context.Context, bcs *block.Cursor) (*Entity, error) {
-	return block.UnmarshalBlock[*Entity](ctx, bcs, NewEntityBlock)
+	return block.UnmarshalBlock[Entity](ctx, bcs)
 }
 
 // Validate validates the entity object and all keypair signatures.
@@ -97,18 +92,6 @@ func (e *Entity) AppendKeypair(privKey crypto.PrivKey, ekp *EntityKeypair) error
 // UnmarshalVerifyKeypairs unmarshals and checks the keypair signatures.
 func (e *Entity) UnmarshalVerifyKeypairs() ([]*EntityKeypair, error) {
 	return e.GetEntityKeypairSet().UnmarshalVerifyKeypairs(e)
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *Entity) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *Entity) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
 }
 
 // _ is a type assertion

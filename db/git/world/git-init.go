@@ -5,7 +5,6 @@ import (
 
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	"github.com/pkg/errors"
-	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	"github.com/s4wave/spacewave/db/world"
@@ -36,11 +35,6 @@ func NewGitInitOp(
 		CreateWorktree:  worktreeArgs,
 		Timestamp:       ts,
 	}
-}
-
-// NewGitInitOpBlock constructs a new GitInitOp block.
-func NewGitInitOpBlock() block.Block {
-	return &GitInitOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -139,18 +133,6 @@ func (o *GitInitOp) ApplyWorldObjectOp(
 	// Publish the validated repository root on the object handle.
 	_, err = objectHandle.SetRootRef(ctx, repoRef)
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (o *GitInitOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (o *GitInitOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

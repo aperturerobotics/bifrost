@@ -58,14 +58,14 @@ func TestLookupObjectBodyUsesBodyRead(t *testing.T) {
 
 	// The singular typed read uses the same immutable body contract as batch reads.
 	reader := &bodyOnlyWorld{inner: ws}
-	value, err := world.LookupObjectBody[*block_mock.Example](ctx, reader, "example/body", block_mock.NewExampleBlock)
+	value, err := world.LookupObjectBody[block_mock.Example](ctx, reader, "example/body")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if value.GetMsg() != "retained value" || reader.batches != 1 {
 		t.Fatalf("body = %v, requests = %d", value, reader.batches)
 	}
-	if _, err := world.LookupObjectBody[*block_mock.Example](ctx, reader, "missing", block_mock.NewExampleBlock); !errors.Is(err, world.ErrObjectNotFound) {
+	if _, err := world.LookupObjectBody[block_mock.Example](ctx, reader, "missing"); !errors.Is(err, world.ErrObjectNotFound) {
 		t.Fatalf("missing object error = %v", err)
 	}
 
@@ -76,7 +76,7 @@ func TestLookupObjectBodyUsesBodyRead(t *testing.T) {
 		errors.New("remote response exceeds unary envelope"),
 	} {
 		reader.bodyError = transportError
-		value, err = world.LookupObjectBody[*block_mock.Example](ctx, reader, "example/body", block_mock.NewExampleBlock)
+		value, err = world.LookupObjectBody[block_mock.Example](ctx, reader, "example/body")
 		if err != nil || value.GetMsg() != "retained value" || reader.handles != index+1 {
 			t.Fatalf("oversized body = %v, handles = %d, error = %v", value, reader.handles, err)
 		}

@@ -45,7 +45,7 @@ func NewTx(
 
 	// Decode the root Node before exposing the transaction.
 	taskCtx, subtask := trace.NewTask(ctx, "hydra/kvtx-block-iavl/new-tx/unmarshal-root")
-	rn, err := block.UnmarshalBlock[*Node](taskCtx, bcs, NewNodeBlock)
+	rn, err := block.UnmarshalBlock[Node](taskCtx, bcs)
 	subtask.End()
 	if err != nil {
 		return nil, err

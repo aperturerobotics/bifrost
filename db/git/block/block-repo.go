@@ -33,7 +33,7 @@ func NewRepoBlock() block.Block {
 // UnmarshalRepo unmarshals a repo from a cursor.
 // If empty, returns nil, nil
 func UnmarshalRepo(ctx context.Context, bcs *block.Cursor) (*Repo, error) {
-	return block.UnmarshalBlock[*Repo](ctx, bcs, NewRepoBlock)
+	return block.UnmarshalBlock[Repo](ctx, bcs)
 }
 
 // Validate performs cursory checks on the repo block.
@@ -124,16 +124,6 @@ func (r *Repo) FollowShallowRefsStore(ctx context.Context, bcs *block.Cursor) (*
 		return nil, nil, block.ErrUnexpectedType
 	}
 	return nv, cs, nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (r *Repo) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *Repo) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

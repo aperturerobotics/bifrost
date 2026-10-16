@@ -38,24 +38,12 @@ func (o *Object) DecodedBlockCacheTypeKey() string {
 // UnmarshalObject unmarshals a Object block from a cursor.
 // If empty, returns nil, nil
 func UnmarshalObject(ctx context.Context, bcs *block.Cursor) (*Object, error) {
-	return block.UnmarshalBlock[*Object](ctx, bcs, NewObjectBlock)
+	return block.UnmarshalBlock[Object](ctx, bcs)
 }
 
 // Clone clones the Object.
 func (o *Object) Clone() *Object {
 	return o.CloneVT()
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (o *Object) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (o *Object) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

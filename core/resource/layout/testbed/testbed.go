@@ -231,7 +231,7 @@ func (t *Testbed) SetupLayoutEngine(ctx context.Context, objectKey string) (*Set
 
 	// Encode the operation that initializes the layout object.
 	op := space_world_ops.NewInitObjectLayoutOp(objectKey, time.Now())
-	opData, err := op.MarshalBlock()
+	opData, err := op.MarshalVT()
 	if err != nil {
 		sdkTx.Release()
 		engine.Release()

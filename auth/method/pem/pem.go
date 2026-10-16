@@ -88,8 +88,8 @@ type PemParameters struct {
 	PubKeyPem []byte
 }
 
-// MarshalBlock marshals the parameters to binary.
-func (p *PemParameters) MarshalBlock() ([]byte, error) {
+// MarshalVT marshals the parameters to binary.
+func (p *PemParameters) MarshalVT() ([]byte, error) {
 	return p.PubKeyPem, nil
 }
 

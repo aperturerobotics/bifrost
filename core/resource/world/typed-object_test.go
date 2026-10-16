@@ -203,10 +203,10 @@ func TestTypedObjectResource(t *testing.T) {
 		op := space_world_ops.NewInitObjectLayoutOp(objectKey, time.Now())
 
 		// marshalBlock opData,err via op.
-		opData, err := op.MarshalBlock()
+		opData, err := op.MarshalVT()
 		if err != nil {
 			sdkTx.Release()
-			t.Fatalf("MarshalBlock failed: %v", err)
+			t.Fatalf("MarshalVT failed: %v", err)
 		}
 		if _, _, err := sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpId, opData, ""); err != nil {
 			sdkTx.Release()
@@ -284,10 +284,10 @@ func TestTypedObjectResource(t *testing.T) {
 
 		// Create and serialize the operation
 		op := space_world_ops.NewInitObjectLayoutOp(objectKey, time.Now())
-		opData, err := op.MarshalBlock()
+		opData, err := op.MarshalVT()
 		if err != nil {
 			sdkTx.Release()
-			t.Fatalf("MarshalBlock failed: %v", err)
+			t.Fatalf("MarshalVT failed: %v", err)
 		}
 
 		// Apply the operation
@@ -364,10 +364,10 @@ func TestTypedObjectResource(t *testing.T) {
 
 		// newInitObjectLayoutOp op via space_world_ops.
 		op := space_world_ops.NewInitObjectLayoutOp(objectKey, time.Now())
-		opData, err := op.MarshalBlock()
+		opData, err := op.MarshalVT()
 		if err != nil {
 			sdkTx.Release()
-			t.Fatalf("MarshalBlock failed: %v", err)
+			t.Fatalf("MarshalVT failed: %v", err)
 		}
 		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpId, opData, "")
 		if err != nil {
@@ -440,10 +440,10 @@ func TestTypedObjectResource(t *testing.T) {
 
 		// newInitUnixFSOp op via space_world_ops.
 		op := space_world_ops.NewInitUnixFSOp(objectKey, time.Now())
-		opData, err := op.MarshalBlock()
+		opData, err := op.MarshalVT()
 		if err != nil {
 			sdkTx.Release()
-			t.Fatalf("MarshalBlock failed: %v", err)
+			t.Fatalf("MarshalVT failed: %v", err)
 		}
 		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitUnixFSOpId, opData, "")
 		if err != nil {
@@ -568,9 +568,9 @@ func TestTypedObjectResource(t *testing.T) {
 
 		// newInitUnixFSOp op via space_world_ops.
 		op := space_world_ops.NewInitUnixFSOp(objectKey, time.Now())
-		opData, err := op.MarshalBlock()
+		opData, err := op.MarshalVT()
 		if err != nil {
-			t.Fatalf("MarshalBlock failed: %v", err)
+			t.Fatalf("MarshalVT failed: %v", err)
 		}
 		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitUnixFSOpId, opData, "")
 		if err != nil {
@@ -671,10 +671,10 @@ func TestTypedObjectResource(t *testing.T) {
 		op := git_world.NewGitInitOp(objectKey, repoRef, true, nil, nil)
 
 		// marshalBlock opData,err via op.
-		opData, err := op.MarshalBlock()
+		opData, err := op.MarshalVT()
 		if err != nil {
 			sdkTx.Release()
-			t.Fatalf("MarshalBlock failed: %v", err)
+			t.Fatalf("MarshalVT failed: %v", err)
 		}
 		_, _, err = sdkTx.ApplyWorldOp(ctx, git_world.GitInitOpId, opData, "")
 		if err != nil {

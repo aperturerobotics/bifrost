@@ -18,7 +18,7 @@ func NewWorktreeBlock() block.Block {
 // UnmarshalWorktree unmarshals a repo from a cursor.
 // If empty, returns nil, nil
 func UnmarshalWorktree(ctx context.Context, bcs *block.Cursor) (*Worktree, error) {
-	return block.UnmarshalBlock[*Worktree](ctx, bcs, NewWorktreeBlock)
+	return block.UnmarshalBlock[Worktree](ctx, bcs)
 }
 
 // Validate performs cursory checks on the repo block.
@@ -42,16 +42,6 @@ func (r *Worktree) FollowHeadRefStore(bcs *block.Cursor) (*HeadRefStoreCursor, e
 		subBcs.SetBlock(hrs, true)
 	}
 	return NewHeadRefStoreCursor(subBcs, hrs), nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (r *Worktree) MarshalBlock() ([]byte, error) {
-	return r.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (r *Worktree) UnmarshalBlock(data []byte) error {
-	return r.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

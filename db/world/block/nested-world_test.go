@@ -106,7 +106,7 @@ func TestNestedWorldPublication(t *testing.T) {
 		if typeID != "example/projection" {
 			t.Fatalf("outer type = %q", typeID)
 		}
-		published, err := world.LookupObjectBody[*world_block.NestedWorld](ctx, state, outerKey, world_block.NewNestedWorldBlock)
+		published, err := world.LookupObjectBody[world_block.NestedWorld](ctx, state, outerKey)
 		if err != nil {
 			return err
 		}
@@ -125,7 +125,7 @@ func TestNestedWorldPublication(t *testing.T) {
 		if err := tb.Engine.AccessWorldState(ctx, published.GetPayloadRef(), func(cursor *bucket_lookup.Cursor) error {
 			// Require the payload block to hold the source receipt.
 			_, bcs := cursor.BuildTransaction(nil)
-			body, err := block.UnmarshalBlock[*block_mock.Example](ctx, bcs, block_mock.NewExampleBlock)
+			body, err := block.UnmarshalBlock[block_mock.Example](ctx, bcs)
 			if err != nil {
 				return err
 			}
@@ -143,7 +143,7 @@ func TestNestedWorldPublication(t *testing.T) {
 				return err
 			}
 			defer nested.Discard()
-			body, err := world.LookupObjectBody[*block_mock.Example](ctx, nested, "inner", block_mock.NewExampleBlock)
+			body, err := world.LookupObjectBody[block_mock.Example](ctx, nested, "inner")
 			if err != nil {
 				return err
 			}
@@ -229,7 +229,7 @@ func TestNestedWorldReplacementGC(t *testing.T) {
 		t.Fatal("published nested World root was collected")
 	}
 	if err := world.ExecTransaction(ctx, tb.Engine, false, func(ctx context.Context, state world.WorldState) error {
-		outer, err := world.LookupObjectBody[*world_block.NestedWorld](ctx, state, outerKey, world_block.NewNestedWorldBlock)
+		outer, err := world.LookupObjectBody[world_block.NestedWorld](ctx, state, outerKey)
 		if err != nil {
 			return err
 		}
@@ -240,7 +240,7 @@ func TestNestedWorldReplacementGC(t *testing.T) {
 				return err
 			}
 			defer nested.Discard()
-			body, err := world.LookupObjectBody[*block_mock.Example](ctx, nested, "inner", block_mock.NewExampleBlock)
+			body, err := world.LookupObjectBody[block_mock.Example](ctx, nested, "inner")
 			if err != nil {
 				return err
 			}

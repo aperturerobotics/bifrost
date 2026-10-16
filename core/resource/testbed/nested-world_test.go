@@ -220,7 +220,7 @@ func requireExampleBody(ctx context.Context, t *testing.T, ws objectGetter, msg 
 	var body *block_mock.Example
 	_, _, err = world.AccessObjectState(ctx, obj, false, func(cursor *block.Cursor) error {
 		var decodeErr error
-		body, decodeErr = block.UnmarshalBlock[*block_mock.Example](ctx, cursor, block_mock.NewExampleBlock)
+		body, decodeErr = block.UnmarshalBlock[block_mock.Example](ctx, cursor)
 		return decodeErr
 	})
 	if err != nil || body.GetMsg() != msg {

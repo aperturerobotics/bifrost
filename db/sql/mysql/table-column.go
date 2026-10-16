@@ -167,18 +167,6 @@ func (t *TableColumn) Validate() error {
 	return nil
 }
 
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (t *TableColumn) MarshalBlock() ([]byte, error) {
-	return t.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (t *TableColumn) UnmarshalBlock(data []byte) error {
-	return t.UnmarshalVT(data)
-}
-
 // ApplySubBlock applies a sub-block change with a field id.
 func (t *TableColumn) ApplySubBlock(id uint32, next block.SubBlock) error {
 	v, ok := next.(*blob.Blob)

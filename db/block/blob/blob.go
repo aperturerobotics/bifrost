@@ -35,7 +35,7 @@ func NewBlobSubBlockCtor(r **Blob) block.SubBlockCtor {
 // UnmarshalBlob unmarshals the Blob block.
 // Returns nil, nil if empty.
 func UnmarshalBlob(ctx context.Context, bcs *block.Cursor) (*Blob, error) {
-	return block.UnmarshalBlock[*Blob](ctx, bcs, NewBlobBlock)
+	return block.UnmarshalBlock[Blob](ctx, bcs)
 }
 
 // Validate validates the blob type from known types.
@@ -662,18 +662,6 @@ func (b *Blob) TransformToRaw(ctx context.Context, bcs *block.Cursor, nsize uint
 	b.BlobType = BlobType_BlobType_RAW
 	bcs.ClearRef(4)
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (b *Blob) MarshalBlock() ([]byte, error) {
-	return b.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (b *Blob) UnmarshalBlock(data []byte) error {
-	return b.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

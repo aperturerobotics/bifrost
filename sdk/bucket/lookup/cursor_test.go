@@ -135,7 +135,7 @@ func TestSDKBucketLookupStoreGetBlockRecordsResourceCounter(t *testing.T) {
 func TestSDKBucketLookupStoreReadOperationReusesDecodedBlocks(t *testing.T) {
 	// Encode the block whose decoded value will be shared within a read scope.
 	ctx := context.Background()
-	encoded, err := (&block_mock.Example{Msg: "resource decoded"}).MarshalBlock()
+	encoded, err := (&block_mock.Example{Msg: "resource decoded"}).MarshalVT()
 	if err != nil {
 		t.Fatal(err.Error())
 	}

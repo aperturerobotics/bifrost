@@ -221,7 +221,7 @@ func (t *objectTracker) processState(
 		if !assigned {
 			// Observe an active foreign claim so this Worker can recover it after
 			// expiry. Pending placement remains exclusive to its selected Worker.
-			execution, err := world.LookupObjectBody[*forge_execution.Execution](ctx, ws, objKey, forge_execution.NewExecutionBlock)
+			execution, err := world.LookupObjectBody[forge_execution.Execution](ctx, ws, objKey)
 			if err != nil {
 				return false, err
 			}

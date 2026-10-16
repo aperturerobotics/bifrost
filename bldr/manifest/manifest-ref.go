@@ -16,14 +16,9 @@ func NewManifestRef(meta *ManifestMeta, ref *bucket.ObjectRef) *ManifestRef {
 	}
 }
 
-// NewManifestRefBlock constructs a new ManifestRef block.
-func NewManifestRefBlock() block.Block {
-	return &ManifestRef{}
-}
-
 // UnmarshalManifestRef unmarshals a ManifestRef block from the cursor.
 func UnmarshalManifestRef(ctx context.Context, bcs *block.Cursor) (*ManifestRef, error) {
-	return block.UnmarshalBlock[*ManifestRef](ctx, bcs, NewManifestRefBlock)
+	return block.UnmarshalBlock[ManifestRef](ctx, bcs)
 }
 
 // CreateManifestRef creates the manifest ref at the block cursor.
@@ -56,16 +51,6 @@ func (m *ManifestRef) Validate() error {
 		return errors.Wrap(err, "manifest_ref")
 	}
 	return nil
-}
-
-// MarshalBlock marshals the block to binary.
-func (m *ManifestRef) MarshalBlock() ([]byte, error) {
-	return m.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (m *ManifestRef) UnmarshalBlock(data []byte) error {
-	return m.UnmarshalVT(data)
 }
 
 // FollowManifestRef follows the ManifestRef sub-block.

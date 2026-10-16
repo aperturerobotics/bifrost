@@ -9,11 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// NewSharedObjectRefBlock constructs a new SharedObjectRef block.
-func NewSharedObjectRefBlock() block.Block {
-	return &SharedObjectRef{}
-}
-
 // NewSharedObjectRef builds a new SharedObjectRef.
 func NewSharedObjectRef(providerID, providerAccountID, sobjectID, blockStoreID string) *SharedObjectRef {
 	return &SharedObjectRef{
@@ -28,7 +23,7 @@ func NewSharedObjectRef(providerID, providerAccountID, sobjectID, blockStoreID s
 
 // UnmarshalSharedObjectRef unmarshals a SharedObjectRef from a block cursor.
 func UnmarshalSharedObjectRef(ctx context.Context, bcs *block.Cursor) (*SharedObjectRef, error) {
-	return block.UnmarshalBlock[*SharedObjectRef](ctx, bcs, NewSharedObjectRefBlock)
+	return block.UnmarshalBlock[SharedObjectRef](ctx, bcs)
 }
 
 // Validate validates the shared object ref.
@@ -47,18 +42,6 @@ func (i *SharedObjectRef) GetLogger(le *logrus.Entry) *logrus.Entry {
 	return i.
 		GetProviderResourceRef().
 		GetLogger(le)
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (i *SharedObjectRef) MarshalBlock() ([]byte, error) {
-	return i.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (i *SharedObjectRef) UnmarshalBlock(data []byte) error {
-	return i.UnmarshalVT(data)
 }
 
 // _ is a type assertion

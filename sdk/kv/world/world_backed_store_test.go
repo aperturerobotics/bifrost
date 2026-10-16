@@ -122,12 +122,12 @@ func TestKvStoreFactoryCommitsWorldBackedRootAndReplaysOp(t *testing.T) {
 
 	// Encode and decode the committed KV root for operation replay.
 	op := s4wave_kv_world.NewKvSetRootOp(objectKey, afterRoot, afterRoot, nil)
-	data, err := op.MarshalBlock()
+	data, err := op.MarshalVT()
 	if err != nil {
-		t.Fatalf("MarshalBlock: %v", err)
+		t.Fatalf("MarshalVT: %v", err)
 	}
-	if err := lookupOp.UnmarshalBlock(data); err != nil {
-		t.Fatalf("UnmarshalBlock: %v", err)
+	if err := lookupOp.UnmarshalVT(data); err != nil {
+		t.Fatalf("UnmarshalVT: %v", err)
 	}
 
 	// Require the decoded operation to preserve the committed World root.

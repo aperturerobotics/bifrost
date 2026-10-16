@@ -199,9 +199,7 @@ func readV86ImageCdnSource(ctx context.Context, ws world.WorldState, imageKey st
 	// Copy the source out of the image block.
 	var src *s4wave_vm.VmImageCdnSource
 	_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
-		img, err := block.UnmarshalBlock[*s4wave_vm.V86Image](ctx, bcs, func() block.Block {
-			return &s4wave_vm.V86Image{}
-		})
+		img, err := block.UnmarshalBlock[s4wave_vm.V86Image](ctx, bcs)
 		if err != nil {
 			return err
 		}

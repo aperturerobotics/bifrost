@@ -48,11 +48,6 @@ func NewFsTruncateOp(
 	}
 }
 
-// NewFsTruncateOpBlock constructs a new FsTruncateOp block.
-func NewFsTruncateOpBlock() block.Block {
-	return &FsTruncateOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *FsTruncateOp) Validate() error {
 	if err := o.GetTimestamp().Validate(false); err != nil {
@@ -121,16 +116,6 @@ func (o *FsTruncateOp) ApplyWorldObjectOp(
 		}
 	})
 	return false, err
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *FsTruncateOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *FsTruncateOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // _ is a type assertion

@@ -139,15 +139,15 @@ func TestTerminalMarshalBlockRoundTrip(t *testing.T) {
 		Rows:            40,
 		CreatedAt:       timestamppb.New(time.Unix(10, 0)),
 	}
-	data, err := term.MarshalBlock()
+	data, err := term.MarshalVT()
 	if err != nil {
-		t.Fatalf("MarshalBlock() error = %v", err)
+		t.Fatalf("MarshalVT() error = %v", err)
 	}
 
 	// Decode the Terminal block and verify all fields survive the round trip.
 	got := &Terminal{}
-	if err := got.UnmarshalBlock(data); err != nil {
-		t.Fatalf("UnmarshalBlock() error = %v", err)
+	if err := got.UnmarshalVT(data); err != nil {
+		t.Fatalf("UnmarshalVT() error = %v", err)
 	}
 	if !got.EqualVT(term) {
 		t.Fatalf("round trip = %#v, want %#v", got, term)
@@ -162,9 +162,9 @@ func TestTerminalSshHostTargetDoesNotStoreCredentialMaterial(t *testing.T) {
 		SshHostObjectKey: "hosts/prod",
 		TargetKind:       TerminalTargetKind_TERMINAL_TARGET_KIND_SSH_HOST,
 	}
-	data, err := term.MarshalBlock()
+	data, err := term.MarshalVT()
 	if err != nil {
-		t.Fatalf("MarshalBlock() error = %v", err)
+		t.Fatalf("MarshalVT() error = %v", err)
 	}
 	if bytes.Contains(data, rawCredential) {
 		t.Fatal("Terminal block contains raw SSH credential bytes")

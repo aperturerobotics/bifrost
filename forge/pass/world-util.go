@@ -116,7 +116,7 @@ func CollectPassExecutions(
 	// Look up each linked Execution object body.
 	states := make([]*forge_execution.Execution, len(kpObjectKeys))
 	for i, objKey := range kpObjectKeys {
-		states[i], err = world.LookupObjectBody[*forge_execution.Execution](ctx, ws, objKey, forge_execution.NewExecutionBlock)
+		states[i], err = world.LookupObjectBody[forge_execution.Execution](ctx, ws, objKey)
 		if err != nil {
 			return nil, nil, err
 		}

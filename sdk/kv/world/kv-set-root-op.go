@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	kvtx_block "github.com/s4wave/spacewave/db/kvtx/block"
@@ -32,11 +31,6 @@ func NewKvSetRootOp(
 		RootRef:   rootRef.Clone(),
 		Mutations: cloneKvMutations(mutations),
 	}
-}
-
-// NewKvSetRootOpBlock constructs a KvSetRootOp block.
-func NewKvSetRootOpBlock() block.Block {
-	return &KvSetRootOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -226,16 +220,6 @@ func cloneKvMutations(mutations []*KvMutation) []*KvMutation {
 		out[i] = mutation.CloneVT()
 	}
 	return out
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *KvSetRootOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (o *KvSetRootOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupKvSetRootOp looks up a KvSetRootOp operation type.

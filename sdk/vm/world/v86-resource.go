@@ -191,9 +191,7 @@ func (r *v86Resource) Execute(req *s4wave_process.ExecuteRequest, stream s4wave_
 		runtimePluginID := defaultVmPluginID
 		_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 			// Decode the VM block before reading its runtime state.
-			vm, unmarshalErr := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-				return &s4wave_vm.VmV86{}
-			})
+			vm, unmarshalErr := block.UnmarshalBlock[s4wave_vm.VmV86](ctx, bcs)
 			if unmarshalErr != nil {
 				return unmarshalErr
 			}
@@ -386,9 +384,7 @@ func (r *v86Resource) ensureRuntimeGeneration(ctx context.Context) (uint64, erro
 	generation := uint64(0)
 	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
 		// Decode the VM block and persist its initial runtime generation.
-		vm, unmarshalErr := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-			return &s4wave_vm.VmV86{}
-		})
+		vm, unmarshalErr := block.UnmarshalBlock[s4wave_vm.VmV86](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}
@@ -441,9 +437,7 @@ func (r *v86Resource) updateObservedState(
 	// Update the VM block only when its runtime generation matches.
 	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
 		// Decode the VM block and accept updates for the matching generation.
-		vm, unmarshalErr := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-			return &s4wave_vm.VmV86{}
-		})
+		vm, unmarshalErr := block.UnmarshalBlock[s4wave_vm.VmV86](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}
@@ -508,9 +502,7 @@ func (r *v86Resource) applyRuntimeStatus(
 	var config *s4wave_vm.V86Config
 	_, _, err = world.AccessObjectState(ctx, objState, false, func(bcs *block.Cursor) error {
 		// Decode the VM block and copy its runtime state for report validation.
-		vm, unmarshalErr := block.UnmarshalBlock[*s4wave_vm.VmV86](ctx, bcs, func() block.Block {
-			return &s4wave_vm.VmV86{}
-		})
+		vm, unmarshalErr := block.UnmarshalBlock[s4wave_vm.VmV86](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}

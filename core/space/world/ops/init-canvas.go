@@ -41,11 +41,6 @@ func NewCanvasInitOp(
 	}
 }
 
-// NewCanvasInitOpBlock constructs a new CanvasInitOp block.
-func NewCanvasInitOpBlock() block.Block {
-	return &CanvasInitOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *CanvasInitOp) Validate() error {
 	objKey := o.GetObjectKey()
@@ -103,16 +98,6 @@ func (o *CanvasInitOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CanvasInitOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CanvasInitOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCanvasInitOp looks up a CanvasInitOp operation type.

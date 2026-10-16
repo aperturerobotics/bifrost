@@ -139,7 +139,7 @@ func CreatePassWithTarget(
 
 // UnmarshalPass unmarshals a pass block from the cursor.
 func UnmarshalPass(ctx context.Context, bcs *block.Cursor) (*Pass, error) {
-	return block.UnmarshalBlock[*Pass](ctx, bcs, NewPassBlock)
+	return block.UnmarshalBlock[Pass](ctx, bcs)
 }
 
 // Validate performs cursory checks of the Pass object.
@@ -250,18 +250,6 @@ func (e *Pass) FollowTargetRef(ctx context.Context, bcs *block.Cursor) (*forge_t
 // Returns empty if not set.
 func (e *Pass) ParsePeerID() (peer.ID, error) {
 	return confparse.ParsePeerID(e.GetPeerId())
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (e *Pass) MarshalBlock() ([]byte, error) {
-	return e.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (e *Pass) UnmarshalBlock(data []byte) error {
-	return e.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

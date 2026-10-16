@@ -24,11 +24,6 @@ func NewTree(t *index.Tree) (*Tree, error) {
 	}, nil
 }
 
-// NewTreeBlock builds a new tree block.
-func NewTreeBlock() block.Block {
-	return &Tree{}
-}
-
 // IsNil returns if the object is nil.
 func (i *Tree) IsNil() bool {
 	return i == nil
@@ -69,18 +64,6 @@ func (i *Tree) ToGitTree() (*index.Tree, error) {
 	return &index.Tree{
 		Entries: out,
 	}, nil
-}
-
-// MarshalBlock marshals the block to binary.
-// This is the initial step of marshaling, before transformations.
-func (i *Tree) MarshalBlock() ([]byte, error) {
-	return i.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-// This is the final step of decoding, after transformations.
-func (i *Tree) UnmarshalBlock(data []byte) error {
-	return i.UnmarshalVT(data)
 }
 
 // ApplySubBlock applies a sub-block change with a field id.

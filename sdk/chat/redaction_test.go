@@ -128,7 +128,7 @@ func TestModeratedRedaction(t *testing.T) {
 	}
 	requireRedacted := func(messageKey, redactionKey string) {
 		t.Helper()
-		message, err := world.LookupObjectBody[*ChatMessage](ctx, ws, messageKey, NewChatMessageBlock)
+		message, err := world.LookupObjectBody[ChatMessage](ctx, ws, messageKey)
 		if err != nil {
 			t.Fatal(err)
 		}

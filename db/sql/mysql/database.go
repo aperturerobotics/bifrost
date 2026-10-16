@@ -25,7 +25,7 @@ type Database struct {
 
 // NewDatabase constructs a new database handle.
 func NewDatabase(ctx context.Context, name string, readOnly bool, bcs *block.Cursor) (*Database, error) {
-	dbr, err := block.UnmarshalBlock[*DatabaseRoot](ctx, bcs, NewDatabaseRootBlock)
+	dbr, err := block.UnmarshalBlock[DatabaseRoot](ctx, bcs)
 	if err != nil {
 		return nil, err
 	}

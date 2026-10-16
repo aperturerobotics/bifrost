@@ -8,24 +8,9 @@ import (
 // AptBuildSpecTypeID is the type identifier for AptBuildSpec objects.
 const AptBuildSpecTypeID = "spacewave-vm/apt/build-spec"
 
-// NewAptBuildSpecBlock constructs a new AptBuildSpec block.
-func NewAptBuildSpecBlock() block.Block {
-	return &AptBuildSpec{}
-}
-
 // GetBlockTypeId returns the block type identifier.
 func (s *AptBuildSpec) GetBlockTypeId() string {
 	return AptBuildSpecTypeID
-}
-
-// MarshalBlock marshals the block to binary.
-func (s *AptBuildSpec) MarshalBlock() ([]byte, error) {
-	return s.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (s *AptBuildSpec) UnmarshalBlock(data []byte) error {
-	return s.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the AptBuildSpec.

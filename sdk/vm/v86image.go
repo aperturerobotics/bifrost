@@ -19,9 +19,8 @@ import (
 const V86ImageTypeID = "vm/image/v86"
 
 // V86ImageBlockType constructs V86Image blocks for typed cursor reads.
-var V86ImageBlockType = blocktype.NewBlockType(
+var V86ImageBlockType = blocktype.New[V86Image](
 	V86ImageTypeID,
-	func() *V86Image { return &V86Image{} },
 )
 
 // PredV86ImageWasm is the graph predicate for the emulator WASM binary.
@@ -42,16 +41,6 @@ var PredV86ImageRootfs = quad.IRI("v86image/rootfs")
 // GetBlockTypeId returns the block type identifier.
 func (v *V86Image) GetBlockTypeId() string {
 	return V86ImageTypeID
-}
-
-// MarshalBlock marshals the block to binary.
-func (v *V86Image) MarshalBlock() ([]byte, error) {
-	return v.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block from binary.
-func (v *V86Image) UnmarshalBlock(data []byte) error {
-	return v.UnmarshalVT(data)
 }
 
 // Validate performs cursory checks on the V86Image.
@@ -75,11 +64,6 @@ func NewCreateV86ImageOp(objKey string, img *V86Image, ts time.Time) *CreateV86I
 		Image:     img,
 		Timestamp: timestamppb.New(ts),
 	}
-}
-
-// NewCreateV86ImageOpBlock constructs a new CreateV86ImageOp block.
-func NewCreateV86ImageOpBlock() block.Block {
-	return &CreateV86ImageOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -147,16 +131,6 @@ func (o *CreateV86ImageOp) ApplyWorldObjectOp(
 	return false, world.ErrUnhandledOp
 }
 
-// MarshalBlock marshals the block to binary.
-func (o *CreateV86ImageOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CreateV86ImageOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
-}
-
 // LookupCreateV86ImageOp looks up a CreateV86ImageOp operation type.
 func LookupCreateV86ImageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
 	if operationTypeID == CreateV86ImageOpId {
@@ -174,11 +148,6 @@ func NewSetV86ImageMetadataOp(objKey string, img *V86Image) *SetV86ImageMetadata
 		ObjectKey: objKey,
 		Image:     img,
 	}
-}
-
-// NewSetV86ImageMetadataOpBlock constructs a new SetV86ImageMetadataOp block.
-func NewSetV86ImageMetadataOpBlock() block.Block {
-	return &SetV86ImageMetadataOp{}
 }
 
 // GetOperationTypeId returns the operation type identifier.
@@ -233,9 +202,7 @@ func (o *SetV86ImageMetadataOp) ApplyWorldOp(
 	incoming := o.GetImage().CloneVT()
 	_, _, err = world.AccessObjectState(ctx, objState, true, func(bcs *block.Cursor) error {
 		// Decode the current VM image and require its retained metadata.
-		current, unmarshalErr := block.UnmarshalBlock[*V86Image](ctx, bcs, func() block.Block {
-			return &V86Image{}
-		})
+		current, unmarshalErr := block.UnmarshalBlock[V86Image](ctx, bcs)
 		if unmarshalErr != nil {
 			return unmarshalErr
 		}
@@ -263,16 +230,6 @@ func (o *SetV86ImageMetadataOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *SetV86ImageMetadataOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *SetV86ImageMetadataOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupSetV86ImageMetadataOp looks up a SetV86ImageMetadataOp operation type.

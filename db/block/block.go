@@ -35,13 +35,30 @@ type Ctor func() Block
 
 // Block defines an in-memory decoded block structure. A block should contain a
 // minimal amount of data with some pointers to other blocks.
+//
+// Every protobuf-go-lite message is a Block; other encodings implement the
+// same two methods.
 type Block interface {
-	// MarshalBlock marshals the block to binary.
+	// MarshalVT marshals the block to binary.
 	// This is the initial step of marshaling, before transformations.
-	MarshalBlock() ([]byte, error)
-	// UnmarshalBlock unmarshals the block to the object.
+	MarshalVT() ([]byte, error)
+	// UnmarshalVT unmarshals the block to the object.
 	// This is the final step of decoding, after transformations.
-	UnmarshalBlock(data []byte) error
+	UnmarshalVT(data []byte) error
+}
+
+// Ptr constrains PT to a pointer to T that is a Block, so generic readers
+// can construct a zero block as PT(new(T)) without a constructor argument.
+type Ptr[T any] interface {
+	*T
+	Block
+}
+
+// DecodedBlockValidator checks a block once after a cursor decodes it from
+// stored bytes, before the decoded-block cache shares it.
+type DecodedBlockValidator interface {
+	// ValidateDecodedBlock returns an error if the decoded block is invalid.
+	ValidateDecodedBlock() error
 }
 
 // BlockWithRefs has references keyed by ID.
@@ -51,8 +68,9 @@ type BlockWithRefs interface {
 	// The reference may be nil if the child block is nil.
 	ApplyBlockRef(id uint32, ptr *BlockRef) error
 	// GetBlockRefs returns all block references by ID.
-	// May return nil, and values may also be nil.
-	// Note: this does not include pending references (in a cursor)
+	//
+	// May return nil, and values may also be nil. Pending references in a
+	// cursor are not included.
 	GetBlockRefs() (map[uint32]*BlockRef, error)
 	// GetBlockRefCtor returns the constructor for the block at the ref id.
 	// Return nil to indicate invalid ref ID or unknown.
@@ -86,8 +104,9 @@ type NamedSubBlock interface {
 type SubBlockCtor func(create bool) SubBlock
 
 // NewSubBlockCtor constructs a new SubBlock constructor.
-// returns nil if r is nil
-// usage: block.NewSubBlockCtor(r, func() *ChangeLogLL { return &ChangeLogLL{} })
+//
+// Returns nil if r is nil. Usage:
+// block.NewSubBlockCtor(r, func() *ChangeLogLL { return &ChangeLogLL{} })
 func NewSubBlockCtor[T ComparableSubBlock](r *T, ctor func() T) SubBlockCtor {
 	if r == nil {
 		return nil
@@ -154,6 +173,7 @@ type BlockWithPreWriteHook interface {
 // BlockWithClone defines a block with a clone function.
 // The clone should share nothing with the original.
 type BlockWithClone interface {
+	// CloneBlock returns a deep copy of the block.
 	CloneBlock() (Block, error)
 }
 
@@ -201,32 +221,26 @@ func CloneBlock(blk any) (any, error) {
 	return nil, ErrNotClonable
 }
 
-// UnmarshalBlock unmarshals the block from the cursor & type-asserts it.
-// Returns ErrUnexpectedType if the type returned was not T.
-// Incorrect type happens if the cursor already contains a block w/ different type.
-// If bcs == nil, returns empty, nil.
-// If unmarshal() returns nil, returns empty, nil.
-func UnmarshalBlock[T Block](ctx context.Context, bcs *Cursor, ctor func() Block) (T, error) {
-	// Return an empty block value for an absent cursor.
-	var out T
+// UnmarshalBlock unmarshals the block at the cursor as a *T.
+//
+// Returns ErrUnexpectedType if the cursor already holds a block of another
+// type. Returns nil, nil if bcs is nil or the cursor has no block.
+func UnmarshalBlock[T any, PT Ptr[T]](ctx context.Context, bcs *Cursor) (PT, error) {
+	// Return a nil block for an absent cursor.
 	if bcs == nil {
-		return out, nil
+		return nil, nil
 	}
 
 	// Unmarshal the cursor block before checking its concrete type.
-	blk, err := bcs.Unmarshal(ctx, ctor)
-	if err != nil {
-		return out, err
-	}
-	if blk == nil {
-		return out, nil
+	blk, err := bcs.Unmarshal(ctx, func() Block { return PT(new(T)) })
+	if err != nil || blk == nil {
+		return nil, err
 	}
 
 	// Require the decoded block to match the requested type.
-	var ok bool
-	out, ok = blk.(T)
+	out, ok := blk.(PT)
 	if !ok {
-		return out, ErrUnexpectedType
+		return nil, ErrUnexpectedType
 	}
 	return out, nil
 }

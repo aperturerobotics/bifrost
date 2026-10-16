@@ -21,11 +21,6 @@ func NewCanvasAddEdgeOp(objKey string, edge *s4wave_canvas.CanvasEdge) *CanvasAd
 	}
 }
 
-// NewCanvasAddEdgeOpBlock constructs a new CanvasAddEdgeOp block.
-func NewCanvasAddEdgeOpBlock() block.Block {
-	return &CanvasAddEdgeOp{}
-}
-
 // Validate performs cursory checks on the op.
 func (o *CanvasAddEdgeOp) Validate() error {
 	// Require a target object and an edge with both endpoint node IDs.
@@ -121,16 +116,6 @@ func (o *CanvasAddEdgeOp) ApplyWorldObjectOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	return false, world.ErrUnhandledOp
-}
-
-// MarshalBlock marshals the block to binary.
-func (o *CanvasAddEdgeOp) MarshalBlock() ([]byte, error) {
-	return o.MarshalVT()
-}
-
-// UnmarshalBlock unmarshals the block to the object.
-func (o *CanvasAddEdgeOp) UnmarshalBlock(data []byte) error {
-	return o.UnmarshalVT(data)
 }
 
 // LookupCanvasAddEdgeOp looks up a CanvasAddEdgeOp operation type.
