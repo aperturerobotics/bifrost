@@ -73,17 +73,7 @@ func TestAccountReplicaCopyBatchesProofReads(t *testing.T) {
 	account, so, head, leaf, payload := mountSeededReplicaSource(ctx, t)
 
 	// Mount an empty destination Space in a separate volume.
-	_, _, dstAccount, _, release := setupProviderAndSessionInternal(ctx, t)
-	defer release()
-	dstRef, err := dstAccount.CreateSharedObject(ctx, ulid.NewULID(), &sobject.SharedObjectMeta{BodyType: "space"}, "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	dstSO, releaseDst, err := dstAccount.MountSharedObject(ctx, dstRef, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer releaseDst()
+	dstSO := mountEmptyReplicaDestination(ctx, t)
 
 	// Copy the source graph into the destination, counting proof reads.
 	counted := &proofCountingStore{Store: block_store.NewStore("destination", dstSO.GetBlockStore())}
@@ -106,6 +96,96 @@ func TestAccountReplicaCopyBatchesProofReads(t *testing.T) {
 	if reads == 0 || uint64(reads) >= progress.GetBlocks() {
 		t.Fatalf("copy of %d blocks made %d proof reads", progress.GetBlocks(), reads)
 	}
+}
+
+// TestAccountReplicaCopySkipsHeldSubtree copies a graph into a volume that
+// already holds a complete subtree of it. The copy holds that subtree under
+// its stage and skips it, so it visits only the blocks no sibling subtree
+// shares with it.
+func TestAccountReplicaCopySkipsHeldSubtree(t *testing.T) {
+	// Mount a seeded source Space and an empty destination Space.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	account, so, head, _, _ := mountSeededReplicaSource(ctx, t)
+	dstSO := mountEmptyReplicaDestination(ctx, t)
+
+	// Hold back the first child of the head root.
+	source := so.GetBlockStore()
+	root, err := source.GetStoredBlock(ctx, head.GetRootRef())
+	if err != nil || len(root.Refs) == 0 {
+		t.Fatalf("head root children: %d, %v", len(root.GetRefs()), err)
+	}
+	subtree := root.Refs[0]
+	total := countGraphBlocks(ctx, t, source, head.GetRootRef(), nil)
+	want := countGraphBlocks(ctx, t, source, head.GetRootRef(), subtree)
+
+	// Store the subtree in the destination with its completion proof.
+	if err := block.CopyGraph(ctx, source, dstSO.GetBlockStore(), subtree, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dstSO.GetBlockStore().Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := block.MarkRootComplete(ctx, dstSO.GetBlockStore(), subtree); err != nil {
+		t.Fatal(err)
+	}
+
+	// Copy the graph, counting the blocks it visits.
+	destination := &replicaDestination{SharedObject: so, store: &BlockStore{
+		store: block_store.NewStore("destination", dstSO.GetBlockStore()), readStore: source,
+	}}
+	progress := &AccountReplicaCopyState{Head: head}
+	if err := account.copyAccountWorld(ctx, destination, progress, func() {}); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("copied %d of %d blocks", progress.GetBlocks(), total)
+	if progress.GetBlocks() != uint64(want) {
+		t.Fatalf("copy visited %d blocks, want %d of %d outside the held subtree", progress.GetBlocks(), want, total)
+	}
+}
+
+// countGraphBlocks counts the blocks a copy of the graph under root visits
+// when it skips the subtree under skip, if set.
+func countGraphBlocks(ctx context.Context, t *testing.T, src block.StoreOps, root, skip *block.BlockRef) int {
+	// Count visited blocks, treating the skipped subtree as already copied.
+	t.Helper()
+	var n int
+	opts := &block.GraphCopyOptions{
+		Visited: func(*block.BlockRef, []byte) { n++ },
+		Known: func(_ context.Context, refs []*block.BlockRef) ([]bool, error) {
+			known := make([]bool, len(refs))
+			for i, ref := range refs {
+				known[i] = skip != nil && ref.EqualVT(skip)
+			}
+			return known, nil
+		},
+	}
+
+	// Copy into a scratch store.
+	if err := block.CopyGraph(ctx, src, newBatchForwardTestStore(), root, opts); err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+// mountEmptyReplicaDestination mounts an empty Space in its own volume.
+func mountEmptyReplicaDestination(ctx context.Context, t *testing.T) sobject.SharedObject {
+	// Start a provider account and create a Space.
+	t.Helper()
+	_, _, account, _, release := setupProviderAndSessionInternal(ctx, t)
+	t.Cleanup(release)
+	ref, err := account.CreateSharedObject(ctx, ulid.NewULID(), &sobject.SharedObjectMeta{BodyType: "space"}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Mount it.
+	so, releaseSO, err := account.MountSharedObject(ctx, ref, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(releaseSO)
+	return so
 }
 
 // TestAccountReplicaCopyWaitsOnUnknownRefs copies from a source that holds

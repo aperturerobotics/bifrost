@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	block_store_inmem "github.com/s4wave/spacewave/db/block/store/inmem"
+	block_store_testing "github.com/s4wave/spacewave/db/block/store/test"
 	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
 	store_kvtx_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
 )
@@ -243,4 +244,12 @@ func TestUploadUntrackedBlock(t *testing.T) {
 	if status, _ := s.GetStatus(); status.Pending != 1 || !errors.Is(status.Err, block.ErrRefsUnknown) {
 		t.Fatalf("status = %+v, want one pending block and ErrRefsUnknown", status)
 	}
+}
+
+// TestMarkingStoreStageHoldsCompleteRoots checks that a stage of the marking
+// store holds completion proofs under the inner stage.
+func TestMarkingStoreStageHoldsCompleteRoots(t *testing.T) {
+	block_store_testing.RequireStageHold(t, func(ops block.StoreOps) block.StoreOps {
+		return NewMarkingStore(ops, nil)
+	})
 }

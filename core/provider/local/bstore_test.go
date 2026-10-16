@@ -14,6 +14,7 @@ import (
 	block_mock "github.com/s4wave/spacewave/db/block/mock"
 	block_store "github.com/s4wave/spacewave/db/block/store"
 	block_store_inmem "github.com/s4wave/spacewave/db/block/store/inmem"
+	block_store_testing "github.com/s4wave/spacewave/db/block/store/test"
 	lookup_concurrent "github.com/s4wave/spacewave/db/bucket/lookup/concurrent"
 	dex_solicit "github.com/s4wave/spacewave/db/dex/solicit"
 	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
@@ -483,4 +484,12 @@ func TestBlockStoreBatchTombstoneInvalidatesDecodedBlockCache(t *testing.T) {
 	if _, err := cursor.Unmarshal(ctx, block_mock.NewExampleBlock); !errors.Is(err, block.ErrNotFound) {
 		t.Fatalf("Unmarshal after tombstone batch error = %v, want %v", err, block.ErrNotFound)
 	}
+}
+
+// TestBlockStoreStageHoldsCompleteRoots checks that a stage of the local block
+// store holds completion proofs under the stage of its underlying store.
+func TestBlockStoreStageHoldsCompleteRoots(t *testing.T) {
+	block_store_testing.RequireStageHold(t, func(ops block.StoreOps) block.StoreOps {
+		return &BlockStore{store: block_store.NewStore("test", ops)}
+	})
 }

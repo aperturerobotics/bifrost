@@ -73,5 +73,13 @@ func (b *BlockStore) RootsComplete(ctx context.Context, refs []*block.BlockRef) 
 	return block.RootsComplete(ctx, b.store, refs)
 }
 
+// HoldCompleteRoots holds completion proofs under the underlying stage.
+func (b *BlockStore) HoldCompleteRoots(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	return block.HoldCompleteRoots(ctx, b.store, refs)
+}
+
 // _ is a type assertion
-var _ block.RootRetainer = (*BlockStore)(nil)
+var (
+	_ block.RootRetainer       = (*BlockStore)(nil)
+	_ block.CompleteRootHolder = (*BlockStore)(nil)
+)
