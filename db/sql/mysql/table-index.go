@@ -341,15 +341,20 @@ func (idx *tableIndex) ColumnExpressionTypes(ctx *sql.Context) []sql.ColumnExpre
 	return out
 }
 
-// CanSupport accepts complete equality tuples; other predicates use table scans.
+// CanSupport accepts complete equality tuples and the NULL-excluding probe a
+// null-safe join plans with before it binds a key; other predicates use table
+// scans.
 func (idx *tableIndex) CanSupport(ctx *sql.Context, ranges ...sql.Range) bool {
 	for _, r := range ranges {
 		mysqlRange, ok := r.(sql.MySQLRange)
-		if !ok {
+		if !ok || len(mysqlRange) != len(idx.columns) {
 			return false
 		}
-		if _, ok := idx.pointValues(ctx, mysqlRange); !ok {
-			return false
+		for _, column := range mysqlRange {
+			_, point := pointValue(ctx, column)
+			if !point && !isNotNullRange(column) {
+				return false
+			}
 		}
 	}
 	return true
@@ -363,27 +368,42 @@ func (idx *tableIndex) pointValues(ctx *sql.Context, r sql.MySQLRange) (sql.Row,
 	}
 	values := make(sql.Row, len(r))
 	for i, column := range r {
-		// NULL is a point only when both cuts select NULL itself.
-		if _, ok := column.LowerBound.(sql.BelowNull); ok {
-			if _, ok := column.UpperBound.(sql.AboveNull); !ok {
-				return nil, false
-			}
-			continue
-		}
-
-		// Closed equal lower and upper bounds identify one SQL value.
-		lower, lowerOK := column.LowerBound.(sql.Below)
-		upper, upperOK := column.UpperBound.(sql.Above)
-		if !lowerOK || !upperOK {
+		value, ok := pointValue(ctx, column)
+		if !ok {
 			return nil, false
 		}
-		cmp, err := column.Typ.Compare(ctx, lower.Key, upper.Key)
-		if err != nil || cmp != 0 {
-			return nil, false
-		}
-		values[i] = lower.Key
+		values[i] = value
 	}
 	return values, true
+}
+
+// pointValue returns the one SQL value a range column selects, or false when
+// the column selects a span.
+func pointValue(ctx *sql.Context, column sql.MySQLRangeColumnExpr) (any, bool) {
+	// NULL is a point only when both cuts select NULL itself.
+	if _, ok := column.LowerBound.(sql.BelowNull); ok {
+		_, ok := column.UpperBound.(sql.AboveNull)
+		return nil, ok
+	}
+
+	// Closed equal lower and upper bounds identify one SQL value.
+	lower, lowerOK := column.LowerBound.(sql.Below)
+	upper, upperOK := column.UpperBound.(sql.Above)
+	if !lowerOK || !upperOK {
+		return nil, false
+	}
+	cmp, err := column.Typ.Compare(ctx, lower.Key, upper.Key)
+	if err != nil || cmp != 0 {
+		return nil, false
+	}
+	return lower.Key, true
+}
+
+// isNotNullRange reports whether the column selects every non-NULL value.
+func isNotNullRange(column sql.MySQLRangeColumnExpr) bool {
+	_, lowerOK := column.LowerBound.(sql.AboveNull)
+	_, upperOK := column.UpperBound.(sql.AboveAll)
+	return lowerOK && upperOK
 }
 
 // CanSupportOrderBy reports false because encoded key order is not SQL value order.

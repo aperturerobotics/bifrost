@@ -28,7 +28,7 @@ func (d *Database) CreateTable(ctx *sql.Context, name string, schema sql.Primary
 	// Build the table schema at the inserted table root reference.
 	d.bcs.SetBlock(d.root, true)
 	ics = ics.FollowRef(2, nil)
-	_, _, err := BuildTable(ctx, ics, name, schema, 1, collation, comment)
+	_, _, err := BuildTable(ctx, ics, name, schema, collation, comment)
 	return err
 }
 
@@ -50,8 +50,8 @@ func (d *Database) DropTable(ctx *sql.Context, name string) error {
 	return nil
 }
 
-// Renames a table from oldName to newName as given. If a table with newName
-// already exists, must return sql.ErrTableAlreadyExists.
+// RenameTable renames a table from oldName to newName as given. It returns
+// sql.ErrTableAlreadyExists when a table named newName exists.
 func (d *Database) RenameTable(ctx *sql.Context, oldName, newName string) error {
 	_, _, ok := d.nsbs.LookupByName(newName)
 	if ok {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
@@ -68,8 +69,8 @@ func (t *Table) writeIndexes(ctx *sql.Context, row sql.Row, rowKey []byte, remov
 
 // rowAtKey reads one primary tree key and decodes only that row.
 func (t *Table) rowAtKey(ctx *sql.Context, key []byte) (sql.Row, error) {
-	// Route the encoded key directly to its storage partition.
-	part, err := t.SelectPartition(key)
+	// Open the partition that stores every row.
+	part, err := t.rowPartition()
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +85,12 @@ func (t *Table) rowAtKey(ctx *sql.Context, key []byte) (sql.Row, error) {
 	if err != nil || cursor == nil {
 		return nil, err
 	}
+	return t.decodeRow(ctx, cursor)
+}
+
+// decodeRow decodes the stored row at cursor, enforcing the table schema.
+func (t *Table) decodeRow(ctx *sql.Context, cursor *block.Cursor) (sql.Row, error) {
+	// Detach the cursor so the decoded row outlives the tree transaction.
 	cursor = cursor.DetachTransaction()
 	stored, err := UnmarshalTableRow(GetDbContext(ctx), cursor)
 	if err != nil {
@@ -99,6 +106,22 @@ func (t *Table) rowAtKey(ctx *sql.Context, key []byte) (sql.Row, error) {
 		return nil, err
 	}
 	return row, nil
+}
+
+// scanRows returns every stored row. A null-safe join probes with a NULL-excluding
+// range before it binds a key, and the engine keeps its predicate filters
+// because PreciseMatch is false.
+func (t *Table) scanRows(ctx *sql.Context) ([]sql.Row, error) {
+	// Iterate the one partition that stores every row.
+	part, err := t.rowPartition()
+	if err != nil {
+		return nil, err
+	}
+	iter, err := part.IterateRows(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return sql.RowIterToRows(ctx, iter)
 }
 
 // lookupRows resolves equality ranges through the primary or secondary tree.
@@ -118,17 +141,13 @@ func (t *Table) lookupRows(ctx *sql.Context, lookup sql.IndexLookup) ([]sql.Row,
 		// Convert the full equality tuple into its encoded tree key.
 		values, ok := index.pointValues(ctx, r)
 		if !ok {
-			return nil, errors.New("unsupported index range")
+			return t.scanRows(ctx)
 		}
 		ordinals, err := t.indexColumnOrdinals(index.columns)
 		if err != nil {
 			return nil, err
 		}
-		schema := make(sql.Schema, len(ordinals))
-		for i, ord := range ordinals {
-			schema[i] = t.schema.Schema[ord]
-		}
-		key, hasNull, err := EncodeTableKey(ctx, schema, values, index.columns)
+		key, hasNull, err := t.encodeColumns(ctx, ordinals, values, index.columns)
 		if err != nil {
 			return nil, err
 		}

@@ -35,11 +35,11 @@ func TestTableKeyEquality(t *testing.T) {
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
 			// Compare canonical tuples rather than the source Go representations.
-			left, _, err := EncodeTableKey(ctx, test.schema, test.left, nil)
+			left, _, err := encodeTableKey(ctx, test.schema, test.left, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
-			right, _, err := EncodeTableKey(ctx, test.schema, test.right, nil)
+			right, _, err := encodeTableKey(ctx, test.schema, test.right, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

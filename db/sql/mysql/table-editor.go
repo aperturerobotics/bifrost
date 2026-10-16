@@ -267,7 +267,7 @@ func (i *TableEditor) storeRow(ctx *sql.Context, row sql.Row, key []byte) error 
 	}
 
 	// Write the row reference into its primary partition.
-	part, err := i.t.SelectPartition(key)
+	part, err := i.t.rowPartition()
 	if err != nil {
 		return err
 	}
@@ -287,7 +287,7 @@ func (i *TableEditor) removeRow(ctx *sql.Context, row sql.Row, key []byte) error
 	if err := i.t.writeIndexes(ctx, row, key, true); err != nil {
 		return err
 	}
-	part, err := i.t.SelectPartition(key)
+	part, err := i.t.rowPartition()
 	if err != nil {
 		return err
 	}
@@ -369,39 +369,22 @@ func formatKey(row sql.Row, ordinals []int) string {
 	return "[" + strings.Join(vals, ",") + "]"
 }
 
-// findRowKey resolves the stored row through its primary key or keyless prefix.
+// findRowKey resolves the stored key of row through its primary key or, for a
+// keyless table, the first stored duplicate equal to row.
 func (i *TableEditor) findRowKey(ctx *sql.Context, row sql.Row) ([]byte, error) {
-	// Encode the row identity and choose its one storage partition.
+	// Encode the row identity and open the partition that stores it.
 	key, err := i.t.rowKey(ctx, row)
 	if err != nil {
 		return nil, err
 	}
-	keyless := len(i.t.schema.PkOrdinals) == 0
-	partitionKey := key
-	if keyless {
-		partitionKey = binary.BigEndian.AppendUint64(bytes.Clone(key), 0)
-	}
-	part, err := i.t.SelectPartition(partitionKey)
+	part, err := i.t.rowPartition()
 	if err != nil {
 		return nil, err
 	}
 
-	// A keyless mutation selects one duplicate without decoding unrelated rows.
-	if keyless {
-		tree, err := part.BuildTreeTx(GetDbContext(ctx), false, false)
-		if err != nil {
-			return nil, err
-		}
-		defer tree.Discard()
-		it := tree.Iterate(GetDbContext(ctx), key, true, false)
-		defer it.Close()
-		if !it.Next() {
-			if err := it.Err(); err != nil {
-				return nil, err
-			}
-			return nil, sql.ErrDeleteRowNotFound.New()
-		}
-		return bytes.Clone(it.Key()), nil
+	// A keyless mutation selects one duplicate among the rows sharing the key prefix.
+	if len(i.t.schema.PkOrdinals) == 0 {
+		return i.findKeylessKey(ctx, part, key, row)
 	}
 
 	// Preserve the editor contract that the supplied old row must still exist.
@@ -420,6 +403,76 @@ func (i *TableEditor) findRowKey(ctx *sql.Context, row sql.Row) ([]byte, error) 
 		return nil, sql.ErrDeleteRowNotFound.New()
 	}
 	return key, nil
+}
+
+// findKeylessKey returns the stored key of the first row under prefix that is
+// identical to row. Keys encode collation weights, so rows differing only in
+// case or trailing spaces share a prefix and must be compared byte for byte.
+func (i *TableEditor) findKeylessKey(ctx *sql.Context, part *TablePartition, prefix []byte, row sql.Row) ([]byte, error) {
+	// Open a read transaction on the row tree.
+	tree, err := part.BuildTreeTx(GetDbContext(ctx), false, false)
+	if err != nil {
+		return nil, err
+	}
+	defer tree.Discard()
+
+	// Walk the duplicates without decoding unrelated rows.
+	it := tree.BlockIterate(GetDbContext(ctx), prefix, true, false)
+	defer it.Close()
+	for it.Next() {
+		existing, err := i.t.decodeRow(ctx, it.ValueCursor())
+		if err != nil {
+			return nil, err
+		}
+		identical, err := sameRow(ctx, i.t.schema.Schema, row, existing)
+		if err != nil {
+			return nil, err
+		}
+		if identical {
+			return bytes.Clone(it.Key()), nil
+		}
+	}
+	if err := it.Err(); err != nil {
+		return nil, err
+	}
+	return nil, sql.ErrDeleteRowNotFound.New()
+}
+
+// sameRow reports whether a and b hold identical values. Unlike Row.Equals it
+// compares text and binary values exactly, since a collation equates distinct
+// stored strings.
+func sameRow(ctx *sql.Context, schema sql.Schema, a, b sql.Row) (bool, error) {
+	for i, col := range schema {
+		left, err := sql.UnwrapAny(ctx, a[i])
+		if err != nil {
+			return false, err
+		}
+		right, err := sql.UnwrapAny(ctx, b[i])
+		if err != nil {
+			return false, err
+		}
+
+		// Compare text and binary values exactly, other values by SQL equality.
+		switch l := left.(type) {
+		case string:
+			if r, ok := right.(string); !ok || l != r {
+				return false, nil
+			}
+		case []byte:
+			if r, ok := right.([]byte); !ok || !bytes.Equal(l, r) {
+				return false, nil
+			}
+		default:
+			cmp, err := col.Type.Compare(ctx, left, right)
+			if err != nil {
+				return false, err
+			}
+			if cmp != 0 {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
 }
 
 // SetAutoIncrementValue sets a new AUTO_INCREMENT value.

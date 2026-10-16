@@ -37,5 +37,7 @@ func (r *TableIndex) GetSubBlockCtor(id uint32) block.SubBlockCtor {
 }
 
 // _ is a type assertion.
-var _ block.SubBlock = (*TableIndex)(nil)
-var _ block.BlockWithSubBlocks = (*TableIndex)(nil)
+var (
+	_ block.SubBlock           = (*TableIndex)(nil)
+	_ block.BlockWithSubBlocks = (*TableIndex)(nil)
+)

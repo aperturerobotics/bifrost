@@ -1,7 +1,10 @@
 package mysql
 
 import (
+	"context"
+	stdsql "database/sql"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -382,5 +385,135 @@ func TestPrefixIndexLookupJoin(t *testing.T) {
 	}
 	if count != 1 {
 		t.Fatalf("prefix lookup join returned %d rows, want 1", count)
+	}
+}
+
+// queryStrings returns the first column of every row, with NULL as "NULL".
+func queryStrings(t *testing.T, ctx context.Context, db *stdsql.DB, query string, args ...any) []string {
+	// Run the query.
+	t.Helper()
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		t.Fatalf("%s: %v", query, err)
+	}
+	defer rows.Close()
+
+	// Collect the first column of each row.
+	var values []string
+	for rows.Next() {
+		var value stdsql.NullString
+		if err := rows.Scan(&value); err != nil {
+			t.Fatal(err)
+		}
+		if !value.Valid {
+			value.String = "NULL"
+		}
+		values = append(values, value.String)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return values
+}
+
+// TestUnsupportedPredicatesScan returns correct rows when the index cannot serve a range.
+func TestUnsupportedPredicatesScan(t *testing.T) {
+	// Index a composite key and the primary key, then ask for ranges they cannot probe.
+	ctx := t.Context()
+	_, db := newMysqlTestDB(t, ctx, "probe")
+	defer db.Close()
+	execMysqlStatements(t, ctx, db,
+		"CREATE TABLE scans (id BIGINT PRIMARY KEY, a BIGINT, b BIGINT)",
+		"CREATE INDEX idx_ab ON scans(a, b)",
+		"INSERT INTO scans VALUES (1, 1, 1), (3, 1, 2), (5, 2, 1), (7, 1, 1), (9, 2, 2)",
+	)
+
+	// A partial composite key and an open range fall back to a full scan.
+	for _, test := range []struct {
+		// query selects through an unsupported predicate.
+		query string
+		// want is the matching ids in order.
+		want string
+	}{
+		{"SELECT id FROM scans WHERE a = 1 ORDER BY id", "1 3 7"},
+		{"SELECT id FROM scans WHERE a = 1 AND b = 1 ORDER BY id", "1 7"},
+		{"SELECT id FROM scans WHERE id > 5 ORDER BY id", "7 9"},
+		{"SELECT id FROM scans WHERE id BETWEEN 3 AND 7 ORDER BY id", "3 5 7"},
+	} {
+		if got := strings.Join(queryStrings(t, ctx, db, test.query), " "); got != test.want {
+			t.Fatalf("%s: ids %q, want %q", test.query, got, test.want)
+		}
+	}
+}
+
+// TestLookupJoinNullKeys never matches a NULL outer key to NULL inner rows.
+func TestLookupJoinNullKeys(t *testing.T) {
+	// Store NULL keys on both sides of an indexed join.
+	ctx := t.Context()
+	_, db := newMysqlTestDB(t, ctx, "probe")
+	defer db.Close()
+	execMysqlStatements(t, ctx, db,
+		"CREATE TABLE inner_keys (id BIGINT PRIMARY KEY, k BIGINT)",
+		"CREATE INDEX idx_k ON inner_keys(k)",
+		"INSERT INTO inner_keys VALUES (1, NULL), (2, NULL), (3, 7), (4, 8)",
+		"CREATE TABLE outer_keys (id BIGINT PRIMARY KEY, k BIGINT)",
+		"INSERT INTO outer_keys VALUES (1, NULL), (2, 7), (3, 9)",
+	)
+
+	// Only the equal non-null key joins; a NULL outer key joins nothing.
+	query := "SELECT CONCAT(outer_keys.id, ':', inner_keys.id) FROM outer_keys JOIN inner_keys ON inner_keys.k = outer_keys.k ORDER BY outer_keys.id"
+	if got := strings.Join(queryStrings(t, ctx, db, query), " "); got != "2:3" {
+		t.Fatalf("lookup join rows %q, want %q", got, "2:3")
+	}
+	query = "SELECT outer_keys.id FROM outer_keys JOIN inner_keys ON inner_keys.k <=> outer_keys.k ORDER BY outer_keys.id, inner_keys.id"
+	if got := strings.Join(queryStrings(t, ctx, db, query), " "); got != "1 1 2" {
+		t.Fatalf("null-safe join outer ids %q, want %q", got, "1 1 2")
+	}
+}
+
+// TestFailedAlterKeepsTable leaves rows and indexes untouched when a rewrite fails.
+func TestFailedAlterKeepsTable(t *testing.T) {
+	for _, test := range []struct {
+		// name is the failure kind and the suffix of the table it alters.
+		name string
+		// rows are the stored (id, v) tuples.
+		rows string
+		// alter is the statement that must fail.
+		alter string
+		// probe is the value of row 2, found through the unique index.
+		probe string
+	}{
+		{"narrow", "(1, 'one'), (2, 'two'), (3, 'long-value')", "MODIFY COLUMN v VARCHAR(4)", "two"},
+		{"unique conflict", "(1, '1'), (2, '01')", "MODIFY COLUMN v BIGINT", "01"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			// Create an indexed table whose rewrite the statement cannot complete.
+			ctx := t.Context()
+			_, db := newMysqlTestDB(t, ctx, "probe")
+			defer db.Close()
+			execMysqlStatements(t, ctx, db,
+				"CREATE TABLE altered (id BIGINT PRIMARY KEY, v VARCHAR(16))",
+				"CREATE UNIQUE INDEX idx_v ON altered(v)",
+				"INSERT INTO altered VALUES "+test.rows,
+			)
+			before := queryStrings(t, ctx, db, "SELECT CONCAT(id, ':', v) FROM altered ORDER BY id")
+			if _, err := db.ExecContext(ctx, "ALTER TABLE altered "+test.alter); err == nil {
+				t.Fatal("accepted a failing alter")
+			}
+
+			// The original rows, column type and unique index must still serve queries.
+			if got := queryStrings(t, ctx, db, "SELECT CONCAT(id, ':', v) FROM altered ORDER BY id"); !slices.Equal(got, before) {
+				t.Fatalf("rows after failed alter %v, want %v", got, before)
+			}
+			if got := queryStrings(t, ctx, db, "SELECT id FROM altered WHERE v = ?", test.probe); !slices.Equal(got, []string{"2"}) {
+				t.Fatalf("lookup of %q returned %v, want [2]", test.probe, got)
+			}
+			if _, err := db.ExecContext(ctx, "INSERT INTO altered VALUES (9, ?)", test.probe); err == nil {
+				t.Fatal("unique index no longer rejects duplicates")
+			}
+			if _, err := db.ExecContext(ctx, "INSERT INTO altered VALUES (10, 'longer than four')"); err != nil {
+				t.Fatalf("column type was narrowed: %v", err)
+			}
+		})
 	}
 }

@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"hash/fnv"
 	"io"
 
 	"github.com/dolthub/go-mysql-server/sql"
@@ -126,15 +125,9 @@ func BuildTable(
 	bcs *block.Cursor,
 	name string,
 	schema sql.PrimaryKeySchema,
-	numPartitions int,
 	collationID sql.CollationID,
 	comment string,
 ) (*TableRoot, *Table, error) {
-	// Give the table at least one storage partition.
-	if numPartitions <= 0 {
-		numPartitions = 1
-	}
-
 	// Construct the table schema and primary-key column positions.
 	tr := &TableRoot{
 		CollationId: uint32(collationID),
@@ -146,11 +139,8 @@ func BuildTable(
 		tr.PrimaryKeyOrdinals[i] = int32(v) //nolint:gosec
 	}
 
-	// Create the table storage partitions.
-	tr.TablePartitions = make([]*TablePartitionRoot, numPartitions)
-	for i := range numPartitions {
-		tr.TablePartitions[i] = NewTablePartitionRoot()
-	}
+	// Create the one storage partition that holds every row.
+	tr.TablePartitions = []*TablePartitionRoot{NewTablePartitionRoot()}
 
 	// Initialize the table auto-increment column with its type zero value.
 	for i, colSch := range tr.GetTableSchema().GetColumns() {
@@ -241,22 +231,9 @@ func (t *Table) PartitionRows(ctx *sql.Context, part sql.Partition) (sql.RowIter
 	return pt.IterateRows(ctx)
 }
 
-// SelectPartition selects a stable partition from the encoded primary row key.
-func (t *Table) SelectPartition(key []byte) (*TablePartition, error) {
-	// Require table partitions before hashing the row identity.
-	numPts := len(t.root.GetTablePartitions())
-	if numPts == 0 {
-		return nil, errors.New("no partitions")
-	}
-
-	// Keep all duplicates of a keyless row in the same prefix-searchable partition.
-	if len(t.schema.PkOrdinals) == 0 {
-		key = key[:len(key)-8]
-	}
-	hash := fnv.New64a()
-	_, _ = hash.Write(key)                    // hash.Write never returns an error.
-	sel := int(hash.Sum64() % uint64(numPts)) //nolint:gosec
-	return t.PartitionAtIndex(sel)
+// rowPartition returns the partition that stores every row; BuildTable creates one.
+func (t *Table) rowPartition() (*TablePartition, error) {
+	return t.PartitionAtIndex(0)
 }
 
 // PartitionCount returns the number of partitions.

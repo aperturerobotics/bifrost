@@ -9,12 +9,12 @@ import (
 	"github.com/dolthub/go-mysql-server/sql/types"
 )
 
-// EncodeTableKey encodes SQL equality keys with length-delimited components.
+// encodeTableKey encodes SQL equality keys with length-delimited components.
 // Values are converted to their column type; text uses the column's collation.
 // The encoding preserves equality, not SQL sort order.
 // The second result reports whether any component is NULL. Row and schema must
 // have equal lengths; columns is nil or supplies one prefix definition per column.
-func EncodeTableKey(ctx *sql.Context, schema sql.Schema, row sql.Row, columns []*TableIndexColumn) ([]byte, bool, error) {
+func encodeTableKey(ctx *sql.Context, schema sql.Schema, row sql.Row, columns []*TableIndexColumn) ([]byte, bool, error) {
 	// Encode each component independently so NULL and composite keys cannot collide.
 	key := make([]byte, 0, len(row)*8)
 	hasNull := false
@@ -89,21 +89,28 @@ func EncodeTableKey(ctx *sql.Context, schema sql.Schema, row sql.Row, columns []
 // rowKey encodes the primary columns, or all columns for a keyless row prefix.
 func (t *Table) rowKey(ctx *sql.Context, row sql.Row) ([]byte, error) {
 	if len(t.schema.PkOrdinals) == 0 {
-		key, _, err := EncodeTableKey(ctx, t.schema.Schema, row, nil)
+		key, _, err := encodeTableKey(ctx, t.schema.Schema, row, nil)
 		return key, err
 	}
 	key, _, err := t.columnKey(ctx, row, t.schema.PkOrdinals, nil)
 	return key, err
 }
 
-// columnKey encodes the selected columns in index order.
+// columnKey encodes the selected row columns in index order.
 func (t *Table) columnKey(ctx *sql.Context, row sql.Row, ordinals []int, columns []*TableIndexColumn) ([]byte, bool, error) {
-	// Project the row and schema onto the index columns.
-	schema := make(sql.Schema, len(ordinals))
+	// Project the row onto the index columns.
 	values := make(sql.Row, len(ordinals))
 	for i, ord := range ordinals {
-		schema[i] = t.schema.Schema[ord]
 		values[i] = row[ord]
 	}
-	return EncodeTableKey(ctx, schema, values, columns)
+	return t.encodeColumns(ctx, ordinals, values, columns)
+}
+
+// encodeColumns encodes values for the table columns at ordinals, in order.
+func (t *Table) encodeColumns(ctx *sql.Context, ordinals []int, values sql.Row, columns []*TableIndexColumn) ([]byte, bool, error) {
+	schema := make(sql.Schema, len(ordinals))
+	for i, ord := range ordinals {
+		schema[i] = t.schema.Schema[ord]
+	}
+	return encodeTableKey(ctx, schema, values, columns)
 }
