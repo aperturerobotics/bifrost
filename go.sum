@@ -84,8 +84,8 @@ github.com/aperturerobotics/util v1.34.10-0.20261006081936-7765b80f85f1 h1:3nz5D
 github.com/aperturerobotics/util v1.34.10-0.20261006081936-7765b80f85f1/go.mod h1:2uIQA8dHn5EQgEtRqcTS4zxJ51dEVehY9O++bJfU2hs=
 github.com/aperturerobotics/vitess v0.0.0-20261014224653-6c6d9725c46d h1:jp+f7QE/3m/BdAQ/E6zE/ul0yVDMWCfyT3zSWiOaC50=
 github.com/aperturerobotics/vitess v0.0.0-20261014224653-6c6d9725c46d/go.mod h1:BA7YZUS4BoNY+k1nl7A3TLJkLY4KfW4I0c+DbXblfis=
-github.com/aperturerobotics/wazero v0.0.0-20261014234543-50a353e1fd64 h1:WX6/1t4EzPe/JhP0LpRH2S0Pkj7mjxt2xCaD7MLtWnU=
-github.com/aperturerobotics/wazero v0.0.0-20261014234543-50a353e1fd64/go.mod h1:LvKtzl2RqO4gyF27BiXU+nKAjcV8f38U+kP/q2vgxh0=
+github.com/aperturerobotics/wazero v0.0.0-20261015230425-cef9eb51e433 h1:47nHIG21jQvOmVHYbdZHdGcd7SQ89+gor1LG9JkTOLM=
+github.com/aperturerobotics/wazero v0.0.0-20261015230425-cef9eb51e433/go.mod h1:LvKtzl2RqO4gyF27BiXU+nKAjcV8f38U+kP/q2vgxh0=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/bwesterb/go-ristretto v1.2.4 h1:8HUl/bYdUaLakTdT2mfYomzPego+qjs5dOrYgAo3+J0=
@@ -278,8 +278,8 @@ github.com/restic/chunker v0.5.0/go.mod h1:z0cH2BejpW636LXw0R/BGyv+Ey8+m9QGiOanD
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/rogpeppe/go-internal v1.16.0 h1:O9DK+vNMDVGLr2BeZqmpLeMjiMNkuXfcqntWbZV6S5g=
 github.com/rogpeppe/go-internal v1.16.0/go.mod h1:DrUVZyrJU+txYW5/1kwtXQSMFio52ZOxX7yM1VHvnxs=
-github.com/s4wave/goscript v0.4.6-0.20261015215645-1da08e8725e1 h1:swZKOLuN7HY9kneYnj0LiwslOUtUUp0YJ5DwplmWUl8=
-github.com/s4wave/goscript v0.4.6-0.20261015215645-1da08e8725e1/go.mod h1:g2psiTXAhkiM7vtr8YEgkq/xUlYHLSghruODJL8VpAU=
+github.com/s4wave/goscript v0.4.6-0.20261016023153-4bdfea31fc2a h1:5tWsYVDxm+Kqfp0kfckgRlHTEHA+9dc1qRXr8s5AyME=
+github.com/s4wave/goscript v0.4.6-0.20261016023153-4bdfea31fc2a/go.mod h1:g2psiTXAhkiM7vtr8YEgkq/xUlYHLSghruODJL8VpAU=
 github.com/sasha-s/go-deadlock v0.3.9 h1:fiaT9rB7g5sr5ddNZvlwheclN9IP86eFW9WgqlEQV+w=
 github.com/sasha-s/go-deadlock v0.3.9/go.mod h1:KuZj51ZFmx42q/mPaYbRk0P1xcwe697zsJKE03vD4/Y=
 github.com/satori/go.uuid v1.2.0 h1:0uYX9dsZ2yD7q2RtLRtPSdGDWzjeM3TbMJP9utgA0ww=

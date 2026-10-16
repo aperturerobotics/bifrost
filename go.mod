@@ -14,7 +14,7 @@ replace (
 	github.com/pion/ice/v4 => github.com/aperturerobotics/pion-ice/v4 v4.0.0-20260923005200-d591ff5895c0
 	github.com/pion/webrtc/v4 => github.com/aperturerobotics/pion-webrtc/v4 v4.2.16-0.20260922235615-c5c6104de130
 	github.com/sirupsen/logrus => github.com/aperturerobotics/logrus v1.10.2-0.20260922042813-73f013325281 // master
-	github.com/tetratelabs/wazero => github.com/aperturerobotics/wazero v0.0.0-20261014234543-50a353e1fd64 // wazevo-check-exit-countdown
+	github.com/tetratelabs/wazero => github.com/aperturerobotics/wazero v0.0.0-20261015230425-cef9eb51e433 // wazevo-check-exit-countdown
 )
 
 require (
@@ -77,7 +77,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.63.0
 	github.com/restic/chunker v0.5.0
-	github.com/s4wave/goscript v0.4.6-0.20261015215645-1da08e8725e1
+	github.com/s4wave/goscript v0.4.6-0.20261016023153-4bdfea31fc2a
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0
