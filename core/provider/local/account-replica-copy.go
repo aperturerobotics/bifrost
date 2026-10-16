@@ -140,8 +140,9 @@ func (a *ProviderAccount) copyAccountWorldHeads(
 // copyAccountWorldHead copies cur until it completes or latest holds a newer
 // head. A block that no reachable source holds, or holds only without its
 // refs, does not appear by retrying the same head: the copy logs it once and
-// retries when a peer session starts on exchange. It returns nil when a newer
-// head arrives first, which the caller copies next.
+// retries when a peer session starts on exchange. A retry first reads the
+// blocks the walk found missing and walks again only once one of them arrives.
+// It returns nil when a newer head arrives first, which the caller copies next.
 func (a *ProviderAccount) copyAccountWorldHead(
 	ctx context.Context,
 	so sobject.SharedObject,
@@ -168,13 +169,15 @@ func (a *ProviderAccount) copyAccountWorldHead(
 		if !logged {
 			a.le.WithError(err).Info("waiting for a peer that holds a World block with its refs")
 		}
+		var holes *worldHolesError
+		errors.As(err, &holes)
 		waitCtx, cancel := context.WithCancel(ctx)
 		go func() {
 			_, _ = latest.WaitValueChange(waitCtx, cur, nil)
 			cancel()
 		}()
 		if exchange != nil {
-			err = exchange.WaitSessionStart(waitCtx, starts)
+			err = waitWorldHoles(waitCtx, so.GetBlockStore(), exchange, starts, holes)
 		} else {
 			<-waitCtx.Done()
 		}
@@ -189,6 +192,62 @@ func (a *ProviderAccount) copyAccountWorldHead(
 			return err
 		}
 	}
+}
+
+// waitWorldHoles waits for a peer session to start on exchange. When holes
+// names the blocks a finished walk missed, it waits on until one of them
+// arrives; a walk stopped by a block without its refs walks again on the next
+// session.
+func waitWorldHoles(
+	ctx context.Context,
+	store block.StoreOps,
+	exchange *dex_solicit.Controller,
+	starts uint64,
+	holes *worldHolesError,
+) error {
+	for {
+		if err := exchange.WaitSessionStart(ctx, starts); err != nil {
+			return err
+		}
+		if holes == nil {
+			return nil
+		}
+		arrived, err := holes.probe(ctx, store)
+		if err != nil || arrived {
+			return err
+		}
+		starts = exchange.GetSessionStarts()
+	}
+}
+
+// worldHolesError reports the blocks a completed World walk could not read.
+// The walk persisted the proofs of every complete subtree, so the next walk
+// reads only the paths down to these blocks.
+type worldHolesError struct {
+	// refs are the missing blocks.
+	refs []*block.BlockRef
+}
+
+// Error describes the missing blocks.
+func (e *worldHolesError) Error() string {
+	return errors.Wrapf(e.Unwrap(), "%d World blocks, first %s", len(e.refs), e.refs[0].MarshalString()).Error()
+}
+
+// Unwrap reports the holes as missing blocks.
+func (e *worldHolesError) Unwrap() error {
+	return block.ErrNotFound
+}
+
+// probe reads each missing block through store and reports whether any
+// arrived.
+func (e *worldHolesError) probe(ctx context.Context, store block.StoreOps) (bool, error) {
+	for _, ref := range e.refs {
+		_, found, err := store.GetBlock(ctx, ref)
+		if err != nil || found {
+			return found, err
+		}
+	}
+	return false, nil
 }
 
 // copyAndPersistAccountWorld records completion only after the block fence.
@@ -256,7 +315,9 @@ func (a *ProviderAccount) copyAndPersistAccountWorld(ctx context.Context, so sob
 }
 
 // copyAccountWorld shares durable graph retention with World publication.
-// Its private proof store belongs to the serialized account replica copy routine.
+// Its private proof store belongs to the serialized account replica copy
+// routine. A missing block does not stop the walk: the walk completes, keeps
+// the proofs of every complete subtree, and returns a worldHolesError.
 func (a *ProviderAccount) copyAccountWorld(ctx context.Context, so sobject.SharedObject, progress *AccountReplicaCopyState, changed func()) error {
 	// Open the shared retention store for the copy.
 	local, release, err := so.AccessLocalStateStore(ctx, "account-replica-retention", nil)
@@ -267,14 +328,23 @@ func (a *ProviderAccount) copyAccountWorld(ctx context.Context, so sobject.Share
 
 	// Retain the World head, publishing progress while blocks copy.
 	lastUpdate := time.Now()
-	return sobject_world_engine.RetainWorld(ctx, so, progress.GetHead(), local, func(_ *block.BlockRef, data []byte) {
+	visited := func(_ *block.BlockRef, data []byte) {
 		progress.Blocks++
 		progress.Bytes += uint64(len(data))
 		if time.Since(lastUpdate) >= 250*time.Millisecond {
 			changed()
 			lastUpdate = time.Now()
 		}
-	}, nil)
+	}
+	holes := &worldHolesError{}
+	missing := func(ref *block.BlockRef) { holes.refs = append(holes.refs, ref.CloneVT()) }
+	if err := sobject_world_engine.RetainWorld(ctx, so, progress.GetHead(), local, visited, missing); err != nil {
+		return err
+	}
+	if len(holes.refs) != 0 {
+		return holes
+	}
+	return nil
 }
 
 // publishCopyProgress snapshots mutable worker progress under the state lock.
