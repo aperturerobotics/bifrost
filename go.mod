@@ -26,7 +26,7 @@ require (
 	github.com/aperturerobotics/bldr-saucer v0.4.4
 	github.com/aperturerobotics/cayley v0.15.1-0.20261012101428-93d30ba80a9a
 	github.com/aperturerobotics/cli v1.1.1-0.20261008170756-47089de94fb3 // master
-	github.com/aperturerobotics/common v0.35.5-0.20261006081939-817dcebc778f // master
+	github.com/aperturerobotics/common v0.35.5-0.20261016061622-bf2de3fd5864 // master
 	github.com/aperturerobotics/controllerbus v0.53.6-0.20261007184646-7a3ab3aea145 // master
 	github.com/aperturerobotics/cpp-yamux v0.0.0-20260929192932-26bdf6cab5b3
 	github.com/aperturerobotics/esbuild v0.24.1-0.20260219011422-6d4b923e2023 // https://github.com/evanw/esbuild/pull/3413 [rejected]
@@ -77,7 +77,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.63.0
 	github.com/restic/chunker v0.5.0
-	github.com/s4wave/goscript v0.4.6-0.20261016023153-4bdfea31fc2a
+	github.com/s4wave/goscript v0.4.6-0.20261016085740-7e93db5e62d5
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0
@@ -167,6 +167,7 @@ require (
 	golang.org/x/telemetry v0.0.0-20261009151841-97e8ea77aa2a // indirect
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/src-d/go-errors.v1 v1.0.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
