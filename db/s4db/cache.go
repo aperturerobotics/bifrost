@@ -27,10 +27,12 @@ type cache struct {
 	shards [cacheShards]cacheShard
 }
 
-// cacheShard is one locked part of the cache.
+// cacheShard is one locked part of the cache. A hit takes the read lock, so
+// lookups through a page every path shares, such as the inner page under the
+// root, never wait on each other.
 type cacheShard struct {
-	// mtx guards the fields below.
-	mtx sync.Mutex
+	// mtx guards the fields below, except the used bits of ring's slots.
+	mtx sync.RWMutex
 	// index maps page numbers to positions in ring.
 	index map[uint64]int
 	// ring holds the cached pages in clock order.
@@ -53,8 +55,9 @@ type cacheSlot struct {
 	page uint64
 	// n is the decoded page; nil marks an empty slot.
 	n *node
-	// used is set by a hit and cleared as the clock passes.
-	used bool
+	// used is set by a hit under the read lock and cleared as the clock
+	// passes.
+	used atomic.Bool
 }
 
 // newCache returns a cache bounded to about bytes of decoded pages.
@@ -75,16 +78,20 @@ func (c *cache) shard(page uint64) *cacheShard {
 func (c *cache) get(page uint64) *node {
 	// Find the page in its shard.
 	s := c.shard(page)
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
 	i, ok := s.index[page]
 	if !ok {
 		return nil
 	}
 
-	// Mark it used so the clock passes it once.
-	s.ring[i].used = true
-	return s.ring[i].n
+	// Mark it used so the clock passes it once. A page already marked is
+	// left unwritten, so readers of a hot page share its cache line.
+	slot := &s.ring[i]
+	if !slot.used.Load() {
+		slot.used.Store(true)
+	}
+	return slot.n
 }
 
 // put caches a page. A full shard evicts the pages the clock finds unused
@@ -159,8 +166,8 @@ func (s *cacheShard) evict() {
 		s.hand = (s.hand + 1) % len(s.ring)
 		switch {
 		case s.ring[i].n == nil:
-		case s.ring[i].used:
-			s.ring[i].used = false
+		case s.ring[i].used.Load():
+			s.ring[i].used.Store(false)
 		case keepInner && !s.ring[i].n.leaf:
 		default:
 			s.remove(i)
