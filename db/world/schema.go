@@ -5,9 +5,11 @@ import (
 
 	"github.com/aperturerobotics/common/typeid"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/blocktype"
 )
 
-// Schema resolves World operations by their generated type IDs.
+// Schema resolves World operations and block types by their generated type IDs.
 //
 // A Schema is built from the []typeid.Type lists that protoc-gen-go-typeid
 // generates for each .proto file declaring (typeid.id) options.
@@ -46,6 +48,25 @@ func (s Schema) LookupOp(_ context.Context, opTypeID string) (Operation, error) 
 		return nil, errors.Errorf("type id %s is not an operation", opTypeID)
 	}
 	return op, nil
+}
+
+// LookupBlockType returns the block type with the type ID.
+//
+// Returns nil, nil if the schema does not declare the type ID.
+func (s Schema) LookupBlockType(_ context.Context, typeID string) (blocktype.BlockType, error) {
+	// Other lookups may declare a type ID absent here.
+	ctor, ok := s[typeID]
+	if !ok {
+		return nil, nil
+	}
+
+	// Check the declared type once, so the constructor cannot fail later.
+	if _, ok := ctor().(block.Block); !ok {
+		return nil, errors.Errorf("type id %s is not a block", typeID)
+	}
+	return blocktype.NewFunc(typeID, func() block.Block {
+		return ctor().(block.Block)
+	}), nil
 }
 
 // _ is a type assertion

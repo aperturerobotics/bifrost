@@ -30,9 +30,6 @@ func TestAptBuildSpecTypeIDAndBlock(t *testing.T) {
 		Architectures: []string{"i386"},
 		BuildDeps:     []string{"zlib"},
 	}
-	if got := spec.GetBlockTypeId(); got != AptBuildSpecTypeID {
-		t.Fatalf("AptBuildSpec block type = %q, want %q", got, AptBuildSpecTypeID)
-	}
 	if err := spec.Validate(); err != nil {
 		t.Fatalf("Validate: %v", err)
 	}

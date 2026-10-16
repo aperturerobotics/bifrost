@@ -14,7 +14,7 @@ import (
 )
 
 // GitWorktreeTypeID is the object type ID for git/worktree objects.
-const GitWorktreeTypeID = git_world.GitWorktreeTypeID
+const GitWorktreeTypeID = git_world.WorktreeTypeID
 
 // GitWorktreeType is the ObjectType for git/worktree objects.
 var GitWorktreeType = objecttype.NewObjectType(GitWorktreeTypeID, GitWorktreeFactory)

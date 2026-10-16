@@ -2,7 +2,14 @@
 
 package space_world_ops
 
-import s4wave_org "github.com/s4wave/spacewave/sdk/org"
+import (
+	"github.com/aperturerobotics/common/typeid"
+	git_world "github.com/s4wave/spacewave/db/git/world"
+)
 
-// buildTypes lists the operations of the TinyGo build.
-var buildTypes = s4wave_org.OrgTypes
+// buildTypes lists the types of the TinyGo build.
+//
+// TinyGo Spaces apply no Git operations but still read Git worktrees.
+var buildTypes = []typeid.Type{
+	{ID: git_world.WorktreeTypeID, New: func() any { return new(git_world.Worktree) }},
+}

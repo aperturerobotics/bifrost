@@ -19,8 +19,6 @@ import (
 )
 
 const (
-	// ExecutionTypeID is the type identifier for an Execution.
-	ExecutionTypeID = "forge/execution"
 	// PredExecutionToWorker links an Execution to its placement's Worker.
 	PredExecutionToWorker = quad.IRI("forge/execution-worker")
 )

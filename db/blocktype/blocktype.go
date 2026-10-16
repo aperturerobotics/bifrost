@@ -9,36 +9,34 @@ type BlockType interface {
 
 	// GetBlockTypeID returns the unique identifier for this block type.
 	//
-	// Format: "github.com/s4wave/spacewave/db/block/mock.Root"
+	// Format: "spacewave-chat/channel"
 	GetBlockTypeID() string
-
-	// MatchesBlockType checks if a block.Block is of this type.
-	MatchesBlockType(b block.Block) bool
 }
 
-// blockType implements BlockType for blocks of type *T.
-type blockType[T any, PT block.Ptr[T]] struct {
+// blockType implements BlockType with a constructor function.
+type blockType struct {
 	typeID string
+	ctor   func() block.Block
 }
 
 // New builds the BlockType of *T with the unique identifier typeID, such as
-// "github.com/s4wave/spacewave/db/block/mock.Root".
+// "spacewave-chat/channel".
 func New[T any, PT block.Ptr[T]](typeID string) BlockType {
-	return &blockType[T, PT]{typeID: typeID}
+	return NewFunc(typeID, func() block.Block { return PT(new(T)) })
+}
+
+// NewFunc builds the BlockType with the unique identifier typeID that ctor
+// constructs.
+func NewFunc(typeID string, ctor func() block.Block) BlockType {
+	return &blockType{typeID: typeID, ctor: ctor}
 }
 
 // Constructor builds a new zero-value block.Block instance.
-func (t *blockType[T, PT]) Constructor() block.Block {
-	return PT(new(T))
+func (t *blockType) Constructor() block.Block {
+	return t.ctor()
 }
 
 // GetBlockTypeID returns the unique identifier for this block type.
-func (t *blockType[T, PT]) GetBlockTypeID() string {
+func (t *blockType) GetBlockTypeID() string {
 	return t.typeID
-}
-
-// MatchesBlockType checks if a block.Block is of this type.
-func (t *blockType[T, PT]) MatchesBlockType(b block.Block) bool {
-	_, ok := b.(PT)
-	return ok
 }

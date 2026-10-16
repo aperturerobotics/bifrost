@@ -19,7 +19,7 @@ const spaceSettingsTypeID = "github.com/s4wave/spacewave/core/space/world.SpaceS
 
 var compiledObjectTypes = extendObjectTypes(commonObjectTypes, map[string]objecttype.ObjectType{
 	spaceSettingsTypeID:              objecttype.NewObjectType(spaceSettingsTypeID, spaceSettingsReadOnlyFactory),
-	s4wave_org.OrganizationTypeID:    s4wave_org_world.OrganizationType,
+	s4wave_org.OrgStateTypeID:        s4wave_org_world.OrganizationType,
 	s4wave_secret_world.SecretTypeID: s4wave_secret_world.SecretType,
 })
 

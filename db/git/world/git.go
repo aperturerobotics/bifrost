@@ -26,9 +26,7 @@ import (
 
 const (
 	// GitRepoTypeID is the type identifier for a git repo.
-	GitRepoTypeID = "git/repo"
-	// GitWorktreeTypeID is the type identifier for a git worktree.
-	GitWorktreeTypeID = "git/worktree"
+	GitRepoTypeID = git_block.RepoTypeID
 	// GitRepoWorktreePred is the predicate pointing to the worktree.
 	GitRepoWorktreePred = "git/worktree"
 	// GitWorktreeWorkdirPred is the predicate pointing to the workdir.
@@ -195,7 +193,7 @@ func ValidateOrCreateRepo(
 // If updateWorld=true, and the result is different, will SetRootRef with change.
 // Note: if updateWorld=true but ws is read-only, sets updateWorld=false.
 // Returns the modified object ref, if it was stored, and any error.
-// refStore can be nil
+// refStore can be nil.
 func AccessWorldObjectRepo(
 	ctx context.Context,
 	ws world.WorldState,
@@ -431,7 +429,7 @@ func CreateWorldObjectWorktree(
 	}
 
 	// Record the worktree type in world metadata.
-	if err := world_types.SetObjectType(ctx, ws, worktreeObjKey, GitWorktreeTypeID); err != nil {
+	if err := world_types.SetObjectType(ctx, ws, worktreeObjKey, WorktreeTypeID); err != nil {
 		return err
 	}
 

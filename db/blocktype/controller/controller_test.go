@@ -25,17 +25,12 @@ func TestController(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	// Read the testbed bus and retain its static resolver for the fixture.
-	b, sr := tb.Bus, tb.StaticResolver
-	_ = sr
-
-	// Capture the identifier the controller must resolve.
-	spaceSettingsTypeID := space_world.SpaceSettingsBlockType.GetBlockTypeID()
-
-	// Resolve the registered SpaceSettings type from the controller callback.
+	// Resolve the SpaceSettings type from the controller callback.
+	b := tb.Bus
+	spaceSettingsTypeID := space_world.SpaceSettingsTypeID
 	lookupFunc := func(ctx context.Context, typeID string) (blocktype.BlockType, error) {
 		if typeID == spaceSettingsTypeID {
-			return space_world.SpaceSettingsBlockType, nil
+			return blocktype.New[space_world.SpaceSettings](spaceSettingsTypeID), nil
 		}
 		return nil, nil
 	}
@@ -75,11 +70,6 @@ func TestController(t *testing.T) {
 	spaceSettings, ok := constructed.(*space_world.SpaceSettings)
 	if !ok {
 		t.Fatalf("expected *SpaceSettings, got %T", constructed)
-	}
-
-	// Confirm the constructed block matches its registered type.
-	if !result.MatchesBlockType(spaceSettings) {
-		t.Fatal("constructed block should match its type")
 	}
 
 	// Serialize a populated SpaceSettings value through the block interface.

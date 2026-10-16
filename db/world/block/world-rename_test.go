@@ -242,7 +242,7 @@ func TestWorldState_RenameGitRepoWithWizardChildren(t *testing.T) {
 	if err := world_types.SetObjectType(ctx, ws, repoKey, git_world.GitRepoTypeID); err != nil {
 		t.Fatal(err.Error())
 	}
-	if err := world_types.SetObjectType(ctx, ws, worktreeKey, git_world.GitWorktreeTypeID); err != nil {
+	if err := world_types.SetObjectType(ctx, ws, worktreeKey, git_world.WorktreeTypeID); err != nil {
 		t.Fatal(err.Error())
 	}
 	if err := world_parent.SetObjectParent(ctx, ws, workdirKey, repoKey, false); err != nil {

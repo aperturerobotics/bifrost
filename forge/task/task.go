@@ -21,9 +21,6 @@ import (
 )
 
 const (
-	// TaskTypeID is the type identifier for a Task.
-	TaskTypeID = "forge/task"
-
 	// PredTaskToTarget is the predicate linking Task to a Target.
 	PredTaskToTarget = quad.IRI("forge/task-target")
 	// PredTaskToPass is the predicate linking Task to a Pass.
@@ -277,7 +274,7 @@ func (e *Task) FollowTargetRef(ctx context.Context, bcs *block.Cursor) (*forge_t
 }
 
 // SetTarget updates the target with a new block.
-// bcs should point to the task
+// bcs should point to the task.
 func (e *Task) SetTarget(bcs *block.Cursor, tgt *forge_target.Target) {
 	tgtCs := bcs.FollowRef(7, nil)
 	tgtCs.ClearAllRefs()
@@ -297,7 +294,7 @@ func (e *Task) ApplyBlockRef(id uint32, ptr *block.BlockRef) error {
 
 // GetBlockRefs returns all block references by ID.
 // May return nil, and values may also be nil.
-// Note: this does not include pending references (in a cursor)
+// Note: this does not include pending references (in a cursor).
 func (e *Task) GetBlockRefs() (map[uint32]*block.BlockRef, error) {
 	m := make(map[uint32]*block.BlockRef)
 	m[7] = e.GetTargetRef()

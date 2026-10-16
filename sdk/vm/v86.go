@@ -5,9 +5,6 @@ import (
 	"github.com/aperturerobotics/cayley/quad"
 )
 
-// VmV86TypeID is the type identifier for VmV86 objects.
-const VmV86TypeID = "vm/v86"
-
 // PredV86Image is the graph predicate linking a VmV86 to its V86Image. The
 // V86Image supplies the default WASM/BIOS/kernel/rootfs UnixFS edges via its
 // own v86image/* predicates.
@@ -29,11 +26,6 @@ var PredV86BiosOverride = quad.IRI("v86/bios-override")
 // PredV86WasmOverride optionally overrides the emulator WASM UnixFS resolved
 // from the linked V86Image. Takes precedence over v86image/wasm.
 var PredV86WasmOverride = quad.IRI("v86/wasm-override")
-
-// GetBlockTypeId returns the block type identifier.
-func (v *VmV86) GetBlockTypeId() string {
-	return VmV86TypeID
-}
 
 // Validate performs cursory checks on the VmV86.
 func (v *VmV86) Validate() error {

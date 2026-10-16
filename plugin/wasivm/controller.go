@@ -110,18 +110,13 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 			return directive.R(bifrost_rpc.NewLookupRpcServiceResolver(c.mux), nil)
 		}
 	case blocktype.LookupBlockType:
-		if bt, ok := blockTypes[d.LookupBlockTypeID()]; ok {
-			return directive.R(directive.NewValueResolver([]blocktype.BlockType{bt}), nil)
+		bt, err := wasiVMSchema.LookupBlockType(ctx, d.LookupBlockTypeID())
+		if err != nil || bt == nil {
+			return nil, err
 		}
+		return directive.R(directive.NewValueResolver([]blocktype.BlockType{bt}), nil)
 	}
 	return nil, nil
-}
-
-// blockTypes are the block types of WasiVM objects by type ID.
-var blockTypes = map[string]blocktype.BlockType{
-	s4wave_vm.WasiVmTypeID:        blocktype.New[s4wave_vm.WasiVm](s4wave_vm.WasiVmTypeID),
-	s4wave_vm.WasiVmImageTypeID:   s4wave_vm.WasiVmImageBlockType,
-	s4wave_vm.WasiVmPackageTypeID: blocktype.New[s4wave_vm.WasiVmPackage](s4wave_vm.WasiVmPackageTypeID),
 }
 
 // register registers the WasiVM ObjectType, operations, viewers and wizard

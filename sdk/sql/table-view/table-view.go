@@ -9,7 +9,7 @@ import (
 )
 
 // SqlTableViewTypeID is the world ObjectType id for SQL table views.
-const SqlTableViewTypeID = "sql/table-view"
+const SqlTableViewTypeID = TableViewTypeID
 
 // ReadTableViewRoot reads a SQL table view object's root.
 func ReadTableViewRoot(ctx context.Context, ws world.WorldState, objectKey string) (*TableView, error) {

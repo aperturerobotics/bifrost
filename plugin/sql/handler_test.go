@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"io"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -45,63 +46,35 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func TestLookupSQLBlockTypeOwnsSQLCursorBlockTypes(t *testing.T) {
+// TestSQLSchemaOwnsSQLBlockTypes checks that the plugin schema constructs the
+// SQL object roots and leaves other type IDs to other resolvers.
+func TestSQLSchemaOwnsSQLBlockTypes(t *testing.T) {
 	for _, tc := range []struct {
-		name       string
-		typeID     string
-		wantID     string
-		wantMatch  func(block.Block) bool
-		wantAbsent bool
+		typeID string
+		want   block.Block
 	}{
-		{
-			name:      "query root",
-			typeID:    s4wave_sql_query.SqlQueryBlockTypeID,
-			wantID:    s4wave_sql_query.SqlQueryBlockTypeID,
-			wantMatch: s4wave_sql_query.SqlQueryBlockType.MatchesBlockType,
-		},
-		{
-			name:      "workbench root",
-			typeID:    s4wave_sql_workbench.SqlWorkbenchBlockTypeID,
-			wantID:    s4wave_sql_workbench.SqlWorkbenchBlockTypeID,
-			wantMatch: s4wave_sql_workbench.SqlWorkbenchBlockType.MatchesBlockType,
-		},
-		{
-			name:      "database object resolves its persisted root",
-			typeID:    s4wave_sql_world.SqlDbTypeID,
-			wantID:    s4wave_sql_world.SqlDbTypeID,
-			wantMatch: func(b block.Block) bool { _, ok := b.(*sql_mysql.Root); return ok },
-		},
-		{
-			name:       "unknown object",
-			typeID:     "unknown/object",
-			wantAbsent: true,
-		},
+		{s4wave_sql_query.SqlQueryTypeID, (*s4wave_sql_query.Query)(nil)},
+		{s4wave_sql_workbench.SqlWorkbenchTypeID, (*s4wave_sql_workbench.Workbench)(nil)},
+		{s4wave_sql_world.SqlDbTypeID, (*sql_mysql.Root)(nil)},
+		{"unknown/object", nil},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			// Resolve the SQL block type for this test case.
-			got, err := lookupSQLBlockType(tc.typeID)
-			if err != nil {
-				t.Fatalf("lookupSQLBlockType(%s): %v", tc.typeID, err)
+		// Resolve the block type, then check its identity and constructor.
+		got, err := sqlSchema.LookupBlockType(t.Context(), tc.typeID)
+		if err != nil {
+			t.Fatalf("LookupBlockType(%s): %v", tc.typeID, err)
+		}
+		if tc.want == nil {
+			if got != nil {
+				t.Fatalf("LookupBlockType(%s) = %v, want nil", tc.typeID, got)
 			}
-
-			// Check absence, identity, and constructor output for the SQL block type.
-			if tc.wantAbsent {
-				if got != nil {
-					t.Fatalf("lookupSQLBlockType(%s) = %T, want nil", tc.typeID, got)
-				}
-				return
-			}
-			if got == nil {
-				t.Fatalf("lookupSQLBlockType(%s) returned nil", tc.typeID)
-			}
-			if got.GetBlockTypeID() != tc.wantID {
-				t.Fatalf("block type id = %q, want %q", got.GetBlockTypeID(), tc.wantID)
-			}
-			blk := got.Constructor()
-			if !tc.wantMatch(blk) {
-				t.Fatalf("constructor returned %T, not a block matching %s", blk, tc.wantID)
-			}
-		})
+			continue
+		}
+		if got == nil || got.GetBlockTypeID() != tc.typeID {
+			t.Fatalf("LookupBlockType(%s) = %v, want its block type", tc.typeID, got)
+		}
+		if blk := got.Constructor(); reflect.TypeOf(blk) != reflect.TypeOf(tc.want) {
+			t.Fatalf("LookupBlockType(%s) constructs %T, want %T", tc.typeID, blk, tc.want)
+		}
 	}
 }
 

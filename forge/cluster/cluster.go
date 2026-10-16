@@ -12,9 +12,6 @@ import (
 )
 
 const (
-	// ClusterTypeID is the type identifier for a Cluster.
-	ClusterTypeID = "forge/cluster"
-
 	// PredClusterToJob is the predicate linking Cluster to a Job.
 	PredClusterToJob = quad.IRI("forge/cluster-job")
 	// PredClusterToWorker is the predicate linking Cluster to a Worker.

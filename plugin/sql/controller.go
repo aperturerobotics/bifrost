@@ -103,7 +103,7 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 		}
 		return directive.R(directive.NewFuncResolver(func(ctx context.Context, handler directive.ResolverHandler) error {
 			// Resolve the SQL block type from its registered ID.
-			blockType, err := lookupSQLBlockType(typeID)
+			blockType, err := sqlSchema.LookupBlockType(ctx, typeID)
 			if err != nil {
 				return err
 			}

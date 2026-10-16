@@ -11,10 +11,6 @@ import type {
 // SqlWorkbenchTypeID is the world ObjectType id for SQL workbenches.
 export const SqlWorkbenchTypeID = 'sql/workbench'
 
-// SqlWorkbenchBlockTypeID is the block type id for SQL workbench roots.
-export const SqlWorkbenchBlockTypeID =
-  'github.com/s4wave/spacewave/sdk/sql/workbench.Workbench'
-
 // SqlWorkbench is the typed SDK handle for a sql/workbench object.
 export class SqlWorkbench extends Resource {
   private service: SqlWorkbenchResourceServiceClient

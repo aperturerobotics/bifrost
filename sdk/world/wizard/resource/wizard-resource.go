@@ -373,7 +373,7 @@ func (r *WizardResource) replaceSpaceIndexIfWizardIsCurrent(
 		ctx,
 		ws,
 		space_world.SpaceSettingsObjectKey,
-		space_world.SpaceSettingsBlockType.GetBlockTypeID(),
+		space_world.SpaceSettingsTypeID,
 	)
 }
 

@@ -106,7 +106,7 @@ func TestSetBlockWithSqlRootBlockTypesWritesBrowserSeededRoots(t *testing.T) {
 		ctx,
 		le,
 		tb,
-		s4wave_sql_query.SqlQueryBlockTypeID,
+		s4wave_sql_query.SqlQueryTypeID,
 		querySeed,
 	)
 	query, err := block.UnmarshalBlock[s4wave_sql_query.Query](ctx, queryRoot)
@@ -133,7 +133,7 @@ func TestSetBlockWithSqlRootBlockTypesWritesBrowserSeededRoots(t *testing.T) {
 		ctx,
 		le,
 		tb,
-		s4wave_sql_workbench.SqlWorkbenchBlockTypeID,
+		s4wave_sql_workbench.SqlWorkbenchTypeID,
 		workbenchSeed,
 	)
 	workbench, err := block.UnmarshalBlock[s4wave_sql_workbench.Workbench](ctx, workbenchRoot)
@@ -168,10 +168,10 @@ func addSQLBlockTypeController(t *testing.T, ctx context.Context, tb *testbed.Te
 	t.Helper()
 	controller := blocktype_controller.NewController(func(_ context.Context, typeID string) (blocktype.BlockType, error) {
 		switch typeID {
-		case s4wave_sql_query.SqlQueryBlockTypeID:
-			return s4wave_sql_query.SqlQueryBlockType, nil
-		case s4wave_sql_workbench.SqlWorkbenchBlockTypeID:
-			return s4wave_sql_workbench.SqlWorkbenchBlockType, nil
+		case s4wave_sql_query.SqlQueryTypeID:
+			return blocktype.New[s4wave_sql_query.Query](typeID), nil
+		case s4wave_sql_workbench.SqlWorkbenchTypeID:
+			return blocktype.New[s4wave_sql_workbench.Workbench](typeID), nil
 		default:
 			return nil, nil
 		}

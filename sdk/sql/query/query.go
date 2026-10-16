@@ -4,22 +4,13 @@ import (
 	"context"
 
 	"github.com/s4wave/spacewave/db/block"
-	"github.com/s4wave/spacewave/db/blocktype"
 	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/s4wave/spacewave/db/world"
 	s4wave_sql "github.com/s4wave/spacewave/sdk/sql"
 )
 
 // SqlQueryTypeID is the world ObjectType id for SQL queries.
-const SqlQueryTypeID = "sql/query"
-
-// SqlQueryBlockTypeID is the block type id for SQL query roots.
-const SqlQueryBlockTypeID = "github.com/s4wave/spacewave/sdk/sql/query.Query"
-
-// SqlQueryBlockType constructs SQL query root blocks for typed cursor writes.
-var SqlQueryBlockType = blocktype.New[Query](
-	SqlQueryBlockTypeID,
-)
+const SqlQueryTypeID = QueryTypeID
 
 // ReadQueryRoot reads a SQL query object's root.
 func ReadQueryRoot(ctx context.Context, ws world.WorldState, objectKey string) (*Query, error) {

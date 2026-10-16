@@ -13,7 +13,7 @@ import (
 )
 
 // CanvasTypeID is the object type ID for canvas objects.
-const CanvasTypeID = "canvas"
+const CanvasTypeID = s4wave_canvas.CanvasStorageTypeID
 
 // CanvasType is the ObjectType for canvas objects.
 var CanvasType = objecttype.NewObjectType(CanvasTypeID, CanvasFactory)

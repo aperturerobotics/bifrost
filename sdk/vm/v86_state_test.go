@@ -26,12 +26,4 @@ func TestV86CleanIDs(t *testing.T) {
 			t.Fatalf("%s ID = %q, want %q", tc.name, tc.got, tc.want)
 		}
 	}
-
-	// Verify VM blocks expose the expected type identifiers.
-	if got := (&VmV86{}).GetBlockTypeId(); got != VmV86TypeID {
-		t.Fatalf("VmV86 block type = %q, want %q", got, VmV86TypeID)
-	}
-	if got := (&V86Image{}).GetBlockTypeId(); got != V86ImageTypeID {
-		t.Fatalf("V86Image block type = %q, want %q", got, V86ImageTypeID)
-	}
 }

@@ -7,11 +7,6 @@ import (
 	"github.com/s4wave/spacewave/identity"
 )
 
-const (
-	// WorkerTypeID is the type identifier for a Worker.
-	WorkerTypeID = "forge/worker"
-)
-
 // NewWorkerBlock constructs a new Worker block.
 func NewWorkerBlock() block.Block {
 	return &Worker{}

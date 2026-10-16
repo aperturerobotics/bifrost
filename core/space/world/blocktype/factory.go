@@ -6,7 +6,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/directive"
-	space_world "github.com/s4wave/spacewave/core/space/world"
+	space_world_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
 	blocktype_controller "github.com/s4wave/spacewave/db/blocktype/controller"
 )
 
@@ -39,7 +39,7 @@ func NewFactory(b bus.Bus) controller.Factory {
 		func(base *bus.BusController[*Config]) (*Controller, error) {
 			return &Controller{
 				BusController: base,
-				btController:  blocktype_controller.NewController(space_world.LookupBlockType),
+				btController:  blocktype_controller.NewController(space_world_optypes.LookupBlockType),
 			}, nil
 		},
 	)

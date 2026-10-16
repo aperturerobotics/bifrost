@@ -8,10 +8,6 @@ import type { GetQueryTextResponse, RunQueryResponse } from './query.pb.js'
 // SqlQueryTypeID is the world ObjectType id for SQL queries.
 export const SqlQueryTypeID = 'sql/query'
 
-// SqlQueryBlockTypeID is the block type id for SQL query roots.
-export const SqlQueryBlockTypeID =
-  'github.com/s4wave/spacewave/sdk/sql/query.Query'
-
 // SqlQuery is the typed SDK handle for a sql/query object.
 export class SqlQuery extends Resource {
   private service: SqlQueryResourceServiceClient

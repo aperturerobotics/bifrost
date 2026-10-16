@@ -11,6 +11,7 @@ import (
 	spacewave_chat "github.com/s4wave/spacewave/sdk/chat"
 	s4wave_device "github.com/s4wave/spacewave/sdk/device"
 	s4wave_flowgraph "github.com/s4wave/spacewave/sdk/flowgraph"
+	s4wave_org "github.com/s4wave/spacewave/sdk/org"
 	s4wave_terminal "github.com/s4wave/spacewave/sdk/terminal"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
@@ -24,6 +25,7 @@ var Types = slices.Concat(
 	spacewave_chat.ChatTypes,
 	s4wave_device.DeviceTypes,
 	s4wave_flowgraph.FlowgraphTypes,
+	s4wave_org.OrgTypes,
 	s4wave_terminal.TerminalTypes,
 	s4wave_vm.V86Types,
 	forge_world.Types,

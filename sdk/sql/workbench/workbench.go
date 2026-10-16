@@ -4,22 +4,13 @@ import (
 	"context"
 
 	"github.com/s4wave/spacewave/db/block"
-	"github.com/s4wave/spacewave/db/blocktype"
 	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/s4wave/spacewave/db/world"
 	s4wave_sql "github.com/s4wave/spacewave/sdk/sql"
 )
 
 // SqlWorkbenchTypeID is the world ObjectType id for SQL workbenches.
-const SqlWorkbenchTypeID = "sql/workbench"
-
-// SqlWorkbenchBlockTypeID is the block type id for SQL workbench roots.
-const SqlWorkbenchBlockTypeID = "github.com/s4wave/spacewave/sdk/sql/workbench.Workbench"
-
-// SqlWorkbenchBlockType constructs SQL workbench root blocks for typed cursor writes.
-var SqlWorkbenchBlockType = blocktype.New[Workbench](
-	SqlWorkbenchBlockTypeID,
-)
+const SqlWorkbenchTypeID = WorkbenchTypeID
 
 // ReadWorkbenchRoot reads a SQL workbench object's root.
 func ReadWorkbenchRoot(ctx context.Context, ws world.WorldState, objectKey string) (*Workbench, error) {
