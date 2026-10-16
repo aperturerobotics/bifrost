@@ -191,28 +191,26 @@ func (t *pluginInstance) execPlugin(ctx context.Context, args *executePluginArgs
 		defer t.assetsAccess.SetBlocked()
 		manifestRoot := pluginManifest.GetManifestRef().GetRootRef().GetHash().MarshalString()
 
-		// Publish the immutable dist and assets file controllers.
-		// Current executions also publish immutable files. A viewer or module URL
-		// must never silently resolve to a later revision with the same plugin ID.
-		if t.manifestRoot == "" {
-			artifactID := bldr_plugin.PluginArtifactID(pluginID, manifestRoot)
-			for _, files := range []struct {
-				id string
-				fs *unixfs.FSHandle
-			}{
-				{bldr_plugin.PluginDistFsId(artifactID), distFS},
-				{bldr_plugin.PluginAssetsFsId(artifactID), assetsFS},
-			} {
-				ctrl := unixfs_access.NewController(t.le, t.c.bus,
-					controller.NewInfo(ControllerID+"/"+files.id, Version, "immutable plugin files"),
-					[]string{files.id}, unixfs_access.NewAccessUnixFSFunc(files.fs))
-				defer ctrl.Close()
-				release, err := t.c.bus.AddController(ctx, ctrl, nil)
-				if err != nil {
-					return err
-				}
-				defer release()
+		// Publish the immutable dist and assets files under the artifact ID of
+		// the root. A viewer or module URL must never silently resolve to a later
+		// revision with the same plugin ID.
+		artifactID := bldr_plugin.PluginArtifactID(pluginID, manifestRoot)
+		for _, files := range []struct {
+			id string
+			fs *unixfs.FSHandle
+		}{
+			{bldr_plugin.PluginDistFsId(artifactID), distFS},
+			{bldr_plugin.PluginAssetsFsId(artifactID), assetsFS},
+		} {
+			ctrl := unixfs_access.NewController(t.le, t.c.bus,
+				controller.NewInfo(ControllerID+"/"+files.id, Version, "immutable plugin files"),
+				[]string{files.id}, unixfs_access.NewAccessUnixFSFunc(files.fs))
+			defer ctrl.Close()
+			release, err := t.c.bus.AddController(ctx, ctrl, nil)
+			if err != nil {
+				return err
 			}
+			defer release()
 		}
 
 		// Announce the root only once its files are served. The browser retries

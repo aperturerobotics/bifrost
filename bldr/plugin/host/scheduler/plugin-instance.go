@@ -287,55 +287,34 @@ func (t *pluginInstance) execute(ctx context.Context) error {
 	t.updatePluginRoutine.SetContext(ctx, true)
 	defer t.updatePluginRoutine.ClearContext()
 
-	// Build the plugin dist access controller ID.
-	distFsID := bldr_plugin.PluginDistFsId(t.pluginID)
-	if t.manifestRoot != "" {
-		distFsID += "/manifest/" + t.manifestRoot
+	// Follow the current execution's files under the plugin ID. A pinned
+	// instance registers no provider of its own: its execution publishes the
+	// immutable files of its root once it serves them, so a lookup of that root
+	// never selects a provider blocked on a second execution of a root another
+	// instance already serves.
+	if t.manifestRoot == "" {
+		for _, files := range []struct {
+			id     string
+			access *unixfs_access.RotatingAccess
+		}{
+			{bldr_plugin.PluginDistFsId(t.pluginID), t.distAccess},
+			{bldr_plugin.PluginAssetsFsId(t.pluginID), t.assetsAccess},
+		} {
+			ctrl := unixfs_access.NewController(
+				t.le,
+				t.c.bus,
+				controller.NewInfo(ControllerID+files.id, Version, "plugin files for plugin: "+t.pluginID),
+				[]string{files.id},
+				files.access.AccessUnixFS,
+			)
+			defer ctrl.Close()
+			release, err := t.c.bus.AddController(ctx, ctrl, nil)
+			if err != nil {
+				return err
+			}
+			defer release()
+		}
 	}
-	distAccessCtrl := unixfs_access.NewController(
-		t.le,
-		t.c.bus,
-		&controller.Info{
-			Id:          ControllerID + distFsID,
-			Version:     Version.String(),
-			Description: "plugin dist fs for plugin: " + t.pluginID,
-		},
-		[]string{distFsID},
-		t.distAccess.AccessUnixFS,
-	)
-	defer distAccessCtrl.Close()
-
-	// Add the dist access controller to the bus.
-	relDistAccessCtrl, err := t.c.bus.AddController(ctx, distAccessCtrl, nil)
-	if err != nil {
-		return err
-	}
-	defer relDistAccessCtrl()
-
-	// Build the plugin assets access controller ID.
-	assetsFsID := bldr_plugin.PluginAssetsFsId(t.pluginID)
-	if t.manifestRoot != "" {
-		assetsFsID += "/manifest/" + t.manifestRoot
-	}
-	assetsAccessCtrl := unixfs_access.NewController(
-		t.le,
-		t.c.bus,
-		&controller.Info{
-			Id:          ControllerID + assetsFsID,
-			Version:     Version.String(),
-			Description: "plugin assets fs for plugin: " + t.pluginID,
-		},
-		[]string{assetsFsID},
-		t.assetsAccess.AccessUnixFS,
-	)
-	defer assetsAccessCtrl.Close()
-
-	// Add the assets access controller to the bus.
-	relAssetsAccessCtrl, err := t.c.bus.AddController(ctx, assetsAccessCtrl, nil)
-	if err != nil {
-		return err
-	}
-	defer relAssetsAccessCtrl()
 
 	// Watch the set of plugin hosts.
 	return ccontainer.WatchChanges(

@@ -4,6 +4,7 @@ import (
 	"context"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -29,6 +30,10 @@ import (
 
 // ControllerID is the controller ID.
 const ControllerID = "bldr/web/plugin/controller"
+
+// slowAssetBinding is the duration past which a handler asset binding step is
+// reported. Each step normally completes in milliseconds.
+const slowAssetBinding = 2 * time.Second
 
 // Version is the version of this controller.
 var Version = controller.MustParseVersion("0.0.1")
@@ -368,23 +373,36 @@ func (c *Controller) bindHandlerAssets(ctx context.Context, handlers *web_view_h
 		}
 	}
 
+	// The document waits on this binding, so report any step that holds it.
+	logSlow := func(step, id string, start time.Time) {
+		if dur := time.Since(start); dur > slowAssetBinding {
+			c.le.WithField("step", step).WithField("id", id).WithField("dur", dur.String()).
+				Warn("slow web view handler asset binding")
+		}
+	}
+
 	// Collect each URL a handler publishes, resolving package prefixes first.
 	var urls []string
 	for _, handler := range handlers.GetHandlers() {
 		render := handler.GetSetRenderMode()
 		for id, basePath := range render.GetWebPkgPaths() {
 			if basePath == "" {
+				start := time.Now()
 				pkg, _, ref, err := web_pkg.ExLookupWebPkg(ctx, c.bus, false, id)
 				if err != nil {
 					release()
 					return nil, err
 				}
 				releases = append(releases, ref.Release)
+				logSlow("lookup-web-pkg", id, start)
+
+				start = time.Now()
 				info, err := pkg.GetInfo(ctx)
 				if err != nil {
 					release()
 					return nil, err
 				}
+				logSlow("web-pkg-info", id, start)
 				basePath = info.GetAssetBasePath()
 				render.WebPkgPaths[id] = basePath
 			}
@@ -415,6 +433,7 @@ func (c *Controller) bindHandlerAssets(ctx context.Context, handlers *web_view_h
 		if !strings.Contains(artifactID, "/manifest/") {
 			continue
 		}
+		start := time.Now()
 		access := unixfs_access.NewAccessUnixFSViaBusFunc(c.bus, bldr_plugin.PluginAssetsFsId(artifactID), false)
 		files, releaseFiles, err := access(ctx, nil)
 		if err != nil {
@@ -422,13 +441,16 @@ func (c *Controller) bindHandlerAssets(ctx context.Context, handlers *web_view_h
 			return nil, err
 		}
 		releases = append(releases, releaseFiles)
+		logSlow("access-plugin-assets", artifactID, start)
 
 		// The filesystem client opens its event stream on first use, and the
 		// plugin host keeps the files mounted while that stream is open.
+		start = time.Now()
 		if _, err := files.GetNodeType(ctx); err != nil {
 			release()
 			return nil, err
 		}
+		logSlow("mount-plugin-assets", artifactID, start)
 	}
 	return release, nil
 }
