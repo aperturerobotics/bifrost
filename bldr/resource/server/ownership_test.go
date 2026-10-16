@@ -20,7 +20,6 @@ func ownershipTestClient(t *testing.T) (*ResourceServer, *RemoteResourceClient) 
 		ctx:            t.Context(),
 		resources:      make(map[uint32]*trackedResource),
 		children:       make(map[uint32]map[uint32]struct{}),
-		tombstones:     make(map[uint32]struct{}),
 	}
 	server.clients[1] = client
 	server.resourceIDCtr = 1
@@ -125,7 +124,7 @@ func TestAdoptedChildSurvivesParentReleaseAndTombstoneNotifies(t *testing.T) {
 		t.Fatal("adopted child was released with parent")
 	}
 
-	// Release the child server-side and verify the tombstone notification.
+	// Release the child server-side and verify the release notification.
 	if !client.ReleaseResource(child) {
 		t.Fatal("server release rejected")
 	}
@@ -133,7 +132,7 @@ func TestAdoptedChildSurvivesParentReleaseAndTombstoneNotifies(t *testing.T) {
 		t.Fatalf("server release notifications = %d, want 1", len(client.txQueue))
 	}
 
-	// Re-adopt the tombstoned child and verify the stale notification.
+	// Re-adopt the released child and verify the stale notification.
 	client.txQueue = nil
 	if !client.adoptResource(child) {
 		t.Fatal("stale adopt did not succeed")
@@ -170,8 +169,10 @@ func TestChildAfterParentReleaseRejected(t *testing.T) {
 	}
 }
 
-// TestForeignAndNeverAllocatedControlsTerminate checks unknown controls are refused.
-func TestForeignAndNeverAllocatedControlsTerminate(t *testing.T) {
+// TestNeverAllocatedControlsTerminate checks controls naming an ID the server
+// never allocated are refused.
+func TestNeverAllocatedControlsTerminate(t *testing.T) {
+	// Release and adopt an ID above the server's counter.
 	_, client := ownershipTestClient(t)
 	if _, err := client.releaseClientControl(999); err != resource.ErrResourceNotFound {
 		t.Fatalf("unknown release error = %v", err)

@@ -85,7 +85,6 @@ func (s *ResourceServer) ResourceClient(strm resource.SRPCResourceService_Resour
 			ctx:               clientCtx,
 			resources:         make(map[uint32]*trackedResource),
 			children:          make(map[uint32]map[uint32]struct{}),
-			tombstones:        make(map[uint32]struct{}),
 			attachedResources: make(map[uint32]*attachedResource),
 		}
 		s.clients[clientHandleID] = client
@@ -201,7 +200,6 @@ func (s *ResourceServer) releaseClientGeneration(client *RemoteResourceClient) {
 		// Clear the generation lifecycle maps and wake the waiters.
 		clear(client.resources)
 		clear(client.children)
-		clear(client.tombstones)
 		broadcast()
 	})
 

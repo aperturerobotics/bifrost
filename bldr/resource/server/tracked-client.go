@@ -30,9 +30,6 @@ type RemoteResourceClient struct {
 	resources map[uint32]*trackedResource
 	// children links parent resource IDs to descendants under server.bcast.
 	children map[uint32]map[uint32]struct{}
-	// tombstones retain every released ID until this immutable generation ends
-	// so a late Adopt cannot revive or miss the matching release notification.
-	tombstones map[uint32]struct{}
 	// attachedResources retains client-published handles under server.bcast.
 	attachedResources map[uint32]*attachedResource
 }
@@ -139,7 +136,7 @@ func (c *RemoteResourceClient) addResource(
 	return id, nil
 }
 
-// adoptResource retains a pending resource or acknowledges its release tombstone.
+// adoptResource retains a pending resource or acknowledges its release.
 func (c *RemoteResourceClient) adoptResource(resourceID uint32) bool {
 	var ok bool
 	c.server.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
@@ -156,12 +153,24 @@ func (c *RemoteResourceClient) adoptResource(resourceID uint32) bool {
 			ok = true
 			return
 		}
-		if _, tombstone := c.tombstones[resourceID]; tombstone {
+		if c.releasedLocked(resourceID) {
 			ok = true
 			c.queueReleasedLocked(resourceID, broadcast)
 		}
 	})
 	return ok
+}
+
+// releasedLocked reports whether id names a resource of this generation that
+// was released, so a late Adopt or Release gets the release notification
+// instead of an error. One server-wide counter allocates every resource ID
+// after the generation's root, and each is tracked or attached until its
+// release, so an ID in that range that neither holds was released. An ID of
+// another generation in the range reads as released too, which reveals and
+// grants nothing.
+func (c *RemoteResourceClient) releasedLocked(id uint32) bool {
+	return id >= c.rootResourceID && id <= c.server.resourceIDCtr &&
+		c.resources[id] == nil && c.attachedResources[id] == nil
 }
 
 // queueReleasedLocked queues a release notification while holding server.bcast.
@@ -208,7 +217,6 @@ func (c *RemoteResourceClient) releaseLocked(id uint32, notify bool, keepRoot bo
 		}
 	}
 	delete(c.children, id)
-	c.tombstones[id] = struct{}{}
 
 	// Queue the release callback and the released notification.
 	if res.releaseFn != nil {
@@ -342,11 +350,11 @@ func (c *RemoteResourceClient) releaseClientControl(resourceID uint32) (bool, er
 			return
 		}
 		if _, exists := c.resources[resourceID]; !exists {
-			if _, tombstone := c.tombstones[resourceID]; tombstone {
-				return
-			}
 			if c.attachedResources[resourceID] != nil {
 				attached = true
+				return
+			}
+			if c.releasedLocked(resourceID) {
 				return
 			}
 			err = resource.ErrResourceNotFound
@@ -422,7 +430,6 @@ func (c *RemoteResourceClient) removeAttachedResource(id uint32, notify bool) {
 			return
 		}
 		delete(c.attachedResources, id)
-		c.tombstones[id] = struct{}{}
 		cancel = ar.cancel
 		if notify {
 			releaseFn = ar.releaseFn

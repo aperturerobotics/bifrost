@@ -38,7 +38,6 @@ func newTestClient(t *testing.T) (*RemoteResourceClient, context.CancelFunc) {
 		ctx:            ctx,
 		resources:      make(map[uint32]*trackedResource),
 		children:       make(map[uint32]map[uint32]struct{}),
-		tombstones:     make(map[uint32]struct{}),
 	}
 	client.resources[1] = &trackedResource{
 		mux:           srpc.NewMux(),
