@@ -148,21 +148,6 @@ type BlockWithSubBlocks interface {
 	GetSubBlockCtor(id uint32) SubBlockCtor
 }
 
-// BlockGraphAttribute is a key-value attribute rendered alongside the
-// block in graph visualizations.
-type BlockGraphAttribute struct {
-	// Key is the attribute name.
-	Key string
-	// Value is the attribute value.
-	Value string
-}
-
-// BlockWithAttributes returns a block with graph attributes.
-type BlockWithAttributes interface {
-	// GetBlockGraphAttributes returns the block graph attributes.
-	GetBlockGraphAttributes() []BlockGraphAttribute
-}
-
 // BlockWithPreWriteHook is a block with a function called when writing.
 // This can also be applied to a sub-block.
 type BlockWithPreWriteHook interface {

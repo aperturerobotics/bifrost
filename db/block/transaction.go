@@ -20,12 +20,27 @@ var maxWriteConcurrency = runtime.GOMAXPROCS(0)
 // maxEncodeConcurrency is the maximum concurrency for hashing & marshaling blocks.
 var maxEncodeConcurrency = maxWriteConcurrency
 
-// transactionReachableNode tracks one node in the marshal reachability graph.
+// orderState tracks a reachable node during the encode ordering walk.
+type orderState uint8
+
+const (
+	// orderPending is a node the walk has not reached.
+	orderPending orderState = iota
+	// orderVisiting is a node on the walk's current path.
+	orderVisiting
+	// orderDone is a node placed in the encode order.
+	orderDone
+)
+
+// transactionReachableNode tracks one handle reachable from the write root.
 type transactionReachableNode struct {
-	// from lists child nodes whose encoding must finish before this node.
-	from []int64
+	// from lists handles whose encoding must finish before this handle: the
+	// referenced blocks and any alias-linked blocks.
+	from []*handle
 	// encodeDone is closed when encoding this node is done.
 	encodeDone chan struct{}
+	// state is the progress of the encode ordering walk.
+	state orderState
 }
 
 // Transaction tracks refs traversed between blocks, batching writes and
@@ -45,8 +60,6 @@ type Transaction struct {
 	root *handle
 	// mtx guards the transaction's cursor graph and write operations.
 	mtx sync.Mutex
-	// blockGraph is the graph of blocks.
-	blockGraph *BlockGraph
 	// putOpts are put options with a resolved hash type.
 	putOpts *PutOpts
 	// dirty indicates whether anything changed in the transaction.
@@ -92,24 +105,15 @@ func NewTransaction(
 	}
 	putOpts.HashType = hashType
 
-	// Attach the root to its own cursor graph.
+	// Attach the root to its own cursor tree.
 	t := &Transaction{
-		store:      store,
-		xfrm:       transformer,
-		root:       &handle{ref: rootRef},
-		blockGraph: NewBlockGraph(),
-		putOpts:    putOpts,
+		store:   store,
+		xfrm:    transformer,
+		root:    &handle{ref: rootRef},
+		putOpts: putOpts,
 	}
-	t.root.Node = t.blockGraph.NewNode()
-	t.blockGraph.AddNode(t.root)
 	cs := newCursor(t, t.root, nil)
 	return t, cs
-}
-
-// GetBlockGraph returns a handle to the internal block graph state.
-// Do not modify this, used for analysis.
-func (t *Transaction) GetBlockGraph() *BlockGraph {
-	return t.blockGraph
 }
 
 // GetTransformer returns the transaction's block transformer.
@@ -393,47 +397,20 @@ func (t *Transaction) WriteAtRoot(ctx context.Context, clearTree bool, subRoot *
 	defer subCtxCancel()
 
 	// Mark blocks reachable from the write root; full writes cut other blocks.
-	reachable := make(map[int64]transactionReachableNode, 1)
 	_, subtask := trace.NewTask(ctx, "hydra/block/transaction/write-at-root/mark-reachable")
-	{
-		var reachableEdges int
-		nodStack := []GraphNode{writeRoot}
-		for len(nodStack) != 0 {
-			nn := nodStack[len(nodStack)-1]
-			nodStack = nodStack[:len(nodStack)-1]
-			nnID := nn.ID()
-			if _, ok := reachable[nnID]; ok {
-				continue
-			}
-			fromNn := t.blockGraph.From(nnID)
-			fromNodes := make([]int64, 0, len(fromNn))
-			for _, to := range fromNn {
-				toID := to.ID()
-				fromNodes = append(fromNodes, toID)
-				if _, ok := reachable[toID]; !ok {
-					nodStack = append(nodStack, to)
-				}
-			}
-			reachableEdges += len(fromNodes)
-			reachable[nn.ID()] = transactionReachableNode{
-				from:       fromNodes,
-				encodeDone: make(chan struct{}),
-			}
-		}
-		trace.Logf(ctx, "hydra/block/transaction/write-at-root/reachable", "nodes=%d edges=%d", len(reachable), reachableEdges)
-	}
+	reachable := markReachable(writeRoot)
+	trace.Logf(ctx, "hydra/block/transaction/write-at-root/reachable", "nodes=%d", len(reachable))
 	subtask.End()
 
 	// Order encodes after their referenced blocks and shared marshal aliases.
-	t.addMarshalAliasWaits(reachable)
-	encodeWaits := t.resolveEncodeWaits(reachable)
-	_, subtask = trace.NewTask(ctx, "hydra/block/transaction/write-at-root/topo-sort")
-	nods, err := SortBlockGraph(t.blockGraph)
+	addMarshalAliasWaits(reachable)
+	encodeWaits := resolveEncodeWaits(reachable)
+	_, subtask = trace.NewTask(ctx, "hydra/block/transaction/write-at-root/order-encodes")
+	order, err := orderEncodes(writeRoot, reachable)
 	subtask.End()
 	if err != nil {
 		return nil, nil, err
 	}
-	trace.Logf(ctx, "hydra/block/transaction/write-at-root/topo", "nodes=%d", len(nods))
 
 	// Use the transaction's resolved hash type for every new block reference.
 	hashType := t.putOpts.GetHashType()
@@ -470,43 +447,13 @@ func (t *Transaction) WriteAtRoot(ctx context.Context, clearTree bool, subRoot *
 		}
 	}
 
-	// Retain unreachable handles until every encoder has stopped using them.
-	var unreachableNodes []*handle
-	if clearTree && subRoot == nil {
-		_, subtask = trace.NewTask(ctx, "hydra/block/transaction/write-at-root/collect-unreachable")
-		for _, v := range slices.Backward(nods) {
-			nod := v
-			nodID := nod.ID()
-			bn, ok := nod.(*handle)
-			if !ok || bn == nil {
-				continue
-			}
-			if _, blkReachable := reachable[nodID]; !blkReachable {
-				unreachableNodes = append(unreachableNodes, bn)
-			}
-		}
-		trace.Logf(ctx, "hydra/block/transaction/write-at-root/unreachable", "nodes=%d", len(unreachableNodes))
-		subtask.End()
-	}
-
 	// Encode children before parents, propagating each new reference upward.
 	var dirtyNodes int
 	var encodedBlocks atomic.Int64
 	var putBlocks atomic.Int64
 	_, subtask = trace.NewTask(ctx, "hydra/block/transaction/write-at-root/schedule-workers")
-	for _, v := range slices.Backward(nods) {
-		nod := v
-		nodID := nod.ID()
-		bn, ok := nod.(*handle)
-		if !ok || bn == nil {
-			continue
-		}
-
-		// Skip nodes unreachable from the write root; nothing waits on them.
-		reachableNod, blkReachable := reachable[nodID]
-		if !blkReachable {
-			continue
-		}
+	for _, bn := range order {
+		reachableNod := reachable[bn]
 
 		// A clean node encodes nothing; its parents wait on its dirty
 		// descendants instead (see resolveEncodeWaits).
@@ -514,7 +461,7 @@ func (t *Transaction) WriteAtRoot(ctx context.Context, clearTree bool, subRoot *
 			continue
 		}
 		dirtyNodes++
-		waits := encodeWaits[nodID]
+		waits := encodeWaits[bn]
 
 		// Use the same encoder for inline leaves and queued graph nodes.
 		encode := func() {
@@ -722,89 +669,110 @@ func (t *Transaction) WriteAtRoot(ctx context.Context, clearTree bool, subRoot *
 	default:
 	}
 
-	// Remove unreachable nodes only after all workers have settled.
-	if clearTree && subRoot == nil {
-		_, subtask = trace.NewTask(ctx, "hydra/block/transaction/write-at-root/cleanup-unreachable")
-		for _, bn := range unreachableNodes {
-			bn.blk, bn.shared = nil, false
-			bn.ref = nil
-			t.blockGraph.RemoveNode(bn.ID())
-		}
-		subtask.End()
-	}
-
 	// The deferred cursor cleanup supplies the returned root cursor.
 	return writeRoot.ref, nil, nil
 }
 
-// clearData resets the cursor graph under mtx, retaining the root handle.
+// clearData resets the cursor tree under mtx, retaining the root handle.
 func (t *Transaction) clearData() {
-	// Reset the transaction cursor graph while retaining its root handle.
 	t.dirty = false
 	t.root.dirty = false
 	t.root.refHandles = nil
-	t.blockGraph = NewBlockGraph()
-	rn := t.blockGraph.NewNode()
-	t.root.Node = rn
-	t.blockGraph.AddNode(t.root)
+}
+
+// markReachable returns the handles reachable from root through traversed
+// references, each with the handles it references.
+func markReachable(root *handle) map[*handle]*transactionReachableNode {
+	reachable := make(map[*handle]*transactionReachableNode, 1)
+	stack := []*handle{root}
+	for len(stack) != 0 {
+		h := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if _, ok := reachable[h]; ok {
+			continue
+		}
+
+		// Collect the referenced handles and visit each of them.
+		from := make([]*handle, 0, len(h.refHandles))
+		for _, ref := range h.refHandles {
+			if ref.target != nil {
+				from = append(from, ref.target)
+			}
+		}
+		reachable[h] = &transactionReachableNode{
+			from:       from,
+			encodeDone: make(chan struct{}),
+		}
+		stack = append(stack, from...)
+	}
+	return reachable
+}
+
+// orderEncodes returns the reachable handles with each handle after every
+// handle it waits on. Scheduling in this order keeps a bounded encode queue
+// from filling with parents that wait on children no worker has started.
+// It fails on a reference cycle, which no encode order can satisfy.
+func orderEncodes(root *handle, reachable map[*handle]*transactionReachableNode) ([]*handle, error) {
+	// Walk the references depth first, placing each handle after its children.
+	order := make([]*handle, 0, len(reachable))
+	var visit func(h *handle) error
+	visit = func(h *handle) error {
+		// Skip placed handles and reject a handle on the current path.
+		node := reachable[h]
+		switch node.state {
+		case orderDone:
+			return nil
+		case orderVisiting:
+			return ErrReferenceCycle
+		}
+
+		// Place the handle after everything it waits on.
+		node.state = orderVisiting
+		for _, child := range node.from {
+			if err := visit(child); err != nil {
+				return err
+			}
+		}
+		node.state = orderDone
+		order = append(order, h)
+		return nil
+	}
+	if err := visit(root); err != nil {
+		return nil, err
+	}
+	return order, nil
 }
 
 // addMarshalAliasWaits makes each node's marshal wait for the marshals of
 // any alias-linked nodes it references, so alias identities are written
 // before the blocks that point at them.
-func (t *Transaction) addMarshalAliasWaits(reachable map[int64]transactionReachableNode) {
+func addMarshalAliasWaits(reachable map[*handle]*transactionReachableNode) {
 	// Index handles sharing the same marshal identity.
-	if t == nil || t.blockGraph == nil {
-		return
-	}
-	handlesByBlock := make(map[*AliasIdentityToken][]int64, len(reachable))
-	for nodeID := range reachable {
-		h, _ := t.blockGraph.Node(nodeID).(*handle)
-		if h == nil {
-			continue
-		}
+	handlesByBlock := make(map[*AliasIdentityToken][]*handle, len(reachable))
+	for h := range reachable {
 		identity := blockAliasIdentity(h.blk)
 		if identity == nil {
 			continue
 		}
-		handlesByBlock[identity] = append(handlesByBlock[identity], nodeID)
+		handlesByBlock[identity] = append(handlesByBlock[identity], h)
 	}
 
 	// Add alias dependencies to each reachable block's existing child waits.
-	for nodeID := range reachable {
-		h, _ := t.blockGraph.Node(nodeID).(*handle)
-		if h == nil || h.isSubBlock || h.blk == nil {
+	for h, node := range reachable {
+		if h.isSubBlock || h.blk == nil {
 			continue
-		}
-		waitSet := make(map[int64]struct{}, len(reachable[nodeID].from))
-		for _, childID := range reachable[nodeID].from {
-			waitSet[childID] = struct{}{}
 		}
 		walkMarshalAliasSubBlocks(h.blk, make(map[*AliasIdentityToken]struct{}), func(subBlock any) {
 			identity := blockAliasIdentity(subBlock)
 			if identity == nil {
 				return
 			}
-			for _, aliasID := range handlesByBlock[identity] {
-				if aliasID == nodeID {
-					continue
+			for _, alias := range handlesByBlock[identity] {
+				if alias != h && !slices.Contains(node.from, alias) {
+					node.from = append(node.from, alias)
 				}
-				if _, ok := reachable[aliasID]; !ok {
-					continue
-				}
-				waitSet[aliasID] = struct{}{}
 			}
 		})
-		next := reachable[nodeID]
-		if len(waitSet) == len(next.from) {
-			continue
-		}
-		next.from = next.from[:0]
-		for waitID := range waitSet {
-			next.from = append(next.from, waitID)
-		}
-		slices.Sort(next.from)
-		reachable[nodeID] = next
 	}
 }
 
@@ -818,18 +786,12 @@ func (t *Transaction) addMarshalAliasWaits(reachable map[int64]transactionReacha
 // change, so a parent marshaling it waits on the clean child's dirty
 // descendants instead. Resolve the waits before any encode runs, since encodes
 // clear the dirty flags they read.
-func (t *Transaction) resolveEncodeWaits(reachable map[int64]transactionReachableNode) map[int64][]chan struct{} {
-	// Read dirtiness from the graph's handles.
-	isDirty := func(nodeID int64) bool {
-		h, _ := t.blockGraph.Node(nodeID).(*handle)
-		return h != nil && h.dirty
-	}
-
+func resolveEncodeWaits(reachable map[*handle]*transactionReachableNode) map[*handle][]chan struct{} {
 	// Memoize each clean node's dirty frontier. Alias waits may point at a
 	// node not yet visited, so resolve by recursion rather than graph order.
-	cleanWaits := make(map[int64][]chan struct{})
-	var childWaits func(nodeID int64) []chan struct{}
-	childWaits = func(nodeID int64) []chan struct{} {
+	cleanWaits := make(map[*handle][]chan struct{})
+	var childWaits func(h *handle) []chan struct{}
+	childWaits = func(h *handle) []chan struct{} {
 		// Collect each wait once, since diamonds reach a frontier twice.
 		var waits []chan struct{}
 		seen := make(map[chan struct{}]struct{})
@@ -841,17 +803,17 @@ func (t *Transaction) resolveEncodeWaits(reachable map[int64]transactionReachabl
 		}
 
 		// A dirty child is its own wait; a clean child passes its frontier up.
-		for _, childID := range reachable[nodeID].from {
-			if isDirty(childID) {
-				add(reachable[childID].encodeDone)
+		for _, child := range reachable[h].from {
+			if child.dirty {
+				add(reachable[child].encodeDone)
 				continue
 			}
-			frontier, ok := cleanWaits[childID]
+			frontier, ok := cleanWaits[child]
 			if !ok {
 				// Mark the node first so a cycle contributes no waits.
-				cleanWaits[childID] = nil
-				frontier = childWaits(childID)
-				cleanWaits[childID] = frontier
+				cleanWaits[child] = nil
+				frontier = childWaits(child)
+				cleanWaits[child] = frontier
 			}
 			for _, wait := range frontier {
 				add(wait)
@@ -861,10 +823,10 @@ func (t *Transaction) resolveEncodeWaits(reachable map[int64]transactionReachabl
 	}
 
 	// Resolve the waits of every node that will encode.
-	waits := make(map[int64][]chan struct{})
-	for nodeID := range reachable {
-		if isDirty(nodeID) {
-			waits[nodeID] = childWaits(nodeID)
+	waits := make(map[*handle][]chan struct{})
+	for h := range reachable {
+		if h.dirty {
+			waits[h] = childWaits(h)
 		}
 	}
 	return waits
@@ -919,12 +881,9 @@ func (t *Transaction) cloneDetached(nroot *handle, sharesBlocks bool) *Transacti
 		store:         t.store,
 		xfrm:          t.xfrm,
 		root:          nroot,
-		blockGraph:    NewBlockGraph(),
 		putOpts:       t.putOpts,
 		decodedBlocks: t.decodedBlocks,
 	}
 	nt.readOnly.Store(sharesBlocks && t.readOnly.Load())
-	nt.root.Node = nt.blockGraph.NewNode()
-	nt.blockGraph.AddNode(nt.root)
 	return nt
 }

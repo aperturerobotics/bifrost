@@ -32,6 +32,8 @@ var (
 	// ErrRefsUnknown is returned when a graph copy reaches a block whose source
 	// holds its bytes without its outgoing refs.
 	ErrRefsUnknown = errors.New("block refs unknown")
+	// ErrReferenceCycle is returned when a write finds a block reachable from itself.
+	ErrReferenceCycle = errors.New("block: reference cycle")
 	// ErrNotClonable is returned if a block could not be cloned.
 	ErrNotClonable = errors.New("block: unable to clone")
 	// ErrBlockRefMismatch is returned if the data does not match the expected ref.

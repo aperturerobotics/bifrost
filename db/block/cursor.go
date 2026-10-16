@@ -118,9 +118,6 @@ func (c *Cursor) Detach(keepRefs bool) *Cursor {
 
 	// Register the detached position and retain its child links.
 	if c.t != nil {
-		nc.pos.Node = c.t.blockGraph.NewNode()
-		c.t.blockGraph.AddNode(nc.pos)
-
 		// Attach the detached position to each retained child block.
 		if keepRefs {
 			prevRefs := c.pos.refHandles
@@ -364,14 +361,6 @@ func (c *Cursor) followRef(refID uint32, blkRef *BlockRef) *Cursor {
 
 	// Create and attach the referenced position to the cursor graph.
 	blkHandle := &handle{ref: blkRef}
-	if c.t != nil {
-		blkHandle.Node = c.t.blockGraph.NewNode()
-	}
-	ref = &refHandle{
-		id:     refID,
-		src:    c.pos,
-		target: blkHandle,
-	}
 	outCursor := newCursor(c.t, blkHandle, c.store)
 	_ = outCursor.addParent(c, refID)
 	return outCursor
@@ -454,9 +443,6 @@ func (c *Cursor) followSubBlock(refID uint32) *Cursor {
 		isSubBlock: true,
 		blk:        sbBlk,
 		shared:     shared,
-	}
-	if c.t != nil {
-		blkHandle.Node = c.t.blockGraph.NewNode()
 	}
 	outCursor := newCursor(c.t, blkHandle, c.store)
 	_ = outCursor.addParent(c, refID)
@@ -1026,22 +1012,18 @@ func (c *Cursor) addParent(parent *Cursor, refID uint32) *refHandle {
 	if parent == nil || parent.pos == nil || c == nil || c.pos == nil {
 		return nil
 	}
-	if parent.pos == c.pos || parent.pos.ID() == c.pos.ID() {
+	if parent.pos == c.pos {
 		// self edge: not allowed
 		return nil
 	}
 
 	// Detach the previous target of the parent reference.
-	removedEdges := make([]*refHandle, 0, 4)
 	if parent.pos.refHandles == nil {
 		parent.pos.refHandles = make(map[uint32]*refHandle)
 	} else {
 		oldEdge := parent.pos.refHandles[refID]
 		if oldEdge != nil && oldEdge.target != nil {
-			removedEdges = append(
-				removedEdges,
-				oldEdge.target.removeParent(oldEdge.src)...,
-			)
+			oldEdge.target.removeParent(oldEdge.src)
 		}
 	}
 
@@ -1051,15 +1033,7 @@ func (c *Cursor) addParent(parent *Cursor, refID uint32) *refHandle {
 		src:    parent.pos,
 		target: c.pos,
 	}
-	removedEdges = append(removedEdges, c.pos.addParent(nedge)...)
-
-	// Replace the displaced parent edges in the transaction graph.
-	if c.t != nil && c.t.blockGraph != nil {
-		for _, ref := range removedEdges {
-			c.t.blockGraph.RemoveEdge(ref.src.ID(), ref.target.ID())
-		}
-		c.t.blockGraph.SetEdge(nedge)
-	}
+	c.pos.addParent(nedge)
 
 	// Retain the parent reference and propagate the child dirty state.
 	parent.pos.refHandles[refID] = nedge
@@ -1088,13 +1062,6 @@ func (c *Cursor) removeParent(parent *Cursor) []*refHandle {
 		c.pos.parents = nil
 	} else {
 		removed = c.pos.removeParent(parent.pos)
-	}
-
-	// Remove the detached edges from the transaction graph.
-	if c.t != nil && c.t.blockGraph != nil {
-		for _, ref := range removed {
-			c.t.blockGraph.RemoveEdge(ref.src.ID(), ref.target.ID())
-		}
 	}
 
 	// Remove parent reference handles that still target the detached edges.
@@ -1149,9 +1116,6 @@ func (c *Cursor) copyToRecursive(targetCs *Cursor, cloneBlocks, markDirty bool) 
 					src:    rstk,
 					target: nextPos,
 				}
-				if targetCs.t != nil {
-					targetCs.t.blockGraph.SetEdge(nrh)
-				}
 			}
 
 			// Retain the edge on both copied positions.
@@ -1195,12 +1159,6 @@ func (c *Cursor) copyToRecursive(targetCs *Cursor, cloneBlocks, markDirty bool) 
 			rstk = nextRoot
 		} else {
 			rstk = nstk.Clone()
-		}
-
-		// Register the copied position in the target transaction graph.
-		if rstk.Node == nil && targetCs.t != nil {
-			rstk.Node = targetCs.t.blockGraph.NewNode()
-			targetCs.t.blockGraph.AddNode(rstk.Node)
 		}
 
 		// update parents

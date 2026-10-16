@@ -244,11 +244,6 @@ func TestTxSetMaterializesBlobOutsideTreeTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Require the outer transaction to retain only root and page nodes.
-	if nodes := len(btx.GetBlockGraph().Nodes()); nodes != 3 {
-		t.Fatalf("outer transaction nodes = %d, want 3 root/page nodes", nodes)
-	}
-
 	// Commit the Okra changes and publish the block transaction root.
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)

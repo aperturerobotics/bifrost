@@ -2,7 +2,6 @@ package kvtx_block_iavl
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
@@ -179,24 +178,10 @@ func (n *Node) GetBlockRefCtor(id uint32) block.Ctor {
 	return nil
 }
 
-// GetBlockGraphAttributes returns the block graph attributes.
-func (n *Node) GetBlockGraphAttributes() []block.BlockGraphAttribute {
-	return []block.BlockGraphAttribute{{
-		Key: "label",
-		Value: fmt.Sprintf(
-			"key: %q\nsize: %d\nheight: %d",
-			n.GetKey(),
-			n.GetSize(),
-			n.GetHeight(),
-		),
-	}}
-}
-
 // _ is a type assertion
 var (
 	_ block.Block                 = (*Node)(nil)
 	_ block.DecodedBlockCacheable = (*Node)(nil)
-	_ block.BlockWithAttributes   = (*Node)(nil)
 	_ block.BlockWithRefs         = (*Node)(nil)
 	_ block.BlockWithSubBlocks    = (*Node)(nil)
 )
