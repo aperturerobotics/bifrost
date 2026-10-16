@@ -44,7 +44,7 @@ message TableRoot {
   repeated int32 primary_key_ordinals = 5;
   // TablePartitions contains the set of table partitions.
   repeated TablePartitionRoot table_partitions = 2;
-  // RowNonce is the row identifier nonce, incremented when a row is inserted.
+  // RowNonce distinguishes duplicate rows in tables without a primary key.
   uint64 row_nonce = 3;
   // AutoIncrVal is the auto increment value, if necessary.
   // Typically contains an integer or float.
@@ -54,7 +54,7 @@ message TableRoot {
   uint32 collation_id = 6;
   // Comment is an additional comment on the table.
   string comment = 7;
-  // Indexes contains secondary index metadata. Lookups are scan-backed.
+  // Indexes contains secondary index definitions and their stored trees.
   repeated TableIndex indexes = 8;
 }
 
@@ -68,6 +68,8 @@ message TableIndex {
   bool unique = 3;
   // Comment contains the index comment.
   string comment = 4;
+  // KeyValue maps encoded index columns to encoded primary row keys.
+  .kvtx.block.KeyValueStore key_value = 5;
 }
 
 // TableIndexColumn is a column in a TableIndex.
@@ -81,7 +83,7 @@ message TableIndexColumn {
 // TablePartitionRoot contains the root of a table partition.
 message TablePartitionRoot {
   // RowKeyValue is the key/value tree of objects.
-  // Key: row_nonce uint64 encoded with big endian
+  // Key: encoded primary key, or encoded row and nonce for keyless tables.
   // Value: cid.BlockRef -> Object
   .kvtx.block.KeyValueStore row_key_value = 1;
 }

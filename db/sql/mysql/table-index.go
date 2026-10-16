@@ -7,24 +7,28 @@ import (
 	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/dolthub/go-mysql-server/sql/expression"
 	"github.com/pkg/errors"
+	kvtx_block "github.com/s4wave/spacewave/db/kvtx/block"
 )
 
+// tableIndex describes a stored equality index to the SQL planner.
 type tableIndex struct {
-	table   *Table
-	name    string
+	// table supplies the indexed column types and stored roots.
+	table *Table
+	// name identifies the index within the table.
+	name string
+	// columns contains indexed columns in key order.
 	columns []*TableIndexColumn
-	unique  bool
+	// unique indicates that non-null tuples identify at most one row.
+	unique bool
+	// comment is the index's SQL comment.
 	comment string
+	// primary selects the row tree instead of a secondary reference tree.
 	primary bool
 }
 
-// IndexedAccess returns a scan-backed indexed table that returns only the rows
-// within the lookup ranges. PreciseMatch is false, so the engine also keeps
-// its predicate filters.
+// IndexedAccess returns a table that resolves equality lookups through stored keys.
 func (t *Table) IndexedAccess(ctx *sql.Context, lookup sql.IndexLookup) sql.IndexedTable {
-	indexed := *t
-	indexed.lookup = &lookup
-	return &indexed
+	return t
 }
 
 // GetIndexes returns primary-key and secondary index metadata for planning.
@@ -60,35 +64,16 @@ func (t *Table) PreciseMatch() bool {
 	return false
 }
 
-// LookupPartitions returns all partitions for scan-backed indexed access.
-// PartitionRows of the indexed table filters each by the lookup ranges.
+// LookupPartitions fetches matching rows from the stored index keys.
 func (t *Table) LookupPartitions(ctx *sql.Context, lookup sql.IndexLookup) (sql.PartitionIter, error) {
-	indexed := *t
-	indexed.lookup = &lookup
-	return NewTablePartitionIter(&indexed), nil
+	rows, err := t.lookupRows(ctx, lookup)
+	if err != nil {
+		return nil, err
+	}
+	return sql.PartitionsToPartitionIter(&tableLookupPartition{rows: rows}), nil
 }
 
-// lookupFilter returns the expression selecting the rows within the ranges of
-// the table index lookup, or nil when the table has no lookup.
-func (t *Table) lookupFilter(ctx *sql.Context) (sql.Expression, error) {
-	// Resolve the lookup index and its ranges.
-	if t.lookup == nil {
-		return nil, nil
-	}
-	idx, ok := t.lookup.Index.(*tableIndex)
-	if !ok {
-		return nil, ErrUnexpectedType
-	}
-	ranges, ok := t.lookup.Ranges.(sql.MySQLRangeCollection)
-	if !ok {
-		return nil, ErrUnexpectedType
-	}
-
-	// Match each range against the indexed column expressions.
-	return expression.NewRangeFilterExpr(ctx, idx.expressions(), ranges)
-}
-
-// CreateIndex records secondary index metadata.
+// CreateIndex builds a secondary tree from the existing rows.
 func (t *Table) CreateIndex(ctx *sql.Context, def sql.IndexDef) error {
 	// Require an unused index name and a supported secondary-index constraint.
 	if def.Name == "" {
@@ -115,83 +100,115 @@ func (t *Table) CreateIndex(ctx *sql.Context, def sql.IndexDef) error {
 
 	// Construct the secondary-index metadata from the requested definition.
 	index := &TableIndex{
-		Name:    def.Name,
-		Columns: cols,
-		Unique:  def.IsUnique(),
-		Comment: def.Comment,
+		Name:     def.Name,
+		Columns:  cols,
+		Unique:   def.IsUnique(),
+		Comment:  def.Comment,
+		KeyValue: kvtx_block.NewKeyValueStore(0),
 	}
 
-	// Check existing table rows before accepting a unique index.
-	if index.GetUnique() {
-		editor := t.NewTableEditor(ctx)
-		ords, err := t.indexColumnOrdinals(cols)
+	// Build on a detached graph so failure cannot leave a partial index.
+	next, err := LoadTable(GetDbContext(ctx), t.name, t.bcs.DetachRecursive(false, true, false))
+	if err != nil {
+		return err
+	}
+	next.root.Indexes = append(next.root.Indexes, index)
+	next.bcs.SetBlock(next.root, true)
+	if err := next.populateIndex(ctx, index); err != nil {
+		return err
+	}
+	return t.replaceRoot(GetDbContext(ctx), next.bcs)
+}
+
+// populateIndex builds index entries and detects duplicate unique values.
+func (t *Table) populateIndex(ctx *sql.Context, index *TableIndex) error {
+	// Open the new secondary tree once for the full table walk.
+	tree, err := t.indexTree(ctx, index, true)
+	if err != nil {
+		return err
+	}
+	defer tree.Discard()
+	for part := range t.root.GetTablePartitions() {
+		// Read the old rows with their exact stored primary keys.
+		partition, err := t.PartitionAtIndex(part)
 		if err != nil {
 			return err
 		}
-		partIter, err := t.Partitions(ctx)
+		tx, err := partition.BuildTreeTx(GetDbContext(ctx), false, false)
 		if err != nil {
 			return err
 		}
-		defer partIter.Close(ctx)
-		for {
-			part, err := partIter.Next(ctx)
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				return err
-			}
-			pt, ok := part.(*TablePartition)
-			if !ok {
-				return ErrUnexpectedType
-			}
-			tx, err := pt.BuildTreeTx(GetDbContext(ctx), false, false)
-			if err != nil {
-				return err
-			}
-			rowIter, err := NewTablePartitionRowIter(GetDbContext(ctx), tx, t.schema.Schema)
-			if err != nil {
-				tx.Discard()
-				return err
-			}
-			for {
-				row, err := rowIter.Next(ctx)
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					rowIter.Close(ctx)
-					tx.Discard()
-					return err
-				}
-				existing, err := editor.findRowWithEqualValues(ctx, row, ords, rowIter.it.Key(), true)
-				if err != nil {
-					rowIter.Close(ctx)
-					tx.Discard()
-					return err
-				}
-				if existing != nil {
-					rowIter.Close(ctx)
-					tx.Discard()
-					return sql.ErrDuplicateEntry.New(index.GetName())
-				}
-			}
-			rowIter.Close(ctx)
+		rows, err := NewTablePartitionRowIter(GetDbContext(ctx), tx, t.schema.Schema)
+		if err != nil {
 			tx.Discard()
+			return err
+		}
+
+		// Release the row walk before moving to the next partition.
+		err = func() error {
+			defer rows.Close(ctx)
+			for {
+				// Encode the indexed values of each stored row.
+				row, err := rows.Next(ctx)
+				if err == io.EOF {
+					return nil
+				}
+				if err != nil {
+					return err
+				}
+				key, unique, err := t.secondaryKey(ctx, index, row, rows.it.Key())
+				if err != nil {
+					return err
+				}
+
+				// Reject existing non-null unique entries before setting the reference.
+				if unique {
+					exists, err := tree.Exists(GetDbContext(ctx), key)
+					if err != nil {
+						return err
+					}
+					if exists {
+						return sql.ErrDuplicateEntry.New(index.GetName())
+					}
+				}
+				if err := tree.Set(GetDbContext(ctx), key, rows.it.Key()); err != nil {
+					return err
+				}
+			}
+		}()
+		if err != nil {
+			return err
 		}
 	}
-
-	// Publish the new secondary index in the dirty table root.
-	t.root.Indexes = append(t.root.Indexes, index)
-	t.bcs.SetBlock(t.root, true)
 	return nil
 }
 
-// DropIndex removes secondary index metadata.
+// DropIndex removes a secondary tree and its definition.
 func (t *Table) DropIndex(ctx *sql.Context, indexName string) error {
 	for i, index := range t.root.GetIndexes() {
 		if strings.EqualFold(index.GetName(), indexName) {
+			// Retain surviving cursor graphs before changing their positional IDs.
+			container := t.bcs.FollowSubBlock(8)
+			children, err := container.GetAllRefs(true)
+			if err != nil {
+				return err
+			}
+			container.ClearAllRefs()
 			t.root.Indexes = append(t.root.Indexes[:i], t.root.Indexes[i+1:]...)
+
+			// Reattach each surviving tree at its new index-set position.
+			for id, child := range children {
+				if int(id) == i {
+					continue
+				}
+				next := id
+				if int(id) > i {
+					next--
+				}
+				if err := child.SetAsSubBlock(next, container); err != nil {
+					return err
+				}
+			}
 			t.bcs.SetBlock(t.root, true)
 			return nil
 		}
@@ -218,6 +235,7 @@ func (t *Table) RenameIndex(ctx *sql.Context, fromIndexName string, toIndexName 
 	return nil
 }
 
+// indexByName resolves a secondary index using SQL's case-insensitive names.
 func (t *Table) indexByName(name string) *TableIndex {
 	for _, index := range t.root.GetIndexes() {
 		if strings.EqualFold(index.GetName(), name) {
@@ -227,6 +245,7 @@ func (t *Table) indexByName(name string) *TableIndex {
 	return nil
 }
 
+// indexColumnOrdinals resolves index column names to their table positions.
 func (t *Table) indexColumnOrdinals(columns []*TableIndexColumn) ([]int, error) {
 	ords := make([]int, len(columns))
 	for i, col := range columns {
@@ -239,6 +258,7 @@ func (t *Table) indexColumnOrdinals(columns []*TableIndexColumn) ([]int, error) 
 	return ords, nil
 }
 
+// columnOrdinal finds a column using SQL's case-insensitive names.
 func (t *Table) columnOrdinal(name string) (int, bool) {
 	for i, col := range t.schema.Schema {
 		if strings.EqualFold(col.Name, name) {
@@ -321,12 +341,52 @@ func (idx *tableIndex) ColumnExpressionTypes(ctx *sql.Context) []sql.ColumnExpre
 	return out
 }
 
-// CanSupport reports true because a lookup scans the table for any range.
+// CanSupport accepts complete equality tuples; other predicates use table scans.
 func (idx *tableIndex) CanSupport(ctx *sql.Context, ranges ...sql.Range) bool {
+	for _, r := range ranges {
+		mysqlRange, ok := r.(sql.MySQLRange)
+		if !ok {
+			return false
+		}
+		if _, ok := idx.pointValues(ctx, mysqlRange); !ok {
+			return false
+		}
+	}
 	return true
 }
 
-// CanSupportOrderBy reports false because lookups return rows in table order.
+// pointValues extracts a full equality tuple without assuming byte sort order.
+func (idx *tableIndex) pointValues(ctx *sql.Context, r sql.MySQLRange) (sql.Row, bool) {
+	// Reject incomplete tuples and unsupported range bounds.
+	if len(r) != len(idx.columns) {
+		return nil, false
+	}
+	values := make(sql.Row, len(r))
+	for i, column := range r {
+		// NULL is a point only when both cuts select NULL itself.
+		if _, ok := column.LowerBound.(sql.BelowNull); ok {
+			if _, ok := column.UpperBound.(sql.AboveNull); !ok {
+				return nil, false
+			}
+			continue
+		}
+
+		// Closed equal lower and upper bounds identify one SQL value.
+		lower, lowerOK := column.LowerBound.(sql.Below)
+		upper, upperOK := column.UpperBound.(sql.Above)
+		if !lowerOK || !upperOK {
+			return nil, false
+		}
+		cmp, err := column.Typ.Compare(ctx, lower.Key, upper.Key)
+		if err != nil || cmp != 0 {
+			return nil, false
+		}
+		values[i] = lower.Key
+	}
+	return values, true
+}
+
+// CanSupportOrderBy reports false because encoded key order is not SQL value order.
 func (idx *tableIndex) CanSupportOrderBy(expr sql.Expression) bool {
 	return false
 }
@@ -348,6 +408,7 @@ func (idx *tableIndex) PrefixLengths() []uint16 {
 	return out
 }
 
+// expressions returns planner fields for the index's ordered column list.
 func (idx *tableIndex) expressions() []sql.Expression {
 	exprs := make([]sql.Expression, len(idx.columns))
 	for i, indexCol := range idx.columns {
@@ -366,4 +427,5 @@ func (idx *tableIndex) expressions() []sql.Expression {
 	return exprs
 }
 
+// _ is a type assertion.
 var _ sql.Index = (*tableIndex)(nil)

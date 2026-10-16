@@ -1,13 +1,13 @@
 package mysql
 
 import (
-	"bytes"
 	"io"
 	"slices"
 	"strings"
 
 	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/pkg/errors"
+	kvtx_block "github.com/s4wave/spacewave/db/kvtx/block"
 )
 
 // AddColumn adds a column and rewrites stored rows to the new schema.
@@ -39,21 +39,14 @@ func (t *Table) AddColumn(ctx *sql.Context, column *sql.Column, order *sql.Colum
 	// Rewrite table rows with the new column inserted into their schema.
 	newSchema := slices.Insert(slices.Clone(t.schema.Schema), insertAt, &nextColumn)
 	newPK := primaryKeySchemaFor(newSchema)
-	if err := t.rewriteRows(ctx, t.schema, newPK, func(row sql.Row) (sql.Row, error) {
+	return t.rewriteRows(ctx, newPK, "", "", func(row sql.Row) (sql.Row, error) {
 		// Build the row with the new column default at its schema position.
 		next := make(sql.Row, len(row)+1)
 		copy(next, row[:insertAt])
 		next[insertAt] = defaultValue
 		copy(next[insertAt+1:], row[insertAt:])
 		return next, nil
-	}); err != nil {
-		return err
-	}
-
-	// Publish the rewritten schema and primary-key positions on the table root.
-	t.root.TableSchema = NewTableSchema(newPK.Schema)
-	t.setPrimaryKeyOrdinals(newPK.PkOrdinals)
-	return t.reloadRoot(GetDbContext(ctx), t.root)
+	})
 }
 
 // DropColumn drops a column and rewrites stored rows to the new schema.
@@ -79,19 +72,12 @@ func (t *Table) DropColumn(ctx *sql.Context, columnName string) error {
 	// Rewrite table rows without the removed column.
 	newSchema := slices.Delete(slices.Clone(t.schema.Schema), dropAt, dropAt+1)
 	newPK := primaryKeySchemaFor(newSchema)
-	if err := t.rewriteRows(ctx, t.schema, newPK, func(row sql.Row) (sql.Row, error) {
+	return t.rewriteRows(ctx, newPK, "", "", func(row sql.Row) (sql.Row, error) {
 		next := make(sql.Row, len(row)-1)
 		copy(next, row[:dropAt])
 		copy(next[dropAt:], row[dropAt+1:])
 		return next, nil
-	}); err != nil {
-		return err
-	}
-
-	// Publish the shortened schema and primary-key positions on the table root.
-	t.root.TableSchema = NewTableSchema(newPK.Schema)
-	t.setPrimaryKeyOrdinals(newPK.PkOrdinals)
-	return t.reloadRoot(GetDbContext(ctx), t.root)
+	})
 }
 
 // ModifyColumn replaces an existing column definition and optionally moves it.
@@ -119,7 +105,7 @@ func (t *Table) ModifyColumn(ctx *sql.Context, columnName string, column *sql.Co
 	// Rewrite table rows with the replacement column at its new position.
 	newSchema := slices.Insert(withoutOld, insertAt, &nextColumn)
 	newPK := primaryKeySchemaFor(newSchema)
-	if err := t.rewriteRows(ctx, t.schema, newPK, func(row sql.Row) (sql.Row, error) {
+	return t.rewriteRows(ctx, newPK, columnName, nextColumn.Name, func(row sql.Row) (sql.Row, error) {
 		// Preserve the existing column value while moving it within the row.
 		value := row[oldAt]
 		next := make(sql.Row, 0, len(row))
@@ -127,81 +113,98 @@ func (t *Table) ModifyColumn(ctx *sql.Context, columnName string, column *sql.Co
 		next = append(next, row[oldAt+1:]...)
 		next = slices.Insert(next, insertAt, value)
 		return next, nil
-	}); err != nil {
+	})
+}
+
+// rewriteRows atomically rebuilds row identities and secondary trees for a schema change.
+func (t *Table) rewriteRows(
+	ctx *sql.Context,
+	newSchema sql.PrimaryKeySchema,
+	renamedFrom, renamedTo string,
+	transform func(sql.Row) (sql.Row, error),
+) error {
+	// Build the new layout in a detached table, leaving the old tree readable.
+	next := *t
+	next.root = t.root.CloneVT()
+	next.bcs = t.bcs.Detach(false)
+	next.bcs.ClearAllRefs()
+	next.root.TableSchema = NewTableSchema(newSchema.Schema)
+	next.setPrimaryKeyOrdinals(newSchema.PkOrdinals)
+	next.root.RowNonce = 0
+
+	// Reset stored trees so every row and secondary reference is rebuilt.
+	for i := range next.root.TablePartitions {
+		next.root.TablePartitions[i] = NewTablePartitionRoot()
+	}
+	for _, index := range next.root.Indexes {
+		index.KeyValue = kvtx_block.NewKeyValueStore(0)
+	}
+	if renamedFrom != "" {
+		next.renameIndexColumn(renamedFrom, renamedTo)
+	}
+
+	// Load the replacement schema and counters on the detached table.
+	next.bcs.SetBlock(next.root, true)
+	if err := next.loadRootState(GetDbContext(ctx), next.root); err != nil {
 		return err
 	}
 
-	// Publish the replacement column in index metadata and the table schema.
-	t.renameIndexColumn(columnName, nextColumn.Name)
-	t.root.TableSchema = NewTableSchema(newPK.Schema)
-	t.setPrimaryKeyOrdinals(newPK.PkOrdinals)
-	return t.reloadRoot(GetDbContext(ctx), t.root)
-}
+	// Transform each original row and insert it through normal key constraints.
+	editor := next.NewTableEditor(ctx)
+	for part := range t.root.TablePartitions {
+		// Open the original partition without modifying its cursors or stored keys.
+		partition, err := t.PartitionAtIndex(part)
+		if err != nil {
+			return err
+		}
+		rows, err := partition.IterateRows(ctx)
+		if err != nil {
+			return err
+		}
 
-func (t *Table) rewriteRows(
-	ctx *sql.Context,
-	oldSchema sql.PrimaryKeySchema,
-	newSchema sql.PrimaryKeySchema,
-	transform func(sql.Row) (sql.Row, error),
-) error {
-	cctx := GetDbContext(ctx)
-	for ix, ptRoot := range t.root.GetTablePartitions() {
-		ptBcs := t.bcs.FollowSubBlock(2).FollowSubBlock(uint32(ix)) //nolint:gosec
-		pt, err := NewTablePartition(ix, ptRoot, ptBcs, oldSchema.Schema)
+		// Rebuild every row and index reference in the replacement table.
+		err = func() error {
+			defer rows.Close(ctx)
+			for {
+				// Transform and validate the row against its replacement schema.
+				row, err := rows.Next(ctx)
+				if err == io.EOF {
+					return nil
+				}
+				if err != nil {
+					return err
+				}
+				row, err = transform(row)
+				if err != nil {
+					return err
+				}
+				for i, column := range newSchema.Schema {
+					value, _, err := column.Type.Convert(ctx, row[i])
+					if err != nil {
+						return err
+					}
+					row[i] = value
+				}
+				if err := newSchema.CheckRow(ctx, row); err != nil {
+					return err
+				}
+
+				// Reuse the editor so primary keys and unique indexes remain authoritative.
+				if err := editor.Insert(ctx, row); err != nil {
+					return err
+				}
+			}
+		}()
 		if err != nil {
 			return err
 		}
-		tx, err := pt.BuildTreeTx(cctx, false, true)
-		if err != nil {
-			return err
-		}
-		rowIter, err := NewTablePartitionRowIter(cctx, tx, oldSchema.Schema)
-		if err != nil {
-			tx.Discard()
-			return err
-		}
-		for {
-			row, err := rowIter.Next(ctx)
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				rowIter.Close(ctx)
-				tx.Discard()
-				return err
-			}
-			rowKey := bytes.Clone(rowIter.it.Key())
-			next, err := transform(row)
-			if err != nil {
-				rowIter.Close(ctx)
-				tx.Discard()
-				return err
-			}
-			if err := newSchema.CheckRow(ctx, next); err != nil {
-				rowIter.Close(ctx)
-				tx.Discard()
-				return err
-			}
-			rootCursor := tx.GetCursor()
-			rowCursor := rootCursor.Detach(false)
-			rowCursor.ClearAllRefs()
-			if _, err := BuildTableRow(cctx, rowCursor, next, nil); err != nil {
-				rowIter.Close(ctx)
-				tx.Discard()
-				return err
-			}
-			if err := tx.SetCursorAtKey(cctx, rowKey, rowCursor, false); err != nil {
-				rowIter.Close(ctx)
-				tx.Discard()
-				return err
-			}
-		}
-		rowIter.Close(ctx)
-		tx.Discard()
 	}
-	return nil
+
+	// Publish the complete replacement layout only after every row succeeds.
+	return t.replaceRoot(GetDbContext(ctx), next.bcs)
 }
 
+// columnOrderIndex resolves a requested position in the table schema.
 func (t *Table) columnOrderIndex(order *sql.ColumnOrder, defaultIndex int) (int, error) {
 	// Use the default column position when the request omits an order.
 	if order == nil {
@@ -224,6 +227,7 @@ func (t *Table) columnOrderIndex(order *sql.ColumnOrder, defaultIndex int) (int,
 	return ord + 1, nil
 }
 
+// columnDefaultValue evaluates a new column's default for existing rows.
 func columnDefaultValue(ctx *sql.Context, column *sql.Column) (any, error) {
 	if column.Default != nil {
 		return column.Default.Eval(ctx, nil)
@@ -234,6 +238,7 @@ func columnDefaultValue(ctx *sql.Context, column *sql.Column) (any, error) {
 	return nil, nil
 }
 
+// primaryKeySchemaFor derives primary ordinals from the current column positions.
 func primaryKeySchemaFor(schema sql.Schema) sql.PrimaryKeySchema {
 	ordinals := make([]int, 0)
 	for i, col := range schema {
@@ -244,6 +249,7 @@ func primaryKeySchemaFor(schema sql.Schema) sql.PrimaryKeySchema {
 	return sql.NewPrimaryKeySchema(schema, ordinals...)
 }
 
+// setPrimaryKeyOrdinals stores primary-key column positions.
 func (t *Table) setPrimaryKeyOrdinals(ordinals []int) {
 	t.root.PrimaryKeyOrdinals = make([]int32, len(ordinals))
 	for i, ord := range ordinals {
@@ -251,6 +257,7 @@ func (t *Table) setPrimaryKeyOrdinals(ordinals []int) {
 	}
 }
 
+// renameIndexColumn updates secondary definitions after a column rename.
 func (t *Table) renameIndexColumn(oldName, newName string) {
 	if strings.EqualFold(oldName, newName) {
 		return

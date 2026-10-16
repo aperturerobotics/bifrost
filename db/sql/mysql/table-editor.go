@@ -3,8 +3,8 @@ package mysql
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"io"
+	"encoding/binary"
+	"slices"
 	"strings"
 
 	"github.com/dolthub/go-mysql-server/sql"
@@ -17,10 +17,32 @@ import (
 //
 // Note: all table operations are (currently) not concurrency safe.
 type TableEditor struct {
-	ctx           context.Context
-	t             *Table
+	// ctx supplies the default operation context.
+	ctx context.Context
+	// t owns the row and index trees.
+	t *Table
+	// buildBlobOpts controls row value encoding.
 	buildBlobOpts *blob.BuildBlobOpts
-	statementRoot *TableRoot
+	// statement indicates whether row edits need rollback records.
+	statement bool
+	// statementNonce is the hidden row counter before the statement.
+	statementNonce uint64
+	// statementAutoIncrement is the auto-increment counter before the statement.
+	statementAutoIncrement uint64
+	// changes records row edits in application order for statement rollback.
+	changes []tableRowChange
+}
+
+// tableRowChange records the row identities needed to undo one editor operation.
+type tableRowChange struct {
+	// before is the replaced row, or nil for an insertion.
+	before sql.Row
+	// after is the replacement row, or nil for a deletion.
+	after sql.Row
+	// oldKey is the original stored identity.
+	oldKey []byte
+	// newKey is the replacement stored identity.
+	newKey []byte
 }
 
 // NewTableEditor constructs a new table row inserter.
@@ -39,11 +61,12 @@ func (i *TableEditor) SetBuildBlobOpts(opts *blob.BuildBlobOpts) {
 	i.buildBlobOpts = opts
 }
 
-// StatementBegin is called before the first operation of a statement.
-// Integrators should mark the state of the data in some way that it may be
-// returned to in the case of an error.
+// StatementBegin starts a row-edit journal and snapshots the table counters.
 func (i *TableEditor) StatementBegin(ctx *sql.Context) {
-	i.statementRoot = i.t.root.CloneVT()
+	i.statement = true
+	i.statementNonce = i.t.root.RowNonce
+	i.statementAutoIncrement = i.t.autoIncVal
+	i.changes = nil
 }
 
 // Insert inserts the row given, returning an error if it cannot. Insert will be
@@ -69,11 +92,13 @@ func (i *TableEditor) Insert(sqlCtx *sql.Context, row sql.Row) error {
 		return sql.ErrInvalidColumnNumber.New(len(schema), len(row))
 	}
 
-	// Select the partition for the next table row.
-	rowNonce := i.t.root.RowNonce
-	pt, _, err := i.t.SelectPartition(rowNonce)
+	// Encode the primary row identity, retaining a nonce only for keyless duplicates.
+	rowKey, err := i.t.rowKey(checkCtx, row)
 	if err != nil {
 		return err
+	}
+	if len(i.t.schema.PkOrdinals) == 0 {
+		rowKey = binary.BigEndian.AppendUint64(rowKey, i.t.root.RowNonce)
 	}
 
 	// Check the inserted row against primary and unique keys.
@@ -82,13 +107,11 @@ func (i *TableEditor) Insert(sqlCtx *sql.Context, row sql.Row) error {
 	}
 
 	// Advance the table auto-increment value past the inserted row.
-	// auto increment
 	autoIncIdx := i.t.autoIncIdx
 	schemaCols := i.t.schema.Schema
 	if autoIncIdx != 0 {
 		// Locate the auto-increment column and compare its inserted value.
 		autoIncIdx-- // 1-based index
-		// ensure next Insert() auto_increment is at least this row + 1
 		autoIncVal := i.t.autoIncVal
 		if autoIncIdx >= len(schemaCols) {
 			return errors.Errorf("auto increment index out of range: %d > %d", autoIncIdx, len(schemaCols)-1)
@@ -101,7 +124,6 @@ func (i *TableEditor) Insert(sqlCtx *sql.Context, row sql.Row) error {
 
 		// Convert larger inserted values into the next auto-increment value.
 		if cmp > 0 {
-			// Provided value larger than autoIncVal, set autoIncVal to that value
 			v, _, err := types.Uint64.Convert(sqlCtx, row[autoIncIdx])
 			if err != nil {
 				return errors.Wrap(err, "auto increment type mismatch")
@@ -125,33 +147,18 @@ func (i *TableEditor) Insert(sqlCtx *sql.Context, row sql.Row) error {
 		}
 	}
 
-	// Open the partition transaction for the new row.
-	rowKey := MarshalTableRowKey(rowNonce)
-	tx, err := pt.BuildTreeTx(i.ctx, false, true)
-	if err != nil {
-		return err
+	// Journal the inserted identity before changing row or index storage.
+	if i.statement {
+		i.changes = append(i.changes, tableRowChange{after: slices.Clone(row), newKey: rowKey})
 	}
-	rootCursor := tx.GetCursor()
-
-	// Build the inserted row in a detached cursor.
-	// detach the root cursor to create a cursor for the new TableRow.
-	rowCursor := rootCursor.Detach(false)
-	rowCursor.ClearAllRefs()
-	_, err = BuildTableRow(cctx, rowCursor, row, i.buildBlobOpts)
-	if err != nil {
+	if err := i.storeRow(checkCtx, row, rowKey); err != nil {
 		return err
 	}
 
-	// Attach the inserted row at its nonce key.
-	// set the row to the rowKey
-	err = tx.SetCursorAtKey(i.ctx, rowKey, rowCursor, false)
-	if err != nil {
-		return err
+	// Reserve the next hidden identity only for a keyless row.
+	if len(i.t.schema.PkOrdinals) == 0 {
+		i.t.root.RowNonce++
 	}
-
-	// Record the next row nonce in the dirty table root.
-	// increment the row nonce
-	i.t.root.RowNonce++
 	i.t.bcs.SetBlock(i.t.root, true)
 	return nil
 }
@@ -186,7 +193,7 @@ func (i *TableEditor) Update(sqlCtx *sql.Context, oldRow, newRow sql.Row) error 
 	}
 
 	// Locate the existing row and check the replacement for key conflicts.
-	pt, rowKey, err := i.findRowKey(checkCtx, oldRow)
+	rowKey, err := i.findRowKey(checkCtx, oldRow)
 	if err != nil {
 		return err
 	}
@@ -194,19 +201,25 @@ func (i *TableEditor) Update(sqlCtx *sql.Context, oldRow, newRow sql.Row) error 
 		return err
 	}
 
-	// Build the replacement row in its partition transaction.
-	tx, err := pt.BuildTreeTx(cctx, false, true)
+	// Recompute the row identity when primary columns or keyless values change.
+	newKey, err := i.t.rowKey(checkCtx, newRow)
 	if err != nil {
 		return err
 	}
-	rootCursor := tx.GetCursor()
-	rowCursor := rootCursor.Detach(false)
-	rowCursor.ClearAllRefs()
-	if _, err := BuildTableRow(cctx, rowCursor, newRow, i.buildBlobOpts); err != nil {
-		return err
+	if len(i.t.schema.PkOrdinals) == 0 {
+		newKey = append(newKey, rowKey[len(rowKey)-8:]...)
 	}
 
-	return tx.SetCursorAtKey(cctx, rowKey, rowCursor, false)
+	// Journal both identities before replacing the row and its secondary references.
+	if i.statement {
+		i.changes = append(i.changes, tableRowChange{
+			before: slices.Clone(oldRow), after: slices.Clone(newRow), oldKey: rowKey, newKey: newKey,
+		})
+	}
+	if err := i.removeRow(checkCtx, oldRow, rowKey); err != nil {
+		return err
+	}
+	return i.storeRow(checkCtx, newRow, newKey)
 }
 
 // Delete deletes the row given.
@@ -232,18 +245,57 @@ func (i *TableEditor) Delete(sqlCtx *sql.Context, row sql.Row) error {
 	}
 
 	// Locate the deleted row in its table partition.
-	pt, rowKey, err := i.findRowKey(checkCtx, row)
+	rowKey, err := i.findRowKey(checkCtx, row)
 	if err != nil {
 		return err
 	}
 
-	// Open the partition transaction that removes the row.
-	tx, err := pt.BuildTreeTx(cctx, false, true)
-	if err != nil {
+	// Journal the removed identity before changing row or index storage.
+	if i.statement {
+		i.changes = append(i.changes, tableRowChange{before: slices.Clone(row), oldKey: rowKey})
+	}
+	return i.removeRow(checkCtx, row, rowKey)
+}
+
+// storeRow writes one row and all of its secondary references without constraint checks.
+func (i *TableEditor) storeRow(ctx *sql.Context, row sql.Row, key []byte) error {
+	// Build the row independently so value encoding cannot partially change its tree.
+	cursor := i.t.bcs.Detach(false)
+	cursor.ClearAllRefs()
+	if _, err := BuildTableRow(GetDbContext(ctx), cursor, row, i.buildBlobOpts); err != nil {
 		return err
 	}
 
-	return tx.Delete(cctx, rowKey)
+	// Write the row reference into its primary partition.
+	part, err := i.t.SelectPartition(key)
+	if err != nil {
+		return err
+	}
+	tree, err := part.BuildTreeTx(GetDbContext(ctx), false, true)
+	if err != nil {
+		return err
+	}
+	if err := tree.SetCursorAtKey(GetDbContext(ctx), key, cursor, false); err != nil {
+		return err
+	}
+	return i.t.writeIndexes(ctx, row, key, false)
+}
+
+// removeRow removes one row and its secondary references without constraint checks.
+func (i *TableEditor) removeRow(ctx *sql.Context, row sql.Row, key []byte) error {
+	// Remove secondary references before deleting the primary row identity.
+	if err := i.t.writeIndexes(ctx, row, key, true); err != nil {
+		return err
+	}
+	part, err := i.t.SelectPartition(key)
+	if err != nil {
+		return err
+	}
+	tree, err := part.BuildTreeTx(GetDbContext(ctx), false, true)
+	if err != nil {
+		return err
+	}
+	return tree.Delete(GetDbContext(ctx), key)
 }
 
 // ensureUniqueRow checks row against the primary key and every unique index,
@@ -251,31 +303,59 @@ func (i *TableEditor) Delete(sqlCtx *sql.Context, row sql.Row) error {
 // carrying the existing row, which INSERT ... ON DUPLICATE KEY UPDATE and
 // REPLACE use to update or delete it.
 func (i *TableEditor) ensureUniqueRow(sqlCtx *sql.Context, row sql.Row, skipKey []byte) error {
+	// Check the primary tree at the encoded row identity, excluding a replaced row.
 	pkOrds := i.t.schema.PkOrdinals
 	if len(pkOrds) != 0 {
-		existing, err := i.findRowWithEqualValues(sqlCtx, row, pkOrds, skipKey, false)
+		key, err := i.t.rowKey(sqlCtx, row)
 		if err != nil {
 			return err
 		}
-		if existing != nil {
-			return sql.NewUniqueKeyErr(formatKey(row, pkOrds), true, existing)
+		if !bytes.Equal(key, skipKey) {
+			existing, err := i.t.rowAtKey(sqlCtx, key)
+			if err != nil {
+				return err
+			}
+			if existing != nil {
+				return sql.NewUniqueKeyErr(formatKey(row, pkOrds), true, existing)
+			}
 		}
 	}
+
+	// Probe each non-null unique secondary key once.
 	for _, index := range i.t.root.GetIndexes() {
 		if !index.GetUnique() {
 			continue
 		}
-		ords, err := i.t.indexColumnOrdinals(index.GetColumns())
+		key, unique, err := i.t.secondaryKey(sqlCtx, index, row, nil)
 		if err != nil {
 			return err
 		}
-		existing, err := i.findRowWithEqualValues(sqlCtx, row, ords, skipKey, true)
+		if !unique {
+			continue
+		}
+		tree, err := i.t.indexTree(sqlCtx, index, false)
 		if err != nil {
 			return err
 		}
-		if existing != nil {
-			return sql.NewUniqueKeyErr(formatKey(row, ords), false, existing)
+		primary, found, err := tree.Get(GetDbContext(sqlCtx), key)
+		tree.Discard()
+		if err != nil {
+			return err
 		}
+		if !found || bytes.Equal(primary, skipKey) {
+			continue
+		}
+
+		// Duplicate-key updates need the existing row, not just its identity.
+		existing, err := i.t.rowAtKey(sqlCtx, primary)
+		if err != nil {
+			return err
+		}
+		ordinals, err := i.t.indexColumnOrdinals(index.GetColumns())
+		if err != nil {
+			return err
+		}
+		return sql.NewUniqueKeyErr(formatKey(row, ordinals), false, existing)
 	}
 	return nil
 }
@@ -284,205 +364,62 @@ func (i *TableEditor) ensureUniqueRow(sqlCtx *sql.Context, row sql.Row, skipKey 
 func formatKey(row sql.Row, ordinals []int) string {
 	vals := make([]string, len(ordinals))
 	for idx, ord := range ordinals {
-		vals[idx] = fmt.Sprint(row[ord])
+		vals[idx] = errors.Errorf("%v", row[ord]).Error()
 	}
 	return "[" + strings.Join(vals, ",") + "]"
 }
 
-// findRowWithEqualValues returns the first stored row other than the one at
-// skipKey whose values at ordinals equal those of row, or nil when none does.
-// With skipNull, a null value in row matches nothing, as in a unique index.
-func (i *TableEditor) findRowWithEqualValues(
-	sqlCtx *sql.Context,
-	row sql.Row,
-	ordinals []int,
-	skipKey []byte,
-	skipNull bool,
-) (sql.Row, error) {
-	// Ignore comparisons with no indexed columns.
-	if len(ordinals) == 0 {
-		return nil, nil
-	}
-
-	// Exclude rows with null indexed values when uniqueness permits them.
-	if skipNull {
-		for _, ord := range ordinals {
-			if row[ord] == nil {
-				return nil, nil
-			}
-		}
-	}
-
-	// Use the SQL operation context for partition reads.
-	cctx := i.ctx
-	if sqlCtx != nil && sqlCtx.Context != nil {
-		cctx = sqlCtx.Context
-	}
-
-	// Open the table partition iterator for the key comparison.
-	partIter, err := i.t.Partitions(sqlCtx)
+// findRowKey resolves the stored row through its primary key or keyless prefix.
+func (i *TableEditor) findRowKey(ctx *sql.Context, row sql.Row) ([]byte, error) {
+	// Encode the row identity and choose its one storage partition.
+	key, err := i.t.rowKey(ctx, row)
 	if err != nil {
 		return nil, err
 	}
-	defer partIter.Close(sqlCtx)
-
-	// Search every table partition for matching indexed values.
-	for {
-		// Read the next table partition and handle iterator completion.
-		part, err := partIter.Next(sqlCtx)
-		if err == io.EOF {
-			return nil, nil
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		// Require a table partition before opening its row transaction.
-		pt, ok := part.(*TablePartition)
-		if !ok {
-			return nil, ErrUnexpectedType
-		}
-		tx, err := pt.BuildTreeTx(cctx, false, false)
-		if err != nil {
-			return nil, err
-		}
-
-		// Open the partition row iterator and discard failed transactions.
-		rowIter, err := NewTablePartitionRowIter(cctx, tx, i.t.schema.Schema)
-		if err != nil {
-			tx.Discard()
-			return nil, err
-		}
-
-		// Compare each stored row with the requested indexed values.
-		for {
-			// Read the next stored row and release resources on failure.
-			next, err := rowIter.Next(sqlCtx)
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				rowIter.Close(sqlCtx)
-				tx.Discard()
-				return nil, err
-			}
-
-			// Exclude the row being replaced from the uniqueness comparison.
-			if skipKey != nil && bytes.Equal(skipKey, rowIter.it.Key()) {
-				continue
-			}
-
-			// Compare the indexed column values and release resources on failure.
-			equals, err := i.rowsEqualOnOrdinals(sqlCtx, row, next, ordinals)
-			if err != nil {
-				rowIter.Close(sqlCtx)
-				tx.Discard()
-				return nil, err
-			}
-
-			// Release the partition resources before returning the matching row.
-			if equals {
-				rowIter.Close(sqlCtx)
-				tx.Discard()
-				return next, nil
-			}
-		}
-
-		// Release the exhausted partition iterator and transaction.
-		rowIter.Close(sqlCtx)
-		tx.Discard()
+	keyless := len(i.t.schema.PkOrdinals) == 0
+	partitionKey := key
+	if keyless {
+		partitionKey = binary.BigEndian.AppendUint64(bytes.Clone(key), 0)
 	}
-}
-
-func (i *TableEditor) rowsEqualOnOrdinals(sqlCtx *sql.Context, left, right sql.Row, ordinals []int) (bool, error) {
-	for _, ord := range ordinals {
-		cmp, err := i.t.schema.Schema[ord].Type.Compare(sqlCtx, left[ord], right[ord])
-		if err != nil {
-			return false, err
-		}
-		if cmp != 0 {
-			return false, nil
-		}
-	}
-	return true, nil
-}
-
-func (i *TableEditor) findRowKey(sqlCtx *sql.Context, row sql.Row) (*TablePartition, []byte, error) {
-	// Use the SQL operation context when locating the stored row.
-	cctx := i.ctx
-	if sqlCtx != nil && sqlCtx.Context != nil {
-		cctx = sqlCtx.Context
-	}
-
-	// Open the table partition iterator for the row search.
-	partIter, err := i.t.Partitions(sqlCtx)
+	part, err := i.t.SelectPartition(partitionKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	defer partIter.Close(sqlCtx)
 
-	// Search each partition for the requested table row.
-	for {
-		// Read the next table partition and report an exhausted search.
-		part, err := partIter.Next(sqlCtx)
-		if err == io.EOF {
-			return nil, nil, sql.ErrDeleteRowNotFound.New()
-		}
+	// A keyless mutation selects one duplicate without decoding unrelated rows.
+	if keyless {
+		tree, err := part.BuildTreeTx(GetDbContext(ctx), false, false)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-
-		// Require a table partition before opening its row transaction.
-		pt, ok := part.(*TablePartition)
-		if !ok {
-			return nil, nil, ErrUnexpectedType
-		}
-		tx, err := pt.BuildTreeTx(cctx, false, false)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		// Open the partition row iterator and discard failed transactions.
-		rowIter, err := NewTablePartitionRowIter(cctx, tx, i.t.schema.Schema)
-		if err != nil {
-			tx.Discard()
-			return nil, nil, err
-		}
-
-		// Compare stored rows until the requested row is found.
-		for {
-			// Read the next stored row and release resources on failure.
-			next, err := rowIter.Next(sqlCtx)
-			if err == io.EOF {
-				break
+		defer tree.Discard()
+		it := tree.Iterate(GetDbContext(ctx), key, true, false)
+		defer it.Close()
+		if !it.Next() {
+			if err := it.Err(); err != nil {
+				return nil, err
 			}
-			if err != nil {
-				rowIter.Close(sqlCtx)
-				tx.Discard()
-				return nil, nil, err
-			}
-
-			// Compare the full row using the table schema.
-			equals, err := row.Equals(sqlCtx, next, i.t.schema.Schema)
-			if err != nil {
-				rowIter.Close(sqlCtx)
-				tx.Discard()
-				return nil, nil, err
-			}
-
-			// Retain the matching row key before releasing partition resources.
-			if equals {
-				rowKey := bytes.Clone(rowIter.it.Key())
-				rowIter.Close(sqlCtx)
-				tx.Discard()
-				return pt, rowKey, nil
-			}
+			return nil, sql.ErrDeleteRowNotFound.New()
 		}
-
-		// Release the exhausted partition iterator and transaction.
-		rowIter.Close(sqlCtx)
-		tx.Discard()
+		return bytes.Clone(it.Key()), nil
 	}
+
+	// Preserve the editor contract that the supplied old row must still exist.
+	existing, err := i.t.rowAtKey(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	if existing == nil {
+		return nil, sql.ErrDeleteRowNotFound.New()
+	}
+	equal, err := row.Equals(ctx, existing, i.t.schema.Schema)
+	if err != nil {
+		return nil, err
+	}
+	if !equal {
+		return nil, sql.ErrDeleteRowNotFound.New()
+	}
+	return key, nil
 }
 
 // SetAutoIncrementValue sets a new AUTO_INCREMENT value.
@@ -504,45 +441,57 @@ func (i *TableEditor) SetAutoIncrementValue(sqlCtx *sql.Context, val uint64) err
 	return nil
 }
 
-// AcquireAutoIncrementLock acquires (if necessary) an exclusive lock on generating auto-increment values for the underlying table.
-// This is called when @@innodb_autoinc_lock_mode is set to 0 (traditional) or 1 (consecutive), in order to guarantee that insert
-// operations get a consecutive range of generated ids. The function returns a callback to release the lock.
+// AcquireAutoIncrementLock relies on the enclosing transaction's exclusive write lock.
 func (i *TableEditor) AcquireAutoIncrementLock(ctx *sql.Context) (func(), error) {
-	// TODO: determine if it is necessary to implement this here.
 	return func() {}, nil
 }
 
 // DiscardChanges is called if a statement encounters an error, and all current
 // changes since the statement beginning should be discarded.
 func (i *TableEditor) DiscardChanges(ctx *sql.Context, errorEncountered error) error {
-	// Restore only statements that failed after capturing a table root.
-	if errorEncountered == nil || i.statementRoot == nil {
+	// Restore only failed statements whose edits were journaled.
+	if errorEncountered == nil || !i.statement {
 		return nil
 	}
+	i.statement = false
 
-	// Use the statement context when restoring the table root.
-	cctx := i.ctx
-	if ctx != nil && ctx.Context != nil {
-		cctx = ctx.Context
+	// Restore row and index identities even when cancellation caused the failure.
+	if ctx == nil {
+		ctx = sql.NewContext(i.ctx)
 	}
+	ctx = ctx.WithContext(context.WithoutCancel(ctx.Context))
+	for _, change := range slices.Backward(i.changes) {
+		if change.after != nil {
+			if err := i.removeRow(ctx, change.after, change.newKey); err != nil {
+				return err
+			}
+		}
+		if change.before != nil {
+			if err := i.storeRow(ctx, change.before, change.oldKey); err != nil {
+				return err
+			}
+		}
+	}
+	i.changes = nil
 
-	// Consume the saved statement root and reload the table state.
-	root := i.statementRoot.CloneVT()
-	i.statementRoot = nil
-	return i.t.reloadRoot(cctx, root)
-}
-
-// StatementComplete is called after the last operation of the statement,
-// indicating that it has successfully completed. The mark set in StatementBegin
-// may be removed, and a new one should be created on the next StatementBegin.
-func (i *TableEditor) StatementComplete(ctx *sql.Context) error {
-	i.statementRoot = nil
+	// Restore counters without cloning or retaining the full table cursor graph.
+	i.t.root.RowNonce = i.statementNonce
+	i.t.bcs.SetBlock(i.t.root, true)
+	if i.t.autoIncIdx != 0 {
+		return i.SetAutoIncrementValue(ctx, i.statementAutoIncrement)
+	}
 	return nil
 }
 
-// Close finalizes the operation, persisting its result.
+// StatementComplete releases the successful statement's rollback journal.
+func (i *TableEditor) StatementComplete(ctx *sql.Context) error {
+	i.statement = false
+	i.changes = nil
+	return nil
+}
+
+// Close releases the editor; writes already belong to the enclosing transaction.
 func (i *TableEditor) Close(sqlCtx *sql.Context) error {
-	// TODO: is it necessary to wait to apply until Close() ?
 	return nil
 }
 

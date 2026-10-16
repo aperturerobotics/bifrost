@@ -127,7 +127,7 @@ type TableRoot struct {
 	PrimaryKeyOrdinals []int32 `protobuf:"varint,5,rep,packed,name=primary_key_ordinals,json=primaryKeyOrdinals,proto3" json:"primaryKeyOrdinals,omitempty"`
 	// TablePartitions contains the set of table partitions.
 	TablePartitions []*TablePartitionRoot `protobuf:"bytes,2,rep,name=table_partitions,json=tablePartitions,proto3" json:"tablePartitions,omitempty"`
-	// RowNonce is the row identifier nonce, incremented when a row is inserted.
+	// RowNonce distinguishes duplicate rows in tables without a primary key.
 	RowNonce uint64 `protobuf:"varint,3,opt,name=row_nonce,json=rowNonce,proto3" json:"rowNonce,omitempty"`
 	// AutoIncrVal is the auto increment value, if necessary.
 	// Typically contains an integer or float.
@@ -137,7 +137,7 @@ type TableRoot struct {
 	CollationId uint32 `protobuf:"varint,6,opt,name=collation_id,json=collationId,proto3" json:"collationId,omitempty"`
 	// Comment is an additional comment on the table.
 	Comment string `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty"`
-	// Indexes contains secondary index metadata. Lookups are scan-backed.
+	// Indexes contains secondary index definitions and their stored trees.
 	Indexes []*TableIndex `protobuf:"bytes,8,rep,name=indexes,proto3" json:"indexes,omitempty"`
 }
 
@@ -214,6 +214,8 @@ type TableIndex struct {
 	Unique bool `protobuf:"varint,3,opt,name=unique,proto3" json:"unique,omitempty"`
 	// Comment contains the index comment.
 	Comment string `protobuf:"bytes,4,opt,name=comment,proto3" json:"comment,omitempty"`
+	// KeyValue maps encoded index columns to encoded primary row keys.
+	KeyValue *block1.KeyValueStore `protobuf:"bytes,5,opt,name=key_value,json=keyValue,proto3" json:"keyValue,omitempty"`
 }
 
 func (x *TableIndex) Reset() {
@@ -250,6 +252,13 @@ func (x *TableIndex) GetComment() string {
 	return ""
 }
 
+func (x *TableIndex) GetKeyValue() *block1.KeyValueStore {
+	if x != nil {
+		return x.KeyValue
+	}
+	return nil
+}
+
 // TableIndexColumn is a column in a TableIndex.
 type TableIndexColumn struct {
 	unknownFields []byte
@@ -283,7 +292,7 @@ func (x *TableIndexColumn) GetLength() int64 {
 type TablePartitionRoot struct {
 	unknownFields []byte
 	// RowKeyValue is the key/value tree of objects.
-	// Key: row_nonce uint64 encoded with big endian
+	// Key: encoded primary key, or encoded row and nonce for keyless tables.
 	// Value: cid.BlockRef -> Object
 	RowKeyValue *block1.KeyValueStore `protobuf:"bytes,1,opt,name=row_key_value,json=rowKeyValue,proto3" json:"rowKeyValue,omitempty"`
 }
@@ -721,6 +730,7 @@ func (m *TableIndex) CloneVT() *TableIndex {
 	r.Unique = m.Unique
 	r.Comment = m.Comment
 	r.Columns = protobuf_go_lite.CloneVTSlice(m.Columns)
+	r.KeyValue = protobuf_go_lite.CloneVTValue(m.KeyValue)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1115,6 +1125,9 @@ func (this *TableIndex) EqualVT(that *TableIndex) bool {
 		return false
 	}
 	if this.Comment != that.Comment {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.KeyValue, that.KeyValue) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1880,6 +1893,11 @@ func (x *TableIndex) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("comment")
 		s.WriteString(x.Comment)
 	}
+	if x.KeyValue != nil || s.HasField("keyValue") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("keyValue")
+		x.KeyValue.MarshalProtoJSON(s.WithField("keyValue"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1924,6 +1942,13 @@ func (x *TableIndex) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "comment":
 			s.AddField("comment")
 			x.Comment = s.ReadString()
+		case "key_value", "keyValue":
+			if s.ReadNil() {
+				x.KeyValue = nil
+				return
+			}
+			x.KeyValue = &block1.KeyValueStore{}
+			x.KeyValue.UnmarshalProtoJSON(s.WithField("key_value", true))
 		}
 	})
 }
@@ -2753,6 +2778,16 @@ func (m *TableIndex) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.KeyValue != nil {
+		size, err := m.KeyValue.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x2a
+	}
 	if len(m.Comment) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Comment)
 		i--
@@ -3377,6 +3412,10 @@ func (m *TableIndex) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Unique)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Comment)
+	if m.KeyValue != nil {
+		l = m.KeyValue.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -3757,6 +3796,10 @@ func (x *TableIndex) MarshalProtoText() string {
 	if x.Comment != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "comment")
 		protobuf_go_lite.TextWriteString(&sb, x.Comment)
+	}
+	if x.KeyValue != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key_value")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.KeyValue)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -4428,6 +4471,21 @@ func (m *TableIndex) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Comment = v
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyValue", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.KeyValue == nil {
+				m.KeyValue = &block1.KeyValueStore{}
+			}
+			if err := m.KeyValue.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

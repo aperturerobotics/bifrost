@@ -2,10 +2,10 @@ package mysql
 
 import (
 	"context"
+	"hash/fnv"
 	"io"
 
 	"github.com/dolthub/go-mysql-server/sql"
-	"github.com/dolthub/go-mysql-server/sql/plan"
 	"github.com/dolthub/go-mysql-server/sql/types"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
@@ -14,21 +14,24 @@ import (
 // Table is the block-graph backed data table cursor.
 // NOTE: calls are not concurrency-safe.
 type Table struct {
-	ctx    context.Context
-	name   string
+	// ctx supplies the table's default operation context.
+	ctx context.Context
+	// name is the SQL table name.
+	name string
+	// schema contains the decoded columns and primary-key positions.
 	schema sql.PrimaryKeySchema
-	bcs    *block.Cursor
-	root   *TableRoot
+	// bcs locates the table root in the block transaction.
+	bcs *block.Cursor
+	// root contains the stored schema, partitions and indexes.
+	root *TableRoot
 
-	// lookup is the index lookup, nil on default.
-	lookup *sql.IndexLookup
-
-	// autoIncIdx is the index of the auto-increment column + 1
+	// autoIncIdx is the index of the auto-increment column plus one.
 	autoIncIdx int
-	// autoIncVal is the current auto increment value
+	// autoIncVal is the next auto-increment value.
 	autoIncVal uint64
 }
 
+// loadRootState loads the schema and counters from a table root.
 func (t *Table) loadRootState(ctx context.Context, root *TableRoot) error {
 	// Decode the table schema from its root block.
 	schema, err := root.GetTableSchema().ToSqlSchema(sql.NewContext(ctx))
@@ -74,17 +77,32 @@ func (t *Table) loadRootState(ctx context.Context, root *TableRoot) error {
 	return nil
 }
 
-func (t *Table) reloadRoot(ctx context.Context, root *TableRoot) error {
-	if err := t.loadRootState(ctx, root); err != nil {
+// replaceRoot adopts a complete detached table graph, including uncommitted rows.
+func (t *Table) replaceRoot(ctx context.Context, cursor *block.Cursor) error {
+	// Resolve the replacement root and its loaded child graphs before detaching them.
+	root, err := block.UnmarshalBlock[*TableRoot](ctx, cursor, NewTableRootBlock)
+	if err != nil {
 		return err
 	}
+	children, err := cursor.GetAllRefs(true)
+	if err != nil {
+		return err
+	}
+
+	// Replace cached sub-block cursors as well as the inline root representation.
+	t.bcs.ClearAllRefs()
 	t.bcs.SetBlock(root, true)
-	return nil
+	for id, child := range children {
+		if err := child.SetAsSubBlock(id, t.bcs); err != nil {
+			return err
+		}
+	}
+	return t.loadRootState(ctx, root)
 }
 
 // LoadTable constructs a new table handle, loading the root block.
 func LoadTable(ctx context.Context, name string, bcs *block.Cursor) (*Table, error) {
-	// follow the database root
+	// Decode the table root before loading its schema and counters.
 	dbr, err := block.UnmarshalBlock[*TableRoot](ctx, bcs, NewTableRootBlock)
 	if err != nil {
 		return nil, err
@@ -102,7 +120,7 @@ func LoadTable(ctx context.Context, name string, bcs *block.Cursor) (*Table, err
 
 // BuildTable constructs a new table, storing it in the block cursor (if set).
 //
-// if bcs is nil, the returned *Table will also be nil.
+// If bcs is nil, the returned *Table will also be nil.
 func BuildTable(
 	ctx context.Context,
 	bcs *block.Cursor,
@@ -130,12 +148,11 @@ func BuildTable(
 
 	// Create the table storage partitions.
 	tr.TablePartitions = make([]*TablePartitionRoot, numPartitions)
-	for i := 0; i < numPartitions; i++ {
+	for i := range numPartitions {
 		tr.TablePartitions[i] = NewTablePartitionRoot()
 	}
 
 	// Initialize the table auto-increment column with its type zero value.
-	// check for auto increment
 	for i, colSch := range tr.GetTableSchema().GetColumns() {
 		if colSch.GetAutoIncrement() {
 			autoIncrType, err := colSch.ParseColumnType()
@@ -168,35 +185,7 @@ func (t *Table) Name() string {
 
 // String returns the table in string form.
 func (t *Table) String() string {
-	// based on String() at go-sql-server/memory/table.go *Table.String
-	p := sql.NewTreePrinter()
-
-	// Describe the table lookup mode for its printed name.
-	kind := ""
-	/*
-		if len(t.columns) > 0 {
-			kind += "Projected "
-		}
-	*/
-
-	// Mark the printed table name when an index lookup is active.
-	if t.lookup != nil {
-		kind += "Indexed "
-	}
-
-	// Format the lookup mode as a suffix on the table name.
-	if kind != "" {
-		kind = ": " + kind
-	}
-
-	// Return the plain table name when no lookup mode applies.
-	if len(kind) == 0 {
-		return t.name
-	}
-
-	// Render the table name with its lookup-mode suffix.
-	_ = p.WriteNode("%s%s", t.name, kind)
-	return p.String()
+	return t.name
 }
 
 // Schema returns the table's SQL schema.
@@ -237,39 +226,37 @@ func (t *Table) Partitions(ctx *sql.Context) (sql.PartitionIter, error) {
 
 // PartitionRows returns a table iterator for the rows in a partition.
 //
-// With an index lookup it returns only the rows within the lookup ranges,
-// because a lookup join trusts the index to select the matching rows.
+// Index partitions already contain the rows fetched by their encoded keys.
 func (t *Table) PartitionRows(ctx *sql.Context, part sql.Partition) (sql.RowIter, error) {
-	// Build the filter selecting the rows within the lookup ranges.
+	// Return rows fetched by an index without opening a table scan.
+	if indexed, ok := part.(*tableLookupPartition); ok {
+		return sql.RowsToRowIter(indexed.rows...), nil
+	}
+
+	// Open an ordinary storage partition for a full table scan.
 	pt, ok := part.(*TablePartition)
 	if !ok {
 		return nil, ErrUnexpectedType
 	}
-	filter, err := t.lookupFilter(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Iterate the partition rows through the filter.
-	rows, err := pt.IterateRows(ctx)
-	if err != nil || filter == nil {
-		return rows, err
-	}
-	return plan.NewFilterIter(filter, rows), nil
+	return pt.IterateRows(ctx)
 }
 
-// SelectPartition selects the partition based on the index (round-robin).
-func (t *Table) SelectPartition(nonce uint64) (*TablePartition, int, error) {
-	// Require table partitions before selecting one by row nonce.
+// SelectPartition selects a stable partition from the encoded primary row key.
+func (t *Table) SelectPartition(key []byte) (*TablePartition, error) {
+	// Require table partitions before hashing the row identity.
 	numPts := len(t.root.GetTablePartitions())
 	if numPts == 0 {
-		return nil, 0, errors.New("no partitions")
+		return nil, errors.New("no partitions")
 	}
 
-	// Select the row partition using the table round-robin mapping.
-	sel := int(nonce % uint64(numPts)) //nolint:gosec
-	pt, err := t.PartitionAtIndex(sel)
-	return pt, sel, err
+	// Keep all duplicates of a keyless row in the same prefix-searchable partition.
+	if len(t.schema.PkOrdinals) == 0 {
+		key = key[:len(key)-8]
+	}
+	hash := fnv.New64a()
+	_, _ = hash.Write(key)                    // hash.Write never returns an error.
+	sel := int(hash.Sum64() % uint64(numPts)) //nolint:gosec
+	return t.PartitionAtIndex(sel)
 }
 
 // PartitionCount returns the number of partitions.
@@ -303,36 +290,21 @@ func (t *Table) PeekNextAutoIncrementValue(*sql.Context) (uint64, error) {
 	return t.autoIncVal, nil
 }
 
-// GetNextAutoIncrementValue gets the next AUTO_INCREMENT value. In the case that a table with an autoincrement
-// column is passed in a row with the autoinc column failed, the next auto increment value must
-// update its internal state accordingly and use the insert val at runtime.
-// Implementations are responsible for updating their state to provide the correct values.
+// GetNextAutoIncrementValue returns the current counter, raised to insertVal when larger.
 func (t *Table) GetNextAutoIncrementValue(sqlCtx *sql.Context, insertVal any) (uint64, error) {
-	/*
-		autoIncCol := t.schema.Schema[t.autoIncIdx]
-		cmp, err := autoIncCol.Type.Compare(insertVal, t.autoIncVal)
-		if err != nil {
-			return nil, err
-		}
-	*/
-
+	// Compare the inserted value with the table's next unsigned counter value.
 	cmp, err := types.Uint64.Compare(sqlCtx, insertVal, t.autoIncVal)
 	if err != nil {
 		return 0, err
 	}
 
+	// Reserve larger explicit values in the loaded table state.
 	if cmp > 0 && insertVal != nil {
 		v, _, err := types.Uint64.Convert(sqlCtx, insertVal)
 		if err != nil {
 			return 0, err
 		}
 		t.autoIncVal = v.(uint64)
-		/*
-			err = t.AutoIncrementSetter(sqlCtx).SetAutoIncrementValue(sqlCtx, insertVal)
-			if err != nil {
-				return nil, err
-			}
-		*/
 	}
 	return t.autoIncVal, nil
 }

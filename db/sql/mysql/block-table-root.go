@@ -9,13 +9,12 @@ import (
 	"github.com/s4wave/spacewave/db/block/blob"
 )
 
-// NewTableRootBlock constructs a new db root block.
+// NewTableRootBlock constructs an empty table root block.
 func NewTableRootBlock() block.Block {
 	return &TableRoot{}
 }
 
-// LoadTableRoot follows the database root cursor.
-// may return nil
+// LoadTableRoot follows the database root cursor and may return nil.
 func LoadTableRoot(ctx context.Context, cursor *block.Cursor) (*TableRoot, error) {
 	// Decode the table root block from the supplied cursor.
 	ni, err := cursor.Unmarshal(ctx, NewTableRootBlock)
@@ -36,7 +35,7 @@ func LoadTableRoot(ctx context.Context, cursor *block.Cursor) (*TableRoot, error
 	return niv, nil
 }
 
-// Validate validates the database root block.
+// Validate checks the table schema, partitions, indexes and auto-increment value.
 func (r *TableRoot) Validate() error {
 	// Validate the table schema before its partitions and indexes.
 	if err := r.GetTableSchema().Validate(); err != nil {
@@ -62,6 +61,9 @@ func (r *TableRoot) Validate() error {
 			if col.GetName() == "" {
 				return errors.Errorf("indexes[%d]: columns[%d]: empty name", i, j)
 			}
+		}
+		if err := index.GetKeyValue().Validate(); err != nil {
+			return errors.Wrapf(err, "indexes[%d]", i)
 		}
 	}
 
@@ -102,7 +104,7 @@ func (r *TableRoot) UnmarshalBlock(data []byte) error {
 	return r.UnmarshalVT(data)
 }
 
-// FetchAutoIncrVal fetches and checks the auto-increment value
+// FetchAutoIncrVal fetches and checks the auto-increment value.
 //
 // bcs should be located at the table root.
 func (r *TableRoot) FetchAutoIncrVal(
@@ -117,7 +119,7 @@ func (r *TableRoot) FetchAutoIncrVal(
 	return expectedType.Convert(sql.NewContext(ctx), autoIncrVal)
 }
 
-// StoreAutoIncrVal stores the auto-increment value
+// StoreAutoIncrVal stores the auto-increment value.
 //
 // bcs should be located at the table root.
 func (r *TableRoot) StoreAutoIncrVal(
@@ -158,6 +160,7 @@ func (r *TableRoot) GetSubBlocks() map[uint32]block.SubBlock {
 	return map[uint32]block.SubBlock{
 		2: newTableRootPartitionSetContainer(r, nil),
 		4: r.GetAutoIncrVal(),
+		8: newTableIndexSet(r),
 	}
 }
 
@@ -165,6 +168,10 @@ func (r *TableRoot) GetSubBlocks() map[uint32]block.SubBlock {
 // sub-block at reference id. Can return nil to indicate invalid reference id.
 func (r *TableRoot) GetSubBlockCtor(id uint32) block.SubBlockCtor {
 	switch id {
+	case 8:
+		return func(create bool) block.SubBlock {
+			return newTableIndexSet(r)
+		}
 	case 2:
 		return func(create bool) block.SubBlock {
 			return newTableRootPartitionSetContainer(r, nil)

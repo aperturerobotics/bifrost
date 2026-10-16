@@ -238,7 +238,7 @@ export const TableSchema: MessageType<TableSchema> =
 export interface TablePartitionRoot {
   /**
    * RowKeyValue is the key/value tree of objects.
-   * Key: row_nonce uint64 encoded with big endian
+   * Key: encoded primary key, or encoded row and nonce for keyless tables.
    * Value: cid.BlockRef -> Object
    *
    * @generated from field: kvtx.block.KeyValueStore row_key_value = 1;
@@ -511,6 +511,12 @@ export interface TableIndex {
    * @generated from field: string comment = 4;
    */
   comment?: string
+  /**
+   * KeyValue maps encoded index columns to encoded primary row keys.
+   *
+   * @generated from field: kvtx.block.KeyValueStore key_value = 5;
+   */
+  keyValue?: KeyValueStore
 }
 
 export const TableIndex: MessageType<TableIndex> =
@@ -527,6 +533,7 @@ export const TableIndex: MessageType<TableIndex> =
       },
       { no: 3, name: 'unique', kind: 'scalar', T: ScalarType.BOOL },
       { no: 4, name: 'comment', kind: 'scalar', T: ScalarType.STRING },
+      { no: 5, name: 'key_value', kind: 'message', T: () => KeyValueStore },
     ] satisfies readonly PartialFieldInfo[],
   })
 
@@ -555,7 +562,7 @@ export interface TableRoot {
    */
   tablePartitions?: TablePartitionRoot[]
   /**
-   * RowNonce is the row identifier nonce, incremented when a row is inserted.
+   * RowNonce distinguishes duplicate rows in tables without a primary key.
    *
    * @generated from field: uint64 row_nonce = 3;
    */
@@ -581,7 +588,7 @@ export interface TableRoot {
    */
   comment?: string
   /**
-   * Indexes contains secondary index metadata. Lookups are scan-backed.
+   * Indexes contains secondary index definitions and their stored trees.
    *
    * @generated from field: repeated mysql.TableIndex indexes = 8;
    */

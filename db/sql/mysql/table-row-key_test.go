@@ -2,52 +2,50 @@ package mysql
 
 import (
 	"bytes"
-	"math/rand/v2"
-	"slices"
+	"math"
 	"testing"
+
+	"github.com/dolthub/go-mysql-server/sql"
+	"github.com/dolthub/go-mysql-server/sql/types"
 )
 
-// TestTableRowKeySortable ensures that the sorting is as we expect.
-func TestTableRowKeySortable(t *testing.T) {
-	// Encode ordered row nonces into their sortable table row keys.
-	ordering := []uint64{2, 4, 6, 342, 135135, 342515135}
-	vals := make([][]byte, len(ordering))
-	for i := range vals {
-		vals[i] = MarshalTableRowKey(ordering[i])
+// TestTableKeyEquality verifies canonical conversions, collation and tuple framing.
+func TestTableKeyEquality(t *testing.T) {
+	// Compare encoded equality with the SQL column comparison contract.
+	ctx := sql.NewContext(t.Context())
+	text := types.MustCreateString(types.Text.Type(), 64, sql.Collation_utf8mb4_general_ci)
+	cases := []struct {
+		// name identifies the equality contract.
+		name string
+		// schema defines the compared columns.
+		schema sql.Schema
+		// left is the stored row.
+		left sql.Row
+		// right is a lookup tuple.
+		right sql.Row
+		// equal indicates whether the tuples compare equal.
+		equal bool
+	}{
+		{"integer conversion", sql.Schema{{Type: types.Int64}}, sql.Row{int64(10)}, sql.Row{int32(10)}, true},
+		{"collation", sql.Schema{{Type: text}}, sql.Row{"Hello"}, sql.Row{"hello"}, true},
+		{"tuple framing", sql.Schema{{Type: types.Text}, {Type: types.Text}}, sql.Row{"a", "bc"}, sql.Row{"ab", "c"}, false},
+		{"null and empty", sql.Schema{{Type: types.Text}}, sql.Row{nil}, sql.Row{""}, false},
+		{"signed zero", sql.Schema{{Type: types.Float64}}, sql.Row{float64(0)}, sql.Row{math.Copysign(0, -1)}, true},
 	}
-
-	// Retain the expected key order before shuffling the encoded keys.
-	// copy the slice
-	valsExpected := make([][]byte, len(vals))
-	copy(valsExpected, vals)
-
-	// Shuffle the encoded row keys to test their sort order.
-	// shuffle the slice
-	rand.Shuffle(len(vals), func(i, j int) {
-		k := vals[j]
-		vals[j] = vals[i]
-		vals[i] = k
-	})
-
-	// Sort the encoded keys and record their expected and actual order.
-	// sort again
-	slices.SortFunc(vals, func(a, b []byte) int {
-		return bytes.Compare(a, b)
-	})
-	t.Log("expected", valsExpected)
-	t.Log("actual", vals)
-
-	// Decode the sorted row keys and verify their original nonce order.
-	// unmarshal
-	out := make([]uint64, len(ordering))
-	var err error
-	for i, v := range vals {
-		out[i], err = UnmarshalTableRowKey(v)
-		if err != nil {
-			t.Fatal(err.Error())
-		}
-		if out[i] != ordering[i] {
-			t.Fatalf("expected at index %d value %d but got %d", i, ordering[i], out[i])
-		}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			// Compare canonical tuples rather than the source Go representations.
+			left, _, err := EncodeTableKey(ctx, test.schema, test.left, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			right, _, err := EncodeTableKey(ctx, test.schema, test.right, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if bytes.Equal(left, right) != test.equal {
+				t.Fatalf("encoded equality = %v, want %v", bytes.Equal(left, right), test.equal)
+			}
+		})
 	}
 }

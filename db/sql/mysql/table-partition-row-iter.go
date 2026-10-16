@@ -11,13 +11,13 @@ import (
 
 // TablePartitionRowIter is a table partition iterator.
 type TablePartitionRowIter struct {
-	// ctx is the context to use when fetching rows
+	// ctx is the context to use when fetching rows.
 	ctx context.Context
-	// tree is the kvtx tree transaction
+	// tree is the kvtx tree transaction.
 	tree kvtx.BlockTx
-	// it is the tree iterator
+	// it is the tree iterator.
 	it kvtx.BlockIterator
-	// schema is the table schema
+	// schema is the table schema.
 	schema sql.Schema
 }
 
@@ -47,24 +47,15 @@ func (i *TablePartitionRowIter) GetRow(sctx *sql.Context) (sql.Row, error) {
 		return nil, io.EOF
 	}
 
-	// Validate the stored row key before reading its value.
-	// check nonce consistency + uint64 marshaling consistency
-	rowNonce, err := UnmarshalTableRowKey(i.it.Key())
-	if err != nil {
-		return nil, err // if len(key) != 8
-	}
-
-	// Decode the table row through a detached value cursor.
-	// detach to allow Go to garbage-collect the value once we're done.
+	// Detach the row cursor so decoded values can be collected after this read.
 	valueCs := i.it.ValueCursor().DetachTransaction()
 
 	// Decode the stored table row block at the detached value cursor.
-	// follow + fetch table row
 	tableRow, err := UnmarshalTableRow(i.ctx, valueCs)
 	if err != nil {
 		return nil, errors.Wrapf(
 			err,
-			"unmarshal table partition row (nonce %d)", rowNonce,
+			"unmarshal table partition row (key %x)", i.it.Key(),
 		)
 	}
 
@@ -80,8 +71,7 @@ func (i *TablePartitionRowIter) GetRow(sctx *sql.Context) (sql.Row, error) {
 	return sqlRow, nil
 }
 
-// Next retrieves the next row. It will return io.EOF if it's the last row.
-// After retrieving the last row, Close will be automatically closed.
+// Next retrieves the next row, or io.EOF after the partition is exhausted.
 func (i *TablePartitionRowIter) Next(sctx *sql.Context) (sql.Row, error) {
 	// Advance the partition iterator and handle failure or exhaustion.
 	if err := i.it.Err(); err != nil {
@@ -95,16 +85,10 @@ func (i *TablePartitionRowIter) Next(sctx *sql.Context) (sql.Row, error) {
 	}
 
 	// Decode the table row at the advanced iterator position.
-	row, err := i.GetRow(sctx)
-	if err != nil {
-		return nil, err
-	}
-	return row, nil
+	return i.GetRow(sctx)
 }
 
-// Next2 produces the next row, and stores it in the RowFrame provided.
-// It will return io.EOF if it's the last row. After retrieving the
-// last row, Close will be automatically called.
+// Next2 appends the next row to frame, or returns io.EOF when exhausted.
 func (i *TablePartitionRowIter) Next2(ctx *sql.Context, frame *sql.RowFrame) error {
 	r, err := i.Next(ctx)
 	if err != nil {
@@ -122,10 +106,10 @@ func (i *TablePartitionRowIter) Next2(ctx *sql.Context, frame *sql.RowFrame) err
 	return nil
 }
 
-// Close the iterator.
+// Close releases the partition iterator and its read transaction.
 func (i *TablePartitionRowIter) Close(sctx *sql.Context) error {
 	i.it.Close()
-	// return i.it.Err()
+	i.tree.Discard()
 	return nil
 }
 
