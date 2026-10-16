@@ -517,11 +517,12 @@ async function stageBrowserRelease(
       return false
     }
     if (await cache.match(request)) continue
+
+    // Generation paths are immutable, so the HTTP cache may answer: a release
+    // the page is loading is staged without downloading it a second time.
     let response: Response
     try {
-      response = await fetch(
-        new Request(request.url, { cache: 'reload', priority: 'low' }),
-      )
+      response = await fetch(new Request(request.url, { priority: 'low' }))
     } catch (error) {
       console.warn(
         'ServiceWorker: %s: failed to stage %s for %s: %s',
