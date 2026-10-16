@@ -70,7 +70,7 @@ func (f *pinnedFiles) Close() error {
 
 // TestBindHandlerAssetsHoldsPinnedFiles checks that the plugin files selected
 // by handler URLs stay open until release, once per manifest, while unpinned
-// URLs open nothing and a package no provider serves yet stays unbound.
+// URLs open nothing.
 func TestBindHandlerAssetsHoldsPinnedFiles(t *testing.T) {
 	// Run a real bus.
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
@@ -96,8 +96,7 @@ func TestBindHandlerAssetsHoldsPinnedFiles(t *testing.T) {
 	defer releaseFiles()
 
 	// Publish the pinned entry, its package prefix, and its stylesheet, with
-	// an unpinned package that must not be requested and a package whose
-	// provider has not started.
+	// an unpinned package that must not be requested.
 	prefix := bldr_plugin.PluginAssetsHttpPrefix + artifact
 	handlers := &web_view_handler.WebViewHandlersConfig{Handlers: []*web_view_handler.WebViewHandlerConfig{
 		{Handler: &web_view_handler.WebViewHandlerConfig_SetRenderMode{SetRenderMode: &web_view.SetRenderModeRequest{
@@ -105,7 +104,6 @@ func TestBindHandlerAssetsHoldsPinnedFiles(t *testing.T) {
 			WebPkgPaths: map[string]string{
 				"react": prefix + "/bldr-web-pkgs/react/",
 				"other": bldr_plugin.PluginAssetsHttpPrefix + "spacewave-web/bldr-web-pkgs/other/",
-				"code":  "",
 			},
 		}}},
 		{Handler: &web_view_handler.WebViewHandlerConfig_SetHtmlLinks{SetHtmlLinks: &web_view.SetHtmlLinksRequest{
@@ -120,9 +118,6 @@ func TestBindHandlerAssetsHoldsPinnedFiles(t *testing.T) {
 	}
 	if held := files.held.Load(); held != 1 {
 		t.Fatalf("held %d pinned filesystems, want 1", held)
-	}
-	if path := handlers.GetHandlers()[0].GetSetRenderMode().GetWebPkgPaths()["code"]; path != "" {
-		t.Fatalf("bound a package no provider serves to %q", path)
 	}
 
 	// Releasing the binding closes the handle.

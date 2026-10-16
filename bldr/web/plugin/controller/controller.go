@@ -382,26 +382,19 @@ func (c *Controller) bindHandlerAssets(ctx context.Context, handlers *web_view_h
 	}
 
 	// Collect each URL a handler publishes, resolving package prefixes first.
-	// Bind only packages whose provider already serves them: a provider still
-	// loading would hold the document until its manifest is copied, and the
-	// renderer may never import the package. An unbound package keeps the
-	// release-pinned /b/pkg/ redirect, which waits for the provider on fetch.
 	var urls []string
 	for _, handler := range handlers.GetHandlers() {
 		render := handler.GetSetRenderMode()
 		for id, basePath := range render.GetWebPkgPaths() {
 			if basePath == "" {
 				start := time.Now()
-				pkg, _, ref, err := web_pkg.ExLookupWebPkg(ctx, c.bus, true, id)
+				pkg, _, ref, err := web_pkg.ExLookupWebPkg(ctx, c.bus, false, id)
 				if err != nil {
 					release()
 					return nil, err
 				}
-				logSlow("lookup-web-pkg", id, start)
-				if pkg == nil {
-					continue
-				}
 				releases = append(releases, ref.Release)
+				logSlow("lookup-web-pkg", id, start)
 
 				start = time.Now()
 				info, err := pkg.GetInfo(ctx)
