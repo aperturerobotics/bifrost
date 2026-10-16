@@ -12,6 +12,8 @@ option go_package = "github.com/s4wave/spacewave/sdk/chat;spacewave_chat";
 // ChatChannel is a chat channel world object.
 // All channels are visible to Space participants (no visibility field).
 message ChatChannel {
+  option (typeid.id) = "spacewave-chat/channel";
+
   // Name is the channel display name.
   string name = 1;
   // Topic is an optional channel topic description.
@@ -37,6 +39,8 @@ message ChatChannel {
 
 // ChatMessage is a chat message world object linked to a channel.
 message ChatMessage {
+  option (typeid.id) = "spacewave-chat/message";
+
   // SenderPeerId is the peer ID of the message sender.
   string sender_peer_id = 1;
   // Content is the message content.
@@ -66,12 +70,16 @@ message ChatMessage {
 
 // ChatMessagePage stores a bounded page of channel message keys.
 message ChatMessagePage {
+  option (typeid.id) = "spacewave-chat/message-page";
+
   // MessageKeys are page-local message object keys in creation order.
   repeated string message_keys = 1;
 }
 
 // ChatThread stores one bounded summary in the channel's activity-ordered thread index.
 message ChatThread {
+  option (typeid.id) = "spacewave-chat/thread";
+
   // RootMessageKey is the immutable root identity summarized by this snapshot.
   string root_message_key = 1;
   // LatestMessageKey is the newest canonical reply captured by this snapshot.

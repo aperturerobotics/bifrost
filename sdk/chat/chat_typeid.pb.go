@@ -7,6 +7,38 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// ChatChannelTypeID is the type ID of ChatChannel.
+const ChatChannelTypeID = "spacewave-chat/channel"
+
+// TypeID returns the type ID of ChatChannel.
+func (*ChatChannel) TypeID() string {
+	return ChatChannelTypeID
+}
+
+// ChatMessageTypeID is the type ID of ChatMessage.
+const ChatMessageTypeID = "spacewave-chat/message"
+
+// TypeID returns the type ID of ChatMessage.
+func (*ChatMessage) TypeID() string {
+	return ChatMessageTypeID
+}
+
+// ChatMessagePageTypeID is the type ID of ChatMessagePage.
+const ChatMessagePageTypeID = "spacewave-chat/message-page"
+
+// TypeID returns the type ID of ChatMessagePage.
+func (*ChatMessagePage) TypeID() string {
+	return ChatMessagePageTypeID
+}
+
+// ChatThreadTypeID is the type ID of ChatThread.
+const ChatThreadTypeID = "spacewave-chat/thread"
+
+// TypeID returns the type ID of ChatThread.
+func (*ChatThread) TypeID() string {
+	return ChatThreadTypeID
+}
+
 // InitChatDemoOpTypeID is the type ID of InitChatDemoOp.
 const InitChatDemoOpTypeID = "chat/init-chat-demo"
 
@@ -49,6 +81,10 @@ func (*UpdateChatReadPositionOp) TypeID() string {
 
 // ChatTypes lists the typed messages of chat.proto.
 var ChatTypes = []typeid.Type{
+	{ID: ChatChannelTypeID, New: func() any { return new(ChatChannel) }},
+	{ID: ChatMessageTypeID, New: func() any { return new(ChatMessage) }},
+	{ID: ChatMessagePageTypeID, New: func() any { return new(ChatMessagePage) }},
+	{ID: ChatThreadTypeID, New: func() any { return new(ChatThread) }},
 	{ID: InitChatDemoOpTypeID, New: func() any { return new(InitChatDemoOp) }},
 	{ID: CreateChatChannelOpTypeID, New: func() any { return new(CreateChatChannelOp) }},
 	{ID: SendChatMessageOpTypeID, New: func() any { return new(SendChatMessageOp) }},

@@ -21,6 +21,8 @@ message WasiVmConfig {
 // WasiVm is a virtual machine that runs WebAssembly programs on the WasiVM
 // kernel, with its root filesystem read from a UnixFS object or a WasiVmImage.
 message WasiVm {
+  option (typeid.id) = "vm/wasivm";
+
   // State is the desired VM state. Runtime observations are in observed_state.
   VmState state = 1;
   // Name is the human-readable name of this VM instance.
@@ -63,6 +65,8 @@ message CreateWasiVmOp {
 // metadata; the filesystem is linked through the wasivmimage/rootfs edge, or
 // read from the published image named by cdn_source.
 message WasiVmImage {
+  option (typeid.id) = "vm/image/wasivm";
+
   // Name is the human-readable name of the image.
   string name = 1;
   // Version identifies this revision of the image.
@@ -100,6 +104,8 @@ message CreateWasiVmImageOp {
 // the dev layer of headers, static libraries and build metadata that only
 // builds against the package need.
 message WasiVmPackage {
+  option (typeid.id) = "vm/package/wasivm";
+
   // Name is the package's category and name, such as app-editors/nano.
   string name = 1;
   // Version is the package version with its revision, such as 9.2-r1.

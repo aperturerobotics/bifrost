@@ -7,6 +7,22 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// DeviceTypeID is the type ID of Device.
+const DeviceTypeID = "spacewave/device"
+
+// TypeID returns the type ID of Device.
+func (*Device) TypeID() string {
+	return DeviceTypeID
+}
+
+// ComputersDashboardTypeID is the type ID of ComputersDashboard.
+const ComputersDashboardTypeID = "spacewave/computers"
+
+// TypeID returns the type ID of ComputersDashboard.
+func (*ComputersDashboard) TypeID() string {
+	return ComputersDashboardTypeID
+}
+
 // CreateComputersDashboardOpTypeID is the type ID of CreateComputersDashboardOp.
 const CreateComputersDashboardOpTypeID = "spacewave/computers/create"
 
@@ -17,5 +33,7 @@ func (*CreateComputersDashboardOp) TypeID() string {
 
 // DeviceTypes lists the typed messages of device.proto.
 var DeviceTypes = []typeid.Type{
+	{ID: DeviceTypeID, New: func() any { return new(Device) }},
+	{ID: ComputersDashboardTypeID, New: func() any { return new(ComputersDashboard) }},
 	{ID: CreateComputersDashboardOpTypeID, New: func() any { return new(CreateComputersDashboardOp) }},
 }

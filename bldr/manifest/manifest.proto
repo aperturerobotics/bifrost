@@ -5,6 +5,7 @@ import "github.com/s4wave/spacewave/db/block/block.proto";
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
 import "github.com/s4wave/spacewave/net/peer/peer.proto";
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // ManifestMeta is basic metadata about a manifest.
 message ManifestMeta {
@@ -29,6 +30,8 @@ message ManifestMeta {
 // Manifest contains metadata and contents.
 // The Manifest represents a specific version for one target architecture.
 message Manifest {
+  option (typeid.id) = "bldr/manifest";
+
   // Meta is the manifest metadata.
   ManifestMeta meta = 1;
   // Entrypoint is the path in the dist fs to the entrypoint binary.
@@ -83,6 +86,8 @@ message GetReleasePeerIdsResponse {
 
 // ManifestBundle contains the metadata for a bundle of Manifest.
 message ManifestBundle {
+  option (typeid.id) = "bldr/manifest-bundle";
+
   // ManifestRefs contains the set of manifest references.
   repeated ManifestRef manifest_refs = 1;
   // Timestamp is the timestamp the bundle was created.

@@ -14,6 +14,8 @@ import "github.com/aperturerobotics/common/typeid/typeid.proto";
 // Incoming links:
 // - forge/cluster-worker: links from Cluster to Worker.
 message Worker {
+  option (typeid.id) = "forge/worker";
+
   // Name is the human readable worker name.
   // Example: "my-worker-1"
   // Must be a valid DNS label as defined in RFC 1123.

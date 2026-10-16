@@ -1,10 +1,14 @@
 syntax = "proto3";
 package s4wave.sql.schema;
 
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
+
 option go_package = "github.com/s4wave/spacewave/sdk/sql/schema;s4wave_sql_schema";
 
 // Schema is a standalone SQL schema world object.
 message Schema {
+  option (typeid.id) = "sql/schema";
+
   // SchemaName is the schema name inside the target sql/db.
   string schema_name = 1;
   // TargetDbObjectKey is the sql/db object this schema belongs to.

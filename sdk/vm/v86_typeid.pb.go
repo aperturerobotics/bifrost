@@ -7,6 +7,14 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// VmV86TypeID is the type ID of VmV86.
+const VmV86TypeID = "vm/v86"
+
+// TypeID returns the type ID of VmV86.
+func (*VmV86) TypeID() string {
+	return VmV86TypeID
+}
+
 // CreateVmV86OpTypeID is the type ID of CreateVmV86Op.
 const CreateVmV86OpTypeID = "vm/v86/create"
 
@@ -31,6 +39,14 @@ func (*SetV86StateOp) TypeID() string {
 	return SetV86StateOpTypeID
 }
 
+// V86ImageTypeID is the type ID of V86Image.
+const V86ImageTypeID = "vm/image/v86"
+
+// TypeID returns the type ID of V86Image.
+func (*V86Image) TypeID() string {
+	return V86ImageTypeID
+}
+
 // CreateV86ImageOpTypeID is the type ID of CreateV86ImageOp.
 const CreateV86ImageOpTypeID = "vm/image/v86/create"
 
@@ -49,9 +65,11 @@ func (*SetV86ImageMetadataOp) TypeID() string {
 
 // V86Types lists the typed messages of v86.proto.
 var V86Types = []typeid.Type{
+	{ID: VmV86TypeID, New: func() any { return new(VmV86) }},
 	{ID: CreateVmV86OpTypeID, New: func() any { return new(CreateVmV86Op) }},
 	{ID: SetV86ConfigOpTypeID, New: func() any { return new(SetV86ConfigOp) }},
 	{ID: SetV86StateOpTypeID, New: func() any { return new(SetV86StateOp) }},
+	{ID: V86ImageTypeID, New: func() any { return new(V86Image) }},
 	{ID: CreateV86ImageOpTypeID, New: func() any { return new(CreateV86ImageOp) }},
 	{ID: SetV86ImageMetadataOpTypeID, New: func() any { return new(SetV86ImageMetadataOp) }},
 }

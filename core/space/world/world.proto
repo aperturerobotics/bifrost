@@ -1,6 +1,7 @@
 syntax = "proto3";
 package space.world;
 import "github.com/s4wave/spacewave/sdk/command/command.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // WorldContents contains a list of world objects and types.
 message WorldContents {
@@ -31,6 +32,8 @@ message WorldContentsObjectType {
 //
 // Note: the space name and other "public" details are in the SpaceSoMeta.
 message SpaceSettings {
+  option (typeid.id) = "space/settings";
+
   // IndexPath is the default URL path to display at /.
   string index_path = 1;
   // PluginIds lists manifest IDs of plugins this Space uses.

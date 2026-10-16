@@ -7,6 +7,30 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// AptRepositoryTypeID is the type ID of AptRepository.
+const AptRepositoryTypeID = "spacewave-vm/apt/repository"
+
+// TypeID returns the type ID of AptRepository.
+func (*AptRepository) TypeID() string {
+	return AptRepositoryTypeID
+}
+
+// AptPackageTypeID is the type ID of AptPackage.
+const AptPackageTypeID = "spacewave-vm/apt/package"
+
+// TypeID returns the type ID of AptPackage.
+func (*AptPackage) TypeID() string {
+	return AptPackageTypeID
+}
+
+// AptBuildSpecTypeID is the type ID of AptBuildSpec.
+const AptBuildSpecTypeID = "spacewave-vm/apt/build-spec"
+
+// TypeID returns the type ID of AptBuildSpec.
+func (*AptBuildSpec) TypeID() string {
+	return AptBuildSpecTypeID
+}
+
 // CreateAptRepositoryOpTypeID is the type ID of CreateAptRepositoryOp.
 const CreateAptRepositoryOpTypeID = "spacewave-vm/apt/repository/create"
 
@@ -49,6 +73,9 @@ func (*AddAptBuildSpecOp) TypeID() string {
 
 // RepositoryTypes lists the typed messages of repository.proto.
 var RepositoryTypes = []typeid.Type{
+	{ID: AptRepositoryTypeID, New: func() any { return new(AptRepository) }},
+	{ID: AptPackageTypeID, New: func() any { return new(AptPackage) }},
+	{ID: AptBuildSpecTypeID, New: func() any { return new(AptBuildSpec) }},
 	{ID: CreateAptRepositoryOpTypeID, New: func() any { return new(CreateAptRepositoryOp) }},
 	{ID: AddAptPackageOpTypeID, New: func() any { return new(AddAptPackageOp) }},
 	{ID: AptPublishPackageOpTypeID, New: func() any { return new(AptPublishPackageOp) }},

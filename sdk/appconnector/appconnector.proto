@@ -18,6 +18,8 @@ message AppRead {
 // admin API. The fetcher process of the device that approved its ProcessBinding
 // polls the reads and writes the result to the connector's AppSnapshot.
 message AppConnector {
+  option (typeid.id) = "spacewave/app-connector";
+
   // Label is the operator-visible connector label.
   string label = 1;
   // BaseUrl is the application origin, such as https://admin.example.com.
@@ -60,6 +62,8 @@ message AppReadSnapshot {
 // AppSnapshot is the retained result of an AppConnector's reads. Only the
 // fetcher writes it.
 message AppSnapshot {
+  option (typeid.id) = "spacewave/app-snapshot";
+
   // Reads holds one entry per connector read, in connector order.
   repeated AppReadSnapshot reads = 1;
 }

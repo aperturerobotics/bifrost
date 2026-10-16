@@ -60,6 +60,8 @@ enum TerminalTargetKind {
 
 // Terminal is the world-block state for a durable remote shell tab.
 message Terminal {
+  option (typeid.id) = "spacewave/terminal";
+
   // Name is the display name for this terminal.
   string name = 1;
   // DeviceObjectKey is the linked Spacewave-managed Device object key.

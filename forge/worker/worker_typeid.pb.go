@@ -7,6 +7,14 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// WorkerTypeID is the type ID of Worker.
+const WorkerTypeID = "forge/worker"
+
+// TypeID returns the type ID of Worker.
+func (*Worker) TypeID() string {
+	return WorkerTypeID
+}
+
 // WorkerCreateOpTypeID is the type ID of WorkerCreateOp.
 const WorkerCreateOpTypeID = "forge/worker/create"
 
@@ -17,5 +25,6 @@ func (*WorkerCreateOp) TypeID() string {
 
 // WorkerTypes lists the typed messages of worker.proto.
 var WorkerTypes = []typeid.Type{
+	{ID: WorkerTypeID, New: func() any { return new(Worker) }},
 	{ID: WorkerCreateOpTypeID, New: func() any { return new(WorkerCreateOp) }},
 }

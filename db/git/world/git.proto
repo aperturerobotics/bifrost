@@ -32,6 +32,8 @@ message GitInitOp {
 // Worktree refers to a location where a repo is checked out.
 // Contains an index and an attached working directory.
 message Worktree {
+  option (typeid.id) = "git/worktree";
+
   // GitIndex is the git index for the worktree.
   .git.block.Index git_index = 1;
   // HeadRefStore contains the HEAD reference for a worktree and submodules.

@@ -2,6 +2,7 @@ syntax = "proto3";
 package identity;
 
 import "github.com/s4wave/spacewave/net/peer/peer.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // Entity is an individual user or system with a persistent identity.
 //
@@ -64,6 +65,8 @@ message EntityRef {
 
 // Keypair contains a peer ID (public key) and information to derive the key.
 message Keypair {
+  option (typeid.id) = "identity/keypair";
+
   // PeerId is the peer id of the keypair (derived from pubkey).
   // Must match the pub_key field.
   string peer_id = 1;

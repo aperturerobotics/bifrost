@@ -4,6 +4,7 @@ package bldr.manifest.builder;
 import "github.com/s4wave/spacewave/bldr/manifest/manifest.proto";
 import "github.com/s4wave/spacewave/bldr/manifest/build/policy.proto";
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // BuilderConfig is common configuration for a manifest builder routine.
 message BuilderConfig {
@@ -46,6 +47,8 @@ message BuilderConfig {
 
 // BuilderResult is the result of a builder run.
 message BuilderResult {
+  option (typeid.id) = "bldr/manifest-build-result";
+
   // Manifest is the manifest object.
   //
   // If this is empty, it is assumed the compiler cannot produce a manifest for this platform.

@@ -66,6 +66,8 @@ message VmMount {
 // VmV86 represents an x86 virtual machine instance via v86 emulation.
 // Linked to BIOS, kernel, and rootfs images via graph edges.
 message VmV86 {
+  option (typeid.id) = "vm/v86";
+
   // State is the desired VM state. Runtime observations are in observed_state.
   VmState state = 1;
   // Name is the human-readable name of this VM instance.
@@ -186,6 +188,8 @@ message ReportV86RuntimeStatusResponse {
 // metadata; the five UnixFS targets are attached via v86image/wasm,
 // v86image/bios/seabios, v86image/bios/vgabios, v86image/kernel, v86image/rootfs.
 message V86Image {
+  option (typeid.id) = "vm/image/v86";
+
   // Name is the human-readable name of the image.
   string name = 1;
   // Version identifies this revision of the image.

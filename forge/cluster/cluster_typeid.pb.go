@@ -7,6 +7,14 @@ import (
 	typeid "github.com/aperturerobotics/common/typeid"
 )
 
+// ClusterTypeID is the type ID of Cluster.
+const ClusterTypeID = "forge/cluster"
+
+// TypeID returns the type ID of Cluster.
+func (*Cluster) TypeID() string {
+	return ClusterTypeID
+}
+
 // ClusterCreateOpTypeID is the type ID of ClusterCreateOp.
 const ClusterCreateOpTypeID = "forge/cluster/create"
 
@@ -65,6 +73,7 @@ func (*ClusterCompleteJobOp) TypeID() string {
 
 // ClusterTypes lists the typed messages of cluster.proto.
 var ClusterTypes = []typeid.Type{
+	{ID: ClusterTypeID, New: func() any { return new(Cluster) }},
 	{ID: ClusterCreateOpTypeID, New: func() any { return new(ClusterCreateOp) }},
 	{ID: ClusterAssignPeerOpTypeID, New: func() any { return new(ClusterAssignPeerOp) }},
 	{ID: ClusterAssignJobOpTypeID, New: func() any { return new(ClusterAssignJobOp) }},

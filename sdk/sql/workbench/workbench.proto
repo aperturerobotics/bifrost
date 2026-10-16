@@ -1,10 +1,14 @@
 syntax = "proto3";
 package s4wave.sql.workbench;
 
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
+
 option go_package = "github.com/s4wave/spacewave/sdk/sql/workbench;s4wave_sql_workbench";
 
 // Workbench is a persistent SQL exploration workspace.
 message Workbench {
+  option (typeid.id) = "sql/workbench";
+
   // TargetDbObjectKey is the sql/db object this workbench explores.
   string target_db_object_key = 1;
   // PinnedQueryObjectKeys are sql/query objects pinned in the workbench.

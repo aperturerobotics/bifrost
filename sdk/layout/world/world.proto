@@ -3,10 +3,13 @@ package s4wave.layout.world;
 
 import "github.com/s4wave/spacewave/web/object/object.proto";
 import "github.com/s4wave/spacewave/sdk/layout/layout.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // ObjectLayout contains information about a layout of objects.
 // This is the body of a world object with type "alpha/object-layout".
 message ObjectLayout {
+  option (typeid.id) = "alpha/object-layout";
+
   // LayoutModel contains the definition of the layout model.
   // The Tab data field contains serialized ObjectLayoutTab messages.
   .s4wave.layout.LayoutModel layout_model = 1;

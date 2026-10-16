@@ -3,10 +3,13 @@ package kvtx.block;
 
 import "github.com/s4wave/spacewave/db/kvtx/block/iavl/iavl.proto";
 import "github.com/s4wave/spacewave/db/kvtx/block/okra/okra.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // KeyValueStore is the root of a Key-Value Transaction store.
 // Allows for multiple options of underlying block structures.
 message KeyValueStore {
+  option (typeid.id) = "kv/store";
+
   // ImplType is the key value implementation type.
   KVImplType impl_type = 1;
 

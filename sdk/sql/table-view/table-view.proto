@@ -2,11 +2,14 @@ syntax = "proto3";
 package s4wave.sql.table_view;
 
 import "github.com/s4wave/spacewave/db/sql/sql.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/sql/table-view;s4wave_sql_table_view";
 
 // TableView is a standalone saved table projection and filter.
 message TableView {
+  option (typeid.id) = "sql/table-view";
+
   // TargetSchemaObjectKey is the sql/schema object this view reads from.
   string target_schema_object_key = 1;
   // TargetTableName is the table name inside the target schema.

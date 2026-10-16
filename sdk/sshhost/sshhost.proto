@@ -64,6 +64,8 @@ message SshHostStatus {
 
 // SshHost is the world-block state for an SSH-only Host.
 message SshHost {
+  option (typeid.id) = "spacewave/ssh-host";
+
   // Label is the operator-visible Host label.
   string label = 1;
   // Endpoint is the SSH endpoint and username.

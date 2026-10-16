@@ -4,6 +4,7 @@ package forge.job;
 import "github.com/s4wave/spacewave/forge/value/value.proto";
 import "github.com/s4wave/spacewave/forge/worker/worker.proto";
 import "google/protobuf/timestamp.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 // Job contains state for running a set of Tasks.
 //
@@ -16,6 +17,8 @@ import "google/protobuf/timestamp.proto";
 // Incoming links:
 //  - parent: any Tasks created specifically for the Job
 message Job {
+  option (typeid.id) = "forge/job";
+
   // JobState is the current state of the job.
   State job_state = 1;
   // Result is information about the outcome of a completed Job.

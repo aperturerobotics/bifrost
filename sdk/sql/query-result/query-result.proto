@@ -3,11 +3,14 @@ package s4wave.sql.query_result;
 
 import "google/protobuf/timestamp.proto";
 import "github.com/s4wave/spacewave/db/sql/sql.proto";
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
 
 option go_package = "github.com/s4wave/spacewave/sdk/sql/query-result;s4wave_sql_query_result";
 
 // QueryResult is a standalone SQL query execution result world object.
 message QueryResult {
+  option (typeid.id) = "sql/query-result";
+
   // Columns describes the returned result columns.
   repeated .sql.ColumnSchema columns = 1;
   // RowBatches stores returned rows in column order.
