@@ -1,0 +1,224 @@
+import * as React from 'react'
+import {
+  LuBot,
+  LuCircle,
+  LuCircleCheck,
+  LuCircleX,
+  LuLoaderCircle,
+} from 'react-icons/lu'
+
+import { Badge } from '@s4wave/web/ui/badge.js'
+import {
+  Trace,
+  TraceCollapsible,
+  TraceCollapsibleContent,
+  TraceCollapsibleTrigger,
+  TraceDescription,
+  TraceIcon,
+  TraceLine,
+  TraceTitle,
+  type TraceStatus,
+} from '@s4wave/web/ui/trace.js'
+import { statusLabel, statusTitle } from '@s4wave/web/ui/trace-status.js'
+
+/** SubagentStep is one step the child session took. id is its identity. */
+export type SubagentStep = {
+  id: string
+  title: string
+  status: TraceStatus
+}
+
+/** subagentIcon picks the step icon for a child session status. */
+function subagentIcon(status: TraceStatus) {
+  if (status === 'running') {
+    return <LuLoaderCircle className="animate-spin" />
+  }
+  if (status === 'error') {
+    return <LuCircleX />
+  }
+  if (status === 'pending') {
+    return <LuCircle />
+  }
+  return <LuCircleCheck />
+}
+
+/** subagentHasBody reports whether the run has anything to open. */
+function subagentHasBody({
+  task,
+  model,
+  tools,
+  steps,
+  result,
+}: {
+  task?: string
+  model?: string
+  tools?: string[]
+  steps?: SubagentStep[]
+  result?: string
+}) {
+  return Boolean(task || model || tools?.length || steps?.length || result)
+}
+
+/** SubagentLine is the child session's title line. */
+function SubagentLine({
+  name,
+  status,
+  seconds,
+}: {
+  name: string
+  status: TraceStatus
+  seconds?: number
+}) {
+  return (
+    <TraceLine status={status}>
+      <TraceIcon>
+        <LuBot />
+      </TraceIcon>
+      <TraceTitle>{statusTitle(status, name)}</TraceTitle>
+      {seconds !== undefined ? (
+        <TraceDescription>{seconds}s</TraceDescription>
+      ) : null}
+    </TraceLine>
+  )
+}
+
+/** SubagentLink is the viewer link, kept outside the trigger. */
+function SubagentLink({ href, name }: { href?: string; name: string }) {
+  if (!href) {
+    return null
+  }
+
+  return (
+    <a
+      href={href}
+      aria-label={`Open ${name} session`}
+      data-slot="subagent-link"
+      className="text-muted-foreground hover:text-foreground shrink-0 text-sm underline-offset-4 hover:underline"
+    >
+      Open session
+    </a>
+  )
+}
+
+/** SubagentBadges shows the model and tools. */
+function SubagentBadges({
+  model,
+  tools = [],
+}: {
+  model?: string
+  tools?: string[]
+}) {
+  if (!model && tools.length === 0) {
+    return null
+  }
+
+  return (
+    <div data-slot="subagent-badges" className="flex flex-wrap gap-1.5">
+      {model ? <Badge variant="secondary">{model}</Badge> : null}
+      {tools.map((tool) => (
+        <Badge key={tool} variant="outline" className="font-mono">
+          {tool}
+        </Badge>
+      ))}
+    </div>
+  )
+}
+
+/** SubagentSteps renders the child session's steps. */
+function SubagentSteps({ steps = [] }: { steps?: SubagentStep[] }) {
+  if (steps.length === 0) {
+    return null
+  }
+
+  return (
+    <Trace>
+      {steps.map((step) => (
+        <TraceLine key={step.id} status={step.status}>
+          <TraceIcon>{subagentIcon(step.status)}</TraceIcon>
+          <TraceTitle>{step.title}</TraceTitle>
+          <span className="sr-only">{statusLabel(step.status)}</span>
+        </TraceLine>
+      ))}
+    </Trace>
+  )
+}
+
+/** SubagentNote labels task or result text so the two can be told apart. */
+function SubagentNote({ label, text }: { label: string; text?: string }) {
+  if (!text) {
+    return null
+  }
+
+  return (
+    <>
+      <span className="sr-only">{label}</span>
+      <p>{text}</p>
+    </>
+  )
+}
+
+/** Subagent renders a child session, with a link to its viewer beside the line. */
+function Subagent({
+  name,
+  status,
+  task,
+  model,
+  tools,
+  steps,
+  result,
+  href,
+  seconds,
+  className,
+  ...props
+}: React.ComponentProps<'div'> & {
+  name: string
+  status: TraceStatus
+  task?: string
+  model?: string
+  tools?: string[]
+  steps?: SubagentStep[]
+  result?: string
+  /** href is the viewer URL. It is rendered beside the trigger, never inside it. */
+  href?: string
+  /** seconds is the settled duration, shown beside the title. */
+  seconds?: number
+}) {
+  // Name the line and keep the viewer link beside it, outside any trigger.
+  const line = <SubagentLine name={name} status={status} seconds={seconds} />
+  const link = <SubagentLink href={href} name={name} />
+  const hasBody = subagentHasBody({ task, model, tools, steps, result })
+  if (!hasBody) {
+    return (
+      <div data-slot="subagent" className={className} {...props}>
+        <Trace>
+          <div className="flex min-w-0 items-center gap-2">
+            {line}
+            {link}
+          </div>
+        </Trace>
+      </div>
+    )
+  }
+
+  return (
+    <div data-slot="subagent" className={className} {...props}>
+      <Trace>
+        {/* Keyed by status so a finished run remounts closed. */}
+        <TraceCollapsible key={status} defaultOpen={status === 'running'}>
+          <div className="flex min-w-0 items-center gap-2">
+            <TraceCollapsibleTrigger>{line}</TraceCollapsibleTrigger>
+            {link}
+          </div>
+          <TraceCollapsibleContent className="flex flex-col gap-3">
+            <SubagentBadges model={model} tools={tools} />
+            <SubagentNote label="Task" text={task} />
+            <SubagentSteps steps={steps} />
+            <SubagentNote label="Result" text={result} />
+          </TraceCollapsibleContent>
+        </TraceCollapsible>
+      </Trace>
+    </div>
+  )
+}
+
+export { Subagent }

@@ -74,6 +74,7 @@ import "embed"
 //go:embed ui/loading/loading-screen-style.ts
 //go:embed ui/loading/useReducedMotion.ts ui/login-form.tsx ui/path/PathInput.tsx ui/path/index.ts
 //go:embed ui/range-slider.tsx ui/separator.tsx ui/sheet.tsx ui/shine-border.tsx ui/tabs.tsx ui/toaster.tsx
+//go:embed ui/context.tsx ui/message.tsx ui/plan.tsx ui/queue.tsx ui/reasoning.tsx ui/stack-trace.tsx ui/subagent.tsx ui/terminal.tsx ui/tool.tsx
 //go:embed ui/tooltip.tsx ui/trace.tsx ui/tree/Tree.tsx ui/tree/TreeNode.tsx ui/tree/TreeRow.tsx ui/tree/TreeState.tsx
 //go:embed ui/tree/index.ts ui/turnstile.tsx util/isEqual.ts
 //go:embed sync/index.ts sync/react.tsx sync/app-hooks.ts sync/useAppAttachment.ts sync/useObjectQuery.ts
