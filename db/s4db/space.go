@@ -48,6 +48,9 @@ type extent struct {
 type space struct {
 	// free maps the first page of each free run to its length.
 	free *btree.Map[uint64, uint64]
+	// sizes holds the free runs ordered by length, then start, so a fit
+	// visits only the runs long enough to hold it.
+	sizes *btree.BTreeG[run]
 	// end is the file length in pages.
 	end uint64
 	// live holds the live bytes of each value page, indexed by page. It
@@ -80,7 +83,31 @@ type space struct {
 
 // newSpace returns the space of a new file.
 func newSpace() *space {
-	return &space{free: new(btree.Map[uint64, uint64]), end: firstPage}
+	return &space{
+		free:  new(btree.Map[uint64, uint64]),
+		sizes: btree.NewBTreeGOptions(lessRunSize, btree.Options{NoLocks: true}),
+		end:   firstPage,
+	}
+}
+
+// lessRunSize orders runs by length, then start.
+func lessRunSize(a, b run) bool {
+	if a.n != b.n {
+		return a.n < b.n
+	}
+	return a.start < b.start
+}
+
+// setFree adds r to the free runs.
+func (s *space) setFree(r run) {
+	s.free.Set(r.start, r.n)
+	s.sizes.Set(r)
+}
+
+// deleteFree removes r from the free runs.
+func (s *space) deleteFree(r run) {
+	s.free.Delete(r.start)
+	s.sizes.Delete(r)
 }
 
 // alloc returns n consecutive pages from the lowest free run that holds
@@ -104,21 +131,33 @@ func (s *space) fit(least, want uint64) (run, bool) {
 	return r, ok
 }
 
-// choose returns the run fit would take without taking it.
+// choose returns the run fit would take without taking it. It visits only
+// the free runs of want pages or more, which a fragmented file has few of,
+// and never the many short runs.
 func (s *space) choose(least, want uint64) (run, bool) {
+	// Take want pages from the lowest run that holds them.
 	var best run
 	found := false
-	s.free.Scan(func(start, n uint64) bool {
-		if n >= want {
-			best, found = run{start: start, n: want}, true
-			return false
-		}
-		if n >= least && n > best.n {
-			best, found = run{start: start, n: n}, true
+	s.sizes.Ascend(run{n: want}, func(r run) bool {
+		if !found || r.start < best.start {
+			best, found = run{start: r.start, n: want}, true
 		}
 		return true
 	})
-	return best, found
+	if found {
+		return best, true
+	}
+
+	// Else take the lowest of the longest runs, when it holds least.
+	longest, ok := s.sizes.Max()
+	if !ok || longest.n < least {
+		return run{}, false
+	}
+	s.sizes.Ascend(run{n: longest.n}, func(r run) bool {
+		longest = r
+		return false
+	})
+	return longest, true
 }
 
 // lower reports whether a value of n bytes placed in a new extent would
@@ -141,12 +180,12 @@ func (s *space) take(r run) {
 
 	// Cut r out of the free runs that overlap it.
 	for _, h := range s.overlaps(r) {
-		s.free.Delete(h.start)
+		s.deleteFree(h)
 		if h.start < r.start {
-			s.free.Set(h.start, r.start-h.start)
+			s.setFree(run{start: h.start, n: r.start - h.start})
 		}
 		if h.end() > r.end() {
-			s.free.Set(r.end(), h.end()-r.end())
+			s.setFree(run{start: r.end(), n: h.end() - r.end()})
 		}
 	}
 }
@@ -176,11 +215,11 @@ func (s *space) addFree(r run) {
 
 	// Merge with the free runs on either side.
 	if prev, ok := s.before(r.start); ok && prev.end() == r.start {
-		s.free.Delete(prev.start)
+		s.deleteFree(prev)
 		r = run{start: prev.start, n: prev.n + r.n}
 	}
 	if n, ok := s.free.Get(r.end()); ok {
-		s.free.Delete(r.end())
+		s.deleteFree(run{start: r.end(), n: n})
 		r.n += n
 	}
 
@@ -189,7 +228,7 @@ func (s *space) addFree(r run) {
 		s.end = r.start
 		return
 	}
-	s.free.Set(r.start, r.n)
+	s.setFree(r)
 }
 
 // before returns the free run starting below page.
@@ -532,7 +571,7 @@ func decodeSpace(b []byte) (*space, error) {
 	s.marks = pin{seq: d.uvarint(), ckpt: d.uvarint()}
 	s.end = d.uvarint()
 	for range d.count() {
-		s.free.Set(d.uvarint(), d.uvarint())
+		s.setFree(run{start: d.uvarint(), n: d.uvarint()})
 	}
 
 	// Read the live value page runs. A run may not reach past the file end.

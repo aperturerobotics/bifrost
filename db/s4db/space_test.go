@@ -1,6 +1,7 @@
 package s4db
 
 import (
+	"math/rand/v2"
 	"slices"
 	"testing"
 )
@@ -48,5 +49,81 @@ func TestSpaceDrainMergesRuns(t *testing.T) {
 	}
 	if sp.releasedPages != 0 {
 		t.Fatalf("releasedPages = %d after drain, want 0", sp.releasedPages)
+	}
+}
+
+// scanChoose is choose by a scan of the free runs in address order: the
+// lowest run holding want, else the lowest of the longest runs holding
+// least.
+func scanChoose(s *space, least, want uint64) (run, bool) {
+	var best run
+	found := false
+	s.free.Scan(func(start, n uint64) bool {
+		if n >= want {
+			best, found = run{start: start, n: want}, true
+			return false
+		}
+		if n >= least && n > best.n {
+			best, found = run{start: start, n: n}, true
+		}
+		return true
+	})
+	return best, found
+}
+
+// TestSpaceChooseMatchesScan checks that the size index picks the run an
+// address-order scan picks, across random allocations and frees.
+func TestSpaceChooseMatchesScan(t *testing.T) {
+	// Allocate and free random runs, keeping the allocated ones.
+	rng := rand.New(rand.NewPCG(3, 4))
+	sp := newSpace()
+	var held []run
+	for i := range 20000 {
+		if len(held) != 0 && rng.IntN(2) == 0 {
+			j := rng.IntN(len(held))
+			sp.addFree(held[j])
+			held = slices.Delete(held, j, j+1)
+		} else {
+			want := 1 + rng.Uint64N(64)
+			held = append(held, sp.alloc(want))
+		}
+
+		// Compare a fit of each shape against the scan.
+		least := 1 + rng.Uint64N(32)
+		want := least + rng.Uint64N(64)
+		got, gotOK := sp.choose(least, want)
+		exp, expOK := scanChoose(sp, least, want)
+		if got != exp || gotOK != expOK {
+			t.Fatalf("step %d: choose(%d, %d) = %v %v, scan = %v %v", i, least, want, got, gotOK, exp, expOK)
+		}
+	}
+
+	// The index holds exactly the free runs.
+	if sp.sizes.Len() != sp.free.Len() {
+		t.Fatalf("sizes holds %d runs, free holds %d", sp.sizes.Len(), sp.free.Len())
+	}
+	sp.free.Scan(func(start, n uint64) bool {
+		if _, ok := sp.sizes.Get(run{start: start, n: n}); !ok {
+			t.Fatalf("sizes lacks free run %d+%d", start, n)
+		}
+		return true
+	})
+}
+
+// BenchmarkSpaceReserveFragmented measures a checkpoint reservation in a
+// file whose free space is a million single pages.
+func BenchmarkSpaceReserveFragmented(b *testing.B) {
+	// Free every other page of a large file.
+	sp := newSpace()
+	base := sp.alloc(2_000_000).start
+	for p := uint64(0); p < 2_000_000; p += 2 {
+		sp.addFree(run{start: base + p, n: 1})
+	}
+
+	// Ask for a reservation no free run holds.
+	for b.Loop() {
+		if _, ok := sp.choose(placeBatch, reserveBatch); ok {
+			b.Fatal("a fragmented space held a reservation")
+		}
 	}
 }
