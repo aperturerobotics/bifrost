@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/net/crypto"
+	"github.com/s4wave/spacewave/net/peer"
 )
 
 // SequencerHost is an optional interface on SharedObject implementations whose
@@ -68,7 +69,26 @@ func SetSOSequencer(ctx context.Context, host *SOHost, peerID string, signer cry
 // SequenceOperations places, as the sequencer of privKey, every operation the
 // sequence has not placed, in one write. It writes nothing unless privKey is
 // the appointed sequencer and an operation awaits a position.
+//
+// The provider lock of a direct write waits for every pending admission to
+// settle, and an admission waits for that lock. AddLocalOperation places the
+// sequencer's own operations as it adds them, so most states leave nothing to
+// place, and the check on the current state skips the lock for them.
 func (s *SOHost) SequenceOperations(ctx context.Context, privKey crypto.PrivKey) error {
+	// Skip the lock when the current state leaves nothing to place.
+	peerID, err := peer.IDFromPrivateKey(privKey)
+	if err != nil {
+		return err
+	}
+	current, err := s.GetHostState(ctx)
+	if err != nil {
+		return err
+	}
+	pending, err := current.NeedsSequencing(s.verifier, peerID.String())
+	if err != nil || !pending {
+		return err
+	}
+
 	// Hold the provider lock through placement and persistence.
 	lk, err := s.lockFn(ctx, s.sharedObjectID)
 	if err != nil {
@@ -78,7 +98,7 @@ func (s *SOHost) SequenceOperations(ctx context.Context, privKey crypto.PrivKey)
 
 	// Sign the positions on a copy and commit them if any.
 	next := lk.GetSOState().Clone()
-	added, err := next.SequenceOperations(s.sharedObjectID, privKey)
+	added, err := next.sequenceOperations(s.verifier, privKey)
 	if err != nil || len(added) == 0 {
 		return err
 	}

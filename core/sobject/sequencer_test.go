@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aperturerobotics/util/ccontainer"
+	"github.com/sirupsen/logrus"
 )
 
 // TestMainDeviceHandoff checks that an owner makes its device the main device,
@@ -119,5 +120,46 @@ func TestSequenceWatchesAppointment(t *testing.T) {
 	}
 	if n := len(state.GetSequence()); n != 1 {
 		t.Fatalf("main device placed %d operations; want 1", n)
+	}
+}
+
+// TestSequencerPlacesOwnOperations checks that the main device places its own
+// edit in the write that adds it, and that a sequencing pass takes the provider
+// lock only when an operation waits for a position.
+func TestSequencerPlacesOwnOperations(t *testing.T) {
+	// A is the sequencer. Count the host's provider locks.
+	peers := createMockPeers(t, 2)
+	keys := mustPrivKeys(t, peers)
+	state, _ := newTestSOState(t, peers)
+	state.Config.Sequencer = &SOSequencer{PeerId: peers[0].GetPeerID().String()}
+	host, current := newTestSOHost(t.Context(), state)
+	lockFn, locks := host.lockFn, 0
+	host.lockFn = func(ctx context.Context, sharedObjectID string) (SOStateLock, error) {
+		locks++
+		return lockFn(ctx, sharedObjectID)
+	}
+
+	// A's edit is placed as it is added, and the pass after it skips the lock.
+	le := logrus.New().WithField("test", t.Name())
+	if _, _, err := host.AddLocalOperation(t.Context(), le, testStepFactorySet(), keys[0], []byte("a1")); err != nil {
+		t.Fatal(err)
+	}
+	if n := len((*current).GetSequence()); n != 1 {
+		t.Fatalf("main device placed %d of its own operations; want 1", n)
+	}
+	if err := host.SequenceOperations(t.Context(), keys[0]); err != nil {
+		t.Fatal(err)
+	}
+	if locks != 1 {
+		t.Fatalf("took the provider lock %d times; want 1", locks)
+	}
+
+	// B's edit waits for a position, so the pass locks and places it.
+	writeTestOp(t, *current, keys[1], "b1")
+	if err := host.SequenceOperations(t.Context(), keys[0]); err != nil {
+		t.Fatal(err)
+	}
+	if locks != 2 || len((*current).GetSequence()) != 2 {
+		t.Fatalf("took %d locks and placed %d operations; want 2 and 2", locks, len((*current).GetSequence()))
 	}
 }

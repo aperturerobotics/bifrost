@@ -572,6 +572,12 @@ func (s *SOHost) AddLocalOperation(
 	if _, err := next.AddOperation(s.sharedObjectID, op); err != nil {
 		return "", 0, err
 	}
+
+	// Place it in the same write when this peer is the sequencer, so the
+	// sequencer never takes the lock again for its own operations.
+	if _, err := next.sequenceOperations(s.verifier, privKey); err != nil {
+		return "", 0, err
+	}
 	if err := lk.WriteSOState(ctx, next); err != nil {
 		return "", 0, err
 	}

@@ -301,6 +301,17 @@ func (s *SOState) AddSequence(sharedObjectID string, record *SOSequence) (bool, 
 	return true, nil
 }
 
+// NeedsSequencing reports whether peerID, as the appointed sequencer, has an
+// operation to place: SequenceOperations with its key would sign a position.
+// The verifier builds the operation set.
+func (s *SOState) NeedsSequencing(verifier *SOOperationVerifier, peerID string) (bool, error) {
+	set, placed, err := s.unsequenced(verifier, peerID)
+	if err != nil || set == nil {
+		return false, err
+	}
+	return placed.sequenced < len(placed.order), nil
+}
+
 // SequenceOperations signs, as the sequencer of privKey, a position for each
 // placed operation after the sequence. It signs nothing unless privKey is the
 // config's sequencer, every resolved position up to the sequencer's start is
@@ -308,30 +319,20 @@ func (s *SOState) AddSequence(sharedObjectID string, record *SOSequence) (bool, 
 // one sequence every member resolves and never forks it. It returns the new
 // positions.
 func (s *SOState) SequenceOperations(sharedObjectID string, privKey crypto.PrivKey) ([]*SOSequence, error) {
-	// Only the appointed sequencer extends a fully placed sequence.
+	return s.sequenceOperations(NewSOOperationVerifier(sharedObjectID), privKey)
+}
+
+// sequenceOperations is SequenceOperations with the operation set built by
+// verifier.
+func (s *SOState) sequenceOperations(verifier *SOOperationVerifier, privKey crypto.PrivKey) ([]*SOSequence, error) {
+	// Find the order the sequencer may extend.
 	peerID, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return nil, err
 	}
-	sequencer := s.GetConfig().GetSequencer()
-	if sequencer.GetPeerId() != peerID.String() {
-		return nil, nil
-	}
-	set, err := s.OperationSet(sharedObjectID)
-	if err != nil {
+	set, placed, err := s.unsequenced(verifier, peerID.String())
+	if err != nil || set == nil {
 		return nil, err
-	}
-	placed := set.order()
-	if !placed.complete || placed.tail.GetHeight() < sequencer.GetStart().GetHeight() {
-		return nil, nil
-	}
-
-	// A position it already signed above the tail would fork the sequence.
-	for _, record := range s.GetSequence() {
-		inner, signer, err := record.Verify(sharedObjectID)
-		if err == nil && signer == sequencer.GetPeerId() && inner.GetHeight() > placed.tail.GetHeight() {
-			return nil, nil
-		}
 	}
 
 	// Place the rest of the order after the tail.
@@ -340,17 +341,46 @@ func (s *SOState) SequenceOperations(sharedObjectID string, privKey crypto.PrivK
 	for _, h := range placed.order[placed.sequenced:] {
 		inner := set.Get(h)
 		op := &SOOperationPosition{PeerId: inner.GetPeerId(), Nonce: inner.GetNonce(), OpHash: h}
-		record, err := BuildSOSequence(sharedObjectID, privKey, prev, op)
+		record, err := BuildSOSequence(verifier.sharedObjectID, privKey, prev, op)
 		if err != nil {
 			return nil, err
 		}
-		if _, err := s.AddSequence(sharedObjectID, record); err != nil {
+		if _, err := s.AddSequence(verifier.sharedObjectID, record); err != nil {
 			return nil, err
 		}
 		added = append(added, record)
 		prev = &SOSequenceHead{Height: prev.GetHeight() + 1, Hash: record.Hash()}
 	}
 	return added, nil
+}
+
+// unsequenced returns the operation set and its order when peerID is the
+// appointed sequencer and may extend the sequence: every resolved position up
+// to the sequencer's start is placed, and peerID signed nothing above them. It
+// returns a nil set otherwise.
+func (s *SOState) unsequenced(verifier *SOOperationVerifier, peerID string) (*SOOperationSet, soOrder, error) {
+	// Only the appointed sequencer extends a fully placed sequence.
+	sequencer := s.GetConfig().GetSequencer()
+	if sequencer.GetPeerId() != peerID {
+		return nil, soOrder{}, nil
+	}
+	set, err := verifier.OperationSet(s)
+	if err != nil {
+		return nil, soOrder{}, err
+	}
+	placed := set.order()
+	if !placed.complete || placed.tail.GetHeight() < sequencer.GetStart().GetHeight() {
+		return nil, soOrder{}, nil
+	}
+
+	// A position it already signed above the tail would fork the sequence.
+	for _, record := range s.GetSequence() {
+		inner, signer, err := record.Verify(verifier.sharedObjectID)
+		if err == nil && signer == peerID && inner.GetHeight() > placed.tail.GetHeight() {
+			return nil, soOrder{}, nil
+		}
+	}
+	return set, placed, nil
 }
 
 // UnmarshalHeight decodes the position's height.
