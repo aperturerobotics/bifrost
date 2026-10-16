@@ -124,7 +124,8 @@ func (t *Table) scanRows(ctx *sql.Context) ([]sql.Row, error) {
 	return sql.RowIterToRows(ctx, iter)
 }
 
-// lookupRows resolves equality ranges through the primary or secondary tree.
+// lookupRows resolves the leading equality columns of each range through the
+// primary or secondary tree.
 func (t *Table) lookupRows(ctx *sql.Context, lookup sql.IndexLookup) ([]sql.Row, error) {
 	// Require ranges supported by the declared index.
 	index, ok := lookup.Index.(*tableIndex)
@@ -135,56 +136,42 @@ func (t *Table) lookupRows(ctx *sql.Context, lookup sql.IndexLookup) ([]sql.Row,
 	if !ok {
 		return nil, ErrUnexpectedType
 	}
+	ordinals, err := t.indexColumnOrdinals(index.columns)
+	if err != nil {
+		return nil, err
+	}
+
+	// Collect each matching row once across the ranges.
 	rows := make([]sql.Row, 0, len(ranges))
 	seen := make(map[string]struct{}, len(ranges))
 	for _, r := range ranges {
-		// Convert the full equality tuple into its encoded tree key.
-		values, ok := index.pointValues(ctx, r)
-		if !ok {
+		// Encode the leading points; a range that fixes no column scans.
+		values := leadingPoints(ctx, r)
+		if len(values) == 0 {
 			return t.scanRows(ctx)
 		}
-		ordinals, err := t.indexColumnOrdinals(index.columns)
+		n := len(values)
+		prefix, hasNull, err := t.encodeColumns(ctx, ordinals[:n], values, index.columns[:n])
 		if err != nil {
 			return nil, err
 		}
-		key, hasNull, err := t.encodeColumns(ctx, ordinals, values, index.columns)
+		single := n == len(index.columns) && (index.primary || index.unique && !hasNull)
+		candidates, err := t.indexRows(ctx, index, prefix, single)
 		if err != nil {
 			return nil, err
 		}
 
-		// Fetch primary keys directly or resolve them through a secondary tree.
-		keys := [][]byte{key}
-		if !index.primary {
-			stored := t.indexByName(index.name)
-			tree, err := t.indexTree(ctx, stored, false)
-			if err != nil {
-				return nil, err
-			}
-			keys, err = secondaryRowKeys(ctx, tree, key, index.unique && !hasNull)
-			tree.Discard()
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// Decode each matching row once even when equality ranges overlap.
-		for _, primary := range keys {
-			if _, ok := seen[string(primary)]; ok {
-				continue
-			}
-			row, err := t.rowAtKey(ctx, primary)
-			if err != nil {
-				return nil, err
-			}
-			if row == nil {
+		// Decode each matching row once even when ranges overlap.
+		for _, candidate := range candidates {
+			if _, ok := seen[string(candidate.key)]; ok {
 				continue
 			}
 
 			// Prefix indexes and coerced probes may resolve a wider equality bucket.
 			// Check only fetched candidates, never unrelated table rows.
 			matches := true
-			for i, ord := range ordinals {
-				cmp, err := r[i].Typ.Compare(ctx, row[ord], values[i])
+			for i, value := range values {
+				cmp, err := r[i].Typ.Compare(ctx, candidate.row[ordinals[i]], value)
 				if err != nil {
 					return nil, err
 				}
@@ -194,18 +181,93 @@ func (t *Table) lookupRows(ctx *sql.Context, lookup sql.IndexLookup) ([]sql.Row,
 				}
 			}
 			if matches {
-				seen[string(primary)] = struct{}{}
-				rows = append(rows, row)
+				seen[string(candidate.key)] = struct{}{}
+				rows = append(rows, candidate.row)
 			}
 		}
 	}
 	return rows, nil
 }
 
-// secondaryRowKeys resolves one unique key or the duplicate keys of one prefix.
-func secondaryRowKeys(ctx *sql.Context, tree kvtx.BlockTx, key []byte, unique bool) ([][]byte, error) {
-	// A unique index equality reads exactly one index entry.
-	if unique {
+// keyedRow is a decoded row and its primary tree key.
+type keyedRow struct {
+	// key is the row's primary tree key.
+	key []byte
+	// row is the decoded row.
+	row sql.Row
+}
+
+// indexRows reads the rows whose index key begins with prefix, the encoding of
+// the index's leading columns. Each encoded component is length framed, so the
+// prefix selects exactly the entries with those leading values. single marks a
+// complete primary or unique non-null tuple, which has at most one entry.
+func (t *Table) indexRows(ctx *sql.Context, index *tableIndex, prefix []byte, single bool) ([]keyedRow, error) {
+	// The primary tree stores rows under their keys.
+	if index.primary {
+		if !single {
+			return t.rowsWithPrefix(ctx, prefix)
+		}
+		row, err := t.rowAtKey(ctx, prefix)
+		if err != nil || row == nil {
+			return nil, err
+		}
+		return []keyedRow{{key: prefix, row: row}}, nil
+	}
+
+	// A secondary tree maps its entries to primary keys.
+	tree, err := t.indexTree(ctx, t.indexByName(index.name), false)
+	if err != nil {
+		return nil, err
+	}
+	keys, err := secondaryRowKeys(ctx, tree, prefix, single)
+	tree.Discard()
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]keyedRow, 0, len(keys))
+	for _, key := range keys {
+		row, err := t.rowAtKey(ctx, key)
+		if err != nil {
+			return nil, err
+		}
+		if row != nil {
+			rows = append(rows, keyedRow{key: key, row: row})
+		}
+	}
+	return rows, nil
+}
+
+// rowsWithPrefix decodes every row whose primary tree key begins with prefix.
+func (t *Table) rowsWithPrefix(ctx *sql.Context, prefix []byte) ([]keyedRow, error) {
+	// Open the partition that stores every row.
+	part, err := t.rowPartition()
+	if err != nil {
+		return nil, err
+	}
+	tree, err := part.BuildTreeTx(GetDbContext(ctx), false, false)
+	if err != nil {
+		return nil, err
+	}
+	defer tree.Discard()
+
+	// Walk only the keys under the prefix.
+	it := tree.BlockIterate(GetDbContext(ctx), prefix, false, false)
+	defer it.Close()
+	var rows []keyedRow
+	for it.Next() {
+		row, err := t.decodeRow(ctx, it.ValueCursor())
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, keyedRow{key: bytes.Clone(it.Key()), row: row})
+	}
+	return rows, it.Err()
+}
+
+// secondaryRowKeys resolves one unique key, or every entry under a prefix.
+func secondaryRowKeys(ctx *sql.Context, tree kvtx.BlockTx, key []byte, single bool) ([][]byte, error) {
+	// A complete unique tuple reads exactly one index entry.
+	if single {
 		value, found, err := tree.Get(GetDbContext(ctx), key)
 		if err != nil || !found {
 			return nil, err
@@ -213,7 +275,7 @@ func secondaryRowKeys(ctx *sql.Context, tree kvtx.BlockTx, key []byte, unique bo
 		return [][]byte{value}, nil
 	}
 
-	// Nonunique equality walks only entries with the complete encoded tuple.
+	// Other lookups walk every entry under the encoded prefix.
 	it := tree.Iterate(GetDbContext(ctx), key, true, false)
 	defer it.Close()
 	var keys [][]byte

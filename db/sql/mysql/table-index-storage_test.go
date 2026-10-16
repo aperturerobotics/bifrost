@@ -428,20 +428,57 @@ func TestUnsupportedPredicatesScan(t *testing.T) {
 		"INSERT INTO scans VALUES (1, 1, 1), (3, 1, 2), (5, 2, 1), (7, 1, 1), (9, 2, 2)",
 	)
 
-	// A partial composite key and an open range fall back to a full scan.
+	// Open ranges and a span on the leading column fall back to a full scan.
 	for _, test := range []struct {
 		// query selects through an unsupported predicate.
 		query string
 		// want is the matching ids in order.
 		want string
 	}{
-		{"SELECT id FROM scans WHERE a = 1 ORDER BY id", "1 3 7"},
-		{"SELECT id FROM scans WHERE a = 1 AND b = 1 ORDER BY id", "1 7"},
+		{"SELECT id FROM scans WHERE b = 1 ORDER BY id", "1 5 7"},
+		{"SELECT id FROM scans WHERE a > 1 AND b = 1 ORDER BY id", "5"},
 		{"SELECT id FROM scans WHERE id > 5 ORDER BY id", "7 9"},
 		{"SELECT id FROM scans WHERE id BETWEEN 3 AND 7 ORDER BY id", "3 5 7"},
 	} {
 		if got := strings.Join(queryStrings(t, ctx, db, test.query), " "); got != test.want {
 			t.Fatalf("%s: ids %q, want %q", test.query, got, test.want)
+		}
+	}
+}
+
+// TestLeadingColumnLookups serves equality on the leading columns of a
+// composite primary or secondary key through the index.
+func TestLeadingColumnLookups(t *testing.T) {
+	// Store keys whose text is a byte prefix of another key's text.
+	ctx := t.Context()
+	_, db := newMysqlTestDB(t, ctx, "probe")
+	defer db.Close()
+	execMysqlStatements(t, ctx, db,
+		"CREATE TABLE pairs (a VARCHAR(16), b BIGINT, c VARCHAR(16), d BIGINT, PRIMARY KEY (a, b))",
+		"CREATE INDEX idx_cd ON pairs(c, d)",
+		"INSERT INTO pairs VALUES ('x', 1, 'p', 1), ('x', 2, 'p', 2), ('xy', 1, 'pq', 1), ('y', 1, NULL, 3), ('y', 2, NULL, 4)",
+	)
+
+	// Each lookup plans an index access and returns only its own rows.
+	for _, test := range []struct {
+		// query selects by the leading index columns.
+		query string
+		// want is the matching rows in order.
+		want string
+	}{
+		{"SELECT CONCAT(a, b) FROM pairs WHERE a = 'x' ORDER BY b", "x1 x2"},
+		{"SELECT CONCAT(a, b) FROM pairs WHERE a = 'x' AND b > 1", "x2"},
+		{"SELECT CONCAT(a, b) FROM pairs WHERE c = 'p' ORDER BY a, b", "x1 x2"},
+		{"SELECT CONCAT(a, b) FROM pairs WHERE c = 'pq' AND d = 1", "xy1"},
+		{"SELECT CONCAT(a, b) FROM pairs WHERE c IS NULL ORDER BY b", "y1 y2"},
+		{"SELECT CONCAT(a, b) FROM pairs WHERE a IN ('x', 'xy') ORDER BY a, b", "x1 x2 xy1"},
+	} {
+		plan := strings.Join(queryStrings(t, ctx, db, "EXPLAIN FORMAT=tree "+test.query), "\n")
+		if !strings.Contains(plan, "IndexedTableAccess") {
+			t.Fatalf("%s: plan scans the table:\n%s", test.query, plan)
+		}
+		if got := strings.Join(queryStrings(t, ctx, db, test.query), " "); got != test.want {
+			t.Fatalf("%s: rows %q, want %q", test.query, got, test.want)
 		}
 	}
 }

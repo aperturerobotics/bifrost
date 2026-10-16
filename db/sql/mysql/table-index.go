@@ -341,18 +341,22 @@ func (idx *tableIndex) ColumnExpressionTypes(ctx *sql.Context) []sql.ColumnExpre
 	return out
 }
 
-// CanSupport accepts complete equality tuples and the NULL-excluding probe a
-// null-safe join plans with before it binds a key; other predicates use table
-// scans.
+// CanSupport accepts ranges that fix the index's leading columns to points,
+// and the NULL-excluding probe a null-safe join plans with before it binds a
+// key. Trailing columns may select any span: a lookup walks the encoded prefix
+// of the leading points, and the engine filters the rest because PreciseMatch
+// is false. Other predicates use table scans.
 func (idx *tableIndex) CanSupport(ctx *sql.Context, ranges ...sql.Range) bool {
 	for _, r := range ranges {
 		mysqlRange, ok := r.(sql.MySQLRange)
 		if !ok || len(mysqlRange) != len(idx.columns) {
 			return false
 		}
+		if len(leadingPoints(ctx, mysqlRange)) != 0 {
+			continue
+		}
 		for _, column := range mysqlRange {
-			_, point := pointValue(ctx, column)
-			if !point && !isNotNullRange(column) {
+			if !isNotNullRange(column) {
 				return false
 			}
 		}
@@ -360,21 +364,18 @@ func (idx *tableIndex) CanSupport(ctx *sql.Context, ranges ...sql.Range) bool {
 	return true
 }
 
-// pointValues extracts a full equality tuple without assuming byte sort order.
-func (idx *tableIndex) pointValues(ctx *sql.Context, r sql.MySQLRange) (sql.Row, bool) {
-	// Reject incomplete tuples and unsupported range bounds.
-	if len(r) != len(idx.columns) {
-		return nil, false
-	}
-	values := make(sql.Row, len(r))
-	for i, column := range r {
+// leadingPoints returns the values of the leading columns r fixes to one SQL
+// value each, stopping at the first column that selects a span.
+func leadingPoints(ctx *sql.Context, r sql.MySQLRange) sql.Row {
+	var values sql.Row
+	for _, column := range r {
 		value, ok := pointValue(ctx, column)
 		if !ok {
-			return nil, false
+			break
 		}
-		values[i] = value
+		values = append(values, value)
 	}
-	return values, true
+	return values
 }
 
 // pointValue returns the one SQL value a range column selects, or false when
