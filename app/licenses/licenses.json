@@ -821,6 +821,14 @@
       "copyrightNotice": "Copyright (c) 2025 Aperture Robotics CLI maintainers\nCopyright (c) 2022 urfave/cli maintainers"
     },
     {
+      "name": "github.com/aperturerobotics/common",
+      "version": "v0.35.5-0.20261016061622-bf2de3fd5864",
+      "spdx": "MIT",
+      "source": "go",
+      "repo": "https://github.com/aperturerobotics/common",
+      "copyrightNotice": "Copyright (c) 2022-2025 Christian Stewart <christian@aperture.us>\nCopyright (c) 2022-2025 Aperture Robotics, LLC."
+    },
+    {
       "name": "github.com/aperturerobotics/controllerbus",
       "version": "v0.53.6-0.20261007184646-7a3ab3aea145",
       "spdx": "MIT",
