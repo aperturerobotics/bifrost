@@ -28,12 +28,14 @@ type readGrantKey struct {
 // ReadGrants asks the cloud for read URLs of packs in a block store. The
 // grants follow the order of packIDs.
 func (c *SessionClient) ReadGrants(ctx context.Context, resourceID string, packIDs []string) ([]*packfile.ReadGrant, error) {
-	// Request the grants.
+	// Request the grants. The request only reads, so the Idempotency-Key header
+	// lets the transport resend it when the server resets a reused connection.
 	body, err := (&packfile.ReadRequest{PackIds: packIDs}).MarshalVT()
 	if err != nil {
 		return nil, err
 	}
-	data, err := c.doPostBinary(ctx, path.Join("/api/bstore", resourceID, "read"), body, nil, SeedReasonColdSeed)
+	headers := map[string]string{"Idempotency-Key": ""}
+	data, err := c.doPostBinary(ctx, path.Join("/api/bstore", resourceID, "read"), body, headers, SeedReasonColdSeed)
 	if err != nil {
 		return nil, errors.Wrap(err, "read grants")
 	}

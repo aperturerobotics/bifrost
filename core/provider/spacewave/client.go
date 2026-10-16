@@ -247,9 +247,13 @@ func (c *SignedHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	for attempt := 0; ; attempt++ {
-		// Sign and send this attempt.
+		// Sign and send this attempt. GetBody lets the transport resend an
+		// idempotent request when the server closes a reused connection.
 		if body != nil {
-			req.Body = io.NopCloser(bytes.NewReader(body))
+			req.GetBody = func() (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewReader(body)), nil
+			}
+			req.Body, _ = req.GetBody()
 		}
 		if err := c.signRequest(req, body); err != nil {
 			return nil, err
@@ -1735,6 +1739,7 @@ func (c *SessionClient) FinalizeAccountSObjectBinding(
 // object binding.
 type accountSObjectBindingResponse interface {
 	protobuf_go_lite.Message
+	// GetBinding returns the binding the response carries.
 	GetBinding() *api.AccountSObjectBinding
 }
 
