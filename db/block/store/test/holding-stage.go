@@ -39,9 +39,8 @@ func (s *HoldingStage) HoldCompleteRoots(_ context.Context, refs []*block.BlockR
 // RequireStageHold fails t unless holding a root through a stage of the store
 // wrap builds over a HoldingStage reaches that stage and reports the root held.
 func RequireStageHold(t testing.TB, wrap func(block.StoreOps) block.StoreOps) {
+	// Open a stage on the wrapped store, reporting failures at the caller.
 	t.Helper()
-
-	// Open a stage on the wrapped store.
 	ctx := context.Background()
 	inner := &HoldingStage{}
 	stage, release, err := block.OpenStage(ctx, wrap(inner))
@@ -51,7 +50,7 @@ func RequireStageHold(t testing.TB, wrap func(block.StoreOps) block.StoreOps) {
 	defer release()
 
 	// Hold a root through the stage.
-	ref, err := block.BuildBlockRef([]byte("held root"), &block.PutOpts{HashType: hash.HashType_HashType_BLAKE3})
+	ref, err := block.BuildBlockRef([]byte("held root"), &block.PutOpts{HashType: hash.HashType_HashType_SHA256})
 	if err != nil {
 		t.Fatal(err)
 	}

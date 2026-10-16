@@ -1,3 +1,5 @@
+//go:build !goscript
+
 package provider_spacewave
 
 import (
@@ -9,7 +11,8 @@ import (
 )
 
 // TestReadGrantsResendOnReset checks that a grant read survives the server
-// closing a reused connection without a response.
+// closing a reused connection without a response. Hijacking a connection
+// needs the native transport, so the test does not build for goscript.
 func TestReadGrantsResendOnReset(t *testing.T) {
 	// Serve grant reads on a server that counts them.
 	var requests int
