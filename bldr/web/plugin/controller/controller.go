@@ -26,6 +26,7 @@ import (
 	unixfs_access "github.com/s4wave/spacewave/db/unixfs/access"
 	bifrost_rpc "github.com/s4wave/spacewave/net/rpc"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 // ControllerID is the controller ID.
@@ -364,46 +365,38 @@ func (c *Controller) HandleWebViewViaHandlers(
 // loads those files after this call returns, and the plugin host mounts a
 // pinned manifest only while an open filesystem handle holds its files, so the
 // caller keeps the returned release until the handlers detach.
+//
+// Each lookup may wait for its provider plugin to start and each mount reads
+// its manifest's files, so the independent lookups run concurrently, as do the
+// mounts. They share the caller's context because the returned handles stay
+// bound to the context that opened them.
 func (c *Controller) bindHandlerAssets(ctx context.Context, handlers *web_view_handler.WebViewHandlersConfig) (func(), error) {
-	// Retain every lookup and mount until the caller releases them.
-	var releases []func()
-	release := func() {
-		for _, release := range releases {
-			release()
+	// Resolve each empty package prefix once, however many handlers share it.
+	var ids []string
+	basePaths := make(map[string]string)
+	for _, handler := range handlers.GetHandlers() {
+		for id, basePath := range handler.GetSetRenderMode().GetWebPkgPaths() {
+			if _, ok := basePaths[id]; !ok && basePath == "" {
+				basePaths[id] = ""
+				ids = append(ids, id)
+			}
 		}
 	}
-
-	// The document waits on this binding, so report any step that holds it.
-	logSlow := func(step, id string, start time.Time) {
-		if dur := time.Since(start); dur > slowAssetBinding {
-			c.le.WithField("step", step).WithField("id", id).WithField("dur", dur.String()).
-				Warn("slow web view handler asset binding")
-		}
+	paths, releaseLookups, err := c.lookupWebPkgPaths(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	for i, id := range ids {
+		basePaths[id] = paths[i]
 	}
 
-	// Collect each URL a handler publishes, resolving package prefixes first.
+	// Collect each URL a handler publishes, filling the resolved prefixes.
 	var urls []string
 	for _, handler := range handlers.GetHandlers() {
 		render := handler.GetSetRenderMode()
 		for id, basePath := range render.GetWebPkgPaths() {
 			if basePath == "" {
-				start := time.Now()
-				pkg, _, ref, err := web_pkg.ExLookupWebPkg(ctx, c.bus, false, id)
-				if err != nil {
-					release()
-					return nil, err
-				}
-				releases = append(releases, ref.Release)
-				logSlow("lookup-web-pkg", id, start)
-
-				start = time.Now()
-				info, err := pkg.GetInfo(ctx)
-				if err != nil {
-					release()
-					return nil, err
-				}
-				logSlow("web-pkg-info", id, start)
-				basePath = info.GetAssetBasePath()
+				basePath = basePaths[id]
 				render.WebPkgPaths[id] = basePath
 			}
 			urls = append(urls, basePath)
@@ -414,7 +407,8 @@ func (c *Controller) bindHandlerAssets(ctx context.Context, handlers *web_view_h
 		}
 	}
 
-	// Mount each pinned manifest once.
+	// Select each pinned manifest the URLs name, once.
+	var artifactIDs []string
 	held := make(map[string]struct{})
 	for _, url := range urls {
 		pluginPath, ok := strings.CutPrefix(url, bldr_plugin.PluginAssetsHttpPrefix)
@@ -423,36 +417,127 @@ func (c *Controller) bindHandlerAssets(ctx context.Context, handlers *web_view_h
 		}
 		artifactID, _, err := bldr_plugin.ParseHTTPPathPluginArtifact(pluginPath)
 		if err != nil {
-			release()
+			releaseLookups()
 			return nil, err
 		}
-		if _, ok := held[artifactID]; ok {
+		if _, ok := held[artifactID]; ok || !strings.Contains(artifactID, "/manifest/") {
 			continue
 		}
 		held[artifactID] = struct{}{}
-		if !strings.Contains(artifactID, "/manifest/") {
-			continue
-		}
-		start := time.Now()
-		access := unixfs_access.NewAccessUnixFSViaBusFunc(c.bus, bldr_plugin.PluginAssetsFsId(artifactID), false)
-		files, releaseFiles, err := access(ctx, nil)
-		if err != nil {
-			release()
-			return nil, err
-		}
-		releases = append(releases, releaseFiles)
-		logSlow("access-plugin-assets", artifactID, start)
+		artifactIDs = append(artifactIDs, artifactID)
+	}
 
-		// The filesystem client opens its event stream on first use, and the
-		// plugin host keeps the files mounted while that stream is open.
-		start = time.Now()
-		if _, err := files.GetNodeType(ctx); err != nil {
-			release()
-			return nil, err
+	// Mount the selected manifests' files.
+	releaseMounts, err := c.mountPluginAssets(ctx, artifactIDs)
+	if err != nil {
+		releaseLookups()
+		return nil, err
+	}
+	return func() {
+		releaseMounts()
+		releaseLookups()
+	}, nil
+}
+
+// lookupWebPkgPaths resolves the asset base path of each package in ids
+// concurrently and returns them in the order of ids. The release function
+// drops every lookup; the caller holds it while the paths are served.
+func (c *Controller) lookupWebPkgPaths(ctx context.Context, ids []string) ([]string, func(), error) {
+	// Look up every package, keeping each reference by index.
+	paths := make([]string, len(ids))
+	refs := make([]directive.Reference, len(ids))
+	var eg errgroup.Group
+	for i, id := range ids {
+		eg.Go(func() error {
+			// Wait for the package's provider to serve it.
+			start := time.Now()
+			pkg, _, ref, err := web_pkg.ExLookupWebPkg(ctx, c.bus, false, id)
+			if err != nil {
+				return err
+			}
+			refs[i] = ref
+			c.logSlowAssetBinding("lookup-web-pkg", id, start)
+
+			// Read the package's asset base path.
+			start = time.Now()
+			info, err := pkg.GetInfo(ctx)
+			if err != nil {
+				return err
+			}
+			c.logSlowAssetBinding("web-pkg-info", id, start)
+			paths[i] = info.GetAssetBasePath()
+			return nil
+		})
+	}
+	err := eg.Wait()
+
+	// Release every reference together, including those of a failed lookup.
+	release := func() {
+		for _, ref := range refs {
+			if ref != nil {
+				ref.Release()
+			}
 		}
-		logSlow("mount-plugin-assets", artifactID, start)
+	}
+	if err != nil {
+		release()
+		return nil, nil, err
+	}
+	return paths, release, nil
+}
+
+// mountPluginAssets opens the assets filesystem of each pinned plugin artifact
+// concurrently and keeps it mounted until the returned release.
+func (c *Controller) mountPluginAssets(ctx context.Context, artifactIDs []string) (func(), error) {
+	// Open every filesystem, keeping each release by index.
+	releases := make([]func(), len(artifactIDs))
+	var eg errgroup.Group
+	for i, artifactID := range artifactIDs {
+		eg.Go(func() error {
+			// Open the artifact's assets filesystem.
+			start := time.Now()
+			access := unixfs_access.NewAccessUnixFSViaBusFunc(c.bus, bldr_plugin.PluginAssetsFsId(artifactID), false)
+			files, releaseFiles, err := access(ctx, nil)
+			if err != nil {
+				return err
+			}
+			releases[i] = releaseFiles
+			c.logSlowAssetBinding("access-plugin-assets", artifactID, start)
+
+			// The filesystem client opens its event stream on first use, and
+			// the plugin host keeps the files mounted while that stream is open.
+			start = time.Now()
+			if _, err := files.GetNodeType(ctx); err != nil {
+				return err
+			}
+			c.logSlowAssetBinding("mount-plugin-assets", artifactID, start)
+			return nil
+		})
+	}
+	err := eg.Wait()
+
+	// Release every mount together, including those of a failed mount.
+	release := func() {
+		for _, release := range releases {
+			if release != nil {
+				release()
+			}
+		}
+	}
+	if err != nil {
+		release()
+		return nil, err
 	}
 	return release, nil
+}
+
+// logSlowAssetBinding reports a binding step that held the document past
+// slowAssetBinding.
+func (c *Controller) logSlowAssetBinding(step, id string, start time.Time) {
+	if dur := time.Since(start); dur > slowAssetBinding {
+		c.le.WithField("step", step).WithField("id", id).WithField("dur", dur.String()).
+			Warn("slow web view handler asset binding")
+	}
 }
 
 // HandleWebPkgsViaPluginAssets configures serving web pkgs via a plugin assets fs.
