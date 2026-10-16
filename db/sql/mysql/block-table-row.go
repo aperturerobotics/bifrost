@@ -5,17 +5,18 @@ import (
 
 	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/block/sbset"
 )
 
-// UnmarshalTableRow unmarshals the TableRow block.
-// Returns nil, nil if empty
+// UnmarshalTableRow unmarshals the TableRow block, returning nil for an empty
+// cursor.
 func UnmarshalTableRow(ctx context.Context, bcs *block.Cursor) (*TableRow, error) {
 	return block.UnmarshalBlock[TableRow](ctx, bcs)
 }
 
-// ApplySubBlock applies a sub-block change with a field id.
+// ApplySubBlock applies a sub-block change with a field id. The column set
+// edits the row in place, so there is nothing to apply.
 func (r *TableRow) ApplySubBlock(id uint32, next block.SubBlock) error {
-	// noop
 	return nil
 }
 
@@ -39,23 +40,30 @@ func (r *TableRow) GetSubBlockCtor(id uint32) block.SubBlockCtor {
 	return nil
 }
 
-// FetchSqlRow fetches columns into a sql.Row structure.
-// This converts the encoded table column values into Go types.
-// The resulting sql.Row should be checked against a schema.
+// FetchSqlRow converts the encoded columns into a sql.Row of Go values, which
+// the caller checks against its schema.
 func (r *TableRow) FetchSqlRow(ctx context.Context, bcs *block.Cursor) (sql.Row, error) {
-	// Open the stored row column set and allocate the SQL row.
-	colSet := newTableRowColumnSetContainer(r, bcs)
+	// Size the SQL row to the stored columns.
 	rowCols := r.GetColumns()
 	cols := make(sql.Row, len(rowCols))
 
-	// Decode each stored column into its SQL row position.
+	// Decode each stored column into its SQL row position. Only a blob
+	// column reads through a cursor, so the column set is followed at the
+	// first blob and scalar rows follow none.
+	var colSet *sbset.SubBlockSet
 	for i, col := range rowCols {
-		_, colcs := colSet.Get(i)
-		r, err := col.FetchSqlColumn(ctx, colcs)
+		var colcs *block.Cursor
+		if col.isBlob() {
+			if colSet == nil {
+				colSet = newTableRowColumnSetContainer(r, bcs)
+			}
+			_, colcs = colSet.Get(i)
+		}
+		val, err := col.FetchSqlColumn(ctx, colcs)
 		if err != nil {
 			return nil, err
 		}
-		cols[i] = r
+		cols[i] = val
 	}
 	return cols, nil
 }

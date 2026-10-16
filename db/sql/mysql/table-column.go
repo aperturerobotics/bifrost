@@ -102,10 +102,22 @@ func (t *TableColumn) IsEmpty() bool {
 	return t.GetValue() == nil
 }
 
-// FetchSqlColumn converts the row back into a sql column.
+// isBlob reports whether the column stores its value in a blob, which reads
+// through a cursor.
+func (t *TableColumn) isBlob() bool {
+	switch t.GetValue().(type) {
+	case *TableColumn_StringBlob, *TableColumn_BytesBlob, *TableColumn_JsonBlob:
+		return true
+	default:
+		return false
+	}
+}
+
+// FetchSqlColumn converts the column into its SQL value. A scalar value
+// decodes from the column itself. A blob value reads through bcs, located at
+// the column, and reads as nil without one.
 func (t *TableColumn) FetchSqlColumn(ctx context.Context, bcs *block.Cursor) (any, error) {
-	if t == nil || bcs == nil {
-		// treat nil object or cursor as nil column
+	if bcs == nil && t.isBlob() {
 		return nil, nil
 	}
 
