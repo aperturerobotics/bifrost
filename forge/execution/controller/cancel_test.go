@@ -54,7 +54,7 @@ func TestCancellationInterruptsSetupAndDrainsTarget(t *testing.T) {
 			}
 
 			// Register the World operations that claim and cancel the Execution.
-			release, err := tb.Bus.AddController(ctx, world.NewLookupOpController("cancel-test-ops", tb.EngineID, execution_tx.LookupWorldOp), nil)
+			release, err := tb.Bus.AddController(ctx, world.NewLookupOpController("cancel-test-ops", tb.EngineID, world.NewSchema(execution_tx.TxTypes).LookupOp), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -177,7 +177,7 @@ func TestCancellationCommittedAsTargetFinishes(t *testing.T) {
 	}
 
 	// Register the World operations that claim and cancel the Execution.
-	release, err := tb.Bus.AddController(ctx, world.NewLookupOpController("cancel-test-ops", tb.EngineID, execution_tx.LookupWorldOp), nil)
+	release, err := tb.Bus.AddController(ctx, world.NewLookupOpController("cancel-test-ops", tb.EngineID, world.NewSchema(execution_tx.TxTypes).LookupOp), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

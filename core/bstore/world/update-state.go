@@ -11,9 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// UpdateBlockStoreStateOpId is the operation to update information about a block store.
-var UpdateBlockStoreStateOpId = BlockStoreStateTypeID + "/update"
-
 // NewUpdateBlockStoreStateOp constructs a new UpdateBlockStoreStateOp block.
 func NewUpdateBlockStoreStateOp(updatedState *BlockStoreState, ifNotExists bool) *UpdateBlockStoreStateOp {
 	return &UpdateBlockStoreStateOp{
@@ -29,11 +26,6 @@ func (o *UpdateBlockStoreStateOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *UpdateBlockStoreStateOp) GetOperationTypeId() string {
-	return UpdateBlockStoreStateOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -85,16 +77,6 @@ func (o *UpdateBlockStoreStateOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *UpdateBlockStoreStateOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

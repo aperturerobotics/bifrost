@@ -76,15 +76,6 @@ func FollowKeypair(
 	return entity, nil
 }
 
-// LookupKeypairOp performs the lookup operation for the Keypair op types.
-func LookupKeypairOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	switch opTypeID {
-	case KeypairUpdateOpId:
-		return &KeypairUpdateOp{}, nil
-	}
-	return nil, nil
-}
-
 // LookupKeypair looks up an entity with the given key.
 // returns nil, nil, nil if not found.
 func LookupKeypair(ctx context.Context, w world.WorldState, objKey string) (*identity.Keypair, world.ObjectState, error) {

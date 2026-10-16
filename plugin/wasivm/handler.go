@@ -155,7 +155,7 @@ func (h *handler) ApplyWorldObjectOp(
 	defer os.Release()
 
 	// Apply the operation to it.
-	sysErr, err := op.ApplyWorldObjectOp(ctx, h.le, os, peer.ID(""))
+	sysErr, err := world.ApplyWorldObjectOp(ctx, h.le, op, os, peer.ID(""))
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (h *handler) ValidateOp(
 ) (*s4wave_worldop_registry.ValidateOpResponse, error) {
 	op, err := unmarshalOp(ctx, req.GetOperationTypeId(), req.GetOpData())
 	if err == nil {
-		err = op.Validate()
+		err = world.ValidateOp(op)
 	}
 	if err != nil {
 		return &s4wave_worldop_registry.ValidateOpResponse{Error: err.Error()}, nil
@@ -191,15 +191,13 @@ func attachedObjectKey(ctx context.Context, ref resource_client.ResourceRef) (st
 	return resp.GetObjectKey(), nil
 }
 
+// wasiVMSchema declares the WasiVM world operations.
+var wasiVMSchema = world.NewSchema(s4wave_vm.WasivmTypes)
+
 // unmarshalOp decodes a WasiVM operation.
 func unmarshalOp(ctx context.Context, opTypeID string, data []byte) (world.Operation, error) {
 	// Construct the operation of the type, then decode its data.
-	op, err := world.LookupOpSlice([]world.LookupOp{
-		s4wave_vm.LookupCreateWasiVmOp,
-		s4wave_vm.LookupSetWasiVmStateOp,
-		s4wave_vm.LookupCreateWasiVmImageOp,
-		s4wave_vm.LookupCreateWasiVmPackageOp,
-	}).LookupOp(ctx, opTypeID)
+	op, err := wasiVMSchema.LookupOp(ctx, opTypeID)
 	if err == nil && op == nil {
 		err = errors.New("unhandled operation type")
 	}

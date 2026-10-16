@@ -9,12 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SendChatMessageOpID identifies a replayable channel append.
-const SendChatMessageOpID = "spacewave-chat/message/send"
-
-// GetOperationTypeId identifies the operation for World transaction replay.
-func (o *SendChatMessageOp) GetOperationTypeId() string { return SendChatMessageOpID }
-
 // AuthenticatedOperation selects the verified transaction signer on replay.
 func (o *SendChatMessageOp) AuthenticatedOperation() {}
 
@@ -45,19 +39,6 @@ func (o *SendChatMessageOp) ApplyWorldOp(ctx context.Context, _ *logrus.Entry, w
 	// Append the requested message inside the replay transaction.
 	_, err = resource.appendMessage(ctx, ws, o.GetRequest(), o.GetTimestamp())
 	return false, err
-}
-
-// ApplyWorldObjectOp rejects object-only application because an append spans World objects.
-func (o *SendChatMessageOp) ApplyWorldObjectOp(context.Context, *logrus.Entry, world.ObjectState, peer.ID) (bool, error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupSendChatMessageOp resolves the replayable channel append operation.
-func LookupSendChatMessageOp(_ context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == SendChatMessageOpID {
-		return &SendChatMessageOp{}, nil
-	}
-	return nil, nil
 }
 
 // newReplayResource binds a replayed operation to its verified signing device

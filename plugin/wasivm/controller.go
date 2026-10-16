@@ -159,10 +159,10 @@ func register(
 	}
 	woSvc := s4wave_worldop_registry.NewSRPCWorldOpRegistryResourceServiceClient(scope)
 	for _, opID := range []string{
-		s4wave_vm.CreateWasiVmOpId,
-		s4wave_vm.SetWasiVmStateOpId,
-		s4wave_vm.CreateWasiVmImageOpId,
-		s4wave_vm.CreateWasiVmPackageOpId,
+		s4wave_vm.CreateWasiVmOpTypeID,
+		s4wave_vm.SetWasiVmStateOpTypeID,
+		s4wave_vm.CreateWasiVmImageOpTypeID,
+		s4wave_vm.CreateWasiVmPackageOpTypeID,
 	} {
 		resp, err := woSvc.RegisterWorldOp(ctx, &s4wave_worldop_registry.RegisterWorldOpRequest{
 			OperationTypeId: opID,
@@ -204,7 +204,7 @@ func register(
 			Description:        "Run Linux programs built for WebAssembly on a Space filesystem",
 			Category:           "VM",
 			IconName:           "LuTerminal",
-			CreateOpId:         s4wave_vm.CreateWasiVmOpId,
+			CreateOpId:         s4wave_vm.CreateWasiVmOpTypeID,
 			DefaultNamePattern: "VM",
 			KeyPrefix:          "vm/wasivm/",
 			Persistent:         true,

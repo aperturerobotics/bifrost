@@ -101,8 +101,8 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 // Returning nil ends execution.
 // NOTE: we le.Fatal a lot of things in here
 func (c *Controller) Execute(ctx context.Context) (rerr error) {
+	// Start the web runtime stack the plugin hosts run on.
 	b, le, devtoolInfo := c.b, c.le, c.devtoolInfo
-
 	runtimeStack, err := web_runtime_bootstrap.StartRuntimeStack(
 		ctx,
 		le,
@@ -131,6 +131,7 @@ func (c *Controller) Execute(ctx context.Context) (rerr error) {
 	}
 	defer volCtrlRef.Release()
 
+	// Wait for the dist storage volume.
 	storageVol, err := storageVolCtrl.GetVolume(ctx)
 	if err != nil {
 		return err
@@ -221,6 +222,7 @@ func (c *Controller) Execute(ctx context.Context) (rerr error) {
 	}
 	defer fwdFmRef.Release()
 
+	// Start the plugin browser host.
 	pluginBrowserHostRel, err := web_runtime_bootstrap.StartPluginBrowserHost(ctx, b, nil)
 	if err != nil {
 		return err
@@ -265,14 +267,14 @@ func (c *Controller) Execute(ctx context.Context) (rerr error) {
 	}
 	defer worldCtrlRef.Release()
 
+	// Wait for the World engine.
 	eng, err := worldCtrl.GetWorldEngine(ctx)
 	if err != nil {
 		return err
 	}
-	// worldState := world.NewEngineWorldState(eng, true)
 
 	// register the world operation types for plugin host
-	lookupOpCtrl := world.NewLookupOpController("bldr-plugin-host-ops", engineID, bldr_manifest_world.LookupOp)
+	lookupOpCtrl := world.NewLookupOpController("bldr-plugin-host-ops", engineID, world.NewSchema(bldr_manifest_world.WorldTypes).LookupOp)
 	relLookupCtrl, err := b.AddController(ctx, lookupOpCtrl, nil)
 	if err != nil {
 		return err
@@ -284,13 +286,11 @@ func (c *Controller) Execute(ctx context.Context) (rerr error) {
 	if err != nil {
 		return err
 	}
-
 	_, err = bldr_manifest_world.CreateManifestStore(ctx, engTx, pluginHostObjKey)
 	if err != nil {
 		engTx.Discard()
 		return err
 	}
-
 	if err := engTx.Commit(ctx); err != nil {
 		engTx.Discard()
 		return err
@@ -313,9 +313,12 @@ func (c *Controller) Execute(ctx context.Context) (rerr error) {
 			policy.CloneVT(),
 		)
 	}
+
 	// Startup plugins may run their own plugins, such as a Space's, on the
 	// browser's plugin hosts.
 	pluginSchedConf.HostExportPluginIds = slices.Clone(devtoolInfo.GetStartPlugins())
+
+	// Start the scheduler, gating manifest copies on the startup group.
 	pluginSchedCtrl := plugin_host_scheduler.NewController(le, b, pluginSchedConf)
 	pluginSchecCtrlRel, err := b.AddController(ctx, pluginSchedCtrl, func(err error) {
 		le.WithError(err).Error("plugin scheduler controller failed")
@@ -380,13 +383,14 @@ func (c *Controller) Execute(ctx context.Context) (rerr error) {
 		}
 		defer plugRef.Release()
 	}
+
+	// Start the startup plugin group.
 	if err := startupGroup.Start(ctx); err != nil {
 		return err
 	}
 
+	// Serve until the context cancels, then run the deferred releases.
 	le.Debug("browser RPC server ready for BrowserProtocolID streams")
-
-	// wait to run all the defer calls until context cancels
 	<-ctx.Done()
 	return nil
 }

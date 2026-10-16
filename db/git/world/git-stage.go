@@ -11,14 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GitStageOpId is the git stage operation id.
-var GitStageOpId = "hydra/git/stage"
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *GitStageOp) GetOperationTypeId() string {
-	return GitStageOpId
-}
-
 // Validate checks the stage operation.
 func (o *GitStageOp) Validate() error {
 	if o.GetObjectKey() == "" {
@@ -66,16 +58,6 @@ func (o *GitStageOp) ApplyWorldOp(
 			return nil
 		},
 	)
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *GitStageOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

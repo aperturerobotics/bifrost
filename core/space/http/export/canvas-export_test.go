@@ -36,7 +36,7 @@ func TestExportSpaceWithCanvasWorldObjectNode(t *testing.T) {
 	defer wtb.Release()
 
 	// Register the filesystem operations used to create the image fixture.
-	unixfsOps := world.NewLookupOpController("test-canvas-export-unixfs", wtb.EngineID, unixfs_world.LookupFsOp)
+	unixfsOps := world.NewLookupOpController("test-canvas-export-unixfs", wtb.EngineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, unixfsOps, nil); err != nil {
 		t.Fatal(err)
 	}

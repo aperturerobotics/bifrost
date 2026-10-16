@@ -209,7 +209,7 @@ func TestFs_SingleTxn(t *testing.T) {
 
 	// provide op handlers to bus
 	engineID := tb.EngineID
-	opc := world.NewLookupOpController("test-fs-ops", engineID, unixfs_world.LookupFsOp)
+	opc := world.NewLookupOpController("test-fs-ops", engineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	_, err = tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {
 		t.Fatal(err.Error())

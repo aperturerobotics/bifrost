@@ -66,7 +66,7 @@ func (w *WorldState) ApplyWorldOp(
 	defer func() {
 		w.le.Debugf(
 			"ApplyWorldOp(%s, %s) => seqno(%v) sysErr(%v) err(%v)",
-			op.GetOperationTypeId(),
+			op.TypeID(),
 			opSender.String(),
 			seqno, sysErr, err,
 		)

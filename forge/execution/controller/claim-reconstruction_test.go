@@ -34,7 +34,7 @@ func TestReconstructedConfigResumesClaimBeforeTargetConstruction(t *testing.T) {
 	opController := world.NewLookupOpController(
 		"execution-reconstruction-tx-ops",
 		tb.EngineID,
-		execution_tx.LookupWorldOp,
+		world.NewSchema(execution_tx.TxTypes).LookupOp,
 	)
 	opRelease, err := tb.Bus.AddController(ctx, opController, nil)
 	if err != nil {

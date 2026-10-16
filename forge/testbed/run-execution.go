@@ -66,7 +66,7 @@ func (tb *Testbed) RunExecutionWithTarget(
 	opc := world.NewLookupOpController(
 		"execution-tx-ops",
 		tb.EngineID,
-		execution_transaction.LookupWorldOp,
+		world.NewSchema(execution_transaction.TxTypes).LookupOp,
 	)
 	releaseOpCtrl, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {

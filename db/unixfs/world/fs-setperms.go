@@ -28,9 +28,6 @@ func FsSetPermissions(
 	return obj.ApplyObjectOp(ctx, wOp, sender)
 }
 
-// FsSetPermissionsOpId is the operation id.
-var FsSetPermissionsOpId = "hydra/unixfs/set-permissions"
-
 // NewFsSetPermissionsOp constructs a new FsSetPermissionsOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsSetPermissionsOp(
@@ -59,11 +56,6 @@ func (o *FsSetPermissionsOp) Validate() error {
 	}
 	// note: allowing empty ts here
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsSetPermissionsOp) GetOperationTypeId() string {
-	return FsSetPermissionsOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

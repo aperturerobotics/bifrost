@@ -11,9 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ClusterCompleteJobOpId is the cluster complete job operation id.
-var ClusterCompleteJobOpId = ClusterTypeID + "/complete-job"
-
 // NewClusterCompleteJobOp constructs a new ClusterCompleteJobOp block.
 func NewClusterCompleteJobOp(clusterKey, jobKey string) *ClusterCompleteJobOp {
 	return &ClusterCompleteJobOp{
@@ -44,11 +41,6 @@ func (o *ClusterCompleteJobOp) Validate() error {
 		return errors.Wrap(world.ErrEmptyObjectKey, "job_key")
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *ClusterCompleteJobOp) GetOperationTypeId() string {
-	return ClusterCompleteJobOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -133,16 +125,6 @@ func (o *ClusterCompleteJobOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *ClusterCompleteJobOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

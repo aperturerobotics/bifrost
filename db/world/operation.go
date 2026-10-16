@@ -9,16 +9,15 @@ import (
 )
 
 // Operation is a batch operation against World or Object.
+//
+// A generated message becomes an Operation by declaring its (typeid.id)
+// option, which generates TypeID, and implementing ApplyWorldOp.
 type Operation interface {
 	// Block indicates this operation is serializable to a block.
 	block.Block
 
-	// Validate performs cursory validation of the operation.
-	// Should not block.
-	Validate() error
-
-	// GetOperationTypeId returns the operation type identifier.
-	GetOperationTypeId() string
+	// TypeID returns the operation type identifier.
+	TypeID() string
 
 	// ApplyWorldOp applies the operation as a world operation. It returns
 	// false, ErrUnhandledOp if the operation cannot handle a world op.
@@ -28,6 +27,20 @@ type Operation interface {
 		worldHandle WorldState,
 		sender peer.ID,
 	) (sysErr bool, err error)
+}
+
+// ValidatedOperation is an Operation with cursory validation.
+type ValidatedOperation interface {
+	Operation
+
+	// Validate performs cursory validation of the operation.
+	// Should not block.
+	Validate() error
+}
+
+// ObjectOperation is an Operation that can also apply to one object handle.
+type ObjectOperation interface {
+	Operation
 
 	// ApplyWorldObjectOp applies the operation to a world object handle. It
 	// returns false, ErrUnhandledOp if the operation cannot handle an object op.
@@ -37,6 +50,30 @@ type Operation interface {
 		objectHandle ObjectState,
 		sender peer.ID,
 	) (sysErr bool, err error)
+}
+
+// ValidateOp validates op when it implements ValidatedOperation.
+func ValidateOp(op Operation) error {
+	if v, ok := op.(ValidatedOperation); ok {
+		return v.Validate()
+	}
+	return nil
+}
+
+// ApplyWorldObjectOp applies op to an object handle. It returns false,
+// ErrUnhandledOp when op is not an ObjectOperation.
+func ApplyWorldObjectOp(
+	ctx context.Context,
+	le *logrus.Entry,
+	op Operation,
+	objectHandle ObjectState,
+	sender peer.ID,
+) (sysErr bool, err error) {
+	objOp, ok := op.(ObjectOperation)
+	if !ok {
+		return false, ErrUnhandledOp
+	}
+	return objOp.ApplyWorldObjectOp(ctx, le, objectHandle, sender)
 }
 
 // PayloadOperation is an Operation whose payload was written outside the World

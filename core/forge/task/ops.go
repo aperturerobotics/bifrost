@@ -14,14 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ForgeTaskCreateOpId is the operation id for ForgeTaskCreateOp.
-var ForgeTaskCreateOpId = "spacewave/forge/task/create"
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *ForgeTaskCreateOp) GetOperationTypeId() string {
-	return ForgeTaskCreateOpId
-}
-
 // Validate performs cursory validation of the operation.
 func (o *ForgeTaskCreateOp) Validate() error {
 	if o.GetTaskKey() == "" {
@@ -77,24 +69,6 @@ func (o *ForgeTaskCreateOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *ForgeTaskCreateOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupForgeTaskCreateOp looks up a ForgeTaskCreateOp operation type.
-func LookupForgeTaskCreateOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == ForgeTaskCreateOpId {
-		return &ForgeTaskCreateOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CanvasRemoveEdgeOpId is the operation id for CanvasRemoveEdgeOp.
-var CanvasRemoveEdgeOpId = "space/world/canvas-remove-edge"
-
 // NewCanvasRemoveEdgeOp constructs a new CanvasRemoveEdgeOp block.
 func NewCanvasRemoveEdgeOp(objKey string, edgeIDs []string) *CanvasRemoveEdgeOp {
 	return &CanvasRemoveEdgeOp{
@@ -30,11 +27,6 @@ func (o *CanvasRemoveEdgeOp) Validate() error {
 		return ErrNoEdgeIds
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CanvasRemoveEdgeOp) GetOperationTypeId() string {
-	return CanvasRemoveEdgeOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -100,24 +92,6 @@ func (o *CanvasRemoveEdgeOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CanvasRemoveEdgeOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCanvasRemoveEdgeOp looks up a CanvasRemoveEdgeOp operation type.
-func LookupCanvasRemoveEdgeOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CanvasRemoveEdgeOpId {
-		return &CanvasRemoveEdgeOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

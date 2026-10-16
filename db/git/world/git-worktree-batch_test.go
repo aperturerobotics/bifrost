@@ -89,7 +89,7 @@ func newGitWorldState(t *testing.T) (context.Context, *logrus.Entry, world.World
 	}
 
 	// Provide the git op handlers to the bus.
-	opc := world.NewLookupOpController("test-git-ops", engineID, LookupGitOp)
+	opc := world.NewLookupOpController("test-git-ops", engineID, world.NewSchema(GitTypes).LookupOp)
 	relOpc, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {
 		t.Fatal(err)

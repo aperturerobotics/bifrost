@@ -208,7 +208,7 @@ func TestTypedObjectResource(t *testing.T) {
 			sdkTx.Release()
 			t.Fatalf("MarshalVT failed: %v", err)
 		}
-		if _, _, err := sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpId, opData, ""); err != nil {
+		if _, _, err := sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpTypeID, opData, ""); err != nil {
 			sdkTx.Release()
 			t.Fatalf("ApplyWorldOp failed: %v", err)
 		}
@@ -291,7 +291,7 @@ func TestTypedObjectResource(t *testing.T) {
 		}
 
 		// Apply the operation
-		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpId, opData, "")
+		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpTypeID, opData, "")
 		if err != nil {
 			sdkTx.Release()
 			t.Fatalf("ApplyWorldOp failed: %v", err)
@@ -369,7 +369,7 @@ func TestTypedObjectResource(t *testing.T) {
 			sdkTx.Release()
 			t.Fatalf("MarshalVT failed: %v", err)
 		}
-		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpId, opData, "")
+		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitObjectLayoutOpTypeID, opData, "")
 		if err != nil {
 			sdkTx.Release()
 			t.Fatalf("ApplyWorldOp failed: %v", err)
@@ -445,7 +445,7 @@ func TestTypedObjectResource(t *testing.T) {
 			sdkTx.Release()
 			t.Fatalf("MarshalVT failed: %v", err)
 		}
-		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitUnixFSOpId, opData, "")
+		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitUnixFSOpTypeID, opData, "")
 		if err != nil {
 			sdkTx.Release()
 			t.Fatalf("ApplyWorldOp failed: %v", err)
@@ -572,7 +572,7 @@ func TestTypedObjectResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("MarshalVT failed: %v", err)
 		}
-		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitUnixFSOpId, opData, "")
+		_, _, err = sdkTx.ApplyWorldOp(ctx, space_world_ops.InitUnixFSOpTypeID, opData, "")
 		if err != nil {
 			t.Fatalf("ApplyWorldOp failed: %v", err)
 		}
@@ -640,7 +640,7 @@ func TestTypedObjectResource(t *testing.T) {
 		defer cleanup()
 
 		// newLookupOpController gitOpc via world.
-		gitOpc := world.NewLookupOpController("test-typed-object-git", tb.EngineID, git_world.LookupGitOp)
+		gitOpc := world.NewLookupOpController("test-typed-object-git", tb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 		gitOpRelease, err := tb.Bus.AddController(ctx, gitOpc, nil)
 		if err != nil {
 			t.Fatalf("AddController(git op): %v", err)
@@ -676,7 +676,7 @@ func TestTypedObjectResource(t *testing.T) {
 			sdkTx.Release()
 			t.Fatalf("MarshalVT failed: %v", err)
 		}
-		_, _, err = sdkTx.ApplyWorldOp(ctx, git_world.GitInitOpId, opData, "")
+		_, _, err = sdkTx.ApplyWorldOp(ctx, git_world.GitInitOpTypeID, opData, "")
 		if err != nil {
 			sdkTx.Release()
 			t.Fatalf("ApplyWorldOp failed: %v", err)

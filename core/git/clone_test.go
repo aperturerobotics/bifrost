@@ -149,9 +149,8 @@ func installLocalTransport(repoRoot string) func() {
 // TestGitCloneRecursive clones the company repo with recursive submodules
 // through a full hydra world engine stack. Used for profiling.
 func TestGitCloneRecursive(t *testing.T) {
+	// Resolve the company repo root and install the local transport.
 	ctx := context.Background()
-
-	// resolve company repo root and install local transport
 	repoPath := "../../../../.."
 	absRepo, err := filepath.Abs(repoPath)
 	if err != nil {
@@ -160,14 +159,15 @@ func TestGitCloneRecursive(t *testing.T) {
 	cleanup := installLocalTransport(absRepo)
 	defer cleanup()
 
+	// Start the World testbed.
 	tb, err := alpha_testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tb.Release()
 
-	// register git ops on the bus
-	opc := world.NewLookupOpController("test-git-ops", tb.EngineID, git_world.LookupGitOp)
+	// Register the Git operations on the bus.
+	opc := world.NewLookupOpController("test-git-ops", tb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	go func() {
 		_ = tb.Bus.ExecuteController(ctx, opc)
 	}()
@@ -177,9 +177,9 @@ func TestGitCloneRecursive(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 	}
 
+	// Describe a clone with submodules.
 	ws := tb.WorldState
 	sender := tb.Volume.GetPeerID()
-
 	objKey := "gitrepo/company"
 	cloneOp := &git_world.GitCloneOp{
 		ObjectKey: objKey,
@@ -191,6 +191,7 @@ func TestGitCloneRecursive(t *testing.T) {
 		},
 	}
 
+	// Apply the clone and time it.
 	t.Logf("cloning %s as %s (recursive, local transport)...", repoPath, objKey)
 	start := time.Now()
 	seqno, _, err := ws.ApplyWorldOp(ctx, cloneOp, sender)
@@ -199,6 +200,7 @@ func TestGitCloneRecursive(t *testing.T) {
 	}
 	t.Logf("clone complete in %s, seqno=%d", time.Since(start), seqno)
 
+	// Check that the clone created the repo object.
 	_, exists, err := ws.GetObject(ctx, objKey)
 	if err != nil {
 		t.Fatal(err)
@@ -211,6 +213,7 @@ func TestGitCloneRecursive(t *testing.T) {
 // TestGitCloneNonRecursive clones the company repo without submodules
 // as a baseline comparison.
 func TestGitCloneNonRecursive(t *testing.T) {
+	// Start the World testbed.
 	ctx := context.Background()
 	tb, err := alpha_testbed.Default(ctx)
 	if err != nil {
@@ -218,7 +221,8 @@ func TestGitCloneNonRecursive(t *testing.T) {
 	}
 	defer tb.Release()
 
-	opc := world.NewLookupOpController("test-git-ops", tb.EngineID, git_world.LookupGitOp)
+	// Register the Git operations on the bus.
+	opc := world.NewLookupOpController("test-git-ops", tb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	go func() {
 		_ = tb.Bus.ExecuteController(ctx, opc)
 	}()
@@ -228,9 +232,9 @@ func TestGitCloneNonRecursive(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 	}
 
+	// Describe a clone without submodules.
 	ws := tb.WorldState
 	sender := tb.Volume.GetPeerID()
-
 	repoPath := "../../../../.."
 	objKey := "gitrepo/company"
 	cloneOp := &git_world.GitCloneOp{
@@ -241,6 +245,7 @@ func TestGitCloneNonRecursive(t *testing.T) {
 		},
 	}
 
+	// Apply the clone and time it.
 	t.Logf("cloning %s as %s (non-recursive)...", repoPath, objKey)
 	start := time.Now()
 	seqno, _, err := ws.ApplyWorldOp(ctx, cloneOp, sender)
@@ -249,6 +254,7 @@ func TestGitCloneNonRecursive(t *testing.T) {
 	}
 	t.Logf("clone complete in %s, seqno=%d", time.Since(start), seqno)
 
+	// Check that the clone created the repo object.
 	_, exists, err := ws.GetObject(ctx, objKey)
 	if err != nil {
 		t.Fatal(err)

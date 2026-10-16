@@ -106,7 +106,7 @@ func (t *ObjectState) ApplyObjectOp(ctx context.Context, op world.Operation, opS
 	}
 
 	// Build the batch entry that records the op.
-	operationTypeID := op.GetOperationTypeId()
+	operationTypeID := op.TypeID()
 	tt, err := NewTxApplyObjectOp(operationTypeID, op, t.key, opSender)
 	if err != nil {
 		return 0, false, err

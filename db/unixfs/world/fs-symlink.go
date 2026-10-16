@@ -27,9 +27,6 @@ func FsSymlink(
 	return obj.ApplyObjectOp(ctx, wOp, sender)
 }
 
-// FsSymlinkOpId is the operation id.
-var FsSymlinkOpId = "hydra/unixfs/symlink"
-
 // NewFsSymlinkOp constructs a new FsSymlinkOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsSymlinkOp(
@@ -60,11 +57,6 @@ func (o *FsSymlinkOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsSymlinkOp) GetOperationTypeId() string {
-	return FsSymlinkOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

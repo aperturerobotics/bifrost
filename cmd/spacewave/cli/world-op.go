@@ -24,7 +24,7 @@ func applyWorldOp(c *cli.Context, engine *sdk_engine.SDKEngine, op world.Operati
 	// Apply the World operation and commit it.
 	_, _, err = tx.ApplyWorldOp(ctx, op, "")
 	if err != nil {
-		return errors.Wrap(err, "apply "+op.GetOperationTypeId())
+		return errors.Wrap(err, "apply "+op.TypeID())
 	}
 	return tx.Commit(ctx)
 }

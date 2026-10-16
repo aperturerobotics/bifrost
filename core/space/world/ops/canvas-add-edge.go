@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CanvasAddEdgeOpId is the operation id for CanvasAddEdgeOp.
-var CanvasAddEdgeOpId = "space/world/canvas-add-edge"
-
 // NewCanvasAddEdgeOp constructs a new CanvasAddEdgeOp block.
 func NewCanvasAddEdgeOp(objKey string, edge *s4wave_canvas.CanvasEdge) *CanvasAddEdgeOp {
 	return &CanvasAddEdgeOp{
@@ -41,11 +38,6 @@ func (o *CanvasAddEdgeOp) Validate() error {
 		return ErrEdgeEmptyTargetNodeId
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CanvasAddEdgeOp) GetOperationTypeId() string {
-	return CanvasAddEdgeOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -106,24 +98,6 @@ func (o *CanvasAddEdgeOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CanvasAddEdgeOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCanvasAddEdgeOp looks up a CanvasAddEdgeOp operation type.
-func LookupCanvasAddEdgeOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CanvasAddEdgeOpId {
-		return &CanvasAddEdgeOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

@@ -12,9 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ClusterAssignPeerOpId is the cluster assign peer operation id.
-var ClusterAssignPeerOpId = ClusterTypeID + "/assign-peer"
-
 // NewClusterAssignPeerOp constructs a new ClusterAssignPeerOp block.
 func NewClusterAssignPeerOp(clusterKey string, peerID peer.ID) *ClusterAssignPeerOp {
 	return &ClusterAssignPeerOp{
@@ -53,11 +50,6 @@ func (o *ClusterAssignPeerOp) Validate() error {
 // ParsePeerID parses the peer ID field.
 func (o *ClusterAssignPeerOp) ParsePeerID() (peer.ID, error) {
 	return confparse.ParsePeerID(o.GetPeerId())
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *ClusterAssignPeerOp) GetOperationTypeId() string {
-	return ClusterAssignPeerOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -155,16 +147,6 @@ func (o *ClusterAssignPeerOp) ApplyWorldOp(
 
 	// Finish after the cluster links are updated.
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *ClusterAssignPeerOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

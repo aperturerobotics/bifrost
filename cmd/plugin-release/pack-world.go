@@ -324,7 +324,7 @@ func mountDevtoolWorld(ctx context.Context, le *logrus.Entry, vol volume.Volume,
 	commitFn := func(ctx context.Context, _ *bucket.ObjectRef, ref *bucket.ObjectRef) error {
 		return writeWorldHeadRef(ctx, vol, ref)
 	}
-	eng, err := world_block.NewEngine(ctx, le, cursor, bldr_manifest_world.LookupOp, commitFn, false)
+	eng, err := world_block.NewEngine(ctx, le, cursor, world.NewSchema(bldr_manifest_world.WorldTypes).LookupOp, commitFn, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "build world engine")
 	}

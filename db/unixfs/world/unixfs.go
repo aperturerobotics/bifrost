@@ -13,38 +13,6 @@ import (
 	world_types "github.com/s4wave/spacewave/db/world/types"
 )
 
-// LookupFsOp performs the lookup operation for the fs op types.
-func LookupFsOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	switch opTypeID {
-	case FsInitOpId:
-		return &FsInitOp{}, nil
-	case FsCopyOpId:
-		return &FsCopyOp{}, nil
-	case FsMknodOpId:
-		return &FsMknodOp{}, nil
-	case FsSetModTimestampOpId:
-		return &FsSetModTimestampOp{}, nil
-	case FsSetPermissionsOpId:
-		return &FsSetPermissionsOp{}, nil
-	case FsTruncateOpId:
-		return &FsTruncateOp{}, nil
-	case FsRemoveOpId:
-		return &FsRemoveOp{}, nil
-	case FsRenameOpId:
-		return &FsRenameOp{}, nil
-	case FsSymlinkOpId:
-		return &FsSymlinkOp{}, nil
-	case FsWriteAtOpId:
-		return &FsWriteAtOp{}, nil
-	case FsMknodWithContentOpId:
-		return &FsMknodWithContentOp{}, nil
-	}
-	return nil, nil
-}
-
-// _ is a type assertion
-var _ world.LookupOp = LookupFsOp
-
 // LookupFsType attempts to lookup the FS type of the world object.
 // If unset, defaults to FS_NODE.
 // Checks that the type ID is recognized.

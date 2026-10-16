@@ -49,7 +49,7 @@ func buildTestWorkdirHandle(ctx context.Context, t *testing.T) (*unixfs_sdk.FSHa
 	opc := world.NewLookupOpController(
 		"test-workdir-fs-ops",
 		wtb.EngineID,
-		unixfs_world.LookupFsOp,
+		world.NewSchema(unixfs_world.UnixfsTypes).LookupOp,
 	)
 	if _, err := wtb.Bus.AddController(ctx, opc, nil); err != nil {
 		out.Release()

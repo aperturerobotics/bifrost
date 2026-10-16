@@ -60,9 +60,6 @@ func FsMknodWithContent(
 	return obj.ApplyObjectOp(ctx, wOp, sender)
 }
 
-// FsMknodWithContentOpId is the operation id.
-var FsMknodWithContentOpId = "hydra/unixfs/mknod-with-content"
-
 // NewFsMknodWithContentOp constructs a new FsMknodWithContentOp block.
 func NewFsMknodWithContentOp(
 	objKey string,
@@ -100,11 +97,6 @@ func (o *FsMknodWithContentOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsMknodWithContentOp) GetOperationTypeId() string {
-	return FsMknodWithContentOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

@@ -40,13 +40,13 @@ func TestGitCommitControllerCommitsStagedWorktreeAndOutputsResult(t *testing.T) 
 	t.Cleanup(wtb.Release)
 
 	// Register the World operations required by the commit controller.
-	unixfsOpc := world.NewLookupOpController("test-git-commit-unixfs", wtb.EngineID, unixfs_world.LookupFsOp)
+	unixfsOpc := world.NewLookupOpController("test-git-commit-unixfs", wtb.EngineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	unixfsRef, err := wtb.Bus.AddController(ctx, unixfsOpc, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(unixfsRef)
-	gitOpc := world.NewLookupOpController("test-git-commit-git", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-git-commit-git", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	gitRef, err := wtb.Bus.AddController(ctx, gitOpc, nil)
 	if err != nil {
 		t.Fatal(err)

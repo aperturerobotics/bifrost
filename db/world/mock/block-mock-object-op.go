@@ -10,24 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// MockObjectOpId is the mock object operation identifier.
-var MockObjectOpId = "hydra/world/mock/mock-object-op"
-
 // NewMockObjectOp constructs a new MockObjectOp block.
 func NewMockObjectOp(msg string) *MockObjectOp {
 	return &MockObjectOp{NextMsg: msg}
 }
-
-// LookupMockObjectOp performs the lookup operation for the mock object op.
-func LookupMockObjectOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID != MockObjectOpId {
-		return nil, nil
-	}
-	return &MockObjectOp{}, nil
-}
-
-// _ is a type assertion
-var _ world.LookupOp = LookupMockObjectOp
 
 // Validate performs cursory checks on the op.
 func (m *MockObjectOp) Validate() error {
@@ -35,11 +21,6 @@ func (m *MockObjectOp) Validate() error {
 		return ErrEmptyNextMsg
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (m *MockObjectOp) GetOperationTypeId() string {
-	return MockObjectOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

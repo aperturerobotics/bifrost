@@ -11,9 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ClusterStartJobOpId is the cluster start job operation id.
-var ClusterStartJobOpId = ClusterTypeID + "/start-job"
-
 // NewClusterStartJobOp constructs a new ClusterStartJobOp block.
 func NewClusterStartJobOp(clusterKey, jobKey string) *ClusterStartJobOp {
 	return &ClusterStartJobOp{
@@ -44,11 +41,6 @@ func (o *ClusterStartJobOp) Validate() error {
 		return errors.Wrap(world.ErrEmptyObjectKey, "job_key")
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *ClusterStartJobOp) GetOperationTypeId() string {
-	return ClusterStartJobOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -109,16 +101,6 @@ func (o *ClusterStartJobOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *ClusterStartJobOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

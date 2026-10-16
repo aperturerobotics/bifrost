@@ -24,7 +24,7 @@ func (o *budgetObjectState) Release() {
 // ApplyObjectOp applies an object operation if it fits in the budget.
 func (o *budgetObjectState) ApplyObjectOp(ctx context.Context, op world.Operation, opSender peer.ID) (uint64, bool, error) {
 	// Size the batch entry the transaction will record for the op.
-	entry, err := NewTxApplyObjectOp(op.GetOperationTypeId(), op, o.GetKey(), opSender)
+	entry, err := NewTxApplyObjectOp(op.TypeID(), op, o.GetKey(), opSender)
 	if err != nil {
 		return 0, false, err
 	}

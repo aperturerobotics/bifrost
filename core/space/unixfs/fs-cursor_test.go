@@ -97,7 +97,7 @@ func TestFSCursorProjectsPopulatedGitRepoMetadataPaths(t *testing.T) {
 	defer wtb.Release()
 
 	// Register Git operations on the World engine.
-	gitOpc := world.NewLookupOpController("test-space-projection-populated-git-repo", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-space-projection-populated-git-repo", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func TestFSCursorProjectedGitRepoHandleReacquiresAfterCommit(t *testing.T) {
 	defer wtb.Release()
 
 	// Register Git operations on the World engine.
-	gitOpc := world.NewLookupOpController("test-space-projection-git-repo-reacquire", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-space-projection-git-repo-reacquire", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -335,13 +335,13 @@ func TestFSCursorGitResourcesAgreeAfterRepoWrite(t *testing.T) {
 	defer wtb.Release()
 
 	// Register UnixFS operations for the Git worktree directory.
-	unixfsOpc := world.NewLookupOpController("test-space-projection-git-agreement-unixfs", wtb.EngineID, unixfs_world.LookupFsOp)
+	unixfsOpc := world.NewLookupOpController("test-space-projection-git-agreement-unixfs", wtb.EngineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, unixfsOpc, nil); err != nil {
 		t.Fatal(err)
 	}
 
 	// Register Git operations on the World engine.
-	gitOpc := world.NewLookupOpController("test-space-projection-git-agreement", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-space-projection-git-agreement", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -566,13 +566,13 @@ func TestFSCursorGitProjectionVerticalSlice(t *testing.T) {
 	defer wtb.Release()
 
 	// Register UnixFS operations for the Git worktree directory.
-	unixfsOpc := world.NewLookupOpController("test-space-projection-git-vertical-unixfs", wtb.EngineID, unixfs_world.LookupFsOp)
+	unixfsOpc := world.NewLookupOpController("test-space-projection-git-vertical-unixfs", wtb.EngineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, unixfsOpc, nil); err != nil {
 		t.Fatal(err)
 	}
 
 	// Register Git operations on the World engine.
-	gitOpc := world.NewLookupOpController("test-space-projection-git-vertical", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-space-projection-git-vertical", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}

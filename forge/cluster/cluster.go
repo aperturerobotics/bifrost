@@ -46,27 +46,6 @@ func NewClusterToWorkerQuad(clusterObjKey, workerObjKey string) world.GraphQuad 
 	)
 }
 
-// LookupClusterOp performs the lookup operation for the Cluster op types.
-func LookupClusterOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	switch opTypeID {
-	case ClusterCreateOpId:
-		return &ClusterCreateOp{}, nil
-	case ClusterAssignJobOpId:
-		return &ClusterAssignJobOp{}, nil
-	case ClusterAssignWorkerOpId:
-		return &ClusterAssignWorkerOp{}, nil
-	case ClusterAssignTaskOpId:
-		return &ClusterAssignTaskOp{}, nil
-	case ClusterAssignPeerOpId:
-		return &ClusterAssignPeerOp{}, nil
-	case ClusterStartJobOpId:
-		return &ClusterStartJobOp{}, nil
-	case ClusterCompleteJobOpId:
-		return &ClusterCompleteJobOp{}, nil
-	}
-	return nil, nil
-}
-
 // UnmarshalCluster unmarshals a Cluster block from the cursor.
 func UnmarshalCluster(ctx context.Context, bcs *block.Cursor) (*Cluster, error) {
 	return block.UnmarshalBlock[Cluster](ctx, bcs)

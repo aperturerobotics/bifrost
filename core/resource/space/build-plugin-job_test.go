@@ -187,7 +187,7 @@ func startPluginBuildWorker(t *testing.T, tb *testbed.Testbed, workerPeer peer.I
 	t.Cleanup(releasePeer)
 
 	// Resolve Forge ops through the World engine.
-	opc := world.NewLookupOpController("forge-ops", tb.EngineID, forge_world.LookupWorldOp)
+	opc := world.NewLookupOpController("forge-ops", tb.EngineID, world.NewSchema(forge_world.Types).LookupOp)
 	releaseOps, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {
 		t.Fatal(err)

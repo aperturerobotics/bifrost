@@ -12,9 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DomainInfoUpdateOpId is the domain info update operation id.
-var DomainInfoUpdateOpId = DomainInfoTypeID + "/update"
-
 // NewDomainInfoUpdateOp constructs a new DomainInfoUpdateOp block.
 func NewDomainInfoUpdateOp(domainInfoRef *bucket.ObjectRef) *DomainInfoUpdateOp {
 	return &DomainInfoUpdateOp{
@@ -48,11 +45,6 @@ func (o *DomainInfoUpdateOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *DomainInfoUpdateOp) GetOperationTypeId() string {
-	return DomainInfoUpdateOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

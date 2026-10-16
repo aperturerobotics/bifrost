@@ -31,9 +31,6 @@ func FsMknod(
 	return obj.ApplyObjectOp(ctx, wOp, sender)
 }
 
-// FsMknodOpId is the operation id.
-var FsMknodOpId = "hydra/unixfs/mknod"
-
 // NewFsMknodOp constructs a new FsMknodOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsMknodOp(
@@ -66,11 +63,6 @@ func (o *FsMknodOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsMknodOp) GetOperationTypeId() string {
-	return FsMknodOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

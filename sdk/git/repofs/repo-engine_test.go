@@ -297,7 +297,7 @@ func newEngineTestState(
 	t.Cleanup(wtb.Release)
 
 	// Register the Git operation controller on the World testbed bus.
-	gitOpc := world.NewLookupOpController("test-git-repo-projection-engine", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-git-repo-projection-engine", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}

@@ -45,7 +45,7 @@ func setupFSCursorTestbed(t *testing.T) (context.Context, *logrus.Entry, *world_
 // the given world testbed. Helper for tests that drive unixfs projections.
 func addUnixFSLookupController(t *testing.T, ctx context.Context, wtb *world_testbed.Testbed, name string) {
 	t.Helper()
-	opc := world.NewLookupOpController(name, wtb.EngineID, unixfs_world.LookupFsOp)
+	opc := world.NewLookupOpController(name, wtb.EngineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, opc, nil); err != nil {
 		t.Fatal(err)
 	}

@@ -73,7 +73,7 @@ func newEnv(t *testing.T) *env {
 	}
 
 	// Handle Forge operations.
-	opc := world.NewLookupOpController("forge-ops", tb.EngineID, forge_world.LookupWorldOp)
+	opc := world.NewLookupOpController("forge-ops", tb.EngineID, world.NewSchema(forge_world.Types).LookupOp)
 	releaseOps, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {
 		t.Fatal(err)

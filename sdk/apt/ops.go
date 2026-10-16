@@ -11,32 +11,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateAptRepositoryOpId is the operation id for CreateAptRepositoryOp.
-var CreateAptRepositoryOpId = "spacewave-vm/apt/repository/create"
-
-// AddAptPackageOpId is the operation id for AddAptPackageOp.
-var AddAptPackageOpId = "spacewave-vm/apt/package/add"
-
-// AptPublishPackageOpId is the operation id for AptPublishPackageOp.
-var AptPublishPackageOpId = "spacewave-vm/apt/package/publish"
-
-// AptSupersedePackageOpId is the operation id for AptSupersedePackageOp.
-var AptSupersedePackageOpId = "spacewave-vm/apt/package/supersede"
-
-// AddAptBuildSpecOpId is the operation id for AddAptBuildSpecOp.
-var AddAptBuildSpecOpId = "spacewave-vm/apt/build-spec/add"
-
 // NewCreateAptRepositoryOp constructs a new CreateAptRepositoryOp.
 func NewCreateAptRepositoryOp(objectKey string, repository *AptRepository) *CreateAptRepositoryOp {
 	return &CreateAptRepositoryOp{
 		ObjectKey:  objectKey,
 		Repository: repository,
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateAptRepositoryOp) GetOperationTypeId() string {
-	return CreateAptRepositoryOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -90,24 +70,6 @@ func (o *CreateAptRepositoryOp) ApplyWorldOp(
 	return false, nil
 }
 
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateAptRepositoryOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateAptRepositoryOp looks up a CreateAptRepositoryOp operation type.
-func LookupCreateAptRepositoryOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateAptRepositoryOpId {
-		return &CreateAptRepositoryOp{}, nil
-	}
-	return nil, nil
-}
-
 // NewAddAptPackageOp constructs a new AddAptPackageOp.
 func NewAddAptPackageOp(repositoryKey, packageKey string, aptPackage *AptPackage) *AddAptPackageOp {
 	return &AddAptPackageOp{
@@ -115,11 +77,6 @@ func NewAddAptPackageOp(repositoryKey, packageKey string, aptPackage *AptPackage
 		PackageKey:    packageKey,
 		AptPackage:    aptPackage,
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *AddAptPackageOp) GetOperationTypeId() string {
-	return AddAptPackageOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -187,32 +144,9 @@ func (o *AddAptPackageOp) ApplyWorldOp(
 	return false, nil
 }
 
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *AddAptPackageOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupAddAptPackageOp looks up an AddAptPackageOp operation type.
-func LookupAddAptPackageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == AddAptPackageOpId {
-		return &AddAptPackageOp{}, nil
-	}
-	return nil, nil
-}
-
 // NewAptPublishPackageOp constructs a new AptPublishPackageOp.
 func NewAptPublishPackageOp(packageKey string) *AptPublishPackageOp {
 	return &AptPublishPackageOp{PackageKey: packageKey}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *AptPublishPackageOp) GetOperationTypeId() string {
-	return AptPublishPackageOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -237,32 +171,9 @@ func (o *AptPublishPackageOp) ApplyWorldOp(
 	return false, err
 }
 
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *AptPublishPackageOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupAptPublishPackageOp looks up an AptPublishPackageOp operation type.
-func LookupAptPublishPackageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == AptPublishPackageOpId {
-		return &AptPublishPackageOp{}, nil
-	}
-	return nil, nil
-}
-
 // NewAptSupersedePackageOp constructs a new AptSupersedePackageOp.
 func NewAptSupersedePackageOp(packageKey string) *AptSupersedePackageOp {
 	return &AptSupersedePackageOp{PackageKey: packageKey}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *AptSupersedePackageOp) GetOperationTypeId() string {
-	return AptSupersedePackageOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -285,24 +196,6 @@ func (o *AptSupersedePackageOp) ApplyWorldOp(
 	}
 	err = applyAptPackageStateTransition(ctx, ws, o.GetPackageKey(), AptPackageState_AptPackageState_SUPERSEDED)
 	return false, err
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *AptSupersedePackageOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupAptSupersedePackageOp looks up an AptSupersedePackageOp operation type.
-func LookupAptSupersedePackageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == AptSupersedePackageOpId {
-		return &AptSupersedePackageOp{}, nil
-	}
-	return nil, nil
 }
 
 func applyAptPackageStateTransition(
@@ -346,11 +239,6 @@ func NewAddAptBuildSpecOp(repositoryKey, buildSpecKey string, buildSpec *AptBuil
 		BuildSpecKey:  buildSpecKey,
 		BuildSpec:     buildSpec,
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *AddAptBuildSpecOp) GetOperationTypeId() string {
-	return AddAptBuildSpecOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -410,35 +298,6 @@ func (o *AddAptBuildSpecOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *AddAptBuildSpecOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupAddAptBuildSpecOp looks up an AddAptBuildSpecOp operation type.
-func LookupAddAptBuildSpecOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == AddAptBuildSpecOpId {
-		return &AddAptBuildSpecOp{}, nil
-	}
-	return nil, nil
-}
-
-// LookupAptOp looks up built-in Apt operation types.
-func LookupAptOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	return world.LookupOpSlice([]world.LookupOp{
-		LookupCreateAptRepositoryOp,
-		LookupAddAptPackageOp,
-		LookupAptPublishPackageOp,
-		LookupAptSupersedePackageOp,
-		LookupAddAptBuildSpecOp,
-	}).LookupOp(ctx, operationTypeID)
 }
 
 var (

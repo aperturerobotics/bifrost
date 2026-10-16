@@ -46,7 +46,7 @@ func TestExecutionRetriesPluginInterruption(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Cleanup(tb.Release)
-			release, err := tb.Bus.AddController(ctx, world.NewLookupOpController("interruption-test-ops", tb.EngineID, execution_tx.LookupWorldOp), nil)
+			release, err := tb.Bus.AddController(ctx, world.NewLookupOpController("interruption-test-ops", tb.EngineID, world.NewSchema(execution_tx.TxTypes).LookupOp), nil)
 			if err != nil {
 				t.Fatal(err)
 			}

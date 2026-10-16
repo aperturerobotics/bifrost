@@ -54,9 +54,6 @@ func (v *V86Image) Validate() error {
 	return nil
 }
 
-// CreateV86ImageOpId is the operation id for CreateV86ImageOp.
-var CreateV86ImageOpId = "vm/image/v86/create"
-
 // NewCreateV86ImageOp constructs a new CreateV86ImageOp.
 func NewCreateV86ImageOp(objKey string, img *V86Image, ts time.Time) *CreateV86ImageOp {
 	return &CreateV86ImageOp{
@@ -64,11 +61,6 @@ func NewCreateV86ImageOp(objKey string, img *V86Image, ts time.Time) *CreateV86I
 		Image:     img,
 		Timestamp: timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateV86ImageOp) GetOperationTypeId() string {
-	return CreateV86ImageOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -121,38 +113,12 @@ func (o *CreateV86ImageOp) ApplyWorldOp(
 	return false, nil
 }
 
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateV86ImageOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateV86ImageOp looks up a CreateV86ImageOp operation type.
-func LookupCreateV86ImageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateV86ImageOpId {
-		return &CreateV86ImageOp{}, nil
-	}
-	return nil, nil
-}
-
-// SetV86ImageMetadataOpId is the operation id for SetV86ImageMetadataOp.
-var SetV86ImageMetadataOpId = "vm/image/v86/set-metadata"
-
 // NewSetV86ImageMetadataOp constructs a new SetV86ImageMetadataOp.
 func NewSetV86ImageMetadataOp(objKey string, img *V86Image) *SetV86ImageMetadataOp {
 	return &SetV86ImageMetadataOp{
 		ObjectKey: objKey,
 		Image:     img,
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SetV86ImageMetadataOp) GetOperationTypeId() string {
-	return SetV86ImageMetadataOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -220,24 +186,6 @@ func (o *SetV86ImageMetadataOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *SetV86ImageMetadataOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupSetV86ImageMetadataOp looks up a SetV86ImageMetadataOp operation type.
-func LookupSetV86ImageMetadataOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == SetV86ImageMetadataOpId {
-		return &SetV86ImageMetadataOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ block.Block = (*V86Image)(nil)

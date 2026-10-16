@@ -9,6 +9,6 @@ import (
 // TestBuildSpaceLookupOpResolvesPluginBuildPublication covers the operations
 // decoded by a remote build worker's mounted Space capability.
 func TestBuildSpaceLookupOpResolvesPluginBuildPublication(t *testing.T) {
-	requireLookupWorldAndBuildSpaceOp[*manifest_world.StoreManifestOp](t, manifest_world.StoreManifestOpId)
-	requireLookupWorldAndBuildSpaceOp[*manifest_world.ExtractManifestBundleOp](t, manifest_world.ExtractManifestBundleOpId)
+	requireLookupWorldAndBuildSpaceOp[*manifest_world.StoreManifestOp](t, manifest_world.StoreManifestOpTypeID)
+	requireLookupWorldAndBuildSpaceOp[*manifest_world.ExtractManifestBundleOp](t, manifest_world.ExtractManifestBundleOpTypeID)
 }

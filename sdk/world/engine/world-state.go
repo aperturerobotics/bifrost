@@ -590,7 +590,7 @@ func (ws *SDKWorldState) ApplyWorldOp(ctx context.Context, op world.Operation, s
 
 	// Apply the encoded operation to the remote World and return its outcome.
 	resp, err := ws.service.ApplyWorldOp(ctx, &s4wave_world.ApplyWorldOpRequest{
-		OpTypeId: op.GetOperationTypeId(),
+		OpTypeId: op.TypeID(),
 		OpData:   opData,
 		OpSender: sender.String(),
 	})

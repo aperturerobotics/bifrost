@@ -700,7 +700,7 @@ func setVMState(
 			_, _, err := tx.ApplyWorldOp(ctx, op, "")
 			return err
 		})
-		return errors.Wrap(err, "apply "+op.GetOperationTypeId())
+		return errors.Wrap(err, "apply "+op.TypeID())
 	})
 }
 

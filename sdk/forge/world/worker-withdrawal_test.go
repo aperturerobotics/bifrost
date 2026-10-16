@@ -165,7 +165,7 @@ func newWorkerHarness(t *testing.T) *workerHarness {
 
 	// Resolve the Forge world operations the Jobs submit.
 	sender := tb.Volume.GetPeerID()
-	releaseOps, err := tb.Bus.AddController(ctx, world.NewLookupOpController("forge-ops", tb.EngineID, forge_world.LookupWorldOp), nil)
+	releaseOps, err := tb.Bus.AddController(ctx, world.NewLookupOpController("forge-ops", tb.EngineID, world.NewSchema(forge_world.Types).LookupOp), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -16,7 +16,7 @@ func TestKvObjectTypeMetadataCoverage(t *testing.T) {
 		typeID   string
 		opTypeID string
 	}{
-		{s4wave_kv_world.KvStoreTypeID, s4wave_kv_world.KvSetRootOpId},
+		{s4wave_kv_world.KvStoreTypeID, s4wave_kv_world.KvSetRootOpTypeID},
 	} {
 		objType, err := LookupObjectType(ctx, row.typeID)
 		if err != nil {

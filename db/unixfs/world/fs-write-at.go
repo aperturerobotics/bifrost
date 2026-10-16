@@ -52,9 +52,6 @@ func FsWriteAt(
 	return obj.ApplyObjectOp(ctx, wOp, sender)
 }
 
-// FsWriteAtOpId is the operation id.
-var FsWriteAtOpId = "hydra/unixfs/write-at"
-
 // NewFsWriteAtOp constructs a new FsWriteAtOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsWriteAtOp(
@@ -88,11 +85,6 @@ func (o *FsWriteAtOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsWriteAtOp) GetOperationTypeId() string {
-	return FsWriteAtOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

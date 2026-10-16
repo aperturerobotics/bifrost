@@ -34,10 +34,7 @@ func TestJobPlacementBindsExecutionPeer(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(tb.Release)
-	op := world.NewLookupOpController("forge-ops", tb.EngineID, world.NewLookupOpFromSlice([]world.LookupOp{
-		forge_world.LookupWorldOp,
-		forge_job_ops.LookupForgeJobCreateOp,
-	}))
+	op := world.NewLookupOpController("forge-ops", tb.EngineID, world.NewSchema(forge_world.Types, forge_job_ops.JobTypes).LookupOp)
 	release, err := tb.Bus.AddController(ctx, op, nil)
 	if err != nil {
 		t.Fatal(err)

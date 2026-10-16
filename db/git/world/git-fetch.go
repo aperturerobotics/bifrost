@@ -15,9 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GitFetchOpId is the git fetch operation id.
-var GitFetchOpId = "hydra/git/fetch"
-
 // GitFetch performs a git fetch operation against an existing repo in the world.
 // Fetches new objects from the remote into the existing world object repo and
 // returns the repo's root reference after the fetch.
@@ -65,11 +62,6 @@ func NewGitFetchOp(objKey string, fetchOpts *git_block.FetchOpts) *GitFetchOp {
 	}
 }
 
-// GetOperationTypeId returns the operation type identifier.
-func (o *GitFetchOp) GetOperationTypeId() string {
-	return GitFetchOpId
-}
-
 // Validate checks the fetch operation.
 func (o *GitFetchOp) Validate() error {
 	if o.GetObjectKey() == "" {
@@ -104,16 +96,6 @@ func (o *GitFetchOp) ApplyWorldOp(
 	// Fetch remote objects into the existing repository.
 	_, err = GitFetch(ctx, worldHandle, objKey, o.GetFetchOpts(), nil, nil)
 	return false, err
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *GitFetchOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

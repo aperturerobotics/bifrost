@@ -12,9 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateComputersDashboardOpId is the operation id for CreateComputersDashboardOp.
-var CreateComputersDashboardOpId = "spacewave/computers/create"
-
 // NewCreateComputersDashboardOp constructs a new CreateComputersDashboardOp.
 func NewCreateComputersDashboardOp(objKey, name string, ts time.Time) *CreateComputersDashboardOp {
 	return &CreateComputersDashboardOp{
@@ -22,11 +19,6 @@ func NewCreateComputersDashboardOp(objKey, name string, ts time.Time) *CreateCom
 		Name:      name,
 		Timestamp: timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateComputersDashboardOp) GetOperationTypeId() string {
-	return CreateComputersDashboardOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -76,24 +68,6 @@ func (o *CreateComputersDashboardOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateComputersDashboardOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateComputersDashboardOp looks up a CreateComputersDashboardOp operation type.
-func LookupCreateComputersDashboardOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateComputersDashboardOpId {
-		return &CreateComputersDashboardOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ world.Operation = (*CreateComputersDashboardOp)(nil)

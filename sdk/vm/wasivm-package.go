@@ -55,9 +55,6 @@ func (p *WasiVmPackage) Validate() error {
 	return nil
 }
 
-// CreateWasiVmPackageOpId is the operation id for CreateWasiVmPackageOp.
-var CreateWasiVmPackageOpId = "vm/package/wasivm/create"
-
 // NewCreateWasiVmPackageOp constructs a new CreateWasiVmPackageOp.
 func NewCreateWasiVmPackageOp(objKey string, pkg *WasiVmPackage, ts time.Time) *CreateWasiVmPackageOp {
 	return &CreateWasiVmPackageOp{
@@ -65,11 +62,6 @@ func NewCreateWasiVmPackageOp(objKey string, pkg *WasiVmPackage, ts time.Time) *
 		Package:   pkg,
 		Timestamp: timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateWasiVmPackageOp) GetOperationTypeId() string {
-	return CreateWasiVmPackageOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -116,24 +108,6 @@ func (o *CreateWasiVmPackageOp) ApplyWorldOp(
 		return false, err
 	}
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateWasiVmPackageOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateWasiVmPackageOp looks up a CreateWasiVmPackageOp operation type.
-func LookupCreateWasiVmPackageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateWasiVmPackageOpId {
-		return &CreateWasiVmPackageOp{}, nil
-	}
-	return nil, nil
 }
 
 // LookupWasiVmImagePackages returns the keys of the packages the image at

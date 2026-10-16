@@ -4,21 +4,12 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/s4wave/spacewave/core/git/opids"
 	git_world "github.com/s4wave/spacewave/db/git/world"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/sirupsen/logrus"
 )
-
-// CreateGitRepoWizardOpId is the operation id for CreateGitRepoWizardOp.
-var CreateGitRepoWizardOpId = opids.CreateRepoWizard
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateGitRepoWizardOp) GetOperationTypeId() string {
-	return CreateGitRepoWizardOpId
-}
 
 // Validate performs cursory validation of the operation.
 func (o *CreateGitRepoWizardOp) Validate() error {
@@ -64,22 +55,13 @@ func (o *CreateGitRepoWizardOp) ApplyWorldOp(
 	return sysErr, err
 }
 
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateGitRepoWizardOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateGitRepoWizardOp looks up a CreateGitRepoWizardOp operation type.
-func LookupCreateGitRepoWizardOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateGitRepoWizardOpId {
-		return &CreateGitRepoWizardOp{}, nil
-	}
-	return nil, nil
+// NewCreateGitRepoWizardOp constructs an empty CreateGitRepoWizardOp.
+//
+// GoScript builds defer this package until the first call to this function,
+// so schemas there construct the operation through it and match its type ID
+// with opids.CreateRepoWizard.
+func NewCreateGitRepoWizardOp() any {
+	return new(CreateGitRepoWizardOp)
 }
 
 // _ is a type assertion

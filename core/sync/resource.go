@@ -41,7 +41,7 @@ func registerKV(ctx context.Context, b bus.Bus) error {
 
 // lookupOp resolves the operation carried by the standard KV Resource.
 func lookupOp(_ context.Context, id string) (world.Operation, error) {
-	if id == kv_world.KvSetRootOpId {
+	if id == kv_world.KvSetRootOpTypeID {
 		return &kv_world.KvSetRootOp{}, nil
 	}
 	return nil, nil

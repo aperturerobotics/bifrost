@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// EntityUpdateOpId is the entity update operation id.
-var EntityUpdateOpId = EntityTypeID + "/update"
-
 // NewEntityUpdateOp constructs a new EntityUpdateOp block.
 func NewEntityUpdateOp(entityRef *bucket.ObjectRef) *EntityUpdateOp {
 	return &EntityUpdateOp{
@@ -42,11 +39,6 @@ func (o *EntityUpdateOp) Validate() error {
 		return err
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *EntityUpdateOp) GetOperationTypeId() string {
-	return EntityUpdateOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -120,16 +112,6 @@ func (o *EntityUpdateOp) ApplyWorldOp(
 		}
 	}
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *EntityUpdateOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

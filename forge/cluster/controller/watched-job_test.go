@@ -104,7 +104,7 @@ func TestWatchedJobRestartsAfterWorkerReconnect(t *testing.T) {
 
 	// The first worker has stopped. A new controller must recover watched
 	// inputs from a completed Task without outside retry or wake commands.
-	opRelease, err := tb.Bus.AddController(ctx, world.NewLookupOpController("watched-job-ops", tb.EngineID, forge_world.LookupWorldOp), nil)
+	opRelease, err := tb.Bus.AddController(ctx, world.NewLookupOpController("watched-job-ops", tb.EngineID, world.NewSchema(forge_world.Types).LookupOp), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

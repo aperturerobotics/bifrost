@@ -210,49 +210,6 @@ func TestAptSupersedePackageOpRejectsInvalidSourceState(t *testing.T) {
 	}
 }
 
-func TestLookupAptOp(t *testing.T) {
-	// Prepare the operation identifiers supported by the Apt lookup.
-	ctx := context.Background()
-	tests := []struct {
-		name string
-		id   string
-	}{
-		{name: "create repository", id: CreateAptRepositoryOpId},
-		{name: "add package", id: AddAptPackageOpId},
-		{name: "publish package", id: AptPublishPackageOpId},
-		{name: "supersede package", id: AptSupersedePackageOpId},
-		{name: "add build spec", id: AddAptBuildSpecOpId},
-	}
-
-	// Resolve every supported Apt operation identifier.
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			// Resolve the operation for this test case.
-			op, err := LookupAptOp(ctx, test.id)
-			if err != nil {
-				t.Fatalf("LookupAptOp: %v", err)
-			}
-
-			// Verify the operation exists and carries the requested identifier.
-			if op == nil {
-				t.Fatalf("LookupAptOp(%q) returned nil", test.id)
-			}
-			if op.GetOperationTypeId() != test.id {
-				t.Fatalf("operation id = %q, want %q", op.GetOperationTypeId(), test.id)
-			}
-		})
-	}
-
-	// Verify an unknown operation identifier resolves to no operation.
-	op, err := LookupAptOp(ctx, "unknown/op")
-	if err != nil {
-		t.Fatalf("LookupAptOp(unknown): %v", err)
-	}
-	if op != nil {
-		t.Fatalf("LookupAptOp(unknown) returned %T, want nil", op)
-	}
-}
-
 func setupAptWorld(t *testing.T) (context.Context, world.WorldState) {
 	// Start a World testbed and register its cleanup.
 	t.Helper()
@@ -264,7 +221,7 @@ func setupAptWorld(t *testing.T) (context.Context, world.WorldState) {
 	t.Cleanup(tb.Release)
 
 	// Register the Apt operation controller on the testbed bus.
-	opController := world.NewLookupOpController("test-apt-ops", tb.EngineID, LookupAptOp)
+	opController := world.NewLookupOpController("test-apt-ops", tb.EngineID, world.NewSchema(RepositoryTypes).LookupOp)
 	if _, err := tb.Bus.AddController(ctx, opController, nil); err != nil {
 		t.Fatal(err)
 	}

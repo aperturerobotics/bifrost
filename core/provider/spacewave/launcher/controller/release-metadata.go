@@ -733,7 +733,7 @@ func readReleaseMetadataSnapshot(
 			false,
 			root,
 			eng,
-			bldr_manifest_world.LookupOp,
+			world.NewSchema(bldr_manifest_world.WorldTypes).LookupOp,
 			false,
 		)
 		if err != nil {

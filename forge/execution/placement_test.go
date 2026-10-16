@@ -29,7 +29,7 @@ func TestExecutionPlacementWorkerToJob(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(tb.Release)
-	op := world.NewLookupOpController("forge-ops", tb.EngineID, forge_world.LookupWorldOp)
+	op := world.NewLookupOpController("forge-ops", tb.EngineID, world.NewSchema(forge_world.Types).LookupOp)
 	release, err := tb.Bus.AddController(ctx, op, nil)
 	if err != nil {
 		t.Fatal(err)

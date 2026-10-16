@@ -26,9 +26,6 @@ func FsSetModTimestamp(
 	return obj.ApplyObjectOp(ctx, wOp, sender)
 }
 
-// FsSetModTimestampOpId is the operation id.
-var FsSetModTimestampOpId = "hydra/unixfs/set-mod-timestamp"
-
 // NewFsSetModTimestampOp constructs a new FsSetModTimestampOp block.
 // repoRef, worktreeArgs can be empty
 func NewFsSetModTimestampOp(
@@ -55,11 +52,6 @@ func (o *FsSetModTimestampOp) Validate() error {
 	}
 	// note: allowing empty ts here
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *FsSetModTimestampOp) GetOperationTypeId() string {
-	return FsSetModTimestampOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.

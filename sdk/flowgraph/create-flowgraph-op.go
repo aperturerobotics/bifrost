@@ -10,14 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateFlowgraphOpID identifies the World operation that creates a Flowgraph.
-const CreateFlowgraphOpID = "flowgraph/create"
-
-// GetOperationTypeId returns the operation's wire identifier.
-func (o *CreateFlowgraphOp) GetOperationTypeId() string {
-	return CreateFlowgraphOpID
-}
-
 // Validate requires an independently addressed Flowgraph key.
 func (o *CreateFlowgraphOp) Validate() error {
 	_, err := ParseFlowgraphObjectKey(o.GetObjectKey())
@@ -43,19 +35,6 @@ func (o *CreateFlowgraphOp) ApplyWorldOp(ctx context.Context, _ *logrus.Entry, w
 
 	// Register the object's type through the World graph.
 	return false, world_types.SetObjectType(ctx, ws, o.GetObjectKey(), FlowgraphTypeID)
-}
-
-// ApplyWorldObjectOp rejects an operation that requires the enclosing World.
-func (o *CreateFlowgraphOp) ApplyWorldObjectOp(context.Context, *logrus.Entry, world.ObjectState, peer.ID) (bool, error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateFlowgraphOp resolves the Flowgraph creation operation.
-func LookupCreateFlowgraphOp(_ context.Context, id string) (world.Operation, error) {
-	if id == CreateFlowgraphOpID {
-		return &CreateFlowgraphOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion.

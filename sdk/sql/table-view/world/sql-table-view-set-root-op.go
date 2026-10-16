@@ -13,17 +13,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SqlTableViewSetRootOpId is the world op id for advancing a sql/table-view root.
-const SqlTableViewSetRootOpId = "sql/table-view/set-root"
-
 // NewSqlTableViewSetRootOp constructs a SQL table view set-root operation.
 func NewSqlTableViewSetRootOp(objectKey string, rootRef *bucket.ObjectRef) *SqlTableViewSetRootOp {
 	return &SqlTableViewSetRootOp{ObjectKey: objectKey, RootRef: rootRef.Clone()}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SqlTableViewSetRootOp) GetOperationTypeId() string {
-	return SqlTableViewSetRootOpId
 }
 
 // Validate performs cursory checks on the operation.
@@ -91,14 +83,6 @@ func (o *SqlTableViewSetRootOp) ApplyWorldObjectOp(
 	// Advance the table view object's root reference.
 	_, err := os.SetRootRef(ctx, o.GetRootRef())
 	return false, err
-}
-
-// LookupSqlTableViewSetRootOp returns an empty SQL table view set-root op for lookup.
-func LookupSqlTableViewSetRootOp(_ context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == SqlTableViewSetRootOpId {
-		return &SqlTableViewSetRootOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ block.Block = (*SqlTableViewSetRootOp)(nil)

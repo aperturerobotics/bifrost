@@ -35,7 +35,7 @@ func (tb *Testbed) RunWorkerWithTasks(
 	opc := world.NewLookupOpController(
 		"forge-ops",
 		tb.EngineID,
-		forge_world.LookupWorldOp,
+		world.NewSchema(forge_world.Types).LookupOp,
 	)
 	releaseOpCtrl, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {

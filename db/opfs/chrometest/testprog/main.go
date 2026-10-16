@@ -87,6 +87,9 @@ const largeScenarioProgressEvery = 8 * 1024 * 1024
 
 // main runs one selected worker scenario, reports its terminal result, and
 // waits for the harness to terminate the worker.
+// lookupSpaceOp resolves the Space world operations.
+var lookupSpaceOp = world.NewSchema(space_world_ops.Types).LookupOp
+
 func main() {
 	// Run the selected scenario and publish its result.
 	start := time.Now()
@@ -877,7 +880,7 @@ func initUnixFSWorld(
 		true,
 		cursor,
 		world.NewWorldStorageFromCursor(cursor),
-		space_world_ops.LookupWorldOp,
+		lookupSpaceOp,
 		false,
 	)
 	if err != nil {
@@ -1124,7 +1127,7 @@ func openDeferredWorldEngine(ctx context.Context, c *config) (*worldEngine, erro
 		ctx,
 		le,
 		h.cursor,
-		space_world_ops.LookupWorldOp,
+		lookupSpaceOp,
 		h.casHead,
 		false,
 		world_block.WithDeferredDurability(),
@@ -1662,7 +1665,7 @@ func runCopyWalkWrapperConcurrency(ctx context.Context, c *config) error {
 		true,
 		worldCursor,
 		world.NewWorldStorageFromCursor(worldCursor),
-		space_world_ops.LookupWorldOp,
+		lookupSpaceOp,
 		false,
 	)
 	if err != nil {

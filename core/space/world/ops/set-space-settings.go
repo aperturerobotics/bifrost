@@ -42,9 +42,6 @@ func SetSpaceSettings(
 	return ws.ApplyWorldOp(ctx, op, sender)
 }
 
-// SetSpaceSettingsOpId is the space settings init operation id.
-var SetSpaceSettingsOpId = "space/world/set-settings"
-
 // DefaultSpaceSettingsObjectKey is the default object key for space settings.
 const DefaultSpaceSettingsObjectKey = "settings"
 
@@ -75,11 +72,6 @@ func (o *SetSpaceSettingsOp) Validate() error {
 		return ErrInvalidSettings
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SetSpaceSettingsOp) GetOperationTypeId() string {
-	return SetSpaceSettingsOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -230,17 +222,6 @@ func (o *SetSpaceSettingsOp) mergeKeybindingSettings(
 	next := current.CloneVT()
 	next.KeybindingOverrides = merged
 	return next, nil
-}
-
-// LookupSetSpaceSettingsOp looks up Space settings operations.
-func LookupSetSpaceSettingsOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	switch operationTypeID {
-	case SetSpaceSettingsOpId:
-		return &SetSpaceSettingsOp{}, nil
-	case SetSpaceIndexPathOpID:
-		return &SetSpaceIndexPathOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

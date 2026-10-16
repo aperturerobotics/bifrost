@@ -41,7 +41,7 @@ func TestExportZipGitRepoProjectionMetadata(t *testing.T) {
 	defer wtb.Release()
 
 	// Register the Git operations used to create the exported repository.
-	gitOpc := world.NewLookupOpController("test-export-git-repo-projection", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-export-git-repo-projection", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestExportZipPopulatedGitRepoProjectionUsesMetadata(t *testing.T) {
 	defer wtb.Release()
 
 	// Register the Git operations used to populate the exported repository.
-	gitOpc := world.NewLookupOpController("test-export-populated-git-repo-projection", wtb.EngineID, git_world.LookupGitOp)
+	gitOpc := world.NewLookupOpController("test-export-populated-git-repo-projection", wtb.EngineID, world.NewSchema(git_world.GitTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, gitOpc, nil); err != nil {
 		t.Fatal(err)
 	}

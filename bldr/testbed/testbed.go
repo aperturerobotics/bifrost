@@ -222,7 +222,7 @@ func BuildTestbedWithSchedulerConfig(
 	worldState := world.NewEngineWorldState(eng, true)
 
 	// register the world operation types for plugin host
-	lookupOpCtrl := world.NewLookupOpController("bldr-plugin-host-ops", engineID, bldr_manifest_world.LookupOp)
+	lookupOpCtrl := world.NewLookupOpController("bldr-plugin-host-ops", engineID, world.NewSchema(bldr_manifest_world.WorldTypes).LookupOp)
 	relLookupCtrl, err := b.AddController(ctx, lookupOpCtrl, nil)
 	if err != nil {
 		rel()

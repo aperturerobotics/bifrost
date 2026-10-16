@@ -20,14 +20,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// InitForgeQuickstartOpId is the operation id for InitForgeQuickstartOp.
-var InitForgeQuickstartOpId = "spacewave/forge/quickstart/init"
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *InitForgeQuickstartOp) GetOperationTypeId() string {
-	return InitForgeQuickstartOpId
-}
-
 // Validate performs cursory checks on the op.
 func (o *InitForgeQuickstartOp) Validate() error {
 	// Reject empty layout, dashboard, cluster, or session peer identifiers.
@@ -199,24 +191,6 @@ func (o *InitForgeQuickstartOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *InitForgeQuickstartOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupInitForgeQuickstartOp looks up an InitForgeQuickstartOp operation type.
-func LookupInitForgeQuickstartOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == InitForgeQuickstartOpId {
-		return &InitForgeQuickstartOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

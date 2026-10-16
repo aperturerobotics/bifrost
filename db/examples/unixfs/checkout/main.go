@@ -112,7 +112,7 @@ func execute(rctx context.Context) error {
 	senderPeerID := tb.Volume.GetPeerID()
 
 	// Provide the filesystem op handlers to the bus.
-	opc := world.NewLookupOpController("test-fs-ops", engineID, unixfs_world.LookupFsOp)
+	opc := world.NewLookupOpController("test-fs-ops", engineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	relOpc, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {
 		return err

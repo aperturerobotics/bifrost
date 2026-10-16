@@ -40,9 +40,6 @@ func (v *WasiVmImage) Validate() error {
 	return nil
 }
 
-// CreateWasiVmImageOpId is the operation id for CreateWasiVmImageOp.
-var CreateWasiVmImageOpId = "vm/image/wasivm/create"
-
 // NewCreateWasiVmImageOp constructs a new CreateWasiVmImageOp.
 func NewCreateWasiVmImageOp(objKey string, img *WasiVmImage, ts time.Time) *CreateWasiVmImageOp {
 	return &CreateWasiVmImageOp{
@@ -50,11 +47,6 @@ func NewCreateWasiVmImageOp(objKey string, img *WasiVmImage, ts time.Time) *Crea
 		Image:     img,
 		Timestamp: timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateWasiVmImageOp) GetOperationTypeId() string {
-	return CreateWasiVmImageOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -101,24 +93,6 @@ func (o *CreateWasiVmImageOp) ApplyWorldOp(
 		return false, err
 	}
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateWasiVmImageOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateWasiVmImageOp looks up a CreateWasiVmImageOp operation type.
-func LookupCreateWasiVmImageOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateWasiVmImageOpId {
-		return &CreateWasiVmImageOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

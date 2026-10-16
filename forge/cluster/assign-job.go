@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ClusterAssignJobOpId is the cluster assign job operation id.
-var ClusterAssignJobOpId = ClusterTypeID + "/assign-job"
-
 // NewClusterAssignJobOp constructs a new ClusterAssignJobOp block.
 func NewClusterAssignJobOp(clusterKey, jobKey string) *ClusterAssignJobOp {
 	return &ClusterAssignJobOp{
@@ -43,11 +40,6 @@ func (o *ClusterAssignJobOp) Validate() error {
 		return errors.Wrap(world.ErrEmptyObjectKey, "job_key")
 	}
 	return nil
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *ClusterAssignJobOp) GetOperationTypeId() string {
-	return ClusterAssignJobOpId
 }
 
 // ApplyWorldOp applies the operation as a world operation.
@@ -85,16 +77,6 @@ func (o *ClusterAssignJobOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *ClusterAssignJobOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	objectHandle world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
 }
 
 // _ is a type assertion

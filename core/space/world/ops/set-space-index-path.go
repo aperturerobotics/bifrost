@@ -9,17 +9,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SetSpaceIndexPathOpID identifies the atomic default-object operation.
-const SetSpaceIndexPathOpID = "space/world/set-index-path"
-
 // Validate checks the operation timestamp.
 func (o *SetSpaceIndexPathOp) Validate() error {
 	return o.GetTimestamp().Validate(false)
-}
-
-// GetOperationTypeId returns the operation identifier.
-func (o *SetSpaceIndexPathOp) GetOperationTypeId() string {
-	return SetSpaceIndexPathOpID
 }
 
 // ApplyWorldOp changes only the index path in the transaction's current settings.
@@ -53,16 +45,6 @@ func (o *SetSpaceIndexPathOp) ApplyWorldOp(
 		Timestamp: o.GetTimestamp(),
 	}
 	return update.ApplyWorldOp(ctx, le, ws, sender)
-}
-
-// ApplyWorldObjectOp is unsupported; the operation addresses the World's settings.
-func (o *SetSpaceIndexPathOp) ApplyWorldObjectOp(
-	context.Context,
-	*logrus.Entry,
-	world.ObjectState,
-	peer.ID,
-) (bool, error) {
-	return false, world.ErrUnhandledOp
 }
 
 var _ world.Operation = (*SetSpaceIndexPathOp)(nil)

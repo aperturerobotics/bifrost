@@ -42,7 +42,7 @@ func newTestUnixFSStore(t *testing.T) (*UnixFSStore, *resource_server.ResourceSe
 	t.Cleanup(wtb.Release)
 
 	// Initialize the UnixFS object through its World operation controller.
-	opc := world.NewLookupOpController("test-fs-ops", wtb.EngineID, unixfs_world.LookupFsOp)
+	opc := world.NewLookupOpController("test-fs-ops", wtb.EngineID, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp)
 	if _, err := wtb.Bus.AddController(ctx, opc, nil); err != nil {
 		t.Fatal(err)
 	}

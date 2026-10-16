@@ -14,9 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateSshHostOpId is the operation id for CreateSshHostOp.
-var CreateSshHostOpId = "spacewave/ssh-host/create"
-
 // NewCreateSshHostOp constructs a new CreateSshHostOp.
 func NewCreateSshHostOp(
 	objKey string,
@@ -34,11 +31,6 @@ func NewCreateSshHostOp(
 		HostKeyPins: hostKeyPins,
 		Timestamp:   timestamppb.New(ts),
 	}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *CreateSshHostOp) GetOperationTypeId() string {
-	return CreateSshHostOpId
 }
 
 // Validate performs cursory checks on the op.
@@ -92,24 +84,6 @@ func (o *CreateSshHostOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *CreateSshHostOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupCreateSshHostOp looks up a CreateSshHostOp operation type.
-func LookupCreateSshHostOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == CreateSshHostOpId {
-		return &CreateSshHostOp{}, nil
-	}
-	return nil, nil
 }
 
 func (o *CreateSshHostOp) buildSshHost() *SshHost {

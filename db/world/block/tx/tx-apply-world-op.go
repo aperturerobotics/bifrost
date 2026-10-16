@@ -12,7 +12,7 @@ import (
 // NewTxApplyWorldOp constructs a new APPLY_WORLD_OP transaction.
 func NewTxApplyWorldOp(op world.Operation, opSender peer.ID) (*Tx, error) {
 	// Require an operation type before recording the World operation.
-	opTypeID := op.GetOperationTypeId()
+	opTypeID := op.TypeID()
 	if opTypeID == "" {
 		return nil, world.ErrEmptyOp
 	}

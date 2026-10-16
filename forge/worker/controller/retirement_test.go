@@ -63,7 +63,7 @@ func TestWorkerRetiresExecutionAfterFinalResult(t *testing.T) {
 	t.Cleanup(releasePeer)
 
 	// Register Forge operation decoding for the real execution controller.
-	releaseOps, err := tb.Bus.AddController(ctx, world.NewLookupOpController("retirement-ops", tb.EngineID, forge_world.LookupWorldOp), nil)
+	releaseOps, err := tb.Bus.AddController(ctx, world.NewLookupOpController("retirement-ops", tb.EngineID, world.NewSchema(forge_world.Types).LookupOp), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

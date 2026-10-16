@@ -13,17 +13,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SqlQueryResultSetRootOpId is the world op id for advancing a sql/query-result root.
-const SqlQueryResultSetRootOpId = "sql/query-result/set-root"
-
 // NewSqlQueryResultSetRootOp constructs a SQL query result set-root operation.
 func NewSqlQueryResultSetRootOp(objectKey string, rootRef *bucket.ObjectRef) *SqlQueryResultSetRootOp {
 	return &SqlQueryResultSetRootOp{ObjectKey: objectKey, RootRef: rootRef.Clone()}
-}
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *SqlQueryResultSetRootOp) GetOperationTypeId() string {
-	return SqlQueryResultSetRootOpId
 }
 
 // Validate performs cursory checks on the operation.
@@ -89,14 +81,6 @@ func (o *SqlQueryResultSetRootOp) ApplyWorldObjectOp(
 	// Advance the SQL query result object to the requested root.
 	_, err := os.SetRootRef(ctx, o.GetRootRef())
 	return false, err
-}
-
-// LookupSqlQueryResultSetRootOp returns an empty SQL query result set-root op for lookup.
-func LookupSqlQueryResultSetRootOp(_ context.Context, opTypeID string) (world.Operation, error) {
-	if opTypeID == SqlQueryResultSetRootOpId {
-		return &SqlQueryResultSetRootOp{}, nil
-	}
-	return nil, nil
 }
 
 var _ block.Block = (*SqlQueryResultSetRootOp)(nil)

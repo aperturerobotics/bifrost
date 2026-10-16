@@ -14,14 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ForgeJobCreateOpId is the operation id for ForgeJobCreateOp.
-var ForgeJobCreateOpId = "spacewave/forge/job/create"
-
-// GetOperationTypeId returns the operation type identifier.
-func (o *ForgeJobCreateOp) GetOperationTypeId() string {
-	return ForgeJobCreateOpId
-}
-
 // Validate performs cursory validation of the operation.
 func (o *ForgeJobCreateOp) Validate() error {
 	// Validate the requested placement before creating the job.
@@ -93,24 +85,6 @@ func (o *ForgeJobCreateOp) ApplyWorldOp(
 	}
 
 	return false, nil
-}
-
-// ApplyWorldObjectOp applies the operation to a world object handle.
-func (o *ForgeJobCreateOp) ApplyWorldObjectOp(
-	ctx context.Context,
-	le *logrus.Entry,
-	os world.ObjectState,
-	sender peer.ID,
-) (sysErr bool, err error) {
-	return false, world.ErrUnhandledOp
-}
-
-// LookupForgeJobCreateOp looks up a ForgeJobCreateOp operation type.
-func LookupForgeJobCreateOp(ctx context.Context, operationTypeID string) (world.Operation, error) {
-	if operationTypeID == ForgeJobCreateOpId {
-		return &ForgeJobCreateOp{}, nil
-	}
-	return nil, nil
 }
 
 // _ is a type assertion

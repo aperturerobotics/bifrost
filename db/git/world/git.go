@@ -37,30 +37,6 @@ const (
 	GitRepoPred = "git/repo"
 )
 
-// LookupGitOp performs the lookup operation for the git op types.
-func LookupGitOp(ctx context.Context, opTypeID string) (world.Operation, error) {
-	switch opTypeID {
-	case GitInitOpId:
-		return &GitInitOp{}, nil
-	case GitCloneOpId:
-		return &GitCloneOp{}, nil
-	case GitCreateWorktreeOpId:
-		return &GitCreateWorktreeOp{}, nil
-	case GitFetchOpId:
-		return &GitFetchOp{}, nil
-	case GitWorktreeCheckoutOpId:
-		return &GitWorktreeCheckoutOp{}, nil
-	case GitStageOpId:
-		return &GitStageOp{}, nil
-	case GitUnstageOpId:
-		return &GitUnstageOp{}, nil
-	}
-	return nil, nil
-}
-
-// _ is a type assertion
-var _ world.LookupOp = LookupGitOp
-
 // AccessRepo is a utility for AccessWorldState to access a repository.
 // Ref can be nil to indicate creating a new repo.
 // The block transaction is written upon completion and updated ObjectRef returned.

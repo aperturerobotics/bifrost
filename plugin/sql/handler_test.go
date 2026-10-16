@@ -157,7 +157,7 @@ func TestSQLHandlerValidateOpUnmarshalsEverySQLOperation(t *testing.T) {
 			// Validate the encoded SQL operation through the handler.
 			h := &SQLHandler{}
 			resp, err := h.ValidateOp(context.Background(), &s4wave_worldop_registry.ValidateOpRequest{
-				OperationTypeId: tc.op.GetOperationTypeId(),
+				OperationTypeId: tc.op.TypeID(),
 				OpData:          data,
 			})
 			if err != nil {
@@ -166,20 +166,20 @@ func TestSQLHandlerValidateOpUnmarshalsEverySQLOperation(t *testing.T) {
 
 			// Check that the handler accepts the SQL operation payload.
 			if resp.GetError() != "" {
-				t.Fatalf("ValidateOp(%s) error = %q, want empty", tc.op.GetOperationTypeId(), resp.GetError())
+				t.Fatalf("ValidateOp(%s) error = %q, want empty", tc.op.TypeID(), resp.GetError())
 			}
 
 			// Decode the SQL operation for contract checks.
-			decoded, err := h.unmarshalSQLOp(context.Background(), tc.op.GetOperationTypeId(), data)
+			decoded, err := h.unmarshalSQLOp(context.Background(), tc.op.TypeID(), data)
 			if err != nil {
-				t.Fatalf("unmarshalSQLOp(%s): %v", tc.op.GetOperationTypeId(), err)
+				t.Fatalf("unmarshalSQLOp(%s): %v", tc.op.TypeID(), err)
 			}
 
 			// Check the decoded operation identity and initialization mode.
-			if decoded.GetOperationTypeId() != tc.op.GetOperationTypeId() {
-				t.Fatalf("decoded op id = %q, want %q", decoded.GetOperationTypeId(), tc.op.GetOperationTypeId())
+			if decoded.TypeID() != tc.op.TypeID() {
+				t.Fatalf("decoded op id = %q, want %q", decoded.TypeID(), tc.op.TypeID())
 			}
-			if err := decoded.Validate(); err != nil {
+			if err := world.ValidateOp(decoded); err != nil {
 				t.Fatalf("decoded op Validate: %v", err)
 			}
 			switch op := decoded.(type) {
@@ -211,13 +211,13 @@ func TestSQLHandlerValidateOpReportsLookupUnmarshalAndValidationErrors(t *testin
 		},
 		{
 			name:    "invalid protobuf payload",
-			opID:    s4wave_sql_world.SqlSetRootOpId,
+			opID:    s4wave_sql_world.SqlSetRootOpTypeID,
 			data:    []byte{0xff},
 			wantErr: "unexpected EOF",
 		},
 		{
 			name:    "decoded op fails Validate",
-			opID:    s4wave_sql_world.SqlSetRootOpId,
+			opID:    s4wave_sql_world.SqlSetRootOpTypeID,
 			wantErr: "object key cannot be empty",
 		},
 	} {
@@ -739,8 +739,8 @@ func newSQLObjectTypeBridgeHarness(
 	cleanupFns = append(cleanupFns, cleanupWorldOpRegistry)
 	worldOpRegistryService := s4wave_worldop_registry.NewSRPCWorldOpRegistryResourceServiceClient(worldOpRegistryRootClient)
 	for _, opID := range []string{
-		s4wave_sql_query_world.SqlQuerySetRootOpId,
-		s4wave_sql_workbench_world.SqlWorkbenchSetRootOpId,
+		s4wave_sql_query_world.SqlQuerySetRootOpTypeID,
+		s4wave_sql_workbench_world.SqlWorkbenchSetRootOpTypeID,
 	} {
 		regResp, err := worldOpRegistryService.RegisterWorldOp(ctx, &s4wave_worldop_registry.RegisterWorldOpRequest{
 			OperationTypeId: opID,

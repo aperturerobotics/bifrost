@@ -12,7 +12,7 @@ import (
 func TestBuildSpaceLookupOpResolvesNativeAptOps(t *testing.T) {
 	lookupOp := BuildSpaceLookupOp(nil, nil, "space/local/test")
 
-	op, err := lookupOp(context.Background(), s4wave_apt.CreateAptRepositoryOpId)
+	op, err := lookupOp(context.Background(), s4wave_apt.CreateAptRepositoryOpTypeID)
 	if err != nil {
 		t.Fatal(err)
 	}

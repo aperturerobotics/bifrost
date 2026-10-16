@@ -461,7 +461,7 @@ func TestVmV86TypedObject(t *testing.T) {
 			tx.Release()
 			t.Fatalf("MarshalVT (setconfig) failed: %v", err)
 		}
-		_, sysErr, err := tx.ApplyWorldOp(ctx, s4wave_vm.SetV86ConfigOpId, setOpData, "")
+		_, sysErr, err := tx.ApplyWorldOp(ctx, s4wave_vm.SetV86ConfigOpTypeID, setOpData, "")
 		if err != nil {
 			tx.Release()
 			t.Fatalf("ApplyWorldOp (setconfig) failed: %v (sysErr=%v)", err, sysErr)
@@ -488,7 +488,7 @@ func TestVmV86TypedObject(t *testing.T) {
 			tx2.Release()
 			t.Fatalf("MarshalVT (missing) failed: %v", err)
 		}
-		_, _, err = tx2.ApplyWorldOp(ctx, s4wave_vm.SetV86ConfigOpId, missData, "")
+		_, _, err = tx2.ApplyWorldOp(ctx, s4wave_vm.SetV86ConfigOpTypeID, missData, "")
 		if err == nil {
 			tx2.Release()
 			t.Fatal("ApplyWorldOp on missing object should error")
@@ -525,7 +525,7 @@ func TestVmV86TypedObject(t *testing.T) {
 				tx.Release()
 				t.Fatalf("MarshalVT failed: %v", err)
 			}
-			_, _, applyErr := tx.ApplyWorldOp(ctx, s4wave_vm.SetV86StateOpId, data, "")
+			_, _, applyErr := tx.ApplyWorldOp(ctx, s4wave_vm.SetV86StateOpTypeID, data, "")
 			if expectOK {
 				if applyErr != nil {
 					tx.Release()
@@ -592,7 +592,7 @@ func TestVmV86TypedObject(t *testing.T) {
 			tx.Release()
 			t.Fatalf("MarshalVT (create image) failed: %v", err)
 		}
-		if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateV86ImageOpId, createData, ""); err != nil {
+		if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateV86ImageOpTypeID, createData, ""); err != nil {
 			tx.Release()
 			t.Fatalf("ApplyWorldOp (create image) failed: %v", err)
 		}
@@ -621,7 +621,7 @@ func TestVmV86TypedObject(t *testing.T) {
 			tx2.Release()
 			t.Fatalf("MarshalVT (set metadata) failed: %v", err)
 		}
-		if _, _, err := tx2.ApplyWorldOp(ctx, s4wave_vm.SetV86ImageMetadataOpId, setData, ""); err != nil {
+		if _, _, err := tx2.ApplyWorldOp(ctx, s4wave_vm.SetV86ImageMetadataOpTypeID, setData, ""); err != nil {
 			tx2.Release()
 			t.Fatalf("ApplyWorldOp (set metadata) failed: %v", err)
 		}
@@ -644,7 +644,7 @@ func TestVmV86TypedObject(t *testing.T) {
 			tx3.Release()
 			t.Fatalf("MarshalVT (missing) failed: %v", err)
 		}
-		if _, _, err := tx3.ApplyWorldOp(ctx, s4wave_vm.SetV86ImageMetadataOpId, missData, ""); err == nil {
+		if _, _, err := tx3.ApplyWorldOp(ctx, s4wave_vm.SetV86ImageMetadataOpTypeID, missData, ""); err == nil {
 			tx3.Release()
 			t.Fatal("ApplyWorldOp on missing V86Image should error")
 		}
@@ -684,7 +684,7 @@ func TestVmV86TypedObject(t *testing.T) {
 			tx.Release()
 			t.Fatalf("marshal V86Image catalog operation: %v", err)
 		}
-		if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateV86ImageOpId, imageData, ""); err != nil {
+		if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateV86ImageOpTypeID, imageData, ""); err != nil {
 			tx.Release()
 			t.Fatalf("apply V86Image catalog operation: %v", err)
 		}
@@ -1065,7 +1065,7 @@ func applySetV86State(
 		tx.Release()
 		t.Fatalf("MarshalVT (SetV86StateOp) failed: %v", err)
 	}
-	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.SetV86StateOpId, data, ""); err != nil {
+	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.SetV86StateOpTypeID, data, ""); err != nil {
 		tx.Release()
 		t.Fatalf("ApplyWorldOp (SetV86StateOp %s) failed: %v", state.String(), err)
 	}
@@ -1179,7 +1179,7 @@ func createVmV86WithRootfs(ctx context.Context, t *testing.T, engine *s4wave_wor
 		tx.Release()
 		t.Fatalf("MarshalVT (create image) failed: %v", err)
 	}
-	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateV86ImageOpId, imageOpData, ""); err != nil {
+	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateV86ImageOpTypeID, imageOpData, ""); err != nil {
 		tx.Release()
 		t.Fatalf("ApplyWorldOp (create image) failed: %v", err)
 	}
@@ -1204,7 +1204,7 @@ func createVmV86WithRootfs(ctx context.Context, t *testing.T, engine *s4wave_wor
 		tx.Release()
 		t.Fatalf("MarshalVT failed: %v", err)
 	}
-	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateVmV86OpId, createOpData, ""); err != nil {
+	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateVmV86OpTypeID, createOpData, ""); err != nil {
 		tx.Release()
 		t.Fatalf("ApplyWorldOp (create vm) failed: %v", err)
 	}
@@ -1242,7 +1242,7 @@ func createVmV86WithoutRootfs(ctx context.Context, t *testing.T, engine *s4wave_
 		tx.Release()
 		t.Fatalf("MarshalVT (create image) failed: %v", err)
 	}
-	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateV86ImageOpId, imageOpData, ""); err != nil {
+	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateV86ImageOpTypeID, imageOpData, ""); err != nil {
 		tx.Release()
 		t.Fatalf("ApplyWorldOp (create image) failed: %v", err)
 	}
@@ -1254,7 +1254,7 @@ func createVmV86WithoutRootfs(ctx context.Context, t *testing.T, engine *s4wave_
 		tx.Release()
 		t.Fatalf("MarshalVT failed: %v", err)
 	}
-	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateVmV86OpId, createOpData, ""); err != nil {
+	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.CreateVmV86OpTypeID, createOpData, ""); err != nil {
 		tx.Release()
 		t.Fatalf("ApplyWorldOp (create vm) failed: %v", err)
 	}
@@ -1286,7 +1286,7 @@ func setV86Config(ctx context.Context, t *testing.T, engine *s4wave_world.Engine
 		tx.Release()
 		t.Fatalf("MarshalVT (setconfig) failed: %v", err)
 	}
-	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.SetV86ConfigOpId, data, ""); err != nil {
+	if _, _, err := tx.ApplyWorldOp(ctx, s4wave_vm.SetV86ConfigOpTypeID, data, ""); err != nil {
 		tx.Release()
 		t.Fatalf("ApplyWorldOp (setconfig) failed: %v", err)
 	}
