@@ -54,6 +54,9 @@ type writer struct {
 	building atomic.Bool
 	// builds counts running background checkpoints, so Close can wait.
 	builds sync.WaitGroup
+	// closing is set by Close, so a running background checkpoint drops
+	// its tree instead of finishing it.
+	closing atomic.Bool
 	// changed lists the commit records published since the state a
 	// background checkpoint builds.
 	changed []*record
@@ -571,7 +574,7 @@ func (w *writer) runCheckpoint(st *state, stripe int) {
 			return err
 		}
 		err := errDropped
-		if t.sp == w.sp {
+		if t.sp == w.sp && !w.closing.Load() {
 			err = write(buf, page)
 		}
 		w.unlock(nil)
@@ -628,9 +631,10 @@ type tree struct {
 	carriedSeq uint64
 }
 
-// errDropped reports a tree whose space was reloaded while it built: the
-// reloaded space does not hold its reservations, so another process may
-// have reused them.
+// errDropped reports a tree abandoned while it built: either its space was
+// reloaded, which does not hold its reservations, so another process may
+// have reused them, or the database is closing. The space saved in the file
+// never holds the reservations, so the next open drops them either way.
 var errDropped = errors.New("checkpoint space reloaded")
 
 // newTree returns the tree of st, writing its pages through the database
@@ -679,7 +683,7 @@ func (w *writer) reserve(t *tree, n uint64) (run, error) {
 	if t.sp == nil {
 		t.sp = sp
 	}
-	if t.sp != sp {
+	if t.sp != sp || w.closing.Load() {
 		return run{}, errDropped
 	}
 

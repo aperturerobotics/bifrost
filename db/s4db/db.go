@@ -590,23 +590,28 @@ func (db *DB) WaitDurable(ctx context.Context) error {
 	return db.flush.waitDurable(ctx, db.cur.Load().seq)
 }
 
-// Close checkpoints when this handle can take the writer lock without
-// waiting, flushes, and closes the file. Transactions must end and leases be
-// released first; Close waits for an abandoned lease wait to return.
+// Close flushes, releases freed space when this handle can take the writer
+// lock without waiting, and closes the file. It leaves the overlay in the log
+// for the next open to replay, which reads the log in order, rather than
+// building a checkpoint, which reads index pages across the file. Transactions
+// must end and leases be released first; Close waits for an abandoned lease
+// wait to return.
 func (db *DB) Close() error {
-	// Stop the warm-up so its snapshot does not hold space, and let a
-	// background checkpoint finish.
+	// Stop the warm-up so its snapshot does not hold space, and drop a
+	// running background checkpoint at its next page.
 	if wait, _ := db.warmer.SetRoutine(nil); wait != nil {
 		<-wait
 	}
+	db.w.closing.Store(true)
 	db.w.builds.Wait()
 
-	// Checkpoint and release when no other process is writing.
+	// Flush and release freed space when no other process is writing. The
+	// flush raises the durability marks that bound the release.
 	ctx := context.Background()
 	var err error
 	if ok, lerr := db.w.tryLock(); lerr == nil && ok {
 		if err = db.w.catchUp(ctx); err == nil {
-			err = db.w.checkpointDurable(ctx)
+			err = db.Sync(ctx)
 		}
 		if err == nil {
 			err = db.w.releaseNow(ctx)
