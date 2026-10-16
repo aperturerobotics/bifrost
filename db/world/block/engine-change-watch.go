@@ -5,6 +5,7 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	"github.com/s4wave/spacewave/db/world"
 )
@@ -16,8 +17,9 @@ const changeDiffLimit = 4096
 
 // engineChangeWatch is the Engine's change producer. It compares each new head
 // with the last compared head once for all watchers, wakes the object
-// revision waiters of the changed keys, and hands the ChangeSet to every
-// change subscriber. A changed object record never returns to an earlier
+// revision waiters of the changed keys, hands the ChangeSet to every change
+// subscriber, and records it so a subscriber starting behind merges the
+// recorded ChangeSets instead of comparing heads again. A changed object record never returns to an earlier
 // value, because its revision grows with every change, so comparing the last
 // compared head with the newest one covers every head published between them.
 // The Engine starts the watch for the first watcher and it exits when the last
@@ -38,9 +40,27 @@ type engineChangeWatch struct {
 	waiters map[string]*objectKeyWake
 	// subs are the change subscribers.
 	subs map[*changeSubscriber]struct{}
+	// history holds the ChangeSets of the last compared spans, oldest first,
+	// each starting at the seqno the one before it reached and the last
+	// reaching baseSeqno. A comparison without a ChangeSet empties it.
+	history []changeSpan
 	// idle closes when the last watcher leaves so the watch releases its base
 	// without waiting for another head.
 	idle chan struct{}
+}
+
+// changeSpan is one comparison of the change watch: the changes from the head
+// at after to the head at seqno.
+type changeSpan struct {
+	// after is the seqno of the earlier head.
+	after uint64
+	// afterRef is the reference of the earlier head, which tells it apart
+	// from another head published at the same seqno.
+	afterRef *bucket.ObjectRef
+	// seqno is the seqno of the later head.
+	seqno uint64
+	// changes lists the changes between the two heads.
+	changes *world.ChangeSet
 }
 
 // objectKeyWake is the wake channel shared by the waiters of one object key.
@@ -240,6 +260,12 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 		for sub := range w.subs {
 			sub.addLocked(nextSeqno, changes)
 		}
+		w.recordLocked(changeSpan{
+			after:    w.baseSeqno,
+			afterRef: w.base.GetRef().CloneVT(),
+			seqno:    nextSeqno,
+			changes:  changes,
+		}, listChanges && err == nil)
 		prevRelease := w.baseRelease
 		w.base, w.baseSeqno, w.baseRelease = next, nextSeqno, nextRelease
 		locked.Unlock()
@@ -283,6 +309,41 @@ func (e *Engine) compareChangeWatchHeads(
 		changes, err = worldChangesWithKeys(ctx, beforeBcs, afterBcs, slices.Clone(keys), changeDiffLimit)
 	}
 	return keys, changes, err
+}
+
+// recordLocked records the span the watch compared when it listed the
+// changes, and otherwise forgets every span, since a span without its
+// ChangeSet breaks the chain from the earlier ones to the base. The caller
+// must hold bcast.
+func (w *engineChangeWatch) recordLocked(span changeSpan, listed bool) {
+	if !listed {
+		w.history = nil
+		return
+	}
+	if len(w.history) == changeWatchHeads {
+		w.history = slices.Delete(w.history, 0, 1)
+	}
+	w.history = append(w.history, span)
+}
+
+// changesSinceLocked merges the recorded ChangeSets from the head at after to
+// the base. It returns false when no recorded span starts at that head. The
+// caller must hold bcast.
+func (w *engineChangeWatch) changesSinceLocked(after uint64, afterRef *bucket.ObjectRef) (*world.ChangeSet, bool) {
+	// Find the span leaving the caller's head; a missed head needs a diff.
+	i := slices.IndexFunc(w.history, func(span changeSpan) bool {
+		return span.after == after && span.afterRef.EqualsRef(afterRef)
+	})
+	if i < 0 {
+		return nil, false
+	}
+
+	// Merge every later span up to the base.
+	var changes *world.ChangeSet
+	for _, span := range w.history[i:] {
+		changes = world.MergeChangeSets(changes, span.changes, changeDiffLimit)
+	}
+	return changes, true
 }
 
 // stopChangeWatchLocked detaches w so the next watcher starts a fresh watch,

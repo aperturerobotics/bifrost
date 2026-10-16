@@ -38,8 +38,10 @@ type changeSubscriber struct {
 // so they need no changelog. Calls coalesce while cb runs. cb must not modify
 // the ChangeSet, which other subscribers share.
 //
-// A subscriber that starts behind the change watch first compares the head at
-// afterSeqno against the published head. The Engine records the last
+// A subscriber that starts behind the change watch merges the ChangeSets the
+// watch recorded since the head at afterSeqno. When the watch did not record
+// that far back, it compares the head at afterSeqno against the published
+// head. The Engine records the last
 // changeWatchHeads heads it published, starting with the head it opened at, so
 // a recent afterSeqno is precise. Recording does not pin a head, so superseded
 // Worlds stay collectible, and a base the volume collected reports unknown
@@ -60,7 +62,16 @@ func (e *Engine) WatchChanges(
 		return err
 	}
 	w.subs[sub] = struct{}{}
-	watchSeqno := w.baseSeqno
+
+	// Catch up from the recorded ChangeSets when the change watch starts past
+	// afterSeqno and recorded every span since the head at afterSeqno.
+	caughtUp := afterSeqno >= w.baseSeqno
+	if base := e.watchedHeadLocked(afterSeqno); !caughtUp && base != nil {
+		var changes *world.ChangeSet
+		if changes, caughtUp = w.changesSinceLocked(afterSeqno, base.GetRef()); caughtUp {
+			sub.addLocked(w.baseSeqno, changes)
+		}
+	}
 	locked.Unlock()
 	defer func() {
 		locked := e.bcast.Lock()
@@ -69,8 +80,8 @@ func (e *Engine) WatchChanges(
 		locked.Unlock()
 	}()
 
-	// Catch up from afterSeqno when the change watch starts past it.
-	if afterSeqno < watchSeqno {
+	// Otherwise compare the head at afterSeqno with the published head.
+	if !caughtUp {
 		seqno, changes, err := e.catchUpChanges(ctx, afterSeqno)
 		if err != nil {
 			return err

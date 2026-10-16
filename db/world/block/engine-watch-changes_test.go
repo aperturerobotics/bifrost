@@ -171,6 +171,51 @@ func TestWatchChangesLive(t *testing.T) {
 	}
 }
 
+// TestWatchChangesRecorded checks that a subscriber starting behind a running
+// change watch receives exactly the changes the watch listed since its head.
+func TestWatchChangesRecorded(t *testing.T) {
+	// Keep a live subscriber so the change watch runs and lists each commit.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	e := newRetirementTestEngine(t, ctx)
+	ws := world.NewEngineWorldState(e, true)
+	after := headSeqno(t, ctx, e)
+	reported := make(chan uint64)
+	go func() {
+		_ = e.WatchChanges(ctx, after, func(seqno uint64, _ *world.ChangeSet) error {
+			select {
+			case reported <- seqno:
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		})
+	}()
+
+	// Commit three objects, each compared by the watch before the next.
+	keys := []string{"recorded/a", "recorded/b", "recorded/c"}
+	for _, key := range keys {
+		createWatchTestObject(t, ctx, ws, key)
+		want := headSeqno(t, ctx, e)
+		for seqno := uint64(0); seqno < want; {
+			select {
+			case seqno = <-reported:
+			case <-time.After(10 * time.Second):
+				t.Fatalf("watch did not report seqno %d", want)
+			}
+		}
+	}
+
+	// Expect a late subscriber from the first head to see all three.
+	_, changes := readChangeWindow(t, ctx, e, after)
+	if changes.Unknown {
+		t.Fatal("recorded changes are unknown")
+	}
+	if got := slices.Sorted(slices.Values(changes.Keys)); !slices.Equal(got, keys) {
+		t.Fatalf("changed keys %q, want %q", got, keys)
+	}
+}
+
 // TestWatchChangesEvicted checks that a watcher whose head the Engine no
 // longer retains sees unknown changes.
 func TestWatchChangesEvicted(t *testing.T) {
