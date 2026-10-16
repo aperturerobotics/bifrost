@@ -107,12 +107,16 @@ func exportLocalCDN(ctx context.Context, le *logrus.Entry, stateDir, distDir str
 		return err
 	}
 	defer w.Release()
+	key, _, err := crypto.GenerateEd25519Key(rand.Reader)
+	if err != nil {
+		return err
+	}
 	var metadata *release.ReleaseMetadata
 	err = world.ExecTransaction(ctx, w.Engine, true, func(ctx context.Context, ws world.WorldState) error {
 		var err error
 		metadata, err = publisher.StageChannel(ctx, ws, "spacewave/release/manifests", &release.ReleaseMetadata{
 			ProjectId: "spacewave", Version: "0.0.0-local", ChannelKey: "stable", Rev: 1,
-		})
+		}, key)
 		return err
 	})
 	if err != nil {
@@ -154,10 +158,6 @@ func exportLocalCDN(ctx context.Context, le *logrus.Entry, stateDir, distDir str
 
 	// Publish the pointer only after all immutable packs are available.
 	stateData, err := cdn_publish.EncodeHeadState(head)
-	if err != nil {
-		return err
-	}
-	key, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
 		return err
 	}

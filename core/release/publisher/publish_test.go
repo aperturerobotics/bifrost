@@ -3,6 +3,7 @@ package publisher
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +21,8 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/packfile"
 	"github.com/s4wave/spacewave/db/world"
+	"github.com/s4wave/spacewave/net/crypto"
+	"github.com/s4wave/spacewave/net/peer"
 	"github.com/sirupsen/logrus"
 )
 
@@ -95,14 +98,27 @@ func TestPublishPreservesRootAfterUploadFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Stage the release channel.
-	metadata, err := StageChannel(ctx, tx, manifestKey, &release.ReleaseMetadata{ProjectId: "test", Version: "0.1.0", ChannelKey: "alpha", Rev: 1})
+	// Stage the release channel; launchers stage only roots the release key signed.
+	releaseKey, _, err := crypto.GenerateEd25519Key(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
+	releasePeer, err := peer.IDFromPrivateKey(releaseKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadata, err := StageChannel(ctx, tx, manifestKey, &release.ReleaseMetadata{ProjectId: "test", Version: "0.1.0", ChannelKey: "alpha", Rev: 1}, releaseKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ref := range metadata.GetManifestRefs() {
+		if err := ref.VerifyReleaseAuthorization([]peer.ID{releasePeer}); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	// Staging a second channel must preserve the first channel's metadata ref.
-	if _, err := StageChannel(ctx, tx, manifestKey, &release.ReleaseMetadata{ProjectId: "test", Version: "0.2.0", ChannelKey: "beta", Rev: 2}); err != nil {
+	if _, err := StageChannel(ctx, tx, manifestKey, &release.ReleaseMetadata{ProjectId: "test", Version: "0.2.0", ChannelKey: "beta", Rev: 2}, releaseKey); err != nil {
 		t.Fatal(err)
 	}
 	_, _, err = world.AccessWorldObject(ctx, tx, ChannelDirectoryKey, false, func(cursor *block.Cursor) error {
@@ -163,7 +179,7 @@ func TestPublishPreservesRootAfterUploadFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tx.Discard()
-	metadata, err = StageChannel(ctx, tx, manifestKey, &release.ReleaseMetadata{ProjectId: "test", Version: "0.1.1", ChannelKey: "alpha", Rev: 3})
+	metadata, err = StageChannel(ctx, tx, manifestKey, &release.ReleaseMetadata{ProjectId: "test", Version: "0.1.1", ChannelKey: "alpha", Rev: 3}, releaseKey)
 	if err != nil {
 		t.Fatal(err)
 	}
