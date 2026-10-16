@@ -12,11 +12,11 @@ import (
 
 const (
 	// FSObjectTypeID is the type identifier for FSObject.
-	FSObjectTypeID = "unixfs/fs-object"
+	FSObjectTypeID = unixfs_block.FSObjectTypeID
 	// FSNodeTypeID is the type identifier for the FS node.
-	FSNodeTypeID = "unixfs/fs-node"
+	FSNodeTypeID = unixfs_block.FSNodeTypeID
 	// FSHostVolumeTypeID is the type identifier for the host volume FS node.
-	FSHostVolumeTypeID = "unixfs/fs-host-volume"
+	FSHostVolumeTypeID = unixfs_block.FSHostVolumeTypeID
 )
 
 // TypeIDToFSType converts a TypeID to a FSType.

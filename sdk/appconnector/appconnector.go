@@ -16,10 +16,6 @@ import (
 )
 
 const (
-	// AppConnectorTypeID is the type identifier for AppConnector objects.
-	AppConnectorTypeID = "spacewave/app-connector"
-	// AppSnapshotTypeID is the type identifier for AppSnapshot objects.
-	AppSnapshotTypeID = "spacewave/app-snapshot"
 	// DefaultPollIntervalMs is the poll interval applied by create paths.
 	DefaultPollIntervalMs uint32 = 60_000
 	// DefaultMaxBodyBytes is the response body limit applied by create paths.

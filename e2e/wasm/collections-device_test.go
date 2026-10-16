@@ -21,7 +21,6 @@ import (
 	session_controller "github.com/s4wave/spacewave/core/session/controller"
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_world_engine "github.com/s4wave/spacewave/core/sobject/world/engine"
-	space_world "github.com/s4wave/spacewave/core/space/world"
 	space_objecttypes "github.com/s4wave/spacewave/core/space/world/objecttypes"
 	space_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
 	blocktype_controller "github.com/s4wave/spacewave/db/blocktype/controller"
@@ -48,7 +47,7 @@ func mountPluginBuildDevice(t *testing.T, ctx context.Context, author *s4wave_se
 	// Root retention traverses every built-in Space object on this device.
 
 	// Register block types and the session controller.
-	releaseBlockTypes, err := tb.Bus.AddController(ctx, blocktype_controller.NewController(space_world.LookupBlockType), nil)
+	releaseBlockTypes, err := tb.Bus.AddController(ctx, blocktype_controller.NewController(space_optypes.LookupBlockType), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

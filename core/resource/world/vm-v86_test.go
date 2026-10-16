@@ -12,7 +12,7 @@ import (
 	"github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	resource_client "github.com/s4wave/spacewave/bldr/resource/client"
-	space_world "github.com/s4wave/spacewave/core/space/world"
+	space_world_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
 	blocktype_controller "github.com/s4wave/spacewave/db/blocktype/controller"
 	unixfs_v86fs "github.com/s4wave/spacewave/db/unixfs/v86fs"
 	unixfs_world "github.com/s4wave/spacewave/db/unixfs/world"
@@ -655,7 +655,7 @@ func TestVmV86TypedObject(t *testing.T) {
 	t.Run("V86ImageCatalogMetadataUnmarshal", func(t *testing.T) {
 
 		// newController blockTypeCtrl via blocktype_controller.
-		blockTypeCtrl := blocktype_controller.NewController(space_world.LookupBlockType)
+		blockTypeCtrl := blocktype_controller.NewController(space_world_optypes.LookupBlockType)
 		releaseBlockTypeCtrl, err := tb.Bus.AddController(ctx, blockTypeCtrl, nil)
 		if err != nil {
 			t.Fatalf("add block type controller: %v", err)

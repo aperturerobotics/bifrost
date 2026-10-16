@@ -5,14 +5,6 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 )
 
-// AptBuildSpecTypeID is the type identifier for AptBuildSpec objects.
-const AptBuildSpecTypeID = "spacewave-vm/apt/build-spec"
-
-// GetBlockTypeId returns the block type identifier.
-func (s *AptBuildSpec) GetBlockTypeId() string {
-	return AptBuildSpecTypeID
-}
-
 // Validate performs cursory checks on the AptBuildSpec.
 func (s *AptBuildSpec) Validate() error {
 	// Require the source package, source reference, and build configuration.

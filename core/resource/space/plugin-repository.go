@@ -203,7 +203,7 @@ func (r *SpaceResource) validatePluginRepository(ctx context.Context, ws world.W
 	if err != nil {
 		return "", nil, err
 	}
-	if objectType != git_world.GitWorktreeTypeID {
+	if objectType != git_world.WorktreeTypeID {
 		return "", nil, errors.New("fetch the plugin repository first")
 	}
 	head, err := git_world.LookupWorktreeHead(ctx, ws, worktreeKey, repoKey)

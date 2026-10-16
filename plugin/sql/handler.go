@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql/driver"
 
+	"github.com/aperturerobotics/common/typeid"
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	"github.com/s4wave/spacewave/db/block"
-	"github.com/s4wave/spacewave/db/blocktype"
 	"github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	s4wave_sql "github.com/s4wave/spacewave/db/sql"
@@ -263,7 +263,7 @@ func lookupSQLWorldOp(ctx context.Context, opTypeID string) (world.Operation, er
 	return sqlSchema.LookupOp(ctx, opTypeID)
 }
 
-// sqlSchema declares the SQL world operations.
+// sqlSchema declares the SQL world operations and block types.
 var sqlSchema = world.NewSchema(
 	s4wave_sql_world.WorldTypes,
 	s4wave_sql_query_world.WorldTypes,
@@ -271,26 +271,13 @@ var sqlSchema = world.NewSchema(
 	s4wave_sql_schema_world.WorldTypes,
 	s4wave_sql_table_view_world.WorldTypes,
 	s4wave_sql_workbench_world.WorldTypes,
+	s4wave_sql_query.QueryTypes,
+	s4wave_sql_query_result.QueryResultTypes,
+	s4wave_sql_schema.SchemaTypes,
+	s4wave_sql_table_view.TableViewTypes,
+	s4wave_sql_workbench.WorkbenchTypes,
+	[]typeid.Type{{ID: s4wave_sql_world.SqlDbTypeID, New: func() any { return new(sql_mysql.Root) }}},
 )
-
-func lookupSQLBlockType(typeID string) (blocktype.BlockType, error) {
-	switch typeID {
-	case s4wave_sql_world.SqlDbTypeID:
-		return blocktype.New[sql_mysql.Root](typeID), nil
-	case s4wave_sql_query.SqlQueryTypeID, s4wave_sql_query.SqlQueryBlockTypeID:
-		return s4wave_sql_query.SqlQueryBlockType, nil
-	case s4wave_sql_workbench.SqlWorkbenchTypeID, s4wave_sql_workbench.SqlWorkbenchBlockTypeID:
-		return s4wave_sql_workbench.SqlWorkbenchBlockType, nil
-	case s4wave_sql_query_result.SqlQueryResultTypeID:
-		return blocktype.New[s4wave_sql_query_result.QueryResult](typeID), nil
-	case s4wave_sql_schema.SqlSchemaTypeID:
-		return blocktype.New[s4wave_sql_schema.Schema](typeID), nil
-	case s4wave_sql_table_view.SqlTableViewTypeID:
-		return blocktype.New[s4wave_sql_table_view.TableView](typeID), nil
-	default:
-		return nil, nil
-	}
-}
 
 // SeedQuickstart seeds the SQL quickstart in the attached Space world.
 func (h *SQLHandler) SeedQuickstart(

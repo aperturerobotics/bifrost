@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	// ObjectLayoutTypeID is the type identifier for a ObjectLayout.
-	ObjectLayoutTypeID = "alpha/object-layout"
 	// ObjectLayoutComponentID is the component identifier for displaying an ObjectLayout.
 	ObjectLayoutComponentID = "alpha/object-layout"
 )

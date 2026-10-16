@@ -8,9 +8,6 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 )
 
-// DeviceTypeID is the type identifier for Spacewave-managed Device objects.
-const DeviceTypeID = "spacewave/device"
-
 const (
 	// DeviceCapabilityKindFilesystem identifies filesystem access exposed by a Device.
 	DeviceCapabilityKindFilesystem = "filesystem"

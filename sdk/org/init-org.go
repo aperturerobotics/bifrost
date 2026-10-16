@@ -56,7 +56,7 @@ func (o *InitOrganizationOp) ApplyWorldOp(
 	}
 
 	// Register the organization type on the new World object.
-	if err := world_types.SetObjectType(ctx, ws, objKey, OrganizationTypeID); err != nil {
+	if err := world_types.SetObjectType(ctx, ws, objKey, OrgStateTypeID); err != nil {
 		return true, err
 	}
 

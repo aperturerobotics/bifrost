@@ -16,9 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// WasiVmPackageTypeID is the type identifier for WasiVmPackage objects.
-const WasiVmPackageTypeID = "vm/package/wasivm"
-
 // Graph predicates linking a WasiVmPackage to its layers and dependencies, and
 // a WasiVmImage to the packages it asks for.
 var (
@@ -37,11 +34,6 @@ var (
 // dev.
 func WasiVmPackageKey(name, version string) string {
 	return "wasivm-pkg/" + name + "/" + version
-}
-
-// GetBlockTypeId returns the block type identifier.
-func (p *WasiVmPackage) GetBlockTypeId() string {
-	return WasiVmPackageTypeID
 }
 
 // Validate performs cursory checks on the WasiVmPackage.

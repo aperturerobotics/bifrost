@@ -13,9 +13,6 @@ import (
 )
 
 const (
-	// JobTypeID is the type identifier for a Job.
-	JobTypeID = "forge/job"
-
 	// PredJobToTask is the predicate linking Job to a Task.
 	PredJobToTask = quad.IRI("forge/job-task")
 )

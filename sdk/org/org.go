@@ -7,9 +7,6 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 )
 
-// OrganizationTypeID is the type identifier for organization objects.
-const OrganizationTypeID = "spacewave/organization"
-
 // OrgBodyType is the SharedObject body type for organization SOs.
 const OrgBodyType = "organization"
 

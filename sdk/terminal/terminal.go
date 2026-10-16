@@ -9,9 +9,6 @@ import (
 	"github.com/s4wave/spacewave/net/protocol"
 )
 
-// TerminalTypeID is the type identifier for remote Terminal objects.
-const TerminalTypeID = "spacewave/terminal"
-
 // RemoteShellProtocolID is the Bifrost protocol used for PTY-backed terminals.
 const RemoteShellProtocolID = protocol.ID("alpha/remote-shell/v0")
 
@@ -58,9 +55,13 @@ func (t *Terminal) Validate() error {
 // terminalTargetSource is the field set that identifies a terminal target.
 // Both Terminal and CreateTerminalOp expose these getters.
 type terminalTargetSource interface {
+	// GetTargetKind returns the explicit target kind, if any.
 	GetTargetKind() TerminalTargetKind
+	// GetSshHostObjectKey returns the SSH Host object key, if any.
 	GetSshHostObjectKey() string
+	// GetDeviceObjectKey returns the Device object key, if any.
 	GetDeviceObjectKey() string
+	// GetDevicePeerId returns the Device peer ID, if any.
 	GetDevicePeerId() string
 }
 

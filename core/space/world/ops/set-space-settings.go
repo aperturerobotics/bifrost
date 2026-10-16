@@ -128,7 +128,7 @@ func (o *SetSpaceSettingsOp) ApplyWorldOp(
 	}
 
 	// Mark the object as SpaceSettings.
-	spaceSettingsTypeID := space_world.SpaceSettingsBlockType.GetBlockTypeID()
+	spaceSettingsTypeID := space_world.SpaceSettingsTypeID
 	if err := world_types.SetObjectType(ctx, worldHandle, objKey, spaceSettingsTypeID); err != nil {
 		return false, err
 	}

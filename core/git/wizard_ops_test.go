@@ -62,7 +62,7 @@ func TestCreateGitRepoWizardOpCreatesTypedRepo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetObjectType: %v", err)
 	}
-	if worktreeType != git_world.GitWorktreeTypeID {
-		t.Fatalf("expected worktree type %q, got %q", git_world.GitWorktreeTypeID, worktreeType)
+	if worktreeType != git_world.WorktreeTypeID {
+		t.Fatalf("expected worktree type %q, got %q", git_world.WorktreeTypeID, worktreeType)
 	}
 }

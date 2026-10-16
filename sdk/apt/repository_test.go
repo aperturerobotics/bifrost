@@ -26,9 +26,6 @@ func TestAptRepositoryTypeIDAndBlock(t *testing.T) {
 		Architectures: []string{"i386"},
 		IndexRef:      &bucket.ObjectRef{RootRef: indexRef},
 	}
-	if got := repo.GetBlockTypeId(); got != AptRepositoryTypeID {
-		t.Fatalf("AptRepository block type = %q, want %q", got, AptRepositoryTypeID)
-	}
 	if err := repo.Validate(); err != nil {
 		t.Fatalf("Validate: %v", err)
 	}

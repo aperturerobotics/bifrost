@@ -5,14 +5,6 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 )
 
-// AptPackageTypeID is the type identifier for AptPackage objects.
-const AptPackageTypeID = "spacewave-vm/apt/package"
-
-// GetBlockTypeId returns the block type identifier.
-func (p *AptPackage) GetBlockTypeId() string {
-	return AptPackageTypeID
-}
-
 // Validate performs cursory checks on the AptPackage.
 func (p *AptPackage) Validate() error {
 	// Validate the package identity, archive reference, and checksums.

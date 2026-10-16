@@ -20,9 +20,6 @@ import (
 )
 
 const (
-	// PassTypeID is the type identifier for a Pass.
-	PassTypeID = "forge/pass"
-
 	// PredPassToExecution is the predicate linking Pass to a Execution.
 	PredPassToExecution = quad.IRI("forge/pass-execution")
 
@@ -310,7 +307,7 @@ func (e *Pass) ApplyBlockRef(id uint32, ptr *block.BlockRef) error {
 
 // GetBlockRefs returns all block references by ID.
 // May return nil, and values may also be nil.
-// Note: this does not include pending references (in a cursor)
+// Note: this does not include pending references (in a cursor).
 func (e *Pass) GetBlockRefs() (map[uint32]*block.BlockRef, error) {
 	m := make(map[uint32]*block.BlockRef)
 	m[3] = e.GetTargetRef()
@@ -351,7 +348,7 @@ func ComputeOutputsWithStates(outputs []*forge_target.Output, execStates []*Exec
 }
 
 // ApplyExecStates updates the exec states field with the list of Executions.
-// bcs can be nil
+// bcs can be nil.
 func (e *Pass) ApplyExecStates(
 	bcs *block.Cursor,
 	execObjKeys []string,

@@ -1,65 +1,54 @@
-package space_world_test
+package optypes
 
 import (
-	"context"
+	"reflect"
 	"testing"
 
 	space_world "github.com/s4wave/spacewave/core/space/world"
+	"github.com/s4wave/spacewave/db/block"
+	"github.com/s4wave/spacewave/db/block/byteslice"
+	s4wave_sql_query "github.com/s4wave/spacewave/sdk/sql/query"
+	s4wave_sql_workbench "github.com/s4wave/spacewave/sdk/sql/workbench"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
+	s4wave_wizard "github.com/s4wave/spacewave/sdk/world/wizard"
 )
 
-// TestLookupBlockTypeSpaceSettings resolves persisted settings by their block ID.
-func TestLookupBlockTypeSpaceSettings(t *testing.T) {
-	// Resolve the persisted Space settings block type.
-	got, err := space_world.LookupBlockType(context.Background(), "space/settings")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify the registered block type constructs SpaceSettings.
-	if got == nil {
-		t.Fatal("space/settings block type was not found")
-	}
-	if got.GetBlockTypeID() != "space/settings" {
-		t.Fatalf("block type ID = %q, want space/settings", got.GetBlockTypeID())
-	}
-	if _, ok := got.Constructor().(*space_world.SpaceSettings); !ok {
-		t.Fatal("space/settings constructor did not return SpaceSettings")
-	}
-}
-
-// TestLookupBlockTypeExcludesSQL checks that core does not own the SQL plugin's
-// block types. They resolve through the sql plugin's LookupBlockType directive
-// handler, so keeping them out of the core lookup is what keeps the sql
-// packages out of the core goscript build closure.
-func TestLookupBlockTypeExcludesSQL(t *testing.T) {
-	ctx := context.Background()
-	for _, typeID := range []string{
-		"github.com/s4wave/spacewave/sdk/sql/query.Query",
-		"github.com/s4wave/spacewave/sdk/sql/workbench.Workbench",
+// TestLookupBlockType checks that the Space schema constructs the core block
+// types by their stored IDs.
+//
+// VM images resolve in core because the CDN catalog Space that lists them is
+// mounted without plugins. The SQL roots resolve only through the SQL plugin,
+// which keeps the SQL packages out of the core GoScript build.
+func TestLookupBlockType(t *testing.T) {
+	for _, tc := range []struct {
+		typeID string
+		want   block.Block
+	}{
+		{space_world.SpaceSettingsTypeID, (*space_world.SpaceSettings)(nil)},
+		{"github.com/s4wave/spacewave/core/space/world.SpaceSettings", (*space_world.SpaceSettings)(nil)},
+		{s4wave_vm.V86ImageTypeID, (*s4wave_vm.V86Image)(nil)},
+		{s4wave_vm.WasiVmImageTypeID, (*s4wave_vm.WasiVmImage)(nil)},
+		{"sync/app/notes", (*byteslice.ByteSlice)(nil)},
+		{"wizard/git", (*s4wave_wizard.WizardState)(nil)},
+		{s4wave_sql_query.SqlQueryTypeID, nil},
+		{s4wave_sql_workbench.SqlWorkbenchTypeID, nil},
 	} {
-		got, err := space_world.LookupBlockType(ctx, typeID)
+		// Resolve the block type, then check its identity and constructor.
+		got, err := LookupBlockType(t.Context(), tc.typeID)
 		if err != nil {
-			t.Fatalf("LookupBlockType(%s): %v", typeID, err)
+			t.Fatalf("LookupBlockType(%s): %v", tc.typeID, err)
 		}
-		if got != nil {
-			t.Fatalf("LookupBlockType(%s) = %T, want nil", typeID, got)
+		if tc.want == nil {
+			if got != nil {
+				t.Fatalf("LookupBlockType(%s) = %v, want nil", tc.typeID, got)
+			}
+			continue
 		}
-	}
-}
-
-// TestLookupBlockTypeVmImages checks that core resolves the published VM image
-// types. The CDN catalog Space that lists them is mounted without plugins, so
-// no plugin handler can answer for them there.
-func TestLookupBlockTypeVmImages(t *testing.T) {
-	ctx := context.Background()
-	for _, typeID := range []string{s4wave_vm.V86ImageTypeID, s4wave_vm.WasiVmImageTypeID} {
-		got, err := space_world.LookupBlockType(ctx, typeID)
-		if err != nil {
-			t.Fatalf("LookupBlockType(%s): %v", typeID, err)
+		if got == nil || got.GetBlockTypeID() != tc.typeID {
+			t.Fatalf("LookupBlockType(%s) = %v, want its block type", tc.typeID, got)
 		}
-		if got == nil || got.GetBlockTypeID() != typeID {
-			t.Fatalf("LookupBlockType(%s) = %v, want its block type", typeID, got)
+		if blk := got.Constructor(); reflect.TypeOf(blk) != reflect.TypeOf(tc.want) {
+			t.Fatalf("LookupBlockType(%s) constructs %T, want %T", tc.typeID, blk, tc.want)
 		}
 	}
 }

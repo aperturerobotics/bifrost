@@ -20,7 +20,7 @@ const (
 	// KeypairPrefix is the prefix applied to the keypair peer id.
 	KeypairPrefix = "kp/"
 	// KeypairTypeID is the type identifier for a Keypair.
-	KeypairTypeID = "identity/keypair"
+	KeypairTypeID = identity.KeypairTypeID
 
 	// PredObjectToKeypair links any object to a Keypair.
 	// The meaning of the link is source-specific.
@@ -124,7 +124,7 @@ func LookupKeypairs(ctx context.Context, w world.WorldState, objKeys []string) (
 }
 
 // CollectAllKeypairs collects all Keypair states located in the store.
-// returns list of entities and object keys
+// Returns the keypairs and their object keys.
 func CollectAllKeypairs(ctx context.Context, w world.WorldState) ([]*identity.Keypair, []string, error) {
 	// Collect and sort the object keys for stored keypairs.
 	var objKeys []string
@@ -147,7 +147,7 @@ func CollectAllKeypairs(ctx context.Context, w world.WorldState) ([]*identity.Ke
 }
 
 // ListKeypairEntities lists all Entity that link to the given keypairs.
-// returns list of object keys
+// Returns the entity object keys.
 func ListKeypairEntities(ctx context.Context, w world.WorldState, keypairKeys ...string) ([]string, error) {
 	return world.CollectPathWithKeys(
 		ctx,
@@ -163,7 +163,7 @@ func ListKeypairEntities(ctx context.Context, w world.WorldState, keypairKeys ..
 }
 
 // CollectKeypairEntities collects all Entity linking to the keypairs.
-// returns list of Entities and object keys
+// Returns the entities and their object keys.
 func CollectKeypairEntities(ctx context.Context, w world.WorldState, keypairKeys ...string) ([]*identity.Entity, []string, error) {
 	// Find the entity objects linked to the selected keypairs.
 	objKeys, err := ListKeypairEntities(ctx, w, keypairKeys...)
@@ -180,7 +180,7 @@ func CollectKeypairEntities(ctx context.Context, w world.WorldState, keypairKeys
 }
 
 // ListKeypairLinks collects all Object linking directly to the Keypair.
-// returns list of object keys
+// Returns the linking object keys.
 func ListKeypairLinks(ctx context.Context, w world.WorldState, keypairKeys ...string) ([]string, error) {
 	return world.CollectGraphPathStepWithKeys(
 		ctx,
@@ -205,7 +205,7 @@ func ListObjectKeypairs(ctx context.Context, w world.WorldState, objectKeys ...s
 }
 
 // CollectObjectKeypairs collects all Keypair linked to by the given Objects.
-// returns list of Keypair
+// Returns the keypairs and their object keys.
 func CollectObjectKeypairs(ctx context.Context, w world.WorldState, objectKeys ...string) ([]*identity.Keypair, []string, error) {
 	// Find the keypair objects linked to the selected objects.
 	kpObjectKeys, err := ListEntityKeypairs(ctx, w, objectKeys...)

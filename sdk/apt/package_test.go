@@ -48,9 +48,6 @@ func TestAptPackageTypeIDPredicatesAndBlock(t *testing.T) {
 		},
 		DebRef: ref,
 	}
-	if got := pkg.GetBlockTypeId(); got != AptPackageTypeID {
-		t.Fatalf("AptPackage block type = %q, want %q", got, AptPackageTypeID)
-	}
 	if err := pkg.Validate(); err != nil {
 		t.Fatalf("Validate: %v", err)
 	}

@@ -56,7 +56,7 @@ func TestBuiltInHandlersDecodeAndSerializePopulatedWorldPayloads(t *testing.T) {
 		{"layout", s4wave_layout_world.ObjectLayoutTypeID, s4wave_layout_world.NewObjectLayoutBlock()},
 		{"unixfs", s4wave_unixfs_world.UnixFSTypeID, unixfs_block.NewFSNodeBlock()},
 		{"git-repo", git_world.GitRepoTypeID, git_block.NewRepo()},
-		{"git-worktree", git_world.GitWorktreeTypeID, git_world.NewWorktreeBlock()},
+		{"git-worktree", git_world.WorktreeTypeID, git_world.NewWorktreeBlock()},
 		{"canvas", s4wave_canvas_world.CanvasTypeID, s4wave_canvas.NewCanvasStorage()},
 		{"kv", s4wave_kv_world.KvStoreTypeID, kvtx_block.NewKeyValueStore(0)},
 		{"cluster", forge_cluster.ClusterTypeID, forge_cluster.NewClusterBlock()},
@@ -382,13 +382,15 @@ func TestFlowgraphHandlerRewritesTargetAndPlacementIdentities(t *testing.T) {
 }
 
 func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
-	// Store a run that references its Flowgraph, Job, and Tasks.
+	// Start the World testbed.
 	ctx := context.Background()
 	tb, err := world_testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tb.Release()
+
+	// Store a run that references its Flowgraph, Job, and Tasks.
 	run := &s4wave_flowgraph.FlowgraphRun{
 		FlowgraphKey:      "graph",
 		FlowgraphRevision: 7,
@@ -408,6 +410,8 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 		Visits: map[string]*s4wave_flowgraph.FlowgraphVisits{"step": {Count: 1, Spend: 3}},
 	}
 	setObjectBlock(t, ctx, tb.WorldState, "run", s4wave_flowgraph.FlowgraphRunTypeID, run)
+
+	// Look up the built-in Flowgraph run handler.
 	object := &space_migration.ObjectDescriptor{ObjectKey: "run", ObjectType: s4wave_flowgraph.FlowgraphRunTypeID, World: tb.WorldState}
 	registry, err := space_migration.BuiltInRegistry()
 	if err != nil {
@@ -443,11 +447,13 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job/task-0-destination"},
 	})
 
-	// Verify the payload carries the destination keys and keeps the rest.
+	// Decode the rewritten payload.
 	var rewritten s4wave_flowgraph.FlowgraphRun
 	if err := rewritten.UnmarshalVT(result.Payload); err != nil {
 		t.Fatal(err)
 	}
+
+	// Verify the payload carries the destination keys and keeps the rest.
 	want := run.CloneVT()
 	want.FlowgraphKey = "graph-destination"
 	want.JobKey = "run/job-destination"
@@ -475,7 +481,7 @@ func TestGitWorktreeLinksAreOwnedThroughRegistryAndPlanner(t *testing.T) {
 
 	// Populate Git repository, worktree, and workdir objects with graph links.
 	setObjectBlock(t, ctx, source.WorldState, "repo", git_world.GitRepoTypeID, git_block.NewRepo())
-	setObjectBlock(t, ctx, source.WorldState, "worktree", git_world.GitWorktreeTypeID, &git_world.Worktree{
+	setObjectBlock(t, ctx, source.WorldState, "worktree", git_world.WorktreeTypeID, &git_world.Worktree{
 		HeadRefStore: &git_world.HeadRefStore{SubmoduleName: "main"},
 	})
 	setObjectBlock(t, ctx, source.WorldState, "workdir", s4wave_unixfs_world.UnixFSTypeID, &unixfs_block.FSNode{
@@ -497,7 +503,7 @@ func TestGitWorktreeLinksAreOwnedThroughRegistryAndPlanner(t *testing.T) {
 	}
 	worktree := &space_migration.ObjectDescriptor{
 		ObjectKey:  "worktree",
-		ObjectType: git_world.GitWorktreeTypeID,
+		ObjectType: git_world.WorktreeTypeID,
 		World:      source.WorldState,
 		GraphReferences: []string{
 			"<worktree>", git_world.GitRepoPred, "<repo>", "",
@@ -527,7 +533,7 @@ func TestGitWorktreeLinksAreOwnedThroughRegistryAndPlanner(t *testing.T) {
 	mapping := space_migration.NewIdentityMap()
 	mapping.ObjectKeys["repo"] = "repo-destination"
 	mapping.ObjectKeys["workdir"] = "workdir-destination"
-	rewrite, err := registry.Lookup(git_world.GitWorktreeTypeID).Rewrite(ctx, worktree, mapping)
+	rewrite, err := registry.Lookup(git_world.WorktreeTypeID).Rewrite(ctx, worktree, mapping)
 	if err != nil {
 		t.Fatalf("Registry.Rewrite(worktree): %v", err)
 	}

@@ -9,8 +9,6 @@ import (
 )
 
 const (
-	// SshHostTypeID is the type identifier for SSH-only Host objects.
-	SshHostTypeID = "spacewave/ssh-host"
 	// DefaultSshPort is the default SSH port applied by create paths.
 	DefaultSshPort uint32 = 22
 )

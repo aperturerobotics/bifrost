@@ -13,7 +13,7 @@ import (
 )
 
 // OrganizationTypeID is the type identifier for organization objects.
-const OrganizationTypeID = s4wave_org.OrganizationTypeID
+const OrganizationTypeID = s4wave_org.OrgStateTypeID
 
 // OrganizationType is the ObjectType for organization objects.
 var OrganizationType = objecttype.NewObjectType(OrganizationTypeID, orgFactory)

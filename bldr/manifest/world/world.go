@@ -27,12 +27,12 @@ const (
 	// ManifestStoreTypeID is the type identifier for a ManifestStore.
 	ManifestStoreTypeID = "bldr/manifest-store"
 	// ManifestTypeID is the type identifier for a Manifest.
-	ManifestTypeID = "bldr/manifest"
+	ManifestTypeID = bldr_manifest.ManifestTypeID
 	// ManifestRefTypeID is the type identifier for a ManifestRef that carries
 	// a release authorization of the Manifest it references.
 	ManifestRefTypeID = "bldr/manifest-ref"
 	// ManifestBundleTypeID is the type identifier for a ManifestBundle.
-	ManifestBundleTypeID = "bldr/manifest-bundle"
+	ManifestBundleTypeID = bldr_manifest.ManifestBundleTypeID
 
 	// PredManifest is the predicate linking to a manifest.
 	//

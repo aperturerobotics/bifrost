@@ -9,7 +9,7 @@ import (
 )
 
 // SqlSchemaTypeID is the world ObjectType id for SQL schemas.
-const SqlSchemaTypeID = "sql/schema"
+const SqlSchemaTypeID = SchemaTypeID
 
 // ReadSchemaRoot reads a SQL schema object's root.
 func ReadSchemaRoot(ctx context.Context, ws world.WorldState, objectKey string) (*Schema, error) {

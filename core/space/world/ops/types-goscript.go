@@ -12,9 +12,10 @@ import (
 	identity_world "github.com/s4wave/spacewave/identity/world"
 )
 
-// buildTypes lists the operations of the GoScript build.
+// buildTypes lists the types of the GoScript build.
 //
-// GoScript Spaces apply only the Git operations that create a repository.
+// GoScript Spaces apply only the Git operations that create a repository,
+// and read Git worktrees.
 // The wizard operation is constructed through the deferred core/git
 // boundary, so the Git package loads only when that operation is applied.
 var buildTypes = slices.Concat(
@@ -22,6 +23,7 @@ var buildTypes = slices.Concat(
 		{ID: git_world.GitInitOpTypeID, New: func() any { return new(git_world.GitInitOp) }},
 		{ID: git_world.GitCreateWorktreeOpTypeID, New: func() any { return new(git_world.GitCreateWorktreeOp) }},
 		{ID: opids.CreateRepoWizard, New: s4wave_git.NewCreateGitRepoWizardOp},
+		{ID: git_world.WorktreeTypeID, New: func() any { return new(git_world.Worktree) }},
 	},
 	identity_world.WorldTypes,
 )

@@ -12,7 +12,7 @@ import (
 
 const (
 	// ManifestBuildResultTypeID is the type identifier for Manifest build provenance.
-	ManifestBuildResultTypeID = "bldr/manifest-build-result"
+	ManifestBuildResultTypeID = bldr_manifest_builder.BuilderResultTypeID
 )
 
 // ManifestBuildResultKey returns the world object key for a Manifest build result.

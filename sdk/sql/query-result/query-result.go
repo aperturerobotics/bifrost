@@ -9,7 +9,7 @@ import (
 )
 
 // SqlQueryResultTypeID is the world ObjectType id for SQL query results.
-const SqlQueryResultTypeID = "sql/query-result"
+const SqlQueryResultTypeID = QueryResultTypeID
 
 // ReadQueryResultRoot reads a SQL query result object's root.
 func ReadQueryResultRoot(ctx context.Context, ws world.WorldState, objectKey string) (*QueryResult, error) {
