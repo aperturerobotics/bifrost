@@ -2422,7 +2422,7 @@
       ]
     },
     "github.com/s4wave/spacewave/db/volume/browser": {
-      "hash": "356b699736fbc656635972c940e2cb08628bb928368c271ea44c4e9e2e55ec13",
+      "hash": "d39ebc0fcf2c994b61c216ebffcb8cd9b14656ee4168db455c6e6c63620b53c2",
       "generatedFiles": [
         "db/volume/browser/browser.pb.go",
         "db/volume/browser/browser.pb.ts"

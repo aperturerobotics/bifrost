@@ -161,7 +161,7 @@ func checkDevices(present bool) error {
 
 // openVolume opens the browser volume name.
 func openVolume(ctx context.Context, name string) (*volume_browser.Volume, error) {
-	return volume_browser.NewVolume(ctx, nil, &volume_browser.Config{
+	return volume_browser.NewVolume(ctx, &volume_browser.Config{
 		Name:        name,
 		StoreConfig: &store_kvtx.Config{},
 	})

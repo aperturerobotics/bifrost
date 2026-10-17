@@ -41,10 +41,6 @@ type Volume struct {
 	kvKey *store_kvkey.KVKey
 	// refGraph is the volume's GC reference graph.
 	refGraph block_gc.RefGraphOps
-	// walAppender is the optional WAL appender for deferred GC updates.
-	walAppender block_gc.WALAppender
-	// gcManagerHooks are the optional WAL-backed GC manager hooks.
-	gcManagerHooks *block_gc.ManagerHooks
 	// statsFn returns storage stats, may be nil.
 	statsFn StatsFn
 	// statsBcast wakes watchers when storage stats may have changed.
@@ -460,18 +456,6 @@ func (v *Volume) EndDeferFlush(ctx context.Context) error {
 	return nil
 }
 
-// GetWALAppender returns the volume's WAL appender, if any.
-// When non-nil, GCStoreOps should use this for FlushPending instead
-// of calling ApplyRefBatch on the RefGraph directly.
-func (v *Volume) GetWALAppender() block_gc.WALAppender {
-	return v.walAppender
-}
-
-// SetWALAppender sets the WAL appender on the volume.
-func (v *Volume) SetWALAppender(wal block_gc.WALAppender) {
-	v.walAppender = wal
-}
-
 // Maintenance lets a BlockDomain reclaim the space of removed blocks. Any
 // other store reclaims it as it deletes their records.
 func (v *Volume) Maintenance(ctx context.Context) error {
@@ -479,19 +463,6 @@ func (v *Volume) Maintenance(ctx context.Context) error {
 		return domain.Maintenance(ctx)
 	}
 	return nil
-}
-
-// GetGCManagerHooks returns the volume's WAL-backed GC manager hooks, if any.
-func (v *Volume) GetGCManagerHooks() (block_gc.ManagerHooks, bool) {
-	if v.gcManagerHooks == nil {
-		return block_gc.ManagerHooks{}, false
-	}
-	return *v.gcManagerHooks, true
-}
-
-// SetGCManagerHooks stores the WAL-backed GC manager hooks on the volume.
-func (v *Volume) SetGCManagerHooks(hooks block_gc.ManagerHooks) {
-	v.gcManagerHooks = &hooks
 }
 
 // Close closes the volume, returning any errors.

@@ -7,7 +7,6 @@ import (
 	"syscall/js"
 
 	block "github.com/s4wave/spacewave/db/block"
-	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	"github.com/s4wave/spacewave/db/kvtx"
 	"github.com/s4wave/spacewave/db/volume/workload"
 )
@@ -126,46 +125,6 @@ func (t t2Target) RmBlock(ctx context.Context, ref *block.BlockRef) error {
 // Sync syncs in one round trip.
 func (t t2Target) Sync(ctx context.Context) (bool, error) {
 	return t2Ops{StoreOps: t.Target, relay: t.relay}.Sync(ctx)
-}
-
-// AppendJournal journals in one round trip.
-func (t t2Target) AppendJournal(ctx context.Context, adds, removes []block_gc.RefEdge) error {
-	if err := t.relay.hop(ctx, edgeBytes(adds, removes), 0); err != nil {
-		return err
-	}
-	return t.Target.AppendJournal(ctx, adds, removes)
-}
-
-// AppendJournalOrdered journals with write ordering in one round trip when
-// the engine supports it.
-func (t t2Target) AppendJournalOrdered(ctx context.Context, adds, removes []block_gc.RefEdge) error {
-	oj, ok := t.Target.(workload.OrderedJournal)
-	if !ok {
-		return t.AppendJournal(ctx, adds, removes)
-	}
-	if err := t.relay.hop(ctx, edgeBytes(adds, removes), 0); err != nil {
-		return err
-	}
-	return oj.AppendJournalOrdered(ctx, adds, removes)
-}
-
-// ReplayJournal replays the journal in one round trip.
-func (t t2Target) ReplayJournal(ctx context.Context, apply func(adds, removes []block_gc.RefEdge) error) error {
-	if err := t.relay.hop(ctx, 0, 0); err != nil {
-		return err
-	}
-	return t.Target.ReplayJournal(ctx, apply)
-}
-
-// edgeBytes approximates the encoded size of journaled edges.
-func edgeBytes(adds, removes []block_gc.RefEdge) int {
-	var n int
-	for _, edges := range [][]block_gc.RefEdge{adds, removes} {
-		for _, e := range edges {
-			n += len(e.Subject) + len(e.Object)
-		}
-	}
-	return n
 }
 
 // t2Ops is block store operations reached through a relay.

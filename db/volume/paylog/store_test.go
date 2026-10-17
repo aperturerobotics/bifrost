@@ -13,18 +13,14 @@ import (
 	"time"
 
 	"github.com/s4wave/spacewave/db/block"
-	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	"github.com/s4wave/spacewave/db/s4db"
 	"github.com/s4wave/spacewave/db/volume/device"
 	"github.com/s4wave/spacewave/db/volume/logindex"
 	"github.com/s4wave/spacewave/db/volume/workload"
 )
 
-// _ checks that a Store serves a replay with ordered journal appends.
-var (
-	_ workload.Target         = (*Store)(nil)
-	_ workload.OrderedJournal = (*Store)(nil)
-)
+// _ checks that a Store serves a replay.
+var _ workload.Target = (*Store)(nil)
 
 // engine opens an index on a device.
 type engine struct {
@@ -71,7 +67,7 @@ func openStore(t *testing.T, e engine, d device.Device) *Store {
 }
 
 // TestStore checks interleaved write transactions, block publication by a
-// key-value commit, removes, the journal, and reopening on every engine.
+// key-value commit, removes, and reopening on every engine.
 func TestStore(t *testing.T) {
 	for _, e := range engines {
 		t.Run(e.name, func(t *testing.T) { testStore(t, e) })
@@ -163,15 +159,7 @@ func testStore(t *testing.T, e engine) {
 		t.Fatalf("duplicate put: existed %v, err %v", existed, err)
 	}
 
-	// Journal two entries.
-	edge := []block_gc.RefEdge{{Subject: "s", Object: "o"}}
-	for range 2 {
-		if err := s.AppendJournal(ctx, edge, nil); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// Reopen and check the key-value store, the blocks, and the journal.
+	// Reopen and check the key-value store and the blocks.
 	if err := s.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -195,19 +183,6 @@ func testStore(t *testing.T, e engine) {
 	}
 	if exists(gone) || exists(doomed) || !exists(owned) {
 		t.Fatal("blocks changed by reopening")
-	}
-
-	// Verify the reopened journal replays both recorded edges.
-	var replayed int
-	err = s.ReplayJournal(ctx, func(adds, removes []block_gc.RefEdge) error {
-		if len(adds) != 1 || adds[0] != edge[0] || len(removes) != 0 {
-			t.Fatalf("replayed %v %v", adds, removes)
-		}
-		replayed++
-		return nil
-	})
-	if err != nil || replayed != 2 {
-		t.Fatalf("replayed %d entries, err %v", replayed, err)
 	}
 }
 
@@ -276,24 +251,19 @@ func replayTrace(t *testing.T, e engine, path string, ordered bool, fillBlocks, 
 	written := d.snapshot().sub(seeded)
 	stored := result.BlockBytes + result.ValueBytes
 
-	// Reopen and recover the volume.
+	// Reopen the volume.
 	if err := target.Close(); err != nil {
 		t.Fatal(err)
 	}
 	openStart := time.Now()
-	reopened := openStore(t, e, d)
+	openStore(t, e, d)
 	openTime := time.Since(openStart)
-	recoverStart := time.Now()
-	if err := reopened.ReplayJournal(ctx, workload.DiscardJournal); err != nil {
-		t.Fatal(err)
-	}
-	recoverTime := time.Since(recoverStart)
 
 	// Report.
 	t.Logf("fill %d blocks of %d B in %s: %s", fillBlocks, fillSize, fillTime.Round(time.Millisecond), fill)
 	t.Logf("records %d", result.Ops)
 	t.Logf("wall %s, commit errors %d, ordered commits %d", result.Wall.Round(time.Microsecond), result.CommitErrors, result.OrderedCommits)
-	for _, op := range []workload.Op{workload.OpCommit, workload.OpSync, workload.OpPutBatch, workload.OpPut, workload.OpGetBlock, workload.OpJournalAppend, workload.OpJournalReplay} {
+	for _, op := range []workload.Op{workload.OpCommit, workload.OpSync, workload.OpPutBatch, workload.OpPut, workload.OpGetBlock} {
 		if n := len(result.Latency[op]); n != 0 {
 			t.Logf("%-15s n %4d  p50 %9s  p99 %9s", op, n, result.Percentile(op, 0.5).Round(time.Microsecond), result.Percentile(op, 0.99).Round(time.Microsecond))
 		}
@@ -302,7 +272,7 @@ func replayTrace(t *testing.T, e engine, path string, ordered bool, fillBlocks, 
 	if stored != 0 {
 		t.Logf("written %d B for %d B stored (%.2fx)", written.bytes, stored, float64(written.bytes)/float64(stored))
 	}
-	t.Logf("open %s, recover %s", openTime.Round(time.Microsecond), recoverTime.Round(time.Microsecond))
+	t.Logf("open %s", openTime.Round(time.Microsecond))
 }
 
 // countingDevice counts the writes and flushes made through a device.

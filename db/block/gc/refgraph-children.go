@@ -69,8 +69,7 @@ func encodeChildren(children []string) []byte {
 }
 
 // addChildrenTx adds children to the child list of block, creating the list
-// when it is missing, and records the nodes in a collector graph's inventory.
-// The list is written only when it changes.
+// when it is missing. The list is written only when it changes.
 func (g *RefGraph) addChildrenTx(ctx context.Context, tx kvtx.TxOps, block string, children []string) error {
 	// Merge the children into the stored list.
 	stored, found, err := readChildrenTx(ctx, tx, block)
@@ -84,14 +83,6 @@ func (g *RefGraph) addChildrenTx(ctx context.Context, tx kvtx.TxOps, block strin
 		return nil
 	}
 
-	// Record the nodes in the inventory of a collector graph.
-	if g.inventory {
-		for _, node := range append([]string{block}, children...) {
-			if err := tx.Set(ctx, graphKey(kindNode, node), nil); err != nil {
-				return err
-			}
-		}
-	}
 	return tx.Set(ctx, graphKey(kindChildren, block), encodeChildren(merged))
 }
 

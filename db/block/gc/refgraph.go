@@ -30,11 +30,12 @@ const (
 	kindForward byte = 'f'
 	// kindIncoming keys an edge by object then subject.
 	kindIncoming byte = 'i'
-	// kindNode keys the node inventory of a collector graph.
+	// kindNode keyed the node inventory of the mark-sweep collector, which
+	// no reader uses; InventoryRecord recognizes its records.
 	kindNode byte = 'n'
 	// kindPass is the one record of a running block pass.
 	kindPass byte = 'p'
-	// kindRoot keys the registered roots of a collector graph.
+	// kindRoot keys the registered roots.
 	kindRoot byte = 'r'
 )
 
@@ -57,21 +58,17 @@ const (
 type RefGraph struct {
 	// store holds the graph records.
 	store kvtx.Store
-	// inventory records every node and root for the mark-sweep collector.
-	inventory bool
 }
 
-// NewRefGraph constructs a reference graph over store. The incremental
-// collector finds garbage through orphan marks, so this graph keeps no node
-// inventory and does not support the CollectorGraph listing methods.
+// NewRefGraph constructs a reference graph over store.
 func NewRefGraph(store kvtx.Store) *RefGraph {
 	return &RefGraph{store: store}
 }
 
-// NewCollectorRefGraph constructs a reference graph over store that also
-// records every node and root, as the mark-sweep collector requires.
-func NewCollectorRefGraph(store kvtx.Store) *RefGraph {
-	return &RefGraph{store: store, inventory: true}
+// InventoryRecord reports whether record, a graph key without its prefix,
+// belongs to the node inventory the mark-sweep collector kept.
+func InventoryRecord(record []byte) bool {
+	return len(record) != 0 && record[0] == kindNode
 }
 
 // textNode begins the encoding of a node that is not a block.
@@ -323,8 +320,7 @@ func edgeKey(edge RefEdge) []byte {
 }
 
 // addRefTx adds an edge to its block's child list, or adds both directions of
-// any other edge and the endpoint inventory of a collector graph unless the
-// exact forward edge already exists.
+// any other edge unless the exact forward edge already exists.
 func (g *RefGraph) addRefTx(ctx context.Context, tx kvtx.Tx, subject, object string) error {
 	// Merge a child edge into its block's list.
 	if parent, child, ok := childEdge(RefEdge{Subject: subject, Object: object}); ok {
@@ -340,16 +336,6 @@ func (g *RefGraph) addRefTx(ctx context.Context, tx kvtx.Tx, subject, object str
 	exists, err := tx.Exists(ctx, forward)
 	if err != nil || exists {
 		return err
-	}
-
-	// Record both endpoints in the inventory of a collector graph.
-	if g.inventory {
-		if err := tx.Set(ctx, graphKey(kindNode, subject), nil); err != nil {
-			return err
-		}
-		if err := tx.Set(ctx, graphKey(kindNode, object), nil); err != nil {
-			return err
-		}
 	}
 
 	// Write the two edge directions.
@@ -585,34 +571,21 @@ func (g *RefGraph) RemoveObjectRoot(ctx context.Context, objectKey string, ref *
 	return g.RemoveRef(ctx, ObjectIRI(objectKey), target)
 }
 
-// AddRoot records a node and its root membership in a collector graph.
+// AddRoot registers node as a root.
 func (g *RefGraph) AddRoot(ctx context.Context, node string) error {
 	return g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
-		for _, kind := range []byte{kindNode, kindRoot} {
-			key := graphKey(kind, node)
-			found, err := tx.Exists(ctx, key)
-			if err != nil {
-				return err
-			}
-			if found {
-				continue
-			}
-			if err := tx.Set(ctx, key, nil); err != nil {
-				return err
-			}
+		key := graphKey(kindRoot, node)
+		found, err := tx.Exists(ctx, key)
+		if err != nil || found {
+			return err
 		}
-		return nil
+		return tx.Set(ctx, key, nil)
 	})
 }
 
 // RemoveRoot removes root membership without changing the node's edges.
 func (g *RefGraph) RemoveRoot(ctx context.Context, node string) error {
 	return g.deleteRecord(ctx, graphKey(kindRoot, node))
-}
-
-// RemoveNode removes inventory after the collector has handled its edges.
-func (g *RefGraph) RemoveNode(ctx context.Context, node string) error {
-	return g.deleteRecord(ctx, graphKey(kindNode, node))
 }
 
 // deleteRecord treats a missing record as a no-op.
@@ -626,12 +599,7 @@ func (g *RefGraph) deleteRecord(ctx context.Context, key []byte) error {
 	})
 }
 
-// IterateNodes returns the node inventory of a collector graph.
-func (g *RefGraph) IterateNodes(ctx context.Context) ([]string, error) {
-	return g.list(ctx, graphKey(kindNode))
-}
-
-// GetRootNodes returns the registered roots of a collector graph.
+// GetRootNodes returns the registered roots.
 func (g *RefGraph) GetRootNodes(ctx context.Context) ([]string, error) {
 	return g.list(ctx, graphKey(kindRoot))
 }
@@ -642,6 +610,5 @@ func (g *RefGraph) Close() error { return nil }
 // _ is a type assertion
 var (
 	_ RefGraphOps            = (*RefGraph)(nil)
-	_ CollectorGraph         = (*RefGraph)(nil)
 	_ RefBatchRemainderError = (*batchRemainderError)(nil)
 )

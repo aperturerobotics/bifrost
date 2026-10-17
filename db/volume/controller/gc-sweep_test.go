@@ -10,145 +10,94 @@ import (
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
 	store_kvtx_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
+	"github.com/s4wave/spacewave/db/volume"
 	common_kvtx "github.com/s4wave/spacewave/db/volume/common/kvtx"
 	"github.com/sirupsen/logrus"
 )
 
-// stubCollectorGraph is an empty reference graph.
-type stubCollectorGraph struct{}
+// stubRefGraph is an empty reference graph.
+type stubRefGraph struct{}
 
-func (stubCollectorGraph) AddRef(context.Context, string, string) error { return nil }
-func (stubCollectorGraph) RemoveRef(context.Context, string, string) error {
+func (stubRefGraph) AddRef(context.Context, string, string) error { return nil }
+func (stubRefGraph) RemoveRef(context.Context, string, string) error {
 	return nil
 }
 
-func (stubCollectorGraph) ApplyRefBatch(context.Context, []block_gc.RefEdge, []block_gc.RefEdge) error {
+func (stubRefGraph) ApplyRefBatch(context.Context, []block_gc.RefEdge, []block_gc.RefEdge) error {
 	return nil
 }
 
-func (stubCollectorGraph) RemoveNodeRefs(context.Context, string, bool) ([]string, error) {
+func (stubRefGraph) RemoveNodeRefs(context.Context, string, bool) ([]string, error) {
 	return nil, nil
 }
 
-func (stubCollectorGraph) HasIncomingRefs(context.Context, string) (bool, error) {
+func (stubRefGraph) HasIncomingRefs(context.Context, string) (bool, error) {
 	return false, nil
 }
 
-func (stubCollectorGraph) HasIncomingRefsExcluding(context.Context, string, ...string) (bool, error) {
+func (stubRefGraph) HasIncomingRefsExcluding(context.Context, string, ...string) (bool, error) {
 	return false, nil
 }
 
-func (stubCollectorGraph) GetOutgoingRefs(context.Context, string) ([]string, error) {
+func (stubRefGraph) GetOutgoingRefs(context.Context, string) ([]string, error) {
 	return nil, nil
 }
 
-func (stubCollectorGraph) GetIncomingRefs(context.Context, string) ([]string, error) {
+func (stubRefGraph) GetIncomingRefs(context.Context, string) ([]string, error) {
 	return nil, nil
 }
 
-func (stubCollectorGraph) GetUnreferencedNodes(context.Context) ([]string, error) {
+func (stubRefGraph) GetUnreferencedNodes(context.Context) ([]string, error) {
 	return nil, nil
 }
 
-func (stubCollectorGraph) AddBlockRef(context.Context, *block.BlockRef, *block.BlockRef) error {
+func (stubRefGraph) AddBlockRef(context.Context, *block.BlockRef, *block.BlockRef) error {
 	return nil
 }
 
-func (stubCollectorGraph) AddObjectRoot(context.Context, string, *block.BlockRef) error {
+func (stubRefGraph) AddObjectRoot(context.Context, string, *block.BlockRef) error {
 	return nil
 }
 
-func (stubCollectorGraph) RemoveObjectRoot(context.Context, string, *block.BlockRef) error {
+func (stubRefGraph) RemoveObjectRoot(context.Context, string, *block.BlockRef) error {
 	return nil
 }
-func (stubCollectorGraph) Close() error { return nil }
-func (stubCollectorGraph) IterateNodes(context.Context) ([]string, error) {
-	return nil, nil
+func (stubRefGraph) Close() error { return nil }
+
+// maintainedVolume is a volume whose storage reclaims removed blocks in a
+// separate step.
+type maintainedVolume struct {
+	*common_kvtx.Volume
+	// maintained is called by each Maintenance.
+	maintained func()
 }
 
-func (stubCollectorGraph) GetRootNodes(context.Context) ([]string, error) {
-	return nil, nil
+// Maintenance calls maintained.
+func (v maintainedVolume) Maintenance(context.Context) error {
+	v.maintained()
+	return nil
 }
-func (stubCollectorGraph) RemoveRoot(context.Context, string) error { return nil }
-func (stubCollectorGraph) RemoveNode(context.Context, string) error { return nil }
 
-func TestRunGCSweepUsesManagerHooks(t *testing.T) {
-	// Give the collection manager a cancellable test lifetime.
-	ctx, cancel := context.WithCancel(context.Background())
+// TestRunGCSweepMaintainsStorage checks that a collection that sweeps a node
+// lets the volume's storage reclaim the space.
+func TestRunGCSweepMaintainsStorage(t *testing.T) {
+	// Create an in-memory volume holding one unreferenced node.
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-
-	// Create an in-memory volume for collection manager hooks.
-	le := logrus.NewEntry(logrus.New())
-	vol, err := common_kvtx.NewVolume(
-		ctx,
-		"test-volume",
-		store_kvkey.NewDefaultKVKey(),
-		store_kvtx_inmem.NewStore(),
-		nil,
-		false,
-		false,
-		nil,
-		nil,
-	)
+	vol := newTestVolume(t)
+	err := vol.GetRefGraph().ApplyRefBatch(ctx, []block_gc.RefEdge{{Subject: block_gc.NodeUnreferenced, Object: "orphan"}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer vol.Close()
 
-	// Observe WAL replay and cancel collection after manager maintenance.
-	replayed := make(chan struct{}, 3)
-	maintained := make(chan struct{}, 1)
-	vol.SetGCManagerHooks(block_gc.ManagerHooks{
-		Graph: stubCollectorGraph{},
-		ReplayWAL: func(context.Context, block_gc.CollectorGraph) (int, error) {
-			select {
-			case replayed <- struct{}{}:
-			default:
-			}
-			return 0, nil
-		},
-		AcquireSTW: func() (func(), error) {
-			return func() {}, nil
-		},
-		Maintenance: func(context.Context) error {
-			// Record that the collection manager reached volume maintenance.
-			select {
-			case maintained <- struct{}{}:
-			default:
-			}
-
-			// End the manager lifetime after recording maintenance.
-			cancel()
-			return nil
-		},
-	})
-
-	// Publish the test volume to the collection controller.
-	c := &Controller{
-		le:     le,
-		config: &Config{GcIntervalDur: "1ms"},
-		volume: ccontainer.NewCContainer[*volumeCtxPair](nil),
-	}
-	c.volume.SetValue(&volumeCtxPair{vol: vol, ctx: ctx})
-
-	// Run volume collection and verify maintenance cancels the manager.
-	err = c.runGCSweep(ctx)
-	if !errors.Is(err, context.Canceled) {
+	// Run collection until the sweep reaches storage maintenance.
+	c := newTestController(maintainedVolume{Volume: vol, maintained: cancel}, ctx)
+	if err := c.runGCSweep(ctx); !errors.Is(err, context.Canceled) {
 		t.Fatalf("runGCSweep error = %v, want context.Canceled", err)
 	}
-
-	// Verify the collection manager replayed its WAL on startup.
-	select {
-	case <-replayed:
-	default:
-		t.Fatal("expected manager startup replay to run")
-	}
-
-	// Verify the collection manager ran volume maintenance.
-	select {
-	case <-maintained:
-	default:
-		t.Fatal("expected manager maintenance to run")
+	refs, err := vol.GetRefGraph().GetIncomingRefs(t.Context(), "orphan")
+	if err != nil || len(refs) != 0 {
+		t.Fatalf("orphan refs %v err %v, want swept", refs, err)
 	}
 }
 
@@ -163,57 +112,33 @@ func (delegatingVolume) DelegatesGC() {}
 // TestRunGCSweepSkipsDelegatingVolume checks a controller whose volume views
 // storage collected elsewhere returns without collecting.
 func TestRunGCSweepSkipsDelegatingVolume(t *testing.T) {
-	// Create an in-memory volume that would otherwise start a collection manager.
+	// The sweep ends at once instead of collecting on its short interval.
 	ctx := t.Context()
-	le := logrus.NewEntry(logrus.New())
-	vol, err := common_kvtx.NewVolume(
-		ctx,
-		"test-volume",
-		store_kvkey.NewDefaultKVKey(),
-		store_kvtx_inmem.NewStore(),
-		nil,
-		false,
-		false,
-		nil,
-		nil,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer vol.Close()
-	replayed := false
-	vol.SetGCManagerHooks(block_gc.ManagerHooks{
-		Graph: stubCollectorGraph{},
-		ReplayWAL: func(context.Context, block_gc.CollectorGraph) (int, error) {
-			replayed = true
-			return 0, nil
-		},
-		AcquireSTW: func() (func(), error) {
-			return func() {}, nil
-		},
-	})
-
-	// Publish the delegating volume and run collection with a short interval.
-	c := &Controller{
-		le:     le,
-		config: &Config{GcIntervalDur: "1ms"},
-		volume: ccontainer.NewCContainer[*volumeCtxPair](nil),
-	}
-	c.volume.SetValue(&volumeCtxPair{vol: delegatingVolume{vol}, ctx: ctx})
-
-	// The sweep ends at once without starting the manager.
+	c := newTestController(delegatingVolume{newTestVolume(t)}, ctx)
 	if err := c.runGCSweep(ctx); err != nil {
 		t.Fatalf("runGCSweep error = %v, want nil", err)
 	}
-	if replayed {
-		t.Fatal("delegating volume started a collection manager")
-	}
 }
 
-// _ is a type assertion
-var (
-	_ interface {
-		SetGCManagerHooks(block_gc.ManagerHooks)
-		GetGCManagerHooks() (block_gc.ManagerHooks, bool)
-	} = (*common_kvtx.Volume)(nil)
-)
+// newTestVolume opens an in-memory volume closed when the test ends.
+func newTestVolume(t *testing.T) *common_kvtx.Volume {
+	// Open the volume on a fresh in-memory store.
+	t.Helper()
+	vol, err := common_kvtx.NewVolume(t.Context(), "test-volume", store_kvkey.NewDefaultKVKey(), store_kvtx_inmem.NewStore(), nil, false, false, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = vol.Close() })
+	return vol
+}
+
+// newTestController returns a controller collecting vol every millisecond.
+func newTestController(vol volume.Volume, ctx context.Context) *Controller {
+	c := &Controller{
+		le:     logrus.NewEntry(logrus.New()),
+		config: &Config{GcIntervalDur: "1ms"},
+		volume: ccontainer.NewCContainer[*volumeCtxPair](nil),
+	}
+	c.volume.SetValue(&volumeCtxPair{vol: vol, ctx: ctx})
+	return c
+}

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
-	volume "github.com/s4wave/spacewave/db/volume"
 )
 
 // gcDelegator is implemented by a volume that views another controller's
@@ -27,10 +26,8 @@ type storageMaintainer interface {
 // markIntervals is the number of collection intervals between block passes.
 const markIntervals = 15
 
-// runGCSweep runs the periodic GC sweep goroutine.
-// It waits for the volume to become ready, then prefers the WAL-backed
-// concurrent GC manager when the volume provides the required hooks.
-// Otherwise it falls back to the legacy unreferenced-node collector.
+// runGCSweep runs the periodic GC sweep goroutine. It waits for the volume to
+// become ready, then collects its reference graph on each interval.
 func (c *Controller) runGCSweep(ctx context.Context) error {
 	// Choose the configured collection interval or disable volume collection.
 	interval, err := c.config.ParseGCIntervalDur()
@@ -55,29 +52,7 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 		return nil
 	}
 
-	// Use the concurrent collector when the volume supplies its required hooks.
-	type gcManagerHooksProvider interface {
-		GetGCManagerHooks() (block_gc.ManagerHooks, bool)
-	}
-	if provider, ok := vol.(gcManagerHooksProvider); ok {
-		if hooks, ok := provider.GetGCManagerHooks(); ok &&
-			hooks.Graph != nil &&
-			hooks.ReplayWAL != nil &&
-			hooks.AcquireSTW != nil {
-			manager := block_gc.NewManager(block_gc.ManagerConfig{
-				Graph:         hooks.Graph,
-				Target:        volumeSweepTarget{vol: vol},
-				ReplayWAL:     hooks.ReplayWAL,
-				AcquireSTW:    hooks.AcquireSTW,
-				SweepInterval: interval,
-				Maintenance:   hooks.Maintenance,
-			})
-			c.le.WithField("interval", interval.String()).Debug("gc manager routine started")
-			return manager.Run(ctx)
-		}
-	}
-
-	// Require a reference graph for legacy volume collection.
+	// Require a reference graph for collection.
 	rg := vol.GetRefGraph()
 	if rg == nil {
 		c.le.Debug("volume has no ref graph, gc sweep disabled")
@@ -157,26 +132,3 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 		}
 	}
 }
-
-// volumeSweepTarget adapts a volume to the concurrent sweep target interface.
-// Object nodes represent world objects that have already been deleted from the
-// backing store before becoming sweep candidates, so only graph cleanup remains.
-type volumeSweepTarget struct {
-	vol volume.Volume
-}
-
-// DeleteBlock removes a block from the current volume block store.
-func (t volumeSweepTarget) DeleteBlock(ctx context.Context, iri string) error {
-	ref, ok := block_gc.ParseBlockIRI(iri)
-	if !ok {
-		return nil
-	}
-	return t.vol.RmBlock(ctx, ref)
-}
-
-// DeleteObject performs no backend action for object nodes.
-func (t volumeSweepTarget) DeleteObject(_ context.Context, _ string) error {
-	return nil
-}
-
-var _ block_gc.SweepTarget = volumeSweepTarget{}

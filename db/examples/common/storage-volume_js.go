@@ -22,15 +22,14 @@ func AddStorageVolume(
 	le *logrus.Entry,
 	b bus.Bus,
 	sr *static.Resolver,
-	verbose bool,
+	_ bool,
 ) (controller.Controller, directive.Instance, directive.Reference, error) {
 	sr.AddFactory(volume_browser.NewFactory(b))
 	return loader.WaitExecControllerRunning(
 		ctx,
 		b,
 		resolver.NewLoadControllerWithConfig(&volume_browser.Config{
-			Name:    "example",
-			Verbose: verbose,
+			Name: "example",
 		}),
 		nil,
 	)

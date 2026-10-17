@@ -167,7 +167,8 @@ func TestUpgradeLegacyRefGraph(t *testing.T) {
 
 // TestAdoptRefGraph opens a Volume over a store whose version 2 graph sits
 // beside the Volume, as the browser engine kept it, and expects the graph in
-// the Volume at the current format with nothing left beside it.
+// the Volume at the current format, the retired node inventory dropped, and
+// nothing left beside it.
 func TestAdoptRefGraph(t *testing.T) {
 	// Write a version 2 Volume store under m/.
 	ctx := context.Background()
@@ -192,7 +193,12 @@ func TestAdoptRefGraph(t *testing.T) {
 		t.Fatalf("%d records, err %v", len(records), err)
 	}
 
-	// Move them beside the Volume, under x/.
+	// Move them beside the Volume, under x/, beside an inventory record of
+	// the retired collector under y/.
+	inventory := slices.Concat([]byte("y/n"), []byte("node"))
+	if err := tx.Set(ctx, inventory, nil); err != nil {
+		t.Fatal(err)
+	}
 	for _, key := range records {
 		if err := tx.Set(ctx, slices.Concat([]byte("x/"), key[len(inner):]), nil); err != nil {
 			t.Fatal(err)
@@ -215,8 +221,10 @@ func TestAdoptRefGraph(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = vol.Close() })
 	checkLegacyRefGraph(t, store)
-	if n := countPrefix(t, root, []byte("x/")); n != 0 {
-		t.Fatalf("%d records remain beside the Volume", n)
+	for _, prefix := range []string{"x/", "y/", "m/" + string(refGraphPrefix) + "n"} {
+		if n := countPrefix(t, root, []byte(prefix)); n != 0 {
+			t.Fatalf("%d records remain under %q", n, prefix)
+		}
 	}
 }
 
@@ -651,7 +659,7 @@ func checkLegacyRefGraph(t *testing.T, store db_kvtx.Store) {
 	}
 
 	// The root survives.
-	roots, err := block_gc.NewCollectorRefGraph(kvtx_prefixer.NewPrefixer(store, refGraphPrefix)).GetRootNodes(ctx)
+	roots, err := block_gc.NewRefGraph(kvtx_prefixer.NewPrefixer(store, refGraphPrefix)).GetRootNodes(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -762,10 +770,10 @@ func testCopyReachable(t *testing.T, src, dst db_kvtx.Store) {
 	}
 
 	// An owner edge is two records, an edge between blocks or from the queue
-	// lands in its block's child list, and a registered root has a node and
-	// a root record: the copy keeps the reachable edges and lists and the
-	// root's records, and drops c's list and the unreachable bucket's edge.
-	want := CopyProgress{Keys: 14, DroppedBlocks: 3, UnownedBlocks: 1, DroppedRecords: 3}
+	// lands in its block's child list, and a registered root has one root
+	// record: the copy keeps the reachable edges and lists and the root's
+	// record, and drops c's list and the unreachable bucket's edge.
+	want := CopyProgress{Keys: 13, DroppedBlocks: 3, UnownedBlocks: 1, DroppedRecords: 3}
 	last.Bytes, last.DroppedBytes = 0, 0
 	if last != want {
 		t.Fatalf("progress %+v, want %+v", last, want)

@@ -51,8 +51,8 @@ func (t *Factory) Construct(
 		cc.GetVolumeConfig(),
 		t.bus,
 		controller.NewInfo(ControllerID, Version, "browser@"+cc.GetName()),
-		func(ctx context.Context, le *logrus.Entry) (volume.Volume, error) {
-			return NewVolume(ctx, le, cc)
+		func(ctx context.Context, _ *logrus.Entry) (volume.Volume, error) {
+			return NewVolume(ctx, cc)
 		},
 	), nil
 }

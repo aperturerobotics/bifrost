@@ -230,8 +230,6 @@ type replayReport struct {
 	WallMs float64 `json:"wallMs"`
 	// OpenMs is the time to reopen the engine after the replay.
 	OpenMs float64 `json:"openMs"`
-	// RecoverMs is the time to replay the journal after the reopen.
-	RecoverMs float64 `json:"recoverMs"`
 	// OrderedCommits is the number of commits made without a flush.
 	OrderedCommits int `json:"orderedCommits"`
 	// CommitErrors is the number of failed commits.
@@ -297,18 +295,12 @@ func replayOne(ctx context.Context, recs []workload.Record, t target, ordered bo
 	}
 	rep.Storage = e.counts().sub(seeded)
 
-	// Reopen and recover.
+	// Reopen.
 	openStart := time.Now()
-	reopened, err := e.reopen(ctx)
-	if err != nil {
+	if _, err := e.reopen(ctx); err != nil {
 		return err
 	}
 	rep.OpenMs = ms(time.Since(openStart))
-	recoverStart := time.Now()
-	if err := reopened.ReplayJournal(ctx, workload.DiscardJournal); err != nil {
-		return err
-	}
-	rep.RecoverMs = ms(time.Since(recoverStart))
 
 	// Report.
 	rep.Records = result.Ops

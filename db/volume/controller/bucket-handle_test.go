@@ -122,7 +122,7 @@ func buildBucketHandleForGCConfig(t *testing.T, conf *Config) *bucketHandle {
 	c.volume.SetValue(&volumeCtxPair{
 		vol: &bucketHandleGCTestVolume{
 			Volume: vol,
-			rg:     stubCollectorGraph{},
+			rg:     stubRefGraph{},
 		},
 		ctx: ctx,
 	})

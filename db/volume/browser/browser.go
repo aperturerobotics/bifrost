@@ -18,7 +18,6 @@ import (
 	volume_kvtx "github.com/s4wave/spacewave/db/volume/common/kvtx"
 	"github.com/s4wave/spacewave/db/volume/logindex"
 	"github.com/s4wave/spacewave/db/volume/paylog"
-	"github.com/sirupsen/logrus"
 )
 
 // ControllerID identifies the browser volume controller.
@@ -43,7 +42,7 @@ type Volume = volume_kvtx.Volume
 
 // NewVolume opens the volume named by conf on its device, creating it when
 // absent.
-func NewVolume(ctx context.Context, le *logrus.Entry, conf *Config) (*Volume, error) {
+func NewVolume(ctx context.Context, conf *Config) (*Volume, error) {
 	// Check the config and open the device.
 	if err := conf.Validate(); err != nil {
 		return nil, volume.Permanent(err)

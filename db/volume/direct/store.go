@@ -1,18 +1,17 @@
-// Package direct is a volume engine that stores every key-value entry, block,
-// and journal entry as its own record in a records.Store, the shape of an
-// IndexedDB object store.
+// Package direct is a volume engine that stores every key-value entry and
+// block as its own record in a records.Store, the shape of an IndexedDB object
+// store.
 //
-// The key-value store and the journal also live in a memtable loaded at Open,
-// so reads never reach the record store. Each write transaction commits as one
-// record store call carrying its changes and the block writes and removes made
-// since the previous commit. Record store calls apply atomically and in order,
-// so an ordered commit may publish blocks too: a crash that keeps it keeps
-// every call before it.
+// The key-value store also lives in a memtable loaded at Open, so reads never
+// reach the record store. Each write transaction commits as one record store
+// call carrying its changes and the block writes and removes made since the
+// previous commit. Record store calls apply atomically and in order, so an
+// ordered commit may publish blocks too: a crash that keeps it keeps every
+// call before it.
 package direct
 
 import (
 	"context"
-	"encoding/binary"
 	"maps"
 	"slices"
 	"sync"
@@ -29,8 +28,6 @@ import (
 const (
 	// blockPrefix holds block payloads by reference key.
 	blockPrefix = "b/"
-	// journalPrefix holds garbage collection journal entries by sequence.
-	journalPrefix = "j/"
 	// kvPrefix holds the key-value store.
 	kvPrefix = "k/"
 )
@@ -42,14 +39,11 @@ type Store struct {
 
 	// records holds every record.
 	records records.Store
-	// table holds the key-value store and journal records.
+	// table holds the key-value records.
 	table *memtable.Table
 	// unflushed is set while an ordered commit is not yet durable. The
 	// table's writer lock guards it.
 	unflushed bool
-	// journal is the sequence of the last journal entry. The table's writer
-	// lock guards it.
-	journal uint64
 
 	// mtx guards the fields below.
 	mtx sync.Mutex
@@ -64,35 +58,20 @@ type pendingBlock struct {
 	data []byte
 }
 
-// Open opens the store on rs, loading the key-value store and the journal.
+// Open opens the store on rs, loading the key-value store.
 func Open(ctx context.Context, rs records.Store) (*Store, error) {
 	// Connect the record store to the in-memory transaction table.
 	s := &Store{records: rs, pending: make(map[string]*pendingBlock)}
 	s.table = memtable.New(s.commit)
 	s.Store = kvtx_prefixer.NewPrefixer(tableStore{s}, []byte(kvPrefix))
 
-	// Load the journal and key-value records in key order.
-	for _, prefix := range []string{journalPrefix, kvPrefix} {
-		err := rs.Scan(ctx, []byte(prefix), func(key, value []byte) error {
-			s.table.Load(key, value)
-			return nil
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "load records")
-		}
-	}
-
-	// Find the last journal sequence.
-	err := s.view(ctx, func(tx kvtx.Tx) error {
-		it := tx.Iterate(ctx, []byte(journalPrefix), true, true)
-		defer it.Close()
-		if it.Next() {
-			s.journal = binary.BigEndian.Uint64(it.Key()[len(journalPrefix):])
-		}
-		return it.Err()
+	// Load the key-value records in key order.
+	err := rs.Scan(ctx, []byte(kvPrefix), func(key, value []byte) error {
+		s.table.Load(key, value)
+		return nil
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "read journal")
+		return nil, errors.Wrap(err, "load records")
 	}
 	return s, nil
 }
@@ -100,38 +79,6 @@ func Open(ctx context.Context, rs records.Store) (*Store, error) {
 // Close releases the store. Uncommitted block writes are lost.
 func (s *Store) Close() error {
 	return nil
-}
-
-// view runs fn in a table read transaction.
-func (s *Store) view(ctx context.Context, fn func(tx kvtx.Tx) error) error {
-	tx, err := s.table.NewTransaction(ctx, false)
-	if err != nil {
-		return err
-	}
-	defer tx.Discard()
-	return fn(tx)
-}
-
-// update runs fn in a table write transaction and commits it, durably unless
-// ordered is set.
-func (s *Store) update(ctx context.Context, ordered bool, fn func(tx kvtx.Tx) error) error {
-	// Open a table write transaction for the record changes.
-	tx, err := s.table.NewTransaction(ctx, true)
-	if err != nil {
-		return err
-	}
-	defer tx.Discard()
-
-	// Apply the record changes before committing the transaction.
-	if err := fn(tx); err != nil {
-		return err
-	}
-
-	// Commit the table transaction with the requested durability.
-	if ordered {
-		return kvtx.CommitOrdered(ctx, tx)
-	}
-	return tx.Commit(ctx)
 }
 
 // commit is the table's commit function. It writes ops and the pending
