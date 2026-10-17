@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/block/blob"
-	"github.com/s4wave/spacewave/db/block/sbset"
 )
 
 // BuildTableRow constructs a TableRow by marshaling cols with msgpack blobs.
@@ -24,21 +23,21 @@ func BuildTableRow(
 	row sql.Row,
 	buildBlobOpts *blob.BuildBlobOpts,
 ) (*TableRow, error) {
-	// Initialize the table row block and its column sub-block container.
-	tr := &TableRow{}
-	tr.Columns = make([]*TableColumn, len(row))
-	var err error
-	var colSet *sbset.SubBlockSet
+	// Allocate every column first: following a column's sub-block needs the
+	// column to exist, and a large value stores its chunks under that cursor.
+	cols := make([]TableColumn, len(row))
+	tr := &TableRow{Columns: make([]*TableColumn, len(row))}
+	for i := range cols {
+		tr.Columns[i] = &cols[i]
+	}
 	bcs.ClearAllRefs()
 	bcs.SetBlock(tr, true)
-	colSet = newTableRowColumnSetContainer(tr, bcs)
+	colSet := newTableRowColumnSetContainer(tr, bcs)
 
 	// Encode every SQL row value into its column sub-block.
 	for i, col := range row {
-		// follow sub-block for the column
 		_, ibcs := colSet.Get(i)
-		tr.Columns[i], err = BuildTableColumn(ctx, ibcs, buildBlobOpts, col)
-		if err != nil {
+		if err := tr.Columns[i].setValue(ctx, ibcs, buildBlobOpts, col); err != nil {
 			return nil, errors.Wrapf(err, "column[%d]", i)
 		}
 	}

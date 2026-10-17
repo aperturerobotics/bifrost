@@ -13,4 +13,7 @@ var (
 	ErrUnknownBlobType = errors.New("unknown blob type")
 	// ErrUnknownChunkerType is returned for a chunker type that is not recognized.
 	ErrUnknownChunkerType = errors.New("unknown chunker type")
+	// ErrNoChunkCursor is returned when a chunk has no cursor to hold its data
+	// block, such as a blob built at a nil cursor.
+	ErrNoChunkCursor = errors.New("chunk data needs a cursor: build the blob at a non-nil cursor")
 )

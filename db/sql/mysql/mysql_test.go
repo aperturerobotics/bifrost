@@ -533,19 +533,20 @@ func TestMysqlStoredColumnExpressions(t *testing.T) {
 
 // TestMysqlInlineText reads text and bytes stored inline in the row block,
 // which decode without a cursor, up to just under the raw blob limit.
-func TestMysqlInlineText(t *testing.T) {
-	// Open a test database and store short, empty and large inline values.
+func TestMysqlTextValues(t *testing.T) {
+	// Open a test database and store short, empty, inline and chunked values.
 	ctx := context.Background()
 	_, db := newMysqlTestDB(t, ctx, "probe")
 	defer db.Close()
 	long := strings.Repeat("0123456789abcdef", 44*1024)
+	chunked := strings.Repeat("0123456789abcdef", 128*1024)
 	execMysqlStatements(t, ctx, db,
 		"CREATE TABLE notes (id BIGINT NOT NULL PRIMARY KEY, body LONGTEXT NOT NULL, raw LONGBLOB NULL)",
 	)
 	for _, row := range []struct {
 		id   int
 		body string
-	}{{1, "short"}, {2, long}, {3, ""}} {
+	}{{1, "short"}, {2, long}, {3, ""}, {4, chunked}} {
 		if _, err := db.ExecContext(ctx, "INSERT INTO notes (id, body, raw) VALUES (?, ?, ?)", row.id, row.body, []byte(row.body)); err != nil {
 			t.Fatal(err.Error())
 		}
@@ -557,7 +558,7 @@ func TestMysqlInlineText(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	defer rows.Close()
-	want := map[int]string{1: "short", 2: long, 3: ""}
+	want := map[int]string{1: "short", 2: long, 3: "", 4: chunked}
 	for rows.Next() {
 		var id int
 		var body string

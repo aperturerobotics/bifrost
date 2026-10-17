@@ -82,6 +82,9 @@ func (a *chunkAppender) append(idx int, size, start uint64, data []byte) error {
 
 	// Store the chunk through the cursor graph without a staging transaction.
 	if a.tx == nil {
+		if a.chkSet.GetCursor() == nil {
+			return ErrNoChunkCursor
+		}
 		dataCopy := append([]byte(nil), data...)
 		recordMetric(a.ctx, Metric{
 			Stage:      "chunk-fallback-copy",

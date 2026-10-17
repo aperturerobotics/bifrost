@@ -21,71 +21,87 @@ func BuildTableColumn(
 	opts *blob.BuildBlobOpts,
 	col any,
 ) (*TableColumn, error) {
-	// Initialize a table column block with cleared references.
 	ntc := &TableColumn{}
-	bcs.ClearAllRefs()
 	bcs.SetBlock(ntc, true)
+	if err := ntc.setValue(ctx, bcs, opts, col); err != nil {
+		return nil, err
+	}
+	return ntc, nil
+}
+
+// setValue replaces the column value with col. bcs must be located at t: a
+// value too large to store inline keeps its chunks in bcs's block graph.
+func (t *TableColumn) setValue(
+	ctx context.Context,
+	bcs *block.Cursor,
+	opts *blob.BuildBlobOpts,
+	col any,
+) error {
+	// Clear the previous value and its references.
+	t.Value = nil
+	bcs.ClearAllRefs()
+	bcs.MarkDirty()
 
 	// Encode the SQL column value in its stored scalar or blob representation.
 	switch v := col.(type) {
 	case nil:
 	case bool:
-		ntc.Value = &TableColumn_BoolValue{BoolValue: v}
+		t.Value = &TableColumn_BoolValue{BoolValue: v}
 	case int:
-		ntc.Value = &TableColumn_IntValue{IntValue: int64(v)}
+		t.Value = &TableColumn_IntValue{IntValue: int64(v)}
 	case int8:
-		ntc.Value = &TableColumn_IntValue{IntValue: int64(v)}
+		t.Value = &TableColumn_IntValue{IntValue: int64(v)}
 	case int16:
-		ntc.Value = &TableColumn_IntValue{IntValue: int64(v)}
+		t.Value = &TableColumn_IntValue{IntValue: int64(v)}
 	case int32:
-		ntc.Value = &TableColumn_IntValue{IntValue: int64(v)}
+		t.Value = &TableColumn_IntValue{IntValue: int64(v)}
 	case int64:
-		ntc.Value = &TableColumn_IntValue{IntValue: v}
+		t.Value = &TableColumn_IntValue{IntValue: v}
 	case uint:
-		ntc.Value = &TableColumn_UintValue{UintValue: uint64(v)}
+		t.Value = &TableColumn_UintValue{UintValue: uint64(v)}
 	case uint8:
-		ntc.Value = &TableColumn_UintValue{UintValue: uint64(v)}
+		t.Value = &TableColumn_UintValue{UintValue: uint64(v)}
 	case uint16:
-		ntc.Value = &TableColumn_UintValue{UintValue: uint64(v)}
+		t.Value = &TableColumn_UintValue{UintValue: uint64(v)}
 	case uint32:
-		ntc.Value = &TableColumn_UintValue{UintValue: uint64(v)}
+		t.Value = &TableColumn_UintValue{UintValue: uint64(v)}
 	case uint64:
-		ntc.Value = &TableColumn_UintValue{UintValue: v}
+		t.Value = &TableColumn_UintValue{UintValue: v}
 	case float32:
-		ntc.Value = &TableColumn_FloatValue{FloatValue: float64(v)}
+		t.Value = &TableColumn_FloatValue{FloatValue: float64(v)}
 	case float64:
-		ntc.Value = &TableColumn_FloatValue{FloatValue: v}
+		t.Value = &TableColumn_FloatValue{FloatValue: v}
 	case string:
-		if err := ntc.setBlob(ctx, bcs, opts, 6, []byte(v), tableColumnBlobString); err != nil {
-			return nil, err
+		if err := t.setBlob(ctx, bcs, opts, 6, []byte(v), tableColumnBlobString); err != nil {
+			return err
 		}
 	case []byte:
-		if err := ntc.setBlob(ctx, bcs, opts, 7, v, tableColumnBlobBytes); err != nil {
-			return nil, err
+		if err := t.setBlob(ctx, bcs, opts, 7, v, tableColumnBlobBytes); err != nil {
+			return err
 		}
 	case time.Time:
 		nanos := v.Nanosecond()
-		ntc.Value = &TableColumn_TimestampValue{
+		t.Value = &TableColumn_TimestampValue{
 			TimestampValue: &TableTimestamp{
 				UnixSeconds: v.Unix(),
 				Nanos:       int32(nanos), // #nosec G115 -- Nanosecond is in [0, 999999999].
 			},
 		}
 	case types.Timespan:
-		ntc.Value = &TableColumn_TimespanMicros{TimespanMicros: int64(v)}
+		t.Value = &TableColumn_TimespanMicros{TimespanMicros: int64(v)}
 	case sql.JSONWrapper:
 		jsonString, err := encodeJsonWrapper(ctx, v)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		if err := ntc.setBlob(ctx, bcs, opts, 8, []byte(jsonString), tableColumnBlobJson); err != nil {
-			return nil, err
+		if err := t.setBlob(ctx, bcs, opts, 8, []byte(jsonString), tableColumnBlobJson); err != nil {
+			return err
 		}
 	default:
-		return nil, errors.Errorf("unsupported table column type %T", col)
+		return errors.Errorf("unsupported table column type %T", col)
 	}
 
-	return ntc, nil
+	return nil
 }
 
 // IsNil returns if the object is nil.

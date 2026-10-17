@@ -3,6 +3,7 @@ package blob
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"slices"
 	"testing"
@@ -221,5 +222,15 @@ func TestBuildBlobWithReaderFallbackCopyIsAccounted(t *testing.T) {
 		return metric.Stage == "chunk-fallback-copy" && metric.ChunkBytes > 0 && !metric.DirectPut
 	}) {
 		t.Fatalf("missing accounted fallback-copy metric: %#v", recorder.metrics)
+	}
+}
+
+// TestBuildBlobChunkedNeedsCursor tests that a chunked blob built without a
+// cursor fails instead of dropping its chunk data.
+func TestBuildBlobChunkedNeedsCursor(t *testing.T) {
+	data := bytes.Repeat([]byte{1}, 64)
+	_, err := BuildBlob(context.Background(), int64(len(data)), bytes.NewReader(data), nil, &BuildBlobOpts{RawHighWaterMark: 1})
+	if !errors.Is(err, ErrNoChunkCursor) {
+		t.Fatalf("got %v, want %v", err, ErrNoChunkCursor)
 	}
 }
