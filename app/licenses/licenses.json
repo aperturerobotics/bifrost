@@ -822,7 +822,7 @@
     },
     {
       "name": "github.com/aperturerobotics/common",
-      "version": "v0.35.5-0.20261016061622-bf2de3fd5864",
+      "version": "v0.35.5-0.20261016222212-4b09e721d4bb",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/common",
@@ -934,7 +934,7 @@
     },
     {
       "name": "github.com/aperturerobotics/protobuf-go-lite",
-      "version": "v0.19.1-0.20261006081947-6c15c9bde28b",
+      "version": "v0.19.1-0.20261016221735-380ab5fa526b",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/protobuf-go-lite",
