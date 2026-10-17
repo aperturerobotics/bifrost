@@ -3,7 +3,6 @@ package paylog
 import (
 	"context"
 	"encoding/binary"
-	"maps"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/kvtx"
@@ -104,16 +103,34 @@ func (s *Store) BlockStats(ctx context.Context) (count, size uint64, err error) 
 	return count, size, err
 }
 
-// Maintenance reclaims segment space in one bounded pass under the writer, so
-// no write transaction holds unpublished blocks meanwhile. It removes the
+// Maintenance reclaims segment space in one bounded pass. It removes the
 // sealed segments that hold no published or pending block, then moves up to
 // moveBytes of live blocks out of the sealed segment with the most dead bytes,
 // if at least half of it is dead. A later pass removes the emptied segment.
+//
+// The pass holds the writer only to read the index and remove segments, so no
+// write transaction holds unpublished blocks in them meanwhile, and to publish
+// the moves. It copies payloads without the writer. It takes one call at a
+// time, since only it removes segments.
 func (s *Store) Maintenance(ctx context.Context) error {
-	// Take the writer for the pass.
+	// Remove the empty segments and choose the blocks to move.
+	victim, keys, locs, err := s.sweepSegments(ctx)
+	if err != nil || len(keys) == 0 {
+		return err
+	}
+
+	// Copy them to the end of the log and publish their new locations.
+	return s.move(ctx, victim, keys, locs)
+}
+
+// sweepSegments removes the empty sealed segments under the writer and
+// returns up to moveBytes of the blocks in the sealed segment with the most
+// dead bytes, if at least half of it is dead.
+func (s *Store) sweepSegments(ctx context.Context) (victim uint64, keys []string, locs []*location, err error) {
+	// Take the writer for the index reads and removes.
 	t, err := s.begin(ctx, true, nil)
 	if err != nil {
-		return err
+		return 0, nil, nil, err
 	}
 	defer t.Discard()
 
@@ -131,16 +148,15 @@ func (s *Store) Maintenance(ctx context.Context) error {
 	// Read the published statistics and the segment files.
 	stats, err := readSegmentStats(ctx, t.itx)
 	if err != nil {
-		return err
+		return 0, nil, nil, err
 	}
 	files, err := s.dev.List(ctx)
 	if err != nil {
-		return err
+		return 0, nil, nil, err
 	}
 
 	// Find the empty sealed segments and the one with the most dead bytes.
 	var empty []string
-	var victim uint64
 	victimDead := int64(-1)
 	for _, f := range files {
 		n, ok := parseSegment(f.Name)
@@ -157,83 +173,81 @@ func (s *Store) Maintenance(ctx context.Context) error {
 		}
 	}
 
-	// Remove the empty segments and move live blocks out of the victim.
+	// Remove the empty segments.
 	if len(empty) != 0 {
 		if err := s.dev.Remove(ctx, empty); err != nil {
-			return err
+			return 0, nil, nil, err
 		}
 	}
 	if victimDead < 0 {
-		return nil
+		return 0, nil, nil, nil
 	}
-	return t.move(ctx, victim)
-}
 
-// move rewrites up to moveBytes of segment n's blocks at the end of the log
-// and publishes their new locations with a durable commit of t. t holds the
-// writer, so no published location changes meanwhile; a block removed outside
-// a transaction meanwhile has a pending remove, which replaces its move.
-func (t *Tx) move(ctx context.Context, n uint64) error {
-	// Find the segment's blocks, up to moveBytes.
-	var keys []string
-	var locs []*location
+	// Collect the victim's blocks until the move is full.
 	var size int64
-	err := t.itx.ScanPrefix(ctx, []byte(blockPrefix), func(key, value []byte) error {
-		// Collect the blocks in segment n until the move is full.
+	err = t.itx.ScanPrefix(ctx, []byte(blockPrefix), func(key, value []byte) error {
+		// Keep a block of the victim while the move has room.
 		loc, err := unmarshalLocation(value)
-		if err != nil || loc.segment != n || size >= moveBytes {
+		if err != nil || loc.segment != victim || size >= moveBytes {
 			return err
 		}
 		keys, locs = append(keys, string(key)), append(locs, loc)
 		size += loc.length
 		return nil
 	})
-	if err != nil || len(keys) == 0 {
-		return err
-	}
+	return victim, keys, locs, err
+}
 
-	// Read their payloads in one device call.
+// move copies the blocks at keys, read from locs in segment n, to the end of
+// the log without the writer, then publishes the new location of each block
+// still at its old one in one durable commit under the writer. A block
+// changed meanwhile keeps its change, and its copy is dead space.
+func (s *Store) move(ctx context.Context, n uint64, keys []string, locs []*location) error {
+	// Read the payloads in one device call.
 	reads := make([]device.Read, len(locs))
 	for i, loc := range locs {
 		reads[i] = device.Read{Name: segmentName(n), Offset: loc.offset, Data: make([]byte, loc.length)}
 	}
-	if err := t.s.dev.Read(ctx, reads); err != nil {
+	if err := s.dev.Read(ctx, reads); err != nil {
 		return errors.Wrap(err, "read moved blocks")
 	}
 
-	// Append the payloads as pending writes, skipping blocks with a pending
-	// change, and publish them.
-	if err := t.s.appendMoves(ctx, keys, locs, reads); err != nil {
+	// Write them at the end of the log.
+	s.mtx.Lock()
+	writes := make([]device.Write, len(reads))
+	moved := make([]*location, len(reads))
+	for i, r := range reads {
+		moved[i] = s.place(int64(len(r.Data)))
+		writes[i] = device.Write{Name: segmentName(moved[i].segment), Offset: moved[i].offset, Data: r.Data}
+	}
+	s.mtx.Unlock()
+	if err := s.dev.Write(ctx, writes, false); err != nil {
 		return err
 	}
-	return t.Commit(ctx)
-}
 
-// appendMoves writes the payloads of the blocks at keys, read from locs, at
-// the end of the log and adds them as pending writes.
-func (s *Store) appendMoves(ctx context.Context, keys []string, locs []*location, reads []device.Read) error {
-	// Place each payload without a pending change at the log's end.
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	var writes []device.Write
-	added := make(map[string]*pendingBlock)
-	for i, key := range keys {
-		if s.pending[key] != nil {
-			continue
-		}
-		loc := s.place(locs[i].length)
-		writes = append(writes, device.Write{Name: segmentName(loc.segment), Offset: loc.offset, Data: reads[i].Data})
-		added[key] = &pendingBlock{loc: loc}
+	// Take the writer and keep the copies of the blocks still in place.
+	t, err := s.begin(ctx, true, nil)
+	if err != nil {
+		return err
 	}
-
-	// Write the payloads, then add them as pending writes.
-	if len(writes) != 0 {
-		if err := s.dev.Write(ctx, writes, false); err != nil {
+	defer t.Discard()
+	for i, key := range keys {
+		cur, err := getLocation(ctx, t.itx, []byte(key))
+		if err != nil {
 			return err
 		}
+		if cur == nil || *cur != *locs[i] {
+			continue
+		}
+		s.mtx.Lock()
+		if s.pending[key] == nil {
+			t.own[key] = &pendingBlock{loc: moved[i]}
+		}
+		s.mtx.Unlock()
 	}
-	maps.Copy(s.pending, added)
-	return nil
+
+	// Publish the new locations.
+	return t.Commit(ctx)
 }
 
 // place returns the location of the next payload of length bytes, starting
