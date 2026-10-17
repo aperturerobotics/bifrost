@@ -3,7 +3,10 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import {
+  createEmptyMessageType,
+  createMessageType,
+} from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import type { VmState } from './v86.pb.js'
@@ -656,7 +659,21 @@ export const WasiVmKeyEvent: MessageType<WasiVmKeyEvent> =
   })
 
 /**
- * WasiVmDisplayInput is a pointer or key event from the viewer.
+ * WasiVmFrameDrawn reports that the viewer drew the last frame it received.
+ *
+ * @generated from message s4wave.vm.WasiVmFrameDrawn
+ */
+export interface WasiVmFrameDrawn {}
+
+export const WasiVmFrameDrawn: MessageType<WasiVmFrameDrawn> =
+  /* @__PURE__ */ createEmptyMessageType<WasiVmFrameDrawn>(
+    's4wave.vm.WasiVmFrameDrawn',
+    true,
+  )
+
+/**
+ * WasiVmDisplayInput is a pointer or key event from the viewer, or its report
+ * that it drew a frame.
  *
  * @generated from message s4wave.vm.WasiVmDisplayInput
  */
@@ -687,6 +704,15 @@ export interface WasiVmDisplayInput {
         value: WasiVmKeyEvent
         case: 'key'
       }
+    | {
+        /**
+         * Drawn reports the viewer drew the last frame and takes the next.
+         *
+         * @generated from field: s4wave.vm.WasiVmFrameDrawn drawn = 3;
+         */
+        value: WasiVmFrameDrawn
+        case: 'drawn'
+      }
 }
 
 export const WasiVmDisplayInput: MessageType<WasiVmDisplayInput> =
@@ -701,5 +727,12 @@ export const WasiVmDisplayInput: MessageType<WasiVmDisplayInput> =
         oneof: 'body',
       },
       { no: 2, name: 'key', kind: 'message', T: WasiVmKeyEvent, oneof: 'body' },
+      {
+        no: 3,
+        name: 'drawn',
+        kind: 'message',
+        T: WasiVmFrameDrawn,
+        oneof: 'body',
+      },
     ] satisfies readonly PartialFieldInfo[],
   })

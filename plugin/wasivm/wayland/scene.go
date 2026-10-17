@@ -149,9 +149,8 @@ func (c *Compositor) raise(w *surface) {
 }
 
 // moveWindow moves the window w so its geometry's corner sits at pos. When
-// its surface is opaque and nothing above its tree covers it, the viewers
-// move the pixels they have and draw only what the move uncovers. The
-// caller holds the lock.
+// its surface is opaque, the viewers move the pixels they have and draw only
+// what the move uncovers and the trees above it. The caller holds the lock.
 func (c *Compositor) moveWindow(w *surface, pos image.Point) {
 	// Move it.
 	before, from := c.bounds(w), w.origin()
@@ -161,27 +160,24 @@ func (c *Compositor) moveWindow(w *surface, pos image.Point) {
 		return
 	}
 
-	// Move the pixels of an opaque uncovered surface, then draw the rest of
-	// both places.
+	// Move the pixels of an opaque surface. The copy carries along the trees
+	// drawn above its source and covers those above its destination, so draw
+	// both again.
 	var moved image.Rectangle
-	if w.opaque && w.image != nil && !c.covered(w, before.Union(after)) {
+	if w.opaque && w.image != nil {
 		moved = c.shift(image.Rectangle{Min: from, Max: from.Add(w.size)}, by)
+		roots := c.roots()
+		for _, above := range roots[slices.Index(roots, w)+1:] {
+			b := c.bounds(above)
+			c.damage(moved.Intersect(b))
+			c.damage(moved.Intersect(b.Add(by)))
+		}
 	}
+
+	// Draw the rest of both places.
 	for _, r := range slices.Concat(subtract(before, moved), subtract(after, moved)) {
 		c.damage(r)
 	}
-}
-
-// covered reports whether a tree drawn above the tree of the window or layer
-// surface w overlaps the screen area r. The caller holds the lock.
-func (c *Compositor) covered(w *surface, r image.Rectangle) bool {
-	roots := c.roots()
-	for _, above := range roots[slices.Index(roots, w)+1:] {
-		if c.bounds(above).Overlaps(r) {
-			return true
-		}
-	}
-	return false
 }
 
 // setState maximizes the window s to the usable area, fills the screen with

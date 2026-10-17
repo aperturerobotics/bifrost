@@ -21,7 +21,8 @@ type screen interface {
 	// Input injects a pointer or key event.
 	Input(in *s4wave_vm.WasiVmDisplayInput)
 	// Run streams the whole screen, then each area that changes, until the
-	// display or ctx ends.
+	// display or ctx ends. Changes made while send blocks go in the next
+	// frame.
 	Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplayFrame) error) error
 }
 
@@ -50,7 +51,21 @@ func (v *vmDisplay) Display(strm s4wave_vm.SRPCWasiVmDisplayService_DisplayStrea
 	}
 	defer a.release()
 
-	// Inject the viewer's input until it leaves.
+	return serveScreen(ctx, strm, a.screen)
+}
+
+// serveScreen streams the screen to the viewer and injects the viewer's input,
+// until either ends. It sends each frame only after the viewer reported
+// drawing the last, so the screen folds the changes made meanwhile into the
+// next frame.
+func serveScreen(ctx context.Context, strm s4wave_vm.SRPCWasiVmDisplayService_DisplayStream, scr screen) error {
+	// End the screen when the viewer leaves, and the input loop with it.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Inject the viewer's input until it leaves, and pass on its reports of
+	// drawn frames.
+	drawn := make(chan struct{}, 1)
 	go func() {
 		defer cancel()
 		for {
@@ -58,12 +73,29 @@ func (v *vmDisplay) Display(strm s4wave_vm.SRPCWasiVmDisplayService_DisplayStrea
 			if err != nil {
 				return
 			}
-			a.screen.Input(in)
+			if in.GetDrawn() != nil {
+				select {
+				case drawn <- struct{}{}:
+				default:
+				}
+				continue
+			}
+			scr.Input(in)
 		}
 	}()
 
-	// Stream the screen.
-	return a.screen.Run(ctx, strm.Send)
+	// Stream the screen, holding each frame until the viewer drew the last.
+	return scr.Run(ctx, func(frame *s4wave_vm.WasiVmDisplayFrame) error {
+		if err := strm.Send(frame); err != nil {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return context.Cause(ctx)
+		case <-drawn:
+			return nil
+		}
+	})
 }
 
 // attachScreen waits for the first display the guest brings up: X display 0

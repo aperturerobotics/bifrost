@@ -602,12 +602,14 @@ func (x *WasiVmDisplayRegion) GetRgba() []byte {
 	return nil
 }
 
-// WasiVmDisplayInput is a pointer or key event from the viewer.
+// WasiVmDisplayInput is a pointer or key event from the viewer, or its report
+// that it drew a frame.
 type WasiVmDisplayInput struct {
 	unknownFields []byte
 	// Types that are assignable to Body:
 	//	*WasiVmDisplayInput_Pointer
 	//	*WasiVmDisplayInput_Key
+	//	*WasiVmDisplayInput_Drawn
 	Body isWasiVmDisplayInput_Body `protobuf_oneof:"body"`
 }
 
@@ -638,6 +640,13 @@ func (x *WasiVmDisplayInput) GetKey() *WasiVmKeyEvent {
 	return nil
 }
 
+func (x *WasiVmDisplayInput) GetDrawn() *WasiVmFrameDrawn {
+	if x, ok := x.GetBody().(*WasiVmDisplayInput_Drawn); ok {
+		return x.Drawn
+	}
+	return nil
+}
+
 type isWasiVmDisplayInput_Body interface {
 	isWasiVmDisplayInput_Body()
 }
@@ -652,9 +661,27 @@ type WasiVmDisplayInput_Key struct {
 	Key *WasiVmKeyEvent `protobuf:"bytes,2,opt,name=key,proto3,oneof"`
 }
 
+type WasiVmDisplayInput_Drawn struct {
+	// Drawn reports the viewer drew the last frame and takes the next.
+	Drawn *WasiVmFrameDrawn `protobuf:"bytes,3,opt,name=drawn,proto3,oneof"`
+}
+
 func (*WasiVmDisplayInput_Pointer) isWasiVmDisplayInput_Body() {}
 
 func (*WasiVmDisplayInput_Key) isWasiVmDisplayInput_Body() {}
+
+func (*WasiVmDisplayInput_Drawn) isWasiVmDisplayInput_Body() {}
+
+// WasiVmFrameDrawn reports that the viewer drew the last frame it received.
+type WasiVmFrameDrawn struct {
+	unknownFields []byte
+}
+
+func (x *WasiVmFrameDrawn) Reset() {
+	*x = WasiVmFrameDrawn{}
+}
+
+func (*WasiVmFrameDrawn) ProtoMessage() {}
 
 // WasiVmPointerEvent moves the pointer and sets which buttons are held.
 type WasiVmPointerEvent struct {
@@ -1008,6 +1035,34 @@ func (m *WasiVmDisplayInput_Key) CloneVT() *WasiVmDisplayInput_Key {
 }
 
 func (m *WasiVmDisplayInput_Key) CloneOneofVT() isWasiVmDisplayInput_Body {
+	return m.CloneVT()
+}
+
+func (m *WasiVmDisplayInput_Drawn) CloneVT() *WasiVmDisplayInput_Drawn {
+	if m == nil {
+		return (*WasiVmDisplayInput_Drawn)(nil)
+	}
+	r := new(WasiVmDisplayInput_Drawn)
+	r.Drawn = protobuf_go_lite.CloneVTValue(m.Drawn)
+	return r
+}
+
+func (m *WasiVmDisplayInput_Drawn) CloneOneofVT() isWasiVmDisplayInput_Body {
+	return m.CloneVT()
+}
+
+func (m *WasiVmFrameDrawn) CloneVT() *WasiVmFrameDrawn {
+	if m == nil {
+		return (*WasiVmFrameDrawn)(nil)
+	}
+	r := new(WasiVmFrameDrawn)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmFrameDrawn) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1444,6 +1499,40 @@ func (this *WasiVmDisplayInput_Key) EqualVT(thatIface isWasiVmDisplayInput_Body)
 		return false
 	}
 	return true
+}
+
+func (this *WasiVmDisplayInput_Drawn) EqualVT(thatIface isWasiVmDisplayInput_Body) bool {
+	that, ok := thatIface.(*WasiVmDisplayInput_Drawn)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Drawn, that.Drawn, func() *WasiVmFrameDrawn { return &WasiVmFrameDrawn{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *WasiVmFrameDrawn) EqualVT(that *WasiVmFrameDrawn) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmFrameDrawn) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmFrameDrawn)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
 }
 
 func (this *WasiVmPointerEvent) EqualVT(that *WasiVmPointerEvent) bool {
@@ -2446,6 +2535,10 @@ func (x *WasiVmDisplayInput) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("key")
 			ov.Key.MarshalProtoJSON(s.WithField("key"))
+		case *WasiVmDisplayInput_Drawn:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("drawn")
+			ov.Drawn.MarshalProtoJSON(s.WithField("drawn"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -2483,12 +2576,51 @@ func (x *WasiVmDisplayInput) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.Key = &WasiVmKeyEvent{}
 			ov.Key.UnmarshalProtoJSON(s.WithField("key", true))
+		case "drawn":
+			ov := &WasiVmDisplayInput_Drawn{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Drawn = nil
+				return
+			}
+			ov.Drawn = &WasiVmFrameDrawn{}
+			ov.Drawn.UnmarshalProtoJSON(s.WithField("drawn", true))
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the WasiVmDisplayInput from JSON.
 func (x *WasiVmDisplayInput) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmFrameDrawn message to JSON.
+func (x *WasiVmFrameDrawn) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmFrameDrawn to JSON.
+func (x *WasiVmFrameDrawn) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmFrameDrawn message from JSON.
+func (x *WasiVmFrameDrawn) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmFrameDrawn from JSON.
+func (x *WasiVmFrameDrawn) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -3374,6 +3506,62 @@ func (m *WasiVmDisplayInput_Key) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
+func (m *WasiVmDisplayInput_Drawn) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmDisplayInput_Drawn) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Drawn != nil {
+		size, err := m.Drawn.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmFrameDrawn) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmFrameDrawn) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmFrameDrawn) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *WasiVmPointerEvent) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -3707,6 +3895,31 @@ func (m *WasiVmDisplayInput_Key) SizeVT() (n int) {
 	} else {
 		n += 2
 	}
+	return n
+}
+
+func (m *WasiVmDisplayInput_Drawn) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Drawn != nil {
+		l = m.Drawn.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *WasiVmFrameDrawn) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
 	return n
 }
 
@@ -4112,11 +4325,28 @@ func (x *WasiVmDisplayInput) MarshalProtoText() string {
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Key)
 		}
+	case *WasiVmDisplayInput_Drawn:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "drawn")
+		if body.Drawn == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmFrameDrawn{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Drawn)
+		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *WasiVmDisplayInput) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmFrameDrawn) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "WasiVmFrameDrawn")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmFrameDrawn) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -5274,6 +5504,69 @@ func (m *WasiVmDisplayInput) UnmarshalVT(dAtA []byte) error {
 				m.Body = &WasiVmDisplayInput_Key{Key: v}
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Drawn", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*WasiVmDisplayInput_Drawn); ok {
+				if err := oneof.Drawn.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &WasiVmFrameDrawn{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &WasiVmDisplayInput_Drawn{Drawn: v}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmFrameDrawn) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmFrameDrawn: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmFrameDrawn: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

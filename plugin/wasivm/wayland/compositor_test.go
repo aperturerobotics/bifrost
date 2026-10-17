@@ -453,17 +453,8 @@ func TestMoveGrab(t *testing.T) {
 	c.request(newEvent(w.surface, surfaceCommit))
 	tc.awaitPattern(image.Pt(cascadeStep, cascadeStep), 32, 32, pix)
 
-	// Press on it, noting the press's serial.
-	pointer := c.newID()
-	c.request(newEvent(idSeat, seatGetPointer).uint(pointer))
-	c.roundtrip()
-	tc.pointer(cascadeStep+8, cascadeStep+8, 1)
-	m := c.await(pointer, pointerButton)
-	serial := m.uint()
-
-	// Ask to move it, then drag the pointer by 20,10 and release.
-	c.request(newEvent(w.toplevel, toplevelMove).uint(idSeat).uint(serial))
-	c.roundtrip()
+	// Drag it by 20,10 and release.
+	tc.grabMove(c, w, image.Pt(cascadeStep+8, cascadeStep+8))
 	tc.pointer(cascadeStep+28, cascadeStep+18, 1)
 	tc.pointer(cascadeStep+28, cascadeStep+18, 0)
 
@@ -474,6 +465,57 @@ func TestMoveGrab(t *testing.T) {
 	if tc.copies == 0 {
 		t.Fatal("the move sent the window's pixels instead of a copy")
 	}
+}
+
+// TestMoveUnderPanel checks a window moved under a panel stays below it, and
+// the viewer still moves the window's pixels.
+func TestMoveUnderPanel(t *testing.T) {
+	// Map a red panel along the bottom.
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	const panel = 16
+	c.layerSurface(layerTop, anchorBottom|anchorLeft|anchorRight, image.Pt(0, panel), 0, interactivityNone, bufRed)
+
+	// Map a window showing a pattern.
+	w := c.window(32, 32, bufBlue)
+	pix := pattern(32, 32, 0)
+	c.request(newEvent(w.surface, surfaceAttach).uint(c.bufferOf(32, 32, 4*32, pix, shmFormatXRGB8888)).int(0).int(0))
+	c.request(newEvent(w.surface, surfaceDamage).int(0).int(0).int(32).int(32))
+	c.request(newEvent(w.surface, surfaceCommit))
+	tc.awaitPattern(image.Pt(cascadeStep, cascadeStep), 32, 32, pix)
+
+	// Drag it down until its lower half is under the panel, then release.
+	start := image.Pt(cascadeStep+8, cascadeStep+8)
+	tc.grabMove(c, w, start)
+	to := image.Pt(cascadeStep+10, 120-panel-16)
+	tc.pointer(start.X+to.X-cascadeStep, start.Y+to.Y-cascadeStep, 1)
+	tc.pointer(start.X+to.X-cascadeStep, start.Y+to.Y-cascadeStep, 0)
+
+	// The window's upper half shows above the panel, and the panel covers
+	// the rest.
+	tc.awaitPattern(to, 32, 16, pix[:4*32*16])
+	tc.awaitPixel(image.Pt(to.X+8, 120-panel+4), red)
+	tc.awaitPixel(image.Pt(cascadeStep, cascadeStep), background)
+	if tc.copies == 0 {
+		t.Fatal("the move sent the window's pixels instead of a copy")
+	}
+}
+
+// grabMove presses on the window w at the screen point at and asks to move
+// it, so pointer motion with the button held drags it.
+func (tc *testCompositor) grabMove(c *testClient, w testWindow, at image.Point) {
+	// Press on it, noting the press's serial.
+	tc.t.Helper()
+	pointer := c.newID()
+	c.request(newEvent(idSeat, seatGetPointer).uint(pointer))
+	c.roundtrip()
+	tc.pointer(at.X, at.Y, 1)
+	m := c.await(pointer, pointerButton)
+	serial := m.uint()
+
+	// Ask to move it.
+	c.request(newEvent(w.toplevel, toplevelMove).uint(idSeat).uint(serial))
+	c.roundtrip()
 }
 
 // TestUnmapNullBuffer checks a window a null buffer unmaps leaves the

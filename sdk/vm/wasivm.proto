@@ -161,7 +161,10 @@ service WasiVmDisplayService {
   // Display streams the screen and carries input back. Once the guest brings
   // up a display, an X server on display 0 or a Wayland client, the VM sends
   // the whole screen, then each change. The viewer sends pointer and key
-  // input. The stream ends when the display closes.
+  // input, and reports each frame it draws; the VM sends the next frame only
+  // after that report, so a slow viewer gets fewer frames, each covering
+  // every change since the last, instead of a growing queue. The stream ends
+  // when the display closes.
   rpc Display(stream WasiVmDisplayInput) returns (stream WasiVmDisplayFrame);
 }
 
@@ -212,15 +215,21 @@ message WasiVmDisplayRegion {
   bytes rgba = 5;
 }
 
-// WasiVmDisplayInput is a pointer or key event from the viewer.
+// WasiVmDisplayInput is a pointer or key event from the viewer, or its report
+// that it drew a frame.
 message WasiVmDisplayInput {
   oneof body {
     // Pointer moves the pointer and sets its buttons.
     WasiVmPointerEvent pointer = 1;
     // Key presses or releases a key.
     WasiVmKeyEvent key = 2;
+    // Drawn reports the viewer drew the last frame and takes the next.
+    WasiVmFrameDrawn drawn = 3;
   }
 }
+
+// WasiVmFrameDrawn reports that the viewer drew the last frame it received.
+message WasiVmFrameDrawn {}
 
 // WasiVmPointerEvent moves the pointer and sets which buttons are held.
 message WasiVmPointerEvent {

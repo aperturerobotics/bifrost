@@ -105,6 +105,8 @@ export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
               )
             }
           }
+          // Take the next frame, which holds every change made meanwhile.
+          input.push({ body: { case: 'drawn', value: {} } })
           if (!ready && !cancelled) {
             ready = true
             setStatus({ kind: 'ready' })
