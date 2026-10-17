@@ -157,3 +157,16 @@ message SetRetainedRootOp {
   // RootRef is the World root block to retain, or empty to release.
   .block.BlockRef root_ref = 2;
 }
+
+// BackfillState is the outcome of the last finished backfill copy on this
+// device.
+message BackfillState {
+  // Root is the installed World root the copy covered, with the retained
+  // roots of that World.
+  .block.BlockRef root = 1;
+  // Holes counts the blocks of those roots that no reachable store held.
+  // Zero means the local store holds every block of them.
+  uint32 holes = 2;
+  // Seqno is the World seqno of Root. A later copy never covers a lower one.
+  uint64 seqno = 3;
+}

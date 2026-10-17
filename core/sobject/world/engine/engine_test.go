@@ -9,6 +9,7 @@ import (
 
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/pkg/errors"
 	provider "github.com/s4wave/spacewave/core/provider"
 	provider_local "github.com/s4wave/spacewave/core/provider/local"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -114,6 +115,49 @@ func TestWorldEngineController(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
+	// Backfill reports a complete copy at or after the current seqno, follows
+	// each commit, and clears when turned off.
+	err = world.AccessEngine(ctx, busEngine, func(ctx context.Context, eng world.Engine) error {
+		// Turn backfill on and wait for a copy of the current World.
+		backfill := eng.(sobject_world_engine.BackfillEngine)
+		if err := backfill.SetBackfill(ctx, true); err != nil {
+			return err
+		}
+		if err := waitBackfilled(ctx, eng, backfill); err != nil {
+			return err
+		}
+
+		// Commit a change and wait for a copy that covers it.
+		tx, err := eng.NewTransaction(ctx, true)
+		if err != nil {
+			return err
+		}
+		objectState, err := tx.CreateObject(ctx, "backfill-object", nil)
+		world.ReleaseObjectState(objectState)
+		if err == nil {
+			err = tx.Commit(ctx)
+		}
+		tx.Discard()
+		if err != nil {
+			return err
+		}
+		if err := waitBackfilled(ctx, eng, backfill); err != nil {
+			return err
+		}
+
+		// Turn backfill off, which clears its state.
+		if err := backfill.SetBackfill(ctx, false); err != nil {
+			return err
+		}
+		if state := backfill.GetBackfillState().GetValue(); state != nil {
+			return errors.Errorf("backfill state after turning it off: %v", state)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
 	// Write past the checkpoint threshold. As the only roster member, the
 	// owner checkpoints its stable history and trims the operation set.
 	for i := range sobject.MinCheckpointOperations {
@@ -168,6 +212,19 @@ func TestWorldEngineController(t *testing.T) {
 			t.Fatalf("object %s after remounting: found %v, %v", key, found, err)
 		}
 	}
+}
+
+// waitBackfilled waits for a complete backfill of the World at or after its
+// current seqno.
+func waitBackfilled(ctx context.Context, eng world.Engine, backfill sobject_world_engine.BackfillEngine) error {
+	seqno, err := eng.GetSeqno(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = backfill.GetBackfillState().WaitValueWithValidator(ctx, func(state *sobject_world_engine.BackfillState) (bool, error) {
+		return state.IsComplete() && !state.GetRoot().GetEmpty() && state.GetSeqno() >= seqno, nil
+	}, nil)
+	return err
 }
 
 // checkpointTrimmed reports whether snap holds a checkpoint above genesis and

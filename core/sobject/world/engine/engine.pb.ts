@@ -526,3 +526,42 @@ export const SOWorldOp: MessageType<SOWorldOp> =
       },
     ] satisfies readonly PartialFieldInfo[],
   })
+
+/**
+ * BackfillState is the outcome of the last finished backfill copy on this
+ * device.
+ *
+ * @generated from message sobject.world.engine.BackfillState
+ */
+export interface BackfillState {
+  /**
+   * Root is the installed World root the copy covered, with the retained
+   * roots of that World.
+   *
+   * @generated from field: block.BlockRef root = 1;
+   */
+  root?: BlockRef
+  /**
+   * Holes counts the blocks of those roots that no reachable store held.
+   * Zero means the local store holds every block of them.
+   *
+   * @generated from field: uint32 holes = 2;
+   */
+  holes?: number
+  /**
+   * Seqno is the World seqno of Root. A later copy never covers a lower one.
+   *
+   * @generated from field: uint64 seqno = 3;
+   */
+  seqno?: bigint
+}
+
+export const BackfillState: MessageType<BackfillState> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.world.engine.BackfillState',
+    fields: [
+      { no: 1, name: 'root', kind: 'message', T: () => BlockRef },
+      { no: 2, name: 'holes', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 3, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
