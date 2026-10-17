@@ -36,7 +36,7 @@ func buildTestbedHandle(t *testing.T) (*testbed.Testbed, world.WorldState, ExecC
 	volumeID := tb.Volume.GetID()
 	bucketID := tb.BucketId
 	objectStoreID := engineID
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
+	wh, worldCtrlRef, err := world.StartEngine(
 		ctx,
 		tb.Bus,
 		world_block_engine.NewConfig(
@@ -47,17 +47,12 @@ func buildTestbedHandle(t *testing.T) (*testbed.Testbed, world.WorldState, ExecC
 			nil,
 			false,
 		),
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	t.Cleanup(worldCtrlRef.Release)
-
-	// Obtain the mounted World engine for the execution handle.
-	wh, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 
 	// Construct the execution handle over a stage of the mounted World state
 	// held until the test ends.

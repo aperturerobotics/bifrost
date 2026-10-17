@@ -27,13 +27,7 @@ func TestWorldEngineStaleHeadPublicationRejectsOpenWriter(t *testing.T) {
 	ctx := context.Background()
 	eng, cleanup := setupWorldEngineCoordBaseline(t, ctx)
 	defer cleanup()
-	rootOwner, ok := eng.(interface {
-		GetRootRef() *bucket.ObjectRef
-		SetRootRef(context.Context, *bucket.ObjectRef) error
-	})
-	if !ok {
-		t.Fatal("world engine does not expose root publication controls")
-	}
+	rootOwner := blockEngine(ctx, t, eng)
 
 	// Commit the initial World root to retain its publication reference.
 	initialTx, err := eng.NewTransaction(ctx, true)
@@ -189,7 +183,7 @@ func setupWorldEngineCoordBaseline(t testing.TB, ctx context.Context) (world_blo
 	}
 
 	// Start the World engine with its encrypted storage configuration.
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
+	eng, worldCtrlRef, err := world.StartEngine(
 		ctx,
 		tb.Bus,
 		world_block_engine.NewConfig(
@@ -201,6 +195,7 @@ func setupWorldEngineCoordBaseline(t testing.TB, ctx context.Context) (world_blo
 			transformConf,
 			true,
 		),
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -213,11 +208,7 @@ func setupWorldEngineCoordBaseline(t testing.TB, ctx context.Context) (world_blo
 		t.Fatal(err)
 	}
 
-	// Resolve the World engine and return cleanup for its retained resources.
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	// Return the World engine with cleanup for its retained resources.
 	return eng, func() {
 		relOpc()
 		worldCtrlRef.Release()

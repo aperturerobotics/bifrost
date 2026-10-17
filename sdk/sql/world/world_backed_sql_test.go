@@ -39,7 +39,7 @@ func TestSqlDbFactoryCommitsWorldBackedRootAndReplaysOp(t *testing.T) {
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)

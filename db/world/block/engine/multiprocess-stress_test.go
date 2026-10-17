@@ -25,7 +25,6 @@ import (
 	volume_controller "github.com/s4wave/spacewave/db/volume/controller"
 	volume_s4db "github.com/s4wave/spacewave/db/volume/s4db"
 	"github.com/s4wave/spacewave/db/world"
-	world_block "github.com/s4wave/spacewave/db/world/block"
 	world_block_engine "github.com/s4wave/spacewave/db/world/block/engine"
 	"github.com/sirupsen/logrus"
 )
@@ -156,12 +155,8 @@ func initWorldEngineStressVolume(t *testing.T, path string) {
 	// Open the s4db testbed and its World engine controller.
 	tb := newWorldEngineStressTestbed(t, ctx, path, "init")
 	defer tb.Release()
-	ctrl, ref := startWorldEngineStressController(t, ctx, tb, "stress-init")
+	eng, ref := startWorldEngineStress(t, ctx, tb, "stress-init")
 	defer ref.Release()
-	eng, err := ctrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 
 	// Commit the initial World object before concurrent stress begins.
 	tx, err := eng.NewTransaction(ctx, true)
@@ -303,12 +298,8 @@ func runWorldEngineStressWorker(t *testing.T, role string) {
 	// Open the shared s4db World through the stress controller.
 	tb := newWorldEngineStressTestbed(t, ctx, path, fmt.Sprintf("%s-%d", role, id))
 	defer tb.Release()
-	ctrl, ref := startWorldEngineStressController(t, ctx, tb, fmt.Sprintf("stress-%s-%d", role, id))
+	eng, ref := startWorldEngineStress(t, ctx, tb, fmt.Sprintf("stress-%s-%d", role, id))
 	defer ref.Release()
-	eng, err := ctrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 
 	// Execute the configured World stress writer, reader, or verifier.
 	switch role {
@@ -555,12 +546,12 @@ func refreshObjectStoreForCoordination(store object.ObjectStore) error {
 	return refreshable.RefreshForCoordinationLock()
 }
 
-func startWorldEngineStressController(
+func startWorldEngineStress(
 	t *testing.T,
 	ctx context.Context,
 	tb *testbed.Testbed,
 	engineID string,
-) (*world_block_engine.Controller, interface{ Release() }) {
+) (world.Engine, interface{ Release() }) {
 	// Configure and start the World stress controller on the shared s4db volume.
 	t.Helper()
 	transformConf, err := block_transform.NewConfig(nil)
@@ -579,15 +570,11 @@ func startWorldEngineStressController(
 		nil,
 		false,
 	)
-	ctrl, ref, err := world_block_engine.StartEngineWithConfig(ctx, tb.Bus, conf)
+	eng, ref, err := world.StartEngine(ctx, tb.Bus, conf, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	if _, err := ctrl.GetWorldEngine(ctx); err != nil {
-		ref.Release()
-		t.Fatal(err.Error())
-	}
-	return ctrl, ref
+	return eng, ref
 }
 
 func runWorldEngineStressWriter(
@@ -667,7 +654,7 @@ func runWorldEngineStressReader(
 	iterations int,
 ) {
 	t.Helper()
-	blockEng := eng.(*world_block.Engine)
+	blockEng := blockEngine(ctx, t, eng)
 	var lastSeqno uint64
 	for i := range iterations {
 		seqno, err := blockEng.GetSeqno(ctx)
@@ -711,12 +698,10 @@ func runWorldEngineStressVerifier(
 func describeWorldEngineStressState(ctx context.Context, eng world.Engine, writers, iterations int) string {
 	// Capture the World stress sequence for failure diagnostics.
 	var parts []string
-	if blockEng, ok := eng.(*world_block.Engine); ok {
-		if seqno, err := blockEng.GetSeqno(ctx); err == nil {
-			parts = append(parts, fmt.Sprintf("seqno=%d", seqno))
-		} else {
-			parts = append(parts, fmt.Sprintf("seqnoErr=%v", err))
-		}
+	if seqno, err := eng.GetSeqno(ctx); err == nil {
+		parts = append(parts, fmt.Sprintf("seqno=%d", seqno))
+	} else {
+		parts = append(parts, fmt.Sprintf("seqnoErr=%v", err))
 	}
 
 	// Count present and missing stress objects through read transactions.

@@ -33,7 +33,7 @@ func TestInstallSpacePluginArtifact(t *testing.T) {
 	}
 
 	// Install the artifact through the mounted Space Resource.
-	body := &spaceResourceChatBody{engine: tb.BusEngine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
+	body := &spaceResourceChatBody{engine: tb.Engine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
 	resource := NewSpaceResourceWithSessionPeerID(tb.Logger, tb.Bus, body, tb.Volume.GetPeerID().String())
 	client := s4wave_space.NewSRPCSpaceResourceServiceClient(spaceResourceClient(t, resource.GetMux()))
 	request := &s4wave_space.AddSpacePluginRequest{PluginId: settingsPluginID, ManifestKey: key}

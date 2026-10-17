@@ -63,7 +63,7 @@ func TestConnectTerminalOpensSshHostSession(t *testing.T) {
 			// Create the optional password Secret referenced by the SSH Host.
 			var credentials *s4wave_sshhost.SshHostCredentialRefs
 			if !test.noAuth {
-				if _, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.BusEngine, s4wave_secret.CreateSecretOptions{
+				if _, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.Engine, s4wave_secret.CreateSecretOptions{
 					ObjectKey:   "secrets/ssh/password",
 					DisplayName: "SSH password",
 					Kind:        s4wave_secret.SecretKindSSHPassword,
@@ -181,7 +181,7 @@ func TestConnectTerminalChallengesAndRemembersAcceptedUnknownSshHostKey(t *testi
 	}
 
 	// Store the SSH password in a Secret for the Host.
-	if _, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.BusEngine, s4wave_secret.CreateSecretOptions{
+	if _, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.Engine, s4wave_secret.CreateSecretOptions{
 		ObjectKey:   "secrets/ssh/password",
 		DisplayName: "SSH password",
 		Kind:        s4wave_secret.SecretKindSSHPassword,
@@ -311,7 +311,7 @@ func TestConnectTerminalRejectsUnknownSshHostKeyWithoutRemembering(t *testing.T)
 	}
 
 	// Store the SSH password in a Secret for the Host.
-	if _, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.BusEngine, s4wave_secret.CreateSecretOptions{
+	if _, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.Engine, s4wave_secret.CreateSecretOptions{
 		ObjectKey:   "secrets/ssh/password",
 		DisplayName: "SSH password",
 		Kind:        s4wave_secret.SecretKindSSHPassword,

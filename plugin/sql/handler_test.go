@@ -634,7 +634,7 @@ func openQuickstartSQLStore(
 	inv, cleanup, err := handler.openObjectType(
 		ctx,
 		s4wave_sql_world.SqlDbTypeID,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		sqlQuickstartDBKey,
 	)
@@ -656,7 +656,7 @@ func openQuickstartQueryClient(
 	inv, cleanup, err := handler.openObjectType(
 		ctx,
 		s4wave_sql_query.SqlQueryTypeID,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		sqlQuickstartQueryKey,
 	)
@@ -761,7 +761,7 @@ func newSQLObjectTypeBridgeHarness(
 	cleanupFns = append(cleanupFns, worldOpBridgeRel)
 
 	// Expose the World Engine through a typed object resource client.
-	engineResource := resource_world.NewEngineResource(le, tb.Bus, tb.BusEngine, nil, nil)
+	engineResource := resource_world.NewEngineResource(le, tb.Bus, tb.Engine, nil, nil)
 	engineClient, engineRootClient, cleanupEngine := newSQLResourceClient(t, engineResource.GetMux())
 	cleanupFns = append(cleanupFns, cleanupEngine)
 	typedObjects := s4wave_world.NewSRPCTypedObjectResourceServiceClient(engineRootClient)

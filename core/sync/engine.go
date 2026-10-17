@@ -118,19 +118,17 @@ func Open(ctx context.Context, le *logrus.Entry, backing storage.Storage) (_ *En
 	if _, _, _, err := volume.ApplyBucketConfig(ctx, &bucket.Config{Id: "sync", Rev: 1}); err != nil {
 		return nil, err
 	}
-	worldController, worldRef, err := world_block_engine.StartEngineWithConfig(ctx, b, world_block_engine.NewConfig(
+	worldConf := world_block_engine.NewConfig(
 		"sync", volume.GetID(), "sync", "sync", &bucket.ObjectRef{BucketId: "sync"}, nil, false,
-	))
+	)
+	worldEngine, worldRef, err := world.StartEngine(ctx, b, worldConf, nil)
 	if err != nil {
 		return nil, err
 	}
 	engine.refs = append(engine.refs, worldRef)
 
-	// Wait for the World engine and expose its writable state.
-	engine.World, err = worldController.GetWorldEngine(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// Expose the World engine's writable state.
+	engine.World = worldEngine
 	engine.State = world.NewEngineWorldState(engine.World, true)
 	return engine, nil
 }

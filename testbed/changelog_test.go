@@ -56,15 +56,11 @@ func TestChangelogStorageVolume(t *testing.T) {
 		nil,
 		true,
 	)
-	ctrl, ctrlRef, err := world_block_engine.StartEngineWithConfig(ctx, tb.Bus, conf)
+	eng, engRef, err := world.StartEngine(ctx, tb.Bus, conf, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ctrlRef.Release()
-	eng, err := ctrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	defer engRef.Release()
 
 	// Commit a write that changes nothing.
 	tx, err := eng.NewTransaction(ctx, true)

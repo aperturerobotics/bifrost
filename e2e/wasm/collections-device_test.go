@@ -177,22 +177,18 @@ func mountPluginBuildDevice(t *testing.T, ctx context.Context, author *s4wave_se
 	}
 	t.Cleanup(releasePairedSession)
 
-	// Start the Space world engine.
+	// Start the Space world engine with the Space operations.
 	ref := sobject.NewSharedObjectRef("local", pairedRef.GetProviderResourceRef().GetProviderAccountId(), spaceID, provider_local.SobjectBlockStoreID(spaceID))
-	engine, _, engineRef, err := sobject_world_engine.StartEngineWithConfig(ctx, tb.Bus,
-		sobject_world_engine.NewConfig("plugin-device-space", ref), nil)
+	worldEngine, engineRef, err := world.StartEngine(ctx, tb.Bus,
+		sobject_world_engine.NewConfig("plugin-device-space", ref),
+		sobject_world_engine.NewFactoryWithLookupOp(tb.Bus, space_optypes.LookupWorldOp))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(engineRef.Release)
-	engine.SetStaticLookupOp(space_optypes.LookupWorldOp)
-	if _, err := engine.GetWorldEngine(ctx); err != nil {
-		t.Fatal(err)
-	}
-
-	// Open a world engine and peer for the paired device.
-	worldEngine := world.NewBusEngine(ctx, tb.Bus, "plugin-device-space")
 	t.Cleanup(worldEngine.ClearContext)
+
+	// Open a peer for the paired device.
 	localPeer, err := peer.NewPeer(paired.GetPrivKey())
 	if err != nil {
 		t.Fatal(err)

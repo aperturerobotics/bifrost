@@ -243,7 +243,7 @@ func setupSecretSpaceResourceTest(
 	resource := &SpaceResource{
 		le:            tb.Logger,
 		b:             tb.Bus,
-		space:         &secretSpaceBody{ref: spaceRef, engine: tb.BusEngine},
+		space:         &secretSpaceBody{ref: spaceRef, engine: tb.Engine},
 		sessionPeerID: tb.Volume.GetPeerID().String(),
 	}
 	return tb, resource, func() {

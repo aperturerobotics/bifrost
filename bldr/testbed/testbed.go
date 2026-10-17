@@ -201,24 +201,13 @@ func BuildTestbedWithSchedulerConfig(
 		false,
 	)
 
-	// Start the world block engine controller.
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
-		ctx,
-		b,
-		engConf,
-	)
+	// Start the world block engine and build its World state.
+	eng, engRef, err := world.StartEngine(ctx, b, engConf, nil)
 	if err != nil {
 		rel()
 		return nil, err
 	}
-	rels = append(rels, worldCtrlRef.Release)
-
-	// Wait for the world engine and build its World state.
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		rel()
-		return nil, err
-	}
+	rels = append(rels, engRef.Release)
 	worldState := world.NewEngineWorldState(eng, true)
 
 	// register the world operation types for plugin host

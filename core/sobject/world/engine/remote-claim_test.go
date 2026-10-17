@@ -70,32 +70,20 @@ func TestRemoteSharedObjectWorldApplyPreservesExecutionClaim(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Start the SharedObject World engine.
+	// Register the execution operations, then start the SharedObject World
+	// engine.
 	const engineID = "remote-shared-object-claim"
-	engineController, _, engineControllerRef, err := sobject_world_engine.StartEngineWithConfig(
-		ctx,
-		tb.Bus,
-		sobject_world_engine.NewConfig(engineID, soRef),
-		nil,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(engineControllerRef.Release)
-
-	// Register the execution operations on the engine.
 	opController := world.NewLookupOpController("remote-execution-ops", engineID, world.NewSchema(execution_tx.TxTypes).LookupOp)
 	releaseOps, err := tb.Bus.AddController(ctx, opController, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(releaseOps)
-
-	// Open the engine.
-	engine, err := engineController.GetWorldEngine(ctx)
+	engine, engineRef, err := world.StartEngine(ctx, tb.Bus, sobject_world_engine.NewConfig(engineID, soRef), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(engineRef.Release)
 
 	// Create a pending execution in the engine.
 	const objectKey = "test/execution/remote-shared-object-claim"

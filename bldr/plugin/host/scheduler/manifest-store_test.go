@@ -33,7 +33,7 @@ func TestControllerEnsuresManifestStoreOnPluginDemand(t *testing.T) {
 		false,
 		false,
 	))
-	state := world.NewEngineWorldState(tb.BusEngine, false)
+	state := world.NewEngineWorldState(tb.Engine, false)
 
 	// The manifest store must not exist yet.
 	objectState, exists, err := state.GetObject(ctx, objectKey)

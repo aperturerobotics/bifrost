@@ -30,13 +30,9 @@ type Testbed struct {
 	EngineObjectStoreID string
 	// EngineID identifies the engine on the bus.
 	EngineID string
-	// Engine is a direct reference to the running world engine.
+	// Engine resolves the running world engine on the bus.
 	Engine world.Engine
-	// EngineController contains the world engine controller.
-	EngineController *world_block_engine.Controller
-	// BusEngine locates the engine through bus directives.
-	BusEngine world.Engine
-	// WorldState exposes the BusEngine-backed engine state.
+	// WorldState exposes the Engine's state.
 	WorldState world.WorldState
 	// StorageID identifies the storage controller.
 	StorageID string
@@ -115,25 +111,13 @@ func NewTestbed(tb *testbed.Testbed, opts ...Option) (t *Testbed, tbErr error) {
 	engConf.Verbose = worldVerbose
 
 	// Start the world engine and retain its release callback.
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
-		ctx,
-		b,
-		engConf,
-	)
+	eng, engRef, err := world.StartEngine(ctx, b, engConf, nil)
 	if err != nil {
 		return nil, err
 	}
-	rels = append(rels, worldCtrlRef.Release)
-	t.EngineController = worldCtrl
-
-	// Resolve the running engine and expose its bus-backed state.
-	engh, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		return nil, err
-	}
-	t.Engine = engh
-	t.BusEngine = world.NewBusEngine(ctx, b, t.EngineID)
-	t.WorldState = world.NewEngineWorldState(t.BusEngine, true)
+	rels = append(rels, engRef.Release)
+	t.Engine = eng
+	t.WorldState = world.NewEngineWorldState(eng, true)
 
 	// Select the storage controller identifier.
 	storageID := "default"

@@ -73,28 +73,24 @@ func TestWorldEngineController(t *testing.T) {
 
 	// Start the engine, and serve the mock operations to it.
 	engineID := "test-world-engine"
-	startEngine := func() (*sobject_world_engine.Controller, directive.Reference) {
-		engineConf := sobject_world_engine.NewConfig(engineID, createdSoRef)
-		worldCtrl, _, worldCtrlRef, err := sobject_world_engine.StartEngineWithConfig(ctx, tb.Bus, engineConf, nil)
-		if err != nil {
-			t.Fatal(err.Error())
-		}
-		return worldCtrl, worldCtrlRef
-	}
-	worldCtrl, worldCtrlRef := startEngine()
-	defer worldCtrlRef.Release()
 	opc := world.NewLookupOpController("test-world-engine-ops", engineID, world_mock.LookupMockOp)
 	relOpc, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	defer relOpc()
+	startEngine := func() (*world.BusEngine, directive.Reference) {
+		engineConf := sobject_world_engine.NewConfig(engineID, createdSoRef)
+		eng, engRef, err := world.StartEngine(ctx, tb.Bus, engineConf, nil)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		return eng, engRef
+	}
+	eng, engRef := startEngine()
+	defer engRef.Release()
 
 	// Open and discard a write transaction.
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 	engTx, err := eng.NewTransaction(ctx, true)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -154,13 +150,9 @@ func TestWorldEngineController(t *testing.T) {
 	}
 
 	// Remount the engine.
-	worldCtrlRef.Release()
-	worldCtrl, worldCtrlRef = startEngine()
-	defer worldCtrlRef.Release()
-	eng, err = worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	engRef.Release()
+	eng, engRef = startEngine()
+	defer engRef.Release()
 
 	// The suite's object and the objects below the checkpoint remain.
 	engTx, err = eng.NewTransaction(ctx, false)

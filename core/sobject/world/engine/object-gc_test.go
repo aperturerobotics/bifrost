@@ -109,28 +109,24 @@ func newSpaceWorld(ctx context.Context, t *testing.T) *spaceWorld {
 		t.Fatal(err)
 	}
 
-	// Start the World engine on the SharedObject without a changelog, as a
-	// Space does, so replaced roots are unreachable from the head.
+	// Register the mock and file operations.
 	engineID := "file-gc-engine"
-	conf := sobject_world_engine.NewConfig(engineID, soRef)
-	conf.InitWorldOp = &sobject_world_engine.InitWorldOp{LastChangeDisable: true}
-	ctrl, _, ctrlRef, err := sobject_world_engine.StartEngineWithConfig(ctx, tb.Bus, conf, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(ctrlRef.Release)
-
-	// Register the mock and file operations and get the engine.
 	lookupOp := world.NewLookupOpFromSlice(world.LookupOpSlice{world_mock.LookupMockOp, world.NewSchema(unixfs_world.UnixfsTypes).LookupOp})
 	relOpc, err := tb.Bus.AddController(ctx, world.NewLookupOpController("file-gc-ops", engineID, lookupOp), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(relOpc)
-	eng, err := ctrl.GetWorldEngine(ctx)
+
+	// Start the World engine on the SharedObject without a changelog, as a
+	// Space does, so replaced roots are unreachable from the head.
+	conf := sobject_world_engine.NewConfig(engineID, soRef)
+	conf.InitWorldOp = &sobject_world_engine.InitWorldOp{LastChangeDisable: true}
+	eng, engRef, err := world.StartEngine(ctx, tb.Bus, conf, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(engRef.Release)
 
 	// Look up the volume that holds the Space bucket.
 	vol, _, volRef, err := volume.ExLookupVolume(ctx, tb.Bus, provider_local.StorageVolumeID(providerID, accountID), "", false)

@@ -45,7 +45,7 @@ func TestLocalPluginFrontend(t *testing.T) {
 
 	// Open the mounted Space Resource and seed its compiler source files.
 	request := setupPluginBuildSource(t, tb, shared.GetPeerID())
-	body := space_sobject.NewSpaceBody(ref, tb.EngineID, tb.EngineBucketID, tb.EngineVolumeID, shared, tb.BusEngine)
+	body := space_sobject.NewSpaceBody(ref, tb.EngineID, tb.EngineBucketID, tb.EngineVolumeID, shared, tb.Engine)
 	resource := NewSpaceResourceWithSessionPeerID(tb.Logger, tb.Bus, body, shared.GetPeerID().String())
 	resources := newSpaceRecordingResourceClient(ctx)
 	ctx = resource_server.WithResourceClientContext(ctx, resources)

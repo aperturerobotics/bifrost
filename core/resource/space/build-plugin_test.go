@@ -38,7 +38,7 @@ func TestQueueSpacePluginBuild(t *testing.T) {
 	}
 
 	// Mount the Space Resource as the submitting Session and queue the build.
-	body := &spaceResourceChatBody{engine: tb.BusEngine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
+	body := &spaceResourceChatBody{engine: tb.Engine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
 	resource := NewSpaceResourceWithSessionPeerID(tb.Logger, tb.Bus, body, peer.String())
 	client := s4wave_space.NewSRPCSpaceResourceServiceClient(spaceResourceClient(t, resource.GetMux()))
 	response, err := client.BuildSpacePlugin(ctx, request)

@@ -20,8 +20,8 @@ import (
 )
 
 func BenchmarkSharedObjectWorldEngineFinalizationBaseline(b *testing.B) {
+	// Start the testbed with the SharedObject engine and local provider.
 	ctx := b.Context()
-
 	tb, err := testbed.Default(ctx)
 	if err != nil {
 		b.Fatal(err)
@@ -30,6 +30,7 @@ func BenchmarkSharedObjectWorldEngineFinalizationBaseline(b *testing.B) {
 	tb.StaticResolver.AddFactory(sobject_world_engine.NewFactory(tb.Bus))
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
 
+	// Load the local provider.
 	providerID := "local"
 	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
@@ -40,12 +41,12 @@ func BenchmarkSharedObjectWorldEngineFinalizationBaseline(b *testing.B) {
 	}
 	defer provCtrlRef.Release()
 
+	// Create the SharedObject the engine writes through.
 	provAcc, provAccRef, err := provider.ExAccessProviderAccount(ctx, tb.Bus, providerID, "coord-baseline-account", false, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
 	defer provAccRef.Release()
-
 	soProv, err := sobject.GetSharedObjectProviderAccountFeature(ctx, provAcc)
 	if err != nil {
 		b.Fatal(err)
@@ -57,36 +58,27 @@ func BenchmarkSharedObjectWorldEngineFinalizationBaseline(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	// Serve the mock operations, then start the engine.
 	engineID := "coord-baseline-shared-object-engine"
-	worldCtrl, _, worldCtrlRef, err := sobject_world_engine.StartEngineWithConfig(
-		ctx,
-		tb.Bus,
-		sobject_world_engine.NewConfig(engineID, createdSoRef),
-		nil,
-	)
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer worldCtrlRef.Release()
-
 	opc := world.NewLookupOpController("coord-baseline-shared-object-ops", engineID, world_mock.LookupMockOp)
 	relOpc, err := tb.Bus.AddController(ctx, opc, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
 	defer relOpc()
-
-	eng, err := worldCtrl.GetWorldEngine(ctx)
+	eng, engRef, err := world.StartEngine(ctx, tb.Bus, sobject_world_engine.NewConfig(engineID, createdSoRef), nil)
 	if err != nil {
 		b.Fatal(err)
 	}
+	defer engRef.Release()
 
+	// Commit one object per iteration and time each commit's finalization.
 	var totalFinalizationLatency time.Duration
 	var rootSeqno uint64
-	var parityHash uint32
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		// Create the iteration's object.
 		tx, err := eng.NewTransaction(ctx, true)
 		if err != nil {
 			b.Fatal(err)
@@ -100,6 +92,8 @@ func BenchmarkSharedObjectWorldEngineFinalizationBaseline(b *testing.B) {
 				b.Fatal(err)
 			}
 		}
+
+		// Commit it and record the finalization latency and root sequence.
 		start := time.Now()
 		if err := tx.Commit(ctx); err != nil {
 			b.Fatal(err)
@@ -111,15 +105,19 @@ func BenchmarkSharedObjectWorldEngineFinalizationBaseline(b *testing.B) {
 		}
 	}
 	b.StopTimer()
+
+	// Hash the committed objects for parity with other baselines.
 	readTx, err := eng.NewTransaction(ctx, false)
 	if err != nil {
 		b.Fatal(err)
 	}
-	parityHash, err = sharedObjectBaselineHash(ctx, readTx, "coord-baseline/object/")
+	parityHash, err := sharedObjectBaselineHash(ctx, readTx, "coord-baseline/object/")
 	readTx.Discard()
 	if err != nil {
 		b.Fatal(err)
 	}
+
+	// Report the baseline metrics.
 	b.ReportMetric(1, "writers/op")
 	b.ReportMetric(1, "shared_object_ops/op")
 	b.ReportMetric(1, "local_finalization_waits/op")

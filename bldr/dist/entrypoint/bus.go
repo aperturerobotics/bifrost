@@ -367,24 +367,13 @@ func BuildDistBus(
 	engConf.DisableLookup = true
 	engConf.RecoverMissingPersistedHead = true
 
-	// Start the shared project World engine.
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
-		ctx,
-		b,
-		engConf,
-	)
+	// Start the shared project World engine and build its world state handle.
+	eng, engRef, err := world.StartEngine(ctx, b, engConf, nil)
 	if err != nil {
 		rel()
 		return nil, err
 	}
-	rels.add(worldCtrlRef.Release)
-
-	// Resolve the engine and build its world state handle.
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		rel()
-		return nil, err
-	}
+	rels.add(engRef.Release)
 	worldState := world.NewEngineWorldState(eng, true)
 
 	// register the world operation types for manifests

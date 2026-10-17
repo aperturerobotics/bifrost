@@ -161,20 +161,14 @@ func BuildCliBus(rctx context.Context, le *logrus.Entry, projectID, stateRoot st
 		return nil, err
 	}
 
-	// Retain the world controller until bus cleanup.
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(ctx, b, engConf)
+	// Retain the world engine until bus cleanup and publish a writable World
+	// facade owned by this bus.
+	eng, engRef, err := world.StartEngine(ctx, b, engConf, nil)
 	if err != nil {
 		rel()
 		return nil, err
 	}
-	rels = append(rels, worldCtrlRef.Release)
-
-	// Publish a writable World facade owned by this bus.
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		rel()
-		return nil, err
-	}
+	rels = append(rels, engRef.Release)
 	worldState := world.NewEngineWorldState(eng, true)
 
 	// Return the bus and the single cleanup boundary.

@@ -343,7 +343,8 @@ func (c *Controller) GetWorldEngine(ctx context.Context) (Engine, error) {
 }
 
 // WaitWorldEngineReplaced waits until eng is no longer the published engine.
-// The controller replaces its engine when read access is lost and regained.
+// The controller replaces its engine when read access is lost and regained;
+// the engine lookup resolver follows each replacement through this wait.
 func (c *Controller) WaitWorldEngineReplaced(ctx context.Context, eng Engine) error {
 	_, err := c.engineCtr.WaitValueWithValidator(ctx, func(current *Engine) (bool, error) {
 		return current == nil || *current != eng, nil
@@ -412,4 +413,4 @@ func (c *Controller) Close() error {
 }
 
 // _ is a type assertion
-var _ world.Controller = (*Controller)(nil)
+var _ world.ReplacingController = (*Controller)(nil)

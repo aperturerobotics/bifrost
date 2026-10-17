@@ -381,15 +381,11 @@ func mountChatEngine(t *testing.T, ctx context.Context, tb *testbed.Testbed, ref
 	t.Cleanup(releaseLookup)
 
 	// Keep the engine controller mounted until all chat reads and writes finish.
-	controller, _, release, err := sobject_world_engine.StartEngineWithConfig(ctx, tb.Bus, sobject_world_engine.NewConfig(id, ref), nil)
+	engine, release, err := world.StartEngine(ctx, tb.Bus, sobject_world_engine.NewConfig(id, ref), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(release.Release)
-	engine, err := controller.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
 	return engine
 }
 

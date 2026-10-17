@@ -3,6 +3,7 @@ package world_block_engine_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -37,7 +38,7 @@ import (
 // changelog when enableChangelog is set.
 func newEngineTestbed(
 	t *testing.T,
-) (context.Context, *logrus.Entry, *testbed.Testbed, func(enableChangelog bool) (*world_block_engine.Controller, directive.Reference)) {
+) (context.Context, *logrus.Entry, *testbed.Testbed, func(enableChangelog bool) (*world.BusEngine, directive.Reference)) {
 	// Report failures at the caller and configure debug logging.
 	t.Helper()
 	ctx := t.Context()
@@ -75,7 +76,7 @@ func newEngineTestbed(
 		BucketId:      tb.BucketId,
 		TransformConf: stateTransformConf,
 	}
-	startEngine := func(enableChangelog bool) (*world_block_engine.Controller, directive.Reference) {
+	startEngine := func(enableChangelog bool) (*world.BusEngine, directive.Reference) {
 		engineConf := world_block_engine.NewConfig(
 			"test-world-engine",
 			tb.Volume.GetID(), tb.BucketId,
@@ -84,11 +85,11 @@ func newEngineTestbed(
 			stateTransformConf,
 			enableChangelog,
 		)
-		worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(ctx, tb.Bus, engineConf)
+		eng, engRef, err := world.StartEngine(ctx, tb.Bus, engineConf, nil)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-		return worldCtrl, worldCtrlRef
+		return eng, engRef
 	}
 	return ctx, le, tb, startEngine
 }
@@ -99,8 +100,8 @@ func TestWorldEngineController(t *testing.T) {
 	// Start the engine with a changelog.
 	ctx, le, tb, startEngine := newEngineTestbed(t)
 	engineID := "test-world-engine"
-	worldCtrl, worldCtrlRef := startEngine(true)
-	defer worldCtrlRef.Release()
+	eng, engRef := startEngine(true)
+	defer engRef.Release()
 
 	// Provide the mock object op handlers to the bus.
 	opc := world.NewLookupOpController("test-world-engine-ops", engineID, world_mock.LookupMockOp)
@@ -111,10 +112,6 @@ func TestWorldEngineController(t *testing.T) {
 	defer relOpc()
 
 	// Open and discard a write transaction on the engine.
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 	engTx, err := eng.NewTransaction(ctx, true)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -122,8 +119,7 @@ func TestWorldEngineController(t *testing.T) {
 	engTx.Discard()
 
 	// Run the World engine suite against the engine the bus resolves.
-	busEngine := world.NewBusEngine(ctx, tb.Bus, engineID)
-	if err := world_mock.TestWorldEngine(ctx, le, busEngine); err != nil {
+	if err := world_mock.TestWorldEngine(ctx, le, eng); err != nil {
 		t.Fatal(err.Error())
 	}
 	le.Info("world engine test suite passed")
@@ -139,13 +135,9 @@ func TestWorldEngineController(t *testing.T) {
 	}
 
 	// Remount the World.
-	worldCtrlRef.Release()
-	worldCtrl, worldCtrlRef = startEngine(true)
-	defer worldCtrlRef.Release()
-	eng, err = worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	engRef.Release()
+	eng, engRef = startEngine(true)
+	defer engRef.Release()
 
 	// Check that the suite's object survived the remount.
 	engTx, err = eng.NewTransaction(ctx, true)
@@ -209,17 +201,11 @@ func TestWorldEngineControllerUsesDeferredDurabilityWithoutGenerations(t *testin
 	)
 
 	// Start the World engine with that configuration.
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(ctx, tb.Bus, engineConf)
+	engine, engRef, err := world.StartEngine(ctx, tb.Bus, engineConf, nil)
 	if err != nil {
 		t.Fatalf("start world engine with unsupported coordinator: %v", err)
 	}
-	defer worldCtrlRef.Release()
-
-	// Resolve the World engine from its controller.
-	engine, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatalf("get world engine: %v", err)
-	}
+	defer engRef.Release()
 
 	// Open a write transaction to exercise deferred durability.
 	tx, err := engine.NewTransaction(ctx, true)
@@ -319,7 +305,7 @@ func TestWorldEngineControllerCoordinatorHeadWatch(t *testing.T) {
 
 	// A commit against a head replaced underneath the transaction fails as
 	// stale; then restore the original head.
-	baseHead := writerEngine.(*world_block.Engine).GetRootRef()
+	baseHead := blockEngine(ctx, t, writerEngine).GetRootRef()
 	staleTx := createObjectTx(ctx, t, writerEngine, "coordinator-stale-head-object")
 	writeRawHead(ctx, t, tb, objectStoreID, &bucket.ObjectRef{BucketId: tb.BucketId})
 	if err := staleTx.Commit(ctx); !errors.Is(err, coord.ErrStaleGeneration) {
@@ -348,7 +334,7 @@ func TestWorldEngineControllerCoordinatorHeadWatch(t *testing.T) {
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err.Error())
 	}
-	acceptedRoot := writerEngine.(*world_block.Engine).GetRootRef()
+	acceptedRoot := blockEngine(ctx, t, writerEngine).GetRootRef()
 	if acceptedRoot.Clone() == nil {
 		t.Fatalf("accepted root clone was nil: %#v", acceptedRoot)
 	}
@@ -424,16 +410,11 @@ func startHeadWatchEngine(
 		nil,
 		false,
 	)
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(ctx, tb.Bus, engineConf)
+	eng, engRef, err := world.StartEngine(ctx, tb.Bus, engineConf, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		worldCtrlRef.Release()
-		t.Fatal(err.Error())
-	}
-	return eng, worldCtrlRef.Release
+	return eng, engRef.Release
 }
 
 // createObjectTx opens a write transaction on eng and creates the object key
@@ -599,14 +580,10 @@ func readObjectsFound(ctx context.Context, t *testing.T, eng world.Engine, keys 
 func TestWorldEngineController_DisableChangelog(t *testing.T) {
 	// Start the engine without a changelog.
 	ctx, le, tb, startEngine := newEngineTestbed(t)
-	worldCtrl, worldCtrlRef := startEngine(false)
-	defer worldCtrlRef.Release()
+	eng, engRef := startEngine(false)
+	defer engRef.Release()
 
 	// Open and discard a write transaction on the engine.
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 	engTx, err := eng.NewTransaction(ctx, true)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -866,4 +843,24 @@ func TestWorldEngineWatchReload(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 	le.Infof("got sequence number after second write: %v", finalWriteSeqno)
+}
+
+// blockEngine returns the block engine the bus engine currently resolves, so a
+// test can read and publish its root directly.
+func blockEngine(ctx context.Context, t testing.TB, eng world.Engine) *world_block.Engine {
+	// Capture the block engine behind the bus engine's current value.
+	t.Helper()
+	var out *world_block.Engine
+	err := world.AccessEngine(ctx, eng, func(_ context.Context, eng world.Engine) error {
+		blockEng, ok := eng.(*world_block.Engine)
+		if !ok {
+			return fmt.Errorf("world engine is %T, not a block engine", eng)
+		}
+		out = blockEng
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	return out
 }

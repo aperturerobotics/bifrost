@@ -44,7 +44,7 @@ func newConnectorHarness(ctx context.Context, t *testing.T) *connectorHarness {
 	api := newFakeAdminAPI(t)
 
 	// Store the API token as a Secret of the API token kind.
-	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.BusEngine, s4wave_secret.CreateSecretOptions{
+	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.Engine, s4wave_secret.CreateSecretOptions{
 		ObjectKey:   "secrets/hyperline-token",
 		DisplayName: "Hyperline admin token",
 		Kind:        s4wave_secret.SecretKindAPIToken,
@@ -101,7 +101,7 @@ func (h *connectorHarness) execute(ctx context.Context, t *testing.T, sessionPee
 		ctx,
 		h.tb.Logger,
 		h.tb.Bus,
-		h.tb.BusEngine,
+		h.tb.Engine,
 		h.tb.WorldState,
 		connectorKey,
 	)
