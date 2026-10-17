@@ -72,5 +72,5 @@ func (d *Dialer) Execute() {
 	}
 
 	// Publish the link created from the dialed QUIC session.
-	d.result.SetResult(d.t.HandleSession(ctx, rconn))
+	d.result.SetResult(d.t.HandleSession(ctx, rconn, true))
 }

@@ -166,7 +166,7 @@ func (t *Transport) Execute(ctx context.Context) error {
 			return err
 		}
 
-		_, err = t.HandleSession(ctx, sess)
+		_, err = t.HandleSession(ctx, sess, false)
 		if err != nil {
 			t.le.WithError(err).Warn("cannot build link for session")
 			_ = sess.CloseWithError(500, "cannot build link")

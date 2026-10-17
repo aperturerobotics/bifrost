@@ -46,6 +46,9 @@ type Link struct {
 	closed func()
 	// closedOnce guards closed
 	closedOnce sync.Once
+	// dialed indicates the local side dialed the session.
+	// Set by Transport.HandleSession before the link is published.
+	dialed bool
 
 	// messagesMtx guards messages.
 	messagesMtx sync.Mutex

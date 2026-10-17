@@ -240,7 +240,7 @@ func (t *Transport) HandleConn(ctx context.Context, dial bool, pc net.PacketConn
 	}
 
 	// Build the link from the negotiated session and publish failures cleanly.
-	lnk, err := t.HandleSession(ctx, sess)
+	lnk, err := t.HandleSession(ctx, sess, dial)
 	if err != nil {
 		t.le.WithError(err).Warn("cannot build link for session")
 		_ = sess.CloseWithError(500, "cannot build link")
@@ -251,7 +251,8 @@ func (t *Transport) HandleConn(ctx context.Context, dial bool, pc net.PacketConn
 }
 
 // HandleSession handles a new Quic session, creating & registering a link.
-func (t *Transport) HandleSession(ctx context.Context, sess *quic.Conn) (*Link, error) {
+// dial indicates this side dialed the session.
+func (t *Transport) HandleSession(ctx context.Context, sess *quic.Conn, dial bool) (*Link, error) {
 	// Allocate a session ID before constructing the link.
 	t.mtx.Lock()
 	sessID := t.sessionCounter
@@ -279,6 +280,7 @@ func (t *Transport) HandleSession(ctx context.Context, sess *quic.Conn) (*Link, 
 	if err != nil {
 		return nil, err
 	}
+	lnk.dialed = dial
 
 	// Register the link and replace any prior session at this address.
 	t.mtx.Lock()
@@ -289,17 +291,27 @@ func (t *Transport) HandleSession(ctx context.Context, sess *quic.Conn) (*Link, 
 		rs := raddr.String()
 		delete(t.dialers, rs)
 	}
-	if elnk, elnkOk := t.links[as]; elnkOk {
-		rpeer := elnk.GetRemotePeer()
-		t.le.
-			WithField("remote-addr", as).
-			WithField("remote-peer", rpeer.String()).
-			Warn("usurping existing session with peer")
-		go elnk.Close()
+
+	// A prior session dialed the same way is one the dialer gave up on, so it
+	// closes. One dialed the other way is a simultaneous open, where the
+	// remote also holds both sessions: closing either here closes the one the
+	// remote kept, and both sides redial forever. Both stay open.
+	elnk := t.links[as]
+	if elnk != nil && elnk.dialed != dial {
+		elnk = nil
 	}
 	t.links[as] = lnk
 	go t.handler.HandleLinkEstablished(lnk)
 	t.mtx.Unlock()
+
+	// Close the replaced session before returning its successor.
+	if elnk != nil {
+		t.le.
+			WithField("remote-addr", as).
+			WithField("remote-peer", elnk.GetRemotePeer().String()).
+			Warn("usurping existing session with peer")
+		_ = elnk.Close()
+	}
 	return lnk, nil
 }
 
