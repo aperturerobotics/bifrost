@@ -13,6 +13,12 @@ type tx struct {
 	prefix []byte
 }
 
+// NewTx returns a view of lower that keeps every key under prefix. Commit and
+// Discard end lower.
+func NewTx(lower kvtx.Tx, prefix []byte) kvtx.Tx {
+	return newTx(lower, prefix)
+}
+
 // newTx constructs a new tx with a prefix.
 func newTx(lower kvtx.Tx, prefix []byte) *tx {
 	return &tx{lower: lower, prefix: prefix}

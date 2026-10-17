@@ -40,8 +40,10 @@ const seeds = 8
 type Blocks int
 
 const (
-	// DurableBlocks targets publish pending blocks with durable commits only.
-	DurableBlocks Blocks = iota
+	// DurablePutBlocks targets publish pending blocks with every commit, and
+	// commit durably while a block write is pending, since an ordered commit
+	// may outlive the unflushed payload.
+	DurablePutBlocks Blocks = iota
 	// AllBlocks targets publish pending blocks with every commit.
 	AllBlocks
 	// ImmediateBlocks targets make each block write and remove durable,
@@ -239,6 +241,9 @@ func runWorkload(ctx context.Context, s Target, blocks Blocks, seed uint64) ([]s
 	live := committed.clone()
 	allowed := []state{committed}
 
+	// putPending is set while a block write waits for a commit to publish it.
+	var putPending bool
+
 	// Advance the target and track the states each commit permits after a crash.
 	for step := range ops {
 		// Apply one step to the live state and, for an ordered commit, the
@@ -254,6 +259,7 @@ func runWorkload(ctx context.Context, s Target, blocks Blocks, seed uint64) ([]s
 			err = setValue(ctx, s, key, value, false)
 		case 2:
 			i := rng.IntN(blockSpace)
+			putPending = putPending || !live.blocks[i]
 			nextLive.blocks[i] = true
 			_, _, err = s.PutBlock(ctx, blockData(i), nil)
 			commit = blocks.writeCommit()
@@ -281,10 +287,13 @@ func runWorkload(ctx context.Context, s Target, blocks Blocks, seed uint64) ([]s
 		default:
 			_, err = s.Sync(ctx)
 		}
+		if commit == commitOrdered && blocks == DurablePutBlocks && putPending {
+			commit = commitDurable
+		}
 		switch {
 		case commit == commitDurable:
 			nextCommitted = nextLive.clone()
-		case commit == commitOrdered && blocks == AllBlocks:
+		case commit == commitOrdered:
 			nextCommitted.blocks = maps.Clone(nextLive.blocks)
 		}
 
@@ -299,6 +308,7 @@ func runWorkload(ctx context.Context, s Target, blocks Blocks, seed uint64) ([]s
 		switch commit {
 		case commitDurable:
 			allowed = []state{committed}
+			putPending = false
 		case commitOrdered:
 			allowed = append(allowed, committed)
 		}

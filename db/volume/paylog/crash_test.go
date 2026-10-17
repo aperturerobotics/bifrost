@@ -25,7 +25,7 @@ var crashEngines = []engine{s4dbEngine, logEngine(logindex.Options{CheckpointByt
 func TestCrashRecovery(t *testing.T) {
 	for _, e := range crashEngines {
 		t.Run(e.name, func(t *testing.T) {
-			crashtest.Run(t, crashtest.DurableBlocks, device.NewMemory, func(ctx context.Context, d *device.Memory) (crashtest.Target, error) {
+			crashtest.Run(t, crashtest.DurablePutBlocks, device.NewMemory, func(ctx context.Context, d *device.Memory) (crashtest.Target, error) {
 				return e.openStore(ctx, d)
 			})
 		})

@@ -133,12 +133,10 @@ func TestMaintenanceRemoved(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Remove the second while maintenance reads it for the move.
+			// Remove the second while maintenance reads it for the move. The
+			// pass holds the writer, so the remove waits in pending.
 			onRead := func() {
 				if err := s.RmBlock(ctx, refs[1]); err != nil {
-					t.Error(err)
-				}
-				if _, err := s.Sync(ctx); err != nil {
 					t.Error(err)
 				}
 			}
@@ -150,11 +148,11 @@ func TestMaintenanceRemoved(t *testing.T) {
 			checkBlocks(t, s, refs, "", "")
 			checkStats(t, s, 0, 0)
 
-			// The next pass removes the segment.
+			// The move wrote nothing, and the next pass removes the segment.
 			if err := s.Maintenance(ctx); err != nil {
 				t.Fatal(err)
 			}
-			checkSegments(t, d, "seg-2")
+			checkSegments(t, d)
 			if err := s.Close(); err != nil {
 				t.Fatal(err)
 			}

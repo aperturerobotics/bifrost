@@ -7,6 +7,11 @@
 // writes, so a published block is durable, and a key-value commit that follows
 // a block write publishes that block with it. An ordered commit publishes no
 // blocks, since a crash could keep its record and lose their payloads.
+//
+// A write transaction holds the store's writer from open to end and owns the
+// blocks put and removed through it: its durable commit publishes them with
+// its records, and its discard drops them. Blocks put and removed outside a
+// transaction wait in the store's pending blocks for the next durable commit.
 package paylog
 
 import (
@@ -18,11 +23,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
+	"github.com/aperturerobotics/util/csync"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/kvtx"
-	kvtx_prefixer "github.com/s4wave/spacewave/db/kvtx/prefixer"
-	kvtx_txcache "github.com/s4wave/spacewave/db/kvtx/txcache"
 	"github.com/s4wave/spacewave/db/volume/device"
 	"github.com/s4wave/spacewave/net/hash"
 )
@@ -63,8 +68,10 @@ type Index interface {
 
 // Store is a volume engine on a Device with an ordered index.
 type Store struct {
-	// kvtx.Store serves the key-value store under kvPrefix.
+	// Store serves the key-value store under kvPrefix.
 	kvtx.Store
+	// blockStore serves block operations outside any transaction.
+	blockStore
 
 	// dev holds the index and the segments.
 	dev device.Device
@@ -74,6 +81,13 @@ type Store struct {
 	// default.
 	hashType hash.HashType
 
+	// writer is held by each write transaction from open to end, so no
+	// commit falls between an ordered commit and the hand-off of its blocks
+	// to pending.
+	writer csync.Mutex
+	// waiting counts the write transactions waiting for writer.
+	waiting atomic.Int32
+
 	// mtx guards the fields below. It is held across segment writes so a
 	// pending location is never published before its payload write is issued.
 	mtx sync.Mutex
@@ -81,7 +95,8 @@ type Store struct {
 	segment uint64
 	// offset is the end of the payloads in the segment.
 	offset int64
-	// pending holds unpublished block writes and removes by block key.
+	// pending holds the unpublished block writes and removes made outside a
+	// write transaction, by block key.
 	pending map[string]*pendingBlock
 	// journal is the sequence of the last journal entry.
 	journal uint64
@@ -95,9 +110,6 @@ type Store struct {
 type pendingBlock struct {
 	// loc is the payload location; nil for a remove.
 	loc *location
-	// from is set on a move: the location the block is moved from. The move
-	// publishes only if the block is still there.
-	from *location
 }
 
 // Open opens the store on dev with index, an index opened on the same device.
@@ -111,7 +123,8 @@ func Open(ctx context.Context, dev device.Device, index Index, hashType hash.Has
 		hashType: hashType,
 		pending:  make(map[string]*pendingBlock),
 	}
-	s.Store = kvtx_prefixer.NewPrefixer(indexStore{s}, []byte(kvPrefix))
+	s.Store = s.Domain(nil)
+	s.blockStore = blockStore{s: s}
 
 	// Find the last journal sequence.
 	err := s.view(ctx, func(tx kvtx.Tx) error {
@@ -158,40 +171,52 @@ func (s *Store) view(ctx context.Context, fn func(tx kvtx.Tx) error) error {
 	return fn(tx)
 }
 
-// update runs fn in an index write transaction and commits it, durably with
-// the pending blocks unless ordered is set.
+// update runs fn in a write transaction's index transaction and commits it,
+// durably with the pending blocks unless ordered is set.
 func (s *Store) update(ctx context.Context, ordered bool, fn func(tx kvtx.Tx) error) error {
-	// Apply fn and commit the index write transaction.
-	tx, err := s.index.NewTransaction(ctx, true)
+	// Apply fn and commit the write transaction.
+	t, err := s.begin(ctx, true, nil)
 	if err != nil {
 		return err
 	}
-	defer tx.Discard()
+	defer t.Discard()
 	if fn != nil {
-		if err := fn(tx); err != nil {
+		if err := fn(t.itx); err != nil {
 			return err
 		}
 	}
-	return s.commit(ctx, tx, ordered)
+	return t.commit(ctx, ordered)
 }
 
-// commit commits the index write transaction tx with write ordering if
-// ordered is set, and otherwise publishes the pending blocks with it.
-func (s *Store) commit(ctx context.Context, tx kvtx.Tx, ordered bool) error {
+// commitIndex commits the index transaction tx, with write ordering only if
+// ordered is set.
+func (s *Store) commitIndex(ctx context.Context, tx kvtx.Tx, ordered bool) error {
 	if ordered {
 		return kvtx.CommitOrdered(ctx, tx)
 	}
-	return s.publish(ctx, tx)
+	return tx.Commit(ctx)
 }
 
-// publish writes the pending block locations and the segment statistics they
-// change into tx, commits it, and drops the published entries from pending.
-// Entries replaced during the commit stay.
-func (s *Store) publish(ctx context.Context, tx kvtx.Tx) error {
+// publish writes the pending block locations, overlaid by own, and the
+// segment statistics they change into tx, commits it, and drops the published
+// entries from pending. Entries replaced during the commit stay. own holds a
+// write transaction's unpublished blocks, which are newer than any pending
+// change to the same block.
+//
+// The commit is ordered only if ordered is set and every published entry is a
+// remove. A device flush, such as an index checkpoint, makes an ordered commit
+// durable, so leaving a put pending could keep the commit without its block,
+// and a crash before the flush could keep a published put without its payload.
+func (s *Store) publish(ctx context.Context, tx kvtx.Tx, own map[string]*pendingBlock, ordered bool) error {
 	// Snapshot pending after the payload writes it names were issued.
 	s.mtx.Lock()
-	published := maps.Clone(s.pending)
+	pending := maps.Clone(s.pending)
+	published := maps.Clone(pending)
+	maps.Copy(published, own)
 	s.mtx.Unlock()
+	for _, p := range published {
+		ordered = ordered && p.loc == nil
+	}
 
 	// Write the locations in key order, tracking the change to each
 	// segment's statistics. A B+tree index splits nodes only at commit, so
@@ -202,9 +227,6 @@ func (s *Store) publish(ctx context.Context, tx kvtx.Tx) error {
 		prev, err := getLocation(ctx, tx, []byte(key))
 		if err != nil {
 			return err
-		}
-		if p.from != nil && (prev == nil || *prev != *p.from) {
-			continue
 		}
 		if prev != nil {
 			stats[prev.segment] = stats[prev.segment].add(-1, -prev.length)
@@ -227,93 +249,19 @@ func (s *Store) publish(ctx context.Context, tx kvtx.Tx) error {
 			return err
 		}
 	}
-	if err := tx.Commit(ctx); err != nil {
+	if err := s.commitIndex(ctx, tx, ordered); err != nil {
 		return err
 	}
 
-	// Drop the entries the commit published.
+	// Drop the pending entries the commit published or own replaced.
 	s.mtx.Lock()
-	for key, p := range published {
+	for key, p := range pending {
 		if s.pending[key] == p {
 			delete(s.pending, key)
 		}
 	}
 	s.mtx.Unlock()
 	return nil
-}
-
-// indexStore serves index transactions. A write transaction collects its
-// changes and applies them in one index write transaction at commit, which
-// also publishes the pending blocks, so any number of write transactions can
-// be open at once.
-type indexStore struct {
-	s *Store
-}
-
-// NewTransaction opens an index transaction.
-func (i indexStore) NewTransaction(ctx context.Context, write bool) (kvtx.Tx, error) {
-	// Buffer write transactions over one index read transaction.
-	read, err := i.s.index.NewTransaction(ctx, false)
-	if err != nil || !write {
-		return read, err
-	}
-	w := &writeTx{s: i.s, ctx: ctx}
-	w.Tx, err = kvtx_txcache.NewTxWithCbs(read, true, read.Discard, w.begin, false)
-	if err != nil {
-		read.Discard()
-		return nil, err
-	}
-	return w, nil
-}
-
-// writeTx is a buffered index write transaction.
-type writeTx struct {
-	// Tx collects the changes.
-	*kvtx_txcache.Tx
-	// s is the store.
-	s *Store
-	// ctx is the context the transaction was opened with.
-	ctx context.Context
-	// itx is the index write transaction opened at commit.
-	itx kvtx.Tx
-}
-
-// begin opens the index write transaction the collected changes apply to.
-func (w *writeTx) begin() (kvtx.Tx, error) {
-	itx, err := w.s.index.NewTransaction(w.ctx, true)
-	if err != nil {
-		return nil, err
-	}
-	w.itx = itx
-	return itx, nil
-}
-
-// Commit applies the collected changes, publishes the pending blocks, and
-// commits.
-func (w *writeTx) Commit(ctx context.Context) error {
-	return w.commit(ctx, false)
-}
-
-// CommitOrdered applies the collected changes and commits them with write
-// ordering, leaving the pending blocks to the next Sync or durable commit.
-func (w *writeTx) CommitOrdered(ctx context.Context) error {
-	return w.commit(ctx, true)
-}
-
-// commit applies the collected changes and commits the index transaction.
-func (w *writeTx) commit(ctx context.Context, ordered bool) error {
-	// Apply the collected changes to the opened index transaction.
-	err := w.Tx.Commit(ctx)
-	if w.itx == nil {
-		return err
-	}
-	defer w.itx.Discard()
-	if err != nil {
-		return err
-	}
-
-	// Publish the pending blocks and commit with the requested ordering.
-	return w.s.commit(ctx, w.itx, ordered)
 }
 
 // location is where a block payload lives.
@@ -373,6 +321,3 @@ func parseSegment(name string) (uint64, bool) {
 	n, err := strconv.ParseUint(rest, 10, 64)
 	return n, err == nil
 }
-
-// _ is a type assertion
-var _ kvtx.OrderedCommitTx = (*writeTx)(nil)
