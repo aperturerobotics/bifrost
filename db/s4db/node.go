@@ -47,8 +47,15 @@ type node struct {
 	page []byte
 	// offs holds the offset of each entry in page.
 	offs []uint16
-	// heads holds the head of each key, so a search compares within one
-	// array and reads a key only on a tie.
+	// pre is the prefix every searched key shares: each key of a leaf, and
+	// each key after the empty first one of an inner page. It points into
+	// page.
+	pre []byte
+	// heads holds the head of each key after pre, so a search compares
+	// within one array and reads a key only on a tie. Keys of one kind
+	// share a long prefix, such as the type bytes of a block reference, and
+	// heads taken before it would all tie. The empty first inner key has
+	// head zero and is never searched.
 	heads []uint64
 	// cost is the memory the decoded node holds, for the cache budget.
 	cost int
@@ -97,16 +104,27 @@ func (n *node) kid(i int) uint64 {
 	return d.u64()
 }
 
-// search returns the position of the first key at or after key and whether
-// it equals key.
+// search returns the position of the first key at or after key in leaf n
+// and whether it equals key.
 func (n *node) search(key []byte) (int, bool) {
 	return n.searchFrom(0, key)
 }
 
-// searchFrom is search over the keys from position lo.
+// searchFrom is search over the keys from position lo, which must not
+// include the empty first key of an inner page.
 func (n *node) searchFrom(lo int, key []byte) (int, bool) {
+	// Every key from lo starts with pre, so a key without it sorts before
+	// or after all of them.
+	p := len(n.pre)
+	if len(key) < p || !bytes.Equal(key[:p], n.pre) {
+		if bytes.Compare(key, n.pre) < 0 {
+			return lo, false
+		}
+		return len(n.heads), false
+	}
+
 	// Bisect on heads, comparing whole keys on equal heads.
-	h := head(key)
+	h := head(key[p:])
 	hi := len(n.heads)
 	for lo < hi {
 		m := int(uint(lo+hi) >> 1)
@@ -179,16 +197,38 @@ func decodeNode(b []byte) (*node, error) {
 		n.cost = pageSize + count*leafEntryCost
 	}
 
-	// Find each entry and the head of its key, checking that its value or
-	// child page is whole.
+	// Find each entry, checking that its value or child page is whole.
 	for i := range count {
 		n.offs[i] = uint16(pageSize - 4 - len(d.b)) // #nosec G115 -- offsets fall within a page.
-		n.heads[i] = head(d.bytes())
+		d.bytes()
 		if n.leaf {
 			d.value(d.kind())
 			continue
 		}
 		d.u64()
 	}
-	return n, d.err
+	if d.err != nil {
+		return nil, d.err
+	}
+
+	// Take the prefix the searched keys share. They are sorted, so it is
+	// the common prefix of the first and the last.
+	first := 0
+	if !n.leaf {
+		first = 1
+	}
+	if first < count {
+		lo, hi := n.key(first), n.key(count-1)
+		p := 0
+		for p < len(lo) && p < len(hi) && lo[p] == hi[p] {
+			p++
+		}
+		n.pre = lo[:p:p]
+	}
+
+	// Take the head of each searched key after the prefix.
+	for i := first; i < count; i++ {
+		n.heads[i] = head(n.key(i)[len(n.pre):])
+	}
+	return n, nil
 }
