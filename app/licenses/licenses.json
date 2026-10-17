@@ -950,7 +950,7 @@
     },
     {
       "name": "github.com/aperturerobotics/util",
-      "version": "v1.34.10-0.20261006081936-7765b80f85f1",
+      "version": "v1.34.10-0.20261017090517-f7b2a392b87e",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/util",
@@ -1504,7 +1504,7 @@
     },
     {
       "name": "github.com/s4wave/goscript",
-      "version": "v0.4.6-0.20261017053636-5e07ad1e5069",
+      "version": "v0.4.6-0.20261017091313-61833a19ace0",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/s4wave/goscript",
