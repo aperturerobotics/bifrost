@@ -44,5 +44,13 @@ func (s *VLoggerStore) RootsComplete(ctx context.Context, refs []*block.BlockRef
 	return block.RootsComplete(ctx, s.st, refs)
 }
 
+// HoldCompleteRoots forwards complete-root ownership to the underlying stage.
+func (s *VLoggerStore) HoldCompleteRoots(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	return block.HoldCompleteRoots(ctx, s.st, refs)
+}
+
 // _ is a type assertion
-var _ block.RootRetainer = (*VLoggerStore)(nil)
+var (
+	_ block.RootRetainer       = (*VLoggerStore)(nil)
+	_ block.CompleteRootHolder = (*VLoggerStore)(nil)
+)

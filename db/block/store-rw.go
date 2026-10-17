@@ -166,9 +166,15 @@ func (b *StoreRW) PublishAtomic(ctx context.Context, p *AtomicPublication) error
 	return b.writeHandle.(AtomicPublisher).PublishAtomic(ctx, p)
 }
 
+// HoldCompleteRoots forwards stage ownership to the write handle, never the read handle.
+func (b *StoreRW) HoldCompleteRoots(ctx context.Context, refs []*BlockRef) ([]bool, error) {
+	return HoldCompleteRoots(ctx, b.writeHandle, refs)
+}
+
 // _ is a type assertion
 var (
 	_ StoreOps                   = (*StoreRW)(nil)
 	_ DecodedBlockCacheFreshener = (*StoreRW)(nil)
 	_ AtomicPublisher            = (*StoreRW)(nil)
+	_ CompleteRootHolder         = (*StoreRW)(nil)
 )

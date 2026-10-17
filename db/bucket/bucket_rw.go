@@ -143,8 +143,14 @@ func (b *bucketRW) PublishAtomic(ctx context.Context, p *block.AtomicPublication
 	return b.store.(block.AtomicPublisher).PublishAtomic(ctx, p)
 }
 
+// HoldCompleteRoots forwards complete-root ownership through the write store.
+func (b *bucketRW) HoldCompleteRoots(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	return block.HoldCompleteRoots(ctx, b.store, refs)
+}
+
 // _ is a type assertion
 var (
-	_ Bucket                = (*bucketRW)(nil)
-	_ block.AtomicPublisher = (*bucketRW)(nil)
+	_ Bucket                   = (*bucketRW)(nil)
+	_ block.AtomicPublisher    = (*bucketRW)(nil)
+	_ block.CompleteRootHolder = (*bucketRW)(nil)
 )

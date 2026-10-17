@@ -645,8 +645,14 @@ func (g *GCStoreOps) RemoveGCRef(ctx context.Context, subject, object string) er
 	return nil
 }
 
+// HoldCompleteRoots forwards complete-root ownership to the inner stage.
+func (g *GCStoreOps) HoldCompleteRoots(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	return block.HoldCompleteRoots(ctx, g.store, refs)
+}
+
 // _ is a type assertion
 var (
-	_ block.StoreOps     = (*GCStoreOps)(nil)
-	_ block.DeferFlusher = (*GCStoreOps)(nil)
+	_ block.StoreOps           = (*GCStoreOps)(nil)
+	_ block.DeferFlusher       = (*GCStoreOps)(nil)
+	_ block.CompleteRootHolder = (*GCStoreOps)(nil)
 )

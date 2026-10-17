@@ -921,7 +921,14 @@ func bufferedMetadataSize(key string, ref *BlockRef, refs []*BlockRef, limit int
 	return size
 }
 
+// HoldCompleteRoots holds roots already proved complete in the inner stage.
+// It neither drains pending blocks nor creates completion proofs.
+func (s *BufferedStore) HoldCompleteRoots(ctx context.Context, refs []*BlockRef) ([]bool, error) {
+	return HoldCompleteRoots(ctx, s.inner, refs)
+}
+
 // _ is a type assertion.
 var (
-	_ StoreOps = (*BufferedStore)(nil)
+	_ StoreOps           = (*BufferedStore)(nil)
+	_ CompleteRootHolder = (*BufferedStore)(nil)
 )

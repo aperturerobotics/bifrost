@@ -84,8 +84,14 @@ func (s *ReadOnlyStore) RootsComplete(ctx context.Context, refs []*BlockRef) ([]
 	return RootsComplete(ctx, s.StoreOps, refs)
 }
 
+// HoldCompleteRoots forwards stage ownership of already complete roots.
+func (s *ReadOnlyStore) HoldCompleteRoots(ctx context.Context, refs []*BlockRef) ([]bool, error) {
+	return HoldCompleteRoots(ctx, s.StoreOps, refs)
+}
+
 // _ is a type assertion
 var (
-	_ StoreOps     = (*ReadOnlyStore)(nil)
-	_ RootRetainer = (*ReadOnlyStore)(nil)
+	_ StoreOps           = (*ReadOnlyStore)(nil)
+	_ RootRetainer       = (*ReadOnlyStore)(nil)
+	_ CompleteRootHolder = (*ReadOnlyStore)(nil)
 )
