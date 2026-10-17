@@ -166,6 +166,76 @@ service WasiVmDisplayService {
   // every change since the last, instead of a growing queue. The stream ends
   // when the display closes.
   rpc Display(stream WasiVmDisplayInput) returns (stream WasiVmDisplayFrame);
+  // WatchWindows streams the Wayland windows of the display, then the list
+  // again each time a window maps, unmaps, is renamed, or moves between the
+  // desktop and a viewer of its own. An X display sends an empty list.
+  rpc WatchWindows(WatchWasiVmWindowsRequest) returns (stream WasiVmWindowList);
+  // Window shows one Wayland window in a viewer of its own, sized to it. The
+  // first input opens the window, which leaves the desktop; the rest resize
+  // it or carry the viewer's input, as Display's do, in window pixels. The
+  // stream ends when the window closes, and the window returns to the
+  // desktop once no viewer shows it.
+  rpc Window(stream WasiVmWindowInput) returns (stream WasiVmDisplayFrame);
+}
+
+// WatchWasiVmWindowsRequest asks for the windows of a running WasiVM.
+message WatchWasiVmWindowsRequest {}
+
+// WasiVmWindowList is the mapped Wayland windows of a display, oldest first.
+message WasiVmWindowList {
+  // Windows is the mapped windows.
+  repeated WasiVmWindow windows = 1;
+}
+
+// WasiVmWindow is a mapped Wayland window.
+message WasiVmWindow {
+  // Id identifies the window for the life of the VM's run.
+  uint32 id = 1;
+  // Title is the title the client set, or empty.
+  string title = 2;
+  // AppId names the client's application, or is empty.
+  string app_id = 3;
+  // Place is where the window shows.
+  WasiVmWindowPlace place = 4;
+}
+
+// WasiVmWindowPlace is where a Wayland window shows.
+enum WasiVmWindowPlace {
+  // WasiVmWindowPlace_UNKNOWN is unset.
+  WasiVmWindowPlace_UNKNOWN = 0;
+  // WasiVmWindowPlace_DESKTOP means the window shows on the desktop.
+  WasiVmWindowPlace_DESKTOP = 1;
+  // WasiVmWindowPlace_VIEWER means the window shows in a viewer of its own.
+  WasiVmWindowPlace_VIEWER = 2;
+}
+
+// WasiVmWindowInput is an input to a window's viewer stream.
+message WasiVmWindowInput {
+  oneof body {
+    // Open takes the window off the desktop at the viewer's size. It is the
+    // stream's first input.
+    WasiVmWindowOpen open = 1;
+    // Resize sets the window's size to the viewer's new size.
+    WasiVmWindowSize resize = 2;
+    // Input is a pointer or key event in window pixels, or a drawn report.
+    WasiVmDisplayInput input = 3;
+  }
+}
+
+// WasiVmWindowOpen opens a window in a viewer of its own.
+message WasiVmWindowOpen {
+  // Id is the window's id from the window list.
+  uint32 id = 1;
+  // Size is the viewer's size.
+  WasiVmWindowSize size = 2;
+}
+
+// WasiVmWindowSize is the size of a window's viewer in pixels.
+message WasiVmWindowSize {
+  // Width is the width in pixels.
+  uint32 width = 1;
+  // Height is the height in pixels.
+  uint32 height = 2;
 }
 
 // WasiVmDisplayFrame is a change to the screen: areas the viewer moves on its

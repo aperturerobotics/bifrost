@@ -185,6 +185,16 @@ type SRPCWasiVmDisplayServiceClient interface {
 	// every change since the last, instead of a growing queue. The stream ends
 	// when the display closes.
 	Display(ctx context.Context) (SRPCWasiVmDisplayService_DisplayClient, error)
+	// WatchWindows streams the Wayland windows of the display, then the list
+	// again each time a window maps, unmaps, is renamed, or moves between the
+	// desktop and a viewer of its own. An X display sends an empty list.
+	WatchWindows(ctx context.Context, in *WatchWasiVmWindowsRequest) (SRPCWasiVmDisplayService_WatchWindowsClient, error)
+	// Window shows one Wayland window in a viewer of its own, sized to it. The
+	// first input opens the window, which leaves the desktop; the rest resize
+	// it or carry the viewer's input, as Display's do, in window pixels. The
+	// stream ends when the window closes, and the window returns to the
+	// desktop once no viewer shows it.
+	Window(ctx context.Context) (SRPCWasiVmDisplayService_WindowClient, error)
 }
 
 type srpcWasiVmDisplayServiceClient struct {
@@ -244,6 +254,78 @@ func (x *srpcWasiVmDisplayService_DisplayClient) RecvTo(m *WasiVmDisplayFrame) e
 	return x.MsgRecv(m)
 }
 
+func (c *srpcWasiVmDisplayServiceClient) WatchWindows(ctx context.Context, in *WatchWasiVmWindowsRequest) (SRPCWasiVmDisplayService_WatchWindowsClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "WatchWindows", in)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcWasiVmDisplayService_WatchWindowsClient{stream}
+	// A failed half-close means the call ended; MsgRecv reports its outcome.
+	_ = strm.CloseSend()
+	return strm, nil
+}
+
+type SRPCWasiVmDisplayService_WatchWindowsClient interface {
+	srpc.Stream
+	Recv() (*WasiVmWindowList, error)
+	RecvTo(*WasiVmWindowList) error
+}
+
+type srpcWasiVmDisplayService_WatchWindowsClient struct {
+	srpc.Stream
+}
+
+func (x *srpcWasiVmDisplayService_WatchWindowsClient) Recv() (*WasiVmWindowList, error) {
+	m := new(WasiVmWindowList)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcWasiVmDisplayService_WatchWindowsClient) RecvTo(m *WasiVmWindowList) error {
+	return x.MsgRecv(m)
+}
+
+func (c *srpcWasiVmDisplayServiceClient) Window(ctx context.Context) (SRPCWasiVmDisplayService_WindowClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "Window", nil)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcWasiVmDisplayService_WindowClient{stream}
+	return strm, nil
+}
+
+type SRPCWasiVmDisplayService_WindowClient interface {
+	srpc.Stream
+	Send(*WasiVmWindowInput) error
+	Recv() (*WasiVmDisplayFrame, error)
+	RecvTo(*WasiVmDisplayFrame) error
+}
+
+type srpcWasiVmDisplayService_WindowClient struct {
+	srpc.Stream
+}
+
+func (x *srpcWasiVmDisplayService_WindowClient) Send(m *WasiVmWindowInput) error {
+	if m == nil {
+		return nil
+	}
+	return x.MsgSend(m)
+}
+
+func (x *srpcWasiVmDisplayService_WindowClient) Recv() (*WasiVmDisplayFrame, error) {
+	m := new(WasiVmDisplayFrame)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcWasiVmDisplayService_WindowClient) RecvTo(m *WasiVmDisplayFrame) error {
+	return x.MsgRecv(m)
+}
+
 type SRPCWasiVmDisplayServiceServer interface {
 	// Display streams the screen and carries input back. Once the guest brings
 	// up a display, an X server on display 0 or a Wayland client, the VM sends
@@ -253,6 +335,16 @@ type SRPCWasiVmDisplayServiceServer interface {
 	// every change since the last, instead of a growing queue. The stream ends
 	// when the display closes.
 	Display(SRPCWasiVmDisplayService_DisplayStream) error
+	// WatchWindows streams the Wayland windows of the display, then the list
+	// again each time a window maps, unmaps, is renamed, or moves between the
+	// desktop and a viewer of its own. An X display sends an empty list.
+	WatchWindows(*WatchWasiVmWindowsRequest, SRPCWasiVmDisplayService_WatchWindowsStream) error
+	// Window shows one Wayland window in a viewer of its own, sized to it. The
+	// first input opens the window, which leaves the desktop; the rest resize
+	// it or carry the viewer's input, as Display's do, in window pixels. The
+	// stream ends when the window closes, and the window returns to the
+	// desktop once no viewer shows it.
+	Window(SRPCWasiVmDisplayService_WindowStream) error
 }
 
 const SRPCWasiVmDisplayServiceServiceID = "s4wave.vm.WasiVmDisplayService"
@@ -282,6 +374,8 @@ func (d *SRPCWasiVmDisplayServiceHandler) GetServiceID() string { return d.servi
 func (SRPCWasiVmDisplayServiceHandler) GetMethodIDs() []string {
 	return []string{
 		"Display",
+		"WatchWindows",
+		"Window",
 	}
 }
 
@@ -296,6 +390,10 @@ func (d *SRPCWasiVmDisplayServiceHandler) InvokeMethod(
 	switch methodID {
 	case "Display":
 		return true, d.InvokeMethod_Display(d.impl, strm)
+	case "WatchWindows":
+		return true, d.InvokeMethod_WatchWindows(d.impl, strm)
+	case "Window":
+		return true, d.InvokeMethod_Window(d.impl, strm)
 	default:
 		return false, nil
 	}
@@ -304,6 +402,20 @@ func (d *SRPCWasiVmDisplayServiceHandler) InvokeMethod(
 func (SRPCWasiVmDisplayServiceHandler) InvokeMethod_Display(impl SRPCWasiVmDisplayServiceServer, strm srpc.Stream) error {
 	clientStrm := &srpcWasiVmDisplayService_DisplayStream{strm}
 	return impl.Display(clientStrm)
+}
+
+func (SRPCWasiVmDisplayServiceHandler) InvokeMethod_WatchWindows(impl SRPCWasiVmDisplayServiceServer, strm srpc.Stream) error {
+	req := new(WatchWasiVmWindowsRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	serverStrm := &srpcWasiVmDisplayService_WatchWindowsStream{strm}
+	return impl.WatchWindows(req, serverStrm)
+}
+
+func (SRPCWasiVmDisplayServiceHandler) InvokeMethod_Window(impl SRPCWasiVmDisplayServiceServer, strm srpc.Stream) error {
+	clientStrm := &srpcWasiVmDisplayService_WindowStream{strm}
+	return impl.Window(clientStrm)
 }
 
 type SRPCWasiVmDisplayService_DisplayStream interface {
@@ -340,5 +452,65 @@ func (x *srpcWasiVmDisplayService_DisplayStream) Recv() (*WasiVmDisplayInput, er
 }
 
 func (x *srpcWasiVmDisplayService_DisplayStream) RecvTo(m *WasiVmDisplayInput) error {
+	return x.MsgRecv(m)
+}
+
+type SRPCWasiVmDisplayService_WatchWindowsStream interface {
+	srpc.Stream
+	Send(*WasiVmWindowList) error
+	SendAndClose(*WasiVmWindowList) error
+}
+
+type srpcWasiVmDisplayService_WatchWindowsStream struct {
+	srpc.Stream
+}
+
+func (x *srpcWasiVmDisplayService_WatchWindowsStream) Send(m *WasiVmWindowList) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcWasiVmDisplayService_WatchWindowsStream) SendAndClose(m *WasiVmWindowList) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
+}
+
+type SRPCWasiVmDisplayService_WindowStream interface {
+	srpc.Stream
+	Send(*WasiVmDisplayFrame) error
+	SendAndClose(*WasiVmDisplayFrame) error
+	Recv() (*WasiVmWindowInput, error)
+	RecvTo(*WasiVmWindowInput) error
+}
+
+type srpcWasiVmDisplayService_WindowStream struct {
+	srpc.Stream
+}
+
+func (x *srpcWasiVmDisplayService_WindowStream) Send(m *WasiVmDisplayFrame) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcWasiVmDisplayService_WindowStream) SendAndClose(m *WasiVmDisplayFrame) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
+}
+
+func (x *srpcWasiVmDisplayService_WindowStream) Recv() (*WasiVmWindowInput, error) {
+	m := new(WasiVmWindowInput)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcWasiVmDisplayService_WindowStream) RecvTo(m *WasiVmWindowInput) error {
 	return x.MsgRecv(m)
 }

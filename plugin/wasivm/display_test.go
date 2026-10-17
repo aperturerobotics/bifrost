@@ -66,7 +66,7 @@ func TestServeScreenPaced(t *testing.T) {
 	}
 	scr := &testScreen{n: 3, input: make(chan *s4wave_vm.WasiVmDisplayInput, 1)}
 	done := make(chan error, 1)
-	go func() { done <- serveScreen(t.Context(), strm, scr) }()
+	go func() { done <- serveScreen(t.Context(), strm.Send, strm.Recv, scr) }()
 
 	// Each frame waits for the report of the last.
 	drawn := &s4wave_vm.WasiVmDisplayInput{Body: &s4wave_vm.WasiVmDisplayInput_Drawn{Drawn: &s4wave_vm.WasiVmFrameDrawn{}}}

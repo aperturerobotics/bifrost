@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { LuMonitor, LuSquareTerminal } from 'react-icons/lu'
 
+import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
+
 import {
   useResource,
   useResourceValue,
@@ -20,7 +22,12 @@ import {
   WasiVmHandle,
   WasiVmTypeID,
 } from '@s4wave/sdk/vm/wasivm.js'
-import { SetWasiVmStateOp, WasiVm } from '@s4wave/sdk/vm/wasivm.pb.js'
+import {
+  SetWasiVmStateOp,
+  WasiVm,
+  WasiVmWindowList,
+  type WasiVmWindow,
+} from '@s4wave/sdk/vm/wasivm.pb.js'
 import { iriToKey, keyToIRI } from '@s4wave/sdk/world/graph-utils.js'
 import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 import { SpaceContentsContext } from '@s4wave/web/contexts/contexts.js'
@@ -37,6 +44,13 @@ import { VmHeader, VmStopButton } from '@s4wave/app/vm/VmHeader.js'
 
 import { WasiVmDisplay, type WasiVmDisplayConnector } from './WasiVmDisplay.js'
 import { WasiVmMachineCard } from './WasiVmMachineCard.js'
+import {
+  useWasiVmWindowRoute,
+  WasiVmWindowPane,
+  WasiVmWindowsMenu,
+  windowLabel,
+  type WasiVmWindowRoute,
+} from './WasiVmWindow.js'
 
 // readLinkedKey reads the key of the first object the VM at objectKey links to
 // with predicate, or "" when it has none.
@@ -126,7 +140,6 @@ function useWasiVm(
   )
 
   const vm = vmResource.value ?? WasiVm.create()
-  useObjectName(vm.name)
   const initPath = vm.config?.initPath || DEFAULT_WASIVM_INIT_PATH
   return {
     loaded: !!vmResource.value,
@@ -168,26 +181,32 @@ function WasiVmScreenToggle({
   )
 }
 
+// useWasiVmWindows watches the windows of the VM's Wayland display through
+// its handle, starting again for each run.
+function useWasiVmWindows(
+  handleResource: Resource<WasiVmHandle>,
+  runGeneration: bigint,
+) {
+  return (
+    useStreamingResource(
+      handleResource,
+      (handle: WasiVmHandle, signal: AbortSignal) =>
+        handle.watchWindows(signal),
+      [runGeneration],
+      { equals: WasiVmWindowList.equals },
+    ).value?.windows ?? []
+  )
+}
+
 // WasiVmScreenProps configures the screen of one run of a VM.
 interface WasiVmScreenProps {
-  worldState: ObjectViewerComponentProps['worldState']
-  objectKey: string
+  handle: WasiVmHandle | undefined
   showDisplay: boolean
 }
 
 // WasiVmScreen shows the console or the display of a running VM, each
 // attached through the VM's typed resource.
-function WasiVmScreen({
-  worldState,
-  objectKey,
-  showDisplay,
-}: WasiVmScreenProps) {
-  const handle = useAccessTypedHandle(
-    worldState,
-    objectKey,
-    WasiVmHandle,
-    WasiVmTypeID,
-  ).value
+function WasiVmScreen({ handle, showDisplay }: WasiVmScreenProps) {
   const connectConsole = useMemo<TerminalPaneConnector | undefined>(
     () =>
       handle
@@ -231,10 +250,208 @@ function WasiVmTransitionCard({ title, detail }: WasiVmTransitionCardProps) {
   )
 }
 
+// WasiVmShowDesktopButton returns a window's tab to the VM's view, which
+// returns the window to the desktop. Its label collapses to the icon in a
+// narrow header.
+function WasiVmShowDesktopButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      variant="outline"
+      size="toolbarSm"
+      aria-label="Show desktop"
+      onClick={onClick}
+    >
+      <LuMonitor />
+      <span className="hidden @md:inline">Desktop</span>
+    </Button>
+  )
+}
+
+// WasiVmEarlierRunCard explains a window tab saved from an earlier run of the
+// VM, whose windows ended with it.
+function WasiVmEarlierRunCard({
+  onShowDesktop,
+}: {
+  onShowDesktop: () => void
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+      <LoadingCard
+        view={{
+          state: 'error',
+          title: 'The window belonged to an earlier run of this VM',
+          detail: 'Its windows closed when that run stopped.',
+          onRetry: onShowDesktop,
+          retryLabel: 'Show desktop',
+        }}
+        className="w-full max-w-sm"
+      />
+    </div>
+  )
+}
+
+// WasiVmLoadingView holds the view until the VM record loads, so no default
+// stands in for it.
+function WasiVmLoadingView({ loadError }: { loadError?: Error | null }) {
+  return (
+    <div className="bg-background-primary flex h-full w-full items-center justify-center p-4">
+      {loadError ? (
+        <VmErrorBanner
+          title="Could not load this virtual machine"
+          message={loadError.message}
+        />
+      ) : (
+        <LoadingCard
+          view={{
+            state: 'active',
+            title: 'Loading virtual machine',
+            detail: 'Reading its settings from this Space.',
+          }}
+          className="w-full max-w-sm"
+        />
+      )}
+    </div>
+  )
+}
+
+// WasiVmRunningBodyProps configures the body of a running VM.
+interface WasiVmRunningBodyProps {
+  handle: WasiVmHandle | undefined
+  runGeneration: bigint
+  route: WasiVmWindowRoute | null
+  showDisplay: boolean
+  onShowDesktop: () => void
+}
+
+// WasiVmRunningBody shows a running VM's console or display, or at a
+// window's viewer path that window alone, or why a window of an earlier run
+// is gone. Each run is a new kernel, so a new run attaches a new screen.
+function WasiVmRunningBody({
+  handle,
+  runGeneration,
+  route,
+  showDisplay,
+  onShowDesktop,
+}: WasiVmRunningBodyProps) {
+  if (!route) {
+    return (
+      <WasiVmScreen
+        key={runGeneration.toString()}
+        handle={handle}
+        showDisplay={showDisplay}
+      />
+    )
+  }
+  if (route.run !== runGeneration) {
+    return <WasiVmEarlierRunCard onShowDesktop={onShowDesktop} />
+  }
+  return (
+    <WasiVmWindowPane
+      key={runGeneration.toString()}
+      handle={handle}
+      id={route.id}
+      onShowDesktop={onShowDesktop}
+    />
+  )
+}
+
+// WasiVmHeaderControlsProps configures the VM header's controls.
+interface WasiVmHeaderControlsProps {
+  state: VmState
+  stopping: boolean
+  windowView: boolean
+  windows: WasiVmWindow[]
+  showDisplay: boolean
+  onToggleDisplay: () => void
+  onOpenWindow: (id: number) => void
+  onShowDesktop: () => void
+  onStop: () => void
+}
+
+// WasiVmHeaderControls offers Show desktop in a window's view, and in the VM
+// view the windows menu, the screen toggle and Stop in the states they apply.
+function WasiVmHeaderControls({
+  state,
+  stopping,
+  windowView,
+  windows,
+  showDisplay,
+  onToggleDisplay,
+  onOpenWindow,
+  onShowDesktop,
+  onStop,
+}: WasiVmHeaderControlsProps) {
+  if (windowView) {
+    return <WasiVmShowDesktopButton onClick={onShowDesktop} />
+  }
+  const running = state === VmState.VmState_RUNNING
+  const active = running || state === VmState.VmState_STARTING
+  return (
+    <>
+      {running && showDisplay && (
+        <WasiVmWindowsMenu windows={windows} onOpen={onOpenWindow} />
+      )}
+      {running && (
+        <WasiVmScreenToggle
+          showDisplay={showDisplay}
+          onToggle={onToggleDisplay}
+        />
+      )}
+      {active && <VmStopButton disabled={stopping} onStop={onStop} />}
+    </>
+  )
+}
+
+// WasiVmStoppedBodyProps configures the body of a VM that is not running.
+interface WasiVmStoppedBodyProps {
+  vm: ReturnType<typeof useWasiVm>
+  operationError: string
+  startDisabled: boolean
+  onStart: () => void
+  onReset: () => void
+}
+
+// WasiVmStoppedBody shows a starting or stopping VM's progress, or a stopped
+// or failed VM's machine card.
+function WasiVmStoppedBody({
+  vm,
+  operationError,
+  startDisabled,
+  onStart,
+  onReset,
+}: WasiVmStoppedBodyProps) {
+  if (vm.state === VmState.VmState_STARTING) {
+    return (
+      <WasiVmTransitionCard
+        title="Starting virtual machine"
+        detail="Opening its root filesystem and booting the kernel."
+      />
+    )
+  }
+  if (vm.state === VmState.VmState_STOPPING) {
+    return (
+      <WasiVmTransitionCard
+        title="Stopping virtual machine"
+        detail="Waiting for the kernel to stop."
+      />
+    )
+  }
+  return (
+    <WasiVmMachineCard
+      {...vm}
+      operationError={operationError}
+      startDisabled={startDisabled}
+      onStart={onStart}
+      onReset={onReset}
+    />
+  )
+}
+
 // WasiVmViewer displays a WasiVM by the state its runtime observed. A stopped
 // or failed VM shows its machine card with Start or Reset, a starting or
 // stopping VM shows its progress, and a running VM shows its console or its
-// display.
+// display. At the viewer path of a window, a running VM shows that window
+// alone, sized by the tab.
 export default function WasiVmViewer({
   objectInfo,
   worldState,
@@ -247,6 +464,16 @@ export default function WasiVmViewer({
   const vm = useWasiVm(worldState, objectKey)
   const [operationError, request] = useVmRequest()
   const [showDisplay, setShowDisplay] = useState(false)
+  const handleResource = useAccessTypedHandle(
+    worldState,
+    objectKey,
+    WasiVmHandle,
+    WasiVmTypeID,
+  )
+  const windows = useWasiVmWindows(handleResource, vm.runGeneration)
+  const view = useWasiVmWindowRoute(objectKey, vm.runGeneration, windows)
+  const name = view.shownWindow ? windowLabel(view.shownWindow) : vm.name
+  useObjectName(name)
 
   // setVmState requests a target state from the view.
   const setVmState = (target: VmState) => {
@@ -254,47 +481,25 @@ export default function WasiVmViewer({
     request(() => requestWasiVmState(world, contents, objectKey, target))
   }
 
-  // Hold the view until the VM record loads, so no default stands in for it.
   if (!vm.loaded) {
-    return (
-      <div className="bg-background-primary flex h-full w-full items-center justify-center p-4">
-        {vm.loadError ? (
-          <VmErrorBanner
-            title="Could not load this virtual machine"
-            message={vm.loadError.message}
-          />
-        ) : (
-          <LoadingCard
-            view={{
-              state: 'active',
-              title: 'Loading virtual machine',
-              detail: 'Reading its settings from this Space.',
-            }}
-            className="w-full max-w-sm"
-          />
-        )}
-      </div>
-    )
+    return <WasiVmLoadingView loadError={vm.loadError} />
   }
-
   const running = vm.state === VmState.VmState_RUNNING
   const active = running || vm.state === VmState.VmState_STARTING
-  const stopRequested = vm.desired === VmState.VmState_STOPPED
   return (
     <div className="bg-background-primary flex h-full w-full flex-col overflow-hidden">
-      <VmHeader name={vm.name} state={vm.state}>
-        {running && (
-          <WasiVmScreenToggle
-            showDisplay={showDisplay}
-            onToggle={() => setShowDisplay(!showDisplay)}
-          />
-        )}
-        {active && (
-          <VmStopButton
-            disabled={stopRequested}
-            onStop={() => setVmState(VmState.VmState_STOPPED)}
-          />
-        )}
+      <VmHeader name={name} state={vm.state}>
+        <WasiVmHeaderControls
+          state={vm.state}
+          stopping={vm.desired === VmState.VmState_STOPPED}
+          windowView={!!view.route}
+          windows={windows}
+          showDisplay={showDisplay}
+          onToggleDisplay={() => setShowDisplay(!showDisplay)}
+          onOpenWindow={view.openWindow}
+          onShowDesktop={view.showDesktop}
+          onStop={() => setVmState(VmState.VmState_STOPPED)}
+        />
       </VmHeader>
       {operationError && active && (
         <div className="shrink-0 p-3">
@@ -302,26 +507,16 @@ export default function WasiVmViewer({
         </div>
       )}
       {running ? (
-        // Each run is a new kernel, so a new run attaches a new screen.
-        <WasiVmScreen
-          key={vm.runGeneration.toString()}
-          worldState={worldState}
-          objectKey={objectKey}
+        <WasiVmRunningBody
+          handle={handleResource.value ?? undefined}
+          runGeneration={vm.runGeneration}
+          route={view.route}
           showDisplay={showDisplay}
-        />
-      ) : vm.state === VmState.VmState_STARTING ? (
-        <WasiVmTransitionCard
-          title="Starting virtual machine"
-          detail="Opening its root filesystem and booting the kernel."
-        />
-      ) : vm.state === VmState.VmState_STOPPING ? (
-        <WasiVmTransitionCard
-          title="Stopping virtual machine"
-          detail="Waiting for the kernel to stop."
+          onShowDesktop={view.showDesktop}
         />
       ) : (
-        <WasiVmMachineCard
-          {...vm}
+        <WasiVmStoppedBody
+          vm={vm}
           operationError={operationError}
           startDisabled={!world || !contents}
           onStart={() => setVmState(VmState.VmState_RUNNING)}

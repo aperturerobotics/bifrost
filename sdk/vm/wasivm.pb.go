@@ -9,11 +9,52 @@ import (
 	io "io"
 	maps "maps"
 	slices "slices"
+	strconv "strconv"
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 )
+
+// WasiVmWindowPlace is where a Wayland window shows.
+type WasiVmWindowPlace int32
+
+const (
+	// WasiVmWindowPlace_UNKNOWN is unset.
+	WasiVmWindowPlace_WasiVmWindowPlace_UNKNOWN WasiVmWindowPlace = 0
+	// WasiVmWindowPlace_DESKTOP means the window shows on the desktop.
+	WasiVmWindowPlace_WasiVmWindowPlace_DESKTOP WasiVmWindowPlace = 1
+	// WasiVmWindowPlace_VIEWER means the window shows in a viewer of its own.
+	WasiVmWindowPlace_WasiVmWindowPlace_VIEWER WasiVmWindowPlace = 2
+)
+
+// Enum value maps for WasiVmWindowPlace.
+var (
+	WasiVmWindowPlace_name = map[int32]string{
+		0: "WasiVmWindowPlace_UNKNOWN",
+		1: "WasiVmWindowPlace_DESKTOP",
+		2: "WasiVmWindowPlace_VIEWER",
+	}
+	WasiVmWindowPlace_value = map[string]int32{
+		"WasiVmWindowPlace_UNKNOWN": 0,
+		"WasiVmWindowPlace_DESKTOP": 1,
+		"WasiVmWindowPlace_VIEWER":  2,
+	}
+)
+
+func (x WasiVmWindowPlace) Enum() *WasiVmWindowPlace {
+	p := new(WasiVmWindowPlace)
+	*p = x
+	return p
+}
+
+func (x WasiVmWindowPlace) String() string {
+	name, valid := WasiVmWindowPlace_name[int32(x)]
+	if valid {
+		return name
+	}
+	return strconv.Itoa(int(x))
+}
 
 // WasiVmConfig configures the init process of a WasiVM.
 type WasiVmConfig struct {
@@ -427,6 +468,212 @@ func (x *SetWasiVmStateOp) GetState() VmState {
 		return x.State
 	}
 	return VmState_VmState_STOPPED
+}
+
+// WatchWasiVmWindowsRequest asks for the windows of a running WasiVM.
+type WatchWasiVmWindowsRequest struct {
+	unknownFields []byte
+}
+
+func (x *WatchWasiVmWindowsRequest) Reset() {
+	*x = WatchWasiVmWindowsRequest{}
+}
+
+func (*WatchWasiVmWindowsRequest) ProtoMessage() {}
+
+// WasiVmWindowList is the mapped Wayland windows of a display, oldest first.
+type WasiVmWindowList struct {
+	unknownFields []byte
+	// Windows is the mapped windows.
+	Windows []*WasiVmWindow `protobuf:"bytes,1,rep,name=windows,proto3" json:"windows,omitempty"`
+}
+
+func (x *WasiVmWindowList) Reset() {
+	*x = WasiVmWindowList{}
+}
+
+func (*WasiVmWindowList) ProtoMessage() {}
+
+func (x *WasiVmWindowList) GetWindows() []*WasiVmWindow {
+	if x != nil {
+		return x.Windows
+	}
+	return nil
+}
+
+// WasiVmWindow is a mapped Wayland window.
+type WasiVmWindow struct {
+	unknownFields []byte
+	// Id identifies the window for the life of the VM's run.
+	Id uint32 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Title is the title the client set, or empty.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// AppId names the client's application, or is empty.
+	AppId string `protobuf:"bytes,3,opt,name=app_id,json=appId,proto3" json:"appId,omitempty"`
+	// Place is where the window shows.
+	Place WasiVmWindowPlace `protobuf:"varint,4,opt,name=place,proto3" json:"place,omitempty"`
+}
+
+func (x *WasiVmWindow) Reset() {
+	*x = WasiVmWindow{}
+}
+
+func (*WasiVmWindow) ProtoMessage() {}
+
+func (x *WasiVmWindow) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *WasiVmWindow) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *WasiVmWindow) GetAppId() string {
+	if x != nil {
+		return x.AppId
+	}
+	return ""
+}
+
+func (x *WasiVmWindow) GetPlace() WasiVmWindowPlace {
+	if x != nil {
+		return x.Place
+	}
+	return WasiVmWindowPlace_WasiVmWindowPlace_UNKNOWN
+}
+
+// WasiVmWindowInput is an input to a window's viewer stream.
+type WasiVmWindowInput struct {
+	unknownFields []byte
+	// Types that are assignable to Body:
+	//	*WasiVmWindowInput_Open
+	//	*WasiVmWindowInput_Resize
+	//	*WasiVmWindowInput_Input
+	Body isWasiVmWindowInput_Body `protobuf_oneof:"body"`
+}
+
+func (x *WasiVmWindowInput) Reset() {
+	*x = WasiVmWindowInput{}
+}
+
+func (*WasiVmWindowInput) ProtoMessage() {}
+
+func (m *WasiVmWindowInput) GetBody() isWasiVmWindowInput_Body {
+	if m != nil {
+		return m.Body
+	}
+	return nil
+}
+
+func (x *WasiVmWindowInput) GetOpen() *WasiVmWindowOpen {
+	if x, ok := x.GetBody().(*WasiVmWindowInput_Open); ok {
+		return x.Open
+	}
+	return nil
+}
+
+func (x *WasiVmWindowInput) GetResize() *WasiVmWindowSize {
+	if x, ok := x.GetBody().(*WasiVmWindowInput_Resize); ok {
+		return x.Resize
+	}
+	return nil
+}
+
+func (x *WasiVmWindowInput) GetInput() *WasiVmDisplayInput {
+	if x, ok := x.GetBody().(*WasiVmWindowInput_Input); ok {
+		return x.Input
+	}
+	return nil
+}
+
+type isWasiVmWindowInput_Body interface {
+	isWasiVmWindowInput_Body()
+}
+
+type WasiVmWindowInput_Open struct {
+	// Open takes the window off the desktop at the viewer's size. It is the
+	// stream's first input.
+	Open *WasiVmWindowOpen `protobuf:"bytes,1,opt,name=open,proto3,oneof"`
+}
+
+type WasiVmWindowInput_Resize struct {
+	// Resize sets the window's size to the viewer's new size.
+	Resize *WasiVmWindowSize `protobuf:"bytes,2,opt,name=resize,proto3,oneof"`
+}
+
+type WasiVmWindowInput_Input struct {
+	// Input is a pointer or key event in window pixels, or a drawn report.
+	Input *WasiVmDisplayInput `protobuf:"bytes,3,opt,name=input,proto3,oneof"`
+}
+
+func (*WasiVmWindowInput_Open) isWasiVmWindowInput_Body() {}
+
+func (*WasiVmWindowInput_Resize) isWasiVmWindowInput_Body() {}
+
+func (*WasiVmWindowInput_Input) isWasiVmWindowInput_Body() {}
+
+// WasiVmWindowOpen opens a window in a viewer of its own.
+type WasiVmWindowOpen struct {
+	unknownFields []byte
+	// Id is the window's id from the window list.
+	Id uint32 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Size is the viewer's size.
+	Size *WasiVmWindowSize `protobuf:"bytes,2,opt,name=size,proto3" json:"size,omitempty"`
+}
+
+func (x *WasiVmWindowOpen) Reset() {
+	*x = WasiVmWindowOpen{}
+}
+
+func (*WasiVmWindowOpen) ProtoMessage() {}
+
+func (x *WasiVmWindowOpen) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *WasiVmWindowOpen) GetSize() *WasiVmWindowSize {
+	if x != nil {
+		return x.Size
+	}
+	return nil
+}
+
+// WasiVmWindowSize is the size of a window's viewer in pixels.
+type WasiVmWindowSize struct {
+	unknownFields []byte
+	// Width is the width in pixels.
+	Width uint32 `protobuf:"varint,1,opt,name=width,proto3" json:"width,omitempty"`
+	// Height is the height in pixels.
+	Height uint32 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+}
+
+func (x *WasiVmWindowSize) Reset() {
+	*x = WasiVmWindowSize{}
+}
+
+func (*WasiVmWindowSize) ProtoMessage() {}
+
+func (x *WasiVmWindowSize) GetWidth() uint32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *WasiVmWindowSize) GetHeight() uint32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
 }
 
 // WasiVmDisplayFrame is a change to the screen: areas the viewer moves on its
@@ -932,6 +1179,149 @@ func (m *SetWasiVmStateOp) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *WatchWasiVmWindowsRequest) CloneVT() *WatchWasiVmWindowsRequest {
+	if m == nil {
+		return (*WatchWasiVmWindowsRequest)(nil)
+	}
+	r := new(WatchWasiVmWindowsRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WatchWasiVmWindowsRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmWindowList) CloneVT() *WasiVmWindowList {
+	if m == nil {
+		return (*WasiVmWindowList)(nil)
+	}
+	r := new(WasiVmWindowList)
+	r.Windows = protobuf_go_lite.CloneVTSlice(m.Windows)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmWindowList) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmWindow) CloneVT() *WasiVmWindow {
+	if m == nil {
+		return (*WasiVmWindow)(nil)
+	}
+	r := new(WasiVmWindow)
+	r.Id = m.Id
+	r.Title = m.Title
+	r.AppId = m.AppId
+	r.Place = m.Place
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmWindow) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmWindowInput) CloneVT() *WasiVmWindowInput {
+	if m == nil {
+		return (*WasiVmWindowInput)(nil)
+	}
+	r := new(WasiVmWindowInput)
+	if m.Body != nil {
+		r.Body = m.Body.(interface {
+			CloneOneofVT() isWasiVmWindowInput_Body
+		}).CloneOneofVT()
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmWindowInput) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmWindowInput_Open) CloneVT() *WasiVmWindowInput_Open {
+	if m == nil {
+		return (*WasiVmWindowInput_Open)(nil)
+	}
+	r := new(WasiVmWindowInput_Open)
+	r.Open = protobuf_go_lite.CloneVTValue(m.Open)
+	return r
+}
+
+func (m *WasiVmWindowInput_Open) CloneOneofVT() isWasiVmWindowInput_Body {
+	return m.CloneVT()
+}
+
+func (m *WasiVmWindowInput_Resize) CloneVT() *WasiVmWindowInput_Resize {
+	if m == nil {
+		return (*WasiVmWindowInput_Resize)(nil)
+	}
+	r := new(WasiVmWindowInput_Resize)
+	r.Resize = protobuf_go_lite.CloneVTValue(m.Resize)
+	return r
+}
+
+func (m *WasiVmWindowInput_Resize) CloneOneofVT() isWasiVmWindowInput_Body {
+	return m.CloneVT()
+}
+
+func (m *WasiVmWindowInput_Input) CloneVT() *WasiVmWindowInput_Input {
+	if m == nil {
+		return (*WasiVmWindowInput_Input)(nil)
+	}
+	r := new(WasiVmWindowInput_Input)
+	r.Input = protobuf_go_lite.CloneVTValue(m.Input)
+	return r
+}
+
+func (m *WasiVmWindowInput_Input) CloneOneofVT() isWasiVmWindowInput_Body {
+	return m.CloneVT()
+}
+
+func (m *WasiVmWindowOpen) CloneVT() *WasiVmWindowOpen {
+	if m == nil {
+		return (*WasiVmWindowOpen)(nil)
+	}
+	r := new(WasiVmWindowOpen)
+	r.Id = m.Id
+	r.Size = protobuf_go_lite.CloneVTValue(m.Size)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmWindowOpen) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmWindowSize) CloneVT() *WasiVmWindowSize {
+	if m == nil {
+		return (*WasiVmWindowSize)(nil)
+	}
+	r := new(WasiVmWindowSize)
+	r.Width = m.Width
+	r.Height = m.Height
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmWindowSize) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *WasiVmDisplayFrame) CloneVT() *WasiVmDisplayFrame {
 	if m == nil {
 		return (*WasiVmDisplayFrame)(nil)
@@ -1342,6 +1732,198 @@ func (this *SetWasiVmStateOp) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+func (this *WatchWasiVmWindowsRequest) EqualVT(that *WatchWasiVmWindowsRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WatchWasiVmWindowsRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WatchWasiVmWindowsRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmWindowList) EqualVT(that *WasiVmWindowList) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Windows, that.Windows, func() *WasiVmWindow { return &WasiVmWindow{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmWindowList) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmWindowList)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmWindow) EqualVT(that *WasiVmWindow) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Id != that.Id {
+		return false
+	}
+	if this.Title != that.Title {
+		return false
+	}
+	if this.AppId != that.AppId {
+		return false
+	}
+	if this.Place != that.Place {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmWindow) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmWindow)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmWindowInput) EqualVT(that *WasiVmWindowInput) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Body == nil && that.Body != nil {
+		return false
+	} else if this.Body != nil {
+		if that.Body == nil {
+			return false
+		}
+		if !this.Body.(interface {
+			EqualVT(isWasiVmWindowInput_Body) bool
+		}).EqualVT(that.Body) {
+			return false
+		}
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmWindowInput) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmWindowInput)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmWindowInput_Open) EqualVT(thatIface isWasiVmWindowInput_Body) bool {
+	that, ok := thatIface.(*WasiVmWindowInput_Open)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Open, that.Open, func() *WasiVmWindowOpen { return &WasiVmWindowOpen{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *WasiVmWindowInput_Resize) EqualVT(thatIface isWasiVmWindowInput_Body) bool {
+	that, ok := thatIface.(*WasiVmWindowInput_Resize)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Resize, that.Resize, func() *WasiVmWindowSize { return &WasiVmWindowSize{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *WasiVmWindowInput_Input) EqualVT(thatIface isWasiVmWindowInput_Body) bool {
+	that, ok := thatIface.(*WasiVmWindowInput_Input)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Input, that.Input, func() *WasiVmDisplayInput { return &WasiVmDisplayInput{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *WasiVmWindowOpen) EqualVT(that *WasiVmWindowOpen) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Id != that.Id {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Size, that.Size) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmWindowOpen) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmWindowOpen)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmWindowSize) EqualVT(that *WasiVmWindowSize) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Width != that.Width {
+		return false
+	}
+	if this.Height != that.Height {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmWindowSize) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmWindowSize)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 func (this *WasiVmDisplayFrame) EqualVT(that *WasiVmDisplayFrame) bool {
 	if this == that {
 		return true
@@ -1582,6 +2164,46 @@ func (this *WasiVmKeyEvent) EqualMessageVT(thatMsg any) bool {
 		return false
 	}
 	return this.EqualVT(that)
+}
+
+// MarshalProtoJSON marshals the WasiVmWindowPlace to JSON.
+func (x WasiVmWindowPlace) MarshalProtoJSON(s *json.MarshalState) {
+	s.WriteEnum(int32(x), WasiVmWindowPlace_name)
+}
+
+// MarshalText marshals the WasiVmWindowPlace to text.
+func (x WasiVmWindowPlace) MarshalText() ([]byte, error) {
+	return []byte(json.GetEnumString(int32(x), WasiVmWindowPlace_name)), nil
+}
+
+// MarshalJSON marshals the WasiVmWindowPlace to JSON.
+func (x WasiVmWindowPlace) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmWindowPlace from JSON.
+func (x *WasiVmWindowPlace) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	v := s.ReadEnum(WasiVmWindowPlace_value)
+	if err := s.Err(); err != nil {
+		s.SetErrorf("could not read WasiVmWindowPlace enum: %v", err)
+		return
+	}
+	*x = WasiVmWindowPlace(v)
+}
+
+// UnmarshalText unmarshals the WasiVmWindowPlace from text.
+func (x *WasiVmWindowPlace) UnmarshalText(b []byte) error {
+	i, err := json.ParseEnumString(string(b), WasiVmWindowPlace_value)
+	if err != nil {
+		return err
+	}
+	*x = WasiVmWindowPlace(i)
+	return nil
+}
+
+// UnmarshalJSON unmarshals the WasiVmWindowPlace from JSON.
+func (x *WasiVmWindowPlace) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
 // MarshalProtoJSON marshals the WasiVmConfig_EnvEntry message to JSON.
@@ -2250,6 +2872,346 @@ func (x *SetWasiVmStateOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the SetWasiVmStateOp from JSON.
 func (x *SetWasiVmStateOp) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WatchWasiVmWindowsRequest message to JSON.
+func (x *WatchWasiVmWindowsRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WatchWasiVmWindowsRequest to JSON.
+func (x *WatchWasiVmWindowsRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WatchWasiVmWindowsRequest message from JSON.
+func (x *WatchWasiVmWindowsRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the WatchWasiVmWindowsRequest from JSON.
+func (x *WatchWasiVmWindowsRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmWindowList message to JSON.
+func (x *WasiVmWindowList) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Windows) > 0 || s.HasField("windows") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("windows")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Windows {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("windows"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmWindowList to JSON.
+func (x *WasiVmWindowList) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmWindowList message from JSON.
+func (x *WasiVmWindowList) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "windows":
+			s.AddField("windows")
+			if s.ReadNil() {
+				x.Windows = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Windows = append(x.Windows, nil)
+					return
+				}
+				v := &WasiVmWindow{}
+				v.UnmarshalProtoJSON(s.WithField("windows", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Windows = append(x.Windows, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmWindowList from JSON.
+func (x *WasiVmWindowList) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmWindow message to JSON.
+func (x *WasiVmWindow) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Id != 0 || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteUint32(x.Id)
+	}
+	if x.Title != "" || s.HasField("title") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("title")
+		s.WriteString(x.Title)
+	}
+	if x.AppId != "" || s.HasField("appId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("appId")
+		s.WriteString(x.AppId)
+	}
+	if x.Place != 0 || s.HasField("place") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("place")
+		x.Place.MarshalProtoJSON(s)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmWindow to JSON.
+func (x *WasiVmWindow) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmWindow message from JSON.
+func (x *WasiVmWindow) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadUint32()
+		case "title":
+			s.AddField("title")
+			x.Title = s.ReadString()
+		case "app_id", "appId":
+			s.AddField("app_id")
+			x.AppId = s.ReadString()
+		case "place":
+			s.AddField("place")
+			x.Place.UnmarshalProtoJSON(s)
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmWindow from JSON.
+func (x *WasiVmWindow) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmWindowInput message to JSON.
+func (x *WasiVmWindowInput) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Body != nil {
+		switch ov := x.Body.(type) {
+		case *WasiVmWindowInput_Open:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("open")
+			ov.Open.MarshalProtoJSON(s.WithField("open"))
+		case *WasiVmWindowInput_Resize:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("resize")
+			ov.Resize.MarshalProtoJSON(s.WithField("resize"))
+		case *WasiVmWindowInput_Input:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("input")
+			ov.Input.MarshalProtoJSON(s.WithField("input"))
+		}
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmWindowInput to JSON.
+func (x *WasiVmWindowInput) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmWindowInput message from JSON.
+func (x *WasiVmWindowInput) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "open":
+			ov := &WasiVmWindowInput_Open{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Open = nil
+				return
+			}
+			ov.Open = &WasiVmWindowOpen{}
+			ov.Open.UnmarshalProtoJSON(s.WithField("open", true))
+		case "resize":
+			ov := &WasiVmWindowInput_Resize{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Resize = nil
+				return
+			}
+			ov.Resize = &WasiVmWindowSize{}
+			ov.Resize.UnmarshalProtoJSON(s.WithField("resize", true))
+		case "input":
+			ov := &WasiVmWindowInput_Input{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Input = nil
+				return
+			}
+			ov.Input = &WasiVmDisplayInput{}
+			ov.Input.UnmarshalProtoJSON(s.WithField("input", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmWindowInput from JSON.
+func (x *WasiVmWindowInput) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmWindowOpen message to JSON.
+func (x *WasiVmWindowOpen) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Id != 0 || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteUint32(x.Id)
+	}
+	if x.Size != nil || s.HasField("size") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("size")
+		x.Size.MarshalProtoJSON(s.WithField("size"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmWindowOpen to JSON.
+func (x *WasiVmWindowOpen) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmWindowOpen message from JSON.
+func (x *WasiVmWindowOpen) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadUint32()
+		case "size":
+			if s.ReadNil() {
+				x.Size = nil
+				return
+			}
+			x.Size = &WasiVmWindowSize{}
+			x.Size.UnmarshalProtoJSON(s.WithField("size", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmWindowOpen from JSON.
+func (x *WasiVmWindowOpen) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmWindowSize message to JSON.
+func (x *WasiVmWindowSize) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Width != 0 || s.HasField("width") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("width")
+		s.WriteUint32(x.Width)
+	}
+	if x.Height != 0 || s.HasField("height") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("height")
+		s.WriteUint32(x.Height)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmWindowSize to JSON.
+func (x *WasiVmWindowSize) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmWindowSize message from JSON.
+func (x *WasiVmWindowSize) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "width":
+			s.AddField("width")
+			x.Width = s.ReadUint32()
+		case "height":
+			s.AddField("height")
+			x.Height = s.ReadUint32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmWindowSize from JSON.
+func (x *WasiVmWindowSize) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -3232,6 +4194,336 @@ func (m *SetWasiVmStateOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *WatchWasiVmWindowsRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchWasiVmWindowsRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WatchWasiVmWindowsRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmWindowList) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmWindowList) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmWindowList) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Windows) > 0 {
+		for iNdEx := len(m.Windows) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Windows[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmWindow) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmWindow) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmWindow) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Place != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Place))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.AppId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.AppId)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Title) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Title)
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Id != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmWindowInput) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmWindowInput) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmWindowInput) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if vtmsg, ok := m.Body.(interface {
+		MarshalToSizedBufferVT([]byte) (int, error)
+	}); ok {
+		size, err := vtmsg.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmWindowInput_Open) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmWindowInput_Open) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Open != nil {
+		size, err := m.Open.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmWindowInput_Resize) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmWindowInput_Resize) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Resize != nil {
+		size, err := m.Resize.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmWindowInput_Input) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmWindowInput_Input) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Input != nil {
+		size, err := m.Input.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmWindowOpen) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmWindowOpen) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmWindowOpen) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Size != nil {
+		size, err := m.Size.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Id != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmWindowSize) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmWindowSize) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmWindowSize) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Height != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Width != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Width))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *WasiVmDisplayFrame) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -3804,6 +5096,129 @@ func (m *SetWasiVmStateOp) SizeVT() (n int) {
 	return n
 }
 
+func (m *WatchWasiVmWindowsRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmWindowList) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Windows {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmWindow) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Id)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Title)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.AppId)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Place)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmWindowInput) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if vtmsg, ok := m.Body.(interface{ SizeVT() int }); ok {
+		n += vtmsg.SizeVT()
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmWindowInput_Open) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Open != nil {
+		l = m.Open.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *WasiVmWindowInput_Resize) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Resize != nil {
+		l = m.Resize.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *WasiVmWindowInput_Input) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Input != nil {
+		l = m.Input.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *WasiVmWindowOpen) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Id)
+	if m.Size != nil {
+		l = m.Size.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmWindowSize) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Width)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Height)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *WasiVmDisplayFrame) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3946,6 +5361,10 @@ func (m *WasiVmKeyEvent) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Down)
 	n += len(m.unknownFields)
 	return n
+}
+
+func (x WasiVmWindowPlace) MarshalProtoText() string {
+	return x.String()
 }
 
 func (x *WasiVmConfig_EnvEntry) MarshalProtoText() string {
@@ -4198,6 +5617,133 @@ func (x *SetWasiVmStateOp) MarshalProtoText() string {
 }
 
 func (x *SetWasiVmStateOp) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WatchWasiVmWindowsRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "WatchWasiVmWindowsRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WatchWasiVmWindowsRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmWindowList) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmWindowList")
+	if len(x.Windows) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "windows")
+		for i, v := range x.Windows {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmWindow{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmWindowList) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmWindow) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmWindow")
+	if x.Id != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteUint(&sb, x.Id)
+	}
+	if x.Title != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "title")
+		protobuf_go_lite.TextWriteString(&sb, x.Title)
+	}
+	if x.AppId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "app_id")
+		protobuf_go_lite.TextWriteString(&sb, x.AppId)
+	}
+	if x.Place != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "place")
+		protobuf_go_lite.TextWriteStringer(&sb, WasiVmWindowPlace(x.Place))
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmWindow) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmWindowInput) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmWindowInput")
+	switch body := x.Body.(type) {
+	case *WasiVmWindowInput_Open:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "open")
+		if body.Open == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmWindowOpen{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Open)
+		}
+	case *WasiVmWindowInput_Resize:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "resize")
+		if body.Resize == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmWindowSize{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Resize)
+		}
+	case *WasiVmWindowInput_Input:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "input")
+		if body.Input == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmDisplayInput{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Input)
+		}
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmWindowInput) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmWindowOpen) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmWindowOpen")
+	if x.Id != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteUint(&sb, x.Id)
+	}
+	if x.Size != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "size")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Size)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmWindowOpen) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmWindowSize) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmWindowSize")
+	if x.Width != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "width")
+		protobuf_go_lite.TextWriteUint(&sb, x.Width)
+	}
+	if x.Height != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "height")
+		protobuf_go_lite.TextWriteUint(&sb, x.Height)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmWindowSize) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -5147,6 +6693,419 @@ func (m *SetWasiVmStateOp) UnmarshalVT(dAtA []byte) error {
 			var _v uint64
 			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
 			m.State = VmState(_v)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WatchWasiVmWindowsRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchWasiVmWindowsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchWasiVmWindowsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmWindowList) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmWindowList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmWindowList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Windows", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Windows = append(m.Windows, &WasiVmWindow{})
+			if err := m.Windows[len(m.Windows)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmWindow) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmWindow: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmWindow: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			m.Id, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Title", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Title = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AppId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.AppId = v
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Place", wireType)
+			}
+			m.Place = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.Place = WasiVmWindowPlace(_v)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmWindowInput) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmWindowInput: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmWindowInput: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Open", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*WasiVmWindowInput_Open); ok {
+				if err := oneof.Open.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &WasiVmWindowOpen{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &WasiVmWindowInput_Open{Open: v}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Resize", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*WasiVmWindowInput_Resize); ok {
+				if err := oneof.Resize.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &WasiVmWindowSize{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &WasiVmWindowInput_Resize{Resize: v}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Input", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*WasiVmWindowInput_Input); ok {
+				if err := oneof.Input.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &WasiVmDisplayInput{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &WasiVmWindowInput_Input{Input: v}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmWindowOpen) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmWindowOpen: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmWindowOpen: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			m.Id, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Size", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Size == nil {
+				m.Size = &WasiVmWindowSize{}
+			}
+			if err := m.Size.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmWindowSize) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmWindowSize: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmWindowSize: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Width", wireType)
+			}
+			m.Width = 0
+			m.Width, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			m.Height, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}

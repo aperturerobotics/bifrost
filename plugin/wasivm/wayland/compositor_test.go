@@ -29,21 +29,46 @@ const (
 	firstFreeID     = 20
 )
 
-// testCompositor is a compositor on a fresh kernel, with a viewer whose
-// frames build a copy of the screen.
+// testCompositor is a compositor on a fresh kernel, with a viewer of the
+// desktop.
 type testCompositor struct {
-	// t is the test.
-	t *testing.T
+	// testView is the desktop's viewer.
+	*testView
 	// k is the kernel.
 	k *kernel.Kernel
 	// comp is the compositor.
 	comp *Compositor
+}
+
+// testView is a viewer whose frames build a copy of a space.
+type testView struct {
+	// t is the test.
+	t *testing.T
 	// frames is the viewer's frames.
 	frames chan *s4wave_vm.WasiVmDisplayFrame
-	// screen is the screen's RGBA pixels as the frames so far draw it.
+	// screen is the space's RGBA pixels as the frames so far draw it.
 	screen *image.RGBA
 	// copies counts the moves the frames so far made.
 	copies int
+	// done receives the error that ended the stream.
+	done chan error
+}
+
+// newTestView starts a viewer of the stream run.
+func newTestView(t *testing.T, run func(context.Context, func(*s4wave_vm.WasiVmDisplayFrame) error) error) *testView {
+	tv := &testView{
+		t:      t,
+		frames: make(chan *s4wave_vm.WasiVmDisplayFrame, 64),
+		screen: image.NewRGBA(image.Rectangle{}),
+		done:   make(chan error, 1),
+	}
+	go func() {
+		tv.done <- run(t.Context(), func(f *s4wave_vm.WasiVmDisplayFrame) error {
+			tv.frames <- f
+			return nil
+		})
+	}()
+	return tv
 }
 
 // newTestCompositor starts a compositor with a width by height screen and a
@@ -64,46 +89,35 @@ func newTestCompositor(t *testing.T, width, height int) *testCompositor {
 	t.Cleanup(comp.Close)
 	go func() { _ = comp.Serve(ctx) }()
 
-	// Collect the viewer's frames.
-	tc := &testCompositor{
-		t:      t,
-		k:      k,
-		comp:   comp,
-		frames: make(chan *s4wave_vm.WasiVmDisplayFrame, 64),
-		screen: image.NewRGBA(image.Rect(0, 0, width, height)),
-	}
-	go func() {
-		_ = comp.Run(ctx, func(f *s4wave_vm.WasiVmDisplayFrame) error {
-			tc.frames <- f
-			return nil
-		})
-	}()
-	return tc
+	// View the desktop.
+	return &testCompositor{testView: newTestView(t, comp.Run), k: k, comp: comp}
 }
 
-// awaitPixel applies the viewer's frames until the screen pixel at pt is
-// want, in RGBA.
-func (tc *testCompositor) awaitPixel(pt image.Point, want [4]byte) {
+// awaitPixel applies the viewer's frames until the pixel at pt is want, in
+// RGBA.
+func (tc *testView) awaitPixel(pt image.Point, want [4]byte) {
 	tc.t.Helper()
 	deadline := time.After(10 * time.Second)
 	for {
-		if got := tc.screen.Pix[tc.screen.PixOffset(pt.X, pt.Y):][:4]; string(got) == string(want[:]) {
+		if pt.In(tc.screen.Rect) && string(tc.screen.Pix[tc.screen.PixOffset(pt.X, pt.Y):][:4]) == string(want[:]) {
 			return
 		}
 		select {
 		case f := <-tc.frames:
 			tc.apply(f)
 		case <-deadline:
-			got := tc.screen.Pix[tc.screen.PixOffset(pt.X, pt.Y):][:4]
-			tc.t.Fatalf("pixel at %v = %x, want %x", pt, got, want)
+			tc.t.Fatalf("pixel at %v in %v = %x, want %x", pt, tc.screen.Rect, tc.screen.At(pt.X, pt.Y), want)
 		}
 	}
 }
 
-// apply draws the frame f on the viewer's copy of the screen, as the viewer
-// does: its copies in order, each reading the screen before it writes, then
-// its regions.
-func (tc *testCompositor) apply(f *s4wave_vm.WasiVmDisplayFrame) {
+// apply draws the frame f on the viewer's copy of the space, as the viewer
+// does: a fresh copy when the size changed, then its copies in order, each
+// reading the space before it writes, then its regions.
+func (tc *testView) apply(f *s4wave_vm.WasiVmDisplayFrame) {
+	if size := image.Pt(int(f.GetScreenWidth()), int(f.GetScreenHeight())); size != tc.screen.Rect.Size() {
+		tc.screen = image.NewRGBA(image.Rectangle{Max: size})
+	}
 	tc.copies += len(f.GetCopies())
 	for _, m := range f.GetCopies() {
 		src := image.Rect(int(m.GetX()), int(m.GetY()), int(m.GetX()+m.GetWidth()), int(m.GetY()+m.GetHeight()))
@@ -727,7 +741,7 @@ func pattern(width, height, seed int) []byte {
 
 // awaitPattern applies the viewer's frames until the screen area at origin
 // shows the RGBA of the buffer pixels of a width by height pattern.
-func (tc *testCompositor) awaitPattern(origin image.Point, width, height int, pixels []byte) {
+func (tc *testView) awaitPattern(origin image.Point, width, height int, pixels []byte) {
 	tc.t.Helper()
 	for y := range height {
 		for x := range width {

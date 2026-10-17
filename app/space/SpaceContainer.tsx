@@ -63,6 +63,10 @@ import {
 import { pluginPathPrefix } from '@s4wave/app/urls.js'
 import { useShellTabs, useTabId } from '@s4wave/app/ShellTabContext.js'
 import { SpaceBody } from './SpaceBody.js'
+import {
+  buildObjectRoutePath,
+  SpaceTabContextProvider,
+} from './SpaceTabContext.js'
 import { SpaceMountingScreen } from './SpaceMountingScreen.js'
 import {
   spaceMountDetailFromWorld,
@@ -108,13 +112,6 @@ const quickstartSpaceStartupLabels: Record<string, string> = {
     'quickstart.space-contents-handoff-used',
   'quickstart mount contents start': 'quickstart.space-contents-mount-start',
   'quickstart mount contents finish': 'quickstart.space-contents-mount-ready',
-}
-
-export function buildObjectRoutePath(
-  parentPaths: readonly string[],
-  objectKey: string,
-): string {
-  return joinPath([...parentPaths, SUBPATH_DELIMITER, objectKey], true)
 }
 
 function logQuickstartSpaceDiagnostic(
@@ -748,6 +745,7 @@ function useSpaceContainerController() {
     navigateToSubPath,
     objectKey,
     objectPath,
+    parentPaths,
     providerId,
     ready,
     renameOpen,
@@ -801,6 +799,7 @@ export function SpaceContainer() {
     navigateToSubPath,
     objectKey,
     objectPath,
+    parentPaths,
     providerId,
     ready,
     renameOpen,
@@ -893,7 +892,9 @@ export function SpaceContainer() {
                   onShareSpace={handleSharingClick}
                 />
                 <CreateObjectButton />
-                <SpaceBody />
+                <SpaceTabContextProvider parentPaths={parentPaths}>
+                  <SpaceBody />
+                </SpaceTabContextProvider>
               </SpaceContainerContext.Provider>
             ) : (
               <SpaceMountingScreen

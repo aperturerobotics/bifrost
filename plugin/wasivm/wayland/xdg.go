@@ -35,10 +35,17 @@ type xdgSurface struct {
 type toplevel struct {
 	// id is the xdg_toplevel's object id.
 	id uint32
+	// The compositor's lock guards the fields below.
+
 	// title and appID name the window.
 	title, appID string
-
-	// The compositor's lock guards the fields below.
+	// windowID names the window to viewers while it is mapped; it is unique
+	// across the compositor's life.
+	windowID uint32
+	// own is the window's space while it is popped out of the desktop.
+	own *space
+	// home is the window's desktop rectangle while it is popped out.
+	home image.Rectangle
 
 	// minSize and maxSize bound the window's size; zero leaves a side
 	// unbounded.
@@ -116,9 +123,9 @@ func (p *positioner) request(op uint16, m *message) error {
 }
 
 // place returns the popup's rectangle in the parent's window geometry
-// coordinates, slid to keep it on the screen when the parent's geometry sits
-// at at.
-func (p *positioner) place(at image.Point, screen image.Rectangle) image.Rectangle {
+// coordinates, slid to stay inside area, its space, when the parent's
+// geometry sits at at.
+func (p *positioner) place(at image.Point, area image.Rectangle) image.Rectangle {
 	// Find the anchor point on the anchor rectangle.
 	a, pt := p.anchorRect, p.anchorRect.Min
 	pt.X += a.Dx() / 2
@@ -152,11 +159,11 @@ func (p *positioner) place(at image.Point, screen image.Rectangle) image.Rectang
 		corner.Y = pt.Y
 	}
 
-	// Slide it onto the screen.
+	// Slide it into the area.
 	r := image.Rectangle{Min: corner, Max: corner.Add(p.size)}
 	on := r.Add(at)
-	shift := image.Pt(max(screen.Min.X-on.Min.X, min(0, screen.Max.X-on.Max.X)),
-		max(screen.Min.Y-on.Min.Y, min(0, screen.Max.Y-on.Max.Y)))
+	shift := image.Pt(max(area.Min.X-on.Min.X, min(0, area.Max.X-on.Max.X)),
+		max(area.Min.Y-on.Min.Y, min(0, area.Max.Y-on.Max.Y)))
 	return r.Add(shift)
 }
 
@@ -278,8 +285,10 @@ func (x *xdgSurface) getPopup(id, parentID, posID uint32) error {
 // attachPopup places the popup on parent, relative to the parent's window
 // geometry, above its other popups. The caller holds the compositor's lock.
 func (x *xdgSurface) attachPopup(parent *surface) {
+	// Place it inside the parent's space, then link it.
+	comp := x.s.c.comp
 	at := parent.origin().Add(parent.geometry().Min)
-	x.popup.place = x.popup.pos.place(at, x.s.c.comp.screen)
+	x.popup.place = x.popup.pos.place(at, comp.spaceOf(comp.rootOf(parent)).area)
 	x.s.parent = parent
 	parent.popups = append(parent.popups, x.s)
 }
@@ -326,7 +335,7 @@ func (x *xdgSurface) configure() {
 	case x.toplevel != nil:
 		t := x.toplevel
 		var states []uint32
-		if t.maximized {
+		if t.maximized || t.own != nil {
 			states = append(states, toplevelMaximized)
 		}
 		if t.fullscreen {
@@ -364,9 +373,11 @@ func (x *xdgSurface) toplevelRequest(op uint16, m *message) error {
 		})
 		c.destroy(t.id)
 	case toplevelSetTitle:
-		t.title = m.string()
+		title := m.string()
+		c.comp.update(func() { t.title, c.comp.changed = title, true })
 	case toplevelSetAppID:
-		t.appID = m.string()
+		appID := m.string()
+		c.comp.update(func() { t.appID, c.comp.changed = appID, true })
 	case toplevelMove, toplevelResize:
 		// Start a grab while the client's surface holds a pressed pointer.
 		_, _ = m.uint(), m.uint()

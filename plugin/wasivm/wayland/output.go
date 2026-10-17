@@ -26,7 +26,7 @@ func (o output) request(op uint16, _ *message) error {
 func (c *client) bindOutput(r resource) object {
 	// Describe the screen: its position, maker and model, its one mode, and
 	// from version 4 its name, as the xdg output names it.
-	size := c.comp.screen.Size()
+	size := c.comp.desktop.area.Size()
 	c.send(newEvent(r.id, outputGeometry).int(0).int(0).int(0).int(0).int(0).
 		string("WasiVM").string("display").int(0))
 	c.send(newEvent(r.id, outputMode).uint(outputModeCurrentPreferred).
@@ -75,7 +75,7 @@ func (c *client) bindXdgOutputManager(r resource) object {
 // 3 the output's done event ends it in place of the xdg output's.
 func (c *client) describeXdgOutput(x resource, o output) {
 	// Describe the screen at its full size, as the scale is 1.
-	size := c.comp.screen.Size()
+	size := c.comp.desktop.area.Size()
 	c.send(newEvent(x.id, xdgOutputLogicalPosition).int(0).int(0))
 	c.send(newEvent(x.id, xdgOutputLogicalSize).int(int32(size.X)).int(int32(size.Y))) //nolint:gosec // screen sizes are small.
 	if x.version >= 2 {

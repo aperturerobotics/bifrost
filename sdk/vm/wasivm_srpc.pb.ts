@@ -11,7 +11,13 @@ import {
   ProtoRpc,
   ServerContext,
 } from 'starpc'
-import { WasiVmDisplayFrame, WasiVmDisplayInput } from './wasivm.pb.js'
+import {
+  WasiVmDisplayFrame,
+  WasiVmDisplayInput,
+  WasiVmWindowInput,
+  WasiVmWindowList,
+  WatchWasiVmWindowsRequest,
+} from './wasivm.pb.js'
 
 /**
  * WasiVmConsoleService attaches a viewer to the console of a running WasiVM.
@@ -133,6 +139,34 @@ export const WasiVmDisplayServiceDefinition = {
       O: WasiVmDisplayFrame,
       kind: MethodKind.BiDiStreaming,
     },
+    /**
+     * WatchWindows streams the Wayland windows of the display, then the list
+     * again each time a window maps, unmaps, is renamed, or moves between the
+     * desktop and a viewer of its own. An X display sends an empty list.
+     *
+     * @generated from rpc s4wave.vm.WasiVmDisplayService.WatchWindows
+     */
+    WatchWindows: {
+      name: 'WatchWindows',
+      I: WatchWasiVmWindowsRequest,
+      O: WasiVmWindowList,
+      kind: MethodKind.ServerStreaming,
+    },
+    /**
+     * Window shows one Wayland window in a viewer of its own, sized to it. The
+     * first input opens the window, which leaves the desktop; the rest resize
+     * it or carry the viewer's input, as Display's do, in window pixels. The
+     * stream ends when the window closes, and the window returns to the
+     * desktop once no viewer shows it.
+     *
+     * @generated from rpc s4wave.vm.WasiVmDisplayService.Window
+     */
+    Window: {
+      name: 'Window',
+      I: WasiVmWindowInput,
+      O: WasiVmDisplayFrame,
+      kind: MethodKind.BiDiStreaming,
+    },
   },
 } as const
 
@@ -156,6 +190,32 @@ export interface WasiVmDisplayService {
    */
   Display(
     request: MessageStream<WasiVmDisplayInput>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmDisplayFrame>
+
+  /**
+   * WatchWindows streams the Wayland windows of the display, then the list
+   * again each time a window maps, unmaps, is renamed, or moves between the
+   * desktop and a viewer of its own. An X display sends an empty list.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDisplayService.WatchWindows
+   */
+  WatchWindows(
+    request: WatchWasiVmWindowsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmWindowList>
+
+  /**
+   * Window shows one Wayland window in a viewer of its own, sized to it. The
+   * first input opens the window, which leaves the desktop; the rest resize
+   * it or carry the viewer's input, as Display's do, in window pixels. The
+   * stream ends when the window closes, and the window returns to the
+   * desktop once no viewer shows it.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDisplayService.Window
+   */
+  Window(
+    request: MessageStream<WasiVmWindowInput>,
     abortSignal?: AbortSignal,
   ): MessageStream<WasiVmDisplayFrame>
 }
@@ -183,6 +243,34 @@ export interface WasiVmDisplayServiceHandler {
     abortSignal: AbortSignal,
     context: ServerContext,
   ): MessageStream<WasiVmDisplayFrame>
+
+  /**
+   * WatchWindows streams the Wayland windows of the display, then the list
+   * again each time a window maps, unmaps, is renamed, or moves between the
+   * desktop and a viewer of its own. An X display sends an empty list.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDisplayService.WatchWindows
+   */
+  WatchWindows(
+    request: WatchWasiVmWindowsRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<WasiVmWindowList>
+
+  /**
+   * Window shows one Wayland window in a viewer of its own, sized to it. The
+   * first input opens the window, which leaves the desktop; the rest resize
+   * it or carry the viewer's input, as Display's do, in window pixels. The
+   * stream ends when the window closes, and the window returns to the
+   * desktop once no viewer shows it.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDisplayService.Window
+   */
+  Window(
+    request: MessageStream<WasiVmWindowInput>,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<WasiVmDisplayFrame>
 }
 
 export const WasiVmDisplayServiceServiceName =
@@ -195,6 +283,8 @@ export class WasiVmDisplayServiceClient implements WasiVmDisplayService {
     this.service = opts?.service || WasiVmDisplayServiceServiceName
     this.rpc = rpc
     this.Display = this.Display.bind(this)
+    this.WatchWindows = this.WatchWindows.bind(this)
+    this.Window = this.Window.bind(this)
   }
   /**
    * Display streams the screen and carries input back. Once the guest brings
@@ -215,6 +305,49 @@ export class WasiVmDisplayServiceClient implements WasiVmDisplayService {
       this.service,
       WasiVmDisplayServiceDefinition.methods.Display.name,
       buildEncodeMessageTransform(WasiVmDisplayInput)(request),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(WasiVmDisplayFrame)(result)
+  }
+
+  /**
+   * WatchWindows streams the Wayland windows of the display, then the list
+   * again each time a window maps, unmaps, is renamed, or moves between the
+   * desktop and a viewer of its own. An X display sends an empty list.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDisplayService.WatchWindows
+   */
+  WatchWindows(
+    request: WatchWasiVmWindowsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmWindowList> {
+    const requestMsg = WatchWasiVmWindowsRequest.create(request)
+    const result = this.rpc.serverStreamingRequest(
+      this.service,
+      WasiVmDisplayServiceDefinition.methods.WatchWindows.name,
+      WatchWasiVmWindowsRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(WasiVmWindowList)(result)
+  }
+
+  /**
+   * Window shows one Wayland window in a viewer of its own, sized to it. The
+   * first input opens the window, which leaves the desktop; the rest resize
+   * it or carry the viewer's input, as Display's do, in window pixels. The
+   * stream ends when the window closes, and the window returns to the
+   * desktop once no viewer shows it.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDisplayService.Window
+   */
+  Window(
+    request: MessageStream<WasiVmWindowInput>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmDisplayFrame> {
+    const result = this.rpc.bidirectionalStreamingRequest(
+      this.service,
+      WasiVmDisplayServiceDefinition.methods.Window.name,
+      buildEncodeMessageTransform(WasiVmWindowInput)(request),
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(WasiVmDisplayFrame)(result)

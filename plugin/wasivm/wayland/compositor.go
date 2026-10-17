@@ -33,16 +33,17 @@ const SocketPath = "/run/wayland-0"
 type Compositor struct {
 	// listener accepts the guest's connections.
 	listener *kernel.UnixListener
-	// screen is the output's size in pixels.
-	screen image.Rectangle
 	// start is the origin of event timestamps.
 	start time.Time
 	// keymap is the keyboard's xkbcommon keymap, sent to each keyboard.
 	keymap *kernel.File
 
 	// bcast guards the fields below and the surfaces' screen state, and
-	// wakes the viewers when the screen changes.
+	// wakes the viewers and the window watchers when they change.
 	bcast broadcast.Broadcast
+	// desktop is the screen's space: the output's size in pixels, with the
+	// layers and the windows not popped out.
+	desktop *space
 	// clients is the connected clients.
 	clients map[*client]struct{}
 	// closed is set once Close runs, so no client connects after it.
@@ -51,8 +52,12 @@ type Compositor struct {
 	connected bool
 	// serial numbers input and configure events.
 	serial uint32
-	// windows is the mapped toplevels, bottom to top.
+	// windows is the mapped toplevels on the desktop, bottom to top.
 	windows []*surface
+	// apart is the mapped toplevels popped out to spaces of their own.
+	apart []*surface
+	// lastWindow is the last id given to a window.
+	lastWindow uint32
 	// layers is the mapped layer surfaces of each layer, bottom to top.
 	layers [layerCount][]*surface
 	// usable is the screen area the exclusive zones leave to the windows.
@@ -73,11 +78,12 @@ type Compositor struct {
 	// popupGrabs is the popups that close on a press outside them, oldest
 	// first.
 	popupGrabs []*surface
-	// viewers holds what each viewer's copy of the screen lacks.
-	viewers map[*view]struct{}
-	// dirty is set when a viewer's copy fell behind under the current lock.
-	dirty bool
-	// pointer is the pointer's position on the screen.
+	// changed is set when a viewer's copy fell behind or the window list
+	// changed under the current lock.
+	changed bool
+	// pointerSpace is the space the pointer is on.
+	pointerSpace *space
+	// pointer is the pointer's position on pointerSpace.
 	pointer image.Point
 	// buttons is the mask of held pointer buttons, in viewer bit order.
 	buttons uint32
@@ -94,15 +100,15 @@ func Listen(k *kernel.Kernel, width, height int) (*Compositor, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "listen for wayland clients")
 	}
-	screen := image.Rect(0, 0, width, height)
+	desktop := newSpace(image.Rect(0, 0, width, height), nil)
 	return &Compositor{
-		listener: l,
-		screen:   screen,
-		usable:   screen,
-		start:    time.Now(),
-		keymap:   k.NewMemfd("keymap", append([]byte(keymap), 0)),
-		clients:  make(map[*client]struct{}),
-		viewers:  make(map[*view]struct{}),
+		listener:     l,
+		desktop:      desktop,
+		pointerSpace: desktop,
+		usable:       desktop.area,
+		start:        time.Now(),
+		keymap:       k.NewMemfd("keymap", append([]byte(keymap), 0)),
+		clients:      make(map[*client]struct{}),
 	}, nil
 }
 
@@ -185,28 +191,44 @@ func (c *Compositor) WaitClient(ctx context.Context) error {
 // Run sends the whole screen to send, then the changes since each frame,
 // until Close or ctx ends.
 func (c *Compositor) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplayFrame) error) error {
-	// Register the viewer with the whole screen to draw.
-	v := &view{damage: []image.Rectangle{c.screen}}
+	return c.run(ctx, c.desktop, send)
+}
+
+// Input sends a viewer's pointer or key event to the surfaces holding the
+// focus. A keysym the keyboard lacks is dropped.
+func (c *Compositor) Input(in *s4wave_vm.WasiVmDisplayInput) {
+	c.input(c.desktop, in)
+}
+
+// run sends the whole space sp to send, then the changes since each frame,
+// until Close, the window leaves sp, or ctx ends.
+func (c *Compositor) run(ctx context.Context, sp *space, send func(*s4wave_vm.WasiVmDisplayFrame) error) error {
+	// Register the viewer with the whole space to draw.
+	v := &view{}
 	c.bcast.HoldLock(func(func(), func() <-chan struct{}) {
-		c.viewers[v] = struct{}{}
+		v.add(sp.area)
+		sp.viewers[v] = struct{}{}
 	})
 	defer c.bcast.HoldLock(func(func(), func() <-chan struct{}) {
-		delete(c.viewers, v)
+		delete(sp.viewers, v)
 	})
 
 	// Send the changes each time the viewer falls behind.
 	for {
 		var frame *s4wave_vm.WasiVmDisplayFrame
-		var closed bool
+		var closed, done bool
 		var waitCh <-chan struct{}
 		c.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
 			if !v.empty() {
-				frame = c.readFrame(v)
+				frame = c.readFrame(sp, v)
 			}
-			closed, waitCh = c.closed, getWaitCh()
+			closed, done, waitCh = c.closed, sp.done, getWaitCh()
 		})
-		if closed {
+		switch {
+		case closed:
 			return nil
+		case done:
+			return ErrWindowClosed
 		}
 		if frame != nil {
 			if err := send(frame); err != nil {
@@ -221,46 +243,54 @@ func (c *Compositor) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplay
 	}
 }
 
-// update runs fn under the lock, then wakes the viewers when fn damaged the
-// screen.
+// update runs fn under the lock, then wakes the viewers and the window
+// watchers when fn changed what they show.
 func (c *Compositor) update(fn func()) {
 	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		fn()
-		if c.dirty {
-			c.dirty = false
+		if c.changed {
+			c.changed = false
 			broadcast()
 		}
 	})
 }
 
-// damage marks the screen area r for every viewer to draw again. The caller
-// holds the lock through update, which wakes the viewers.
-func (c *Compositor) damage(r image.Rectangle) {
-	r = r.Intersect(c.screen)
+// damage marks the area r of the space sp for each of its viewers to draw
+// again. The caller holds the lock through update, which wakes the viewers.
+func (c *Compositor) damage(sp *space, r image.Rectangle) {
+	r = r.Intersect(sp.area)
 	if r.Empty() {
 		return
 	}
-	for v := range c.viewers {
+	for v := range sp.viewers {
 		v.add(r)
 	}
-	c.dirty = true
+	c.changed = true
 }
 
-// shift has every viewer move the screen area src by by, as far as both ends
-// stay on the screen, and returns the area it moved to. The caller marks the
-// areas the move uncovers, and holds the lock through update.
+// redrawTree marks the whole tree holding s, if it shows, for the viewers of
+// its space to draw again. The caller holds the lock.
+func (c *Compositor) redrawTree(s *surface) {
+	w := c.rootOf(s)
+	c.damage(c.spaceOf(w), c.bounds(w))
+}
+
+// shift has every desktop viewer move the screen area src by by, as far as
+// both ends stay on the screen, and returns the area it moved to. The caller
+// marks the areas the move uncovers, and holds the lock through update.
 func (c *Compositor) shift(src image.Rectangle, by image.Point) image.Rectangle {
 	// Keep the part whose source and destination are on the screen.
-	src = src.Intersect(c.screen).Intersect(c.screen.Sub(by))
+	screen := c.desktop.area
+	src = src.Intersect(screen).Intersect(screen.Sub(by))
 	if src.Empty() || by == (image.Point{}) {
 		return image.Rectangle{}
 	}
 
 	// Queue the move for every viewer.
-	for v := range c.viewers {
+	for v := range c.desktop.viewers {
 		v.copy(src, by)
 	}
-	c.dirty = true
+	c.changed = true
 	return src.Add(by)
 }
 

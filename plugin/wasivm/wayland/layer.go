@@ -181,7 +181,7 @@ func (l *layerSurface) commit() bool {
 	if !l.configured {
 		area := comp.usable
 		if l.zone < 0 {
-			area = comp.screen
+			area = comp.desktop.area
 		}
 		l.place(area)
 		return changed
@@ -282,7 +282,7 @@ func (l *layerSurface) place(area image.Rectangle) {
 		comp := c.comp
 		before := comp.bounds(comp.rootOf(l.s))
 		l.pos = pos
-		comp.damage(before.Union(comp.bounds(comp.rootOf(l.s))))
+		comp.damage(comp.desktop, before.Union(comp.bounds(comp.rootOf(l.s))))
 	}
 }
 

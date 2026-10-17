@@ -146,8 +146,7 @@ func (s *surface) commit() error {
 	size, area := s.size, image.Rectangle{}
 	var pix []byte
 	if s.attached && buf != nil {
-		screen := s.c.comp.screen.Size()
-		size = image.Pt(min(buf.width, screen.X), min(buf.height, screen.Y))
+		size = image.Pt(min(buf.width, maxWindowSize), min(buf.height, maxWindowSize))
 		area = s.damaged.Intersect(image.Rectangle{Max: size})
 		if size != s.size || s.image == nil {
 			area = image.Rectangle{Max: size}
@@ -165,7 +164,7 @@ func (s *surface) commit() error {
 	comp.update(func() {
 		// Note where the surface's tree was.
 		w := comp.rootOf(s)
-		before := comp.bounds(w)
+		sp, before := comp.spaceOf(w), comp.bounds(w)
 
 		// Apply the image, the subsurfaces' positions and the role.
 		relayout := s.attached && (buf == nil || size != s.size)
@@ -192,12 +191,12 @@ func (s *surface) commit() error {
 		// emptied its bounds before the unmap saw them.
 		switch {
 		case w != comp.rootOf(s):
-			comp.damage(before)
+			comp.damage(sp, before)
 		case relayout:
-			comp.damage(before.Union(comp.bounds(w)))
+			comp.damage(sp, before.Union(comp.bounds(w)))
 			comp.refocusPointer()
 		case w != nil:
-			comp.damage(area.Add(s.origin()))
+			comp.damage(sp, area.Add(s.origin()))
 		}
 		if s.inputSet {
 			comp.refocusPointer()
@@ -286,7 +285,7 @@ func (s *surface) mapped() bool {
 func (s *surface) detach() {
 	// Redraw where the surface's tree was.
 	comp := s.c.comp
-	comp.damage(comp.bounds(comp.rootOf(s)))
+	comp.redrawTree(s)
 
 	// Unmap it, leave the parent and orphan the children.
 	comp.unmap(s)
@@ -356,7 +355,7 @@ func (s *surface) subsurfaceRequest(op uint16, m *message) error {
 		id := s.sub.id
 		s.c.comp.update(func() {
 			// Redraw where its tree was, then remove it.
-			s.c.comp.damage(s.c.comp.bounds(s.c.comp.rootOf(s)))
+			s.c.comp.redrawTree(s)
 			s.unparent()
 			s.sub = nil
 			s.c.comp.refocusPointer()
@@ -388,7 +387,7 @@ func (s *surface) subsurfaceRequest(op uint16, m *message) error {
 				at++
 			}
 			p.stack = slices.Insert(p.stack, at, s)
-			s.c.comp.damage(s.c.comp.bounds(s.c.comp.rootOf(s)))
+			s.c.comp.redrawTree(s)
 		})
 	}
 	return nil

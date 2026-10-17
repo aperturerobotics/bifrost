@@ -3,7 +3,12 @@ import { Resource } from '@aptre/bldr-sdk/resource/resource.js'
 import type { MessageStream } from 'starpc'
 
 import type { TerminalFrame } from '../terminal/terminal.pb.js'
-import type { WasiVmDisplayFrame, WasiVmDisplayInput } from './wasivm.pb.js'
+import type {
+  WasiVmDisplayFrame,
+  WasiVmDisplayInput,
+  WasiVmWindowInput,
+  WasiVmWindowList,
+} from './wasivm.pb.js'
 import {
   WasiVmConsoleServiceClient,
   WasiVmDisplayServiceClient,
@@ -76,5 +81,27 @@ export class WasiVmHandle extends Resource {
     abortSignal?: AbortSignal,
   ): MessageStream<WasiVmDisplayFrame> {
     return this.display.Display(input, abortSignal)
+  }
+
+  // watchWindows streams the windows of the running VM's Wayland display,
+  // then the list again each time a window maps, unmaps, is renamed, or moves
+  // between the desktop and a viewer. It waits for the VM to start and ends
+  // when the display does.
+  public watchWindows(
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmWindowList> {
+    return this.display.WatchWindows({}, abortSignal)
+  }
+
+  // connectWindow pops one window of the running VM's Wayland display out to
+  // the viewer. The first input opens the window at the viewer's size; later
+  // ones resize it or carry the viewer's pointer and keys. The stream sends
+  // the window's frames as connectDisplay does and ends when the window
+  // closes; the window returns to the desktop when the viewer leaves.
+  public connectWindow(
+    input: MessageStream<WasiVmWindowInput>,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmDisplayFrame> {
+    return this.display.Window(input, abortSignal)
   }
 }

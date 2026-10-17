@@ -8,6 +8,7 @@ import type {
 } from '@s4wave/sdk/vm/wasivm.pb.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
+import type { LoadingView } from '@s4wave/web/ui/loading/types.js'
 
 import { keysymOf, xButtons } from './display-input.js'
 
@@ -17,26 +18,73 @@ export type WasiVmDisplayConnector = (
   signal: AbortSignal,
 ) => MessageStream<WasiVmDisplayFrame>
 
+// WasiVmPaneSize is the size of the pane a display fits in, in CSS pixels.
+export interface WasiVmPaneSize {
+  width: number
+  height: number
+}
+
+// WasiVmDisplayViews describes a display that is not showing: waiting for
+// its first frame, closed by the VM, or failed. retry reconnects.
+export interface WasiVmDisplayViews {
+  waiting: LoadingView
+  closed: (retry: () => void) => LoadingView
+  failed: (detail: string, retry: () => void) => LoadingView
+}
+
 // WasiVmDisplayProps configures the display of a VM.
 export interface WasiVmDisplayProps {
   connectDisplay?: WasiVmDisplayConnector
+  // views replaces the views of the desktop display.
+  views?: WasiVmDisplayViews
+  // onPaneSize receives the pane's size when it is first measured and each
+  // time it changes.
+  onPaneSize?: (size: WasiVmPaneSize) => void
+}
+
+// desktopViews describes the desktop display while it is not showing.
+const desktopViews: WasiVmDisplayViews = {
+  waiting: {
+    state: 'active',
+    title: 'Waiting for the display',
+    detail: 'The desktop appears once the VM starts its display.',
+  },
+  closed: (retry) => ({
+    state: 'error',
+    title: 'The display disconnected',
+    detail: 'The display closed.',
+    onRetry: retry,
+  }),
+  failed: (detail, retry) => ({
+    state: 'error',
+    title: 'The display disconnected',
+    detail,
+    onRetry: retry,
+  }),
 }
 
 // DisplayStatus is the state of the display stream: waiting for the first
-// frame, showing the screen, or ended with a reason.
+// frame, showing the screen, closed by the VM, or failed with a reason.
 type DisplayStatus =
   | { kind: 'waiting' }
   | { kind: 'ready' }
-  | { kind: 'ended'; detail: string }
+  | { kind: 'closed' }
+  | { kind: 'failed'; detail: string }
 
 // wheelUp and wheelDown are the masks of X buttons 4 and 5, which a wheel
 // step presses and releases to scroll up and down.
 const wheelUp = 1 << 3
 const wheelDown = 1 << 4
 
-// WasiVmDisplay shows the display of a running VM, X or Wayland, on a canvas
-// scaled to fit the pane. Pointer, wheel and key input on the canvas drive the desktop.
-export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
+// WasiVmDisplay shows the display of a running VM, X or Wayland, or one
+// window of it, on a canvas scaled to fit the pane. Pointer, wheel and key
+// input on the canvas drive the VM.
+export function WasiVmDisplay({
+  connectDisplay,
+  views = desktopViews,
+  onPaneSize,
+}: WasiVmDisplayProps) {
+  const paneRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const inputRef = useRef<Pushable<WasiVmDisplayInput> | null>(null)
   // heldKeys maps each held key's code to the keysym its press sent, so the
@@ -44,6 +92,23 @@ export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
   const heldKeys = useRef(new Map<string, number>())
   const [status, setStatus] = useState<DisplayStatus>({ kind: 'waiting' })
   const [attempt, retry] = useReducer((n: number) => n + 1, 0)
+
+  // Report the pane's size as it changes.
+  useEffect(() => {
+    const pane = paneRef.current
+    if (!onPaneSize || !pane) return
+    let last = ''
+    const observer = new ResizeObserver(() => {
+      const width = Math.floor(pane.clientWidth)
+      const height = Math.floor(pane.clientHeight)
+      const key = width + 'x' + height
+      if (!width || !height || key === last) return
+      last = key
+      onPaneSize({ width, height })
+    })
+    observer.observe(pane)
+    return () => observer.disconnect()
+  }, [onPaneSize])
 
   // Stream the screen onto the canvas.
   useEffect(() => {
@@ -113,15 +178,12 @@ export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
           }
         }
         if (!cancelled) {
-          setStatus({
-            kind: 'ended',
-            detail: 'The display closed.',
-          })
+          setStatus({ kind: 'closed' })
         }
       } catch (err) {
         if (!cancelled) {
           const detail = err instanceof Error ? err.message : String(err)
-          setStatus({ kind: 'ended', detail })
+          setStatus({ kind: 'failed', detail })
         }
       }
     })()
@@ -174,7 +236,10 @@ export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black">
+    <div
+      ref={paneRef}
+      className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black"
+    >
       <canvas
         ref={canvasRef}
         tabIndex={0}
@@ -219,17 +284,10 @@ export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
           className="absolute w-full max-w-sm"
           view={
             status.kind === 'waiting'
-              ? {
-                  state: 'active',
-                  title: 'Waiting for the display',
-                  detail: 'The desktop appears once the VM starts its display.',
-                }
-              : {
-                  state: 'error',
-                  title: 'The display disconnected',
-                  detail: status.detail,
-                  onRetry: retry,
-                }
+              ? views.waiting
+              : status.kind === 'closed'
+                ? views.closed(retry)
+                : views.failed(status.detail, retry)
           }
         />
       )}

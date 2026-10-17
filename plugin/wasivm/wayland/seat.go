@@ -20,14 +20,22 @@ type grab struct {
 	rect image.Rectangle
 }
 
-// Input sends a viewer's pointer or key event to the surfaces holding the
-// focus. A keysym the keyboard lacks is dropped.
-func (c *Compositor) Input(in *s4wave_vm.WasiVmDisplayInput) {
+// input sends a pointer or key event from a viewer of the space sp to the
+// surfaces holding the focus. A key from a window's own space first
+// activates the window. A keysym the keyboard lacks is dropped.
+func (c *Compositor) input(sp *space, in *s4wave_vm.WasiVmDisplayInput) {
 	c.update(func() {
+		if sp.done {
+			return
+		}
 		switch {
 		case in.GetPointer() != nil:
-			c.pointerInput(in.GetPointer())
+			c.pointerInput(sp, in.GetPointer())
 		case in.GetKey() != nil:
+			if sp.window != nil && c.active != sp.window {
+				c.layerFocus = nil
+				c.activate(sp.window)
+			}
 			c.keyInput(in.GetKey())
 		}
 	})
@@ -96,7 +104,7 @@ func (c *Compositor) refocusPointer() {
 	switch {
 	case c.grab != nil:
 	case c.buttons&buttonBits == 0:
-		c.setHover(c.surfaceAt(c.pointer))
+		c.setHover(c.surfaceAt(c.pointerSpace, c.pointer))
 	case c.hover != nil && (c.rootOf(c.hover) == nil || c.hover.image == nil):
 		c.setHover(nil)
 	}
@@ -172,14 +180,20 @@ func (c *Compositor) modifiersEvent(id uint32) *event {
 		uint(heldModifiers(c.keys)).uint(0).uint(c.locked).uint(0)
 }
 
-// pointerInput moves the pointer and presses, releases or scrolls with the
-// buttons whose state changed. A grab takes the pointer from the surfaces.
-// The caller holds the lock.
-func (c *Compositor) pointerInput(ev *s4wave_vm.WasiVmPointerEvent) {
-	// Move the pointer within the screen and note the buttons that changed.
+// pointerInput moves the pointer on the space sp and presses, releases or
+// scrolls with the buttons whose state changed. A grab takes the pointer
+// from the surfaces. The caller holds the lock.
+func (c *Compositor) pointerInput(sp *space, ev *s4wave_vm.WasiVmPointerEvent) {
+	// Release the buttons on the space the pointer leaves.
+	if sp != c.pointerSpace {
+		c.leavePointer()
+		c.pointerSpace = sp
+	}
+
+	// Move the pointer within the space and note the buttons that changed.
 	c.pointer = image.Pt(
-		max(min(int(ev.GetX()), c.screen.Max.X-1), c.screen.Min.X),
-		max(min(int(ev.GetY()), c.screen.Max.Y-1), c.screen.Min.Y),
+		max(min(int(ev.GetX()), sp.area.Max.X-1), sp.area.Min.X),
+		max(min(int(ev.GetY()), sp.area.Max.Y-1), sp.area.Min.Y),
 	)
 	changed := ev.GetButtons() ^ c.buttons
 	held := c.buttons&buttonBits != 0
@@ -197,7 +211,7 @@ func (c *Compositor) pointerInput(ev *s4wave_vm.WasiVmPointerEvent) {
 	// Focus the surface under the pointer. A first press dismisses the
 	// popups outside it, then focuses its window or layer surface.
 	if !held {
-		c.setHover(c.surfaceAt(c.pointer))
+		c.setHover(c.surfaceAt(sp, c.pointer))
 		if c.buttons&changed&buttonBits != 0 {
 			c.press()
 		}
@@ -210,9 +224,25 @@ func (c *Compositor) pointerInput(ev *s4wave_vm.WasiVmPointerEvent) {
 	}
 }
 
+// leavePointer releases the held buttons where the pointer is, ending a
+// grab, and takes the pointer focus from the surfaces, as when the pointer
+// leaves its space. The caller holds the lock.
+func (c *Compositor) leavePointer() {
+	if changed := c.buttons; changed != 0 {
+		c.buttons = 0
+		if c.grab != nil {
+			c.endGrab()
+		} else {
+			c.sendPointer(changed)
+		}
+	}
+	c.setHover(nil)
+}
+
 // press dismisses the grabbing popups the hovered surface is outside of.
 // Then it raises and activates the hovered window, or gives the keyboard to
-// a layer surface that takes it on a press. The caller holds the lock.
+// a layer surface that takes it on a press. A window in its own space has
+// nothing to rise above. The caller holds the lock.
 func (c *Compositor) press() {
 	// Dismiss the popups.
 	for n := len(c.popupGrabs); n != 0; n-- {
@@ -228,7 +258,9 @@ func (c *Compositor) press() {
 	case w == nil:
 	case w.xdg != nil:
 		c.layerFocus = nil
-		c.raise(w)
+		if w.xdg.toplevel.own == nil {
+			c.raise(w)
+		}
 		c.activate(w)
 	case w.layer.interactivity == interactivityOnDemand:
 		c.layerFocus = w
@@ -273,11 +305,12 @@ func (c *Compositor) sendPointer(changed uint32) {
 
 // startGrab starts moving the window s, or resizing it by edges, when a
 // button pressed on it is still held. A maximized or fullscreen window
-// stays put. The caller holds the lock.
+// stays put, as does one in its own space, whose viewer places it. The
+// caller holds the lock.
 func (c *Compositor) startGrab(s *surface, edges uint32) {
 	// Check the press and the window.
 	t := s.xdg.toplevel
-	if c.grab != nil || c.buttons&buttonBits == 0 || c.rootOf(c.hover) != s || t.maximized || t.fullscreen {
+	if c.grab != nil || c.buttons&buttonBits == 0 || c.rootOf(c.hover) != s || t.maximized || t.fullscreen || t.own != nil {
 		return
 	}
 

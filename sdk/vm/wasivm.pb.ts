@@ -2,6 +2,7 @@
 // @generated from file github.com/s4wave/spacewave/sdk/vm/wasivm.proto (package s4wave.vm, syntax proto3)
 /* eslint-disable */
 
+import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import {
   createEmptyMessageType,
@@ -12,6 +13,39 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import type { VmState } from './v86.pb.js'
 import { VmImageCdnSource, VmState_Enum } from './v86.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
+
+/**
+ * WasiVmWindowPlace is where a Wayland window shows.
+ *
+ * @generated from enum s4wave.vm.WasiVmWindowPlace
+ */
+export enum WasiVmWindowPlace {
+  /**
+   * WasiVmWindowPlace_UNKNOWN is unset.
+   *
+   * @generated from enum value: WasiVmWindowPlace_UNKNOWN = 0;
+   */
+  WasiVmWindowPlace_UNKNOWN = 0,
+
+  /**
+   * WasiVmWindowPlace_DESKTOP means the window shows on the desktop.
+   *
+   * @generated from enum value: WasiVmWindowPlace_DESKTOP = 1;
+   */
+  WasiVmWindowPlace_DESKTOP = 1,
+
+  /**
+   * WasiVmWindowPlace_VIEWER means the window shows in a viewer of its own.
+   *
+   * @generated from enum value: WasiVmWindowPlace_VIEWER = 2;
+   */
+  WasiVmWindowPlace_VIEWER = 2,
+}
+
+export const WasiVmWindowPlace_Enum = /* @__PURE__ */ createEnumType(
+  's4wave.vm.WasiVmWindowPlace',
+  WasiVmWindowPlace,
+)
 
 /**
  * WasiVmConfig configures the init process of a WasiVM.
@@ -426,6 +460,365 @@ export const SetWasiVmStateOp: MessageType<SetWasiVmStateOp> =
   })
 
 /**
+ * WatchWasiVmWindowsRequest asks for the windows of a running WasiVM.
+ *
+ * @generated from message s4wave.vm.WatchWasiVmWindowsRequest
+ */
+export interface WatchWasiVmWindowsRequest {}
+
+export const WatchWasiVmWindowsRequest: MessageType<WatchWasiVmWindowsRequest> =
+  /* @__PURE__ */ createEmptyMessageType<WatchWasiVmWindowsRequest>(
+    's4wave.vm.WatchWasiVmWindowsRequest',
+    true,
+  )
+
+/**
+ * WasiVmWindow is a mapped Wayland window.
+ *
+ * @generated from message s4wave.vm.WasiVmWindow
+ */
+export interface WasiVmWindow {
+  /**
+   * Id identifies the window for the life of the VM's run.
+   *
+   * @generated from field: uint32 id = 1;
+   */
+  id?: number
+  /**
+   * Title is the title the client set, or empty.
+   *
+   * @generated from field: string title = 2;
+   */
+  title?: string
+  /**
+   * AppId names the client's application, or is empty.
+   *
+   * @generated from field: string app_id = 3;
+   */
+  appId?: string
+  /**
+   * Place is where the window shows.
+   *
+   * @generated from field: s4wave.vm.WasiVmWindowPlace place = 4;
+   */
+  place?: WasiVmWindowPlace
+}
+
+export const WasiVmWindow: MessageType<WasiVmWindow> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmWindow',
+    fields: [
+      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'title', kind: 'scalar', T: ScalarType.STRING },
+      { no: 3, name: 'app_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 4, name: 'place', kind: 'enum', T: WasiVmWindowPlace_Enum },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmWindowList is the mapped Wayland windows of a display, oldest first.
+ *
+ * @generated from message s4wave.vm.WasiVmWindowList
+ */
+export interface WasiVmWindowList {
+  /**
+   * Windows is the mapped windows.
+   *
+   * @generated from field: repeated s4wave.vm.WasiVmWindow windows = 1;
+   */
+  windows?: WasiVmWindow[]
+}
+
+export const WasiVmWindowList: MessageType<WasiVmWindowList> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmWindowList',
+    fields: [
+      {
+        no: 1,
+        name: 'windows',
+        kind: 'message',
+        T: WasiVmWindow,
+        repeated: true,
+      },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmWindowSize is the size of a window's viewer in pixels.
+ *
+ * @generated from message s4wave.vm.WasiVmWindowSize
+ */
+export interface WasiVmWindowSize {
+  /**
+   * Width is the width in pixels.
+   *
+   * @generated from field: uint32 width = 1;
+   */
+  width?: number
+  /**
+   * Height is the height in pixels.
+   *
+   * @generated from field: uint32 height = 2;
+   */
+  height?: number
+}
+
+export const WasiVmWindowSize: MessageType<WasiVmWindowSize> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmWindowSize',
+    fields: [
+      { no: 1, name: 'width', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmWindowOpen opens a window in a viewer of its own.
+ *
+ * @generated from message s4wave.vm.WasiVmWindowOpen
+ */
+export interface WasiVmWindowOpen {
+  /**
+   * Id is the window's id from the window list.
+   *
+   * @generated from field: uint32 id = 1;
+   */
+  id?: number
+  /**
+   * Size is the viewer's size.
+   *
+   * @generated from field: s4wave.vm.WasiVmWindowSize size = 2;
+   */
+  size?: WasiVmWindowSize
+}
+
+export const WasiVmWindowOpen: MessageType<WasiVmWindowOpen> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmWindowOpen',
+    fields: [
+      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'size', kind: 'message', T: WasiVmWindowSize },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmPointerEvent moves the pointer and sets which buttons are held.
+ *
+ * @generated from message s4wave.vm.WasiVmPointerEvent
+ */
+export interface WasiVmPointerEvent {
+  /**
+   * X is the pointer's column in screen pixels.
+   *
+   * @generated from field: int32 x = 1;
+   */
+  x?: number
+  /**
+   * Y is the pointer's row in screen pixels.
+   *
+   * @generated from field: int32 y = 2;
+   */
+  y?: number
+  /**
+   * Buttons holds bit n-1 for each held X button n: 1 is the left, 2 the
+   * middle, 3 the right, and 4 and 5 scroll up and down.
+   *
+   * @generated from field: uint32 buttons = 3;
+   */
+  buttons?: number
+}
+
+export const WasiVmPointerEvent: MessageType<WasiVmPointerEvent> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmPointerEvent',
+    fields: [
+      { no: 1, name: 'x', kind: 'scalar', T: ScalarType.INT32 },
+      { no: 2, name: 'y', kind: 'scalar', T: ScalarType.INT32 },
+      { no: 3, name: 'buttons', kind: 'scalar', T: ScalarType.UINT32 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmKeyEvent presses or releases a key.
+ *
+ * @generated from message s4wave.vm.WasiVmKeyEvent
+ */
+export interface WasiVmKeyEvent {
+  /**
+   * Keysym is the X keysym the key produces.
+   *
+   * @generated from field: uint32 keysym = 1;
+   */
+  keysym?: number
+  /**
+   * Down is set for a press and clear for a release.
+   *
+   * @generated from field: bool down = 2;
+   */
+  down?: boolean
+}
+
+export const WasiVmKeyEvent: MessageType<WasiVmKeyEvent> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmKeyEvent',
+    fields: [
+      { no: 1, name: 'keysym', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'down', kind: 'scalar', T: ScalarType.BOOL },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmFrameDrawn reports that the viewer drew the last frame it received.
+ *
+ * @generated from message s4wave.vm.WasiVmFrameDrawn
+ */
+export interface WasiVmFrameDrawn {}
+
+export const WasiVmFrameDrawn: MessageType<WasiVmFrameDrawn> =
+  /* @__PURE__ */ createEmptyMessageType<WasiVmFrameDrawn>(
+    's4wave.vm.WasiVmFrameDrawn',
+    true,
+  )
+
+/**
+ * WasiVmDisplayInput is a pointer or key event from the viewer, or its report
+ * that it drew a frame.
+ *
+ * @generated from message s4wave.vm.WasiVmDisplayInput
+ */
+export interface WasiVmDisplayInput {
+  /**
+   * @generated from oneof s4wave.vm.WasiVmDisplayInput.body
+   */
+  body?:
+    | {
+        value?: undefined
+        case: undefined
+      }
+    | {
+        /**
+         * Pointer moves the pointer and sets its buttons.
+         *
+         * @generated from field: s4wave.vm.WasiVmPointerEvent pointer = 1;
+         */
+        value: WasiVmPointerEvent
+        case: 'pointer'
+      }
+    | {
+        /**
+         * Key presses or releases a key.
+         *
+         * @generated from field: s4wave.vm.WasiVmKeyEvent key = 2;
+         */
+        value: WasiVmKeyEvent
+        case: 'key'
+      }
+    | {
+        /**
+         * Drawn reports the viewer drew the last frame and takes the next.
+         *
+         * @generated from field: s4wave.vm.WasiVmFrameDrawn drawn = 3;
+         */
+        value: WasiVmFrameDrawn
+        case: 'drawn'
+      }
+}
+
+export const WasiVmDisplayInput: MessageType<WasiVmDisplayInput> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmDisplayInput',
+    fields: [
+      {
+        no: 1,
+        name: 'pointer',
+        kind: 'message',
+        T: WasiVmPointerEvent,
+        oneof: 'body',
+      },
+      { no: 2, name: 'key', kind: 'message', T: WasiVmKeyEvent, oneof: 'body' },
+      {
+        no: 3,
+        name: 'drawn',
+        kind: 'message',
+        T: WasiVmFrameDrawn,
+        oneof: 'body',
+      },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmWindowInput is an input to a window's viewer stream.
+ *
+ * @generated from message s4wave.vm.WasiVmWindowInput
+ */
+export interface WasiVmWindowInput {
+  /**
+   * @generated from oneof s4wave.vm.WasiVmWindowInput.body
+   */
+  body?:
+    | {
+        value?: undefined
+        case: undefined
+      }
+    | {
+        /**
+         * Open takes the window off the desktop at the viewer's size. It is the
+         * stream's first input.
+         *
+         * @generated from field: s4wave.vm.WasiVmWindowOpen open = 1;
+         */
+        value: WasiVmWindowOpen
+        case: 'open'
+      }
+    | {
+        /**
+         * Resize sets the window's size to the viewer's new size.
+         *
+         * @generated from field: s4wave.vm.WasiVmWindowSize resize = 2;
+         */
+        value: WasiVmWindowSize
+        case: 'resize'
+      }
+    | {
+        /**
+         * Input is a pointer or key event in window pixels, or a drawn report.
+         *
+         * @generated from field: s4wave.vm.WasiVmDisplayInput input = 3;
+         */
+        value: WasiVmDisplayInput
+        case: 'input'
+      }
+}
+
+export const WasiVmWindowInput: MessageType<WasiVmWindowInput> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmWindowInput',
+    fields: [
+      {
+        no: 1,
+        name: 'open',
+        kind: 'message',
+        T: WasiVmWindowOpen,
+        oneof: 'body',
+      },
+      {
+        no: 2,
+        name: 'resize',
+        kind: 'message',
+        T: WasiVmWindowSize,
+        oneof: 'body',
+      },
+      {
+        no: 3,
+        name: 'input',
+        kind: 'message',
+        T: WasiVmDisplayInput,
+        oneof: 'body',
+      },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * WasiVmDisplayCopy moves an area of the viewer's screen, as a window that
  * moves on screen does, so its pixels need not be sent again. The source and
  * the destination lie inside the screen and may overlap.
@@ -588,151 +981,6 @@ export const WasiVmDisplayFrame: MessageType<WasiVmDisplayFrame> =
         kind: 'message',
         T: WasiVmDisplayRegion,
         repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmPointerEvent moves the pointer and sets which buttons are held.
- *
- * @generated from message s4wave.vm.WasiVmPointerEvent
- */
-export interface WasiVmPointerEvent {
-  /**
-   * X is the pointer's column in screen pixels.
-   *
-   * @generated from field: int32 x = 1;
-   */
-  x?: number
-  /**
-   * Y is the pointer's row in screen pixels.
-   *
-   * @generated from field: int32 y = 2;
-   */
-  y?: number
-  /**
-   * Buttons holds bit n-1 for each held X button n: 1 is the left, 2 the
-   * middle, 3 the right, and 4 and 5 scroll up and down.
-   *
-   * @generated from field: uint32 buttons = 3;
-   */
-  buttons?: number
-}
-
-export const WasiVmPointerEvent: MessageType<WasiVmPointerEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmPointerEvent',
-    fields: [
-      { no: 1, name: 'x', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 2, name: 'y', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 3, name: 'buttons', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmKeyEvent presses or releases a key.
- *
- * @generated from message s4wave.vm.WasiVmKeyEvent
- */
-export interface WasiVmKeyEvent {
-  /**
-   * Keysym is the X keysym the key produces.
-   *
-   * @generated from field: uint32 keysym = 1;
-   */
-  keysym?: number
-  /**
-   * Down is set for a press and clear for a release.
-   *
-   * @generated from field: bool down = 2;
-   */
-  down?: boolean
-}
-
-export const WasiVmKeyEvent: MessageType<WasiVmKeyEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmKeyEvent',
-    fields: [
-      { no: 1, name: 'keysym', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'down', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmFrameDrawn reports that the viewer drew the last frame it received.
- *
- * @generated from message s4wave.vm.WasiVmFrameDrawn
- */
-export interface WasiVmFrameDrawn {}
-
-export const WasiVmFrameDrawn: MessageType<WasiVmFrameDrawn> =
-  /* @__PURE__ */ createEmptyMessageType<WasiVmFrameDrawn>(
-    's4wave.vm.WasiVmFrameDrawn',
-    true,
-  )
-
-/**
- * WasiVmDisplayInput is a pointer or key event from the viewer, or its report
- * that it drew a frame.
- *
- * @generated from message s4wave.vm.WasiVmDisplayInput
- */
-export interface WasiVmDisplayInput {
-  /**
-   * @generated from oneof s4wave.vm.WasiVmDisplayInput.body
-   */
-  body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Pointer moves the pointer and sets its buttons.
-         *
-         * @generated from field: s4wave.vm.WasiVmPointerEvent pointer = 1;
-         */
-        value: WasiVmPointerEvent
-        case: 'pointer'
-      }
-    | {
-        /**
-         * Key presses or releases a key.
-         *
-         * @generated from field: s4wave.vm.WasiVmKeyEvent key = 2;
-         */
-        value: WasiVmKeyEvent
-        case: 'key'
-      }
-    | {
-        /**
-         * Drawn reports the viewer drew the last frame and takes the next.
-         *
-         * @generated from field: s4wave.vm.WasiVmFrameDrawn drawn = 3;
-         */
-        value: WasiVmFrameDrawn
-        case: 'drawn'
-      }
-}
-
-export const WasiVmDisplayInput: MessageType<WasiVmDisplayInput> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmDisplayInput',
-    fields: [
-      {
-        no: 1,
-        name: 'pointer',
-        kind: 'message',
-        T: WasiVmPointerEvent,
-        oneof: 'body',
-      },
-      { no: 2, name: 'key', kind: 'message', T: WasiVmKeyEvent, oneof: 'body' },
-      {
-        no: 3,
-        name: 'drawn',
-        kind: 'message',
-        T: WasiVmFrameDrawn,
-        oneof: 'body',
       },
     ] satisfies readonly PartialFieldInfo[],
   })
