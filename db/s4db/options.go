@@ -21,10 +21,13 @@ type Options struct {
 	// RelocateBudget is the value bytes compaction may move after each
 	// commit. Zero selects 4 MiB; negative disables compaction.
 	RelocateBudget int64
-	// SingleProcess skips watching the file for other processes' commits.
-	// Set it only when no other process opens the file: its readers never
-	// see another process's writes. It also starts no watcher goroutine
-	// outside the database's own lifetime.
+	// SingleProcess skips watching the file for other processes' commits
+	// and holds the file's writer lock from open to close, so a background
+	// checkpoint writes its pages without waiting for this handle's
+	// writers. Set it only when no other process opens the file: its
+	// readers never see another process's writes, and another process's
+	// writers wait until this handle closes. It also starts no watcher
+	// goroutine outside the database's own lifetime.
 	SingleProcess bool
 }
 

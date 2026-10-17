@@ -78,8 +78,9 @@ export interface Config {
    */
   checkpointMaxBytes?: bigint
   /**
-   * SingleProcess skips watching the file for other processes' commits. Set
-   * it only when no other process opens the file.
+   * SingleProcess skips watching the file for other processes' commits and
+   * holds its writer lock from open to close, so checkpoints write without
+   * waiting for writers. Set it only when no other process opens the file.
    *
    * @generated from field: bool single_process = 10;
    */

@@ -22,7 +22,8 @@ const (
 // Lock byte offsets. Locks sit far past the end of the file, where they
 // never cover data, and the system drops them when the holding process dies.
 const (
-	// lockWriter is held for the duration of each write transaction.
+	// lockWriter is held for the duration of each write transaction, or
+	// for the lifetime of a single-process handle.
 	lockWriter = 1 << 40
 	// lockSlot is the first reader slot lock; slot i locks lockSlot+i.
 	lockSlot = lockWriter + 1

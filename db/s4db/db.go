@@ -116,12 +116,13 @@ func open(s storage, opts Options) (*DB, error) {
 
 // load creates the file if empty, takes a reader slot, and recovers state.
 func (db *DB) load() error {
-	// Create the file under the writer lock so concurrent openers agree.
+	// Create the file under the writer lock so concurrent openers agree. A
+	// single-process handle keeps the lock until the file closes.
 	if _, err := db.s.lock(lockWriter, true); err != nil {
 		return err
 	}
 	err := db.w.create()
-	if uerr := db.s.unlock(lockWriter); err == nil {
+	if uerr := db.unlockFile(); err == nil {
 		err = uerr
 	}
 	if err != nil {
@@ -298,7 +299,7 @@ func (db *DB) tail(st *state, verify bool) (*state, bool, error) {
 // have appended meanwhile, so it tails again under the writer lock first.
 func (db *DB) cutTorn(st *state) (*state, error) {
 	// Exclude writers and find the torn record again.
-	if _, err := db.s.lock(lockWriter, true); err != nil {
+	if _, err := db.lockFile(true); err != nil {
 		return nil, err
 	}
 	st, torn, err := db.tail(st, true)
@@ -309,10 +310,29 @@ func (db *DB) cutTorn(st *state) (*state, error) {
 			err = db.s.flushDurable()
 		}
 	}
-	if uerr := db.s.unlock(lockWriter); err == nil {
+	if uerr := db.unlockFile(); err == nil {
 		err = uerr
 	}
 	return st, err
+}
+
+// lockFile takes the file's writer lock, excluding other processes'
+// writers, and reports whether it holds it; wait waits for another holder.
+// A single-process handle holds it from open until the file closes.
+func (db *DB) lockFile(wait bool) (bool, error) {
+	if db.opts.SingleProcess {
+		return true, nil
+	}
+	return db.s.lock(lockWriter, wait)
+}
+
+// unlockFile releases the file's writer lock unless the handle holds it for
+// its lifetime.
+func (db *DB) unlockFile() error {
+	if db.opts.SingleProcess {
+		return nil
+	}
+	return db.s.unlock(lockWriter)
 }
 
 // derive returns a copy of st whose overlay the caller owns. Copying a tree
