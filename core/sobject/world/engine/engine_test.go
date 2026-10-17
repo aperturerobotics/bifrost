@@ -198,19 +198,28 @@ func TestWorldEngineController(t *testing.T) {
 	eng, engRef = startEngine()
 	defer engRef.Release()
 
-	// The suite's object and the objects below the checkpoint remain.
-	engTx, err = eng.NewTransaction(ctx, false)
+	// The suite's object and the objects below the checkpoint remain. The
+	// lookup can reach the released controller's engine before it retires, so
+	// read through AccessEngine, which reruns on the successor.
+	last := "checkpoint-object-" + strconv.Itoa(sobject.MinCheckpointOperations-1)
+	err = world.AccessEngine(ctx, eng, func(ctx context.Context, eng world.Engine) error {
+		// Read each object in one transaction.
+		tx, err := eng.NewTransaction(ctx, false)
+		if err != nil {
+			return err
+		}
+		defer tx.Discard()
+		for _, key := range []string{"test-object", last} {
+			objectState, found, err := tx.GetObject(ctx, key)
+			world.ReleaseObjectState(objectState)
+			if err != nil || !found {
+				return errors.Errorf("object %s after remounting: found %v, %v", key, found, err)
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		t.Fatal(err.Error())
-	}
-	defer engTx.Discard()
-	last := "checkpoint-object-" + strconv.Itoa(sobject.MinCheckpointOperations-1)
-	for _, key := range []string{"test-object", last} {
-		objectState, found, err := engTx.GetObject(ctx, key)
-		world.ReleaseObjectState(objectState)
-		if err != nil || !found {
-			t.Fatalf("object %s after remounting: found %v, %v", key, found, err)
-		}
 	}
 }
 

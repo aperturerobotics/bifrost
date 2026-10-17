@@ -38,6 +38,9 @@ var backfillBackoff = &backoff.Backoff{
 // BackfillEngine is a World engine whose device can keep a complete local copy
 // of the World. Without backfill the device reads blocks on demand and keeps
 // the blocks it wrote or read while the World still references them.
+//
+// The served engine implements it, not the BusEngine that world.StartEngine
+// returns: assert it inside world.AccessEngine.
 type BackfillEngine interface {
 	// SetBackfill chooses whether this device copies the installed World and
 	// the retained roots into its local store in the background. The choice

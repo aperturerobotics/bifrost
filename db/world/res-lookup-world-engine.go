@@ -18,23 +18,31 @@ func NewWorldEngineResolver(c Controller) (*WorldEngineResolver, error) {
 }
 
 // Resolve publishes the engine the controller serves. When the controller
-// replaces its engine within a run, Resolve removes the retired engine and
-// publishes its successor, so a lookup never holds a retired engine.
+// replaces its engine within a run, Resolve removes the retired engine before
+// the controller closes it and publishes its successor, so a lookup never
+// holds a closed engine.
 func (r *WorldEngineResolver) Resolve(ctx context.Context, handler directive.ResolverHandler) error {
-	replacing, _ := r.c.(ReplacingController)
-	for {
+	replacing, ok := r.c.(ReplacingController)
+	if !ok {
 		eng, err := r.c.GetWorldEngine(ctx)
 		if err != nil {
 			return err
 		}
-		valID, _ := handler.AddValue(eng)
-		if replacing == nil {
-			return nil
-		}
-		if err := replacing.WaitWorldEngineReplaced(ctx, eng); err != nil {
+		_, _ = handler.AddValue(eng)
+		return nil
+	}
+	for {
+		eng, release, err := replacing.AcquireWorldEngine(ctx)
+		if err != nil {
 			return err
 		}
+		valID, _ := handler.AddValue(eng)
+		err = replacing.WaitWorldEngineReplaced(ctx, eng)
 		_, _ = handler.RemoveValue(valID)
+		release()
+		if err != nil {
+			return err
+		}
 	}
 }
 
