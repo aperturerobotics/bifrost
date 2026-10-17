@@ -256,7 +256,7 @@ func (s *PackfileStore) GetStoredBlock(ctx context.Context, ref *block.BlockRef)
 	// Read the block from the first candidate pack that contains it.
 	var stored *block.StoredBlock
 	var lookup packLookup
-	err := s.probePacks(key, &lookup, func(eng *PackReader) (bool, error) {
+	err := s.probePacks(ctx, key, &lookup, func(eng *PackReader) (bool, error) {
 		// Trace and read the block from this candidate pack.
 		trace.Log(ctx, "pack-id", eng.packID)
 		var err error
@@ -290,7 +290,7 @@ func (s *PackfileStore) GetBlockExists(ctx context.Context, ref *block.BlockRef)
 
 	// Probe candidate pack indexes and record the existence result.
 	var lookup packLookup
-	err := s.probePacks(key, &lookup, func(eng *PackReader) (bool, error) {
+	err := s.probePacks(ctx, key, &lookup, func(eng *PackReader) (bool, error) {
 		return eng.getBlockExists(ctx, key)
 	})
 	s.recordLookupStats(lookup)
@@ -347,7 +347,7 @@ func (s *PackfileStore) getBlockExistsBatch(ctx context.Context, view *ManifestS
 	for _, key := range keys {
 		// Check whether a candidate pack contains this block key.
 		var found bool
-		err := s.probeCatalog(view, []byte(key), &lookup, func(eng *PackReader) (bool, error) {
+		err := s.probeCatalog(ctx, view, []byte(key), &lookup, func(eng *PackReader) (bool, error) {
 			var err error
 			found, err = eng.getBlockExists(ctx, []byte(key))
 			return found, err
@@ -387,7 +387,12 @@ func (s *PackfileStore) loadCandidateIndexes(ctx context.Context, view *Manifest
 	if len(candidates) < 2 {
 		return nil
 	}
+	return s.loadIndexes(ctx, candidates)
+}
 
+// loadIndexes loads the index of each candidate pack, indexLoadConcurrency at
+// a time, and returns the first error after every load finishes.
+func (s *PackfileStore) loadIndexes(ctx context.Context, candidates []*packfile.PackfileEntry) error {
 	// Load candidate pack indexes with bounded concurrency.
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.SetLimit(indexLoadConcurrency)
@@ -430,7 +435,7 @@ func (s *PackfileStore) StatBlock(ctx context.Context, ref *block.BlockRef) (*bl
 	// Read block metadata from the first matching candidate pack.
 	var stat *block.BlockStat
 	var lookup packLookup
-	err := s.probePacks(key, &lookup, func(eng *PackReader) (bool, error) {
+	err := s.probePacks(ctx, key, &lookup, func(eng *PackReader) (bool, error) {
 		var err error
 		stat, err = eng.statBlock(ctx, key, ref)
 		return stat != nil, err
@@ -452,12 +457,13 @@ func (s *PackfileStore) StatBlock(ctx context.Context, ref *block.BlockRef) (*bl
 // omits the dropped one. Store shutdown ends the restarts with
 // ErrPackfileStoreClosed.
 func (s *PackfileStore) probePacks(
+	ctx context.Context,
 	key []byte,
 	lookup *packLookup,
 	visit func(eng *PackReader) (bool, error),
 ) error {
 	for {
-		err := s.probeCatalog(s.SnapshotManifest(), key, lookup, visit)
+		err := s.probeCatalog(ctx, s.SnapshotManifest(), key, lookup, visit)
 		if !errors.Is(err, ErrPackReaderClosed) {
 			return err
 		}
@@ -466,6 +472,7 @@ func (s *PackfileStore) probePacks(
 
 // probeCatalog visits a stable catalog without holding a store lock during I/O.
 func (s *PackfileStore) probeCatalog(
+	ctx context.Context,
 	view *ManifestSnapshot,
 	key []byte,
 	lookup *packLookup,
@@ -473,18 +480,19 @@ func (s *PackfileStore) probeCatalog(
 ) error {
 	// Select catalog packs whose bloom filters may contain the block key.
 	bloomKey := bloom.NewKey(key)
-	var candidates []*packfile.PackfileEntry
+	var candidates []*manifestEntry
 	view.entries.Scan(func(item *manifestEntry) bool {
 		if item.filter == nil || item.filter.TestKey(bloomKey) {
-			candidates = append(candidates, item.entry)
+			candidates = append(candidates, item)
 		}
 		return true
 	})
 	lookup.candidates += len(candidates)
 
 	// Probe candidate pack readers until the requested block is found.
-	for _, entry := range candidates {
+	for i, item := range candidates {
 		// Validate the candidate pack size before opening its reader.
+		entry := item.entry
 		size, err := manifestPackSize(entry)
 		if err != nil {
 			return err
@@ -513,8 +521,32 @@ func (s *PackfileStore) probeCatalog(
 			return nil
 		}
 		lookup.negative++
+
+		// The newest candidate usually holds the block. After it misses, each
+		// remaining bloom hit costs an index load, and probing in order pays
+		// those loads one after another, so load them in one concurrent round.
+		// Packs without a filter match every key and stay in probe order. The
+		// load is best effort: the ordered probe reports the error of any pack
+		// it visits, and a failure in a pack it never reaches stays unseen.
+		if lookup.negative == 1 {
+			s.loadBloomHitIndexes(ctx, candidates[i+1:])
+		}
 	}
 	return nil
+}
+
+// loadBloomHitIndexes loads the indexes of the bloom-filtered candidates
+// concurrently when more than one remains, ignoring load errors.
+func (s *PackfileStore) loadBloomHitIndexes(ctx context.Context, candidates []*manifestEntry) {
+	var hits []*packfile.PackfileEntry
+	for _, item := range candidates {
+		if item.filter != nil {
+			hits = append(hits, item.entry)
+		}
+	}
+	if len(hits) > 1 {
+		_ = s.loadIndexes(ctx, hits)
+	}
 }
 
 // recordLookupStats adds one lookup to the store stats and notifies watchers.

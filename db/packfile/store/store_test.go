@@ -1014,6 +1014,64 @@ func TestPackfileStoreGetBlockExistsBatchLoadsIndexesConcurrently(t *testing.T) 
 	}
 }
 
+// TestPackfileStoreGetBlockLoadsCandidateIndexesConcurrently loads the index
+// of a bloom false positive alongside the pack that holds the block, so the
+// false positive costs no extra round trip.
+func TestPackfileStoreGetBlockLoadsCandidateIndexesConcurrently(t *testing.T) {
+	// Both false-positive packs' bloom filters claim the wanted block.
+	ctx := t.Context()
+	fpPack, _ := buildTestPackOrdered(t, []struct{ Name, Data string }{{"other", "other-data"}})
+	_, fpBloom := buildTestPackOrdered(t, []struct{ Name, Data string }{{"other", "other-data"}, {"want", "want-data"}})
+	realPack, realBloom := buildTestPackOrdered(t, []struct{ Name, Data string }{{"want", "want-data"}})
+	packs := map[string][]byte{"newest": fpPack, "false-positive": fpPack, "holder": realPack}
+	manifest := []*packfile.PackfileEntry{
+		{Id: "newest", BloomFilter: fpBloom, BlockCount: 1, SizeBytes: uint64(len(fpPack)), Sequence: 3},
+		{Id: "false-positive", BloomFilter: fpBloom, BlockCount: 1, SizeBytes: uint64(len(fpPack)), Sequence: 2},
+		{Id: "holder", BloomFilter: realBloom, BlockCount: 1, SizeBytes: uint64(len(realPack)), Sequence: 1},
+	}
+
+	// The newest pack is probed alone. After it misses, every fetch of the
+	// other packs waits until both have started an index load, so loading
+	// one index after the other never completes.
+	var started atomic.Int32
+	bothStarted := make(chan struct{})
+	opener := func(packID string, size int64) (*PackReader, error) {
+		var first sync.Once
+		data := packs[packID]
+		transport := TransportFunc(func(_ context.Context, off int64, n int) ([]byte, error) {
+			if packID != "newest" {
+				first.Do(func() {
+					if started.Add(1) == 2 {
+						close(bothStarted)
+					}
+				})
+				select {
+				case <-bothStarted:
+				case <-time.After(5 * time.Second):
+					return nil, errors.New("index loads ran one at a time")
+				}
+			}
+			return bytes.Clone(data[off : off+int64(n)]), nil
+		})
+		return NewPackReader(packID, size, transport), nil
+	}
+	store := NewPackfileStore(opener, newMemIndexCache())
+	store.UpdateManifest(manifest)
+
+	// Verify the lookup reads the block from the pack that holds it.
+	h, err := hash.Sum(hash.HashType_HashType_SHA256, []byte("want-data"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, found, err := store.GetBlock(ctx, &block.BlockRef{Hash: h})
+	if err != nil {
+		t.Fatalf("GetBlock: %v", err)
+	}
+	if !found || string(data) != "want-data" {
+		t.Fatalf("GetBlock = %q, %v; want want-data", data, found)
+	}
+}
+
 func TestPackfileStoreLookupPrunesUnrelatedFullPacks(t *testing.T) {
 	// Configure a full-pack collection and its target location.
 	ctx := t.Context()
