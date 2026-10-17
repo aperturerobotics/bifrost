@@ -83,7 +83,7 @@ func (deviceFile) held(_ int64) (bool, error) {
 
 // watch returns a watcher that waits only for stop.
 func (deviceFile) watch(_ int) (watcher, error) {
-	return &stopWatcher{done: make(chan struct{})}, nil
+	return newStopWatcher(), nil
 }
 
 // close issues the collected writes.
@@ -97,6 +97,11 @@ type stopWatcher struct {
 	done chan struct{}
 	// once closes done once.
 	once sync.Once
+}
+
+// newStopWatcher builds a watcher that waits only for stop.
+func newStopWatcher() *stopWatcher {
+	return &stopWatcher{done: make(chan struct{})}
 }
 
 // wait blocks until stop, reporting false.

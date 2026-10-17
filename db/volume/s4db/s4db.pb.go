@@ -44,6 +44,9 @@ type Config struct {
 	// each rewrite of the index pages they touch, at the cost of overlay memory
 	// and log replay at open.
 	CheckpointMaxBytes int64 `protobuf:"varint,9,opt,name=checkpoint_max_bytes,json=checkpointMaxBytes,proto3" json:"checkpointMaxBytes,omitempty"`
+	// SingleProcess skips watching the file for other processes' commits. Set
+	// it only when no other process opens the file.
+	SingleProcess bool `protobuf:"varint,10,opt,name=single_process,json=singleProcess,proto3" json:"singleProcess,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -115,6 +118,13 @@ func (x *Config) GetCheckpointMaxBytes() int64 {
 	return 0
 }
 
+func (x *Config) GetSingleProcess() bool {
+	if x != nil {
+		return x.SingleProcess
+	}
+	return false
+}
+
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
@@ -126,6 +136,7 @@ func (m *Config) CloneVT() *Config {
 	r.Verbose = m.Verbose
 	r.CacheBytes = m.CacheBytes
 	r.CheckpointMaxBytes = m.CheckpointMaxBytes
+	r.SingleProcess = m.SingleProcess
 	r.KvKeyOpts = protobuf_go_lite.CloneVTValue(m.KvKeyOpts)
 	r.VolumeConfig = protobuf_go_lite.CloneVTValue(m.VolumeConfig)
 	r.StoreConfig = protobuf_go_lite.CloneVTValue(m.StoreConfig)
@@ -170,6 +181,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.CheckpointMaxBytes != that.CheckpointMaxBytes {
+		return false
+	}
+	if this.SingleProcess != that.SingleProcess {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -236,6 +250,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("checkpointMaxBytes")
 		s.WriteInt64(x.CheckpointMaxBytes)
 	}
+	if x.SingleProcess || s.HasField("singleProcess") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("singleProcess")
+		s.WriteBool(x.SingleProcess)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -292,6 +311,9 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "checkpoint_max_bytes", "checkpointMaxBytes":
 			s.AddField("checkpoint_max_bytes")
 			x.CheckpointMaxBytes = s.ReadInt64()
+		case "single_process", "singleProcess":
+			s.AddField("single_process")
+			x.SingleProcess = s.ReadBool()
 		}
 	})
 }
@@ -329,6 +351,11 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.SingleProcess {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.SingleProcess)
+		i--
+		dAtA[i] = 0x50
 	}
 	if m.CheckpointMaxBytes != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.CheckpointMaxBytes))
@@ -417,6 +444,7 @@ func (m *Config) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.CacheBytes)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.CheckpointMaxBytes)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.SingleProcess)
 	n += len(m.unknownFields)
 	return n
 }
@@ -459,6 +487,10 @@ func (x *Config) MarshalProtoText() string {
 	if x.CheckpointMaxBytes != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "checkpoint_max_bytes")
 		protobuf_go_lite.TextWriteInt(&sb, x.CheckpointMaxBytes)
+	}
+	if x.SingleProcess != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "single_process")
+		protobuf_go_lite.TextWriteBool(&sb, x.SingleProcess)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -590,6 +622,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SingleProcess", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SingleProcess = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

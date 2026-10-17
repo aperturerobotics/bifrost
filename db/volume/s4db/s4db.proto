@@ -32,4 +32,7 @@ message Config {
   // each rewrite of the index pages they touch, at the cost of overlay memory
   // and log replay at open.
   int64 checkpoint_max_bytes = 9;
+  // SingleProcess skips watching the file for other processes' commits. Set
+  // it only when no other process opens the file.
+  bool single_process = 10;
 }

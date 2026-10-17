@@ -145,7 +145,9 @@ func (db *DB) load() error {
 	if err := db.writePin(pin{}); err != nil {
 		return err
 	}
-	if db.watch, err = db.s.watch(db.slot); err != nil {
+	if db.opts.SingleProcess {
+		db.watch = newStopWatcher()
+	} else if db.watch, err = db.s.watch(db.slot); err != nil {
 		return err
 	}
 

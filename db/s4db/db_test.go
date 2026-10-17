@@ -12,6 +12,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"github.com/pkg/errors"
 	kvtest "github.com/s4wave/spacewave/db/kvtx/kvtest"
@@ -399,6 +401,42 @@ func TestOpenInProcess(t *testing.T) {
 	if _, err := Open(path, Options{}); !errors.Is(err, ErrOpenInProcess) {
 		t.Fatalf("second open returned %v", err)
 	}
+}
+
+// TestSingleProcessInBubble opens a single-process database inside a
+// synctest bubble. Its goroutines must block durably, so fake time advances
+// while it is open, and must all end with Close.
+func TestSingleProcessInBubble(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		// Commit a key.
+		ctx := t.Context()
+		db := openTest(t, filepath.Join(t.TempDir(), "bubble.s4wave"), Options{SingleProcess: true})
+		tx, err := db.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Set(ctx, []byte("k"), []byte("v")); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait out fake time, then read the key back.
+		time.Sleep(time.Minute)
+		tx, err = db.NewTransaction(ctx, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		v, found, err := tx.Get(ctx, []byte("k"))
+		tx.Discard()
+		if err != nil || !found || string(v) != "v" {
+			t.Fatalf("get returned %q, %v, %v", v, found, err)
+		}
+		if err := db.Close(); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 // checkCrash copies the file of an open database, as a crash would leave

@@ -77,6 +77,13 @@ export interface Config {
    * @generated from field: int64 checkpoint_max_bytes = 9;
    */
   checkpointMaxBytes?: bigint
+  /**
+   * SingleProcess skips watching the file for other processes' commits. Set
+   * it only when no other process opens the file.
+   *
+   * @generated from field: bool single_process = 10;
+   */
+  singleProcess?: boolean
 }
 
 export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
@@ -96,5 +103,6 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
       kind: 'scalar',
       T: ScalarType.INT64,
     },
+    { no: 10, name: 'single_process', kind: 'scalar', T: ScalarType.BOOL },
   ] satisfies readonly PartialFieldInfo[],
 })
