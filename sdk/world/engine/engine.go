@@ -62,6 +62,9 @@ func (e *SDKEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, e
 		txRef.Release()
 		return nil, err
 	}
+	if !resp.ReadOnly {
+		tx.hold = newWriteHold()
+	}
 	return tx, nil
 }
 

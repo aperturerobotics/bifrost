@@ -15,6 +15,7 @@ type SDKTx struct {
 	*SDKWorldState
 	txService s4wave_world.SRPCTxResourceServiceClient
 	finished  atomic.Bool // a terminal RPC has returned; only reference release remains
+	hold      *writeHold  // opener of a write transaction; nil for a read
 }
 
 // NewSDKTx creates a new SDKTx wrapping a resource reference.
@@ -51,6 +52,7 @@ func (tx *SDKTx) CommitMutations(
 	if err := ctx.Err(); err != nil {
 		tx.finished.Store(true)
 		tx.ref.Release()
+		tx.hold.finish("canceled")
 		return nil, err
 	}
 
@@ -58,6 +60,7 @@ func (tx *SDKTx) CommitMutations(
 	resp, err := tx.txService.CommitMutations(context.WithoutCancel(ctx), &s4wave_world.CommitMutationsRequest{Mutations: mutations})
 	tx.finished.Store(true)
 	tx.ref.Release()
+	tx.hold.finish("commit")
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +78,7 @@ func (tx *SDKTx) Commit(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		tx.finished.Store(true)
 		tx.ref.Release()
+		tx.hold.finish("canceled")
 		return err
 	}
 
@@ -82,6 +86,7 @@ func (tx *SDKTx) Commit(ctx context.Context) error {
 	_, err := tx.txService.Commit(context.WithoutCancel(ctx), &s4wave_world.CommitRequest{})
 	tx.finished.Store(true)
 	tx.ref.Release()
+	tx.hold.finish("commit")
 	return s4wave_world.CommitError(err)
 }
 
@@ -91,6 +96,7 @@ func (tx *SDKTx) Discard() {
 	if !tx.finished.Load() {
 		_, _ = tx.txService.Discard(context.Background(), &s4wave_world.DiscardRequest{})
 		tx.finished.Store(true)
+		tx.hold.finish("discard")
 	}
 	tx.ref.Release()
 }
