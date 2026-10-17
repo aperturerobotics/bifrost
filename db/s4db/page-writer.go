@@ -14,8 +14,11 @@ const reserveBatch = 4096
 
 // pageWriter numbers a checkpoint's new pages in the order it receives them
 // and writes them in batches of adjacent pages, so a checkpoint holds the
-// encoding of at most one batch. It caches each page decoded from its own
-// copy, which holds no buffer of the pages it replaced.
+// encoding of at most one batch. It caches each new inner page, which every
+// lookup below it reads, decoded from its own copy, which holds no buffer of
+// the pages it replaced. New leaves stay out of the cache: a checkpoint
+// rewrites more leaves than the cache holds, and copies of them would evict
+// the pages readers use.
 type pageWriter struct {
 	// reserve returns a run of at least one and at most n unused pages.
 	reserve func(n uint64) (run, error)
@@ -46,6 +49,10 @@ func (w *pageWriter) add(d *draft) (uint64, error) {
 		if err != nil {
 			return 0, err
 		}
+
+		// Drop what the cache holds for the reused pages, since new
+		// leaves do not replace it.
+		w.cache.drop(r)
 		w.runs = append(w.runs, r)
 		w.next, w.at = r.start, r.start
 	}
@@ -53,18 +60,21 @@ func (w *pageWriter) add(d *draft) (uint64, error) {
 	w.next++
 	w.count++
 
-	// Encode the page and cache its decoded copy.
+	// Encode the page and cache an inner page's decoded copy.
 	if w.buf == nil {
 		w.buf = make([]byte, 0, placeBatch*pageSize)
 	}
 	w.buf = d.encode(w.buf)
-	n, err := decodeNode(bytes.Clone(w.buf[len(w.buf)-pageSize:]))
-	if err != nil {
-		return 0, err
+	if !d.leaf {
+		n, err := decodeNode(bytes.Clone(w.buf[len(w.buf)-pageSize:]))
+		if err != nil {
+			return 0, err
+		}
+		w.cache.put(page, n)
 	}
-	w.cache.put(page, n)
 
 	// Write a full batch.
+	var err error
 	if len(w.buf) == cap(w.buf) {
 		err = w.flush()
 	}
