@@ -48,10 +48,8 @@ func (v *view) add(r image.Rectangle) {
 	if r.Empty() {
 		return
 	}
-	for _, d := range v.damage {
-		if r.In(d) {
-			return
-		}
+	if slices.ContainsFunc(v.damage, r.In) {
+		return
 	}
 	v.damage = slices.DeleteFunc(v.damage, func(d image.Rectangle) bool { return d.In(r) })
 	v.damage = append(v.damage, r)
