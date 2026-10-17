@@ -269,10 +269,10 @@ func runWorkload(ctx context.Context, s Target, blocks Blocks, seed uint64) ([]s
 		if commit == commitOrdered && blocks == DurablePutBlocks && putPending {
 			commit = commitDurable
 		}
-		switch {
-		case commit == commitDurable:
+		switch commit {
+		case commitDurable:
 			nextCommitted = nextLive.clone()
-		case commit == commitOrdered:
+		case commitOrdered:
 			nextCommitted.blocks = maps.Clone(nextLive.blocks)
 		}
 
