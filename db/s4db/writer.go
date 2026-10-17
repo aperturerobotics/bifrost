@@ -504,6 +504,9 @@ func (w *writer) checkpoint(ctx context.Context) error {
 	// Build and write the tree, reserving its pages as it goes, and save
 	// it.
 	t := w.newTree(st)
+	t.b.out.reserve = func(n uint64) (run, error) {
+		return w.reserve(t, n)
+	}
 	if err := t.build(); err != nil {
 		return err
 	}
@@ -560,21 +563,35 @@ func (w *writer) waitBuild(ctx context.Context) error {
 // and writes its pages, holding the writer lock only to reserve and write
 // pages and to save the tree. The next commit reports a failure.
 func (w *writer) runCheckpoint(st *state, stripe int) {
-	// Write each full run of the tree's pages and reserve the next under
-	// the writer lock, which reloads the space when another process wrote.
-	// The space saved in the file does not hold the reservations, so
-	// another process may hand them out: placeRun first checks that no
-	// other process has written since the space was loaded.
+	// Reserve the tree's pages under the writer lock as it builds.
 	ctx := context.Background()
 	t := w.newTree(st)
-	t.b.out.turn = func(buf []byte, at, n uint64) (run, error) {
-		// Take one turn of the writer lock.
+	out := t.b.out
+	out.reserve = func(n uint64) (run, error) {
 		if err := w.lock(ctx); err != nil {
 			return run{}, err
 		}
-		r, err := w.placeRun(t, buf, at, n)
+		r, err := w.reserve(t, n)
 		w.unlock(nil)
 		return r, err
+	}
+
+	// Write the pages under the writer lock too. The space saved in the
+	// file does not hold the reservations, so another process may hand
+	// them out: each write first checks that no other process has written
+	// since the space was loaded.
+	write := out.write
+	out.write = func(buf []byte, page uint64) error {
+		// Taking the lock reloads the space when another process wrote.
+		if err := w.lock(ctx); err != nil {
+			return err
+		}
+		err := errDropped
+		if t.sp == w.sp && !w.closing.Load() {
+			err = write(buf, page)
+		}
+		w.unlock(nil)
+		return err
 	}
 
 	// Build the tree, then flush its pages without the writer lock, so the
@@ -634,38 +651,13 @@ type tree struct {
 var errDropped = errors.New("checkpoint space reloaded")
 
 // newTree returns the tree of st, writing its pages through the database
-// file and cache. Its turns expect the caller to hold the writer lock; a
-// background checkpoint replaces them with turns that take it.
+// file and cache. The caller sets the writer's reserve function.
 func (w *writer) newTree(st *state) *tree {
-	// Place the pages under the lock the caller holds.
-	t := &tree{st: st}
-	out := &pageWriter{cache: w.db.p.cache}
-	out.turn = func(buf []byte, at, n uint64) (run, error) {
-		return w.placeRun(t, buf, at, n)
-	}
-	t.b = &builder{p: w.db.p, out: out}
-	return t
-}
-
-// placeRun writes t's encoded pages in buf from page at, then reserves up to
-// n more pages when n is not zero. It drops a tree whose space was reloaded
-// or whose database is closing. The caller holds the writer lock.
-func (w *writer) placeRun(t *tree, buf []byte, at, n uint64) (run, error) {
-	// Write the pages into the space that reserved them.
-	if len(buf) != 0 {
-		if t.sp != w.sp || w.closing.Load() {
-			return run{}, errDropped
-		}
-		if _, err := w.db.s.WriteAt(buf, pageOff(at)); err != nil {
-			return run{}, err
-		}
-	}
-
-	// Reserve the next run.
-	if n == 0 {
-		return run{}, nil
-	}
-	return w.reserve(t, n)
+	out := &pageWriter{cache: w.db.p.cache, write: func(buf []byte, page uint64) error {
+		_, err := w.db.s.WriteAt(buf, pageOff(page))
+		return err
+	}}
+	return &tree{st: st, b: &builder{p: w.db.p, out: out}}
 }
 
 // build applies the overlay of t's state to its tree and writes the new
@@ -709,7 +701,7 @@ func (w *writer) reserve(t *tree, n uint64) (run, error) {
 	}
 
 	// Take n pages from the lowest free run holding them, else the largest
-	// free run of placeBatch pages or more, else from the file end.
+	// free run of a write batch or more, else from the file end.
 	r, ok := sp.fit(min(n, placeBatch), n)
 	if !ok {
 		r = sp.alloc(n)
