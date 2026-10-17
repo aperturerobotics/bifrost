@@ -2,7 +2,6 @@ package kvtx
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -21,37 +20,74 @@ func orphanPublication(t *testing.T, v *Volume, p *block.AtomicPublication) stri
 		t.Fatal(err)
 	}
 
-	// Verify the reference graph marks the publication block as a sweep candidate.
-	candidates, err := v.GetRefGraph().GetUnreferencedNodes(t.Context())
-	if err != nil || !slices.Contains(candidates, node) {
-		t.Fatalf("candidate %q missing: %v %v", node, candidates, err)
+	// Verify a mark no longer reaches the publication block.
+	mark := markBlocks(t, v)
+	if !slices.Contains(mark.Unreached, node) {
+		t.Fatalf("block %q reached: %v", node, mark.Unreached)
 	}
 	return node
 }
 
-func TestPublicationSweepRechecksRescuedCandidate(t *testing.T) {
+// markBlocks marks the blocks of the Volume's graph.
+func markBlocks(t *testing.T, v *Volume) *block_gc.BlockMark {
+	t.Helper()
+	mark, err := v.refGraph.(*transactionRefGraph).MarkBlocks(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return mark
+}
+
+// TestPublicationSweepRescuesAdoptedBlock checks that a block a publication
+// adopts after the mark's snapshot survives the sweep of an open pass.
+func TestPublicationSweepRescuesAdoptedBlock(t *testing.T) {
 	// Publish a block and release its bucket ownership.
 	v, _ := newPublicationTestVolume(t)
+	ctx := t.Context()
 	p := publicationFor(t, "sweep", "", "one")
-	if err := v.PublishAtomic(t.Context(), p); err != nil {
+	if err := v.PublishAtomic(ctx, p); err != nil {
 		t.Fatal(err)
 	}
 	node := orphanPublication(t, v, p)
 
-	// The collector already holds node in a candidate snapshot. Publication
-	// rescues the same bytes before the physical deletion can begin.
+	// Open a pass and mark the block unreached.
+	rg := v.refGraph.(*transactionRefGraph)
+	if err := rg.write(ctx, func(rg *block_gc.RefGraph) error { return rg.BeginBlockPass(ctx) }); err != nil {
+		t.Fatal(err)
+	}
+	mark := markBlocks(t, v)
+	if !slices.Contains(mark.Unreached, node) {
+		t.Fatalf("block %q reached: %v", node, mark.Unreached)
+	}
+
+	// Publication adopts the same bytes before the sweep begins.
 	p.Heads = publicationFor(t, "sweep", "one", "two").Heads
-	if err := v.PublishAtomic(t.Context(), p); err != nil {
+	if err := v.PublishAtomic(ctx, p); err != nil {
 		t.Fatal(err)
 	}
 
-	// Verify atomic sweeping preserves the rescued block and its new head.
-	removed, err := v.SweepUnreferenced(t.Context(), v.GetRefGraph(), []string{node})
-	if err != nil || len(removed) != 0 {
-		t.Fatalf("rescued candidate: removed=%v err=%v", removed, err)
+	// The sweep rescues the block and keeps it and its new head.
+	var stats block_gc.Stats
+	if err := v.sweepUnreached(ctx, mark, func() bool { return false }, &stats); err != nil {
+		t.Fatal(err)
+	}
+	if stats.RescuedNodes == 0 || stats.BlocksSwept != 0 {
+		t.Fatalf("rescue stats=%+v", stats)
 	}
 	assertPublishedBlock(t, v, p, true)
 	assertHead(t, v, "sweep", "two")
+
+	// Ending the pass drops its marker and log, so a later pass sweeps the
+	// block once it is released again.
+	if err := rg.write(ctx, func(rg *block_gc.RefGraph) error { return rg.EndBlockPass(ctx) }); err != nil {
+		t.Fatal(err)
+	}
+	orphanPublication(t, v, p)
+	collected, err := block_gc.NewCollector(rg, v, nil).Collect(ctx)
+	if err != nil || collected.BlocksSwept != 1 {
+		t.Fatalf("later pass stats=%+v err=%v", collected, err)
+	}
+	assertPublishedBlock(t, v, p, false)
 }
 
 // TestPublicationSweepBatchMarksReleasedChildren checks that one sweep batch
@@ -135,22 +171,6 @@ func TestPublicationCollectForStopsAtBudget(t *testing.T) {
 	}
 }
 
-type rescueSweepStore struct {
-	*Volume
-	rescue func() error
-}
-
-func (v *rescueSweepStore) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphOps, nodes []string) ([]string, error) {
-	if v.rescue != nil {
-		rescue := v.rescue
-		v.rescue = nil
-		if err := rescue(); err != nil {
-			return nil, err
-		}
-	}
-	return v.Volume.SweepUnreferenced(ctx, graph, nodes)
-}
-
 func TestPublicationCollectorUsesAtomicSweep(t *testing.T) {
 	// Publish and orphan the collector test block.
 	v, _ := newPublicationTestVolume(t)
@@ -158,31 +178,23 @@ func TestPublicationCollectorUsesAtomicSweep(t *testing.T) {
 	if err := v.PublishAtomic(t.Context(), p); err != nil {
 		t.Fatal(err)
 	}
-	orphanPublication(t, v, p)
+	node := orphanPublication(t, v, p)
 
-	// Rescue the block during collection and verify atomic sweeping retains it.
-	store := &rescueSweepStore{Volume: v, rescue: func() error {
-		_, err := v.PrepareOwnedBlockBatch(t.Context(), p.BucketID, p.Entries)
-		return err
-	}}
-	stats, err := block_gc.NewCollector(v.GetRefGraph(), store, nil).Collect(t.Context())
-	if err != nil || stats.NodesSwept != 0 || stats.AtomicSweepCount == 0 {
-		t.Fatalf("collector stats=%+v err=%v", stats, err)
-	}
-	assertPublishedBlock(t, v, p, true)
-
-	// Release the rescued block and verify the collector deletes it.
-	orphanPublication(t, v, p)
-	stats, err = block_gc.NewCollector(v.GetRefGraph(), v, nil).Collect(t.Context())
-	if err != nil || stats.NodesSwept != 1 || stats.RemoveBlockCount != 1 {
+	// The collector sweeps the unreached block through the Volume.
+	stats, err := block_gc.NewCollector(v.GetRefGraph(), v, nil).Collect(t.Context())
+	if err != nil || stats.BlockPasses != 1 || stats.NodesSwept != 1 || stats.RemoveBlockCount != 1 || stats.AtomicSweepCount != 1 {
 		t.Fatalf("orphan stats=%+v err=%v", stats, err)
 	}
 	assertPublishedBlock(t, v, p, false)
 
-	// Sweep is idempotent after the marker and block have gone.
-	removed, err := v.SweepUnreferenced(t.Context(), v.GetRefGraph(), []string{block_gc.BlockIRI(p.Entries[0].Ref)})
-	if len(removed) != 0 || err != nil {
-		t.Fatalf("repeat sweep: %v %v", removed, err)
+	// The block left no records, and a repeat pass sweeps nothing.
+	incoming, err := v.GetRefGraph().GetIncomingRefs(t.Context(), node)
+	if err != nil || len(incoming) != 0 {
+		t.Fatalf("swept block owners=%v err=%v", incoming, err)
+	}
+	stats, err = block_gc.NewCollector(v.GetRefGraph(), v, nil).Collect(t.Context())
+	if err != nil || stats.NodesSwept != 0 {
+		t.Fatalf("repeat stats=%+v err=%v", stats, err)
 	}
 }
 
@@ -210,12 +222,13 @@ func TestPublicationCollectorSweepsCandidatesInOneCommit(t *testing.T) {
 		t.Fatalf("collector stats=%+v err=%v", stats, err)
 	}
 
-	// Verify the collector sweeps the whole batch in one physical commit.
+	// Verify the collector sweeps the whole batch in one physical commit
+	// between the commits that open and close the pass.
 	raw.mu.Lock()
 	count := raw.commits - before
 	raw.mu.Unlock()
-	if count != 1 {
-		t.Fatalf("sweep used %d physical commits for %d candidates", count, len(published))
+	if count != 3 {
+		t.Fatalf("pass used %d physical commits for %d candidates, want 3", count, len(published))
 	}
 	for _, p := range published {
 		assertPublishedBlock(t, v, p, false)
@@ -223,24 +236,26 @@ func TestPublicationCollectorSweepsCandidatesInOneCommit(t *testing.T) {
 }
 
 func TestPublicationSweepFailureRollsBackGraphAndBlock(t *testing.T) {
-	// Publish and orphan a block for the failed sweep.
+	// Publish, orphan and mark a block for the failed sweep.
 	v, raw := newPublicationTestVolume(t)
 	p := publicationFor(t, "sweep-failure", "", "one")
 	if err := v.PublishAtomic(t.Context(), p); err != nil {
 		t.Fatal(err)
 	}
 	node := orphanPublication(t, v, p)
+	mark := markBlocks(t, v)
 
-	// Inject a physical commit failure into the atomic sweep.
+	// Inject a physical commit failure into the sweep.
 	failure := errors.New("sync failed")
 	raw.mu.Lock()
 	raw.errorCommit = failure
 	raw.mu.Unlock()
 
-	// Verify the failed sweep reports no deleted nodes.
-	removed, err := v.SweepUnreferenced(t.Context(), v.GetRefGraph(), []string{node})
-	if len(removed) != 0 || !errors.Is(err, failure) {
-		t.Fatalf("failed sweep: %v %v", removed, err)
+	// Verify the failed sweep reports no deleted blocks.
+	var stats block_gc.Stats
+	err := v.sweepUnreached(t.Context(), mark, func() bool { return false }, &stats)
+	if stats.BlocksSwept != 0 || !errors.Is(err, failure) {
+		t.Fatalf("failed sweep: stats=%+v err=%v", stats, err)
 	}
 
 	// Clear the commit fault before inspecting stored state.
@@ -248,21 +263,22 @@ func TestPublicationSweepFailureRollsBackGraphAndBlock(t *testing.T) {
 	raw.errorCommit = nil
 	raw.mu.Unlock()
 
-	// Verify the failed sweep preserves block bytes and the orphan marker.
+	// Verify the failed sweep preserves block bytes and the child list.
 	data, found, err := v.GetBlock(t.Context(), p.Entries[0].Ref)
 	if err != nil || !found || !bytes.Equal(data, p.Entries[0].Data) {
 		t.Fatal("failed sweep deleted bytes", err)
 	}
 	incoming, err := v.GetRefGraph().GetIncomingRefs(t.Context(), node)
 	if err != nil || !slices.Contains(incoming, block_gc.NodeUnreferenced) {
-		t.Fatal("failed sweep deleted marker", incoming, err)
+		t.Fatal("failed sweep deleted child list", incoming, err)
 	}
 
-	// Verify a later sweep removes the preserved orphan.
-	removed, err = v.SweepUnreferenced(t.Context(), v.GetRefGraph(), []string{node})
-	if len(removed) != 1 || err != nil {
-		t.Fatalf("retry sweep: %v %v", removed, err)
+	// Verify a later pass removes the preserved block.
+	collected, err := block_gc.NewCollector(v.GetRefGraph(), v, nil).Collect(t.Context())
+	if err != nil || collected.BlocksSwept != 1 {
+		t.Fatalf("retry pass: stats=%+v err=%v", collected, err)
 	}
+	assertPublishedBlock(t, v, p, false)
 }
 
 func TestPublicationPreparationAtomicAndOversized(t *testing.T) {

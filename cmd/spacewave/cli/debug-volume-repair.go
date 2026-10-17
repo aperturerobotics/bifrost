@@ -149,25 +149,22 @@ func repairVolume(ctx context.Context, le *logrus.Entry, path string, compact bo
 		return err
 	}
 
-	// Sweep the orphans until a pass finds none, since each sweep orphans the
-	// children of the nodes it removes.
+	// Collect until a pass sweeps nothing: each pass sweeps the queued nodes
+	// that are not blocks, then the blocks no root reaches, and a swept block
+	// may release a node of another kind.
+	collector := block_gc.NewCollector(rg, vol, nil)
 	for {
-		nodes, err := rg.GetUnreferencedNodes(ctx)
-		if err != nil {
-			return err
-		}
-		le.Infof("sweeping %d orphaned nodes", len(nodes))
-		swept, err := vol.SweepUnreferenced(ctx, rg, nodes)
-		for _, node := range swept {
-			if _, ok := block_gc.ParseBlockIRI(node); ok {
-				res.blocksSwept++
-			}
-		}
-		res.nodesSwept += uint64(len(swept))
+		stats, err := collector.Collect(ctx)
 		if err != nil {
 			return errors.Wrap(err, "sweep orphans")
 		}
-		if len(swept) == 0 {
+		if stats.UnknownBlocks != 0 {
+			le.Warnf("kept every block: %d reached blocks have unknown references, such as %v", stats.UnknownBlocks, stats.UnknownSample)
+		}
+		le.Infof("swept %d orphaned nodes", stats.NodesSwept)
+		res.nodesSwept += uint64(stats.NodesSwept)        //nolint:gosec // a count is nonnegative.
+		res.blocksSwept += uint64(stats.RemoveBlockCount) //nolint:gosec // a count is nonnegative.
+		if stats.NodesSwept == 0 {
 			break
 		}
 	}

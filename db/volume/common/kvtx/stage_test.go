@@ -57,15 +57,23 @@ func TestStageOwnsAndReleasesUnadoptedBuild(t *testing.T) {
 	ctx := t.Context()
 	stage, release, root, child := stageBuild(t, v, "unadopted")
 
-	// The stage owns the root, the root owns the child, and no bucket does.
-	for ref, owner := range map[*block.BlockRef]string{root: stage, child: block_gc.BlockIRI(root)} {
+	// The stage owns the root, the root lists the child, and no bucket owns
+	// either.
+	for ref, want := range map[*block.BlockRef][]string{
+		root:  {block_gc.NodeUnreferenced, stage},
+		child: {block_gc.NodeUnreferenced},
+	} {
 		owners, err := v.GetRefGraph().GetIncomingRefs(ctx, block_gc.BlockIRI(ref))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !slices.Equal(owners, []string{owner}) {
-			t.Fatalf("owners of %s: %v, want %s", ref.MarshalString(), owners, owner)
+		if !slices.Equal(owners, want) {
+			t.Fatalf("owners of %s: %v, want %v", ref.MarshalString(), owners, want)
 		}
+	}
+	children, err := v.GetRefGraph().GetOutgoingRefs(ctx, block_gc.BlockIRI(root))
+	if err != nil || !slices.Equal(children, []string{block_gc.BlockIRI(child)}) {
+		t.Fatalf("children of root: %v err=%v", children, err)
 	}
 
 	// The open stage retains the build.

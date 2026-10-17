@@ -2,6 +2,7 @@ package kvtx
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/s4wave/spacewave/db/block"
@@ -215,6 +216,130 @@ func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphO
 			return swept, err
 		}
 		swept = append(swept, batch...)
+	}
+	return swept, nil
+}
+
+// SweepUnreachedBlocks runs one block pass at a time per Volume. It opens the
+// pass in its own commit, so each later write logs the blocks it adopts, then
+// marks in a later snapshot without holding the writer. Each sweep transaction
+// first rescues the logged blocks and every node they reach, then removes
+// chunks of the unreached blocks still unrescued, with their records, sized
+// and budgeted as SweepUnreferenced's are. A block a write adopts after the
+// mark is therefore never removed: the write either committed before the
+// transaction, which then rescues it, or waits behind it.
+func (v *Volume) SweepUnreachedBlocks(ctx context.Context, graph block_gc.RefGraphOps, spent func() bool, stats *block_gc.Stats) error {
+	// Require the Volume transaction domain and run one pass at a time.
+	actual, ok := v.refGraph.(*transactionRefGraph)
+	given, sameType := graph.(*transactionRefGraph)
+	if !ok || !sameType || given != actual || !v.SupportsAtomicPublication() {
+		return block_gc.ErrAtomicSweepUnsupported
+	}
+	release, err := v.blockPassMu.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	// Open the pass, and close it when the pass ends, also on cancellation.
+	if err := actual.write(ctx, func(rg *block_gc.RefGraph) error { return rg.BeginBlockPass(ctx) }); err != nil {
+		return err
+	}
+	err = v.sweepBlockPass(ctx, actual, spent, stats)
+	endCtx := context.WithoutCancel(ctx)
+	endErr := actual.write(endCtx, func(rg *block_gc.RefGraph) error { return rg.EndBlockPass(endCtx) })
+	return errors.Join(err, endErr)
+}
+
+// sweepBlockPass marks the blocks of an open pass and sweeps the unreached.
+func (v *Volume) sweepBlockPass(ctx context.Context, actual *transactionRefGraph, spent func() bool, stats *block_gc.Stats) error {
+	// Mark the blocks. A block of unknown references may name any
+	// unreached block, so the pass then sweeps nothing.
+	start := time.Now()
+	mark, err := actual.MarkBlocks(ctx)
+	stats.MarkDuration += time.Since(start)
+	if err != nil {
+		return err
+	}
+	stats.RecordMark(mark)
+	if mark.Unknown != 0 {
+		return nil
+	}
+	return v.sweepUnreached(ctx, mark, spent, stats)
+}
+
+// sweepUnreached removes the blocks mark did not reach in budgeted
+// transactions, each first rescuing the blocks writes adopted since the last.
+func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, spent func() bool, stats *block_gc.Stats) error {
+	// Time the sweep, starting from the default chunk size.
+	nodes := mark.Unreached
+	size := sweepChunkSize
+	start := time.Now()
+	defer func() { stats.AtomicSweepDuration += time.Since(start) }()
+	for len(nodes) != 0 {
+		var batch []string
+		err := v.withDirectAtomic(ctx, func(blocks block.StoreOps, rg *block_gc.RefGraph) error {
+			// Rescue the blocks adopted since the last transaction.
+			rescued, err := rg.RescueAdopted(ctx, mark)
+			if err != nil {
+				return err
+			}
+			stats.RescuedNodes += rescued
+
+			// Sweep chunks until the budget runs out or a writer waits.
+			txStart := time.Now()
+			for len(nodes) != 0 {
+				chunkStart := time.Now()
+				chunk := nodes[:min(len(nodes), size)]
+				nodes = nodes[len(chunk):]
+				stats.AtomicSweepCount += len(chunk)
+				removed, err := sweepBlockChunk(ctx, blocks, rg, mark.Live, chunk)
+				if err != nil {
+					return err
+				}
+				batch = append(batch, removed...)
+				size = nextChunkSize(size, time.Since(chunkStart))
+				if time.Since(txStart) >= sweepBudget || v.writersWaiting() {
+					break
+				}
+			}
+			return nil
+		})
+
+		// Forget the pending proofs of the blocks the transaction may have
+		// removed, and count only the blocks of committed transactions.
+		v.forgetSweptProofs(batch)
+		if err != nil {
+			return err
+		}
+		stats.NodesSwept += len(batch)
+		stats.BlocksSwept += len(batch)
+		stats.RemoveNodeRefsCount += len(batch)
+		stats.RemoveBlockCount += len(batch)
+		if len(nodes) != 0 && spent() {
+			stats.More = true
+			return nil
+		}
+	}
+	return nil
+}
+
+// sweepBlockChunk removes the chunk's blocks that the mark and the rescues
+// did not reach, with their records, and returns them.
+func sweepBlockChunk(ctx context.Context, blocks block.StoreOps, rg *block_gc.RefGraph, live *block_gc.NodeSet, chunk []string) ([]string, error) {
+	var swept []string
+	for _, node := range chunk {
+		ref, ok := block_gc.ParseBlockIRI(node)
+		if !ok || live.Has(node) {
+			continue
+		}
+		if _, err := rg.RemoveNodeRefs(ctx, node, true); err != nil {
+			return nil, err
+		}
+		if err := blocks.RmBlock(ctx, ref); err != nil {
+			return nil, err
+		}
+		swept = append(swept, node)
 	}
 	return swept, nil
 }

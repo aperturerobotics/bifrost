@@ -72,7 +72,6 @@ type GCStoreOps struct {
 	mu                sync.Mutex
 	pendingReleases   map[string]struct{} // latest parent releases, canceled by a later put
 	pendingUnref      []string            // block IRIs needing parent/unreferenced -> block edges
-	pendingUnstage    []string            // existing block IRIs leaving unreferenced for the parent
 	pendingCandidates []string            // cache-filled block IRIs needing unreferenced -> block edges
 	pendingReputs     []pendingReput      // existing blocks written with refs, checked for lost edges
 	pendingRefs       []pendingRef        // source -> target block ref edges
@@ -367,7 +366,6 @@ func (g *GCStoreOps) bufferPutLocked(ref *block.BlockRef, targets []*block.Block
 
 	// Move the parent's hold from the referenced blocks to this one.
 	g.pendingUnref = append(g.pendingUnref, iri)
-	g.pendingUnstage = append(g.pendingUnstage, iri)
 	delete(g.pendingReleases, iri)
 	for _, t := range targets {
 		if t != nil && !t.GetEmpty() {
@@ -489,10 +487,10 @@ func (g *GCStoreOps) FlushPending(ctx context.Context) error {
 
 	// Take the buffered ownership changes.
 	g.mu.Lock()
-	unrefs, unstages := g.pendingUnref, g.pendingUnstage
+	unrefs := g.pendingUnref
 	candidates, refs := g.pendingCandidates, g.pendingRefs
 	ununrefs, releases := g.pendingUnunref, g.pendingReleases
-	g.pendingUnref, g.pendingUnstage = nil, nil
+	g.pendingUnref = nil
 	g.pendingCandidates, g.pendingRefs = nil, nil
 	g.pendingUnunref, g.pendingReleases = nil, nil
 	g.mu.Unlock()
@@ -509,10 +507,9 @@ func (g *GCStoreOps) FlushPending(ctx context.Context) error {
 	trace.Logf(
 		ctx,
 		"hydra/block-gc/store/flush-pending/pending",
-		"path=%s unrefs=%d unstages=%d refs=%d ununrefs=%d releases=%d",
+		"path=%s unrefs=%d refs=%d ununrefs=%d releases=%d",
 		path,
 		len(unrefs),
-		len(unstages),
 		len(refs),
 		len(ununrefs),
 		len(releases),
@@ -524,16 +521,15 @@ func (g *GCStoreOps) FlushPending(ctx context.Context) error {
 		parent = NodeUnreferenced
 	}
 
-	// A parent takes an existing block in the same batch that removes its
-	// staging edge. RefGraph treats removal of a missing edge as a no-op.
-	adds := make([]RefEdge, 0, len(unrefs)+len(candidates)+len(refs)+len(releases))
-	removes := make([]RefEdge, 0, len(ununrefs)+len(unstages)+len(releases))
+	// The staging edge of each written block records that its references are
+	// known, giving a leaf its empty child list. A block owns no queue entry,
+	// so a parent taking an existing block only adds its owner edge.
+	adds := make([]RefEdge, 0, 2*len(unrefs)+len(candidates)+len(refs)+len(releases))
+	removes := make([]RefEdge, 0, len(ununrefs)+len(releases))
 	for _, iri := range unrefs {
 		adds = append(adds, RefEdge{Subject: parent, Object: iri})
-	}
-	for _, iri := range unstages {
-		if _, released := releases[iri]; !released {
-			removes = append(removes, RefEdge{Subject: NodeUnreferenced, Object: iri})
+		if parent != NodeUnreferenced {
+			adds = append(adds, RefEdge{Subject: NodeUnreferenced, Object: iri})
 		}
 	}
 

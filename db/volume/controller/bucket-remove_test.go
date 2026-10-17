@@ -76,7 +76,7 @@ func TestBucketRemovalPreservesSharedBlock(t *testing.T) {
 			// One release removes ownership before returning without losing B.
 			remove(a)
 			owners, err := rg.GetIncomingRefs(ctx, block_gc.BlockIRI(ref))
-			if err != nil || !slices.Equal(owners, []string{block_gc.BucketIRI("b")}) {
+			if err != nil || !slices.Equal(owners, []string{block_gc.NodeUnreferenced, block_gc.BucketIRI("b")}) {
 				t.Fatalf("owners after release: %v err=%v", owners, err)
 			}
 			collector := block_gc.NewCollector(rg, vol, nil)

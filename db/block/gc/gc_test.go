@@ -669,15 +669,12 @@ func TestCollector_PhaseStats(t *testing.T) {
 		t.Fatalf("expected 1 swept, got %d", stats.NodesSwept)
 	}
 
-	// Verify collection records the orphan graph cleanup.
-	if stats.UnreferencedNodeCount == 0 {
-		t.Fatal("expected unreferenced node count")
+	// Verify collection records the block pass and its graph cleanup.
+	if stats.BlockPasses != 1 || stats.UnreachedBlocks != 1 || stats.BlocksSwept != 1 {
+		t.Fatalf("expected 1 pass sweeping 1 unreached block, got %+v", stats)
 	}
 	if stats.RemoveNodeRefsCount != 1 {
 		t.Fatalf("expected 1 node-ref removal, got %d", stats.RemoveNodeRefsCount)
-	}
-	if stats.RemoveUnreferencedEdgeCount != 1 {
-		t.Fatalf("expected 1 unreferenced edge removal, got %d", stats.RemoveUnreferencedEdgeCount)
 	}
 
 	// Verify collection records the callback and physical deletion.

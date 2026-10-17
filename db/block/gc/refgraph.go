@@ -3,6 +3,7 @@ package block_gc
 import (
 	"context"
 	"encoding/binary"
+	"maps"
 	"slices"
 
 	"github.com/pkg/errors"
@@ -15,23 +16,44 @@ const maxBatchEdges = 128
 
 // Record kinds. Each kind byte begins a key followed by encoded nodes, each of
 // which delimits itself, so no node can be read as a prefix of another.
-// Records hold no value: a scan reads the last node from each key.
+// Edge, node and root records hold no value: a scan reads the last node from
+// each key.
 const (
+	// kindAdopt keys a record of the adopt log by a big-endian sequence. Its
+	// value packs the encodings of the blocks one write adopted while a block
+	// pass ran.
+	kindAdopt byte = 'a'
+	// kindChildren keys the child list of a block by the block. Its value
+	// packs the encodings of the blocks it references, sorted and distinct.
+	kindChildren byte = 'c'
 	// kindForward keys an edge by subject then object.
 	kindForward byte = 'f'
 	// kindIncoming keys an edge by object then subject.
 	kindIncoming byte = 'i'
 	// kindNode keys the node inventory of a collector graph.
 	kindNode byte = 'n'
+	// kindPass is the one record of a running block pass.
+	kindPass byte = 'p'
 	// kindRoot keys the registered roots of a collector graph.
 	kindRoot byte = 'r'
 )
 
 // RefGraph stores the garbage collection ownership graph as plain records in
-// a transactional key-value store. Each edge is one record per direction keyed
-// by the full node IRIs, so membership is a point read, traversal is a prefix
-// scan and a removed edge leaves nothing behind. Opening a RefGraph reads
-// nothing.
+// a transactional key-value store. Opening a RefGraph reads nothing.
+//
+// An edge from a node that is not a block is one record per direction keyed by
+// the full node IRIs, so membership is a point read, traversal is a prefix scan
+// and a removed edge leaves nothing behind.
+//
+// The edges between blocks are one child list record per parent block, written
+// once when the block is stored, with no record under each child. A block's
+// child list also records that its references are known, so a leaf has an
+// empty one. Blocks are collected by marking from the roots, so a block never
+// joins the unreferenced queue: the queue's staging edge to a block creates
+// the block's child list, exists while the list does, and is never removed on
+// its own. Incoming queries of a block report its owners that are not blocks,
+// and the unreferenced queue while the block is tracked. While a block pass
+// runs, each write also logs the blocks it adopts, as MarkBlocks describes.
 type RefGraph struct {
 	// store holds the graph records.
 	store kvtx.Store
@@ -121,10 +143,10 @@ func RegisterEntityChain(ctx context.Context, rg RefGraphOps, nodes ...string) e
 	return nil
 }
 
-// AddRef atomically inserts both edge directions. Idempotent.
+// AddRef adds one edge as a batch of one addition. Idempotent.
 func (g *RefGraph) AddRef(ctx context.Context, subject, object string) error {
 	return g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
-		return g.addRefTx(ctx, tx, subject, object)
+		return g.applyRefBatchTx(ctx, tx, []RefEdge{{Subject: subject, Object: object}}, nil)
 	})
 }
 
@@ -197,7 +219,8 @@ func (g *RefGraph) ApplyRefBatch(ctx context.Context, adds, removes []RefEdge) e
 }
 
 // applyRefBatchTx applies one transaction slice in ownership order, marking
-// each object that loses its last owner as unreferenced.
+// each object that is not a block and loses its last owner as unreferenced,
+// and logs the blocks it adds edges to while a block pass runs.
 func (g *RefGraph) applyRefBatchTx(ctx context.Context, tx kvtx.Tx, adds, removes []RefEdge) error {
 	// Prefetch every record the checks below read. A store that reads many
 	// keys together then answers each check from its cache instead of
@@ -206,11 +229,33 @@ func (g *RefGraph) applyRefBatchTx(ctx context.Context, tx kvtx.Tx, adds, remove
 		return err
 	}
 
-	// Add every edge first, so an edge in both lists ends removed.
+	// Add every edge first, so an edge in both lists ends removed. The child
+	// edges of each block merge into its list in one write.
+	children := make(map[string][]string)
+	var adopted []string
 	for _, edge := range adds {
+		if isBlockNode(edge.Object) {
+			adopted = append(adopted, edge.Object)
+		}
+		if parent, child, ok := childEdge(edge); ok {
+			list := children[parent]
+			if child != "" {
+				list = append(list, child)
+			}
+			children[parent] = list
+			continue
+		}
 		if err := g.addRefTx(ctx, tx, edge.Subject, edge.Object); err != nil {
 			return err
 		}
+	}
+	for _, parent := range slices.Sorted(maps.Keys(children)) {
+		if err := g.addChildrenTx(ctx, tx, parent, children[parent]); err != nil {
+			return err
+		}
+	}
+	if err := logAdoptedTx(ctx, tx, adopted); err != nil {
+		return err
 	}
 
 	// Remove every edge, noting the objects that lost an owner and the
@@ -222,7 +267,7 @@ func (g *RefGraph) applyRefBatchTx(ctx context.Context, tx kvtx.Tx, adds, remove
 		switch {
 		case err != nil:
 			return err
-		case !existed || IsPermanentRoot(edge.Object):
+		case !existed || IsPermanentRoot(edge.Object) || isBlockNode(edge.Object):
 		case edge.Subject == NodeUnreferenced:
 			unstaged[edge.Object] = struct{}{}
 		default:
@@ -249,28 +294,47 @@ func (g *RefGraph) applyRefBatchTx(ctx context.Context, tx kvtx.Tx, adds, remove
 	return nil
 }
 
-// prefetchRefBatchTx prefetches the forward record of each edge and the first
-// incoming record position of each removed object.
+// prefetchRefBatchTx prefetches the record that holds each edge and the first
+// incoming record position of each removed object that is not a block.
 func prefetchRefBatchTx(ctx context.Context, tx kvtx.Tx, adds, removes []RefEdge) error {
 	// List the records the batch checks.
 	keys := make([][]byte, 0, len(adds)+2*len(removes))
 	for _, edge := range adds {
-		keys = append(keys, graphKey(kindForward, edge.Subject, edge.Object))
+		keys = append(keys, edgeKey(edge))
 	}
 	for _, edge := range removes {
-		keys = append(keys,
-			graphKey(kindForward, edge.Subject, edge.Object),
-			graphKey(kindIncoming, edge.Object),
-		)
+		keys = append(keys, edgeKey(edge))
+		if !isBlockNode(edge.Object) {
+			keys = append(keys, graphKey(kindIncoming, edge.Object))
+		}
 	}
 
 	// Prefetch them together.
 	return kvtx.Prefetch(ctx, tx, keys)
 }
 
-// addRefTx adds both edge directions, and the endpoint inventory of a
-// collector graph, unless the exact forward edge already exists.
+// edgeKey returns the key of the record that holds edge: the child list of its
+// block, or its forward record.
+func edgeKey(edge RefEdge) []byte {
+	if parent, _, ok := childEdge(edge); ok {
+		return graphKey(kindChildren, parent)
+	}
+	return graphKey(kindForward, edge.Subject, edge.Object)
+}
+
+// addRefTx adds an edge to its block's child list, or adds both directions of
+// any other edge and the endpoint inventory of a collector graph unless the
+// exact forward edge already exists.
 func (g *RefGraph) addRefTx(ctx context.Context, tx kvtx.Tx, subject, object string) error {
+	// Merge a child edge into its block's list.
+	if parent, child, ok := childEdge(RefEdge{Subject: subject, Object: object}); ok {
+		var children []string
+		if child != "" {
+			children = []string{child}
+		}
+		return g.addChildrenTx(ctx, tx, parent, children)
+	}
+
 	// Skip the edge when its exact forward record already exists.
 	forward := graphKey(kindForward, subject, object)
 	exists, err := tx.Exists(ctx, forward)
@@ -295,9 +359,17 @@ func (g *RefGraph) addRefTx(ctx context.Context, tx kvtx.Tx, subject, object str
 	return tx.Set(ctx, graphKey(kindIncoming, object, subject), nil)
 }
 
-// removeRefTx removes both directions of an exact edge and reports whether it
-// existed.
+// removeRefTx removes an exact edge and reports whether it existed. A child
+// edge leaves its block's list, and a staging edge stays with the list.
 func (g *RefGraph) removeRefTx(ctx context.Context, tx kvtx.Tx, subject, object string) (bool, error) {
+	// Remove a child from its block's list.
+	if parent, child, ok := childEdge(RefEdge{Subject: subject, Object: object}); ok {
+		if child == "" {
+			return false, nil
+		}
+		return removeChildTx(ctx, tx, parent, child)
+	}
+
 	// Check the forward record, then delete both directions.
 	forward := graphKey(kindForward, subject, object)
 	exists, err := tx.Exists(ctx, forward)
@@ -333,9 +405,30 @@ func hasIncomingTx(ctx context.Context, tx kvtx.Tx, object string, ignored map[s
 }
 
 // RemoveNodeRefs removes the observed outgoing targets in bounded transactions.
-// New unrelated edges may be added after this operation's initial snapshot.
+// New unrelated edges may be added after this operation's initial snapshot. A
+// block's child list goes first, so the block is no longer tracked; its
+// children never join the unreferenced queue.
 func (g *RefGraph) RemoveNodeRefs(ctx context.Context, node string, markOrphaned bool) ([]string, error) {
-	targets, err := g.GetOutgoingRefs(ctx, node)
+	// Drop a block's child list.
+	var children []string
+	if isBlockNode(node) {
+		err := g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
+			// Read the list, then delete it.
+			var found bool
+			var err error
+			children, found, err = readChildrenTx(ctx, tx, node)
+			if err != nil || !found {
+				return err
+			}
+			return tx.Delete(ctx, graphKey(kindChildren, node))
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Remove the observed targets of the other edges in chunks.
+	targets, err := g.list(ctx, graphKey(kindForward, node))
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +453,7 @@ func (g *RefGraph) RemoveNodeRefs(ctx context.Context, node string, markOrphaned
 			return nil, err
 		}
 	}
-	return targets, nil
+	return append(children, targets...), nil
 }
 
 // HasIncomingRefs ignores the bookkeeping edge from the unreferenced root.
@@ -401,17 +494,66 @@ func (g *RefGraph) list(ctx context.Context, prefix []byte) ([]string, error) {
 	return answer, nil
 }
 
-// GetOutgoingRefs returns all current targets of a node.
+// GetOutgoingRefs returns all current targets of a node: a block's children
+// and the targets of its other edges.
 func (g *RefGraph) GetOutgoingRefs(ctx context.Context, node string) ([]string, error) {
-	return g.list(ctx, graphKey(kindForward, node))
+	var answer []string
+	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
+		// Read a block's child list.
+		answer = nil
+		if isBlockNode(node) {
+			children, _, err := readChildrenTx(ctx, tx, node)
+			if err != nil {
+				return err
+			}
+			answer = children
+		}
+
+		// Add the targets of the forward records.
+		prefix := graphKey(kindForward, node)
+		return tx.ScanPrefixKeys(ctx, prefix, func(key []byte) error {
+			answer = append(answer, lastNode(prefix, key))
+			return nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return answer, nil
 }
 
-// GetIncomingRefs returns all current owners of a node.
+// GetIncomingRefs returns all current owners of a node. A block reports its
+// owners that are not blocks, and the unreferenced queue while it is tracked.
 func (g *RefGraph) GetIncomingRefs(ctx context.Context, node string) ([]string, error) {
-	return g.list(ctx, graphKey(kindIncoming, node))
+	var answer []string
+	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
+		// Report the staging edge of a tracked block.
+		answer = nil
+		if isBlockNode(node) {
+			tracked, err := tx.Exists(ctx, graphKey(kindChildren, node))
+			if err != nil {
+				return err
+			}
+			if tracked {
+				answer = append(answer, NodeUnreferenced)
+			}
+		}
+
+		// Add the sources of the incoming records.
+		prefix := graphKey(kindIncoming, node)
+		return tx.ScanPrefixKeys(ctx, prefix, func(key []byte) error {
+			answer = append(answer, lastNode(prefix, key))
+			return nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return answer, nil
 }
 
-// GetUnreferencedNodes returns the nodes marked for collector reconsideration.
+// GetUnreferencedNodes returns the nodes marked for collector reconsideration,
+// none of which is a block.
 func (g *RefGraph) GetUnreferencedNodes(ctx context.Context) ([]string, error) {
 	return g.GetOutgoingRefs(ctx, NodeUnreferenced)
 }

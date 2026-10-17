@@ -54,11 +54,10 @@ func TestCollectBlocksUnknownRefs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Model a root stored without tracking, without changing its block bytes.
-	for _, child := range outgoing {
-		if err := graph.RemoveRef(ctx, node, child); err != nil {
-			t.Fatal(err)
-		}
+	// Model a root stored without tracking, without changing its block bytes:
+	// drop its child list and its owner edges.
+	if _, err := graph.RemoveNodeRefs(ctx, node, false); err != nil {
+		t.Fatal(err)
 	}
 	for _, owner := range incoming {
 		if err := graph.RemoveRef(ctx, owner, node); err != nil {

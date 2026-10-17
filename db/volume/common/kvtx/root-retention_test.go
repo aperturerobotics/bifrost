@@ -355,7 +355,7 @@ func TestRootRetentionDefersEditsToNextCommit(t *testing.T) {
 		t.Fatalf("root proof edges=%v err=%v", proofs, err)
 	}
 	owners, err := v.GetRefGraph().GetIncomingRefs(ctx, node)
-	if err != nil || !slices.Equal(owners, []string{block_gc.BucketIRI("bucket")}) {
+	if err != nil || !slices.Equal(owners, []string{block_gc.NodeUnreferenced, block_gc.BucketIRI("bucket")}) {
 		t.Fatalf("root owners=%v err=%v", owners, err)
 	}
 }
