@@ -74,7 +74,7 @@ func TestMaintenanceRemoved(t *testing.T) {
 			}
 
 			// Remove the second while maintenance reads it for the move. The
-			// pass holds the writer, so the remove waits in pending.
+			// move publishes only the blocks still in place.
 			onRead := func() {
 				if err := s.RmBlock(ctx, refs[1]); err != nil {
 					t.Error(err)
@@ -88,11 +88,12 @@ func TestMaintenanceRemoved(t *testing.T) {
 			checkBlocks(t, s, refs, "", "")
 			checkStats(t, s, 0, 0)
 
-			// The move wrote nothing, and the next pass removes the segment.
+			// The next pass removes the old segment. The open one keeps the
+			// dead copy.
 			if err := s.Maintenance(ctx); err != nil {
 				t.Fatal(err)
 			}
-			checkSegments(t, d)
+			checkSegments(t, d, "seg-2")
 			if err := s.Close(); err != nil {
 				t.Fatal(err)
 			}
