@@ -17,6 +17,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// servedEngine is an engine the controller publishes. Holders keep mtx read
+// locked; withdraw takes the write lock to retire the engine, so the engine
+// closes only after every holder released it.
+type servedEngine struct {
+	// engine is the published engine.
+	engine Engine
+	// mtx is read locked by each holder of engine.
+	mtx sync.RWMutex
+	// retired is set once the engine is withdrawn. Guarded by mtx.
+	retired bool
+}
+
 // Controller drives a World Graph engine bound to a block graph and controlled by a Shared Object.
 // Uses MountSharedObject to mount and access the shared object and block store.
 // Every member replays the Shared Object operation set to the same World.
@@ -28,7 +40,7 @@ type Controller struct {
 	// conf configures the mounted SharedObject and World engine.
 	conf *Config
 	// engineCtr publishes the ready engine for this controller execution.
-	engineCtr *ccontainer.CContainer[*Engine]
+	engineCtr *ccontainer.CContainer[*servedEngine]
 	// engineID identifies the engine served by lookup directives.
 	engineID string
 
@@ -65,7 +77,7 @@ func NewController(
 		le:        le.WithField("engine-id", conf.GetEngineId()),
 		conf:      conf,
 		bus:       bus,
-		engineCtr: ccontainer.NewCContainer[*Engine](nil),
+		engineCtr: ccontainer.NewCContainer[*servedEngine](nil),
 		engineID:  conf.GetEngineId(),
 		sfs:       sfs,
 		failed:    make(map[string]struct{}),
@@ -272,8 +284,9 @@ func (c *Controller) executeWorld(
 	if err := c.setWriter(ctx, engine); err != nil {
 		return err
 	}
-	c.engineCtr.SetValue(&wengine)
-	defer c.engineCtr.SetValue(nil)
+	served := &servedEngine{engine: wengine}
+	c.engineCtr.SetValue(served)
+	defer c.withdraw(served)
 
 	// Order the Space as its main device, vote in the group's decisions and
 	// reclaim storage while the World is served.
@@ -335,26 +348,55 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 // GetWorldEngine waits for the engine to be built.
 // Returns the Engine managed by the controller.
 func (c *Controller) GetWorldEngine(ctx context.Context) (Engine, error) {
-	val, err := c.engineCtr.WaitValue(ctx, nil)
+	served, err := c.engineCtr.WaitValue(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	return *val, nil
+	return served.engine, nil
+}
+
+// AcquireWorldEngine waits for the served engine and holds it open until
+// release is called. The engine lookup resolver withdraws the engine before
+// releasing it, so no lookup sees the engine close.
+func (c *Controller) AcquireWorldEngine(ctx context.Context) (Engine, func(), error) {
+	for {
+		served, err := c.engineCtr.WaitValue(ctx, nil)
+		if err != nil {
+			return nil, nil, err
+		}
+		served.mtx.RLock()
+		if !served.retired {
+			return served.engine, served.mtx.RUnlock, nil
+		}
+		// withdraw cleared the container before retiring it, so the next
+		// wait returns a successor.
+		served.mtx.RUnlock()
+	}
 }
 
 // WaitWorldEngineReplaced waits until eng is no longer the published engine.
 // The controller replaces its engine when read access is lost and regained;
 // the engine lookup resolver follows each replacement through this wait.
 func (c *Controller) WaitWorldEngineReplaced(ctx context.Context, eng Engine) error {
-	_, err := c.engineCtr.WaitValueWithValidator(ctx, func(current *Engine) (bool, error) {
-		return current == nil || *current != eng, nil
+	_, err := c.engineCtr.WaitValueWithValidator(ctx, func(current *servedEngine) (bool, error) {
+		return current == nil || current.engine != eng, nil
 	}, nil)
 	return err
+}
+
+// withdraw stops publishing served and waits for every holder to release it.
+// The caller closes the engine afterwards.
+func (c *Controller) withdraw(served *servedEngine) {
+	c.engineCtr.SetValue(nil)
+	served.mtx.Lock()
+	served.retired = true
+	served.mtx.Unlock()
 }
 
 // setWriter sets the served engine under the writer lock. The engine it
 // replaces settles no further: its writes ended with it.
 func (c *Controller) setWriter(ctx context.Context, e *soEngine) error {
+	// Swap the writer under the writer lock.
 	unlock, err := c.writeMtx.Lock(ctx)
 	if err != nil {
 		return err

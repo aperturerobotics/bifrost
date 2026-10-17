@@ -39,6 +39,16 @@ func (c *replacingTestController) GetWorldEngine(ctx context.Context) (Engine, e
 	return *val, nil
 }
 
+// AcquireWorldEngine waits for an engine to be served. The stand-in engines
+// never close, so release does nothing.
+func (c *replacingTestController) AcquireWorldEngine(ctx context.Context) (Engine, func(), error) {
+	eng, err := c.GetWorldEngine(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	return eng, func() {}, nil
+}
+
 // WaitWorldEngineReplaced waits until eng is no longer served.
 func (c *replacingTestController) WaitWorldEngineReplaced(ctx context.Context, eng Engine) error {
 	_, err := c.engines.WaitValueWithValidator(ctx, func(current *Engine) (bool, error) {

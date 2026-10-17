@@ -28,6 +28,9 @@ type EngineConfig interface {
 // controller reports for it. factory constructs the controller when set;
 // otherwise the bus resolves the factory by config ID. ctx bounds the Engine's
 // lookups. Release the reference to stop the controller.
+//
+// The returned Engine implements only Engine. Assert an optional interface of
+// the served engine, such as RootRetainingEngine, inside AccessEngine.
 func StartEngine(
 	ctx context.Context,
 	b bus.Bus,
