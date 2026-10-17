@@ -531,6 +531,53 @@ func TestMysqlStoredColumnExpressions(t *testing.T) {
 	}
 }
 
+// TestMysqlInlineText reads text and bytes stored inline in the row block,
+// which decode without a cursor, up to just under the raw blob limit.
+func TestMysqlInlineText(t *testing.T) {
+	// Open a test database and store short, empty and large inline values.
+	ctx := context.Background()
+	_, db := newMysqlTestDB(t, ctx, "probe")
+	defer db.Close()
+	long := strings.Repeat("0123456789abcdef", 44*1024)
+	execMysqlStatements(t, ctx, db,
+		"CREATE TABLE notes (id BIGINT NOT NULL PRIMARY KEY, body LONGTEXT NOT NULL, raw LONGBLOB NULL)",
+	)
+	for _, row := range []struct {
+		id   int
+		body string
+	}{{1, "short"}, {2, long}, {3, ""}} {
+		if _, err := db.ExecContext(ctx, "INSERT INTO notes (id, body, raw) VALUES (?, ?, ?)", row.id, row.body, []byte(row.body)); err != nil {
+			t.Fatal(err.Error())
+		}
+	}
+
+	// Read every value back through a full scan.
+	rows, err := db.QueryContext(ctx, "SELECT id, body, raw FROM notes ORDER BY id")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer rows.Close()
+	want := map[int]string{1: "short", 2: long, 3: ""}
+	for rows.Next() {
+		var id int
+		var body string
+		var raw []byte
+		if err := rows.Scan(&id, &body, &raw); err != nil {
+			t.Fatal(err.Error())
+		}
+		if body != want[id] || string(raw) != want[id] {
+			t.Fatalf("row %d: got body %d bytes and raw %d bytes, want %d", id, len(body), len(raw), len(want[id]))
+		}
+		delete(want, id)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err.Error())
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing rows: %v", want)
+	}
+}
+
 func TestMysqlDropDatabaseAndDropTable(t *testing.T) {
 	// Open a test database for table and database removal.
 	ctx := context.Background()

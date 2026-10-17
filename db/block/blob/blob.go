@@ -108,6 +108,23 @@ func FetchToBytes(ctx context.Context, bcs *block.Cursor) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// InlineData returns the blob's bytes when its root holds all of them, as an
+// empty or raw blob does, so a reader needs no cursor. It returns false for a
+// chunked blob and for a raw blob whose length disagrees with its total size,
+// which FetchToBuffer reports as an error. The slice aliases the root.
+func (b *Blob) InlineData() ([]byte, bool) {
+	switch {
+	case b.GetTotalSize() == 0:
+		return nil, true
+	case b.GetBlobType() != BlobType_BlobType_RAW:
+		return nil, false
+	case uint64(len(b.GetRawData())) != b.GetTotalSize():
+		return nil, false
+	default:
+		return b.GetRawData(), true
+	}
+}
+
 // IsEmpty checks if the blob total size is zero.
 func (b *Blob) IsEmpty() bool {
 	return b.GetTotalSize() == 0

@@ -12,10 +12,6 @@ import (
 	"github.com/s4wave/spacewave/db/block/blob"
 )
 
-// TableColumnMaxSize is the maximum size of the data field, if larger than
-// this size, data will be stored in a block referenced by "data_ref".
-const TableColumnMaxSize = 2e4 // 20kb
-
 // BuildTableColumn constructs a TableColumn by marshaling a col.
 //
 // bcs must be set.
@@ -102,22 +98,48 @@ func (t *TableColumn) IsEmpty() bool {
 	return t.GetValue() == nil
 }
 
-// isBlob reports whether the column stores its value in a blob, which reads
-// through a cursor.
-func (t *TableColumn) isBlob() bool {
-	switch t.GetValue().(type) {
-	case *TableColumn_StringBlob, *TableColumn_BytesBlob, *TableColumn_JsonBlob:
-		return true
+// blobValue returns the column's blob and its sub-block id, or nil for a
+// scalar column.
+func (t *TableColumn) blobValue() (*blob.Blob, uint32) {
+	switch v := t.GetValue().(type) {
+	case *TableColumn_StringBlob:
+		return v.StringBlob, 6
+	case *TableColumn_BytesBlob:
+		return v.BytesBlob, 7
+	case *TableColumn_JsonBlob:
+		return v.JsonBlob, 8
 	default:
-		return false
+		return nil, 0
 	}
 }
 
-// FetchSqlColumn converts the column into its SQL value. A scalar value
-// decodes from the column itself. A blob value reads through bcs, located at
-// the column, and reads as nil without one.
+// readsThroughCursor reports whether the column's value lives in blob chunks
+// outside the row block, so reading it needs a cursor at the column.
+func (t *TableColumn) readsThroughCursor() bool {
+	b, _ := t.blobValue()
+	if b == nil {
+		return false
+	}
+	_, inline := b.InlineData()
+	return !inline
+}
+
+// fetchBlobData returns the bytes of the column's blob. An inline blob reads
+// from the decoded row without a cursor; a chunked blob reads through bcs,
+// located at the column.
+func (t *TableColumn) fetchBlobData(ctx context.Context, bcs *block.Cursor) ([]byte, error) {
+	b, id := t.blobValue()
+	if data, ok := b.InlineData(); ok {
+		return data, nil
+	}
+	return blob.FetchToBytes(ctx, bcs.FollowSubBlock(id))
+}
+
+// FetchSqlColumn converts the column into its SQL value. A scalar value or an
+// inline blob decodes from the column itself. A chunked blob reads through bcs,
+// located at the column, and reads as nil without one.
 func (t *TableColumn) FetchSqlColumn(ctx context.Context, bcs *block.Cursor) (any, error) {
-	if bcs == nil && t.isBlob() {
+	if bcs == nil && t.readsThroughCursor() {
 		return nil, nil
 	}
 
@@ -133,15 +155,20 @@ func (t *TableColumn) FetchSqlColumn(ctx context.Context, bcs *block.Cursor) (an
 	case *TableColumn_FloatValue:
 		return v.FloatValue, nil
 	case *TableColumn_StringBlob:
-		data, err := blob.FetchToBytes(ctx, bcs.FollowSubBlock(6))
+		data, err := t.fetchBlobData(ctx, bcs)
 		if err != nil {
 			return nil, err
 		}
 		return string(data), nil
 	case *TableColumn_BytesBlob:
-		return blob.FetchToBytes(ctx, bcs.FollowSubBlock(7))
+		// Copy so the caller cannot alias the decoded row block.
+		data, err := t.fetchBlobData(ctx, bcs)
+		if err != nil {
+			return nil, err
+		}
+		return bytes.Clone(data), nil
 	case *TableColumn_JsonBlob:
-		data, err := blob.FetchToBytes(ctx, bcs.FollowSubBlock(8))
+		data, err := t.fetchBlobData(ctx, bcs)
 		if err != nil {
 			return nil, err
 		}

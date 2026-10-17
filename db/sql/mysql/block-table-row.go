@@ -47,13 +47,13 @@ func (r *TableRow) FetchSqlRow(ctx context.Context, bcs *block.Cursor) (sql.Row,
 	rowCols := r.GetColumns()
 	cols := make(sql.Row, len(rowCols))
 
-	// Decode each stored column into its SQL row position. Only a blob
-	// column reads through a cursor, so the column set is followed at the
-	// first blob and scalar rows follow none.
+	// Decode each stored column into its SQL row position. Only a chunked
+	// blob reads through a cursor, so the column set is followed at the
+	// first one and rows of scalars and inline blobs follow none.
 	var colSet *sbset.SubBlockSet
 	for i, col := range rowCols {
 		var colcs *block.Cursor
-		if col.isBlob() {
+		if col.readsThroughCursor() {
 			if colSet == nil {
 				colSet = newTableRowColumnSetContainer(r, bcs)
 			}
