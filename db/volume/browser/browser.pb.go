@@ -6,13 +6,14 @@ package volume_browser
 
 import (
 	fmt "fmt"
+	io "io"
+	slices "slices"
+
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	kvkey "github.com/s4wave/spacewave/db/store/kvkey"
 	kvtx "github.com/s4wave/spacewave/db/store/kvtx"
 	controller "github.com/s4wave/spacewave/db/volume/controller"
-	io "io"
-	slices "slices"
 )
 
 // Config is the browser volume controller config.
@@ -367,6 +368,7 @@ func (x *Config) MarshalProtoText() string {
 func (x *Config) String() string {
 	return x.MarshalProtoText()
 }
+
 func (m *Config) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
