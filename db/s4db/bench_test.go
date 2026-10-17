@@ -19,14 +19,29 @@ const benchKeys = 200000
 // loadBench fills a database with benchKeys small values in ordered commits
 // of 128 keys and returns it with its keys.
 func loadBench(b *testing.B) (*DB, [][]byte) {
-	db, keys, _ := fill(b, benchKeys, Options{})
+	db, keys, _ := fill(b, benchKeys, Options{}, randKey)
 	return db, keys
 }
 
-// fill opens a fresh database with opts, commits n random keys with 150-byte
-// values in ordered commits of 128 keys, and returns it with its keys and
-// the slowest commit.
-func fill(b *testing.B, n int, opts Options) (*DB, [][]byte, time.Duration) {
+// randKey returns a random eight-byte key.
+func randKey(rng *rand.Rand) []byte {
+	return binary.BigEndian.AppendUint64(nil, rng.Uint64())
+}
+
+// blockKey returns a key shaped like a block store key: a store prefix and
+// a SHA-256 block reference, whose first ten bytes every block key shares.
+func blockKey(rng *rand.Rand) []byte {
+	k := []byte{'h', '/', 'b', '/', 0x0a, 0x24, 0x08, 0x01, 0x12, 0x20}
+	for range 4 {
+		k = binary.BigEndian.AppendUint64(k, rng.Uint64())
+	}
+	return k
+}
+
+// fill opens a fresh database with opts, commits n keys from key with
+// 150-byte values in ordered commits of 128 keys, and returns it with its
+// keys and the slowest commit.
+func fill(b *testing.B, n int, opts Options, key func(*rand.Rand) []byte) (*DB, [][]byte, time.Duration) {
 	// Open a fresh file.
 	b.Helper()
 	ctx := context.Background()
@@ -47,7 +62,7 @@ func fill(b *testing.B, n int, opts Options) (*DB, [][]byte, time.Duration) {
 			b.Fatal(err)
 		}
 		for j := i; j < min(i+128, n); j++ {
-			keys[j] = binary.BigEndian.AppendUint64(nil, rng.Uint64())
+			keys[j] = key(rng)
 			if err := tx.Set(ctx, keys[j], val); err != nil {
 				b.Fatal(err)
 			}
@@ -61,20 +76,22 @@ func fill(b *testing.B, n int, opts Options) (*DB, [][]byte, time.Duration) {
 }
 
 // BenchmarkGet measures point reads, each in its own read transaction, from
-// parallel goroutines, with the index cached and with a cache too small for
-// it, where most reads decode a page.
+// parallel goroutines, with the index cached, with a cache too small for it,
+// where most reads decode a page, and with block store keys.
 func BenchmarkGet(b *testing.B) {
 	runs := []struct {
 		name string
 		opts Options
+		key  func(*rand.Rand) []byte
 	}{
-		{"cached", Options{}},
-		{"misses", Options{CacheBytes: 2 << 20}},
+		{"cached", Options{}, randKey},
+		{"misses", Options{CacheBytes: 2 << 20}, randKey},
+		{"blocks", Options{}, blockKey},
 	}
 	for _, run := range runs {
 		b.Run(run.name, func(b *testing.B) {
 			// Load and warm the database.
-			db, keys, _ := fill(b, benchKeys, run.opts)
+			db, keys, _ := fill(b, benchKeys, run.opts, run.key)
 			defer db.Close()
 			ctx := context.Background()
 			get := func(k []byte) {
@@ -128,7 +145,7 @@ func BenchmarkCheckpointFill(b *testing.B) {
 		b.Run(run.name, func(b *testing.B) {
 			for b.Loop() {
 				// Fill, then time one flush of the filled file.
-				db, _, slowest := fill(b, 1_000_000, run.opts)
+				db, _, slowest := fill(b, 1_000_000, run.opts, randKey)
 				start := time.Now()
 				if err := db.s.flushDurable(); err != nil {
 					b.Fatal(err)
