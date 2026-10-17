@@ -139,6 +139,9 @@ type TableRoot struct {
 	Comment string `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty"`
 	// Indexes contains secondary index definitions and their stored trees.
 	Indexes []*TableIndex `protobuf:"bytes,8,rep,name=indexes,proto3" json:"indexes,omitempty"`
+	// KeyFormat is the version of the row and index key encoding.
+	// Tables are readable only when it equals the current format.
+	KeyFormat uint32 `protobuf:"varint,9,opt,name=key_format,json=keyFormat,proto3" json:"keyFormat,omitempty"`
 }
 
 func (x *TableRoot) Reset() {
@@ -201,6 +204,13 @@ func (x *TableRoot) GetIndexes() []*TableIndex {
 		return x.Indexes
 	}
 	return nil
+}
+
+func (x *TableRoot) GetKeyFormat() uint32 {
+	if x != nil {
+		return x.KeyFormat
+	}
+	return 0
 }
 
 // TableIndex is a secondary table index definition.
@@ -734,6 +744,7 @@ func (m *TableRoot) CloneVT() *TableRoot {
 	r.RowNonce = m.RowNonce
 	r.CollationId = m.CollationId
 	r.Comment = m.Comment
+	r.KeyFormat = m.KeyFormat
 	r.TableSchema = protobuf_go_lite.CloneVTValue(m.TableSchema)
 	r.PrimaryKeyOrdinals = protobuf_go_lite.CloneSlice(m.PrimaryKeyOrdinals)
 	r.TablePartitions = protobuf_go_lite.CloneVTSlice(m.TablePartitions)
@@ -1127,6 +1138,9 @@ func (this *TableRoot) EqualVT(that *TableRoot) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.Indexes, that.Indexes, func() *TableIndex { return &TableIndex{} }) {
+		return false
+	}
+	if this.KeyFormat != that.KeyFormat {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1807,6 +1821,11 @@ func (x *TableRoot) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.KeyFormat != 0 || s.HasField("keyFormat") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("keyFormat")
+		s.WriteUint32(x.KeyFormat)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1890,6 +1909,9 @@ func (x *TableRoot) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.Indexes = append(x.Indexes, v)
 			})
+		case "key_format", "keyFormat":
+			s.AddField("key_format")
+			x.KeyFormat = s.ReadUint32()
 		}
 	})
 }
@@ -2746,6 +2768,11 @@ func (m *TableRoot) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.KeyFormat != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.KeyFormat))
+		i--
+		dAtA[i] = 0x48
+	}
 	if len(m.Indexes) > 0 {
 		for iNdEx := len(m.Indexes) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.Indexes[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -3474,6 +3501,7 @@ func (m *TableRoot) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.KeyFormat)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3844,6 +3872,10 @@ func (x *TableRoot) MarshalProtoText() string {
 			}
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.KeyFormat != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key_format")
+		protobuf_go_lite.TextWriteUint(&sb, x.KeyFormat)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -4479,6 +4511,15 @@ func (m *TableRoot) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KeyFormat", wireType)
+			}
+			m.KeyFormat = 0
+			m.KeyFormat, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

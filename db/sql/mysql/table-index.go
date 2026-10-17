@@ -342,17 +342,18 @@ func (idx *tableIndex) ColumnExpressionTypes(ctx *sql.Context) []sql.ColumnExpre
 }
 
 // CanSupport accepts ranges that fix the index's leading columns to points,
-// and the NULL-excluding probe a null-safe join plans with before it binds a
-// key. Trailing columns may select any span: a lookup walks the encoded prefix
-// of the leading points, and the engine filters the rest because PreciseMatch
-// is false. Other predicates use table scans.
+// optionally followed by a span of the next column when its keys sort in SQL
+// order (see orderedType), and the NULL-excluding probe a null-safe join plans
+// with before it binds a key. Later columns may select any span: a lookup walks
+// the keys under the encoded points within the span, and the engine filters the
+// rest because PreciseMatch is false. Other predicates use table scans.
 func (idx *tableIndex) CanSupport(ctx *sql.Context, ranges ...sql.Range) bool {
 	for _, r := range ranges {
 		mysqlRange, ok := r.(sql.MySQLRange)
 		if !ok || len(mysqlRange) != len(idx.columns) {
 			return false
 		}
-		if len(leadingPoints(ctx, mysqlRange)) != 0 {
+		if len(leadingPoints(ctx, mysqlRange)) != 0 || idx.spanColumn(ctx, mysqlRange) {
 			continue
 		}
 		for _, column := range mysqlRange {
@@ -362,6 +363,17 @@ func (idx *tableIndex) CanSupport(ctx *sql.Context, ranges ...sql.Range) bool {
 		}
 	}
 	return true
+}
+
+// spanColumn reports whether r selects a span of the column after its leading
+// points that the index walks as a span of keys.
+func (idx *tableIndex) spanColumn(ctx *sql.Context, r sql.MySQLRange) bool {
+	n := len(leadingPoints(ctx, r))
+	if n == len(r) {
+		return false
+	}
+	ord, ok := idx.table.columnOrdinal(idx.columns[n].GetName())
+	return ok && idx.columns[n].GetLength() == 0 && orderedType(idx.table.schema.Schema[ord].Type)
 }
 
 // leadingPoints returns the values of the leading columns r fixes to one SQL
@@ -407,7 +419,8 @@ func isNotNullRange(column sql.MySQLRangeColumnExpr) bool {
 	return lowerOK && upperOK
 }
 
-// CanSupportOrderBy reports false because encoded key order is not SQL value order.
+// CanSupportOrderBy reports false: only number columns store keys in SQL order,
+// and lookups return rows in no defined order.
 func (idx *tableIndex) CanSupportOrderBy(expr sql.Expression) bool {
 	return false
 }

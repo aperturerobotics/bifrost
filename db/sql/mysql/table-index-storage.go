@@ -124,8 +124,9 @@ func (t *Table) scanRows(ctx *sql.Context) ([]sql.Row, error) {
 	return sql.RowIterToRows(ctx, iter)
 }
 
-// lookupRows resolves the leading equality columns of each range through the
-// primary or secondary tree.
+// lookupRows resolves the leading equality columns of each range, and a span of
+// the next column when its keys sort in SQL order, through the primary or
+// secondary tree.
 func (t *Table) lookupRows(ctx *sql.Context, lookup sql.IndexLookup) ([]sql.Row, error) {
 	// Require ranges supported by the declared index.
 	index, ok := lookup.Index.(*tableIndex)
@@ -145,18 +146,22 @@ func (t *Table) lookupRows(ctx *sql.Context, lookup sql.IndexLookup) ([]sql.Row,
 	rows := make([]sql.Row, 0, len(ranges))
 	seen := make(map[string]struct{}, len(ranges))
 	for _, r := range ranges {
-		// Encode the leading points; a range that fixes no column scans.
+		// Encode the leading points and the next column's span; a range that
+		// selects neither scans.
 		values := leadingPoints(ctx, r)
-		if len(values) == 0 {
+		n := len(values)
+		var span keySpan
+		if index.spanColumn(ctx, r) {
+			span = spanOf(ctx, t.schema.Schema[ordinals[n]].Type, r[n])
+		} else if n == 0 {
 			return t.scanRows(ctx)
 		}
-		n := len(values)
 		prefix, hasNull, err := t.encodeColumns(ctx, ordinals[:n], values, index.columns[:n])
 		if err != nil {
 			return nil, err
 		}
 		single := n == len(index.columns) && (index.primary || index.unique && !hasNull)
-		candidates, err := t.indexRows(ctx, index, prefix, single)
+		candidates, err := t.indexRows(ctx, index, prefix, span, single)
 		if err != nil {
 			return nil, err
 		}
@@ -198,14 +203,15 @@ type keyedRow struct {
 }
 
 // indexRows reads the rows whose index key begins with prefix, the encoding of
-// the index's leading columns. Each encoded component is length framed, so the
-// prefix selects exactly the entries with those leading values. single marks a
-// complete primary or unique non-null tuple, which has at most one entry.
-func (t *Table) indexRows(ctx *sql.Context, index *tableIndex, prefix []byte, single bool) ([]keyedRow, error) {
+// the index's leading columns, and continues within span. Each encoded component
+// is self-delimiting, so the prefix selects exactly the entries with those
+// leading values. single marks a complete primary or unique non-null tuple,
+// which has at most one entry.
+func (t *Table) indexRows(ctx *sql.Context, index *tableIndex, prefix []byte, span keySpan, single bool) ([]keyedRow, error) {
 	// The primary tree stores rows under their keys.
 	if index.primary {
 		if !single {
-			return t.rowsWithPrefix(ctx, prefix)
+			return t.rowsInSpan(ctx, prefix, span)
 		}
 		row, err := t.rowAtKey(ctx, prefix)
 		if err != nil || row == nil {
@@ -219,7 +225,7 @@ func (t *Table) indexRows(ctx *sql.Context, index *tableIndex, prefix []byte, si
 	if err != nil {
 		return nil, err
 	}
-	keys, err := secondaryRowKeys(ctx, tree, prefix, single)
+	keys, err := secondaryRowKeys(ctx, tree, prefix, span, single)
 	tree.Discard()
 	if err != nil {
 		return nil, err
@@ -237,8 +243,9 @@ func (t *Table) indexRows(ctx *sql.Context, index *tableIndex, prefix []byte, si
 	return rows, nil
 }
 
-// rowsWithPrefix decodes every row whose primary tree key begins with prefix.
-func (t *Table) rowsWithPrefix(ctx *sql.Context, prefix []byte) ([]keyedRow, error) {
+// rowsInSpan decodes every row whose primary tree key begins with prefix and
+// continues within span.
+func (t *Table) rowsInSpan(ctx *sql.Context, prefix []byte, span keySpan) ([]keyedRow, error) {
 	// Open the partition that stores every row.
 	part, err := t.rowPartition()
 	if err != nil {
@@ -250,41 +257,44 @@ func (t *Table) rowsWithPrefix(ctx *sql.Context, prefix []byte) ([]keyedRow, err
 	}
 	defer tree.Discard()
 
-	// Walk only the keys under the prefix.
-	it := tree.BlockIterate(GetDbContext(ctx), prefix, false, false)
+	// Walk only the keys within the span.
+	it := tree.BlockIterate(GetDbContext(ctx), prefix, true, false)
 	defer it.Close()
 	var rows []keyedRow
-	for it.Next() {
+	err = span.walk(it, prefix, func() error {
 		row, err := t.decodeRow(ctx, it.ValueCursor())
 		if err != nil {
-			return nil, err
+			return err
 		}
 		rows = append(rows, keyedRow{key: bytes.Clone(it.Key()), row: row})
-	}
-	return rows, it.Err()
+		return nil
+	})
+	return rows, err
 }
 
-// secondaryRowKeys resolves one unique key, or every entry under a prefix.
-func secondaryRowKeys(ctx *sql.Context, tree kvtx.BlockTx, key []byte, single bool) ([][]byte, error) {
+// secondaryRowKeys resolves one unique key, or every entry under a prefix
+// within span.
+func secondaryRowKeys(ctx *sql.Context, tree kvtx.BlockTx, prefix []byte, span keySpan, single bool) ([][]byte, error) {
 	// A complete unique tuple reads exactly one index entry.
 	if single {
-		value, found, err := tree.Get(GetDbContext(ctx), key)
+		value, found, err := tree.Get(GetDbContext(ctx), prefix)
 		if err != nil || !found {
 			return nil, err
 		}
 		return [][]byte{value}, nil
 	}
 
-	// Other lookups walk every entry under the encoded prefix.
-	it := tree.Iterate(GetDbContext(ctx), key, true, false)
+	// Other lookups walk the entries within the span.
+	it := tree.Iterate(GetDbContext(ctx), prefix, true, false)
 	defer it.Close()
 	var keys [][]byte
-	for it.Next() {
+	err := span.walk(it, prefix, func() error {
 		value, err := it.Value()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		keys = append(keys, bytes.Clone(value))
-	}
-	return keys, it.Err()
+		return nil
+	})
+	return keys, err
 }

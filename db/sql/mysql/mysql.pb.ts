@@ -615,6 +615,13 @@ export interface TableRoot {
    * @generated from field: repeated mysql.TableIndex indexes = 8;
    */
   indexes?: TableIndex[]
+  /**
+   * KeyFormat is the version of the row and index key encoding.
+   * Tables are readable only when it equals the current format.
+   *
+   * @generated from field: uint32 key_format = 9;
+   */
+  keyFormat?: number
 }
 
 export const TableRoot: MessageType<TableRoot> =
@@ -647,6 +654,7 @@ export const TableRoot: MessageType<TableRoot> =
         T: TableIndex,
         repeated: true,
       },
+      { no: 9, name: 'key_format', kind: 'scalar', T: ScalarType.UINT32 },
     ] satisfies readonly PartialFieldInfo[],
   })
 

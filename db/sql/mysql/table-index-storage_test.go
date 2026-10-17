@@ -416,7 +416,8 @@ func queryStrings(t *testing.T, ctx context.Context, db *stdsql.DB, query string
 	return values
 }
 
-// TestUnsupportedPredicatesScan returns correct rows when the index cannot serve a range.
+// TestUnsupportedPredicatesScan returns correct rows for ranges the index walks
+// as a span or cannot serve at all.
 func TestUnsupportedPredicatesScan(t *testing.T) {
 	// Index a composite key and the primary key, then ask for ranges they cannot probe.
 	ctx := t.Context()
@@ -428,7 +429,7 @@ func TestUnsupportedPredicatesScan(t *testing.T) {
 		"INSERT INTO scans VALUES (1, 1, 1), (3, 1, 2), (5, 2, 1), (7, 1, 1), (9, 2, 2)",
 	)
 
-	// Open ranges and a span on the leading column fall back to a full scan.
+	// A condition only on a later column scans; spans of number columns walk keys.
 	for _, test := range []struct {
 		// query selects through an unsupported predicate.
 		query string
@@ -442,6 +443,70 @@ func TestUnsupportedPredicatesScan(t *testing.T) {
 	} {
 		if got := strings.Join(queryStrings(t, ctx, db, test.query), " "); got != test.want {
 			t.Fatalf("%s: ids %q, want %q", test.query, got, test.want)
+		}
+	}
+}
+
+// TestNumberSpanLookups serves spans of number columns through the index and
+// returns the rows a table scan returns, across negatives, signed zero, NULL,
+// rounded and out-of-range bounds.
+func TestNumberSpanLookups(t *testing.T) {
+	// Store numbers on both sides of zero beside NULLs.
+	ctx := t.Context()
+	_, db := newMysqlTestDB(t, ctx, "probe")
+	defer db.Close()
+	execMysqlStatements(t, ctx, db,
+		"CREATE TABLE nums (id BIGINT PRIMARY KEY, g VARCHAR(8), n BIGINT, u TINYINT UNSIGNED, d DOUBLE)",
+		"CREATE INDEX idx_n ON nums(n)",
+		"CREATE INDEX idx_u ON nums(u)",
+		"CREATE INDEX idx_d ON nums(d)",
+		"CREATE INDEX idx_gn ON nums(g, n)",
+		`INSERT INTO nums VALUES
+			(1, 'a', -5, 0, -2.5), (2, 'a', -1, 1, -0.0), (3, 'a', 0, 200, 0),
+			(4, 'b', 1, 255, 1.5), (5, 'b', 2, NULL, NULL), (6, 'b', 3, 7, 1e20),
+			(7, 'a', 100, 8, -1e20), (8, NULL, NULL, 9, 2), (9, 'a', 9223372036854775807, 10, 3),
+			(10, 'b', -9223372036854775808, 11, 4)`,
+	)
+
+	// Each span plans an index access and returns the rows of the same
+	// predicate written so that it scans.
+	for _, test := range []struct {
+		// where selects through an index.
+		where string
+		// scan is the same predicate on expressions no index serves.
+		scan string
+	}{
+		{"n > -2", "n + 0 > -2"},
+		{"n >= -5 AND n < 3", "n + 0 >= -5 AND n + 0 < 3"},
+		{"n <= 0", "n + 0 <= 0"},
+		{"n BETWEEN -1 AND 2", "n + 0 BETWEEN -1 AND 2"},
+		{"n > 2.5", "n + 0 > 2.5"},
+		{"n < -0.5", "n + 0 < -0.5"},
+		{"n > 0 OR n < -3", "n + 0 > 0 OR n + 0 < -3"},
+		{"n < -1e30", "n + 0 < -1e30"},
+		{"n > 1e30", "n + 0 > 1e30"},
+		{"n IS NOT NULL", "(n + 0) IS NOT NULL"},
+		{"u > -5", "u + 0 > -5"},
+		{"u < 300", "u + 0 < 300"},
+		{"u >= 200", "u + 0 >= 200"},
+		{"u <= -1", "u + 0 <= -1"},
+		{"d > -1", "d + 0 > -1"},
+		{"d <= -0.0", "d + 0 <= -0.0"},
+		{"d >= 0", "d + 0 >= 0"},
+		{"d < 1.5", "d + 0 < 1.5"},
+		{"g = 'a' AND n > 0", "CONCAT(g, '') = 'a' AND n + 0 > 0"},
+		{"g = 'b' AND n <= 2", "CONCAT(g, '') = 'b' AND n + 0 <= 2"},
+		{"id > 3 AND id <= 7", "id + 0 > 3 AND id + 0 <= 7"},
+	} {
+		query := "SELECT id FROM nums WHERE " + test.where + " ORDER BY id"
+		plan := strings.Join(queryStrings(t, ctx, db, "EXPLAIN FORMAT=tree "+query), "\n")
+		if !strings.Contains(plan, "IndexedTableAccess") {
+			t.Fatalf("%s: plan scans the table:\n%s", query, plan)
+		}
+		got := strings.Join(queryStrings(t, ctx, db, query), " ")
+		want := strings.Join(queryStrings(t, ctx, db, "SELECT id FROM nums WHERE "+test.scan+" ORDER BY id"), " ")
+		if got != want {
+			t.Fatalf("%s: ids %q, want %q", query, got, want)
 		}
 	}
 }

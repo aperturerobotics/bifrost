@@ -32,6 +32,11 @@ type Table struct {
 
 // loadRootState loads the schema and counters from a table root.
 func (t *Table) loadRootState(ctx context.Context, root *TableRoot) error {
+	// Refuse keys written in another encoding: lookups would miss their rows.
+	if format := root.GetKeyFormat(); format != tableKeyFormat {
+		return errors.Errorf("table key format %d is not %d: recreate the database to rewrite its keys", format, tableKeyFormat)
+	}
+
 	// Decode the table schema from its root block.
 	schema, err := root.GetTableSchema().ToSqlSchema()
 	if err != nil {
@@ -130,6 +135,7 @@ func BuildTable(
 ) (*TableRoot, *Table, error) {
 	// Construct the table schema and primary-key column positions.
 	tr := &TableRoot{
+		KeyFormat:   tableKeyFormat,
 		CollationId: uint32(collationID),
 		TableSchema: NewTableSchema(schema.Schema),
 		Comment:     comment,

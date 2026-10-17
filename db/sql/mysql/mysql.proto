@@ -56,6 +56,9 @@ message TableRoot {
   string comment = 7;
   // Indexes contains secondary index definitions and their stored trees.
   repeated TableIndex indexes = 8;
+  // KeyFormat is the version of the row and index key encoding.
+  // Tables are readable only when it equals the current format.
+  uint32 key_format = 9;
 }
 
 // TableIndex is a secondary table index definition.
