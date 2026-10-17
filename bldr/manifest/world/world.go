@@ -570,32 +570,42 @@ func NewListManifestCandidatePath(p *cayley.Path) *cayley.Path {
 
 // ListManifests lists all manifests recursively linked to the given object(s).
 func ListManifests(ctx context.Context, w world.WorldState, startObjKeys ...string) ([]string, error) {
-	// Collect the keys reachable through the manifest path.
-	return world.CollectPathWithKeys(
-		ctx,
-		w,
-		startObjKeys,
-		func(p *cayley.Path) (*cayley.Path, error) {
-			// Follow <manifest> references, collecting nodes.
-			// Limit those objects to the ones that have type manifest.
-			return NewListManifestPath(p), nil
-		},
-	)
+	// Follow manifest edges before reading only the reachable candidates' type edges.
+	candidates, err := ListManifestCandidates(ctx, w, startObjKeys...)
+	if err != nil {
+		return nil, err
+	}
+	filters := make([]world.GraphQuad, len(candidates))
+	for i, key := range candidates {
+		filters[i] = world.NewGraphQuadWithKeys(key, world_types.TypePred.String(), "", "")
+	}
+	types, err := lookupManifestGraphQuadsBatch(ctx, w, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	// Retain either manifest type, preserving the sorted, distinct candidate order.
+	var output []string
+	for i, quads := range types {
+		for _, q := range quads {
+			if q.GetObj() == world_types.BuildTypeQuadValue(ManifestTypeID).String() ||
+				q.GetObj() == world_types.BuildTypeQuadValue(ManifestRefTypeID).String() {
+				output = append(output, candidates[i])
+				break
+			}
+		}
+	}
+	return output, nil
 }
 
 // ListManifestCandidates lists all objects recursively linked with <manifest>
 // from the given object(s). Candidates may be Manifest objects, ManifestRef
 // objects, or intermediate bundle/store objects.
 func ListManifestCandidates(ctx context.Context, w world.WorldState, startObjKeys ...string) ([]string, error) {
-	// Collect the keys reachable through the candidate path.
-	return world.CollectPathWithKeys(
-		ctx,
-		w,
-		startObjKeys,
-		func(p *cayley.Path) (*cayley.Path, error) {
-			return NewListManifestCandidatePath(p), nil
-		},
-	)
+	// Follow explicit edge filters so tracked views depend only on the edges read.
+	keys, err := listManifestCandidatesByLabels(ctx, w, nil, startObjKeys...)
+	slices.Sort(keys)
+	return keys, err
 }
 
 // ListStartupManifestCandidatesWithID lists startup manifest candidates for a manifest ID.
@@ -666,7 +676,7 @@ func listStartupManifestCandidatesForManifestIDs(
 		for i, objKey := range frontier {
 			filters[i] = world.NewGraphQuadWithKeys(objKey, PredManifest.String(), "", "")
 		}
-		results, err := lookupManifestEdgesBatch(ctx, ws, filters)
+		results, err := lookupManifestGraphQuadsBatch(ctx, ws, filters)
 		if err != nil {
 			return nil, err
 		}
@@ -719,15 +729,15 @@ func listStartupManifestCandidatesForManifestIDs(
 	return out, nil
 }
 
-// manifestEdgeLookupLimit is the first per-filter limit for a batched
-// <manifest> edge lookup. Remote World states reject an unbounded batch.
+// manifestEdgeLookupLimit is the first per-filter limit for a manifest listing's
+// graph edge lookup. Remote World states reject an unbounded batch.
 const manifestEdgeLookupLimit = 64
 
-// lookupManifestEdgesBatch returns every quad matching each filter through
+// lookupManifestGraphQuadsBatch returns every quad matching each filter through
 // bounded batch lookups. A filter whose result fills the limit may have more
 // matches, so it is looked up again with twice the limit until it comes back
 // short. The batch API has no cursor, so each retry reads from the start.
-func lookupManifestEdgesBatch(
+func lookupManifestGraphQuadsBatch(
 	ctx context.Context,
 	ws world.WorldState,
 	filters []world.GraphQuad,
@@ -774,6 +784,9 @@ func lookupManifestEdgesBatch(
 	return results, nil
 }
 
+// listManifestCandidatesByLabels follows manifest edges in label-priority order.
+// An empty label list follows every label. Each lookup records its edge filter
+// through WorldState, including lookups with no matches.
 func listManifestCandidatesByLabels(
 	ctx context.Context,
 	w world.WorldState,
@@ -783,6 +796,12 @@ func listManifestCandidatesByLabels(
 	// Nothing to collect without start object keys.
 	if len(startObjKeys) == 0 {
 		return nil, nil
+	}
+
+	// Use one unrestricted pass when no label priority was requested.
+	edgeLabels := labels
+	if len(edgeLabels) == 0 {
+		edgeLabels = []string{""}
 	}
 
 	// Seed the breadth-first queue with the unique start keys.
@@ -803,14 +822,35 @@ func listManifestCandidatesByLabels(
 	var output []string
 	outputSeen := make(map[string]struct{})
 	for depth := 0; depth < 50 && len(frontier) != 0; depth++ {
+		// Read each frontier's outgoing edges through bounded, tracked batch lookups.
+		filters := make([]world.GraphQuad, len(frontier))
+		for i, objKey := range frontier {
+			filters[i] = world.NewGraphQuadWithKeys(objKey, PredManifest.String(), "", "")
+		}
+		results, err := lookupManifestGraphQuadsBatch(ctx, w, filters)
+		if err != nil {
+			return nil, err
+		}
+
+		// Queue each reachable key once, retaining the caller's label priority.
 		var next []string
-		for _, objKey := range frontier {
-			// Record every linked key matching a label.
-			for _, label := range labels {
-				linkedKeys, err := listManifestCandidateEdgesWithLabel(ctx, w, objKey, label)
-				if err != nil {
-					return nil, err
+		for _, quads := range results {
+			for _, label := range edgeLabels {
+				// Sort the matching targets before deduplicating and queuing them.
+				linkedKeys := make([]string, 0, len(quads))
+				for _, q := range quads {
+					if len(labels) != 0 && q.GetLabel() != label {
+						continue
+					}
+					key, err := world.GraphValueToKey(q.GetObj())
+					if err != nil {
+						return nil, err
+					}
+					linkedKeys = append(linkedKeys, key)
 				}
+				slices.Sort(linkedKeys)
+
+				// Record outputs separately so cycles may include a start key.
 				for _, linkedKey := range linkedKeys {
 					if _, ok := outputSeen[linkedKey]; !ok {
 						outputSeen[linkedKey] = struct{}{}
@@ -827,38 +867,6 @@ func listManifestCandidatesByLabels(
 		frontier = next
 	}
 	return output, nil
-}
-
-func listManifestCandidateEdgesWithLabel(
-	ctx context.Context,
-	w world.WorldState,
-	objKey string,
-	label string,
-) ([]string, error) {
-	// Look up the object's <manifest> edges.
-	quads, err := w.LookupGraphQuads(
-		ctx,
-		world.NewGraphQuadWithKeys(objKey, PredManifest.String(), "", ""),
-		0,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Collect the linked keys matching the label, sorted.
-	linkedKeys := make([]string, 0, len(quads))
-	for _, q := range quads {
-		if q.GetLabel() != label {
-			continue
-		}
-		linkedKey, err := world.GraphValueToKey(q.GetObj())
-		if err != nil {
-			return nil, err
-		}
-		linkedKeys = append(linkedKeys, linkedKey)
-	}
-	slices.Sort(linkedKeys)
-	return linkedKeys, nil
 }
 
 // CollectedManifest contains information from CollectManifest.
