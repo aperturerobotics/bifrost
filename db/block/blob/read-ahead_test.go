@@ -76,6 +76,37 @@ func TestBlobReaderReadAheadBoundsAndClose(t *testing.T) {
 	}
 }
 
+// TestBlobReaderReadAheadHintsStore verifies each streaming chunk fetch asks
+// the store to read the window ahead, bounded by the blob's remaining bytes.
+func TestBlobReaderReadAheadHintsStore(t *testing.T) {
+	// Open six 1 MiB chunks; the 4 MiB window fetches the first four.
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	reader, store := newReadAheadFixture(t, ctx, 6, 1<<20)
+	defer reader.Close()
+	for _, gate := range store.gates {
+		close(gate)
+	}
+
+	// Read a streaming prefix and wait for the window's fetches.
+	if _, err := io.ReadFull(reader, make([]byte, 32<<10)); err != nil {
+		t.Fatal(err)
+	}
+	for range 4 {
+		waitChunkFetch(t, ctx, store)
+	}
+	if err := reader.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify the hints: a full window, then the bytes left in the blob.
+	for idx, want := range []int64{4 << 20, 4 << 20, 4 << 20, 3 << 20} {
+		if got := store.readAhead[idx].Load(); got != want {
+			t.Fatalf("chunk %d read-ahead = %d, want %d", idx, got, want)
+		}
+	}
+}
+
 func TestBlobReaderSmallReadDoesNotReadAhead(t *testing.T) {
 	// Open a gated reader fixture for a read smaller than the read-ahead threshold.
 	reader, store := newReadAheadFixture(t, t.Context(), 3, 64<<10)
@@ -207,8 +238,10 @@ type chunkFetchStore struct {
 	started chan int
 	active  atomic.Int32
 	calls   atomic.Int32
-	failIdx int
-	failErr error
+	// readAhead holds each chunk fetch's block.ReadAhead hint.
+	readAhead []atomic.Int64
+	failIdx   int
+	failErr   error
 }
 
 func (s *chunkFetchStore) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
@@ -220,6 +253,7 @@ func (s *chunkFetchStore) GetBlock(ctx context.Context, ref *block.BlockRef) ([]
 
 	// Count the chunk fetch and wait for its gate or context cancellation.
 	s.calls.Add(1)
+	s.readAhead[idx].Store(int64(block.ReadAhead(ctx)))
 	s.active.Add(1)
 	defer s.active.Add(-1)
 	s.started <- idx
@@ -268,11 +302,12 @@ func newReadAheadFixture(t *testing.T, ctx context.Context, count, size int) (*R
 
 	// Open the persisted blob through a store with observable chunk fetches.
 	store := &chunkFetchStore{
-		StoreOps: base,
-		indices:  make(map[string]int, count),
-		gates:    make([]chan struct{}, count),
-		started:  make(chan int, count*2),
-		failIdx:  -1,
+		StoreOps:  base,
+		indices:   make(map[string]int, count),
+		gates:     make([]chan struct{}, count),
+		started:   make(chan int, count*2),
+		readAhead: make([]atomic.Int64, count),
+		failIdx:   -1,
 	}
 	_, cursor = block.NewTransaction(store, nil, ref, nil)
 	reader, err := NewReader(ctx, cursor)

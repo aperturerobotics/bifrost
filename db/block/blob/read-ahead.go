@@ -24,16 +24,25 @@ type chunkReadAhead struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	chunks  *sbset.SubBlockSet
+	blobEnd uint64
 	queue   *conc.ConcurrentQueue
 	pending map[int]*promise.Promise[[]byte]
 }
 
 func newChunkReadAhead(ctx context.Context, chunks *sbset.SubBlockSet) *chunkReadAhead {
+	// The last chunk ends the stored bytes; Start sums the preceding sizes.
+	var blobEnd uint64
+	if value, _ := chunks.Get(chunks.Len() - 1); value != nil {
+		if last, ok := value.(*Chunk); ok {
+			blobEnd = last.GetStart() + last.GetSize()
+		}
+	}
 	ctx, cancel := context.WithCancel(ctx)
 	return &chunkReadAhead{
 		ctx:     ctx,
 		cancel:  cancel,
 		chunks:  chunks,
+		blobEnd: blobEnd,
 		queue:   conc.NewConcurrentQueue(chunkReadAheadCount),
 		pending: make(map[int]*promise.Promise[[]byte], chunkReadAheadCount),
 	}
@@ -70,10 +79,15 @@ func (r *chunkReadAhead) read(idx int) ([]byte, error) {
 			continue
 		}
 
+		// The stream reads on past this chunk, and an access-ordered pack
+		// stores those chunks after it, so a miss may fetch up to a window of
+		// the blob's remaining bytes in one transport request.
 		result := promise.NewPromise[[]byte]()
 		r.pending[next] = result
+		readAhead := min(chunkReadAheadBytes, r.blobEnd-chunk.GetStart())
+		fetchCtx := block.WithReadAhead(r.ctx, int(readAhead)) //nolint:gosec // bounded by chunkReadAheadBytes.
 		r.queue.Enqueue(func() {
-			data, err := fetchChunkDataNoCursorCache(r.ctx, chunk, cursor, next, nil)
+			data, err := fetchChunkDataNoCursorCache(fetchCtx, chunk, cursor, next, nil)
 			result.SetResult(data, err)
 		})
 	}
