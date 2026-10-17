@@ -49,6 +49,15 @@ type DecodedBlockShareable interface {
 	SharesDecodedBlock()
 }
 
+// DecodedBlockReadShareable marks a block type that reads and cursor traversal
+// never mutate in place, but whose writers change a loaded instance before
+// handing it back to the cursor. Read-only transactions take the cached
+// instance without a clone; other transactions take a private copy.
+type DecodedBlockReadShareable interface {
+	// SharesDecodedBlockWithReaders marks the type as shareable with readers.
+	SharesDecodedBlockWithReaders()
+}
+
 // decodedBlockCacheSizer reports a decoded block's size without marshaling it.
 type decodedBlockCacheSizer interface {
 	// SizeVT returns the block's encoded size.

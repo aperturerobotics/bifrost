@@ -11,8 +11,11 @@ import (
 // RootCursor is the minimal cursor surface Mysql needs to read and update the
 // root object reference.
 type RootCursor interface {
+	// BuildTransaction opens a block transaction at the committed root.
 	BuildTransaction(*block.PutOpts) (*block.Transaction, *block.Cursor)
+	// GetRef returns the committed root object reference.
 	GetRef() *bucket.ObjectRef
+	// SetRootRef advances the committed root to ref.
 	SetRootRef(*block.BlockRef)
 }
 
@@ -60,7 +63,7 @@ func (t *Mysql) NewMysqlTransaction(ctx context.Context, write bool) (*Tx, error
 	}
 
 	// Load the root and construct the transaction with its database catalog.
-	rn, btx, bcs, err := t.fetchRoot(ctx)
+	rn, btx, bcs, err := t.fetchRoot(ctx, write)
 	atx := &Tx{
 		t:       t,
 		write:   write,
@@ -76,14 +79,19 @@ func (t *Mysql) NewMysqlTransaction(ctx context.Context, write bool) (*Tx, error
 	return atx, nil
 }
 
-// fetchRoot fetches the root block.
-func (t *Mysql) fetchRoot(ctx context.Context) (
+// fetchRoot fetches the root block. A read transaction's block transaction is
+// read-only, so it shares decoded blocks with other readers instead of cloning
+// them.
+func (t *Mysql) fetchRoot(ctx context.Context, write bool) (
 	rn *Root,
 	btx *block.Transaction,
 	bcs *block.Cursor,
 	err error,
 ) {
 	btx, bcs = t.rootCursor.BuildTransaction(nil)
+	if !write {
+		btx.SetReadOnly()
+	}
 	rn, err = block.UnmarshalBlock[Root](ctx, bcs)
 	return
 }

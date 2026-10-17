@@ -131,6 +131,12 @@ func (n *Node) ApplyBlockRef(id uint32, ptr *block.BlockRef) error {
 	return nil
 }
 
+// SharesDecodedBlockWithReaders marks decoded nodes as shareable with
+// read-only transactions. Reads never change a node, and FollowValue follows
+// only an existing inline Blob. Tx writes change a loaded node before setting
+// it on its cursor, so writers keep their private copy.
+func (n *Node) SharesDecodedBlockWithReaders() {}
+
 // FollowLeft follows the left child.
 func (n *Node) FollowLeft(ctx context.Context, cursor *block.Cursor) (*Node, *block.Cursor, error) {
 	bcs := cursor.FollowRef(5, n.GetLeftChildRef())
@@ -156,7 +162,7 @@ func (n *Node) FollowValue(cursor *block.Cursor) (*block.Cursor, bool) {
 
 // GetBlockRefs returns all block references by ID.
 // May return nil, and values may also be nil.
-// Note: this does not include pending references (in a cursor)
+// It does not include pending references held in a cursor.
 func (n *Node) GetBlockRefs() (map[uint32]*block.BlockRef, error) {
 	return map[uint32]*block.BlockRef{
 		5: n.GetLeftChildRef(),

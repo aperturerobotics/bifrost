@@ -213,13 +213,17 @@ func (t *Transaction) SetReadOnly() {
 
 // sharesDecodedBlock reports whether the transaction takes blk from its
 // decoded-block cache without a clone. The cursor position records the shared
-// instance and copies it before changing it in place.
+// instance and copies it before changing it in place. A read-only transaction
+// also shares blocks whose writers change them in place, since it never writes.
 func (t *Transaction) sharesDecodedBlock(blk any) bool {
 	if t == nil {
 		return false
 	}
-	_, ok := blk.(DecodedBlockShareable)
-	return ok
+	if _, ok := blk.(DecodedBlockShareable); ok {
+		return true
+	}
+	_, ok := blk.(DecodedBlockReadShareable)
+	return ok && t.readOnly.Load()
 }
 
 // SetBufferedStoreSettings overrides the BufferedStore settings used to wrap

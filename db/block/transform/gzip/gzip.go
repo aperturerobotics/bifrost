@@ -3,6 +3,7 @@ package transform_gzip
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/binary"
 	"io"
 	"sync"
 
@@ -100,9 +101,11 @@ func (g *Gzip) DecodeBlock(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// Decode the block within the maximum permitted output size.
+	// Decode the block within the maximum permitted output size, sized once
+	// from the trailer so the buffer never regrows. ReadFrom keeps MinRead
+	// bytes free, which leaves room to observe the end of the stream.
 	var buf bytes.Buffer
-	buf.Grow(len(data))
+	buf.Grow(decodedSizeHint(data) + bytes.MinRead)
 	lrd := &io.LimitedReader{R: rd.reader, N: block.MaxBlockSize + 1}
 	if _, err := io.Copy(&buf, lrd); err != nil {
 		return nil, err
@@ -114,6 +117,21 @@ func (g *Gzip) DecodeBlock(data []byte) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// maxDeflateRatio bounds how far deflate can expand its input.
+const maxDeflateRatio = 1032
+
+// decodedSizeHint returns the decoded size recorded in a gzip trailer, bounded
+// by the block size limit and by what deflate could produce from data. The
+// trailer is unverified until the stream ends, so it only sizes the output
+// buffer.
+func decodedSizeHint(data []byte) int {
+	if len(data) < 18 {
+		return 0
+	}
+	recorded := int(binary.LittleEndian.Uint32(data[len(data)-4:]))
+	return min(recorded, len(data)*maxDeflateRatio, block.MaxBlockSize)
 }
 
 // _ is a type assertion

@@ -152,3 +152,37 @@ func TestDecodeBlockRecoversAfterInvalidInput(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodedSizeHintBoundsTrailer(t *testing.T) {
+	// Encode a small block whose trailer records its decoded size.
+	g, err := NewGzip(&Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := bytes.Repeat([]byte("row"), 500)
+	encoded, err := g.EncodeBlock(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := decodedSizeHint(encoded); got != len(data) {
+		t.Fatalf("hint = %d, want %d", got, len(data))
+	}
+
+	// Claim a 4 GiB output in the trailer and check the hint stays within
+	// what deflate could produce from the input.
+	lying := bytes.Clone(encoded)
+	copy(lying[len(lying)-4:], []byte{0xff, 0xff, 0xff, 0xff})
+	if got, limit := decodedSizeHint(lying), len(lying)*maxDeflateRatio; got > limit {
+		t.Fatalf("hint = %d exceeds deflate bound %d", got, limit)
+	}
+
+	// Verify the lying trailer still fails the decode instead of passing.
+	if _, err := g.DecodeBlock(lying); err == nil {
+		t.Fatal("expected a mismatched trailer size to fail")
+	}
+
+	// Verify a stream too short for a trailer gives no hint.
+	if got := decodedSizeHint(encoded[:10]); got != 0 {
+		t.Fatalf("short hint = %d, want 0", got)
+	}
+}
