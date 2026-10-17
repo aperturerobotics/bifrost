@@ -198,9 +198,12 @@ func decodeNode(b []byte) (*node, error) {
 	}
 
 	// Find each entry, checking that its value or child page is whole.
+	// Until the prefix is known, each head holds where its key ends and
+	// how long it is, so the heads need no second decode.
 	for i := range count {
 		n.offs[i] = uint16(pageSize - 4 - len(d.b)) // #nosec G115 -- offsets fall within a page.
-		d.bytes()
+		k := d.bytes()
+		n.heads[i] = uint64(pageSize-4-len(d.b))<<16 | uint64(len(k)) // #nosec G115 -- ends and lengths fall within a page.
 		if n.leaf {
 			d.value(d.kind())
 			continue
@@ -213,12 +216,17 @@ func decodeNode(b []byte) (*node, error) {
 
 	// Take the prefix the searched keys share. They are sorted, so it is
 	// the common prefix of the first and the last.
+	key := func(i int) []byte {
+		end, l := int(n.heads[i]>>16), int(n.heads[i]&0xffff)
+		return b[end-l : end]
+	}
 	first := 0
 	if !n.leaf {
 		first = 1
+		n.heads[0] = 0
 	}
 	if first < count {
-		lo, hi := n.key(first), n.key(count-1)
+		lo, hi := key(first), key(count-1)
 		p := 0
 		for p < len(lo) && p < len(hi) && lo[p] == hi[p] {
 			p++
@@ -228,7 +236,7 @@ func decodeNode(b []byte) (*node, error) {
 
 	// Take the head of each searched key after the prefix.
 	for i := first; i < count; i++ {
-		n.heads[i] = head(n.key(i)[len(n.pre):])
+		n.heads[i] = head(key(i)[len(n.pre):])
 	}
 	return n, nil
 }
