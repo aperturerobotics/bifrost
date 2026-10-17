@@ -41,15 +41,6 @@ type FetchRangeReader struct {
 	knownSize atomic.Pointer[uint64]
 }
 
-// cachedData contains cached data from the previous request.
-type cachedData struct {
-	// offset is the location of the read
-	offset uint64
-	//
-	// data is the read data
-	data []byte
-}
-
 // NewFetchRangeReader initializes a FetchRangeReader for the given request.
 // verbose logs http requests
 func NewFetchRangeReader(le *logrus.Entry, fetchUrl string, opts *fetch.Opts, verbose bool) *FetchRangeReader {
@@ -65,6 +56,7 @@ func (r *FetchRangeReader) SetSize(size uint64) {
 // NOTE: the returned slice may start before or after the requested location and length.
 // NOTE: this may return a completely different range than what you asked for!
 func (r *FetchRangeReader) SliceReadAt(offset, length int64) (dataOffset int64, data []byte, err error) {
+	// Reject reads before the start and empty reads.
 	if offset < 0 {
 		return 0, nil, io.EOF
 	}
@@ -72,6 +64,8 @@ func (r *FetchRangeReader) SliceReadAt(offset, length int64) (dataOffset int64, 
 		return offset, nil, io.ErrShortBuffer
 	}
 
+	// Clamp the read to the known size and note whether it covers the file.
+	var wholeFile bool
 	if knownSizePtr := r.knownSize.Load(); knownSizePtr != nil {
 		knownSize := int64(*knownSizePtr)
 		if offset >= knownSize {
@@ -83,23 +77,30 @@ func (r *FetchRangeReader) SliceReadAt(offset, length int64) (dataOffset int64, 
 				return 0, nil, io.EOF
 			}
 		}
+		wholeFile = offset == 0 && length == knownSize
 	}
 
+	// A read of the whole file sends a plain GET, the same request a
+	// ServiceWorker or prefetch of the URL makes, so the browser's HTTP cache
+	// shares one download between them. The 200 case below handles the body.
 	req := r.opts.Clone()
-	if req.Header == nil {
-		req.Header = make(map[string][]string, 1)
+	if !wholeFile {
+		if req.Header == nil {
+			req.Header = make(map[string][]string, 1)
+		}
+		req.Header.Set("range", fmtRange(offset, length))
 	}
-	req.Header.Set("range", fmtRange(offset, length))
 
+	// Send the request.
 	resp, err := httplog_fetch.Fetch(r.le, r.fetchUrl, req, r.verbose)
 	if err != nil {
 		return 0, nil, err
 	}
 
+	// Read the body by status: 200 holds the whole file, 206 the range.
 	switch resp.StatusCode {
 	case 200:
-		// If the response is 200, the server does not support Range.
-		// The entire file was returned, handle that here.
+		// The request had no Range, or the server ignores Range.
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return 0, nil, err
