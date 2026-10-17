@@ -75,18 +75,16 @@ func addSegmentStats(ctx context.Context, tx kvtx.Tx, n uint64, delta segmentSta
 }
 
 // readSegmentStats reads the statistics of every segment with a published
-// block.
-func (s *Store) readSegmentStats(ctx context.Context) (map[uint64]segmentStats, error) {
+// block from tx.
+func readSegmentStats(ctx context.Context, tx kvtx.Tx) (map[uint64]segmentStats, error) {
 	stats := make(map[uint64]segmentStats)
-	err := s.view(ctx, func(tx kvtx.Tx) error {
-		return tx.ScanPrefix(ctx, []byte(segmentStatsPrefix), func(key, value []byte) error {
-			st, err := unmarshalSegmentStats(value)
-			if err != nil {
-				return err
-			}
-			stats[binary.BigEndian.Uint64(key[len(segmentStatsPrefix):])] = st
-			return nil
-		})
+	err := tx.ScanPrefix(ctx, []byte(segmentStatsPrefix), func(key, value []byte) error {
+		st, err := unmarshalSegmentStats(value)
+		if err != nil {
+			return err
+		}
+		stats[binary.BigEndian.Uint64(key[len(segmentStatsPrefix):])] = st
+		return nil
 	})
 	return stats, err
 }
@@ -94,7 +92,11 @@ func (s *Store) readSegmentStats(ctx context.Context) (map[uint64]segmentStats, 
 // BlockStats returns the number and total payload length of the published
 // blocks.
 func (s *Store) BlockStats(ctx context.Context) (count, size uint64, err error) {
-	stats, err := s.readSegmentStats(ctx)
+	var stats map[uint64]segmentStats
+	err = s.view(ctx, func(tx kvtx.Tx) error {
+		stats, err = readSegmentStats(ctx, tx)
+		return err
+	})
 	for _, st := range stats {
 		count += uint64(st.count) //nolint:gosec
 		size += uint64(st.bytes)  //nolint:gosec
@@ -102,13 +104,20 @@ func (s *Store) BlockStats(ctx context.Context) (count, size uint64, err error) 
 	return count, size, err
 }
 
-// Maintenance reclaims segment space in one bounded pass. It removes the
+// Maintenance reclaims segment space in one bounded pass under the writer, so
+// no write transaction holds unpublished blocks meanwhile. It removes the
 // sealed segments that hold no published or pending block, then moves up to
 // moveBytes of live blocks out of the sealed segment with the most dead bytes,
 // if at least half of it is dead. A later pass removes the emptied segment.
 func (s *Store) Maintenance(ctx context.Context) error {
-	// Snapshot the open segment and the segments with pending payloads before
-	// reading the statistics, so a payload published in between is counted.
+	// Take the writer for the pass.
+	t, err := s.begin(ctx, true, nil)
+	if err != nil {
+		return err
+	}
+	defer t.Discard()
+
+	// Snapshot the open segment and the segments with pending payloads.
 	s.mtx.Lock()
 	open := s.segment
 	busy := make(map[uint64]bool)
@@ -120,7 +129,7 @@ func (s *Store) Maintenance(ctx context.Context) error {
 	s.mtx.Unlock()
 
 	// Read the published statistics and the segment files.
-	stats, err := s.readSegmentStats(ctx)
+	stats, err := readSegmentStats(ctx, t.itx)
 	if err != nil {
 		return err
 	}
@@ -157,29 +166,27 @@ func (s *Store) Maintenance(ctx context.Context) error {
 	if victimDead < 0 {
 		return nil
 	}
-	return s.move(ctx, victim)
+	return t.move(ctx, victim)
 }
 
 // move rewrites up to moveBytes of segment n's blocks at the end of the log
-// and publishes their new locations durably. Each move publishes only if its
-// block is still at the old location, so a block removed meanwhile stays
-// removed.
-func (s *Store) move(ctx context.Context, n uint64) error {
+// and publishes their new locations with a durable commit of t. t holds the
+// writer, so no published location changes meanwhile; a block removed outside
+// a transaction meanwhile has a pending remove, which replaces its move.
+func (t *Tx) move(ctx context.Context, n uint64) error {
 	// Find the segment's blocks, up to moveBytes.
 	var keys []string
 	var locs []*location
 	var size int64
-	err := s.view(ctx, func(tx kvtx.Tx) error {
-		return tx.ScanPrefix(ctx, []byte(blockPrefix), func(key, value []byte) error {
-			// Collect the blocks in segment n until the move is full.
-			loc, err := unmarshalLocation(value)
-			if err != nil || loc.segment != n || size >= moveBytes {
-				return err
-			}
-			keys, locs = append(keys, string(key)), append(locs, loc)
-			size += loc.length
-			return nil
-		})
+	err := t.itx.ScanPrefix(ctx, []byte(blockPrefix), func(key, value []byte) error {
+		// Collect the blocks in segment n until the move is full.
+		loc, err := unmarshalLocation(value)
+		if err != nil || loc.segment != n || size >= moveBytes {
+			return err
+		}
+		keys, locs = append(keys, string(key)), append(locs, loc)
+		size += loc.length
+		return nil
 	})
 	if err != nil || len(keys) == 0 {
 		return err
@@ -190,23 +197,20 @@ func (s *Store) move(ctx context.Context, n uint64) error {
 	for i, loc := range locs {
 		reads[i] = device.Read{Name: segmentName(n), Offset: loc.offset, Data: make([]byte, loc.length)}
 	}
-	if err := s.dev.Read(ctx, reads); err != nil {
+	if err := t.s.dev.Read(ctx, reads); err != nil {
 		return errors.Wrap(err, "read moved blocks")
 	}
 
-	// Append the payloads as pending moves, skipping blocks with a pending
-	// change.
-	if err := s.appendMoves(ctx, keys, locs, reads); err != nil {
+	// Append the payloads as pending writes, skipping blocks with a pending
+	// change, and publish them.
+	if err := t.s.appendMoves(ctx, keys, locs, reads); err != nil {
 		return err
 	}
-
-	// Publish the moves.
-	_, err = s.Sync(ctx)
-	return err
+	return t.Commit(ctx)
 }
 
 // appendMoves writes the payloads of the blocks at keys, read from locs, at
-// the end of the log and adds them as pending moves.
+// the end of the log and adds them as pending writes.
 func (s *Store) appendMoves(ctx context.Context, keys []string, locs []*location, reads []device.Read) error {
 	// Place each payload without a pending change at the log's end.
 	s.mtx.Lock()
@@ -219,10 +223,10 @@ func (s *Store) appendMoves(ctx context.Context, keys []string, locs []*location
 		}
 		loc := s.place(locs[i].length)
 		writes = append(writes, device.Write{Name: segmentName(loc.segment), Offset: loc.offset, Data: reads[i].Data})
-		added[key] = &pendingBlock{loc: loc, from: locs[i]}
+		added[key] = &pendingBlock{loc: loc}
 	}
 
-	// Write the payloads, then add them as pending moves.
+	// Write the payloads, then add them as pending writes.
 	if len(writes) != 0 {
 		if err := s.dev.Write(ctx, writes, false); err != nil {
 			return err

@@ -11,25 +11,36 @@ import (
 	"github.com/s4wave/spacewave/net/hash"
 )
 
+// blockStore serves block operations in one scope: the store's own, whose
+// puts and removes wait in the store's pending blocks, or a transaction's,
+// whose puts and removes stay with the transaction until it ends.
+type blockStore struct {
+	// s is the store.
+	s *Store
+	// tx is the transaction, nil for the store's scope.
+	tx *Tx
+}
+
 // GetHashType returns the hash type of new block references; zero selects
 // the default.
-func (s *Store) GetHashType() hash.HashType {
-	return s.hashType
+func (b *blockStore) GetHashType() hash.HashType {
+	return b.s.hashType
 }
 
 // GetSupportedFeatures reports native batches and the store's own buffering.
-func (s *Store) GetSupportedFeatures() block.StoreFeature {
+func (b *blockStore) GetSupportedFeatures() block.StoreFeature {
 	return block.StoreFeatureNativeBatchPut | block.StoreFeatureNativeBatchExists | block.StoreFeatureSelfBuffered
 }
 
-// BeginReadOperation returns the store, which needs no read scope.
-func (s *Store) BeginReadOperation(context.Context) (block.StoreOps, func(), error) {
-	return s, func() {}, nil
+// BeginReadOperation returns the scope, which needs no read scope.
+func (b *blockStore) BeginReadOperation(context.Context) (block.StoreOps, func(), error) {
+	return b, func() {}, nil
 }
 
-// PutBlock appends the payload to the open segment. The block is readable at
-// once and durable after the next Sync or index commit.
-func (s *Store) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) (*block.BlockRef, bool, error) {
+// PutBlock appends the payload to the open segment. The block is readable in
+// the scope at once. The store's scope publishes it with the next Sync or
+// index commit, a transaction's with its commit.
+func (b *blockStore) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) (*block.BlockRef, bool, error) {
 	// Build and check the reference.
 	if len(data) == 0 {
 		return nil, false, block.ErrEmptyBlock
@@ -38,7 +49,7 @@ func (s *Store) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) 
 	if opts == nil {
 		opts = new(block.PutOpts)
 	}
-	opts.HashType = opts.SelectHashType(s.GetHashType())
+	opts.HashType = opts.SelectHashType(b.GetHashType())
 	ref, err := block.BuildBlockRef(data, opts)
 	if err != nil {
 		return nil, false, err
@@ -48,12 +59,12 @@ func (s *Store) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) 
 	}
 
 	// Append the payload unless the block is already stored.
-	existed, err := s.append(ctx, []*block.PutBatchEntry{{Ref: ref, Data: data}})
+	existed, err := b.append(ctx, []*block.PutBatchEntry{{Ref: ref, Data: data}})
 	if err != nil {
 		return ref, false, err
 	}
 	if opts.GetSync() {
-		_, err = s.Sync(ctx)
+		_, err = b.Sync(ctx)
 	}
 	return ref, existed[0], err
 }
@@ -61,7 +72,7 @@ func (s *Store) PutBlock(ctx context.Context, data []byte, opts *block.PutOpts) 
 // PutBlockBatch verifies every entry, then appends the new payloads in one
 // device call and records the tombstones as removes. Reports whether each block
 // was stored before the write.
-func (s *Store) PutBlockBatch(ctx context.Context, entries []*block.PutBatchEntry) ([]bool, error) {
+func (b *blockStore) PutBlockBatch(ctx context.Context, entries []*block.PutBatchEntry) ([]bool, error) {
 	for _, entry := range entries {
 		if entry == nil {
 			return nil, block.ErrEmptyBlockRef
@@ -79,15 +90,21 @@ func (s *Store) PutBlockBatch(ctx context.Context, entries []*block.PutBatchEntr
 			return nil, err
 		}
 	}
-	return s.append(ctx, entries)
+	return b.append(ctx, entries)
 }
 
 // append writes the payloads of entries not yet stored in one device call and
-// adds their pending locations, and adds a pending remove for each tombstone.
-// It returns whether each entry's block was stored before the call, false for
-// a tombstone.
-func (s *Store) append(ctx context.Context, entries []*block.PutBatchEntry) ([]bool, error) {
-	// Resolve keys and find the stored blocks in one index view.
+// adds their unpublished locations to the scope, and adds an unpublished
+// remove for each tombstone. It returns whether each entry's block was stored
+// before the call, false for a tombstone.
+func (b *blockStore) append(ctx context.Context, entries []*block.PutBatchEntry) ([]bool, error) {
+	// Only a write transaction or the store itself takes writes.
+	s := b.s
+	if b.tx != nil && !b.tx.write {
+		return nil, kvtx.ErrNotWrite
+	}
+
+	// Resolve keys and find the published blocks in one index view.
 	keys := make([]string, len(entries))
 	stored := make([]bool, len(entries))
 	for i, entry := range entries {
@@ -97,7 +114,7 @@ func (s *Store) append(ctx context.Context, entries []*block.PutBatchEntry) ([]b
 		}
 		keys[i] = key
 	}
-	err := s.view(ctx, func(tx kvtx.Tx) error {
+	err := b.view(ctx, func(tx kvtx.Tx) error {
 		for i, entry := range entries {
 			if entry.Tombstone {
 				continue
@@ -114,9 +131,13 @@ func (s *Store) append(ctx context.Context, entries []*block.PutBatchEntry) ([]b
 		return nil, err
 	}
 
-	// Lay out the new payloads and issue them before recording them.
+	// Lay out the new payloads in a scope that is still open. mtx stays held
+	// until they are issued and recorded.
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
+	if b.tx != nil && b.tx.own == nil {
+		return nil, kvtx.ErrDiscarded
+	}
 	var writes []device.Write
 	added := make(map[string]*pendingBlock)
 	existed := make([]bool, len(entries))
@@ -128,7 +149,7 @@ func (s *Store) append(ctx context.Context, entries []*block.PutBatchEntry) ([]b
 		}
 		p := added[key]
 		if p == nil {
-			p = s.pending[key]
+			p = b.unpublished(key)
 		}
 		if (p != nil && p.loc != nil) || (p == nil && stored[i]) {
 			existed[i] = true
@@ -138,20 +159,49 @@ func (s *Store) append(ctx context.Context, entries []*block.PutBatchEntry) ([]b
 		writes = append(writes, device.Write{Name: segmentName(loc.segment), Offset: loc.offset, Data: entry.Data})
 		added[key] = &pendingBlock{loc: loc}
 	}
+
+	// Issue the payloads, then record them in the scope.
 	if len(writes) != 0 {
 		if err := s.dev.Write(ctx, writes, false); err != nil {
 			return nil, err
 		}
 	}
-	maps.Copy(s.pending, added)
+	if b.tx != nil {
+		maps.Copy(b.tx.own, added)
+	} else {
+		maps.Copy(s.pending, added)
+	}
 	return existed, nil
 }
 
-// locate returns the locations of refs, nil for an absent block. It reads
-// pending entries before opening the index view, so an entry published in
-// between is found in the view.
-func (s *Store) locate(ctx context.Context, refs []*block.BlockRef) ([]*location, error) {
-	// Resolve keys and answer from pending entries.
+// unpublished returns the scope's unpublished change to the block at key: the
+// transaction's own, then the store's pending one. The caller holds s.mtx.
+func (b *blockStore) unpublished(key string) *pendingBlock {
+	if b.tx != nil {
+		if p := b.tx.own[key]; p != nil {
+			return p
+		}
+	}
+	return b.s.pending[key]
+}
+
+// view runs fn in the scope's index view: the transaction's, or a new read
+// transaction for the store's scope.
+func (b *blockStore) view(ctx context.Context, fn func(tx kvtx.Tx) error) error {
+	if b.tx != nil {
+		if b.tx.itx == nil {
+			return kvtx.ErrDiscarded
+		}
+		return fn(b.tx.itx)
+	}
+	return b.s.view(ctx, fn)
+}
+
+// locate returns the locations of refs, nil for an absent block. It reads the
+// unpublished changes before the index view, so an entry published in between
+// is found in the view.
+func (b *blockStore) locate(ctx context.Context, refs []*block.BlockRef) ([]*location, error) {
+	// Resolve keys and answer from the unpublished changes.
 	keys := make([]string, len(refs))
 	found := make([]bool, len(refs))
 	locs := make([]*location, len(refs))
@@ -166,28 +216,21 @@ func (s *Store) locate(ctx context.Context, refs []*block.BlockRef) ([]*location
 		}
 		keys[i] = key
 	}
-	s.mtx.Lock()
+	b.s.mtx.Lock()
 	for i, key := range keys {
-		if p := s.pending[key]; p != nil && !found[i] {
+		if p := b.unpublished(key); p != nil && !found[i] {
 			locs[i], found[i] = p.loc, true
 		}
 	}
-	s.mtx.Unlock()
+	b.s.mtx.Unlock()
 
 	// Read the rest from one index view.
-	err := s.view(ctx, func(tx kvtx.Tx) error {
+	err := b.view(ctx, func(tx kvtx.Tx) error {
 		for i, key := range keys {
 			if found[i] {
 				continue
 			}
-			v, ok, err := tx.Get(ctx, []byte(key))
-			if err != nil {
-				return err
-			}
-			if !ok {
-				continue
-			}
-			loc, err := unmarshalLocation(v)
+			loc, err := getLocation(ctx, tx, []byte(key))
 			if err != nil {
 				return err
 			}
@@ -200,21 +243,21 @@ func (s *Store) locate(ctx context.Context, refs []*block.BlockRef) ([]*location
 
 // GetBlock reads a block's payload. A read that fails while maintenance
 // moves the block retries at its new location.
-func (s *Store) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
+func (b *blockStore) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
 	refs := []*block.BlockRef{ref}
-	locs, err := s.locate(ctx, refs)
+	locs, err := b.locate(ctx, refs)
 	for err == nil && locs[0] != nil {
 		// Read the payload from the segment.
 		loc := locs[0]
 		data := make([]byte, loc.length)
 		read := []device.Read{{Name: segmentName(loc.segment), Offset: loc.offset, Data: data}}
-		readErr := s.dev.Read(ctx, read)
+		readErr := b.s.dev.Read(ctx, read)
 		if readErr == nil {
 			return data, true, nil
 		}
 
 		// Retry if the block moved or was removed meanwhile.
-		locs, err = s.locate(ctx, refs)
+		locs, err = b.locate(ctx, refs)
 		if err == nil && locs[0] != nil && *locs[0] == *loc {
 			return nil, false, errors.Wrap(readErr, "read block")
 		}
@@ -224,20 +267,20 @@ func (s *Store) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool
 
 // GetStoredBlock serves the block without refs because this store keeps
 // block bytes without their refs.
-func (s *Store) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
-	return block.GetBlockWithoutRefs(ctx, s, ref)
+func (b *blockStore) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
+	return block.GetBlockWithoutRefs(ctx, b, ref)
 }
 
 // GetBlockExists checks whether a block is stored.
-func (s *Store) GetBlockExists(ctx context.Context, ref *block.BlockRef) (bool, error) {
-	locs, err := s.locate(ctx, []*block.BlockRef{ref})
+func (b *blockStore) GetBlockExists(ctx context.Context, ref *block.BlockRef) (bool, error) {
+	locs, err := b.locate(ctx, []*block.BlockRef{ref})
 	return err == nil && locs[0] != nil, err
 }
 
 // GetBlockExistsBatch checks each reference from one index view.
-func (s *Store) GetBlockExistsBatch(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+func (b *blockStore) GetBlockExistsBatch(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
 	// Locate every reference and report which were found.
-	locs, err := s.locate(ctx, refs)
+	locs, err := b.locate(ctx, refs)
 	if err != nil {
 		return nil, err
 	}
@@ -249,35 +292,43 @@ func (s *Store) GetBlockExistsBatch(ctx context.Context, refs []*block.BlockRef)
 }
 
 // StatBlock returns a block's payload length without reading it.
-func (s *Store) StatBlock(ctx context.Context, ref *block.BlockRef) (*block.BlockStat, error) {
-	locs, err := s.locate(ctx, []*block.BlockRef{ref})
+func (b *blockStore) StatBlock(ctx context.Context, ref *block.BlockRef) (*block.BlockStat, error) {
+	locs, err := b.locate(ctx, []*block.BlockRef{ref})
 	if err != nil || locs[0] == nil {
 		return nil, err
 	}
 	return &block.BlockStat{Ref: ref.Clone(), Size: locs[0].length}, nil
 }
 
-// RmBlock records a pending remove, published by the next Sync or index
-// commit.
-func (s *Store) RmBlock(ctx context.Context, ref *block.BlockRef) error {
-	_, err := s.append(ctx, []*block.PutBatchEntry{{Ref: ref, Tombstone: true}})
+// RmBlock records an unpublished remove in the scope.
+func (b *blockStore) RmBlock(ctx context.Context, ref *block.BlockRef) error {
+	_, err := b.append(ctx, []*block.PutBatchEntry{{Ref: ref, Tombstone: true}})
 	return err
 }
 
-// Sync publishes every pending block write and remove in one index commit,
+// Sync publishes the store's pending blocks. In a transaction's scope it
+// reports durable, since the transaction's commit publishes its blocks.
+func (b *blockStore) Sync(ctx context.Context) (bool, error) {
+	if b.tx != nil {
+		return true, nil
+	}
+	return true, b.s.sync(ctx)
+}
+
+// sync publishes every pending block write and remove in one index commit,
 // which also makes the earlier ordered commits durable. With nothing pending
 // it flushes the device instead, which costs nothing when nothing is dirty.
-func (s *Store) Sync(ctx context.Context) (bool, error) {
+func (s *Store) sync(ctx context.Context) error {
 	// Flush the device when nothing is pending.
 	s.mtx.Lock()
 	idle := len(s.pending) == 0
 	s.mtx.Unlock()
 	if idle {
-		return true, s.dev.Write(ctx, nil, true)
+		return s.dev.Write(ctx, nil, true)
 	}
 
 	// Publish the pending writes and removes through one index commit.
-	return true, s.update(ctx, false, nil)
+	return s.update(ctx, false, nil)
 }
 
 // blockKey returns the index key of a block reference.
@@ -291,3 +342,6 @@ func blockKey(ref *block.BlockRef) (string, error) {
 	}
 	return blockPrefix + string(key), nil
 }
+
+// _ is a type assertion
+var _ block.StoreOps = (*blockStore)(nil)

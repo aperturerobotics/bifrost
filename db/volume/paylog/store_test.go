@@ -85,34 +85,67 @@ func testStore(t *testing.T, e engine) {
 	d := device.NewMemory()
 	s := openStore(t, e, d)
 
-	// Two write transactions open at once both commit.
+	// A block put outside a transaction is published by the next commit.
+	kept, _, err := s.PutBlock(ctx, []byte("kept"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	a, err := s.NewTransaction(ctx, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer a.Discard()
-	b, err := s.NewTransaction(ctx, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer b.Discard()
 	if err := a.Set(ctx, []byte("a"), []byte("1")); err != nil {
-		t.Fatal(err)
-	}
-	if err := b.Set(ctx, []byte("b"), []byte("2")); err != nil {
-		t.Fatal(err)
-	}
-
-	// A block put before a commit is published by it.
-	kept, _, err := s.PutBlock(ctx, []byte("kept"), nil)
-	if err != nil {
 		t.Fatal(err)
 	}
 	if err := a.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if err := b.Commit(ctx); err != nil {
+
+	// A transaction's blocks stay its own until it ends: its discard drops a
+	// put and a remove, and its commit publishes them with its records.
+	exists := func(ref *block.BlockRef) bool {
+		t.Helper()
+		ok, err := s.GetBlockExists(ctx, ref)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return ok
+	}
+	doomed, _, err := s.PutBlock(ctx, []byte("doomed"), &block.PutOpts{Sync: true})
+	if err != nil {
 		t.Fatal(err)
+	}
+	var owned *block.BlockRef
+	for _, commit := range []bool{false, true} {
+		tx, err := s.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		blocks := tx.(*Tx).GetBlockStore()
+		owned, _, err = blocks.PutBlock(ctx, []byte("owned"), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := blocks.RmBlock(ctx, doomed); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Set(ctx, []byte("b"), []byte("2")); err != nil {
+			t.Fatal(err)
+		}
+		if exists(owned) || !exists(doomed) {
+			t.Fatal("transaction blocks visible outside it")
+		}
+		if commit {
+			err = tx.Commit(ctx)
+		}
+		tx.Discard()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if exists(owned) != commit || exists(doomed) == commit {
+			t.Fatalf("commit %v: owned %v, doomed %v", commit, exists(owned), exists(doomed))
+		}
 	}
 
 	// A removed block is gone after Sync, and a duplicate put stores nothing.
@@ -160,8 +193,8 @@ func testStore(t *testing.T, e engine) {
 	if err != nil || !found || string(data) != "kept" {
 		t.Fatalf("get kept block = %q, %v, %v", data, found, err)
 	}
-	if exists, err := s.GetBlockExists(ctx, gone); err != nil || exists {
-		t.Fatalf("removed block exists %v, err %v", exists, err)
+	if exists(gone) || exists(doomed) || !exists(owned) {
+		t.Fatal("blocks changed by reopening")
 	}
 
 	// Verify the reopened journal replays both recorded edges.
