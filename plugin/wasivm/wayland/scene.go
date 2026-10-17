@@ -241,7 +241,7 @@ func (c *Compositor) surfaceAt(pt image.Point) *surface {
 		// Note the last surface of the tree, the topmost, under pt.
 		var hit *surface
 		c.walk(w, w.origin(), func(t *surface, at image.Point) bool {
-			if pt.In(image.Rectangle{Min: at, Max: at.Add(t.size)}) {
+			if t.takesInput(pt.Sub(at)) {
 				hit = t
 			}
 			return false

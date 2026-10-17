@@ -471,6 +471,62 @@ func TestSubsurface(t *testing.T) {
 	tc.awaitPixel(image.Pt(cascadeStep+3, cascadeStep+3), blue)
 }
 
+// TestInputRegion checks the pointer passes through the parts of a
+// subsurface outside its input region to the surface below.
+func TestInputRegion(t *testing.T) {
+	// Map a window with an 8x8 subsurface at 4,4 and take a pointer.
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	w := c.window(32, 32, bufBlue)
+	pointer := c.newID()
+	c.request(newEvent(idSeat, seatGetPointer).uint(pointer))
+
+	// Add the subsurface.
+	sub, subsurface := c.newID(), c.newID()
+	c.request(newEvent(idCompositor, compositorCreateSurface).uint(sub))
+	c.request(newEvent(idSubcompositor, subcompositorGetSubsurface).uint(subsurface).uint(sub).uint(w.surface))
+	c.request(newEvent(subsurface, subsurfaceSetPosition).int(4).int(4))
+	bid := c.buffer(8, 8, [4]byte{0, 0, 0xff, 0xff}, shmFormatARGB8888)
+
+	// Give it an empty input region, destroying the region before the
+	// commit, which keeps the region set.
+	empty := c.newID()
+	c.request(newEvent(idCompositor, compositorCreateRegion).uint(empty))
+	c.request(newEvent(sub, surfaceSetInputRegion).uint(empty))
+	c.request(newEvent(empty, regionDestroy))
+	c.request(newEvent(sub, surfaceAttach).uint(bid).int(0).int(0))
+	c.request(newEvent(sub, surfaceCommit))
+	c.request(newEvent(w.surface, surfaceCommit))
+	c.roundtrip()
+
+	// The pointer over it enters the window.
+	tc.pointer(cascadeStep+6, cascadeStep+6, 0)
+	m := c.await(pointer, pointerEnter)
+	if _, s := m.uint(), m.uint(); s != w.surface {
+		t.Fatalf("pointer entered %d, want the window %d", s, w.surface)
+	}
+
+	// Set a region of its left half. The pointer, at 2,2 on it, enters it
+	// once the region applies.
+	half := c.newID()
+	c.request(newEvent(idCompositor, compositorCreateRegion).uint(half))
+	c.request(newEvent(half, regionAdd).int(0).int(0).int(8).int(8))
+	c.request(newEvent(half, regionSubtract).int(4).int(0).int(4).int(8))
+	c.request(newEvent(sub, surfaceSetInputRegion).uint(half))
+	c.request(newEvent(sub, surfaceCommit))
+	m = c.await(pointer, pointerEnter)
+	if _, s := m.uint(), m.uint(); s != sub {
+		t.Fatalf("pointer entered %d, want the subsurface %d", s, sub)
+	}
+
+	// The right half passes the pointer through to the window.
+	tc.pointer(cascadeStep+10, cascadeStep+6, 0)
+	m = c.await(pointer, pointerEnter)
+	if _, s := m.uint(), m.uint(); s != w.surface {
+		t.Fatalf("pointer entered %d, want the window %d", s, w.surface)
+	}
+}
+
 // TestLayerShell checks a panel's exclusive zone keeps the windows below it,
 // a maximized window fills the area left, an overlay draws above the windows
 // and an exclusive overlay takes the keyboard.

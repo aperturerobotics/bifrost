@@ -315,7 +315,7 @@ func (c *client) bindCompositor(resource) object {
 		case compositorCreateSurface:
 			return c.add(id, newSurface(c, id))
 		case compositorCreateRegion:
-			return c.add(id, c.inert(id, 0))
+			return c.add(id, &region{c: c, id: id})
 		}
 		return nil
 	})

@@ -24,6 +24,10 @@ type surface struct {
 	damaged image.Rectangle
 	// callbacks is the pending frame callbacks.
 	callbacks []uint32
+	// inputSet is set when the pending state sets the input region.
+	inputSet bool
+	// inputNext is the pending input region, or nil for the whole surface.
+	inputNext *region
 
 	// xdg is the surface's xdg_surface role, or nil.
 	xdg *xdgSurface
@@ -43,6 +47,9 @@ type surface struct {
 	image []byte
 	// opaque is set when every pixel of the image is opaque.
 	opaque bool
+	// input is the area that takes pointer input, clipped to the image, or
+	// nil for the whole image.
+	input *region
 	// parent is the surface a subsurface or a popup is drawn on, or nil.
 	parent *surface
 	// stack is the surface and its subsurfaces, bottom to top.
@@ -102,6 +109,19 @@ func (s *surface) request(op uint16, m *message) error {
 			return err
 		}
 		s.callbacks = append(s.callbacks, id)
+	case surfaceSetInputRegion:
+		rid := m.uint()
+		if m.err != nil {
+			return nil
+		}
+		r, ok := s.c.objects[rid].(*region)
+		if rid != 0 && !ok {
+			return s.c.fail(s.id, errInvalidObject, "input region is not a region")
+		}
+		s.inputSet, s.inputNext = true, nil
+		if r != nil {
+			s.inputNext = r.clone()
+		}
 	case surfaceCommit:
 		return s.commit()
 	}
@@ -152,6 +172,9 @@ func (s *surface) commit() error {
 		if s.attached {
 			s.update(buf, size, area, pix)
 		}
+		if s.inputSet {
+			s.input = s.inputNext
+		}
 		for _, t := range s.stack {
 			if t.sub != nil && t.sub.offset != t.sub.pending {
 				t.sub.offset, relayout = t.sub.pending, true
@@ -173,10 +196,14 @@ func (s *surface) commit() error {
 		case w != nil:
 			comp.damage(area.Add(s.origin()))
 		}
+		if s.inputSet {
+			comp.refocusPointer()
+		}
 	})
 
 	// Clear the pending state and tell the client to draw its next frame.
 	s.attached, s.buffer, s.damaged = false, nil, image.Rectangle{}
+	s.inputSet, s.inputNext = false, nil
 	now := comp.now()
 	for _, id := range s.callbacks {
 		s.c.done(id, now)
@@ -223,6 +250,15 @@ func (s *surface) origin() image.Point {
 		return s.parent.origin().Add(at).Sub(s.xdg.geometry().Min)
 	}
 	return image.Point{}
+}
+
+// takesInput reports whether the point pt in surface coordinates is in the
+// surface's input region. The caller holds the compositor's lock.
+func (s *surface) takesInput(pt image.Point) bool {
+	if !pt.In(image.Rectangle{Max: s.size}) {
+		return false
+	}
+	return s.input == nil || s.input.contains(pt)
 }
 
 // geometry returns the window geometry of an xdg surface, or the whole

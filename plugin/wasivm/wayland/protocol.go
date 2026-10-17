@@ -38,12 +38,20 @@ const (
 
 // wl_surface.
 const (
-	surfaceDestroy      = 0
-	surfaceAttach       = 1
-	surfaceDamage       = 2
-	surfaceFrame        = 3
-	surfaceCommit       = 6
-	surfaceDamageBuffer = 9
+	surfaceDestroy        = 0
+	surfaceAttach         = 1
+	surfaceDamage         = 2
+	surfaceFrame          = 3
+	surfaceSetInputRegion = 5
+	surfaceCommit         = 6
+	surfaceDamageBuffer   = 9
+)
+
+// wl_region.
+const (
+	regionDestroy  = 0
+	regionAdd      = 1
+	regionSubtract = 2
 )
 
 // wl_subcompositor.
