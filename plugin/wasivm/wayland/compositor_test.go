@@ -1,5 +1,3 @@
-//go:build !js
-
 package wayland
 
 import (
@@ -12,7 +10,6 @@ import (
 	"time"
 
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel"
-	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine/native"
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
 
@@ -51,9 +48,7 @@ type testCompositor struct {
 func newTestCompositor(t *testing.T, width, height int) *testCompositor {
 	// Start a kernel.
 	ctx := t.Context()
-	rt := native.New(ctx)
-	t.Cleanup(func() { _ = rt.Close(ctx) })
-	k, err := kernel.New(ctx, rt, &kernel.Config{VirtualTerminal: true, Stdin: strings.NewReader("")})
+	k, err := kernel.New(ctx, testRuntime(t, ctx), &kernel.Config{VirtualTerminal: true, Stdin: strings.NewReader("")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -250,11 +245,17 @@ func (c *testClient) awaitStates(id uint32) (image.Point, []uint32) {
 // buffer makes a width by height buffer of one pixel value, its bytes blue,
 // green, red and alpha, in a pool of its own.
 func (c *testClient) buffer(width, height int, bgra [4]byte, format uint32) uint32 {
-	// Fill a shared memory file.
 	pixels := make([]byte, 4*width*height)
 	for i := 0; i < len(pixels); i += 4 {
 		copy(pixels[i:], bgra[:])
 	}
+	return c.bufferOf(width, height, 4*width, pixels, format)
+}
+
+// bufferOf makes a width by height buffer of pixels, rows stride bytes apart
+// of blue, green, red and alpha bytes, in a pool of its own.
+func (c *testClient) bufferOf(width, height, stride int, pixels []byte, format uint32) uint32 {
+	// Fill a shared memory file.
 	pool := c.k.NewMemfd("pool", pixels)
 	c.t.Cleanup(func() { _ = pool.Close() })
 
@@ -262,7 +263,7 @@ func (c *testClient) buffer(width, height int, bgra [4]byte, format uint32) uint
 	pid, bid := c.newID(), c.newID()
 	c.request(newEvent(idShm, shmCreatePool).uint(pid).int(int32(len(pixels))), pool) //nolint:gosec // small buffers.
 	c.request(newEvent(pid, shmPoolCreateBuffer).uint(bid).int(0).
-		int(int32(width)).int(int32(height)).int(int32(4 * width)).uint(format)) //nolint:gosec // small buffers.
+		int(int32(width)).int(int32(height)).int(int32(stride)).uint(format)) //nolint:gosec // small buffers.
 	return bid
 }
 
@@ -567,4 +568,74 @@ func TestWaitClient(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("Run continued after Close")
 	}
+}
+
+// pattern returns the buffer pixels of a width by height image whose pixel at
+// x,y has its own blue, green and red bytes, so a misplaced row or column
+// shows as a wrong color.
+func pattern(width, height, seed int) []byte {
+	pixels := make([]byte, 4*width*height)
+	for y := range height {
+		for x := range width {
+			px := pixels[4*(y*width+x):]
+			px[0], px[1], px[2] = byte(x+seed), byte(y+2*seed), byte(x^y+3*seed) //nolint:gosec // wraps on purpose.
+		}
+	}
+	return pixels
+}
+
+// awaitPattern applies the viewer's frames until the screen area at origin
+// shows the RGBA of the buffer pixels of a width by height pattern.
+func (tc *testCompositor) awaitPattern(origin image.Point, width, height int, pixels []byte) {
+	tc.t.Helper()
+	for y := range height {
+		for x := range width {
+			px := pixels[4*(y*width+x):]
+			tc.awaitPixel(origin.Add(image.Pt(x, y)), [4]byte{px[2], px[1], px[0], 0xff})
+		}
+	}
+}
+
+// TestPattern checks the screen shows each pixel of a window's buffer in
+// place, through a full commit and a commit damaging part of a buffer whose
+// rows are wider than the window.
+func TestPattern(t *testing.T) {
+	// Map a window.
+	const width, height = 300, 70
+	tc := newTestCompositor(t, 400, 200)
+	c := tc.connect()
+	w := c.window(width, height, bufRed)
+
+	// Commit a pattern over all of it.
+	first := pattern(width, height, 0)
+	bid := c.bufferOf(width, height, 4*width, first, shmFormatXRGB8888)
+	c.request(newEvent(w.surface, surfaceAttach).uint(bid).int(0).int(0))
+	c.request(newEvent(w.surface, surfaceDamage).int(0).int(0).int(width).int(height))
+	c.request(newEvent(w.surface, surfaceCommit))
+	origin := image.Pt(cascadeStep, cascadeStep)
+	tc.awaitPattern(origin, width, height, first)
+
+	// Make a second pattern in a buffer whose rows have 40 bytes of padding.
+	const stride = 4*width + 40
+	second := pattern(width, height, 1)
+	padded := make([]byte, stride*height)
+	for y := range height {
+		copy(padded[y*stride:], second[4*y*width:][:4*width])
+	}
+	padID := c.bufferOf(width, height, stride, padded, shmFormatXRGB8888)
+
+	// Commit it, damaging only part of it.
+	damage := image.Rect(17, 9, 263, 51)
+	c.request(newEvent(w.surface, surfaceAttach).uint(padID).int(0).int(0))
+	c.request(newEvent(w.surface, surfaceDamage).int(int32(damage.Min.X)).int(int32(damage.Min.Y)).int(int32(damage.Dx())).int(int32(damage.Dy()))) //nolint:gosec // small rectangles.
+	c.request(newEvent(w.surface, surfaceCommit))
+	c.await(padID, bufferRelease)
+
+	// The damaged area shows the second pattern and the rest the first.
+	want := slices.Clone(first)
+	for y := damage.Min.Y; y < damage.Max.Y; y++ {
+		i := 4 * (y*width + damage.Min.X)
+		copy(want[i:i+4*damage.Dx()], second[i:])
+	}
+	tc.awaitPattern(origin, width, height, want)
 }
