@@ -236,6 +236,26 @@ func (f *continuityFixture) next(t *testing.T, want string) {
 	}
 }
 
+// moved requires the stop of the execution on one host and its start on
+// another, in either order: the old execution reports its stop after its
+// context ends, concurrently with the scheduler starting the new one.
+func (f *continuityFixture) moved(t *testing.T, from, to string) {
+	t.Helper()
+	want := []string{from + ":stop", to + ":start"}
+	for len(want) != 0 {
+		select {
+		case got := <-f.events:
+			i := slices.Index(want, got)
+			if i < 0 {
+				t.Fatalf("execution event %q, expected one of %q", got, want)
+			}
+			want = slices.Delete(want, i, i+1)
+		case <-f.ctx.Done():
+			t.Fatalf("no execution events %q: %v", want, f.ctx.Err())
+		}
+	}
+}
+
 // quiet requires that no execution event arrives for a short while. Execution
 // events are the work a host change must not start.
 func (f *continuityFixture) quiet(t *testing.T, step string) {
@@ -330,15 +350,13 @@ func TestSpaceRuntimeHostChangesReplaceOnlyAffectedExecution(t *testing.T) {
 
 	// The selected host leaves, so the execution moves to the remaining host.
 	releaseA1()
-	f.next(t, "a1:stop")
-	f.next(t, "a2:start")
+	f.moved(t, "a1", "a2")
 
 	// A replacement of the same platform arrives and the running host leaves.
 	a3, _ := f.addHost(t, "a3", continuityPlatform)
 	stable("replacement arrival", hostsInclude([]plugin_host.PluginHost{a2, a3}, a1))
 	releaseA2()
-	f.next(t, "a2:stop")
-	f.next(t, "a3:start")
+	f.moved(t, "a2", "a3")
 
 	// A resolver error is reported with the live hosts and starts no work.
 	injected := errors.New("host resolver failed")
