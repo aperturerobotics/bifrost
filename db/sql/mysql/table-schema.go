@@ -50,13 +50,11 @@ func (s *TableSchema) Validate() error {
 }
 
 // ToSqlSchema converts to a table sql schema.
-//
-// ctx is optional.
-func (s *TableSchema) ToSqlSchema(ctx *sql.Context) (sql.Schema, error) {
+func (s *TableSchema) ToSqlSchema() (sql.Schema, error) {
 	cols := s.GetColumns()
 	sch := make(sql.Schema, len(cols))
 	for i, col := range cols {
-		scol, err := col.ToSqlColumn(ctx)
+		scol, err := col.ToSqlColumn()
 		if err != nil {
 			return nil, errors.Wrapf(err, "columns[%d]", i)
 		}

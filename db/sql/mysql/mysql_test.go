@@ -470,6 +470,67 @@ func TestMysqlAlterAddDropColumn(t *testing.T) {
 	}
 }
 
+// TestMysqlStoredColumnExpressions checks that defaults, generated values and
+// ON UPDATE expressions read back from storage still plan. A stored expression
+// loaded as a parsed default left every plan over its table unresolved.
+func TestMysqlStoredColumnExpressions(t *testing.T) {
+	// Open a test database for tables with stored column expressions.
+	ctx := context.Background()
+	_, db := newMysqlTestDB(t, ctx, "probe")
+	defer db.Close()
+
+	// Add a defaulted column to a stored table and index it, then insert
+	// through the reloaded schema with and without the new column.
+	execMysqlStatements(t, ctx, db,
+		"CREATE TABLE finishes (id BIGINT NOT NULL PRIMARY KEY, ms INT NOT NULL)",
+		"ALTER TABLE finishes ADD COLUMN changed BIGINT NOT NULL DEFAULT 0",
+		"CREATE INDEX by_changed ON finishes (changed)",
+		"INSERT INTO finishes (id, ms) VALUES (1, 100)",
+		"INSERT IGNORE INTO finishes (id, ms, changed) VALUES (2, 200, (SELECT MAX(id) FROM finishes))",
+	)
+	var changed int64
+	if err := db.QueryRowContext(ctx, "SELECT SUM(changed) FROM finishes").Scan(&changed); err != nil {
+		t.Fatal(err.Error())
+	}
+	if changed != 1 {
+		t.Fatalf("unexpected changed sum: %d", changed)
+	}
+
+	// Create a table with every stored expression kind and insert into it
+	// after the schema reloads.
+	execMysqlStatements(t, ctx, db,
+		"CREATE TABLE plays ("+
+			"id BIGINT NOT NULL PRIMARY KEY, "+
+			"n INT NOT NULL DEFAULT (1 + 1), "+
+			"twice INT AS (n * 2) STORED, "+
+			"seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)",
+		"INSERT INTO plays (id) VALUES (1)",
+		"UPDATE plays SET n = 5 WHERE id = 1",
+	)
+	var n, twice int
+	if err := db.QueryRowContext(ctx, "SELECT n, twice FROM plays WHERE id = 1").Scan(&n, &twice); err != nil {
+		t.Fatal(err.Error())
+	}
+	if n != 5 || twice != 10 {
+		t.Fatalf("unexpected play row: n=%d twice=%d", n, twice)
+	}
+
+	// Verify the stored schema keeps each expression.
+	var name, create string
+	if err := db.QueryRowContext(ctx, "SHOW CREATE TABLE plays").Scan(&name, &create); err != nil {
+		t.Fatal(err.Error())
+	}
+	for _, want := range []string{
+		"DEFAULT ((1 + 1))",
+		"GENERATED ALWAYS AS ((`n` * 2)) STORED",
+		"ON UPDATE CURRENT_TIMESTAMP",
+	} {
+		if !strings.Contains(create, want) {
+			t.Fatalf("create statement lacks %q:\n%s", want, create)
+		}
+	}
+}
+
 func TestMysqlDropDatabaseAndDropTable(t *testing.T) {
 	// Open a test database for table and database removal.
 	ctx := context.Background()

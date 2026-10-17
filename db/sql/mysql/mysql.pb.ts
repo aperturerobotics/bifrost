@@ -179,6 +179,25 @@ export interface TableSchemaColumn {
    * @generated from field: string extra = 9;
    */
   extra?: string
+  /**
+   * GeneratedExpr is the generated column expression, encoded to a string.
+   * Empty unless the column is generated; a generated column has no default.
+   *
+   * @generated from field: string generated_expr = 10;
+   */
+  generatedExpr?: string
+  /**
+   * OnUpdateExpr is the ON UPDATE expression, stored unparenthesized.
+   *
+   * @generated from field: string on_update_expr = 11;
+   */
+  onUpdateExpr?: string
+  /**
+   * Virtual is true if the generated column is computed on read.
+   *
+   * @generated from field: bool virtual = 12;
+   */
+  virtual?: boolean
 }
 
 export const TableSchemaColumn: MessageType<TableSchemaColumn> =
@@ -199,6 +218,9 @@ export const TableSchemaColumn: MessageType<TableSchemaColumn> =
       { no: 7, name: 'primary_key', kind: 'scalar', T: ScalarType.BOOL },
       { no: 8, name: 'comment', kind: 'scalar', T: ScalarType.STRING },
       { no: 9, name: 'extra', kind: 'scalar', T: ScalarType.STRING },
+      { no: 10, name: 'generated_expr', kind: 'scalar', T: ScalarType.STRING },
+      { no: 11, name: 'on_update_expr', kind: 'scalar', T: ScalarType.STRING },
+      { no: 12, name: 'virtual', kind: 'scalar', T: ScalarType.BOOL },
     ] satisfies readonly PartialFieldInfo[],
   })
 

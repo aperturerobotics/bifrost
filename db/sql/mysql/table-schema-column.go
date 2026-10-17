@@ -23,22 +23,28 @@ func NewTableSchemaColumn(col *sql.Column) *TableSchemaColumn {
 		PrimaryKey:    col.PrimaryKey,
 		Comment:       col.Comment,
 		Extra:         col.Extra,
+		Virtual:       col.Virtual,
 	}
 	if col.Type != nil {
 		tc.ColumnType = col.Type.String()
 	}
 	if col.Default != nil {
-		if defs := col.Default.String(); defs != "" {
-			tc.DefaultValueExpr = defs
-		}
+		tc.DefaultValueExpr = col.Default.String()
+	} else if col.Generated != nil {
+		tc.GeneratedExpr = col.Generated.String()
+	}
+	if col.OnUpdate != nil {
+		tc.OnUpdateExpr = col.OnUpdate.String()
 	}
 	return tc
 }
 
 // ToSqlColumn converts the proto into a sql column.
 //
-// Ctx is optional
-func (t *TableSchemaColumn) ToSqlColumn(ctx *sql.Context) (*sql.Column, error) {
+// Stored expressions return as unresolved text, as Dolt loads its schemas, so
+// each statement's planner binds them to the column type. A parsed expression
+// has no output type and leaves every plan over the table unresolved.
+func (t *TableSchemaColumn) ToSqlColumn() (*sql.Column, error) {
 	// Require a stored column definition with a column name.
 	if t == nil {
 		return nil, ErrEmptyTableColumn
@@ -57,6 +63,7 @@ func (t *TableSchemaColumn) ToSqlColumn(ctx *sql.Context) (*sql.Column, error) {
 		PrimaryKey:    t.GetPrimaryKey(),
 		Comment:       t.GetComment(),
 		Extra:         t.GetExtra(),
+		Virtual:       t.GetVirtual(),
 	}
 
 	// Parse the stored column type for the SQL schema.
@@ -68,13 +75,19 @@ func (t *TableSchemaColumn) ToSqlColumn(ctx *sql.Context) (*sql.Column, error) {
 		col.Type = ttype
 	}
 
-	// Parse the stored default expression for the SQL column.
-	if t.GetDefaultValueExpr() != "" {
-		defv, err := t.ParseDefaultValueExpr(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "default_value_expr")
+	// Keep the stored expressions for the planner to resolve.
+	if defvexp := t.GetDefaultValueExpr(); defvexp != "" {
+		col.Default = sql.NewUnresolvedColumnDefaultValue(defvexp)
+	}
+	if genexp := t.GetGeneratedExpr(); genexp != "" {
+		col.Generated = sql.NewUnresolvedColumnDefaultValue(genexp)
+	}
+	if onupexp := t.GetOnUpdateExpr(); onupexp != "" {
+		// Literal keeps the unparenthesized text as stored.
+		col.OnUpdate = &sql.ColumnDefaultValue{
+			Expr:    &sql.UnresolvedColumnDefault{ExprString: onupexp},
+			Literal: true,
 		}
-		col.Default = defv
 	}
 
 	// Require primary-key columns to reject null values.
@@ -87,9 +100,27 @@ func (t *TableSchemaColumn) ToSqlColumn(ctx *sql.Context) (*sql.Column, error) {
 }
 
 // Validate performs cursory validation of the table column.
+//
+// Each stored expression must parse, though the planner binds it to the
+// column type only when a statement uses the table.
 func (t *TableSchemaColumn) Validate() error {
-	_, err := t.ToSqlColumn(nil)
-	return err
+	if _, err := t.ToSqlColumn(); err != nil {
+		return err
+	}
+	ctx := sql.NewEmptyContext()
+	for _, f := range []struct{ name, expr string }{
+		{"default_value_expr", t.GetDefaultValueExpr()},
+		{"generated_expr", t.GetGeneratedExpr()},
+		{"on_update_expr", t.GetOnUpdateExpr()},
+	} {
+		if f.expr == "" {
+			continue
+		}
+		if _, err := planbuilder.StringToColumnDefaultValue(ctx, f.expr); err != nil {
+			return errors.Wrap(err, f.name)
+		}
+	}
+	return nil
 }
 
 // ParseColumnType parses the column type to sql type.
@@ -100,19 +131,4 @@ func (t *TableSchemaColumn) ParseColumnType() (sql.Type, error) {
 		return nil, err
 	}
 	return types.ColumnTypeToType(tt)
-}
-
-// ParseDefaultValueExpr parses the default value expression.
-//
-// Returns nil if the field is empty.
-// If ctx is nil, uses default context.
-func (t *TableSchemaColumn) ParseDefaultValueExpr(ctx *sql.Context) (*sql.ColumnDefaultValue, error) {
-	defvexp := t.GetDefaultValueExpr()
-	if len(defvexp) == 0 {
-		return nil, nil
-	}
-	if ctx == nil {
-		ctx = sql.NewEmptyContext()
-	}
-	return planbuilder.StringToColumnDefaultValue(ctx, defvexp)
 }

@@ -33,7 +33,7 @@ type Table struct {
 // loadRootState loads the schema and counters from a table root.
 func (t *Table) loadRootState(ctx context.Context, root *TableRoot) error {
 	// Decode the table schema from its root block.
-	schema, err := root.GetTableSchema().ToSqlSchema(sql.NewContext(ctx))
+	schema, err := root.GetTableSchema().ToSqlSchema()
 	if err != nil {
 		return err
 	}

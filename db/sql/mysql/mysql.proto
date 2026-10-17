@@ -153,4 +153,11 @@ message TableSchemaColumn {
   string comment = 8;
   // Extra contains any additional information to put in the `extra` column under `information_schema.columns`.
   string extra = 9;
+  // GeneratedExpr is the generated column expression, encoded to a string.
+  // Empty unless the column is generated; a generated column has no default.
+  string generated_expr = 10;
+  // OnUpdateExpr is the ON UPDATE expression, stored unparenthesized.
+  string on_update_expr = 11;
+  // Virtual is true if the generated column is computed on read.
+  bool virtual = 12;
 }

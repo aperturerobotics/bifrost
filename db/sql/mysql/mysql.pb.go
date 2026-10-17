@@ -561,6 +561,13 @@ type TableSchemaColumn struct {
 	Comment string `protobuf:"bytes,8,opt,name=comment,proto3" json:"comment,omitempty"`
 	// Extra contains any additional information to put in the `extra` column under `information_schema.columns`.
 	Extra string `protobuf:"bytes,9,opt,name=extra,proto3" json:"extra,omitempty"`
+	// GeneratedExpr is the generated column expression, encoded to a string.
+	// Empty unless the column is generated; a generated column has no default.
+	GeneratedExpr string `protobuf:"bytes,10,opt,name=generated_expr,json=generatedExpr,proto3" json:"generatedExpr,omitempty"`
+	// OnUpdateExpr is the ON UPDATE expression, stored unparenthesized.
+	OnUpdateExpr string `protobuf:"bytes,11,opt,name=on_update_expr,json=onUpdateExpr,proto3" json:"onUpdateExpr,omitempty"`
+	// Virtual is true if the generated column is computed on read.
+	Virtual bool `protobuf:"varint,12,opt,name=virtual,proto3" json:"virtual,omitempty"`
 }
 
 func (x *TableSchemaColumn) Reset() {
@@ -630,6 +637,27 @@ func (x *TableSchemaColumn) GetExtra() string {
 		return x.Extra
 	}
 	return ""
+}
+
+func (x *TableSchemaColumn) GetGeneratedExpr() string {
+	if x != nil {
+		return x.GeneratedExpr
+	}
+	return ""
+}
+
+func (x *TableSchemaColumn) GetOnUpdateExpr() string {
+	if x != nil {
+		return x.OnUpdateExpr
+	}
+	return ""
+}
+
+func (x *TableSchemaColumn) GetVirtual() bool {
+	if x != nil {
+		return x.Virtual
+	}
+	return false
 }
 
 func (m *Root) CloneVT() *Root {
@@ -972,6 +1000,9 @@ func (m *TableSchemaColumn) CloneVT() *TableSchemaColumn {
 	r.PrimaryKey = m.PrimaryKey
 	r.Comment = m.Comment
 	r.Extra = m.Extra
+	r.GeneratedExpr = m.GeneratedExpr
+	r.OnUpdateExpr = m.OnUpdateExpr
+	r.Virtual = m.Virtual
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1460,6 +1491,15 @@ func (this *TableSchemaColumn) EqualVT(that *TableSchemaColumn) bool {
 		return false
 	}
 	if this.Extra != that.Extra {
+		return false
+	}
+	if this.GeneratedExpr != that.GeneratedExpr {
+		return false
+	}
+	if this.OnUpdateExpr != that.OnUpdateExpr {
+		return false
+	}
+	if this.Virtual != that.Virtual {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -2418,6 +2458,21 @@ func (x *TableSchemaColumn) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("extra")
 		s.WriteString(x.Extra)
 	}
+	if x.GeneratedExpr != "" || s.HasField("generatedExpr") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("generatedExpr")
+		s.WriteString(x.GeneratedExpr)
+	}
+	if x.OnUpdateExpr != "" || s.HasField("onUpdateExpr") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("onUpdateExpr")
+		s.WriteString(x.OnUpdateExpr)
+	}
+	if x.Virtual || s.HasField("virtual") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("virtual")
+		s.WriteBool(x.Virtual)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -2462,6 +2517,15 @@ func (x *TableSchemaColumn) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "extra":
 			s.AddField("extra")
 			x.Extra = s.ReadString()
+		case "generated_expr", "generatedExpr":
+			s.AddField("generated_expr")
+			x.GeneratedExpr = s.ReadString()
+		case "on_update_expr", "onUpdateExpr":
+			s.AddField("on_update_expr")
+			x.OnUpdateExpr = s.ReadString()
+		case "virtual":
+			s.AddField("virtual")
+			x.Virtual = s.ReadBool()
 		}
 	})
 }
@@ -3263,6 +3327,21 @@ func (m *TableSchemaColumn) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Virtual {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Virtual)
+		i--
+		dAtA[i] = 0x60
+	}
+	if len(m.OnUpdateExpr) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.OnUpdateExpr)
+		i--
+		dAtA[i] = 0x5a
+	}
+	if len(m.GeneratedExpr) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.GeneratedExpr)
+		i--
+		dAtA[i] = 0x52
+	}
 	if len(m.Extra) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Extra)
 		i--
@@ -3624,6 +3703,9 @@ func (m *TableSchemaColumn) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.PrimaryKey)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Comment)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Extra)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.GeneratedExpr)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.OnUpdateExpr)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Virtual)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3995,6 +4077,18 @@ func (x *TableSchemaColumn) MarshalProtoText() string {
 	if x.Extra != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "extra")
 		protobuf_go_lite.TextWriteString(&sb, x.Extra)
+	}
+	if x.GeneratedExpr != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "generated_expr")
+		protobuf_go_lite.TextWriteString(&sb, x.GeneratedExpr)
+	}
+	if x.OnUpdateExpr != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "on_update_expr")
+		protobuf_go_lite.TextWriteString(&sb, x.OnUpdateExpr)
+	}
+	if x.Virtual != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "virtual")
+		protobuf_go_lite.TextWriteBool(&sb, x.Virtual)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -5088,6 +5182,36 @@ func (m *TableSchemaColumn) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Extra = v
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GeneratedExpr", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.GeneratedExpr = v
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OnUpdateExpr", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.OnUpdateExpr = v
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Virtual", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Virtual = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
