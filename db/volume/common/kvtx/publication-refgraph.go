@@ -102,6 +102,12 @@ func (g *transactionRefGraph) GetUnreferencedNodes(ctx context.Context) ([]strin
 	return g.GetOutgoingRefs(ctx, block_gc.NodeUnreferenced)
 }
 
+// MarkBlocks marks the graph's blocks in one read snapshot.
+func (g *transactionRefGraph) MarkBlocks(ctx context.Context) (mark *block_gc.BlockMark, err error) {
+	err = g.read(ctx, func(rg *block_gc.RefGraph) error { mark, err = rg.MarkBlocks(ctx); return err })
+	return
+}
+
 // AddBlockRef adds a block-to-block reference edge.
 func (g *transactionRefGraph) AddBlockRef(ctx context.Context, source, target *block.BlockRef) error {
 	return g.write(ctx, func(rg *block_gc.RefGraph) error { return rg.AddBlockRef(ctx, source, target) })

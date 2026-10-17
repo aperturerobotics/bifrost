@@ -18,7 +18,8 @@ type CopyProgress struct {
 	Keys uint64
 	// Bytes is the size of the keys and values copied verbatim.
 	Bytes uint64
-	// Edges is the number of Cayley log edges converted.
+	// Edges is the number of Cayley log edges and version 3 graph records
+	// converted.
 	Edges uint64
 	// DroppedBlocks is the number of blocks a reachable copy left out.
 	DroppedBlocks uint64
@@ -33,9 +34,10 @@ type CopyProgress struct {
 
 // CopyStore writes the Volume store src into the empty store dst at
 // store_kvkey.FormatVersion. It copies every key outside the Cayley graph,
-// encoding the version 2 graph records again, then converts the Cayley graph's
-// live edges to edge records, so a store of format version 1 or 2, converted
-// in part or not at all, never rewrites its graph in place.
+// encoding the version 2 graph records again and moving the edges between
+// blocks of a version 3 graph into child lists, then converts the Cayley
+// graph's live edges, so a store of format version 1 to 3, converted in part
+// or not at all, never rewrites its graph in place.
 //
 // src is read in one snapshot and must have no writer. The format version is
 // written last in a durable commit; a dst without it is an incomplete copy to
@@ -49,7 +51,7 @@ func CopyStore(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey
 	if version == 0 || version > store_kvkey.FormatVersion {
 		return fmt.Errorf("copy needs store format version 1 to %d, found %d", store_kvkey.FormatVersion, version)
 	}
-	return copyStore(ctx, src, dst, keys, false, progress)
+	return copyStore(ctx, src, dst, keys, version, false, progress)
 }
 
 // CopyReachable writes the Volume store src into the empty store dst like
@@ -57,29 +59,30 @@ func CopyStore(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey
 // reachable from the graph root, the graph records of reachable nodes and
 // every key outside the graph and the blocks. It drops the unreferenced queue.
 //
-// src must be at store_kvkey.FormatVersion: the walk reads only the current
-// graph, so the records of a store not yet converted would be missed and
-// their blocks dropped. A dropped block no graph record owned is counted in
-// UnownedBlocks, since a running collector would never have deleted it.
+// src must be at format version 3 or later: the walk reads edge records and
+// child lists, so the records of an older store would be missed and their
+// blocks dropped. A dropped block no graph record tracked or owned is counted
+// in UnownedBlocks, since a running collector would never have deleted it.
 func CopyReachable(ctx context.Context, src, dst kvtx.Store, keys *store_kvkey.KVKey, progress func(CopyProgress)) error {
-	// Require a fully converted source.
+	// Require a source whose graph the walk reads.
 	version, err := readFormatVersion(ctx, src, keys)
 	if err != nil {
 		return err
 	}
-	if version != store_kvkey.FormatVersion {
-		return fmt.Errorf("reachable copy needs store format version %d, found %d; copy it to the current format first", store_kvkey.FormatVersion, version)
+	if version < 3 || version > store_kvkey.FormatVersion {
+		return fmt.Errorf("reachable copy needs store format version 3 to %d, found %d; copy it to the current format first", store_kvkey.FormatVersion, version)
 	}
-	return copyStore(ctx, src, dst, keys, true, progress)
+	return copyStore(ctx, src, dst, keys, version, true, progress)
 }
 
-// copyStore copies src into the empty store dst and records the format
-// version last. With reachable, it first marks the nodes reachable from the
-// graph root and copies only what they keep.
+// copyStore copies src, at format version, into the empty store dst and
+// records the format version last. With reachable, it first marks the nodes
+// reachable from the graph root and copies only what they keep.
 func copyStore(
 	ctx context.Context,
 	src, dst kvtx.Store,
 	keys *store_kvkey.KVKey,
+	version uint64,
 	reachable bool,
 	progress func(CopyProgress),
 ) error {
@@ -96,7 +99,7 @@ func copyStore(
 	defer stx.Discard()
 
 	// Mark the reachable nodes in the same snapshot.
-	w := &copyWriter{store: dst, progress: progress}
+	w := &copyWriter{store: dst, progress: progress, convert: version < 4}
 	if reachable {
 		w.graph = openRefGraph(kvtx.NewTxStore(stx))
 		w.blockPrefix = keys.GetBlockFullPrefix()
@@ -161,11 +164,17 @@ type copyWriter struct {
 	// graph reads the source's reference graph in the copy's snapshot during
 	// a reachable copy.
 	graph *block_gc.RefGraph
+	// convert moves the edges of a graph older than child lists into them.
+	convert bool
+	// adds are the converted edges of the batch being filled.
+	adds []block_gc.RefEdge
+	// addBytes is the size of the nodes in adds.
+	addBytes int
 }
 
 // copyKeys copies every key of stx except the Cayley graph and versionKey,
 // in commits of up to migrateBatchBytes. It writes each version 2 graph
-// record in the current encoding.
+// record in the version 3 encoding, and converts version 3 records.
 func (w *copyWriter) copyKeys(ctx context.Context, stx kvtx.Tx, versionKey []byte) error {
 	// Walk every key in order.
 	it := stx.Iterate(ctx, nil, true, false)
@@ -199,6 +208,9 @@ func (w *copyWriter) copyKeys(ctx context.Context, stx kvtx.Tx, versionKey []byt
 				key = append(bytes.Clone(refGraphPrefix), current...)
 			}
 			keep, err := w.keep(ctx, key)
+			if err == nil && keep {
+				keep, err = w.convertRecord(key)
+			}
 			if err != nil {
 				return err
 			}
@@ -209,7 +221,7 @@ func (w *copyWriter) copyKeys(ctx context.Context, stx kvtx.Tx, versionKey []byt
 				w.counts.DroppedBytes += uint64(len(key) + len(value)) //nolint:gosec // lengths are never negative.
 			}
 		}
-		if size >= migrateBatchBytes {
+		if size+w.addBytes >= migrateBatchBytes {
 			if err := w.commitKeys(ctx, batch, size); err != nil {
 				return err
 			}
@@ -272,10 +284,28 @@ func (w *copyWriter) keep(ctx context.Context, key []byte) (bool, error) {
 	return false, nil
 }
 
-// commitKeys writes batch, holding size bytes, in one ordered commit.
+// convertRecord reports whether the copy writes key as it is. A converted
+// graph record that the current encoding drops or holds elsewhere queues its
+// edge for the batch's commit.
+func (w *copyWriter) convertRecord(key []byte) (bool, error) {
+	// Convert only graph records of a version 3 source.
+	record, ok := bytes.CutPrefix(key, refGraphPrefix)
+	if !w.convert || !ok {
+		return true, nil
+	}
+	keep, add, hasAdd, err := block_gc.ConvertFormat3Record(record)
+	if hasAdd {
+		w.adds = append(w.adds, add)
+		w.addBytes += len(add.Subject) + len(add.Object)
+	}
+	return keep, err
+}
+
+// commitKeys writes batch, holding size bytes, and the queued converted
+// edges in one ordered commit.
 func (w *copyWriter) commitKeys(ctx context.Context, batch []keyValue, size int) error {
-	// Write the batch.
-	if len(batch) == 0 {
+	// Open the commit when there is work.
+	if len(batch) == 0 && len(w.adds) == 0 {
 		return nil
 	}
 	tx, err := w.store.NewTransaction(ctx, true)
@@ -283,14 +313,21 @@ func (w *copyWriter) commitKeys(ctx context.Context, batch []keyValue, size int)
 		return err
 	}
 	defer tx.Discard()
+
+	// Write the batch, then apply the converted edges over it.
 	for _, m := range batch {
 		if err := tx.Set(ctx, m.key, m.value); err != nil {
 			return err
 		}
 	}
+	if err := openRefGraph(kvtx.NewTxStore(tx)).ApplyRefBatch(ctx, w.adds, nil); err != nil {
+		return err
+	}
 	if err := kvtx.CommitOrdered(ctx, tx); err != nil {
 		return err
 	}
+	w.counts.Edges += uint64(len(w.adds))
+	w.adds, w.addBytes = w.adds[:0], 0
 
 	// Count the committed work.
 	w.counts.Keys += uint64(len(batch))

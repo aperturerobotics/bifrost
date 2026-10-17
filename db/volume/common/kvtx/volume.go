@@ -100,6 +100,9 @@ type Volume struct {
 	rootProofs map[string]*block.BlockRef
 	// sweeps counts the sweep transactions that may have removed nodes.
 	sweeps uint64
+	// blockPassMu runs one block pass at a time, since a pass consumes the
+	// adopt log that the graph keeps while one is open.
+	blockPassMu csync.Mutex
 }
 
 // KvtxVolume is an interface for a volume with a kvtx store.

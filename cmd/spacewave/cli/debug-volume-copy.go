@@ -32,7 +32,7 @@ func newDebugVolumeCopyCommand() *cli.Command {
 			"to edge records on the way, so the source is never rewritten in place. The new file is written in key order " +
 			"with compaction off and records the format version last; a copy that stops early lacks it and should be deleted. " +
 			"The source is left unchanged. Replace the source with the new file only after checking it. " +
-			"With --reachable, the source must already be at the current format, and the copy keeps only the blocks " +
+			"With --reachable, the source must be at store format 3 or later, and the copy keeps only the blocks " +
 			"and graph records reachable from the graph root, as a complete collection would. Check its count of " +
 			"unowned blocks before using it: the running collector never deletes those.",
 		Flags: []cli.Flag{

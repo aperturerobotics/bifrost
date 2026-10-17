@@ -87,6 +87,9 @@ func NewVolume(ctx context.Context, le *logrus.Entry, conf *Config) (*Volume, er
 	if err == nil && stale {
 		err = volume_kvtx.MigrateLegacyRefGraph(ctx, s, []byte(legacyGraphPrefix), []byte(graphPrefix))
 	}
+	if err == nil && stale {
+		err = volume_kvtx.MigrateChildLists(ctx, s, []byte(graphPrefix))
+	}
 	if err != nil {
 		return nil, errors.Join(err, closeStore())
 	}

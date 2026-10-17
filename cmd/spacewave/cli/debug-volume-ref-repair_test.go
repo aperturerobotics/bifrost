@@ -167,8 +167,9 @@ func TestDebugRefRepair(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Store raw blocks that have incident graph edges but remain outside the walk.
-	trackedData := [][]byte{[]byte("outgoing only"), []byte("incoming only"), []byte("staging only")}
+	// Store raw blocks outside the walk: two with child lists, and one that
+	// only a parent's list names, whose own references stay unknown.
+	trackedData := [][]byte{[]byte("outgoing only"), []byte("staging only")}
 	tracked := make([]*block.BlockRef, len(trackedData))
 	for i, data := range trackedData {
 		tracked[i], _, err = vol.PutBlock(ctx, data, nil)
@@ -176,13 +177,17 @@ func TestDebugRefRepair(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-
-	// Give the raw blocks only outgoing, incoming, or staging edges.
-	rg := vol.GetRefGraph()
-	if err := rg.AddBlockRef(ctx, tracked[0], tracked[1]); err != nil {
+	listed, _, err := vol.PutBlock(ctx, []byte("listed only"), nil)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := rg.AddRef(ctx, block_gc.NodeUnreferenced, block_gc.BlockIRI(tracked[2])); err != nil {
+
+	// Give the raw blocks only a child or a staging edge.
+	rg := vol.GetRefGraph()
+	if err := rg.AddBlockRef(ctx, tracked[0], listed); err != nil {
+		t.Fatal(err)
+	}
+	if err := rg.AddRef(ctx, block_gc.NodeUnreferenced, block_gc.BlockIRI(tracked[1])); err != nil {
 		t.Fatal(err)
 	}
 
@@ -201,8 +206,8 @@ func TestDebugRefRepair(t *testing.T) {
 		}
 	}
 
-	// The original World copies are all untracked; only the three raw blocks
-	// with incident edges are excluded from the stored-block totals.
+	// The original World copies are all untracked; only the two raw blocks
+	// with child lists are excluded from the stored-block totals.
 	var storedCount, storedBytes uint64
 	tx, err := vol.GetKvtxStore().NewTransaction(ctx, false)
 	if err != nil {
@@ -219,7 +224,7 @@ func TestDebugRefRepair(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Exclude the three blocks whose graph nodes already exist.
+	// Exclude the two blocks whose child lists exist.
 	wantUntracked := storedCount - uint64(len(tracked))
 	wantBytes := storedBytes
 	for _, data := range trackedData {

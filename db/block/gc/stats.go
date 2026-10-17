@@ -36,4 +36,32 @@ type Stats struct {
 	OnSweptDuration time.Duration
 	// RemoveBlockDuration is time spent physically deleting block-backed nodes.
 	RemoveBlockDuration time.Duration
+	// BlockPasses is the number of block passes that marked the graph.
+	BlockPasses int
+	// MarkDuration is time spent marking blocks.
+	MarkDuration time.Duration
+	// LiveNodes is the number of nodes the last mark reached.
+	LiveNodes int
+	// UnreachedBlocks is the number of tracked blocks the last mark did not
+	// reach.
+	UnreachedBlocks int
+	// UnknownBlocks is the number of reached blocks of unknown references the
+	// last mark found. A pass that finds any sweeps no block.
+	UnknownBlocks int
+	// UnknownSample lists some of those blocks.
+	UnknownSample []string
+	// RescuedNodes is the number of nodes sweeps rescued from the adopt log.
+	RescuedNodes int
+	// BlocksSwept is the number of blocks block passes removed.
+	BlocksSwept int
+}
+
+// RecordMark records a block pass's mark.
+func (s *Stats) RecordMark(mark *BlockMark) {
+	// Count the pass and copy the mark's totals.
+	s.BlockPasses++
+	s.LiveNodes = mark.Live.Len()
+	s.UnreachedBlocks = len(mark.Unreached)
+	s.UnknownBlocks = mark.Unknown
+	s.UnknownSample = mark.UnknownSample
 }

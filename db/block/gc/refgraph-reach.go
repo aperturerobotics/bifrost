@@ -1,11 +1,9 @@
 package block_gc
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
-	"slices"
 
 	"github.com/s4wave/spacewave/db/kvtx"
 	"github.com/s4wave/spacewave/net/hash"
@@ -14,14 +12,14 @@ import (
 // reachChunk bounds the nodes whose forward records one prefetch loads.
 const reachChunk = 4096
 
-// Reachable returns every node reachable by forward edges from the graph root
-// and the registered roots, the roots included: the nodes the mark phase of a
-// complete collection keeps. The unreferenced queue marks candidates and owns
-// nothing, so neither it nor its edges are included. The walk reads one
-// snapshot, popping chunks of nodes from a stack and loading the index pages
-// of each chunk's records together in key order, so a cold store costs a batch
-// of reads per chunk instead of one read per node, and the work list stays
-// small however wide the graph is.
+// Reachable returns every node reachable by forward edges and child lists from
+// the graph root and the registered roots, the roots included: the nodes the
+// mark phase of a complete collection keeps. The unreferenced queue marks
+// candidates and owns nothing, so neither it nor its edges are included. The
+// walk reads one snapshot, popping chunks of nodes from a stack and loading the
+// index pages of each chunk's records together in key order, so a cold store
+// costs a batch of reads per chunk instead of one read per node, and the work
+// list stays small however wide the graph is.
 func (g *RefGraph) Reachable(ctx context.Context) (*NodeSet, error) {
 	reached := NewNodeSet()
 	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
@@ -39,37 +37,8 @@ func (g *RefGraph) Reachable(ctx context.Context) (*NodeSet, error) {
 			return err
 		}
 
-		// Walk chunks of the stack until it empties.
-		prefixes := make([][]byte, 0, reachChunk)
-		for len(stack) != 0 {
-			// Pop a chunk and order its record prefixes by key.
-			chunk := stack[max(0, len(stack)-reachChunk):]
-			prefixes = prefixes[:0]
-			for _, node := range chunk {
-				if node != NodeUnreferenced {
-					prefixes = append(prefixes, graphKey(kindForward, node))
-				}
-			}
-			stack = stack[:len(stack)-len(chunk)]
-			slices.SortFunc(prefixes, bytes.Compare)
-
-			// Load the chunk's index pages together, then push each new target.
-			if err := kvtx.Prefetch(ctx, tx, prefixes); err != nil {
-				return err
-			}
-			for _, prefix := range prefixes {
-				err := tx.ScanPrefixKeys(ctx, prefix, func(key []byte) error {
-					if node := lastNode(prefix, key); reached.Add(node) {
-						stack = append(stack, node)
-					}
-					return nil
-				})
-				if err != nil {
-					return err
-				}
-			}
-		}
-		return nil
+		// Walk from them.
+		return walkTx(ctx, tx, reached, stack, nil)
 	})
 	if err != nil {
 		return nil, err
@@ -79,13 +48,18 @@ func (g *RefGraph) Reachable(ctx context.Context) (*NodeSet, error) {
 
 // RecordSubject returns the node whose liveness decides whether a complete
 // collection keeps the graph record key: the subject of an edge in either
-// direction, or the node of a node or root record.
+// direction, the block of a child list, or the node of a node or root record.
+// The records of a block pass name no node, so it returns an empty subject
+// for them, which no collection keeps.
 func RecordSubject(key []byte) (string, error) {
 	// Split the kind byte from the nodes.
 	if len(key) == 0 {
 		return "", fmt.Errorf("decode empty reference graph record")
 	}
 	kind, rest := key[0], key[1:]
+	if kind == kindPass || kind == kindAdopt {
+		return "", nil
+	}
 
 	// An incoming record names the object first.
 	if kind == kindIncoming {

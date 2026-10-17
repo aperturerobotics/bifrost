@@ -290,6 +290,10 @@ func (rejectingSweepStore) SweepUnreferenced(context.Context, RefGraphOps, []str
 	return nil, ErrAtomicSweepUnsupported
 }
 
+func (rejectingSweepStore) SweepUnreachedBlocks(context.Context, RefGraphOps, func() bool, *Stats) error {
+	return ErrAtomicSweepUnsupported
+}
+
 func TestCollectorDoesNotBypassAtomicScopeRejection(t *testing.T) {
 	// Store the orphan block for the recovery check.
 	env := newGCTestEnv(t)

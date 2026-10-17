@@ -1,0 +1,297 @@
+package block_gc
+
+import (
+	"context"
+	"math/rand/v2"
+	"slices"
+	"strconv"
+	"testing"
+
+	"github.com/s4wave/spacewave/db/kvtx"
+	store_kvtx_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
+)
+
+// TestChildListEncoding checks that a child list round-trips its blocks and
+// rejects a node that is not a block.
+func TestChildListEncoding(t *testing.T) {
+	// Encode sorted blocks of two hash types and decode them back.
+	children := []string{BlockIRI(testBlockRef(t, "a")), BlockIRI(testBlockRef(t, "b"))}
+	slices.Sort(children)
+	got, err := decodeChildren(encodeChildren(children))
+	if err != nil || !slices.Equal(got, children) {
+		t.Fatalf("decoded %v err=%v, want %v", got, err, children)
+	}
+	if got, err := decodeChildren(nil); err != nil || len(got) != 0 {
+		t.Fatalf("empty list decoded %v err=%v", got, err)
+	}
+
+	// A text node is not a child.
+	if _, err := decodeChildren(appendNode(nil, "bucket")); err == nil {
+		t.Fatal("decoded a text node as a child")
+	}
+}
+
+// TestMarkBlocksKeepsChildrenOfUnknownBlock checks the failure of October 11:
+// an owner reaches a block whose references were never recorded, so the mark
+// cannot tell which unreached blocks it names, and the collection sweeps none.
+func TestMarkBlocksKeepsChildrenOfUnknownBlock(t *testing.T) {
+	// A rooted bucket owns a parent block with no child list. The child it
+	// references has a list, so it looks unreached.
+	env := newGCTestEnv(t)
+	parent, child := env.putBlock(t, "unknown-parent"), env.putBlock(t, "unknown-child")
+	rg := env.refGraph
+	if err := rg.AddRef(env.ctx, NodeGCRoot, "bucket"); err != nil {
+		t.Fatal(err)
+	}
+	if err := rg.AddRef(env.ctx, "bucket", BlockIRI(parent)); err != nil {
+		t.Fatal(err)
+	}
+	deleteChildList(t, env.kvStore, BlockIRI(parent))
+
+	// The mark reports the parent as unknown and the child as unreached.
+	mark, err := rg.MarkBlocks(env.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mark.Unknown != 1 || !slices.Equal(mark.UnknownSample, []string{BlockIRI(parent)}) {
+		t.Fatalf("unknown %d %v, want the parent", mark.Unknown, mark.UnknownSample)
+	}
+	if !slices.Equal(mark.Unreached, []string{BlockIRI(child)}) {
+		t.Fatalf("unreached %v, want the child", mark.Unreached)
+	}
+
+	// The collection keeps both blocks and reports why.
+	stats, err := NewCollector(rg, env.rawStore, nil).Collect(env.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.UnknownBlocks != 1 || stats.BlocksSwept != 0 {
+		t.Fatalf("stats %+v, want one unknown block and no sweep", stats)
+	}
+	if !env.blockExists(t, parent) || !env.blockExists(t, child) {
+		t.Fatal("collection swept past a block of unknown references")
+	}
+
+	// Recording the parent's references lets the next pass decide: the
+	// parent keeps the child.
+	if err := rg.ApplyRefBatch(env.ctx, []RefEdge{{Subject: BlockIRI(parent), Object: BlockIRI(child)}}, nil); err != nil {
+		t.Fatal(err)
+	}
+	mark, err = rg.MarkBlocks(env.ctx)
+	if err != nil || mark.Unknown != 0 || len(mark.Unreached) != 0 {
+		t.Fatalf("mark after recording: %+v err=%v", mark, err)
+	}
+}
+
+// TestMarkBlocksMatchesReachability checks the mark against a direct walk on
+// random graphs with cycles, shared children, owners of every kind, and child
+// lists dropped from reached and unreached blocks.
+func TestMarkBlocksMatchesReachability(t *testing.T) {
+	for seed := range uint64(40) {
+		t.Run(strconv.FormatUint(seed, 10), func(t *testing.T) {
+			testMarkBlocksMatchesReachability(t, rand.New(rand.NewPCG(seed, 1)))
+		})
+	}
+}
+
+// testMarkBlocksMatchesReachability runs one graph of
+// TestMarkBlocksMatchesReachability.
+func testMarkBlocksMatchesReachability(t *testing.T, rnd *rand.Rand) {
+	// Open an empty graph.
+	ctx := context.Background()
+	store := store_kvtx_inmem.NewStore()
+	rg := NewRefGraph(store)
+	t.Cleanup(func() { rg.Close() })
+	blocks := make([]string, 4+rnd.IntN(40))
+
+	// Track every block and link random pairs.
+	var edges []RefEdge
+	for i := range blocks {
+		blocks[i] = BlockIRI(testBlockRef(t, "block-"+strconv.Itoa(i)+"-"+strconv.FormatUint(rnd.Uint64(), 16)))
+		edges = append(edges, RefEdge{Subject: NodeUnreferenced, Object: blocks[i]})
+	}
+	for range rnd.IntN(2 * len(blocks)) {
+		edges = append(edges, RefEdge{Subject: blocks[rnd.IntN(len(blocks))], Object: blocks[rnd.IntN(len(blocks))]})
+	}
+
+	// Give random owners blocks, and root or queue each owner at random.
+	owners := []string{"bucket:a", "bucket:b", "object:c", "stage:d"}
+	for range rnd.IntN(4) {
+		edges = append(edges, RefEdge{Subject: owners[rnd.IntN(len(owners))], Object: blocks[rnd.IntN(len(blocks))]})
+	}
+	for _, owner := range owners {
+		switch rnd.IntN(3) {
+		case 0:
+			edges = append(edges, RefEdge{Subject: NodeGCRoot, Object: owner})
+		case 1:
+			edges = append(edges, RefEdge{Subject: NodeUnreferenced, Object: owner})
+		}
+	}
+	if err := rg.ApplyRefBatch(ctx, edges, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	// Drop the child lists of a few blocks, as an untracked write leaves them.
+	untracked := make(map[string]bool)
+	for range rnd.IntN(3) {
+		node := blocks[rnd.IntN(len(blocks))]
+		untracked[node] = true
+		deleteChildList(t, store, node)
+	}
+
+	// Index the edges the mark follows: every node that is not a block is
+	// live, and a block without a child list names nothing.
+	next := make(map[string][]string)
+	live := make(map[string]bool)
+	var stack []string
+	for _, edge := range edges {
+		if edge.Subject == NodeUnreferenced && slices.Contains(blocks, edge.Object) {
+			continue
+		}
+		if untracked[edge.Subject] {
+			continue
+		}
+		next[edge.Subject] = append(next[edge.Subject], edge.Object)
+		for _, node := range []string{edge.Subject, edge.Object} {
+			if !slices.Contains(blocks, node) && node != NodeUnreferenced && !live[node] {
+				live[node] = true
+				stack = append(stack, node)
+			}
+		}
+	}
+
+	// Walk them directly from the live nodes.
+	for len(stack) != 0 {
+		node := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		for _, child := range next[node] {
+			if !live[child] {
+				live[child] = true
+				stack = append(stack, child)
+			}
+		}
+	}
+
+	// Expect the unreached tracked blocks and the reached untracked ones.
+	var wantUnreached []string
+	var wantUnknown int
+	for _, node := range blocks {
+		switch {
+		case live[node] && untracked[node]:
+			wantUnknown++
+		case !live[node] && !untracked[node] && !slices.Contains(wantUnreached, node):
+			wantUnreached = append(wantUnreached, node)
+		}
+	}
+	slices.Sort(wantUnreached)
+	wantUnreached = slices.Compact(wantUnreached)
+
+	// The mark agrees with the walk.
+	mark, err := rg.MarkBlocks(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unreached := slices.Sorted(slices.Values(mark.Unreached))
+	if !slices.Equal(unreached, wantUnreached) || mark.Unknown != wantUnknown {
+		t.Fatalf("unreached %d unknown %d, want %d and %d", len(unreached), mark.Unknown, len(wantUnreached), wantUnknown)
+	}
+	for _, node := range blocks {
+		if mark.Live.Has(node) != live[node] {
+			t.Fatalf("block %q live %v, want %v", node, mark.Live.Has(node), live[node])
+		}
+	}
+}
+
+// TestBlockPassRescuesAdoptedBlocks checks that a write during an open pass
+// logs the blocks it adopts, that a rescue keeps them and the blocks they
+// list, and that writes outside a pass log nothing.
+func TestBlockPassRescuesAdoptedBlocks(t *testing.T) {
+	// A parent block lists a child, and nothing owns either.
+	ctx := context.Background()
+	store := store_kvtx_inmem.NewStore()
+	rg := NewRefGraph(store)
+	t.Cleanup(func() { rg.Close() })
+	parent, child := BlockIRI(testBlockRef(t, "adopt-parent")), BlockIRI(testBlockRef(t, "adopt-child"))
+	err := rg.ApplyRefBatch(ctx, []RefEdge{
+		{Subject: NodeUnreferenced, Object: parent},
+		{Subject: NodeUnreferenced, Object: child},
+		{Subject: parent, Object: child},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := countKeys(t, store, []byte{kindAdopt}); n != 0 {
+		t.Fatalf("writes outside a pass logged %d records", n)
+	}
+
+	// Open a pass and mark both blocks unreached.
+	if err := rg.BeginBlockPass(ctx); err != nil {
+		t.Fatal(err)
+	}
+	mark, err := rg.MarkBlocks(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(mark.Unreached) != 2 {
+		t.Fatalf("unreached %v, want both blocks", mark.Unreached)
+	}
+
+	// A bucket adopts the parent after the snapshot. The rescue keeps the
+	// parent and its child and consumes the log.
+	if err := rg.AddRef(ctx, "bucket", parent); err != nil {
+		t.Fatal(err)
+	}
+	rescued, err := rg.RescueAdopted(ctx, mark)
+	if err != nil || rescued != 2 || !mark.Live.Has(parent) || !mark.Live.Has(child) {
+		t.Fatalf("rescued %d err=%v", rescued, err)
+	}
+	if n := countKeys(t, store, []byte{kindAdopt}); n != 0 {
+		t.Fatalf("rescue left %d log records", n)
+	}
+
+	// Ending the pass drops its marker and any log written since.
+	if err := rg.AddRef(ctx, "bucket", child); err != nil {
+		t.Fatal(err)
+	}
+	if err := rg.EndBlockPass(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if n := countKeys(t, store, []byte{kindAdopt}) + countKeys(t, store, passKey); n != 0 {
+		t.Fatalf("ended pass left %d records", n)
+	}
+}
+
+// deleteChildList deletes the child list record of block from store.
+func deleteChildList(t *testing.T, store kvtx.Store, block string) {
+	// Delete the record in its own commit.
+	t.Helper()
+	ctx := context.Background()
+	tx, err := store.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	if err := tx.Delete(ctx, graphKey(kindChildren, block)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// countKeys counts the keys of store under prefix.
+func countKeys(t *testing.T, store kvtx.Store, prefix []byte) int {
+	// Count in a read snapshot.
+	t.Helper()
+	ctx := context.Background()
+	tx, err := store.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	var n int
+	if err := tx.ScanPrefixKeys(ctx, prefix, func([]byte) error { n++; return nil }); err != nil {
+		t.Fatal(err)
+	}
+	return n
+}

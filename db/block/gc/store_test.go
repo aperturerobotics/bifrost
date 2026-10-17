@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"slices"
-	"sync"
 	"testing"
 
 	"github.com/s4wave/spacewave/db/block"
@@ -81,6 +80,21 @@ func (e *gcTestEnv) recordRefs(source *block.BlockRef, targets []*block.BlockRef
 	e.gcStore.mu.Unlock()
 }
 
+// candidates returns the nodes a collection would sweep now: the queued nodes
+// that are not blocks, then the tracked blocks the mark does not reach.
+func (e *gcTestEnv) candidates(ctx context.Context) ([]string, error) {
+	// List the queue, then add the mark's unreached blocks.
+	queued, err := e.refGraph.GetUnreferencedNodes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	mark, err := e.refGraph.MarkBlocks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return append(queued, mark.Unreached...), nil
+}
+
 // blockExists checks if a block exists in the raw store.
 func (e *gcTestEnv) blockExists(t *testing.T, ref *block.BlockRef) bool {
 	t.Helper()
@@ -113,7 +127,7 @@ func TestGCStoreOps_PutBlockAddsUnrefEdge(t *testing.T) {
 	env.flush(t)
 
 	// Read unreferenced nodes after the new write.
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -300,9 +314,9 @@ func wantRefEdges(edges ...RefEdge) []RefEdge {
 	return edges
 }
 
-// TestGCStoreOps_RecordRefsRemovesUnrefEdge tests that recording refs
-// removes the unreferenced edge from the target.
-func TestGCStoreOps_RecordRefsRemovesUnrefEdge(t *testing.T) {
+// TestGCStoreOps_RecordRefsListsChild tests that recording refs lists the
+// target in the source's child list, so owning the source keeps the target.
+func TestGCStoreOps_RecordRefsListsChild(t *testing.T) {
 	// Create the GC block store and reference graph for the test.
 	env := newGCTestEnv(t)
 
@@ -311,7 +325,7 @@ func TestGCStoreOps_RecordRefsRemovesUnrefEdge(t *testing.T) {
 	bRef := env.putBlock(t, "block-b")
 
 	// Both should be unreferenced.
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -321,23 +335,18 @@ func TestGCStoreOps_RecordRefsRemovesUnrefEdge(t *testing.T) {
 		t.Fatalf("expected 2 unreferenced nodes before recording, got %d", len(nodes))
 	}
 
-	// Record a->b ref: b's unreferenced edge should be removed.
+	// Record a->b and root a: a's child list keeps b.
 	env.recordRefs(aRef, []*block.BlockRef{bRef})
 	env.flush(t)
-
-	// Read staging edges after recording the block reference.
-	nodes, err = env.refGraph.GetUnreferencedNodes(env.ctx)
+	if err := env.gcStore.AddGCRef(env.ctx, NodeGCRoot, BlockIRI(aRef)); err != nil {
+		t.Fatal(err.Error())
+	}
+	nodes, err = env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
-	// Only a should remain unreferenced.
-	if len(nodes) != 1 {
-		t.Fatalf("expected 1 unreferenced node after recording, got %d", len(nodes))
-	}
-	expected := BlockIRI(aRef)
-	if nodes[0] != expected {
-		t.Fatalf("expected unreferenced node %s, got %s", expected, nodes[0])
+	if len(nodes) != 0 {
+		t.Fatalf("expected no candidates after rooting a, got %v", nodes)
 	}
 }
 
@@ -369,7 +378,7 @@ func TestGCStoreOps_DuplicatePutNoNewUnrefEdge(t *testing.T) {
 	env.flush(t)
 
 	// Read staged nodes after the duplicate write.
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -391,7 +400,7 @@ func TestGCStoreOps_AddGCRef(t *testing.T) {
 	blockIRI := BlockIRI(ref)
 
 	// Block should be unreferenced.
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -408,7 +417,7 @@ func TestGCStoreOps_AddGCRef(t *testing.T) {
 	}
 
 	// Block should no longer be unreferenced.
-	nodes, err = env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err = env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -451,7 +460,7 @@ func TestGCStoreOps_RemoveGCRef(t *testing.T) {
 	}
 
 	// Block should be unreferenced again.
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -516,19 +525,16 @@ func TestGCStoreOps_TransactionRecordsRefs(t *testing.T) {
 		t.Fatalf("expected ref to child %s, got %s", expectedChild, outgoing[0])
 	}
 
-	// Child's unreferenced edge should have been removed.
-	// Root should still be unreferenced (no GC ref to it yet).
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	// Owning the root keeps the child it lists.
+	if err := env.gcStore.AddGCRef(env.ctx, NodeGCRoot, rootIRI); err != nil {
+		t.Fatal(err.Error())
+	}
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
-	// Verify only the root remains in the staging set.
-	if len(nodes) != 1 {
-		t.Fatalf("expected 1 unreferenced node (root only), got %d", len(nodes))
-	}
-	if nodes[0] != rootIRI {
-		t.Fatalf("expected unreferenced node to be root %s, got %s", rootIRI, nodes[0])
+	if len(nodes) != 0 {
+		t.Fatalf("expected no candidates after rooting the root, got %v", nodes)
 	}
 }
 
@@ -621,7 +627,7 @@ func TestGCStoreOps_ParentIRI_PutBlockAddsParentEdge(t *testing.T) {
 	}
 
 	// Should NOT be in unreferenced.
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -765,7 +771,7 @@ func TestGCStoreOps_ParentIRI_DedupClearsStaleUnref(t *testing.T) {
 			env.flush(t)
 
 			// Read staged nodes before taking parent ownership.
-			nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+			nodes, err := env.candidates(env.ctx)
 			if err != nil {
 				t.Fatal(err.Error())
 			}
@@ -796,7 +802,7 @@ func TestGCStoreOps_ParentIRI_DedupClearsStaleUnref(t *testing.T) {
 			}
 
 			// Read staged nodes after taking parent ownership.
-			nodes, err = env.refGraph.GetUnreferencedNodes(env.ctx)
+			nodes, err = env.candidates(env.ctx)
 			if err != nil {
 				t.Fatal(err.Error())
 			}
@@ -887,59 +893,48 @@ func TestGCStoreOps_ParentIRI_FlushPendingRemovesConcurrentUnref(t *testing.T) {
 	}
 }
 
-// TestGCStoreOps_RemoveGCRefDoesNotReviveStagingAfterParentBatch verifies
-// that orphan marking waits inside the ownership transition.
-func TestGCStoreOps_RemoveGCRefDoesNotReviveStagingAfterParentBatch(t *testing.T) {
-	// Give the block an old owner the remover will release.
+// TestGCStoreOps_RemoveGCRefKeepsBlockOfRootedParent verifies that releasing a
+// block's owner keeps the block while a rooted parent block lists it.
+func TestGCStoreOps_RemoveGCRefKeepsBlockOfRootedParent(t *testing.T) {
+	// Give the block an old owner.
 	env := newGCTestEnv(t)
-	ref := env.putBlock(t, "orphan-transition")
+	ref := env.putBlock(t, "released-child")
 	object := BlockIRI(ref)
 	if err := env.gcStore.AddGCRef(env.ctx, "owner:old", object); err != nil {
 		t.Fatal(err.Error())
 	}
 
-	// Start the removal and hold it inside the ownership transition.
-	raceGraph := &orphanRaceRefGraph{
-		RefGraphOps:    env.refGraph,
-		removerStarted: make(chan struct{}),
-		parentDone:     make(chan struct{}),
-	}
-	remover := NewGCStoreOps(env.rawStore, raceGraph)
-	removerErr := make(chan error, 1)
-	go func() {
-		removerErr <- remover.RemoveGCRef(env.ctx, "owner:old", object)
-	}()
-	<-raceGraph.removerStarted
-
-	// Flush a parent edge while the removal waits.
-	parent := NewGCStoreOps(env.rawStore, raceGraph)
-	parent.mu.Lock()
-	parent.bufferRefEdgesLocked(ref, []*block.BlockRef{ref}, true)
-	parent.mu.Unlock()
-	if err := parent.FlushPending(env.ctx); err != nil {
-		t.Fatal(err.Error())
-	}
-	if err := <-removerErr; err != nil {
-		t.Fatal(err.Error())
-	}
-
-	// The parent keeps the block and its staging edge stays removed.
-	if _, err := NewCollector(env.refGraph, env.rawStore, nil).Collect(env.ctx); err != nil {
-		t.Fatal(err.Error())
-	}
-	if !env.blockExists(t, ref) {
-		t.Fatal("parent-owned block should survive collection")
-	}
-
-	// Read staged nodes after the concurrent ownership transition.
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	// Give a parent block that lists it a rooted owner.
+	parentRef, _, err := env.gcStore.PutBlock(env.ctx, []byte("rooted-parent"), &block.PutOpts{Refs: []*block.BlockRef{ref}})
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	env.flush(t)
+	if err := env.refGraph.AddRef(env.ctx, NodeGCRoot, "owner:new"); err != nil {
+		t.Fatal(err.Error())
+	}
+	if err := env.gcStore.AddGCRef(env.ctx, "owner:new", BlockIRI(parentRef)); err != nil {
+		t.Fatal(err.Error())
+	}
 
-	// Verify parent ownership leaves no stale staging edge.
+	// Release the old owner and collect.
+	if err := env.gcStore.RemoveGCRef(env.ctx, "owner:old", object); err != nil {
+		t.Fatal(err.Error())
+	}
+	if _, err := NewCollector(env.refGraph, env.rawStore, nil).Collect(env.ctx); err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// The parent keeps the block, which is no longer a candidate.
+	if !env.blockExists(t, ref) {
+		t.Fatal("parent-owned block should survive collection")
+	}
+	nodes, err := env.candidates(env.ctx)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 	if slices.Contains(nodes, object) {
-		t.Fatal("parent-owned block should not be staged as unreferenced")
+		t.Fatal("parent-owned block should not be a candidate")
 	}
 }
 
@@ -976,7 +971,7 @@ func TestGCStoreOps_PutBlockBatch_DuplicateNoNewUnrefEdge(t *testing.T) {
 	}
 
 	// Block should not be unreferenced (it has a real ref).
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -995,7 +990,7 @@ func TestGCStoreOps_PutBlockBatch_DuplicateNoNewUnrefEdge(t *testing.T) {
 
 	// Should still have 0 unreferenced nodes. The batch path must
 	// not revive the unreferenced edge for an already-existing block.
-	nodes, err = env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err = env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -1021,7 +1016,7 @@ func TestGCStoreOps_PutBlockBatch_NewBlockAddsUnrefEdge(t *testing.T) {
 	env.flush(t)
 
 	// Read staged nodes after writing the new batch.
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -1082,12 +1077,12 @@ func TestGCStoreOps_ParentIRI_PutBlockBatchExistingTreeBuffersOwnerOnly(t *testi
 		t.Fatalf("first write reported existing blocks: %v", existed)
 	}
 
-	// A new tree records its owner edges and its child edges.
+	// A new tree records its owner, staging and child edges.
 	if err := gcStore.FlushPending(ctx); err != nil {
 		t.Fatal(err.Error())
 	}
-	if len(refGraph.adds) != 5 {
-		t.Fatalf("first write adds = %v, want 3 owner and 2 child edges", refGraph.adds)
+	if len(refGraph.adds) != 8 {
+		t.Fatalf("first write adds = %v, want 3 owner, 3 staging and 2 child edges", refGraph.adds)
 	}
 
 	// Write the same chain again.
@@ -1102,13 +1097,15 @@ func TestGCStoreOps_ParentIRI_PutBlockBatchExistingTreeBuffersOwnerOnly(t *testi
 		t.Fatal(err.Error())
 	}
 
-	// Each block gets its owner edge and loses its staging edge, and each
-	// referenced block leaves the owner to the block above it.
+	// Each block gets its owner and staging edges, and each referenced block
+	// leaves the owner to the block above it.
 	var wantAdds, wantRemoves []RefEdge
 	for _, entry := range tree {
 		iri := BlockIRI(entry.Ref)
-		wantAdds = append(wantAdds, RefEdge{Subject: parent, Object: iri})
-		wantRemoves = append(wantRemoves, RefEdge{Subject: NodeUnreferenced, Object: iri})
+		wantAdds = append(wantAdds,
+			RefEdge{Subject: parent, Object: iri},
+			RefEdge{Subject: NodeUnreferenced, Object: iri},
+		)
 	}
 	for _, entry := range []*block.PutBatchEntry{leaf, mid} {
 		wantRemoves = append(wantRemoves, RefEdge{Subject: parent, Object: BlockIRI(entry.Ref)})
@@ -1312,47 +1309,6 @@ func (r *injectUnrefRefGraph) ApplyRefBatch(
 	return r.RefGraphOps.ApplyRefBatch(ctx, adds, removes)
 }
 
-type orphanRaceRefGraph struct {
-	RefGraphOps
-	removerStarted chan struct{}
-	parentDone     chan struct{}
-	startOnce      sync.Once
-	parentOnce     sync.Once
-}
-
-func (r *orphanRaceRefGraph) signalRemoverStarted() {
-	r.startOnce.Do(func() { close(r.removerStarted) })
-}
-
-func (r *orphanRaceRefGraph) signalParentDone() {
-	r.parentOnce.Do(func() { close(r.parentDone) })
-}
-
-func (r *orphanRaceRefGraph) ApplyRefBatch(
-	ctx context.Context,
-	adds, removes []RefEdge,
-) error {
-	// Hold the removal batch until the parent ownership batch completes.
-	removalOnly := len(adds) == 0 && len(removes) == 1 && removes[0].Subject != NodeUnreferenced
-	if removalOnly {
-		r.signalRemoverStarted()
-		<-r.parentDone
-	}
-
-	// Apply the graph batch and signal completion of parent additions.
-	err := r.RefGraphOps.ApplyRefBatch(ctx, adds, removes)
-	if len(adds) != 0 {
-		r.signalParentDone()
-	}
-	return err
-}
-
-func (r *orphanRaceRefGraph) HasIncomingRefs(ctx context.Context, node string) (bool, error) {
-	r.signalRemoverStarted()
-	<-r.parentDone
-	return false, nil
-}
-
 func (r *recordingRefGraph) RemoveNodeRefs(context.Context, string, bool) ([]string, error) {
 	return nil, nil
 }
@@ -1500,7 +1456,7 @@ func TestGCStoreOps_ParentIRI_CacheFillTakesNoOwnership(t *testing.T) {
 	if !slices.Equal(owned, []string{BlockIRI(written)}) {
 		t.Fatalf("bucket owns %v, want only %s", owned, BlockIRI(written))
 	}
-	nodes, err := env.refGraph.GetUnreferencedNodes(env.ctx)
+	nodes, err := env.candidates(env.ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

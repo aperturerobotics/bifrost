@@ -17,6 +17,9 @@ type gcDelegator interface {
 	DelegatesGC()
 }
 
+// markIntervals is the number of collection intervals between block passes.
+const markIntervals = 15
+
 // runGCSweep runs the periodic GC sweep goroutine.
 // It waits for the volume to become ready, then prefers the WAL-backed
 // concurrent GC manager when the volume provides the required hooks.
@@ -74,8 +77,10 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 		return nil
 	}
 
-	// Construct the legacy collector for the volume reference graph.
+	// Construct the collector for the volume reference graph. A block pass
+	// reads the whole graph, so it runs every markIntervals intervals.
 	collector := block_gc.NewCollector(rg, vol, nil)
+	collector.SetMarkInterval(markIntervals * interval)
 	c.le.WithField("interval", interval.String()).Debug("gc sweep routine started")
 
 	// Collect unreferenced volume nodes on each maintenance deadline, for at
@@ -109,15 +114,26 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 			continue
 		}
 
-		// Report each collection that found candidates, and continue a
+		// Report each collection that found candidates or marked, warn of a
+		// pass that blocks of unknown references stopped, and continue a
 		// collection the budget stopped.
-		if stats.UnreferencedNodeCount != 0 {
+		if stats.UnreferencedNodeCount != 0 || stats.BlockPasses != 0 {
 			c.le.
 				WithField("swept", stats.NodesSwept).
 				WithField("candidates", stats.Candidates).
+				WithField("live", stats.LiveNodes).
+				WithField("unreached", stats.UnreachedBlocks).
+				WithField("blocks-swept", stats.BlocksSwept).
+				WithField("mark-duration", stats.MarkDuration.String()).
 				WithField("more", stats.More).
 				WithField("duration", stats.Duration.String()).
 				Info("gc sweep completed")
+		}
+		if stats.UnknownBlocks != 0 {
+			c.le.
+				WithField("unknown", stats.UnknownBlocks).
+				WithField("sample", stats.UnknownSample).
+				Warn("gc block pass reached blocks of unknown references and swept no block")
 		}
 		if stats.More {
 			timer.Reset(0)

@@ -198,6 +198,113 @@ func TestMigrateLegacyRefGraphBatches(t *testing.T) {
 	}
 }
 
+// writeFormat3Graph writes edges and the graph root to store as a version 3
+// store holds them: a record per direction for each edge.
+func writeFormat3Graph(t *testing.T, store db_kvtx.Store, keys *store_kvkey.KVKey, edges []block_gc.RefEdge) {
+	// Encode the records of the root and of each edge.
+	t.Helper()
+	ctx := context.Background()
+	records := [][]byte{legacyGraphKey('r', block_gc.NodeGCRoot)}
+	for _, edge := range edges {
+		records = append(records,
+			legacyGraphKey('f', block_gc.FormatIRI(edge.Subject), block_gc.FormatIRI(edge.Object)),
+			legacyGraphKey('i', block_gc.FormatIRI(edge.Object), block_gc.FormatIRI(edge.Subject)),
+		)
+	}
+
+	// Write them and the version in one commit.
+	tx, err := store.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	for _, record := range records {
+		key, err := block_gc.LegacyRecordKey(record[len(legacyRefGraphPrefix):])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Set(ctx, slices.Concat(refGraphPrefix, key), nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tx.Set(ctx, keys.GetFormatVersionKey(), store_kvkey.MarshalFormatVersion(3)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestUpgradeChildLists opens a version 3 store, whose graph holds a record
+// per direction for every edge, and expects the edges between blocks and the
+// queue's block entries in child lists, the owner edges kept, and a mark that
+// reaches the same blocks. The parent lists more children than one batch
+// converts, so its list merges across batches.
+func TestUpgradeChildLists(t *testing.T) {
+	// Root a bucket owning a, and queue a garbage block listing a leaf.
+	bucket := block_gc.BucketIRI("bucket")
+	a, garbage, leaf := testBlockIRI(t, "a"), testBlockIRI(t, "garbage"), testBlockIRI(t, "garbage-leaf")
+	edges := []block_gc.RefEdge{
+		{Subject: block_gc.NodeGCRoot, Object: bucket},
+		{Subject: bucket, Object: a},
+		{Subject: block_gc.NodeUnreferenced, Object: garbage},
+		{Subject: garbage, Object: leaf},
+	}
+
+	// Give a more children than one batch converts.
+	children := make([]string, 2*convertBatchEdges+3)
+	for i := range children {
+		children[i] = testBlockIRI(t, "child-"+strconv.Itoa(i))
+		edges = append(edges, block_gc.RefEdge{Subject: a, Object: children[i]})
+	}
+
+	// Write their version 3 records.
+	ctx := context.Background()
+	store := store_kvtx_inmem.NewStore()
+	keys := store_kvkey.NewDefaultKVKey()
+	writeFormat3Graph(t, store, keys, edges)
+
+	// Upgrade it.
+	if err := upgradeFormat(ctx, store, keys); err != nil {
+		t.Fatal(err)
+	}
+
+	// The bucket owns a, a lists every child, and each block is tracked.
+	rg := openRefGraph(store)
+	for node, want := range map[string][]string{
+		block_gc.NodeGCRoot:       {bucket},
+		bucket:                    {a},
+		a:                         slices.Sorted(slices.Values(children)),
+		garbage:                   {leaf},
+		block_gc.NodeUnreferenced: nil,
+	} {
+		got, err := rg.GetOutgoingRefs(ctx, node)
+		if err != nil || !slices.Equal(slices.Sorted(slices.Values(got)), want) {
+			t.Fatalf("%s: outgoing %d, want %d, err %v", node, len(got), len(want), err)
+		}
+	}
+	for node, want := range map[string][]string{
+		a:           {block_gc.NodeUnreferenced, bucket},
+		children[0]: {block_gc.NodeUnreferenced},
+		garbage:     {block_gc.NodeUnreferenced},
+		leaf:        {block_gc.NodeUnreferenced},
+	} {
+		got, err := rg.GetIncomingRefs(ctx, node)
+		if err != nil || !slices.Equal(got, want) {
+			t.Fatalf("%s: incoming %v, want %v, err %v", node, got, want, err)
+		}
+	}
+
+	// The mark reaches a and its children and leaves the garbage.
+	mark, err := rg.MarkBlocks(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mark.Unknown != 0 || !slices.Equal(slices.Sorted(slices.Values(mark.Unreached)), slices.Sorted(slices.Values([]string{garbage, leaf}))) {
+		t.Fatalf("mark: unknown %d, unreached %v", mark.Unknown, mark.Unreached)
+	}
+}
+
 // countPrefix returns the number of keys under prefix.
 func countPrefix(t *testing.T, store db_kvtx.Store, prefix []byte) int {
 	// Scan the prefix in a snapshot.
@@ -233,7 +340,7 @@ type copyCase struct {
 // copyCases are the earlier formats CopyStore converts, by name.
 var copyCases = map[string]copyCase{
 	"cayley": {version: 1, write: writeCayleyStore, check: checkConvertedRefGraph, keys: 1, edges: 3},
-	"legacy": {version: 2, write: writeLegacyStore, check: checkLegacyRefGraph, keys: 8},
+	"legacy": {version: 2, write: writeLegacyStore, check: checkLegacyRefGraph, keys: 6, edges: 3},
 }
 
 // TestCopyStore copies a store of each earlier format and expects its other
@@ -460,8 +567,9 @@ func testBlockIRI(t *testing.T, data string) string {
 	return block_gc.BlockIRI(block.NewBlockRef(h))
 }
 
-// checkLegacyRefGraph expects the writeLegacyStore edges in both directions,
-// its root and no version 2 records.
+// checkLegacyRefGraph expects the writeLegacyStore edges forward, each owner
+// that is not a block and the staging edge of each tracked block back, its
+// root and no version 2 records.
 func checkLegacyRefGraph(t *testing.T, store db_kvtx.Store) {
 	// Each edge reads forward and back.
 	ctx := context.Background()
@@ -475,7 +583,14 @@ func checkLegacyRefGraph(t *testing.T, store db_kvtx.Store) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !slices.Equal(out, []string{edge.Object}) || !slices.Equal(in, []string{edge.Subject}) {
+		var want []string
+		if _, ok := block_gc.ParseBlockIRI(edge.Object); ok {
+			want = append(want, block_gc.NodeUnreferenced)
+		}
+		if _, ok := block_gc.ParseBlockIRI(edge.Subject); !ok {
+			want = append(want, edge.Subject)
+		}
+		if !slices.Equal(out, []string{edge.Object}) || !slices.Equal(in, want) {
 			t.Fatalf("edge %v: outgoing %v, incoming %v", edge, out, in)
 		}
 	}
@@ -591,10 +706,11 @@ func testCopyReachable(t *testing.T, src, dst db_kvtx.Store) {
 		t.Fatal(err)
 	}
 
-	// Each edge is two records, and a registered root has a node and a root
-	// record: the copy keeps the four reachable edges and the root's records,
-	// and drops the two queue marks and the unreachable bucket's edge.
-	want := CopyProgress{Keys: 14, DroppedBlocks: 3, UnownedBlocks: 1, DroppedRecords: 6}
+	// An owner edge is two records, an edge between blocks or from the queue
+	// lands in its block's child list, and a registered root has a node and
+	// a root record: the copy keeps the reachable edges and lists and the
+	// root's records, and drops c's list and the unreachable bucket's edge.
+	want := CopyProgress{Keys: 14, DroppedBlocks: 3, UnownedBlocks: 1, DroppedRecords: 3}
 	last.Bytes, last.DroppedBytes = 0, 0
 	if last != want {
 		t.Fatalf("progress %+v, want %+v", last, want)
