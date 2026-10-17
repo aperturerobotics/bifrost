@@ -335,6 +335,87 @@ func TestGetBatchPrefetch(t *testing.T) {
 	}
 }
 
+// TestCommitPrefetch checks that a commit on a cold cache reads the index
+// paths of its changes together instead of one path at a time.
+func TestCommitPrefetch(t *testing.T) {
+	// Build a deep tree across checkpoints.
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "a.s4wave")
+	opts := Options{CheckpointMin: 32 << 10, CheckpointMax: 64 << 10, RelocateBudget: -1}
+	db := openTest(t, path, opts)
+	prefix := strings.Repeat("p", 120)
+	for n := range 40 {
+		tx, err := db.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := range 200 {
+			k := fmt.Sprintf("%s/%07d", prefix, n*200+i)
+			if err := tx.Set(ctx, []byte(k), []byte(k[len(prefix):])); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Reopen it so its index is on disk, and let the warm-up finish before
+	// the test empties the cache.
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	db = openTest(t, path, opts)
+	defer db.Close()
+	if wait, _ := db.warmer.SetRoutine(nil); wait != nil {
+		<-wait
+	}
+
+	// Delete and replace scattered keys through a cold cache whose reads
+	// each take long enough to overlap with the reads beside them.
+	r := &overlapReader{r: db.s}
+	db.p.r = r
+	db.p.cache.clear()
+	tx, err := db.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 8000; i += 97 {
+		k := fmt.Appendf(nil, "%s/%07d", prefix, i)
+		if i%2 == 0 {
+			err = tx.Delete(ctx, k)
+		} else {
+			err = tx.Set(ctx, k, []byte("new"))
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if r.most.Load() < 2 {
+		t.Fatalf("commit kept at most %d reads in flight", r.most.Load())
+	}
+
+	// Check the commit's result.
+	rtx, err := db.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rtx.Discard()
+	for i := 0; i < 8000; i += 97 {
+		k := fmt.Appendf(nil, "%s/%07d", prefix, i)
+		v, found, err := rtx.Get(ctx, k)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if found != (i%2 != 0) || (found && string(v) != "new") {
+			t.Fatalf("key %d: found %v value %q", i, found, v)
+		}
+	}
+}
+
 // overlapReader records the most reads in flight at once.
 type overlapReader struct {
 	r          io.ReaderAt

@@ -251,9 +251,22 @@ func (w *writer) replaySpace(st *state) error {
 // commit appends a commit record for changes on base, writes its values,
 // and publishes the new state. The caller holds the writer lock.
 func (w *writer) commit(ctx context.Context, base *state, changes []tentry, ordered bool) error {
+	// Load the index paths of the changes the overlay does not answer
+	// together, so a cold commit reads one round per tree level instead of
+	// one path per change while it holds the writer lock.
+	db, sp := w.db, w.sp
+	var cold [][]byte
+	for _, c := range changes {
+		if !base.filter.has(c.key) {
+			cold = append(cold, c.key)
+		}
+	}
+	if err := db.p.prefetch(ctx, base.root, cold); err != nil {
+		return err
+	}
+
 	// Resolve each change against the base state: frees, count, and value
 	// placement.
-	db, sp := w.db, w.sp
 	r := &record{kind: kindCommit}
 	var writes []valueWrite
 	for _, c := range changes {
