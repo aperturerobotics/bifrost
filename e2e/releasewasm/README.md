@@ -36,6 +36,9 @@ Browser proxy isolation blocks external network access while retaining normal
 HTTP caching. The optional public-content catalog is unavailable, and the local
 provider has no cloud signaling connection. This scenario measures local
 startup and storage costs; it does not measure internet delivery latency.
+Set `E2E_RELEASE_WASM_LOCAL_CDN_DELAY` to a Go duration, such as `250ms`, to
+hold each CDN request that long before its response, which models the round
+trips a distant CDN adds to serial pack reads.
 
 ## Saved Canvas reopening
 

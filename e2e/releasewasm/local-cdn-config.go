@@ -17,9 +17,12 @@ import (
 )
 
 const (
-	localCDNEnv     = "E2E_RELEASE_WASM_LOCAL_CDN"
-	localCDNSpaceID = "01kqjmfxd44r7ggrq78efad3d2"
-	localCDNState   = ".bldr-startup"
+	localCDNEnv = "E2E_RELEASE_WASM_LOCAL_CDN"
+	// localCDNDelayEnv holds a Go duration each CDN request waits before its
+	// response, modeling internet round trips to the CDN.
+	localCDNDelayEnv = "E2E_RELEASE_WASM_LOCAL_CDN_DELAY"
+	localCDNSpaceID  = "01kqjmfxd44r7ggrq78efad3d2"
+	localCDNState    = ".bldr-startup"
 )
 
 // localCDNProject composes the production bootstrap and plugin build targets

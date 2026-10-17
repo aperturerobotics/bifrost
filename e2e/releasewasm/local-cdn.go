@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/bldr/util/packedmsg"
@@ -245,20 +246,38 @@ type localCDNHandler struct {
 	packBytes atomic.Int64
 	// cdnDown drops every CDN connection, as when the CDN is unreachable.
 	cdnDown atomic.Bool
+	// delay holds each CDN request before its response, as a round trip to
+	// a distant CDN does.
+	delay time.Duration
 }
 
 // ServeHTTP counts fixture requests and rejects outbound proxy connections.
 func (h *localCDNHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	// Reject proxy requests for the external network.
 	if req.Method == http.MethodConnect || req.URL.IsAbs() {
 		http.Error(rw, "external network is unavailable", http.StatusForbidden)
 		return
 	}
-	if h.cdnDown.Load() && strings.Contains(req.URL.Path, "/cdn/") {
+
+	// Drop CDN connections while the CDN is down.
+	cdnPath := strings.Contains(req.URL.Path, "/cdn/")
+	if h.cdnDown.Load() && cdnPath {
 		if conn, _, err := http.NewResponseController(rw).Hijack(); err == nil {
 			_ = conn.Close()
 		}
 		return
 	}
+
+	// Hold CDN requests for the modeled round trip.
+	if h.delay > 0 && cdnPath {
+		select {
+		case <-req.Context().Done():
+			return
+		case <-time.After(h.delay):
+		}
+	}
+
+	// Count the delivered fixture request and serve it.
 	switch {
 	case strings.HasSuffix(req.URL.Path, "/distribution.packedmsg"):
 		h.distribution.Add(1)
