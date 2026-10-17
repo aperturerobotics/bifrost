@@ -11,6 +11,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -266,11 +268,23 @@ const childEnv = "S4DB_TEST_CHILD"
 // childKeys is the number of keys each process of TestTwoProcesses writes.
 const childKeys = 400
 
-// TestMain runs the child of TestTwoProcesses when the test binary is
-// started as one.
+// probeEnv names the file whose writer lock a child process of
+// TestSingleProcessHoldsWriterLock probes.
+const probeEnv = "S4DB_TEST_PROBE"
+
+// TestMain runs the child of TestTwoProcesses or of
+// TestSingleProcessHoldsWriterLock when the test binary is started as one.
 func TestMain(m *testing.M) {
-	if path := os.Getenv(childEnv); path != "" {
-		if err := runChild(path); err != nil {
+	// Choose the child the environment names, if any.
+	run := runChild
+	path := os.Getenv(childEnv)
+	if path == "" {
+		run, path = runProbe, os.Getenv(probeEnv)
+	}
+
+	// Run it in place of the tests.
+	if path != "" {
+		if err := run(path); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -334,6 +348,111 @@ func runChild(path string) error {
 	}
 	fmt.Println(db.Seq())
 	return db.Close()
+}
+
+// runProbe prints whether another process holds the writer lock of the
+// file at path, taking and releasing it when free.
+func runProbe(path string) error {
+	// Open the file without registering it, as another process would.
+	f, err := os.OpenFile(path, os.O_RDWR, 0)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Try the lock without waiting, and release it when taken.
+	file := &osFile{File: f, path: path}
+	ok, err := file.lock(lockWriter, false)
+	if err != nil {
+		return err
+	}
+	if ok {
+		fmt.Println("free")
+		return file.unlock(lockWriter)
+	}
+	fmt.Println("held")
+	return nil
+}
+
+// probeWriterLock reports what a child process finds probing the writer
+// lock of the file at path.
+func probeWriterLock(t *testing.T, path string) string {
+	// Run the test binary as the probe.
+	t.Helper()
+	cmd := exec.Command(os.Args[0], "-test.run=^$")
+	cmd.Env = append(os.Environ(), probeEnv+"="+path)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("probe: %v: %s", err, out)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// TestSingleProcessHoldsWriterLock checks that a single-process handle
+// holds the file's writer lock from open to close, across commits, so no
+// other process writes while its checkpoints write without the lock.
+func TestSingleProcessHoldsWriterLock(t *testing.T) {
+	// Open the file and commit.
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "single.s4wave")
+	db := openTest(t, path, Options{SingleProcess: true})
+	if err := writeKeys(ctx, db, "single"); err != nil {
+		t.Fatal(err)
+	}
+	if got := probeWriterLock(t, path); got != "held" {
+		t.Fatalf("open handle: probe found the writer lock %s", got)
+	}
+
+	// Close, which releases it.
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if got := probeWriterLock(t, path); got != "free" {
+		t.Fatalf("closed handle: probe found the writer lock %s", got)
+	}
+}
+
+// TestSingleProcessWriters commits from several writers of a single-process
+// handle while background checkpoints write their pages without the writer
+// lock, and checks the keys and the space before and after reopening.
+func TestSingleProcessWriters(t *testing.T) {
+	// Write from each writer at once, checkpointing often.
+	ctx := context.Background()
+	opts := Options{CheckpointMin: 8 << 10, CheckpointMax: 16 << 10, SingleProcess: true}
+	path := filepath.Join(t.TempDir(), "writers.s4wave")
+	db := openTest(t, path, opts)
+
+	// Start the writers and wait for them all.
+	writers := []string{"a", "b", "c", "d"}
+	errs := make([]error, len(writers))
+	var wg sync.WaitGroup
+	for i, who := range writers {
+		wg.Go(func() {
+			errs[i] = writeKeys(ctx, db, who)
+		})
+	}
+	wg.Wait()
+	for _, err := range errs {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Check the keys and the space, then reopen and check the keys.
+	m := make(model)
+	for i := range childKeys {
+		for _, who := range writers {
+			m[string(processKey(who, i))] = processValue(i)
+		}
+	}
+	m.check(t, db)
+	checkSpace(t, db)
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	db = openTest(t, path, opts)
+	defer db.Close()
+	m.check(t, db)
 }
 
 // TestTwoProcesses writes one file from two processes at once and checks

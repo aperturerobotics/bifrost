@@ -44,8 +44,9 @@ type Config struct {
 	// each rewrite of the index pages they touch, at the cost of overlay memory
 	// and log replay at open.
 	CheckpointMaxBytes int64 `protobuf:"varint,9,opt,name=checkpoint_max_bytes,json=checkpointMaxBytes,proto3" json:"checkpointMaxBytes,omitempty"`
-	// SingleProcess skips watching the file for other processes' commits. Set
-	// it only when no other process opens the file.
+	// SingleProcess skips watching the file for other processes' commits and
+	// holds its writer lock from open to close, so checkpoints write without
+	// waiting for writers. Set it only when no other process opens the file.
 	SingleProcess bool `protobuf:"varint,10,opt,name=single_process,json=singleProcess,proto3" json:"singleProcess,omitempty"`
 }
 

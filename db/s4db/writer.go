@@ -29,8 +29,13 @@ type writer struct {
 	mtx csync.Mutex
 	// unlockMtx releases mtx while the writer lock is held.
 	unlockMtx func()
-	// sp is the space state, current through spSeq and spGen.
+	// sp is the space state, current through spSeq and spGen. Replacing it
+	// also takes spMtx.
 	sp *space
+	// spMtx excludes replacing sp while a background checkpoint writes a
+	// page it reserved from sp, which a single-process handle does without
+	// the writer lock.
+	spMtx sync.Mutex
 	// spSeq is the commit sp reflects.
 	spSeq uint64
 	// spGen is the checkpoint generation sp reflects.
@@ -74,7 +79,7 @@ func (w *writer) lock(ctx context.Context) error {
 		w.waiting.Add(-1)
 		return err
 	}
-	_, err = w.db.s.lock(lockWriter, true)
+	_, err = w.db.lockFile(true)
 	w.waiting.Add(-1)
 	if err != nil {
 		release()
@@ -100,7 +105,7 @@ func (w *writer) tryLock() (bool, error) {
 	if !ok {
 		return false, nil
 	}
-	ok, err := w.db.s.lock(lockWriter, false)
+	ok, err := w.db.lockFile(false)
 	if err != nil || !ok {
 		release()
 		return false, err
@@ -117,17 +122,25 @@ func (w *writer) tryLock() (bool, error) {
 func (w *writer) unlock(err error) {
 	// Drop a space a failed step may have left ahead of the log.
 	if err != nil {
-		w.sp = nil
+		w.setSpace(nil)
 	}
 
 	// Release other processes and wake their watchers, then this handle's
 	// writers.
 	w.held.Store(false)
-	_ = w.db.s.unlock(lockWriter)
+	_ = w.db.unlockFile()
 	w.db.watch.notify()
 	release := w.unlockMtx
 	w.unlockMtx = nil
 	release()
+}
+
+// setSpace replaces the space once no background checkpoint is writing a
+// page reserved from it. The caller holds the writer lock.
+func (w *writer) setSpace(sp *space) {
+	w.spMtx.Lock()
+	w.sp = sp
+	w.spMtx.Unlock()
 }
 
 // create writes an empty database into an empty file. The caller holds the
@@ -243,7 +256,8 @@ func (w *writer) replaySpace(st *state) error {
 	if err != nil {
 		return err
 	}
-	w.sp, w.spSeq, w.spGen = sp, st.seq, st.gen
+	w.setSpace(sp)
+	w.spSeq, w.spGen = st.seq, st.gen
 	w.fileEnd = uint64(size) / pageSize // #nosec G115 -- file sizes are not negative.
 	return nil
 }
@@ -560,8 +574,8 @@ func (w *writer) waitBuild(ctx context.Context) error {
 }
 
 // runCheckpoint builds the tree of st, which the snapshot in stripe keeps,
-// and writes its pages, holding the writer lock only to reserve and write
-// pages and to save the tree. The next commit reports a failure.
+// and writes its pages, holding the writer lock only to reserve pages, to
+// write them to a shared file, and to save the tree. The next commit reports a failure.
 func (w *writer) runCheckpoint(st *state, stripe int) {
 	// Reserve the tree's pages under the writer lock as it builds.
 	ctx := context.Background()
@@ -576,22 +590,31 @@ func (w *writer) runCheckpoint(st *state, stripe int) {
 		return r, err
 	}
 
-	// Write the pages under the writer lock too. The space saved in the
-	// file does not hold the reservations, so another process may hand
-	// them out: each write first checks that no other process has written
-	// since the space was loaded.
+	// Write each batch of pages while the space still holds their
+	// reservations. A failed commit reloads the space, and the space saved
+	// in the file does not hold the reservations, so the reloaded space
+	// may hand them out. Another process may also hand them out, so a
+	// shared file is written under the writer lock, whose catch-up reloads
+	// the space when another process wrote. A single-process handle holds
+	// the file's writer lock for its lifetime and writes without waiting
+	// for this handle's writers.
 	write := out.write
 	out.write = func(buf []byte, page uint64) error {
-		// Taking the lock reloads the space when another process wrote.
-		if err := w.lock(ctx); err != nil {
-			return err
+		// Exclude other processes' writers from a shared file.
+		if !w.db.opts.SingleProcess {
+			if err := w.lock(ctx); err != nil {
+				return err
+			}
+			defer w.unlock(nil)
 		}
-		err := errDropped
-		if t.sp == w.sp && !w.closing.Load() {
-			err = write(buf, page)
+
+		// Write while the space holds the reservations.
+		w.spMtx.Lock()
+		defer w.spMtx.Unlock()
+		if t.sp != w.sp || w.closing.Load() {
+			return errDropped
 		}
-		w.unlock(nil)
-		return err
+		return write(buf, page)
 	}
 
 	// Build the tree, then flush its pages without the writer lock, so the
