@@ -41,9 +41,9 @@ func (r *region) request(op uint16, m *message) error {
 
 // contains reports whether pt is in the region.
 func (r *region) contains(pt image.Point) bool {
-	for i := len(r.ops) - 1; i >= 0; i-- {
-		if pt.In(r.ops[i].rect) {
-			return r.ops[i].add
+	for _, v := range slices.Backward(r.ops) {
+		if pt.In(v.rect) {
+			return v.add
 		}
 	}
 	return false
