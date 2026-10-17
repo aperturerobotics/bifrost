@@ -105,7 +105,7 @@ export function CliTerminalPage() {
           <div className="border-foreground/8 text-foreground-alt/70 flex h-7 shrink-0 items-center border-b px-3 text-xs">
             Spacewave CLI · This session
           </div>
-          <TerminalPane connectTerminal={connectTerminal} />
+          <TerminalPane session="cli" connectTerminal={connectTerminal} />
         </div>
       </BottomBarLevel>
     </SessionFrame>

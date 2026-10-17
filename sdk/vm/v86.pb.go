@@ -22,11 +22,13 @@ type VmState int32
 const (
 	// VmState_STOPPED means the VM should not be running.
 	VmState_VmState_STOPPED VmState = 0
-	// VmState_STARTING is retained as a start-request compatibility value.
+	// VmState_STARTING means a runtime is starting the VM. A request for it
+	// asks for RUNNING.
 	VmState_VmState_STARTING VmState = 1
 	// VmState_RUNNING means the VM should be running.
 	VmState_VmState_RUNNING VmState = 2
-	// VmState_STOPPING is retained as a stop-request compatibility value.
+	// VmState_STOPPING means a runtime is stopping the VM. A request for it
+	// asks for STOPPED.
 	VmState_VmState_STOPPING VmState = 3
 	// VmState_ERROR is reserved for observed runtime failures.
 	VmState_VmState_ERROR VmState = 4

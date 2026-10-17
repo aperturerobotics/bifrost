@@ -85,7 +85,7 @@ export function VmSerialConsole({
             view={terminalStatusToLoadingView(
               { kind: 'connecting' },
               {
-                cliSession: false,
+                session: 'console',
                 connectingTitle: 'Booting virtual machine',
                 connectingDetail:
                   'Waiting for the guest to write to its console.',

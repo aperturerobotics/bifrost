@@ -10,8 +10,11 @@ import {
 } from 'react'
 import type { MessageStream } from 'starpc'
 
-import { terminalStatusToLoadingView } from '@s4wave/app/loading/status/terminal.js'
-import type { TerminalStatus } from '@s4wave/app/loading/status/terminal.js'
+import {
+  terminalStatusToLoadingView,
+  type TerminalSessionKind,
+  type TerminalStatus,
+} from '@s4wave/app/loading/status/terminal.js'
 import {
   TerminalFrameKind,
   type TerminalFrame,
@@ -35,6 +38,8 @@ export type TerminalPaneTrustChallengeRenderer = (
 ) => ReactNode
 
 export interface TerminalPaneProps {
+  // session names what the terminal attaches to, for its status copy.
+  session: TerminalSessionKind
   connectTerminal?: TerminalPaneConnector
   renderTrustChallenge?: TerminalPaneTrustChallengeRenderer
   onRetry?: () => void
@@ -62,6 +67,7 @@ interface TerminalFrameStateHandlers {
 const connectingStatus: TerminalPaneStatus = { kind: 'connecting' }
 
 export function TerminalPane({
+  session,
   connectTerminal,
   renderTrustChallenge,
   onRetry,
@@ -209,7 +215,7 @@ export function TerminalPane({
         {status.kind !== 'ready' ? (
           <TerminalPaneStatusLayer
             status={status}
-            cliSession={!renderTrustChallenge}
+            session={session}
             onRetry={
               connectTerminal ? (onRetry ?? handleLocalRetry) : undefined
             }
@@ -223,12 +229,12 @@ export function TerminalPane({
 
 function TerminalPaneStatusLayer({
   status,
-  cliSession,
+  session,
   onRetry,
   onBackToSettings,
 }: {
   status: TerminalStatus
-  cliSession: boolean
+  session: TerminalSessionKind
   onRetry?: () => void
   onBackToSettings?: () => void
 }) {
@@ -241,7 +247,7 @@ function TerminalPaneStatusLayer({
     >
       <LoadingCard
         view={terminalStatusToLoadingView(status, {
-          cliSession,
+          session,
           onRetry,
           onBackToSettings,
         })}

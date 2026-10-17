@@ -206,14 +206,35 @@ function WasiVmScreen({
     <WasiVmDisplay connectDisplay={connectDisplay} />
   ) : (
     <TerminalPane
+      session="console"
       connectTerminal={connectConsole}
       describeFailure={describeConsoleFailure}
     />
   )
 }
 
-// WasiVmViewer displays a WasiVM. A stopped or failed VM shows its machine
-// card with Start or Reset; a running VM shows its console or its display.
+// WasiVmTransitionCardProps describes a VM moving between states.
+interface WasiVmTransitionCardProps {
+  title: string
+  detail: string
+}
+
+// WasiVmTransitionCard shows a VM that is starting or stopping.
+function WasiVmTransitionCard({ title, detail }: WasiVmTransitionCardProps) {
+  return (
+    <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+      <LoadingCard
+        view={{ state: 'active', title, detail }}
+        className="w-full max-w-sm"
+      />
+    </div>
+  )
+}
+
+// WasiVmViewer displays a WasiVM by the state its runtime observed. A stopped
+// or failed VM shows its machine card with Start or Reset, a starting or
+// stopping VM shows its progress, and a running VM shows its console or its
+// display.
 export default function WasiVmViewer({
   objectInfo,
   worldState,
@@ -256,10 +277,8 @@ export default function WasiVmViewer({
     )
   }
 
-  const running =
-    vm.state !== VmState.VmState_ERROR &&
-    (vm.desired === VmState.VmState_RUNNING ||
-      vm.state !== VmState.VmState_STOPPED)
+  const running = vm.state === VmState.VmState_RUNNING
+  const active = running || vm.state === VmState.VmState_STARTING
   const stopRequested = vm.desired === VmState.VmState_STOPPED
   return (
     <div className="bg-background-primary flex h-full w-full flex-col overflow-hidden">
@@ -270,14 +289,14 @@ export default function WasiVmViewer({
             onToggle={() => setShowDisplay(!showDisplay)}
           />
         )}
-        {running && (
+        {active && (
           <VmStopButton
-            disabled={stopRequested || vm.state === VmState.VmState_STOPPING}
+            disabled={stopRequested}
             onStop={() => setVmState(VmState.VmState_STOPPED)}
           />
         )}
       </VmHeader>
-      {operationError && running && (
+      {operationError && active && (
         <div className="shrink-0 p-3">
           <VmErrorBanner title="Operation error" message={operationError} />
         </div>
@@ -289,6 +308,16 @@ export default function WasiVmViewer({
           worldState={worldState}
           objectKey={objectKey}
           showDisplay={showDisplay}
+        />
+      ) : vm.state === VmState.VmState_STARTING ? (
+        <WasiVmTransitionCard
+          title="Starting virtual machine"
+          detail="Opening its root filesystem and booting the kernel."
+        />
+      ) : vm.state === VmState.VmState_STOPPING ? (
+        <WasiVmTransitionCard
+          title="Stopping virtual machine"
+          detail="Waiting for the kernel to stop."
         />
       ) : (
         <WasiVmMachineCard

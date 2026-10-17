@@ -158,7 +158,11 @@ function renderTerminalPane(
   }
 
   return render(
-    <TerminalPane connectTerminal={connectTerminal} {...statusActions} />,
+    <TerminalPane
+      session="cli"
+      connectTerminal={connectTerminal}
+      {...statusActions}
+    />,
   )
 }
 
@@ -347,7 +351,7 @@ describe('TerminalPane', () => {
       return terminalFrames([], true)
     }
     const { unmount } = render(
-      <TerminalPane connectTerminal={connectTerminal} />,
+      <TerminalPane session="cli" connectTerminal={connectTerminal} />,
     )
 
     await vi.waitFor(() => expect(h.onDataCallbacks).toHaveLength(1))
@@ -433,7 +437,13 @@ describe('TerminalPane', () => {
         false,
       ),
     )
-    render(<TerminalPane connectTerminal={connectTerminal} onRetry={onRetry} />)
+    render(
+      <TerminalPane
+        session="cli"
+        connectTerminal={connectTerminal}
+        onRetry={onRetry}
+      />,
+    )
 
     await screen.findByText('CLI session failed')
     screen.getByRole('button', { name: 'Retry' }).click()
@@ -449,7 +459,7 @@ describe('TerminalPane', () => {
     )
     render(
       <React.StrictMode>
-        <TerminalPane connectTerminal={connectTerminal} />
+        <TerminalPane session="cli" connectTerminal={connectTerminal} />
       </React.StrictMode>,
     )
 
@@ -483,7 +493,7 @@ describe('TerminalPane', () => {
         false,
       )
     }
-    render(<TerminalPane connectTerminal={connectTerminal} />)
+    render(<TerminalPane session="cli" connectTerminal={connectTerminal} />)
 
     await screen.findByText('CLI session failed')
     screen.getByRole('button', { name: 'Retry' }).click()

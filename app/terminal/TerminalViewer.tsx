@@ -104,6 +104,7 @@ export function TerminalViewer({
         </div>
       )}
       <TerminalPane
+        session="terminal"
         connectTerminal={connectTerminal}
         renderTrustChallenge={renderTrustChallenge}
       />

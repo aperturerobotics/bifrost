@@ -23,7 +23,8 @@ export enum VmState {
   VmState_STOPPED = 0,
 
   /**
-   * VmState_STARTING is retained as a start-request compatibility value.
+   * VmState_STARTING means a runtime is starting the VM. A request for it
+   * asks for RUNNING.
    *
    * @generated from enum value: VmState_STARTING = 1;
    */
@@ -37,7 +38,8 @@ export enum VmState {
   VmState_RUNNING = 2,
 
   /**
-   * VmState_STOPPING is retained as a stop-request compatibility value.
+   * VmState_STOPPING means a runtime is stopping the VM. A request for it
+   * asks for STOPPED.
    *
    * @generated from enum value: VmState_STOPPING = 3;
    */

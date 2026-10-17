@@ -5,8 +5,42 @@ export type TerminalStatus =
   | { kind: 'failed'; detail: string }
   | { kind: 'closed' }
 
+// TerminalSessionKind names what a terminal attaches to: the Spacewave CLI,
+// a terminal object's remote prompt, or a virtual machine's console.
+export type TerminalSessionKind = 'cli' | 'terminal' | 'console'
+
+// terminalSessionCopy is the status copy of each terminal session kind.
+const terminalSessionCopy: Record<
+  TerminalSessionKind,
+  {
+    name: string
+    connectingTitle: string
+    connectingDetail: string
+    closedDetail: string
+  }
+> = {
+  cli: {
+    name: 'CLI session',
+    connectingTitle: 'Connecting to Spacewave CLI…',
+    connectingDetail: 'Preparing a session-local command prompt.',
+    closedDetail: 'The command prompt has ended.',
+  },
+  terminal: {
+    name: 'Terminal session',
+    connectingTitle: 'Connecting terminal…',
+    connectingDetail: 'Connecting and waiting for the remote prompt.',
+    closedDetail: 'The command prompt has ended.',
+  },
+  console: {
+    name: 'Console',
+    connectingTitle: 'Attaching to the console…',
+    connectingDetail: 'Waiting for the virtual machine to write to it.',
+    closedDetail: 'The console has ended.',
+  },
+}
+
 interface TerminalStatusOptions {
-  cliSession: boolean
+  session: TerminalSessionKind
   connectingTitle?: string
   connectingDetail?: string
   onRetry?: () => void
@@ -19,11 +53,11 @@ export function terminalStatusToLoadingView(
   status: TerminalStatus,
   options: TerminalStatusOptions,
 ): LoadingView {
-  const sessionName = options.cliSession ? 'CLI session' : 'Terminal session'
+  const copy = terminalSessionCopy[options.session]
   if (status.kind === 'failed') {
     return {
       state: 'error',
-      title: `${sessionName} failed`,
+      title: `${copy.name} failed`,
       detail: status.detail,
       onRetry: options.onRetry,
       retryLabel: 'Retry',
@@ -34,23 +68,15 @@ export function terminalStatusToLoadingView(
   if (status.kind === 'closed') {
     return {
       state: 'error',
-      title: `${sessionName} ended`,
-      detail: 'The command prompt has ended.',
+      title: `${copy.name} ended`,
+      detail: copy.closedDetail,
       onRetry: options.onRetry,
       retryLabel: 'Restart',
     }
   }
   return {
     state: 'active',
-    title:
-      options.connectingTitle ??
-      (options.cliSession
-        ? 'Connecting to Spacewave CLI…'
-        : 'Connecting terminal…'),
-    detail:
-      options.connectingDetail ??
-      (options.cliSession
-        ? 'Preparing a session-local command prompt.'
-        : 'Connecting and waiting for the remote prompt.'),
+    title: options.connectingTitle ?? copy.connectingTitle,
+    detail: options.connectingDetail ?? copy.connectingDetail,
   }
 }

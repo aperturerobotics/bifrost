@@ -71,13 +71,14 @@ func resolveRootfs(
 	}
 
 	// Mount the CDN Space and find the published image's filesystem in it.
-	cdnWS, release, err := cdn_sharedobject.MountWorld(ctx, le, b, cdn.BaseURL(), src.GetSpaceId())
+	baseURL := cdn.BaseURL()
+	cdnWS, release, err := cdn_sharedobject.MountWorld(ctx, le, b, baseURL, src.GetSpaceId())
 	if err != nil {
-		return nil, errors.Wrapf(err, "mount the CDN Space %s", src.GetSpaceId())
+		return nil, errors.Wrapf(err, "mount the CDN Space %s from %s", src.GetSpaceId(), baseURL)
 	}
 	key, ok, err = world.LookupGraphObjectKey(ctx, cdnWS, src.GetObjectKey(), string(s4wave_vm.PredWasiVmImageRootfs))
 	if err == nil && !ok {
-		err = errors.Errorf("published image %s/%s has no root filesystem", src.GetSpaceId(), src.GetObjectKey())
+		err = errors.Errorf("%s publishes no root filesystem for image %s/%s", baseURL, src.GetSpaceId(), src.GetObjectKey())
 	}
 	if err != nil {
 		release()
