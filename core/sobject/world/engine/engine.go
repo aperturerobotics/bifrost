@@ -184,6 +184,9 @@ type soEngine struct {
 	// backfillChoice is this device's backfill choice, written under the
 	// controller's writer lock.
 	backfillChoice *ccontainer.CContainer[bool]
+	// backfillState is the outcome of the last finished copy while backfill
+	// is on, written under the controller's writer lock.
+	backfillState *ccontainer.CContainer[*BackfillState]
 	// rejected are the rejected edits last reported, guarded by the
 	// controller's writer lock.
 	rejected []*sobject.SORejectedEdit
@@ -208,6 +211,7 @@ func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObjec
 		bengine:        engine,
 		replay:         replay,
 		backfillChoice: ccontainer.NewCContainer(false),
+		backfillState:  ccontainer.NewCContainerVT[*BackfillState](nil),
 	}
 	e.backfill = routine.NewStateRoutineContainer[bool](
 		nil,

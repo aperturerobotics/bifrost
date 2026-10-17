@@ -45,6 +45,15 @@ type BackfillEngine interface {
 	SetBackfill(ctx context.Context, enabled bool) error
 	// GetBackfill watches this device's backfill choice.
 	GetBackfill() ccontainer.Watchable[bool]
+	// GetBackfillState watches the outcome of the last finished copy, nil
+	// while backfill is off or before its first copy finishes.
+	GetBackfillState() ccontainer.Watchable[*BackfillState]
+}
+
+// IsComplete reports whether the local store held every block of the covered
+// roots.
+func (s *BackfillState) IsComplete() bool {
+	return s != nil && s.GetHoles() == 0
 }
 
 // SetBackfill stores this device's backfill choice and starts or stops the
@@ -57,18 +66,27 @@ func (e *soEngine) SetBackfill(ctx context.Context, enabled bool) error {
 	}
 	defer unlockWriteMtx()
 
-	// Store the choice, then publish it and start or stop the copy.
+	// Store the choice, then publish it and start or stop the copy. Stopping
+	// cancels the copy before it can publish, so its outcome clears for good.
 	if err := writeBackfill(ctx, e.so, enabled); err != nil {
 		return err
 	}
 	e.backfillChoice.SetValue(enabled)
 	e.backfill.SetState(enabled)
+	if !enabled {
+		e.backfillState.SetValue(nil)
+	}
 	return nil
 }
 
 // GetBackfill watches this device's backfill choice.
 func (e *soEngine) GetBackfill() ccontainer.Watchable[bool] {
 	return e.backfillChoice
+}
+
+// GetBackfillState watches the outcome of the last finished copy.
+func (e *soEngine) GetBackfillState() ccontainer.Watchable[*BackfillState] {
+	return e.backfillState
 }
 
 // readBackfill reads this device's backfill choice for the World of so.
@@ -111,8 +129,9 @@ func writeBackfill(ctx context.Context, so sobject.SharedObject, enabled bool) e
 }
 
 // executeBackfill copies the installed World and the retained roots into the
-// local store, then again after each World change. Completion proofs make each
-// copy skip the subtrees an earlier copy finished.
+// local store, then again after each World change, and publishes the outcome of
+// each copy. Completion proofs make each copy skip the subtrees an earlier copy
+// finished.
 func (e *soEngine) executeBackfill(ctx context.Context, _ bool) error {
 	le := e.c.le
 	for {
@@ -122,14 +141,14 @@ func (e *soEngine) executeBackfill(ctx context.Context, _ bool) error {
 		e.c.writeBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
 			waitCh = getWaitCh()
 		})
-		roots, err := e.backfillRoots(ctx)
+		roots, seqno, err := e.backfillRoots(ctx)
 		if err != nil {
 			return err
 		}
 
 		// Copy them, logging each block no peer holds and continuing past it.
 		start := time.Now()
-		var holes int
+		var holes uint32
 		missing := func(ref *block.BlockRef) {
 			holes++
 			le.WithField("block", ref.MarshalString()).Warn("backfill found a block no peer holds")
@@ -141,6 +160,9 @@ func (e *soEngine) executeBackfill(ctx context.Context, _ bool) error {
 			"dur":   time.Since(start).String(),
 			"holes": holes,
 		}).Debug("backfilled the World")
+		if err := e.publishBackfill(ctx, &BackfillState{Root: roots[0], Holes: holes, Seqno: seqno}); err != nil {
+			return err
+		}
 
 		// Wait for the next change.
 		select {
@@ -151,22 +173,43 @@ func (e *soEngine) executeBackfill(ctx context.Context, _ bool) error {
 	}
 }
 
-// backfillRoots returns the installed World root and the retained roots.
-func (e *soEngine) backfillRoots(ctx context.Context) ([]*block.BlockRef, error) {
+// publishBackfill publishes the outcome of a copy under the writer lock, unless
+// SetBackfill stopped the copy first.
+func (e *soEngine) publishBackfill(ctx context.Context, state *BackfillState) error {
+	// Take the lock SetBackfill holds, then check the copy is still wanted.
+	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	defer unlockWriteMtx()
+	if ctx.Err() != nil {
+		return context.Cause(ctx)
+	}
+	e.backfillState.SetValue(state)
+	return nil
+}
+
+// backfillRoots returns the installed World root, then the retained roots, and
+// the World seqno of the installed root.
+func (e *soEngine) backfillRoots(ctx context.Context) ([]*block.BlockRef, uint64, error) {
 	// Read them under the writer lock once the installed World is durable,
 	// since the copy reads only the store.
 	unlockWriteMtx, err := e.c.lockSettled(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer unlockWriteMtx()
+	seqno, err := e.bengine.GetSeqno(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	// Collect the head, then the retained roots.
 	roots := []*block.BlockRef{e.retained.GetRootRef()}
 	for _, root := range e.retainedRoots {
 		roots = append(roots, root.GetRootRef())
 	}
-	return roots, nil
+	return roots, seqno, nil
 }
 
 // _ is a type assertion
