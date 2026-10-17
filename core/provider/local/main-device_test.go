@@ -130,13 +130,15 @@ func TestFollowerInstallsLeaderCheckpoint(t *testing.T) {
 	}
 }
 
-// waitCheckpoint waits until the Space's checkpoint publishes the World root
-// with no edit above it.
+// waitCheckpoint waits until the state the World engine replays holds a
+// checkpoint of the World root with no edit above it. The durable state can
+// lead the admitted state, so a durable checkpoint does not yet reach the
+// engine.
 func (m *offlineMember) waitCheckpoint(ctx context.Context, root *block.BlockRef) {
-	// Watch the readable state.
+	// Watch the admitted state.
 	t := m.t
 	t.Helper()
-	states, release, err := m.object.AccessSharedObjectState(ctx, nil)
+	states, release, err := m.object.AccessAdmittedState(ctx, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
