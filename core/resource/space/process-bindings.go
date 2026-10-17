@@ -48,12 +48,18 @@ func (r *SpaceResource) WatchProcessBindings(
 
 // listProcessBindingInfos reads local decisions from the Space's account store.
 func listProcessBindingInfos(ctx context.Context, b bus.Bus, volumeID, storeID, spaceID string) ([]*s4wave_space.ProcessBindingInfo, error) {
-	// Read and project local process decisions from the Space account store.
+	// Open the Space account store. An idle directive returns no store, as
+	// when the volume is unloading.
 	handle, _, ref, err := volume.ExBuildObjectStoreAPI(ctx, b, true, storeID, volumeID, nil)
 	if err != nil {
 		return nil, err
 	}
+	if ref == nil {
+		return nil, errors.New("process binding store unavailable")
+	}
 	defer ref.Release()
+
+	// Read and project the local process decisions.
 	bindings, err := process_binding.ListProcessBindings(ctx, handle.GetObjectStore(), spaceID)
 	if err != nil {
 		return nil, err
