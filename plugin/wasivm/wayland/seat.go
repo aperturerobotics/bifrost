@@ -301,10 +301,9 @@ func (c *Compositor) drag() {
 	g := c.grab
 	t, d := g.w.xdg.toplevel, c.pointer.Sub(g.pointer)
 	if g.edges == 0 {
-		before := c.bounds(g.w)
-		t.pos = g.rect.Min.Add(d)
-		t.pos.Y = max(t.pos.Y, c.usable.Min.Y)
-		c.damage(before.Union(c.bounds(g.w)))
+		pos := g.rect.Min.Add(d)
+		pos.Y = max(pos.Y, c.usable.Min.Y)
+		c.moveWindow(g.w, pos)
 		return
 	}
 

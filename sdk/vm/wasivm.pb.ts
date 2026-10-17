@@ -423,7 +423,118 @@ export const SetWasiVmStateOp: MessageType<SetWasiVmStateOp> =
   })
 
 /**
- * WasiVmDisplayFrame is a region of the screen.
+ * WasiVmDisplayCopy moves an area of the viewer's screen, as a window that
+ * moves on screen does, so its pixels need not be sent again. The source and
+ * the destination lie inside the screen and may overlap.
+ *
+ * @generated from message s4wave.vm.WasiVmDisplayCopy
+ */
+export interface WasiVmDisplayCopy {
+  /**
+   * X is the left edge of the source area.
+   *
+   * @generated from field: uint32 x = 1;
+   */
+  x?: number
+  /**
+   * Y is the top edge of the source area.
+   *
+   * @generated from field: uint32 y = 2;
+   */
+  y?: number
+  /**
+   * Width is the area's width in pixels.
+   *
+   * @generated from field: uint32 width = 3;
+   */
+  width?: number
+  /**
+   * Height is the area's height in pixels.
+   *
+   * @generated from field: uint32 height = 4;
+   */
+  height?: number
+  /**
+   * ToX is the left edge of the destination.
+   *
+   * @generated from field: uint32 to_x = 5;
+   */
+  toX?: number
+  /**
+   * ToY is the top edge of the destination.
+   *
+   * @generated from field: uint32 to_y = 6;
+   */
+  toY?: number
+}
+
+export const WasiVmDisplayCopy: MessageType<WasiVmDisplayCopy> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmDisplayCopy',
+    fields: [
+      { no: 1, name: 'x', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'y', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 3, name: 'width', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 4, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 5, name: 'to_x', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 6, name: 'to_y', kind: 'scalar', T: ScalarType.UINT32 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmDisplayRegion is a rectangle of the screen's pixels.
+ *
+ * @generated from message s4wave.vm.WasiVmDisplayRegion
+ */
+export interface WasiVmDisplayRegion {
+  /**
+   * X is the left edge of the region.
+   *
+   * @generated from field: uint32 x = 1;
+   */
+  x?: number
+  /**
+   * Y is the top edge of the region.
+   *
+   * @generated from field: uint32 y = 2;
+   */
+  y?: number
+  /**
+   * Width is the region's width in pixels.
+   *
+   * @generated from field: uint32 width = 3;
+   */
+  width?: number
+  /**
+   * Height is the region's height in pixels.
+   *
+   * @generated from field: uint32 height = 4;
+   */
+  height?: number
+  /**
+   * Rgba holds the region's pixels row by row, four bytes each: red, green,
+   * blue and an opaque alpha.
+   *
+   * @generated from field: bytes rgba = 5;
+   */
+  rgba?: Uint8Array
+}
+
+export const WasiVmDisplayRegion: MessageType<WasiVmDisplayRegion> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmDisplayRegion',
+    fields: [
+      { no: 1, name: 'x', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 2, name: 'y', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 3, name: 'width', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 4, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 5, name: 'rgba', kind: 'scalar', T: ScalarType.BYTES },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
+ * WasiVmDisplayFrame is a change to the screen: areas the viewer moves on its
+ * copy, then regions it draws over the result.
  *
  * @generated from message s4wave.vm.WasiVmDisplayFrame
  */
@@ -441,36 +552,18 @@ export interface WasiVmDisplayFrame {
    */
   screenHeight?: number
   /**
-   * X is the left edge of the region.
+   * Copies move areas of the viewer's screen, in order, before the regions
+   * draw.
    *
-   * @generated from field: uint32 x = 3;
+   * @generated from field: repeated s4wave.vm.WasiVmDisplayCopy copies = 3;
    */
-  x?: number
+  copies?: WasiVmDisplayCopy[]
   /**
-   * Y is the top edge of the region.
+   * Regions draw pixels over the screen after the copies.
    *
-   * @generated from field: uint32 y = 4;
+   * @generated from field: repeated s4wave.vm.WasiVmDisplayRegion regions = 4;
    */
-  y?: number
-  /**
-   * Width is the region's width in pixels.
-   *
-   * @generated from field: uint32 width = 5;
-   */
-  width?: number
-  /**
-   * Height is the region's height in pixels.
-   *
-   * @generated from field: uint32 height = 6;
-   */
-  height?: number
-  /**
-   * Rgba holds the region's pixels row by row, four bytes each: red, green,
-   * blue and an opaque alpha.
-   *
-   * @generated from field: bytes rgba = 7;
-   */
-  rgba?: Uint8Array
+  regions?: WasiVmDisplayRegion[]
 }
 
 export const WasiVmDisplayFrame: MessageType<WasiVmDisplayFrame> =
@@ -479,11 +572,20 @@ export const WasiVmDisplayFrame: MessageType<WasiVmDisplayFrame> =
     fields: [
       { no: 1, name: 'screen_width', kind: 'scalar', T: ScalarType.UINT32 },
       { no: 2, name: 'screen_height', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'x', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'y', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'width', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 6, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'rgba', kind: 'scalar', T: ScalarType.BYTES },
+      {
+        no: 3,
+        name: 'copies',
+        kind: 'message',
+        T: WasiVmDisplayCopy,
+        repeated: true,
+      },
+      {
+        no: 4,
+        name: 'regions',
+        kind: 'message',
+        T: WasiVmDisplayRegion,
+        repeated: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
   })
 

@@ -137,15 +137,51 @@ func (c *Compositor) arrange() {
 	}
 }
 
-// raise moves the window w to the top of the stack. The caller holds the
-// lock.
+// raise moves the mapped window w to the top of the stack, drawing again
+// the parts of it the windows above covered. The caller holds the lock.
 func (c *Compositor) raise(w *surface) {
-	if n := len(c.windows); n == 0 || c.windows[n-1] == w {
+	i := slices.Index(c.windows, w)
+	b := c.bounds(w)
+	for _, above := range c.windows[i+1:] {
+		c.damage(b.Intersect(c.bounds(above)))
+	}
+	c.windows = append(slices.Delete(c.windows, i, i+1), w)
+}
+
+// moveWindow moves the window w so its geometry's corner sits at pos. When
+// its surface is opaque and nothing above its tree covers it, the viewers
+// move the pixels they have and draw only what the move uncovers. The
+// caller holds the lock.
+func (c *Compositor) moveWindow(w *surface, pos image.Point) {
+	// Move it.
+	before, from := c.bounds(w), w.origin()
+	w.xdg.toplevel.pos = pos
+	after, by := c.bounds(w), w.origin().Sub(from)
+	if by == (image.Point{}) {
 		return
 	}
-	c.windows = slices.DeleteFunc(c.windows, func(t *surface) bool { return t == w })
-	c.windows = append(c.windows, w)
-	c.damage(c.bounds(w))
+
+	// Move the pixels of an opaque uncovered surface, then draw the rest of
+	// both places.
+	var moved image.Rectangle
+	if w.opaque && w.image != nil && !c.covered(w, before.Union(after)) {
+		moved = c.shift(image.Rectangle{Min: from, Max: from.Add(w.size)}, by)
+	}
+	for _, r := range slices.Concat(subtract(before, moved), subtract(after, moved)) {
+		c.damage(r)
+	}
+}
+
+// covered reports whether a tree drawn above the tree of the window or layer
+// surface w overlaps the screen area r. The caller holds the lock.
+func (c *Compositor) covered(w *surface, r image.Rectangle) bool {
+	roots := c.roots()
+	for _, above := range roots[slices.Index(roots, w)+1:] {
+		if c.bounds(above).Overlaps(r) {
+			return true
+		}
+	}
+	return false
 }
 
 // setState maximizes the window s to the usable area, fills the screen with
@@ -253,13 +289,40 @@ func (c *Compositor) surfaceAt(pt image.Point) *surface {
 	return nil
 }
 
+// readFrame takes what the view v lacks as a frame: its moves, then its
+// areas read from the screen. The caller holds the lock.
+func (c *Compositor) readFrame(v *view) *s4wave_vm.WasiVmDisplayFrame {
+	// List the moves, then read each area after them.
+	f := &s4wave_vm.WasiVmDisplayFrame{
+		ScreenWidth:  uint32(c.screen.Dx()), //nolint:gosec // screen sizes are small.
+		ScreenHeight: uint32(c.screen.Dy()), //nolint:gosec // screen sizes are small.
+	}
+	for _, m := range v.copies {
+		src, dst := m.src, m.dst()
+		f.Copies = append(f.Copies, &s4wave_vm.WasiVmDisplayCopy{
+			X:      uint32(src.Min.X), //nolint:gosec // inside the screen.
+			Y:      uint32(src.Min.Y), //nolint:gosec // inside the screen.
+			Width:  uint32(src.Dx()),  //nolint:gosec // inside the screen.
+			Height: uint32(src.Dy()),  //nolint:gosec // inside the screen.
+			ToX:    uint32(dst.Min.X), //nolint:gosec // inside the screen.
+			ToY:    uint32(dst.Min.Y), //nolint:gosec // inside the screen.
+		})
+	}
+	for _, r := range v.damage {
+		f.Regions = append(f.Regions, c.readScreen(r))
+	}
+	v.copies, v.damage = v.copies[:0], v.damage[:0]
+	return f
+}
+
 // readScreen composites the area r of the screen: the windows and layer
 // surfaces, bottom to top, over the background. The caller holds the lock.
-func (c *Compositor) readScreen(r image.Rectangle) *s4wave_vm.WasiVmDisplayFrame {
-	// Fill the background.
+func (c *Compositor) readScreen(r image.Rectangle) *s4wave_vm.WasiVmDisplayRegion {
+	// Fill the background: one pixel, then double the filled prefix, so a
+	// large area takes a few long copies instead of one per pixel.
 	pix := make([]byte, 4*r.Dx()*r.Dy())
-	for i := 0; i < len(pix); i += 4 {
-		copy(pix[i:i+4], background[:])
+	for n := copy(pix, background[:]); n < len(pix); {
+		n += copy(pix[n:], pix[:n])
 	}
 
 	// Draw each surface of each tree.
@@ -269,14 +332,12 @@ func (c *Compositor) readScreen(r image.Rectangle) *s4wave_vm.WasiVmDisplayFrame
 			return false
 		})
 	}
-	return &s4wave_vm.WasiVmDisplayFrame{
-		ScreenWidth:  uint32(c.screen.Dx()), //nolint:gosec // screen sizes are small.
-		ScreenHeight: uint32(c.screen.Dy()), //nolint:gosec // screen sizes are small.
-		X:            uint32(r.Min.X),       //nolint:gosec // inside the screen.
-		Y:            uint32(r.Min.Y),       //nolint:gosec // inside the screen.
-		Width:        uint32(r.Dx()),        //nolint:gosec // inside the screen.
-		Height:       uint32(r.Dy()),        //nolint:gosec // inside the screen.
-		Rgba:         pix,
+	return &s4wave_vm.WasiVmDisplayRegion{
+		X:      uint32(r.Min.X), //nolint:gosec // inside the screen.
+		Y:      uint32(r.Min.Y), //nolint:gosec // inside the screen.
+		Width:  uint32(r.Dx()),  //nolint:gosec // inside the screen.
+		Height: uint32(r.Dy()),  //nolint:gosec // inside the screen.
+		Rgba:   pix,
 	}
 }
 

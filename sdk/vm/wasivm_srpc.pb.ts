@@ -119,8 +119,8 @@ export const WasiVmDisplayServiceDefinition = {
     /**
      * Display streams the screen and carries input back. Once the guest brings
      * up a display, an X server on display 0 or a Wayland client, the VM sends
-     * the whole screen, then each region that changes. The viewer sends pointer
-     * and key input. The stream ends when the display closes.
+     * the whole screen, then each change. The viewer sends pointer and key
+     * input. The stream ends when the display closes.
      *
      * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
      */
@@ -143,8 +143,8 @@ export interface WasiVmDisplayService {
   /**
    * Display streams the screen and carries input back. Once the guest brings
    * up a display, an X server on display 0 or a Wayland client, the VM sends
-   * the whole screen, then each region that changes. The viewer sends pointer
-   * and key input. The stream ends when the display closes.
+   * the whole screen, then each change. The viewer sends pointer and key
+   * input. The stream ends when the display closes.
    *
    * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
    */
@@ -164,8 +164,8 @@ export interface WasiVmDisplayServiceHandler {
   /**
    * Display streams the screen and carries input back. Once the guest brings
    * up a display, an X server on display 0 or a Wayland client, the VM sends
-   * the whole screen, then each region that changes. The viewer sends pointer
-   * and key input. The stream ends when the display closes.
+   * the whole screen, then each change. The viewer sends pointer and key
+   * input. The stream ends when the display closes.
    *
    * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
    */
@@ -190,8 +190,8 @@ export class WasiVmDisplayServiceClient implements WasiVmDisplayService {
   /**
    * Display streams the screen and carries input back. Once the guest brings
    * up a display, an X server on display 0 or a Wayland client, the VM sends
-   * the whole screen, then each region that changes. The viewer sends pointer
-   * and key input. The stream ends when the display closes.
+   * the whole screen, then each change. The viewer sends pointer and key
+   * input. The stream ends when the display closes.
    *
    * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
    */

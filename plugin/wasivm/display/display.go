@@ -254,11 +254,13 @@ func (c *Client) sendRegion(send func(*s4wave_vm.WasiVmDisplayFrame) error, area
 	return send(&s4wave_vm.WasiVmDisplayFrame{
 		ScreenWidth:  uint32(c.width),
 		ScreenHeight: uint32(c.height),
-		X:            uint32(area.X), //nolint:gosec // clipped to the screen.
-		Y:            uint32(area.Y), //nolint:gosec // clipped to the screen.
-		Width:        uint32(area.Width),
-		Height:       uint32(area.Height),
-		Rgba:         pix,
+		Regions: []*s4wave_vm.WasiVmDisplayRegion{{
+			X:      uint32(area.X), //nolint:gosec // clipped to the screen.
+			Y:      uint32(area.Y), //nolint:gosec // clipped to the screen.
+			Width:  uint32(area.Width),
+			Height: uint32(area.Height),
+			Rgba:   pix,
+		}},
 	})
 }
 

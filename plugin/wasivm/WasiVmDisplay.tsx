@@ -70,17 +70,40 @@ export function WasiVmDisplay({ connectDisplay }: WasiVmDisplayProps) {
             canvas.height = screenHeight
           }
 
-          // Draw the region.
-          const width = frame.width ?? 0
-          const height = frame.height ?? 0
-          const rgba = frame.rgba
-          if (width && height && rgba?.length === width * height * 4) {
-            const pixels = new Uint8ClampedArray(rgba)
-            ctx.putImageData(
-              new ImageData(pixels, width, height),
-              frame.x ?? 0,
-              frame.y ?? 0,
-            )
+          // Move the copied areas in order, then draw the regions.
+          for (const m of frame.copies ?? []) {
+            const width = m.width ?? 0
+            const height = m.height ?? 0
+            if (width && height) {
+              ctx.drawImage(
+                canvas,
+                m.x ?? 0,
+                m.y ?? 0,
+                width,
+                height,
+                m.toX ?? 0,
+                m.toY ?? 0,
+                width,
+                height,
+              )
+            }
+          }
+          for (const r of frame.regions ?? []) {
+            const width = r.width ?? 0
+            const height = r.height ?? 0
+            const rgba = r.rgba
+            if (width && height && rgba?.length === width * height * 4) {
+              const pixels = new Uint8ClampedArray(
+                rgba.buffer,
+                rgba.byteOffset,
+                rgba.length,
+              )
+              ctx.putImageData(
+                new ImageData(pixels, width, height),
+                r.x ?? 0,
+                r.y ?? 0,
+              )
+            }
           }
           if (!ready && !cancelled) {
             ready = true

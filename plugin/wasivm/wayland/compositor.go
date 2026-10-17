@@ -73,10 +73,9 @@ type Compositor struct {
 	// popupGrabs is the popups that close on a press outside them, oldest
 	// first.
 	popupGrabs []*surface
-	// viewers holds each viewer's damage: the screen area changed since its
-	// last frame.
-	viewers map[*image.Rectangle]struct{}
-	// dirty is set when the viewers' damage grew under the current lock.
+	// viewers holds what each viewer's copy of the screen lacks.
+	viewers map[*view]struct{}
+	// dirty is set when a viewer's copy fell behind under the current lock.
 	dirty bool
 	// pointer is the pointer's position on the screen.
 	pointer image.Point
@@ -103,7 +102,7 @@ func Listen(k *kernel.Kernel, width, height int) (*Compositor, error) {
 		start:    time.Now(),
 		keymap:   k.NewMemfd("keymap", append([]byte(keymap), 0)),
 		clients:  make(map[*client]struct{}),
-		viewers:  make(map[*image.Rectangle]struct{}),
+		viewers:  make(map[*view]struct{}),
 	}, nil
 }
 
@@ -183,28 +182,26 @@ func (c *Compositor) WaitClient(ctx context.Context) error {
 	}
 }
 
-// Run sends the whole screen to send, then each area that changes, until
-// Close or ctx ends. Each area is the bounding box of the changes since the
-// last one.
+// Run sends the whole screen to send, then the changes since each frame,
+// until Close or ctx ends.
 func (c *Compositor) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplayFrame) error) error {
-	// Register the viewer with the whole screen damaged.
-	damage := c.screen
+	// Register the viewer with the whole screen to draw.
+	v := &view{damage: []image.Rectangle{c.screen}}
 	c.bcast.HoldLock(func(func(), func() <-chan struct{}) {
-		c.viewers[&damage] = struct{}{}
+		c.viewers[v] = struct{}{}
 	})
 	defer c.bcast.HoldLock(func(func(), func() <-chan struct{}) {
-		delete(c.viewers, &damage)
+		delete(c.viewers, v)
 	})
 
-	// Send the damaged area each time it grows.
+	// Send the changes each time the viewer falls behind.
 	for {
 		var frame *s4wave_vm.WasiVmDisplayFrame
 		var closed bool
 		var waitCh <-chan struct{}
 		c.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			if !damage.Empty() {
-				frame = c.readScreen(damage)
-				damage = image.Rectangle{}
+			if !v.empty() {
+				frame = c.readFrame(v)
 			}
 			closed, waitCh = c.closed, getWaitCh()
 		})
@@ -236,17 +233,35 @@ func (c *Compositor) update(fn func()) {
 	})
 }
 
-// damage adds r to every viewer's damage. The caller holds the lock through
-// update, which wakes the viewers.
+// damage marks the screen area r for every viewer to draw again. The caller
+// holds the lock through update, which wakes the viewers.
 func (c *Compositor) damage(r image.Rectangle) {
 	r = r.Intersect(c.screen)
 	if r.Empty() {
 		return
 	}
-	for d := range c.viewers {
-		*d = d.Union(r)
+	for v := range c.viewers {
+		v.add(r)
 	}
 	c.dirty = true
+}
+
+// shift has every viewer move the screen area src by by, as far as both ends
+// stay on the screen, and returns the area it moved to. The caller marks the
+// areas the move uncovers, and holds the lock through update.
+func (c *Compositor) shift(src image.Rectangle, by image.Point) image.Rectangle {
+	// Keep the part whose source and destination are on the screen.
+	src = src.Intersect(c.screen).Intersect(c.screen.Sub(by))
+	if src.Empty() || by == (image.Point{}) {
+		return image.Rectangle{}
+	}
+
+	// Queue the move for every viewer.
+	for v := range c.viewers {
+		v.copy(src, by)
+	}
+	c.dirty = true
+	return src.Add(by)
 }
 
 // nextSerial returns a new event serial. The caller holds the lock.

@@ -187,9 +187,12 @@ func (s *surface) commit() error {
 			relayout = true
 		}
 
-		// Redraw, unless the tree mapped or unmapped, which redraws it.
+		// Redraw where the tree was and is. Mapping draws a new tree. An
+		// unmapped tree is drawn again where it was, since a null buffer
+		// emptied its bounds before the unmap saw them.
 		switch {
 		case w != comp.rootOf(s):
+			comp.damage(before)
 		case relayout:
 			comp.damage(before.Union(comp.bounds(w)))
 			comp.refocusPointer()

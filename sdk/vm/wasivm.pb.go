@@ -429,24 +429,19 @@ func (x *SetWasiVmStateOp) GetState() VmState {
 	return VmState_VmState_STOPPED
 }
 
-// WasiVmDisplayFrame is a region of the screen.
+// WasiVmDisplayFrame is a change to the screen: areas the viewer moves on its
+// copy, then regions it draws over the result.
 type WasiVmDisplayFrame struct {
 	unknownFields []byte
 	// ScreenWidth is the screen's width in pixels.
 	ScreenWidth uint32 `protobuf:"varint,1,opt,name=screen_width,json=screenWidth,proto3" json:"screenWidth,omitempty"`
 	// ScreenHeight is the screen's height in pixels.
 	ScreenHeight uint32 `protobuf:"varint,2,opt,name=screen_height,json=screenHeight,proto3" json:"screenHeight,omitempty"`
-	// X is the left edge of the region.
-	X uint32 `protobuf:"varint,3,opt,name=x,proto3" json:"x,omitempty"`
-	// Y is the top edge of the region.
-	Y uint32 `protobuf:"varint,4,opt,name=y,proto3" json:"y,omitempty"`
-	// Width is the region's width in pixels.
-	Width uint32 `protobuf:"varint,5,opt,name=width,proto3" json:"width,omitempty"`
-	// Height is the region's height in pixels.
-	Height uint32 `protobuf:"varint,6,opt,name=height,proto3" json:"height,omitempty"`
-	// Rgba holds the region's pixels row by row, four bytes each: red, green,
-	// blue and an opaque alpha.
-	Rgba []byte `protobuf:"bytes,7,opt,name=rgba,proto3" json:"rgba,omitempty"`
+	// Copies move areas of the viewer's screen, in order, before the regions
+	// draw.
+	Copies []*WasiVmDisplayCopy `protobuf:"bytes,3,rep,name=copies,proto3" json:"copies,omitempty"`
+	// Regions draw pixels over the screen after the copies.
+	Regions []*WasiVmDisplayRegion `protobuf:"bytes,4,rep,name=regions,proto3" json:"regions,omitempty"`
 }
 
 func (x *WasiVmDisplayFrame) Reset() {
@@ -469,35 +464,138 @@ func (x *WasiVmDisplayFrame) GetScreenHeight() uint32 {
 	return 0
 }
 
-func (x *WasiVmDisplayFrame) GetX() uint32 {
+func (x *WasiVmDisplayFrame) GetCopies() []*WasiVmDisplayCopy {
+	if x != nil {
+		return x.Copies
+	}
+	return nil
+}
+
+func (x *WasiVmDisplayFrame) GetRegions() []*WasiVmDisplayRegion {
+	if x != nil {
+		return x.Regions
+	}
+	return nil
+}
+
+// WasiVmDisplayCopy moves an area of the viewer's screen, as a window that
+// moves on screen does, so its pixels need not be sent again. The source and
+// the destination lie inside the screen and may overlap.
+type WasiVmDisplayCopy struct {
+	unknownFields []byte
+	// X is the left edge of the source area.
+	X uint32 `protobuf:"varint,1,opt,name=x,proto3" json:"x,omitempty"`
+	// Y is the top edge of the source area.
+	Y uint32 `protobuf:"varint,2,opt,name=y,proto3" json:"y,omitempty"`
+	// Width is the area's width in pixels.
+	Width uint32 `protobuf:"varint,3,opt,name=width,proto3" json:"width,omitempty"`
+	// Height is the area's height in pixels.
+	Height uint32 `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty"`
+	// ToX is the left edge of the destination.
+	ToX uint32 `protobuf:"varint,5,opt,name=to_x,json=toX,proto3" json:"toX,omitempty"`
+	// ToY is the top edge of the destination.
+	ToY uint32 `protobuf:"varint,6,opt,name=to_y,json=toY,proto3" json:"toY,omitempty"`
+}
+
+func (x *WasiVmDisplayCopy) Reset() {
+	*x = WasiVmDisplayCopy{}
+}
+
+func (*WasiVmDisplayCopy) ProtoMessage() {}
+
+func (x *WasiVmDisplayCopy) GetX() uint32 {
 	if x != nil {
 		return x.X
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayFrame) GetY() uint32 {
+func (x *WasiVmDisplayCopy) GetY() uint32 {
 	if x != nil {
 		return x.Y
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayFrame) GetWidth() uint32 {
+func (x *WasiVmDisplayCopy) GetWidth() uint32 {
 	if x != nil {
 		return x.Width
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayFrame) GetHeight() uint32 {
+func (x *WasiVmDisplayCopy) GetHeight() uint32 {
 	if x != nil {
 		return x.Height
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayFrame) GetRgba() []byte {
+func (x *WasiVmDisplayCopy) GetToX() uint32 {
+	if x != nil {
+		return x.ToX
+	}
+	return 0
+}
+
+func (x *WasiVmDisplayCopy) GetToY() uint32 {
+	if x != nil {
+		return x.ToY
+	}
+	return 0
+}
+
+// WasiVmDisplayRegion is a rectangle of the screen's pixels.
+type WasiVmDisplayRegion struct {
+	unknownFields []byte
+	// X is the left edge of the region.
+	X uint32 `protobuf:"varint,1,opt,name=x,proto3" json:"x,omitempty"`
+	// Y is the top edge of the region.
+	Y uint32 `protobuf:"varint,2,opt,name=y,proto3" json:"y,omitempty"`
+	// Width is the region's width in pixels.
+	Width uint32 `protobuf:"varint,3,opt,name=width,proto3" json:"width,omitempty"`
+	// Height is the region's height in pixels.
+	Height uint32 `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty"`
+	// Rgba holds the region's pixels row by row, four bytes each: red, green,
+	// blue and an opaque alpha.
+	Rgba []byte `protobuf:"bytes,5,opt,name=rgba,proto3" json:"rgba,omitempty"`
+}
+
+func (x *WasiVmDisplayRegion) Reset() {
+	*x = WasiVmDisplayRegion{}
+}
+
+func (*WasiVmDisplayRegion) ProtoMessage() {}
+
+func (x *WasiVmDisplayRegion) GetX() uint32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *WasiVmDisplayRegion) GetY() uint32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *WasiVmDisplayRegion) GetWidth() uint32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *WasiVmDisplayRegion) GetHeight() uint32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *WasiVmDisplayRegion) GetRgba() []byte {
 	if x != nil {
 		return x.Rgba
 	}
@@ -814,6 +912,44 @@ func (m *WasiVmDisplayFrame) CloneVT() *WasiVmDisplayFrame {
 	r := new(WasiVmDisplayFrame)
 	r.ScreenWidth = m.ScreenWidth
 	r.ScreenHeight = m.ScreenHeight
+	r.Copies = protobuf_go_lite.CloneVTSlice(m.Copies)
+	r.Regions = protobuf_go_lite.CloneVTSlice(m.Regions)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmDisplayFrame) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmDisplayCopy) CloneVT() *WasiVmDisplayCopy {
+	if m == nil {
+		return (*WasiVmDisplayCopy)(nil)
+	}
+	r := new(WasiVmDisplayCopy)
+	r.X = m.X
+	r.Y = m.Y
+	r.Width = m.Width
+	r.Height = m.Height
+	r.ToX = m.ToX
+	r.ToY = m.ToY
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmDisplayCopy) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmDisplayRegion) CloneVT() *WasiVmDisplayRegion {
+	if m == nil {
+		return (*WasiVmDisplayRegion)(nil)
+	}
+	r := new(WasiVmDisplayRegion)
 	r.X = m.X
 	r.Y = m.Y
 	r.Width = m.Width
@@ -825,7 +961,7 @@ func (m *WasiVmDisplayFrame) CloneVT() *WasiVmDisplayFrame {
 	return r
 }
 
-func (m *WasiVmDisplayFrame) CloneMessageVT() protobuf_go_lite.CloneMessage {
+func (m *WasiVmDisplayRegion) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1163,6 +1299,64 @@ func (this *WasiVmDisplayFrame) EqualVT(that *WasiVmDisplayFrame) bool {
 	if this.ScreenHeight != that.ScreenHeight {
 		return false
 	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Copies, that.Copies, func() *WasiVmDisplayCopy { return &WasiVmDisplayCopy{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Regions, that.Regions, func() *WasiVmDisplayRegion { return &WasiVmDisplayRegion{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmDisplayFrame) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmDisplayFrame)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmDisplayCopy) EqualVT(that *WasiVmDisplayCopy) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.X != that.X {
+		return false
+	}
+	if this.Y != that.Y {
+		return false
+	}
+	if this.Width != that.Width {
+		return false
+	}
+	if this.Height != that.Height {
+		return false
+	}
+	if this.ToX != that.ToX {
+		return false
+	}
+	if this.ToY != that.ToY {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmDisplayCopy) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmDisplayCopy)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmDisplayRegion) EqualVT(that *WasiVmDisplayRegion) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
 	if this.X != that.X {
 		return false
 	}
@@ -1181,8 +1375,8 @@ func (this *WasiVmDisplayFrame) EqualVT(that *WasiVmDisplayFrame) bool {
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
-func (this *WasiVmDisplayFrame) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*WasiVmDisplayFrame)
+func (this *WasiVmDisplayRegion) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmDisplayRegion)
 	if !ok {
 		return false
 	}
@@ -1988,6 +2182,186 @@ func (x *WasiVmDisplayFrame) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("screenHeight")
 		s.WriteUint32(x.ScreenHeight)
 	}
+	if len(x.Copies) > 0 || s.HasField("copies") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("copies")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Copies {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("copies"))
+		}
+		s.WriteArrayEnd()
+	}
+	if len(x.Regions) > 0 || s.HasField("regions") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("regions")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Regions {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("regions"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmDisplayFrame to JSON.
+func (x *WasiVmDisplayFrame) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmDisplayFrame message from JSON.
+func (x *WasiVmDisplayFrame) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "screen_width", "screenWidth":
+			s.AddField("screen_width")
+			x.ScreenWidth = s.ReadUint32()
+		case "screen_height", "screenHeight":
+			s.AddField("screen_height")
+			x.ScreenHeight = s.ReadUint32()
+		case "copies":
+			s.AddField("copies")
+			if s.ReadNil() {
+				x.Copies = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Copies = append(x.Copies, nil)
+					return
+				}
+				v := &WasiVmDisplayCopy{}
+				v.UnmarshalProtoJSON(s.WithField("copies", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Copies = append(x.Copies, v)
+			})
+		case "regions":
+			s.AddField("regions")
+			if s.ReadNil() {
+				x.Regions = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Regions = append(x.Regions, nil)
+					return
+				}
+				v := &WasiVmDisplayRegion{}
+				v.UnmarshalProtoJSON(s.WithField("regions", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Regions = append(x.Regions, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmDisplayFrame from JSON.
+func (x *WasiVmDisplayFrame) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmDisplayCopy message to JSON.
+func (x *WasiVmDisplayCopy) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.X != 0 || s.HasField("x") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("x")
+		s.WriteUint32(x.X)
+	}
+	if x.Y != 0 || s.HasField("y") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("y")
+		s.WriteUint32(x.Y)
+	}
+	if x.Width != 0 || s.HasField("width") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("width")
+		s.WriteUint32(x.Width)
+	}
+	if x.Height != 0 || s.HasField("height") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("height")
+		s.WriteUint32(x.Height)
+	}
+	if x.ToX != 0 || s.HasField("toX") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("toX")
+		s.WriteUint32(x.ToX)
+	}
+	if x.ToY != 0 || s.HasField("toY") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("toY")
+		s.WriteUint32(x.ToY)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmDisplayCopy to JSON.
+func (x *WasiVmDisplayCopy) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmDisplayCopy message from JSON.
+func (x *WasiVmDisplayCopy) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "x":
+			s.AddField("x")
+			x.X = s.ReadUint32()
+		case "y":
+			s.AddField("y")
+			x.Y = s.ReadUint32()
+		case "width":
+			s.AddField("width")
+			x.Width = s.ReadUint32()
+		case "height":
+			s.AddField("height")
+			x.Height = s.ReadUint32()
+		case "to_x", "toX":
+			s.AddField("to_x")
+			x.ToX = s.ReadUint32()
+		case "to_y", "toY":
+			s.AddField("to_y")
+			x.ToY = s.ReadUint32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmDisplayCopy from JSON.
+func (x *WasiVmDisplayCopy) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmDisplayRegion message to JSON.
+func (x *WasiVmDisplayRegion) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
 	if x.X != 0 || s.HasField("x") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("x")
@@ -2016,13 +2390,13 @@ func (x *WasiVmDisplayFrame) MarshalProtoJSON(s *json.MarshalState) {
 	s.WriteObjectEnd()
 }
 
-// MarshalJSON marshals the WasiVmDisplayFrame to JSON.
-func (x *WasiVmDisplayFrame) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the WasiVmDisplayRegion to JSON.
+func (x *WasiVmDisplayRegion) MarshalJSON() ([]byte, error) {
 	return json.DefaultMarshalerConfig.Marshal(x)
 }
 
-// UnmarshalProtoJSON unmarshals the WasiVmDisplayFrame message from JSON.
-func (x *WasiVmDisplayFrame) UnmarshalProtoJSON(s *json.UnmarshalState) {
+// UnmarshalProtoJSON unmarshals the WasiVmDisplayRegion message from JSON.
+func (x *WasiVmDisplayRegion) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
@@ -2030,12 +2404,6 @@ func (x *WasiVmDisplayFrame) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		switch key {
 		default:
 			s.Skip() // ignore unknown field
-		case "screen_width", "screenWidth":
-			s.AddField("screen_width")
-			x.ScreenWidth = s.ReadUint32()
-		case "screen_height", "screenHeight":
-			s.AddField("screen_height")
-			x.ScreenHeight = s.ReadUint32()
 		case "x":
 			s.AddField("x")
 			x.X = s.ReadUint32()
@@ -2055,8 +2423,8 @@ func (x *WasiVmDisplayFrame) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	})
 }
 
-// UnmarshalJSON unmarshals the WasiVmDisplayFrame from JSON.
-func (x *WasiVmDisplayFrame) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals the WasiVmDisplayRegion from JSON.
+func (x *WasiVmDisplayRegion) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -2761,30 +3129,29 @@ func (m *WasiVmDisplayFrame) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
-	if len(m.Rgba) > 0 {
-		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.Rgba)
-		i--
-		dAtA[i] = 0x3a
+	if len(m.Regions) > 0 {
+		for iNdEx := len(m.Regions) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Regions[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x22
+		}
 	}
-	if m.Height != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Height))
-		i--
-		dAtA[i] = 0x30
-	}
-	if m.Width != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Width))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.Y != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.X != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
-		i--
-		dAtA[i] = 0x18
+	if len(m.Copies) > 0 {
+		for iNdEx := len(m.Copies) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Copies[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x1a
+		}
 	}
 	if m.ScreenHeight != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ScreenHeight))
@@ -2793,6 +3160,125 @@ func (m *WasiVmDisplayFrame) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	}
 	if m.ScreenWidth != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ScreenWidth))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmDisplayCopy) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmDisplayCopy) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmDisplayCopy) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.ToY != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ToY))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.ToX != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ToX))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.Height != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.Width != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Width))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.Y != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.X != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmDisplayRegion) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmDisplayRegion) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmDisplayRegion) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Rgba) > 0 {
+		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.Rgba)
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.Height != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.Width != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Width))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.Y != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.X != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
 		i--
 		dAtA[i] = 0x8
 	}
@@ -3138,6 +3624,40 @@ func (m *WasiVmDisplayFrame) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.ScreenWidth)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.ScreenHeight)
+	for _, e := range m.Copies {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.Regions {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmDisplayCopy) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.X)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Y)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Width)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Height)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ToX)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ToY)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmDisplayRegion) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.X)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Y)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Width)
@@ -3479,6 +3999,74 @@ func (x *WasiVmDisplayFrame) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "screen_height")
 		protobuf_go_lite.TextWriteUint(&sb, x.ScreenHeight)
 	}
+	if len(x.Copies) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "copies")
+		for i, v := range x.Copies {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmDisplayCopy{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.Regions) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "regions")
+		for i, v := range x.Regions {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmDisplayRegion{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmDisplayFrame) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmDisplayCopy) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmDisplayCopy")
+	if x.X != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "x")
+		protobuf_go_lite.TextWriteUint(&sb, x.X)
+	}
+	if x.Y != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "y")
+		protobuf_go_lite.TextWriteUint(&sb, x.Y)
+	}
+	if x.Width != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "width")
+		protobuf_go_lite.TextWriteUint(&sb, x.Width)
+	}
+	if x.Height != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "height")
+		protobuf_go_lite.TextWriteUint(&sb, x.Height)
+	}
+	if x.ToX != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "to_x")
+		protobuf_go_lite.TextWriteUint(&sb, x.ToX)
+	}
+	if x.ToY != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "to_y")
+		protobuf_go_lite.TextWriteUint(&sb, x.ToY)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmDisplayCopy) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmDisplayRegion) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmDisplayRegion")
 	if x.X != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "x")
 		protobuf_go_lite.TextWriteUint(&sb, x.X)
@@ -3502,7 +4090,7 @@ func (x *WasiVmDisplayFrame) MarshalProtoText() string {
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
-func (x *WasiVmDisplayFrame) String() string {
+func (x *WasiVmDisplayRegion) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -4394,6 +4982,75 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Copies", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Copies = append(m.Copies, &WasiVmDisplayCopy{})
+			if err := m.Copies[len(m.Copies)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Regions", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Regions = append(m.Regions, &WasiVmDisplayRegion{})
+			if err := m.Regions[len(m.Regions)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmDisplayCopy) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmDisplayCopy: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmDisplayCopy: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field X", wireType)
 			}
@@ -4402,7 +5059,7 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 4:
+		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Y", wireType)
 			}
@@ -4411,7 +5068,7 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 5:
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Width", wireType)
 			}
@@ -4420,7 +5077,7 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 6:
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
 			}
@@ -4429,7 +5086,104 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 7:
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToX", wireType)
+			}
+			m.ToX = 0
+			m.ToX, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToY", wireType)
+			}
+			m.ToY = 0
+			m.ToY, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmDisplayRegion) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmDisplayRegion: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmDisplayRegion: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field X", wireType)
+			}
+			m.X = 0
+			m.X, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Y", wireType)
+			}
+			m.Y = 0
+			m.Y, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Width", wireType)
+			}
+			m.Width = 0
+			m.Width, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			m.Height, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Rgba", wireType)
 			}

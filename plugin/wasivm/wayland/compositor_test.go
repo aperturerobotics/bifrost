@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"image"
+	"image/draw"
 	"slices"
 	"strings"
 	"testing"
@@ -41,6 +42,8 @@ type testCompositor struct {
 	frames chan *s4wave_vm.WasiVmDisplayFrame
 	// screen is the screen's RGBA pixels as the frames so far draw it.
 	screen *image.RGBA
+	// copies counts the moves the frames so far made.
+	copies int
 }
 
 // newTestCompositor starts a compositor with a width by height screen and a
@@ -89,13 +92,29 @@ func (tc *testCompositor) awaitPixel(pt image.Point, want [4]byte) {
 		}
 		select {
 		case f := <-tc.frames:
-			r := image.Rect(int(f.GetX()), int(f.GetY()), int(f.GetX()+f.GetWidth()), int(f.GetY()+f.GetHeight()))
-			for y := range r.Dy() {
-				copy(tc.screen.Pix[tc.screen.PixOffset(r.Min.X, r.Min.Y+y):], f.GetRgba()[4*y*r.Dx():][:4*r.Dx()])
-			}
+			tc.apply(f)
 		case <-deadline:
 			got := tc.screen.Pix[tc.screen.PixOffset(pt.X, pt.Y):][:4]
 			tc.t.Fatalf("pixel at %v = %x, want %x", pt, got, want)
+		}
+	}
+}
+
+// apply draws the frame f on the viewer's copy of the screen, as the viewer
+// does: its copies in order, each reading the screen before it writes, then
+// its regions.
+func (tc *testCompositor) apply(f *s4wave_vm.WasiVmDisplayFrame) {
+	tc.copies += len(f.GetCopies())
+	for _, m := range f.GetCopies() {
+		src := image.Rect(int(m.GetX()), int(m.GetY()), int(m.GetX()+m.GetWidth()), int(m.GetY()+m.GetHeight()))
+		from := image.NewRGBA(src)
+		draw.Draw(from, src, tc.screen, src.Min, draw.Src)
+		draw.Draw(tc.screen, src.Sub(src.Min).Add(image.Pt(int(m.GetToX()), int(m.GetToY()))), from, src.Min, draw.Src)
+	}
+	for _, g := range f.GetRegions() {
+		r := image.Rect(int(g.GetX()), int(g.GetY()), int(g.GetX()+g.GetWidth()), int(g.GetY()+g.GetHeight()))
+		for y := range r.Dy() {
+			copy(tc.screen.Pix[tc.screen.PixOffset(r.Min.X, r.Min.Y+y):], g.GetRgba()[4*y*r.Dx():][:4*r.Dx()])
 		}
 	}
 }
@@ -424,10 +443,15 @@ func TestStacking(t *testing.T) {
 // TestMoveGrab checks a window moves with the pointer after its client asks
 // to move it during a press.
 func TestMoveGrab(t *testing.T) {
-	// Map a window.
+	// Map a window showing a pattern.
 	tc := newTestCompositor(t, 160, 120)
 	c := tc.connect()
 	w := c.window(32, 32, bufBlue)
+	pix := pattern(32, 32, 0)
+	c.request(newEvent(w.surface, surfaceAttach).uint(c.bufferOf(32, 32, 4*32, pix, shmFormatXRGB8888)).int(0).int(0))
+	c.request(newEvent(w.surface, surfaceDamage).int(0).int(0).int(32).int(32))
+	c.request(newEvent(w.surface, surfaceCommit))
+	tc.awaitPattern(image.Pt(cascadeStep, cascadeStep), 32, 32, pix)
 
 	// Press on it, noting the press's serial.
 	pointer := c.newID()
@@ -443,9 +467,28 @@ func TestMoveGrab(t *testing.T) {
 	tc.pointer(cascadeStep+28, cascadeStep+18, 1)
 	tc.pointer(cascadeStep+28, cascadeStep+18, 0)
 
-	// The window follows, leaving the background behind.
-	tc.awaitPixel(image.Pt(cascadeStep+20+31, cascadeStep+10+31), blue)
+	// The window follows, leaving the background behind. The viewer moves
+	// the opaque window's pixels rather than receiving them again.
+	tc.awaitPattern(image.Pt(cascadeStep+20, cascadeStep+10), 32, 32, pix)
 	tc.awaitPixel(image.Pt(cascadeStep, cascadeStep), background)
+	if tc.copies == 0 {
+		t.Fatal("the move sent the window's pixels instead of a copy")
+	}
+}
+
+// TestUnmapNullBuffer checks a window a null buffer unmaps leaves the
+// background where it was.
+func TestUnmapNullBuffer(t *testing.T) {
+	// Map a window, then commit no buffer.
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	w := c.window(32, 32, bufBlue)
+	tc.awaitPixel(image.Pt(cascadeStep+8, cascadeStep+8), blue)
+	c.request(newEvent(w.surface, surfaceAttach).uint(0).int(0).int(0))
+	c.request(newEvent(w.surface, surfaceCommit))
+
+	// The background shows again.
+	tc.awaitPixel(image.Pt(cascadeStep+8, cascadeStep+8), background)
 }
 
 // TestSubsurface checks a translucent subsurface blends over its parent at
