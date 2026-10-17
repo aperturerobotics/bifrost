@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
+	manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
 	"github.com/s4wave/spacewave/bldr/util/packedmsg"
 	"github.com/s4wave/spacewave/core/cdn"
 	cdn_publish "github.com/s4wave/spacewave/core/cdn/publish"
@@ -23,6 +25,7 @@ import (
 	"github.com/s4wave/spacewave/db/packfile"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/crypto"
+	"github.com/s4wave/spacewave/net/peer"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,7 +37,13 @@ func prepareLocalCDN(ctx context.Context, le *logrus.Entry, repoRoot, baseURL st
 	if err := os.MkdirAll(stateDir, 0o755); err != nil {
 		return releaseWasmDistDirs{}, err
 	}
-	conf, distConfig, err := localCDNProject(repoRoot, baseURL)
+
+	// Compose the project configuration around the harness release signer.
+	signer, err := loadLocalCDNSigner(stateDir)
+	if err != nil {
+		return releaseWasmDistDirs{}, err
+	}
+	conf, distConfig, err := localCDNProject(repoRoot, baseURL, signer)
 	if err != nil {
 		return releaseWasmDistDirs{}, err
 	}
@@ -77,7 +86,7 @@ func prepareLocalCDN(ctx context.Context, le *logrus.Entry, repoRoot, baseURL st
 		releaseDist: filepath.Join(stateDir, "build", "js", "spacewave-browser", "dist"),
 		prerender:   filepath.Join(repoRoot, prerenderDistRelPath),
 	}
-	if err := exportLocalCDN(ctx, le, stateDir, dirs.releaseDist); err != nil {
+	if err := exportLocalCDN(ctx, le, stateDir, dirs.releaseDist, signer); err != nil {
 		return releaseWasmDistDirs{}, err
 	}
 	if err := os.WriteFile(filepath.Join(dirs.releaseDist, "distribution.packedmsg"), []byte(distConfig), 0o644); err != nil {
@@ -96,26 +105,76 @@ func prepareLocalCDN(ctx context.Context, le *logrus.Entry, repoRoot, baseURL st
 	return dirs, nil
 }
 
+// loadLocalCDNSigner returns the harness release signer stored in stateDir,
+// creating it on first use. The launcher pins its peer ID in the build
+// configuration, so keeping one key keeps that configuration, and the
+// incremental build, unchanged between runs. It signs only local fixtures.
+func loadLocalCDNSigner(stateDir string) (crypto.PrivKey, error) {
+	// Reuse the stored key when one exists.
+	path := filepath.Join(stateDir, "release-signer.key")
+	data, err := os.ReadFile(path)
+	if err == nil {
+		return crypto.UnmarshalPrivateKey(data)
+	}
+	if !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	// Create and store a new key.
+	key, _, err := crypto.GenerateEd25519Key(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	data, err = crypto.MarshalPrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+	return key, os.WriteFile(path, data, 0o600)
+}
+
 // exportLocalCDN writes real release packs and their signed root pointer to
-// the static origin. Its temporary signing key never leaves this process.
+// the static origin, authorizing the release manifests with key.
 //
 // Like the production CDN, the root keeps the previous publication's packs
 // live, so a returning visitor can still read the release it cached.
-func exportLocalCDN(ctx context.Context, le *logrus.Entry, stateDir, distDir string) error {
+func exportLocalCDN(ctx context.Context, le *logrus.Entry, stateDir, distDir string, key crypto.PrivKey) error {
 	// Mount only the dedicated fixture database and stage its current manifests.
 	w, err := publisher.OpenLocalWorld(ctx, le, filepath.Join(stateDir, "publication", "release.s4wave"), "spacewave-release-world", "spacewave-release")
 	if err != nil {
 		return err
 	}
 	defer w.Release()
-	key, _, err := crypto.GenerateEd25519Key(rand.Reader)
+	sender, err := peer.IDFromPrivateKey(key)
 	if err != nil {
 		return err
 	}
 	var metadata *release.ReleaseMetadata
 	err = world.ExecTransaction(ctx, w.Engine, true, func(ctx context.Context, ws world.WorldState) error {
-		var err error
-		metadata, err = publisher.StageChannel(ctx, ws, "spacewave/release/manifests", &release.ReleaseMetadata{
+		// Browsers with a release authority fetch only manifests a pinned
+		// release peer authorized, so authorize each one in the World, as
+		// the production publisher does.
+		const manifestsKey = "spacewave/release/manifests"
+		groups, manifestErrs, err := manifest_world.CollectManifests(ctx, ws, nil, manifestsKey)
+		if err != nil {
+			return err
+		}
+		if len(manifestErrs) != 0 {
+			return manifestErrs[0]
+		}
+		for _, manifests := range groups {
+			for _, m := range manifests {
+				ref := bldr_manifest.NewManifestRef(m.Manifest.GetMeta(), m.ManifestRef)
+				if err := ref.SignReleaseAuthorization(key); err != nil {
+					return err
+				}
+				if err := manifest_world.ExStoreManifestOp(ctx, ws, sender, m.ManifestKey, []string{manifestsKey}, ref); err != nil {
+					return err
+				}
+			}
+		}
+
+		// Bind the channel to the authorized manifests.
+		metadata, err = publisher.StageChannel(ctx, ws, manifestsKey, &release.ReleaseMetadata{
 			ProjectId: "spacewave", Version: "0.0.0-local", ChannelKey: "stable", Rev: 1,
 		}, key)
 		return err

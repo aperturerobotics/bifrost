@@ -11,9 +11,13 @@ import (
 	compiler "github.com/s4wave/spacewave/bldr/plugin/compiler/go"
 	project "github.com/s4wave/spacewave/bldr/project"
 	starlark "github.com/s4wave/spacewave/bldr/project/starlark"
+	"github.com/s4wave/spacewave/bldr/util/packedmsg"
 	cdn_world "github.com/s4wave/spacewave/core/cdn/world/controller"
+	spacewave_launcher "github.com/s4wave/spacewave/core/provider/spacewave/launcher"
 	launcher "github.com/s4wave/spacewave/core/provider/spacewave/launcher/controller"
 	volume_s4db "github.com/s4wave/spacewave/db/volume/s4db"
+	"github.com/s4wave/spacewave/net/crypto"
+	"github.com/s4wave/spacewave/net/peer"
 )
 
 const (
@@ -26,8 +30,10 @@ const (
 )
 
 // localCDNProject composes the production bootstrap and plugin build targets
-// with localhost delivery and the existing public distribution test identity.
-func localCDNProject(repoRoot, baseURL string) (*project.ProjectConfig, string, error) {
+// with localhost delivery. It re-signs the public distribution fixture with
+// signer and pins signer as the only release peer, so the launcher accepts
+// the manifests the harness authorizes.
+func localCDNProject(repoRoot, baseURL string, signer crypto.PrivKey) (*project.ProjectConfig, string, error) {
 	// Retain production manifest selection, embedding, and host configuration.
 	result, err := starlark.Evaluate(filepath.Join(repoRoot, "bldr.star"))
 	if err != nil {
@@ -73,10 +79,33 @@ func localCDNProject(repoRoot, baseURL string) (*project.ProjectConfig, string, 
 	if err := dist.UnmarshalJSON(testBootstrap.ConfigSet["spacewave-launcher"].Config); err != nil {
 		return nil, "", err
 	}
-	packedConfig := dist.InitDistConfig
-	if packedConfig == "" {
+	if dist.InitDistConfig == "" {
 		return nil, "", errors.New("local CDN requires the signed distribution fixture")
 	}
+
+	// Read the fixture distribution under its own pins.
+	fixturePeers := make([]peer.ID, len(dist.DistPeerIds))
+	for i, id := range dist.DistPeerIds {
+		if fixturePeers[i], err = peer.IDB58Decode(id); err != nil {
+			return nil, "", err
+		}
+	}
+	fixture, _, _, err := spacewave_launcher.ParseDistConfigPackedMsg(nil, []byte(dist.InitDistConfig), fixturePeers, conf.GetId())
+	if err != nil {
+		return nil, "", errors.Wrap(err, "distribution fixture")
+	}
+
+	// Re-sign it with the harness signer and pin only that signer.
+	signed, err := spacewave_launcher.EncodeSignedDistConfig(signer, fixture)
+	if err != nil {
+		return nil, "", err
+	}
+	packedConfig := packedmsg.EncodePackedMessage(signed)
+	signerID, err := peer.IDFromPrivateKey(signer)
+	if err != nil {
+		return nil, "", err
+	}
+	dist.DistPeerIds = []string{signerID.String()}
 
 	// Route the launcher to the signed distribution served by the local origin.
 	dist.InitDistConfig = ""
@@ -95,7 +124,7 @@ func localCDNProject(repoRoot, baseURL string) (*project.ProjectConfig, string, 
 	// The local provider keeps foreground storage and RPC without cloud signaling.
 	core := conf.Build["release-web-e2e-goscript"].ManifestOverrides["spacewave-core"].CloneVT()
 	conf.Build["local-startup-plugins"] = &project.BuildConfig{
-		Manifests:         []string{"spacewave-core", "spacewave-web", "spacewave-app"},
+		Manifests:         []string{"spacewave-core", "spacewave-web", "spacewave-app", "spacewave-code"},
 		PlatformIds:       []string{"js", "web/js/wasm"},
 		ManifestOverrides: map[string]*configset_proto.ControllerConfig{"spacewave-core": core},
 	}
@@ -117,7 +146,7 @@ func localCDNProject(repoRoot, baseURL string) (*project.ProjectConfig, string, 
 
 	// Select the startup plugin and web manifests for local publication.
 	plugins := conf.Publish["spacewave-release"]
-	plugins.Manifests = []string{"spacewave-core", "spacewave-web", "spacewave-app"}
+	plugins.Manifests = []string{"spacewave-core", "spacewave-web", "spacewave-app", "spacewave-code"}
 	plugins.PlatformIds = []string{"js", "web/js/wasm"}
 	web := plugins.CloneVT()
 	web.Manifests = []string{"web"}
