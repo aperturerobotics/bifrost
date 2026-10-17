@@ -5,19 +5,19 @@ import (
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
-	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/directive"
 	cdn_sharedobject "github.com/s4wave/spacewave/core/cdn/sharedobject"
 	"github.com/s4wave/spacewave/core/sobject"
 	sobject_world_engine "github.com/s4wave/spacewave/core/sobject/world/engine"
 	"github.com/s4wave/spacewave/core/space"
 	space_world_optypes "github.com/s4wave/spacewave/core/space/world/optypes"
+	"github.com/s4wave/spacewave/db/world"
 )
 
 // ControllerID is the controller id.
 const ControllerID = "space/sobject"
 
-// Version is the component version
+// Version is the component version.
 var Version = controller.MustParseVersion("0.0.1")
 
 // controllerDescrip is the controller description.
@@ -77,26 +77,12 @@ func (c *Controller) resolveMountSharedObjectBody(dir sobject.MountSharedObjectB
 		}
 
 		// Run the engine on this bus with the built-in Space operations set
-		// at construction, before its first replay. The body follows the
-		// published engine below rather than the controller's run state: a
-		// restart that fails before publishing leaves the body's engine
-		// untouched.
+		// at construction, before its first replay. The body's engine
+		// follows each engine the controller serves, across restarts and
+		// replacements after read access returns.
 		factory := sobject_world_engine.NewFactoryWithLookupOp(c.GetBus(), space_world_optypes.LookupWorldOp)
-		ctrl, _, ref, err := loader.WaitExecControllerRunningRetryTyped[*sobject_world_engine.Controller](
-			ctx,
-			c.GetBus(),
-			loader.NewExecController(factory, conf),
-			nil,
-		)
+		eng, ref, err := world.StartEngine(ctx, c.GetBus(), conf, factory)
 		if err != nil {
-			soRef.Release()
-			return nil, nil, err
-		}
-
-		// Wait for the controller to publish its engine.
-		eng, err := ctrl.GetWorldEngine(ctx)
-		if err != nil {
-			ref.Release()
 			soRef.Release()
 			return nil, nil, err
 		}
@@ -106,17 +92,7 @@ func (c *Controller) resolveMountSharedObjectBody(dir sobject.MountSharedObjectB
 		volumeID := so.GetBlockStore().GetID()
 		body := NewSpaceBody(mountRef, engineID, bucketID, volumeID, so, eng)
 		ret := sobject.NewMountSharedObjectBodyValue(mountRef, space.SpaceBodyType, so, body)
-
-		// The body serves one engine. Resolve again when the controller
-		// unpublishes it, such as after losing read access.
-		bodyCtx, bodyCancel := context.WithCancel(ctx)
-		go func() {
-			if ctrl.WaitWorldEngineReplaced(bodyCtx, eng) == nil {
-				released()
-			}
-		}()
 		return ret, func() {
-			bodyCancel()
 			ref.Release()
 			soRef.Release()
 		}, nil

@@ -134,7 +134,7 @@ func assertPluginInstallation(t *testing.T, tb *testbed.Testbed, pluginID string
 func submitPluginBuild(t *testing.T, tb *testbed.Testbed, session peer.ID, request *s4wave_space.BuildSpacePluginRequest) *s4wave_space.BuildSpacePluginResponse {
 	// Mount the Space Resource as the submitting Session.
 	t.Helper()
-	body := &spaceResourceChatBody{engine: tb.BusEngine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
+	body := &spaceResourceChatBody{engine: tb.Engine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
 	resource := NewSpaceResourceWithSessionPeerID(tb.Logger, tb.Bus, body, session.String())
 	client := s4wave_space.NewSRPCSpaceResourceServiceClient(spaceResourceClient(t, resource.GetMux()))
 

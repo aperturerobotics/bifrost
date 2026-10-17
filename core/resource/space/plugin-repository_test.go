@@ -58,7 +58,7 @@ func TestQueuePluginRepositoryFetch(t *testing.T) {
 	setupPluginBuildSource(t, tb, peer)
 
 	// Mount the Space Resource as the submitting Session and queue the fetch.
-	body := &spaceResourceChatBody{engine: tb.BusEngine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
+	body := &spaceResourceChatBody{engine: tb.Engine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
 	resource := NewSpaceResourceWithSessionPeerID(tb.Logger, tb.Bus, body, peer.String())
 	client := s4wave_space.NewSRPCSpaceResourceServiceClient(spaceResourceClient(t, resource.GetMux()))
 	request := &s4wave_space.FetchPluginRepositoryRequest{Repository: "s4wave/spreadsheet", DeviceKey: "devices/build"}
@@ -177,7 +177,7 @@ func TestValidatePluginRepository(t *testing.T) {
 	}
 
 	// Validate the checked-out commit through the public RPC.
-	body := &spaceResourceChatBody{engine: tb.BusEngine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
+	body := &spaceResourceChatBody{engine: tb.Engine, engineID: tb.EngineID, bucketID: tb.EngineBucketID}
 	resource := NewSpaceResourceWithSessionPeerID(tb.Logger, tb.Bus, body, peer.String())
 	client := s4wave_space.NewSRPCSpaceResourceServiceClient(spaceResourceClient(t, resource.GetMux()))
 	response, err := client.ValidatePluginRepository(ctx, &s4wave_space.ValidatePluginRepositoryRequest{Repository: "acme/colors"})

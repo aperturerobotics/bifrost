@@ -58,7 +58,7 @@ func TestGitCloneOp(t *testing.T) {
 		BucketId:      bucketID,
 		TransformConf: xfrmConf,
 	}
-	_, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
+	busEngine, worldCtrlRef, err := world.StartEngine(
 		ctx,
 		tb.Bus,
 		world_block_engine.NewConfig(
@@ -69,6 +69,7 @@ func TestGitCloneOp(t *testing.T) {
 			xfrmConf,
 			false,
 		),
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -87,7 +88,6 @@ func TestGitCloneOp(t *testing.T) {
 	}
 
 	// Open the World state through the bus.
-	busEngine := world.NewBusEngine(ctx, tb.Bus, engineID)
 	ws := world.NewEngineWorldState(busEngine, true)
 	sender := tb.Volume.GetPeerID()
 

@@ -237,21 +237,16 @@ func addLocalSession(ctx context.Context, t *testing.T, tb *testbed.Testbed) (*p
 
 // start starts the World engine and waits for its World.
 func (m *offlineMember) start(ctx context.Context) {
-	// Start the engine controller.
+	// Start the engine and wait for the replayed World.
 	t := m.t
 	t.Helper()
 	conf := sobject_world_engine.NewConfig("offline-world-"+m.name, m.ref)
-	ctrl, _, ref, err := sobject_world_engine.StartEngineWithConfig(ctx, m.tb.Bus, conf, nil)
+	eng, ref, err := world.StartEngine(ctx, m.tb.Bus, conf, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Wait for the replayed World.
 	m.release = ref
-	m.engine, err = ctrl.GetWorldEngine(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	m.engine = eng
 }
 
 // stop stops the World engine.

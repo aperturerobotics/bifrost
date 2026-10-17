@@ -7,9 +7,6 @@ import (
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
-	"github.com/aperturerobotics/controllerbus/controller/loader"
-	"github.com/aperturerobotics/controllerbus/controller/resolver"
-	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
@@ -28,26 +25,6 @@ import (
 
 // Engine is the world engine type.
 type Engine = world.Engine
-
-// StartEngineWithConfig starts the sobject world engine with a config and
-// waits for the controller to run. A failed execution is transient, such as a
-// predecessor engine still holding the write lease or World blocks still in
-// transit, so the wait continues through the loader's retries until ctx ends.
-// rel is called when the controller stops running. Release the reference to
-// stop the controller.
-func StartEngineWithConfig(
-	ctx context.Context,
-	b bus.Bus,
-	conf *Config,
-	rel func(),
-) (*Controller, directive.Instance, directive.Reference, error) {
-	return loader.WaitExecControllerRunningRetryTyped[*Controller](
-		ctx,
-		b,
-		resolver.NewLoadControllerWithConfig(conf),
-		rel,
-	)
-}
 
 // blkEngine contains a world state with engine.
 type blkEngine struct {

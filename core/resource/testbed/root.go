@@ -105,15 +105,12 @@ func (s *TestbedResourceServer) CreateWorld(ctx context.Context, req *s4wave_tes
 		false,
 	)
 
-	// Start the world engine controller using server's context (not request context)
-	// This ensures the engine remains alive even if the request context is canceled
-	_, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(s.ctx, s.bus, engConf)
+	// Start the world engine with the server's context, not the request's,
+	// so the engine outlives the request.
+	busEngine, worldCtrlRef, err := world.StartEngine(s.ctx, s.bus, engConf, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	// Create bus-based engine using server's context
-	busEngine := world.NewBusEngine(s.ctx, s.bus, engineID)
 
 	// Create engine resource
 	engineInfo := &s4wave_world.EngineInfo{

@@ -276,24 +276,13 @@ func BuildDevtoolBus(
 		false,
 	)
 
-	// Start the World engine controller and wait for it to run.
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
-		ctx,
-		b,
-		engConf,
-	)
+	// Start the World engine and wrap it in an engine world state.
+	eng, engRef, err := world.StartEngine(ctx, b, engConf, nil)
 	if err != nil {
 		rel()
 		return nil, err
 	}
-	rels = append(rels, worldCtrlRef.Release)
-
-	// Wait for the engine handle and wrap it in an engine world state.
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		rel()
-		return nil, err
-	}
+	rels = append(rels, engRef.Release)
 	worldState := world.NewEngineWorldState(eng, true)
 
 	// Register the plugin host's World operation types.

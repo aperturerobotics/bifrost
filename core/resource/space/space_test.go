@@ -76,7 +76,7 @@ func TestSpaceResourceChatSenderUsesWorldSigner(t *testing.T) {
 
 	// Present the testbed World without an operation author.
 	body := &spaceResourceChatBody{
-		engine:   tb.BusEngine,
+		engine:   tb.Engine,
 		engineID: tb.EngineID,
 		bucketID: tb.EngineBucketID,
 	}
@@ -166,7 +166,7 @@ func TestSpaceResourceChatSenderUsesWorldSigner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SendMessage(A): %v", err)
 	}
-	assertSpaceChatSender(t, ctx, tb.BusEngine, sendA.GetMessageKey(), peerA.String())
+	assertSpaceChatSender(t, ctx, tb.Engine, sendA.GetMessageKey(), peerA.String())
 
 	// Verify the second mounted peer identity.
 	ctxWithPeerA := objecttype.WithSessionPeerID(ctx, peerA)
@@ -179,7 +179,7 @@ func TestSpaceResourceChatSenderUsesWorldSigner(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SendMessage(B): %v", err)
 	}
-	assertSpaceChatSender(t, ctx, tb.BusEngine, sendB.GetMessageKey(), peerB.String())
+	assertSpaceChatSender(t, ctx, tb.Engine, sendB.GetMessageKey(), peerB.String())
 
 	// Verify one factory handle per peer after the anonymous open.
 	factory.mu.Lock()
@@ -297,8 +297,8 @@ func TestTypedObjectResourceCacheSeparatesPeerIdentities(t *testing.T) {
 	owner := resource_world.NewTypedObjectResource(
 		tb.Logger,
 		tb.Bus,
-		world.NewEngineWorldState(tb.BusEngine, true),
-		tb.BusEngine,
+		world.NewEngineWorldState(tb.Engine, true),
+		tb.Engine,
 	)
 	t.Cleanup(owner.Close)
 	mux := resource_server.NewResourceMux(func(mux srpc.Mux) error {
@@ -468,7 +468,7 @@ func TestSpaceResourceChatSenderPropagatesThroughChildWorldResources(t *testing.
 	if err != nil {
 		t.Fatalf("SendMessage(A tx): %v", err)
 	}
-	assertSpaceChatSender(t, ctx, tb.BusEngine, txSend.GetMessageKey(), peerA.String())
+	assertSpaceChatSender(t, ctx, tb.Engine, txSend.GetMessageKey(), peerA.String())
 
 	// Discard the transaction.
 	txService := s4wave_world.NewSRPCTxResourceServiceClient(txRaw)
@@ -505,14 +505,14 @@ func TestSpaceResourceChatSenderPropagatesThroughChildWorldResources(t *testing.
 	if err != nil {
 		t.Fatalf("SendMessage(B tracked): %v", err)
 	}
-	assertSpaceChatSender(t, ctx, tb.BusEngine, trackedSend.GetMessageKey(), peerB.String())
+	assertSpaceChatSender(t, ctx, tb.Engine, trackedSend.GetMessageKey(), peerB.String())
 }
 
 // newSignerChatBody presents the testbed World under one signing device, as
 // each session's mounted SharedObject engine does.
 func newSignerChatBody(tb *testbed.Testbed, device peer.ID) *spaceResourceChatBody {
 	return &spaceResourceChatBody{
-		engine:   &signerEngine{Engine: tb.BusEngine, device: device},
+		engine:   &signerEngine{Engine: tb.Engine, device: device},
 		engineID: tb.EngineID,
 		bucketID: tb.EngineBucketID,
 	}

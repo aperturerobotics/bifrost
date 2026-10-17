@@ -48,22 +48,18 @@ func startLocalWorld(t *testing.T, dir string, soRef *sobject.SharedObjectRef) *
 
 	// Start its World engine with the mock operations.
 	engineID := "local-world-engine"
-	ctrl, _, ctrlRef, err := sobject_world_engine.StartEngineWithConfig(ctx, tb.Bus, sobject_world_engine.NewConfig(engineID, soRef), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(ctrlRef.Release)
 	relOpc, err := tb.Bus.AddController(ctx, world.NewLookupOpController("local-world-ops", engineID, world_mock.LookupMockOp), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(relOpc)
-
-	// Wait for the engine and find the account database.
-	eng, err := ctrl.GetWorldEngine(ctx)
+	eng, engRef, err := world.StartEngine(ctx, tb.Bus, sobject_world_engine.NewConfig(engineID, soRef), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(engRef.Release)
+
+	// Find the account database.
 	return newLocalWorld(t, tb, acc, eng, soRef)
 }
 

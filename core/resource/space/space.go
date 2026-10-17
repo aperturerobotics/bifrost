@@ -373,12 +373,10 @@ func (r *SpaceResource) SetSpaceBackfill(
 	ctx context.Context,
 	req *s4wave_space.SetSpaceBackfillRequest,
 ) (*s4wave_space.SetSpaceBackfillResponse, error) {
-	// Only a shared object World keeps a backfill choice.
-	engine, ok := r.space.GetWorldEngine().(sobject_world_engine.BackfillEngine)
-	if !ok {
-		return nil, errors.New("this Space's World cannot be backfilled")
-	}
-	if err := engine.SetBackfill(ctx, req.GetBackfill()); err != nil {
+	err := r.accessBackfill(ctx, func(ctx context.Context, engine sobject_world_engine.BackfillEngine) error {
+		return engine.SetBackfill(ctx, req.GetBackfill())
+	})
+	if err != nil {
 		return nil, err
 	}
 	return &s4wave_space.SetSpaceBackfillResponse{}, nil
@@ -389,26 +387,37 @@ func (r *SpaceResource) WatchSpaceBackfill(
 	req *s4wave_space.WatchSpaceBackfillRequest,
 	strm s4wave_space.SRPCSpaceResourceService_WatchSpaceBackfillStream,
 ) error {
-	// Only a shared object World keeps a backfill choice.
-	ctx := strm.Context()
-	engine, ok := r.space.GetWorldEngine().(sobject_world_engine.BackfillEngine)
-	if !ok {
-		return errors.New("this Space's World cannot be backfilled")
-	}
+	// Send the choice, then each change. A replaced engine sends its
+	// successor's choice.
+	return r.accessBackfill(strm.Context(), func(ctx context.Context, engine sobject_world_engine.BackfillEngine) error {
+		choice := engine.GetBackfill()
+		backfill := choice.GetValue()
+		for {
+			if err := strm.Send(&s4wave_space.SpaceBackfillState{Backfill: backfill}); err != nil {
+				return err
+			}
+			var err error
+			backfill, err = choice.WaitValueChange(ctx, backfill, nil)
+			if err != nil {
+				return err
+			}
+		}
+	})
+}
 
-	// Send the choice, then each change.
-	choice := engine.GetBackfill()
-	backfill := choice.GetValue()
-	for {
-		if err := strm.Send(&s4wave_space.SpaceBackfillState{Backfill: backfill}); err != nil {
-			return err
+// accessBackfill calls cb with the engine serving this Space's World. Only a
+// shared object World keeps a backfill choice.
+func (r *SpaceResource) accessBackfill(
+	ctx context.Context,
+	cb func(ctx context.Context, engine sobject_world_engine.BackfillEngine) error,
+) error {
+	return world.AccessEngine(ctx, r.space.GetWorldEngine(), func(ctx context.Context, eng world.Engine) error {
+		engine, ok := eng.(sobject_world_engine.BackfillEngine)
+		if !ok {
+			return errors.New("this Space's World cannot be backfilled")
 		}
-		var err error
-		backfill, err = choice.WaitValueChange(ctx, backfill, nil)
-		if err != nil {
-			return err
-		}
-	}
+		return cb(ctx, engine)
+	})
 }
 
 // SetSpaceControl chooses who controls the Space. An owner hands control to

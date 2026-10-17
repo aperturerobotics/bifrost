@@ -37,7 +37,7 @@ func TestWorldBackedStoreFirstCommitFromEmptyRootLands(t *testing.T) {
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)
@@ -108,7 +108,7 @@ func TestWorldBackedStoreConcurrentCommitsLandInWorldObjectRoot(t *testing.T) {
 			ctx,
 			logrus.NewEntry(logrus.New()),
 			tb.Bus,
-			tb.BusEngine,
+			tb.Engine,
 			tb.WorldState,
 			objectKey,
 		)

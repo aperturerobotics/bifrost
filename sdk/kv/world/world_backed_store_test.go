@@ -38,7 +38,7 @@ func TestKvStoreFactoryCommitsWorldBackedRootAndReplaysOp(t *testing.T) {
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)
@@ -159,7 +159,7 @@ func TestKvStoreFactoryWatchStreamsCommittedSetAndDeleteSnapshots(t *testing.T) 
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)

@@ -32,7 +32,7 @@ func TestCreateSecretStoresPayloadOnlyInNestedSharedObject(t *testing.T) {
 
 	// Store a provider credential and verify its parent metadata.
 	token := "provider-credential-secret-value"
-	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.BusEngine, s4wave_secret.CreateSecretOptions{
+	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.Engine, s4wave_secret.CreateSecretOptions{
 		ObjectKey:   "secrets/provider/opencode-go",
 		DisplayName: "OpenCode Go credential",
 		Kind:        s4wave_secret.SecretKindProviderCredential,
@@ -101,7 +101,7 @@ func TestSSHSecretContractStoresCredentialPayloadOnlyInNestedSharedObject(t *tes
 	}
 
 	// Store the SSH private key in its nested SharedObject.
-	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.BusEngine, s4wave_secret.CreateSecretOptions{
+	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.Engine, s4wave_secret.CreateSecretOptions{
 		ObjectKey:   "secrets/ssh/private-key",
 		DisplayName: "SSH private key",
 		Kind:        s4wave_secret.SecretKindSSHPrivateKey,
@@ -154,7 +154,7 @@ func TestSecretPayloadAccessUsesSharedObjectGrants(t *testing.T) {
 	tb, soProvider, release := setupSecretTest(ctx, t)
 	defer release()
 	value := []byte("grant-gated-secret")
-	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.BusEngine, s4wave_secret.CreateSecretOptions{
+	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.Engine, s4wave_secret.CreateSecretOptions{
 		ObjectKey:   "secrets/grants",
 		DisplayName: "Grant gated",
 		Kind:        "api_key",
@@ -283,7 +283,7 @@ func TestSecretResourceReadPayloadRequiresSignedGrantedPeer(t *testing.T) {
 
 	// Create the payload whose bytes the resource will protect.
 	value := []byte("resource-read-secret")
-	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.BusEngine, s4wave_secret.CreateSecretOptions{
+	secret, err := s4wave_secret.CreateSecret(ctx, tb.Bus, soProvider, tb.Engine, s4wave_secret.CreateSecretOptions{
 		ObjectKey:   "secrets/resource-read",
 		DisplayName: "Resource read",
 		Kind:        "api_key",

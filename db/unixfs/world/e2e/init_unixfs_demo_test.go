@@ -67,7 +67,7 @@ func TestInitUnixFSDemo(t *testing.T) {
 	}
 
 	// initialize world engine
-	_, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
+	busEngine, worldCtrlRef, err := world.StartEngine(
 		ctx,
 		tb.Bus,
 		world_block_engine.NewConfig(
@@ -78,6 +78,7 @@ func TestInitUnixFSDemo(t *testing.T) {
 			xfrmConf,
 			false,
 		),
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -90,9 +91,6 @@ func TestInitUnixFSDemo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
-	// uses directive to look up the engine
-	busEngine := world.NewBusEngine(ctx, tb.Bus, engineID)
 
 	// uses short-lived engine txs to implement world state
 	ws := world.NewEngineWorldState(busEngine, true)

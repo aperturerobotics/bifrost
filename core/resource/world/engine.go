@@ -126,11 +126,14 @@ func (r *EngineResource) GetWorldRootSnapshot(ctx context.Context, req *s4wave_w
 
 // SetRetainedRoot retains a World root in an engine that supports retention.
 func (r *EngineResource) SetRetainedRoot(ctx context.Context, req *s4wave_world.SetRetainedRootRequest) (*s4wave_world.SetRetainedRootResponse, error) {
-	retainer, ok := r.engine.(world.RootRetainingEngine)
-	if !ok {
-		return nil, errors.New("world engine does not retain roots")
-	}
-	if err := retainer.SetRetainedRoot(ctx, req.GetName(), req.GetRootRef()); err != nil {
+	err := world.AccessEngine(ctx, r.engine, func(ctx context.Context, eng world.Engine) error {
+		retainer, ok := eng.(world.RootRetainingEngine)
+		if !ok {
+			return errors.New("world engine does not retain roots")
+		}
+		return retainer.SetRetainedRoot(ctx, req.GetName(), req.GetRootRef())
+	})
+	if err != nil {
 		return nil, err
 	}
 	return &s4wave_world.SetRetainedRootResponse{}, nil

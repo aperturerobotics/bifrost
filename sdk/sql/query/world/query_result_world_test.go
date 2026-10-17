@@ -592,7 +592,7 @@ func seedSqlDb(t *testing.T, ctx context.Context, tb *testbed.Testbed, objectKey
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)
@@ -630,7 +630,7 @@ func openSqlQueryClient(
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)
@@ -653,7 +653,7 @@ func openSqlQueryResultClient(
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)

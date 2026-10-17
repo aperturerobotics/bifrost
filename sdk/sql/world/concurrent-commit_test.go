@@ -41,7 +41,7 @@ func TestWorldBackedSqlFirstCommitFromEmptyRootLands(t *testing.T) {
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)
@@ -102,7 +102,7 @@ func TestWorldBackedSqlFirstCommitFromEmptyObjectRefLands(t *testing.T) {
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)
@@ -163,7 +163,7 @@ func TestWorldBackedSqlFirstCommitFromNilRootLands(t *testing.T) {
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)
@@ -218,7 +218,7 @@ func TestWorldBackedSqlConcurrentCommitsLandInWorldObjectRoot(t *testing.T) {
 			ctx,
 			logrus.NewEntry(logrus.New()),
 			tb.Bus,
-			tb.BusEngine,
+			tb.Engine,
 			tb.WorldState,
 			objectKey,
 		)
@@ -336,7 +336,7 @@ func seedConcurrentSqlTable(t *testing.T, ctx context.Context, tb *testbed.Testb
 		ctx,
 		logrus.NewEntry(logrus.New()),
 		tb.Bus,
-		tb.BusEngine,
+		tb.Engine,
 		tb.WorldState,
 		objectKey,
 	)

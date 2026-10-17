@@ -256,22 +256,11 @@ func (c *Controller) Execute(ctx context.Context) (rerr error) {
 		nil,
 		false,
 	)
-	worldCtrl, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
-		ctx,
-		b,
-		engConf,
-	)
+	eng, engRef, err := world.StartEngine(ctx, b, engConf, nil)
 	if err != nil {
-		err = errors.Wrap(err, "start world controller")
-		return err
+		return errors.Wrap(err, "start world engine")
 	}
-	defer worldCtrlRef.Release()
-
-	// Wait for the World engine.
-	eng, err := worldCtrl.GetWorldEngine(ctx)
-	if err != nil {
-		return err
-	}
+	defer engRef.Release()
 
 	// register the world operation types for plugin host
 	lookupOpCtrl := world.NewLookupOpController("bldr-plugin-host-ops", engineID, world.NewSchema(bldr_manifest_world.WorldTypes).LookupOp)

@@ -71,7 +71,7 @@ func newGitWorldState(t *testing.T) (context.Context, *logrus.Entry, world.World
 		BucketId:      tb.BucketId,
 		TransformConf: xfrmConf,
 	}
-	_, worldCtrlRef, err := world_block_engine.StartEngineWithConfig(
+	busEngine, worldCtrlRef, err := world.StartEngine(
 		ctx,
 		tb.Bus,
 		world_block_engine.NewConfig(
@@ -83,6 +83,7 @@ func newGitWorldState(t *testing.T) (context.Context, *logrus.Entry, world.World
 			xfrmConf,
 			false,
 		),
+		nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +98,6 @@ func newGitWorldState(t *testing.T) (context.Context, *logrus.Entry, world.World
 
 	// Implement the World state with short-lived transactions on the engine
 	// that the bus resolves.
-	busEngine := world.NewBusEngine(ctx, tb.Bus, engineID)
 	ws := world.NewEngineWorldState(busEngine, true)
 	cleanup := func() {
 		relOpc()

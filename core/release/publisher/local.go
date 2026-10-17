@@ -82,16 +82,13 @@ func OpenLocalWorld(ctx context.Context, le *logrus.Entry, path, engineID, bucke
 	}
 
 	// Attach the World engine using the publication bucket aliases.
-	ctrl, ref, err := world_block_engine.StartEngineWithConfig(ctx, b,
-		world_block_engine.NewConfig(engineID, "release-volume", bucketID, bucketID, nil, nil, false))
+	engConf := world_block_engine.NewConfig(engineID, "release-volume", bucketID, bucketID, nil, nil, false)
+	eng, ref, err := world.StartEngine(ctx, b, engConf, nil)
 	if err != nil {
 		return nil, err
 	}
 	out.release = append(out.release, ref.Release)
-	out.Engine, err = ctrl.GetWorldEngine(ctx)
-	if err != nil {
-		return nil, err
-	}
+	out.Engine = eng
 	return out, nil
 }
 
