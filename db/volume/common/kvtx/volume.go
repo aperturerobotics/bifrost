@@ -131,7 +131,8 @@ func NewVolume(
 	closeFn func() error,
 	deleteFn ...func() error,
 ) (*Volume, error) {
-	// Build the Volume around its key-value store and cleanup callbacks.
+	// Build the Volume around its key-value store and cleanup callbacks. A
+	// BlockDomain serves the blocks outside a transaction.
 	v := &Volume{
 		Store:     store_kvtx.NewKVTx(kvkey, store, conf),
 		kvtxStore: store,
@@ -139,12 +140,15 @@ func NewVolume(
 		statsFn:   statsFn,
 		closeFn:   closeFn,
 	}
+	if domain, ok := store.(BlockDomain); ok {
+		v.Store = store_kvtx.NewKVTxWithBlockStore(kvkey, store, domain.GetBlockStore(), conf)
+	}
 	if len(deleteFn) != 0 {
 		v.deleteFn = deleteFn[0]
 	}
 
 	// Load or claim the Volume identity and initialize its storage.
-	v, err := initVolume(ctx, v, storeID, store, noGenerateKey, noWriteKey)
+	v, err := initVolume(ctx, v, storeID, noGenerateKey, noWriteKey)
 	if err != nil {
 		return nil, err
 	}
@@ -165,113 +169,9 @@ func NewVolume(
 	return v, nil
 }
 
-// NewVolumeWithBlockStore builds a key/value volume with a custom block store.
-//
-// blk is used for block operations instead of creating a KVTxBlock from the
-// kvtx store. This supports per-file locking block stores (e.g. OPFS).
-func NewVolumeWithBlockStore(
-	ctx context.Context,
-	storeID string,
-	kvkey *store_kvkey.KVKey,
-	store kvtx.Store,
-	blk block.StoreOps,
-	conf *store_kvtx.Config,
-	noGenerateKey,
-	noWriteKey bool,
-	statsFn StatsFn,
-	closeFn func() error,
-	deleteFn ...func() error,
-) (*Volume, error) {
-	// Build the Volume around its key-value store and cleanup callbacks.
-	v := &Volume{
-		Store:     store_kvtx.NewKVTxWithBlockStore(kvkey, store, blk, conf),
-		kvtxStore: store,
-		kvKey:     kvkey,
-		statsFn:   statsFn,
-		closeFn:   closeFn,
-	}
-	if len(deleteFn) != 0 {
-		v.deleteFn = deleteFn[0]
-	}
-
-	// Load or claim the Volume identity and initialize its storage.
-	v, err := initVolume(ctx, v, storeID, store, noGenerateKey, noWriteKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// Coordinate direct writers using the initialized Volume identity.
-	v.Coordinator = coord_inmem.ForVolume(v.GetID())
-
-	return v, nil
-}
-
-// NewVolumeWithBlockStoreAndGC builds a key/value volume with a custom block
-// store and a pre-built GC reference graph.
-func NewVolumeWithBlockStoreAndGC(
-	ctx context.Context,
-	storeID string,
-	kvkey *store_kvkey.KVKey,
-	store kvtx.Store,
-	blk block.StoreOps,
-	rg block_gc.RefGraphOps,
-	conf *store_kvtx.Config,
-	noGenerateKey,
-	noWriteKey bool,
-	statsFn StatsFn,
-	closeFn func() error,
-	deleteFn ...func() error,
-) (*Volume, error) {
-	// Build the Volume around its key-value store and cleanup callbacks.
-	v := &Volume{
-		Store:     store_kvtx.NewKVTxWithBlockStore(kvkey, store, blk, conf),
-		kvtxStore: store,
-		kvKey:     kvkey,
-		refGraph:  rg,
-		statsFn:   statsFn,
-		closeFn:   closeFn,
-	}
-	if len(deleteFn) != 0 {
-		v.deleteFn = deleteFn[0]
-	}
-
-	// Load or claim the Volume identity and initialize its storage.
-	v, err := initVolumeSkipGC(ctx, v, storeID, noGenerateKey, noWriteKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// Coordinate direct writers using the initialized Volume identity.
-	v.Coordinator = coord_inmem.ForVolume(v.GetID())
-
-	return v, nil
-}
-
-// initVolume performs common volume initialization: peer key generation,
-// volume ID computation, and GC reference graph setup.
+// initVolume brings the store to the current format, loads or claims the
+// Volume identity, and opens the persistent reference graph.
 func initVolume(
-	ctx context.Context,
-	v *Volume,
-	storeID string,
-	store kvtx.Store,
-	noGenerateKey,
-	noWriteKey bool,
-) (*Volume, error) {
-	// Initialize the Volume identity before opening its reference graph.
-	v, err := initVolumeSkipGC(ctx, v, storeID, noGenerateKey, noWriteKey)
-	if err != nil {
-		return nil, err
-	}
-
-	// Open the persistent reference graph for Volume garbage collection.
-	v.refGraph = openRefGraph(store)
-	return v, nil
-}
-
-// initVolumeSkipGC performs common volume initialization without opening
-// the Volume's reference graph. Used when the caller provides its
-// own RefGraphOps (e.g. OPFS GCGraph).
-func initVolumeSkipGC(
 	ctx context.Context,
 	v *Volume,
 	storeID string,
@@ -314,6 +214,8 @@ func initVolumeSkipGC(
 	}
 	v.volumeID = volume.NewVolumeID(storeID, v.Peer.GetPeerID())
 
+	// Open the persistent reference graph for Volume garbage collection.
+	v.refGraph = openRefGraph(v.kvtxStore)
 	return v, nil
 }
 
@@ -568,6 +470,15 @@ func (v *Volume) GetWALAppender() block_gc.WALAppender {
 // SetWALAppender sets the WAL appender on the volume.
 func (v *Volume) SetWALAppender(wal block_gc.WALAppender) {
 	v.walAppender = wal
+}
+
+// Maintenance lets a BlockDomain reclaim the space of removed blocks. Any
+// other store reclaims it as it deletes their records.
+func (v *Volume) Maintenance(ctx context.Context) error {
+	if domain, ok := v.kvtxStore.(BlockDomain); ok {
+		return domain.Maintenance(ctx)
+	}
+	return nil
 }
 
 // GetGCManagerHooks returns the volume's WAL-backed GC manager hooks, if any.

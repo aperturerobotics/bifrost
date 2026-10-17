@@ -13,10 +13,6 @@ import (
 	"errors"
 
 	"github.com/aperturerobotics/controllerbus/controller"
-	block_gc "github.com/s4wave/spacewave/db/block/gc"
-	"github.com/s4wave/spacewave/db/kvtx"
-	kvtx_prefixer "github.com/s4wave/spacewave/db/kvtx/prefixer"
-	kvtx_vlogger "github.com/s4wave/spacewave/db/kvtx/vlogger"
 	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
 	"github.com/s4wave/spacewave/db/volume"
 	volume_kvtx "github.com/s4wave/spacewave/db/volume/common/kvtx"
@@ -31,15 +27,15 @@ const ControllerID = "hydra/volume/browser"
 // Version is the version of the browser volume implementation.
 var Version = controller.MustParseVersion("0.0.1")
 
-// metadataPrefix holds the Volume metadata in the engine's store, apart from
-// the reference graph.
-const metadataPrefix = "m/"
+// volumePrefix holds the Volume's records in the engine's store.
+const volumePrefix = "m/"
 
-// graphPrefix holds the reference graph records.
+// graphPrefix held the reference graph records beside the Volume before the
+// graph moved into it.
 const graphPrefix = "\x03"
 
-// legacyGraphPrefix held the reference graph records of format version 2,
-// which spelled each node as a length and its full IRI.
+// legacyGraphPrefix held the reference graph records of format version 2 beside
+// the Volume.
 const legacyGraphPrefix = "\x02"
 
 // Volume is the browser volume.
@@ -75,34 +71,13 @@ func NewVolume(ctx context.Context, le *logrus.Entry, conf *Config) (*Volume, er
 		return errors.Join(s.Close(), dev.Close())
 	}
 
-	// Metadata and the garbage collection graph have disjoint namespaces.
-	var store kvtx.Store = kvtx_prefixer.NewPrefixer(s, []byte(metadataPrefix))
-	if conf.GetVerbose() {
-		store = kvtx_vlogger.NewVLogger(le, store)
-	}
-
-	// Move an older graph to the current encoding before the Volume records
-	// the current format version.
-	stale, err := volume_kvtx.NeedsFormatUpgrade(ctx, store, keys)
-	if err == nil && stale {
-		err = volume_kvtx.MigrateLegacyRefGraph(ctx, s, []byte(legacyGraphPrefix), []byte(graphPrefix))
-	}
-	if err == nil && stale {
-		err = volume_kvtx.MigrateChildLists(ctx, s, []byte(graphPrefix))
-	}
+	// Move the reference graph the engine kept beside the Volume into it.
+	err = volume_kvtx.AdoptRefGraph(ctx, s.Domain(nil), []byte(volumePrefix), []byte(legacyGraphPrefix), []byte(graphPrefix))
 	if err != nil {
 		return nil, errors.Join(err, closeStore())
 	}
 
-	// Open the graph and register its roots.
-	graph := block_gc.NewCollectorRefGraph(kvtx_prefixer.NewPrefixer(s, []byte(graphPrefix)))
-	for _, node := range []string{block_gc.NodeGCRoot, block_gc.NodeUnreferenced} {
-		if err := graph.AddRoot(ctx, node); err != nil {
-			return nil, errors.Join(err, closeStore())
-		}
-	}
-
-	// Build the Volume and wire the collector hooks.
+	// Build the Volume in its namespace of the engine.
 	stats := func(ctx context.Context) (*volume.StorageStats, error) {
 		count, size, err := s.BlockStats(ctx)
 		if err != nil {
@@ -110,20 +85,17 @@ func NewVolume(ctx context.Context, le *logrus.Entry, conf *Config) (*Volume, er
 		}
 		return &volume.StorageStats{BlockCount: count, TotalBytes: size}, nil
 	}
-	vol, err := volume_kvtx.NewVolumeWithBlockStoreAndGC(
-		ctx, ControllerID, keys, store, s, graph, conf.GetStoreConfig(),
+	vol, err := volume_kvtx.NewVolume(
+		ctx, ControllerID, keys, s.Domain([]byte(volumePrefix)), conf.GetStoreConfig(),
 		conf.GetNoGenerateKey(), conf.GetNoWriteKey(), stats, closeStore,
 		func() error { return Delete(conf.GetName()) },
 	)
 	if err != nil {
 		return nil, errors.Join(err, closeStore())
 	}
-	vol.SetWALAppender(s)
-	vol.SetGCManagerHooks(block_gc.ManagerHooks{
-		Graph:       graph,
-		ReplayWAL:   s.ReplayWAL,
-		AcquireSTW:  func() (func(), error) { return s.AcquireSTW(ctx) },
-		Maintenance: s.Maintenance,
-	})
 	return vol, nil
 }
+
+// _ is a type assertion: the Volume serves its blocks from the engine only
+// through a BlockDomain.
+var _ volume_kvtx.BlockDomain = (*paylog.Domain)(nil)

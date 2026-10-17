@@ -63,6 +63,23 @@ func (s *countingTxStore) NewTransaction(ctx context.Context, write bool) (db_kv
 
 var _ db_kvtx.Store = (*countingTxStore)(nil)
 
+// blockDomain is a key-value store whose blocks live in a separate block store.
+type blockDomain struct {
+	db_kvtx.Store
+
+	blocks block.StoreOps
+}
+
+func (d *blockDomain) GetBlockStore() block.StoreOps {
+	return d.blocks
+}
+
+func (d *blockDomain) Maintenance(context.Context) error {
+	return nil
+}
+
+var _ BlockDomain = (*blockDomain)(nil)
+
 func TestVolumeForwardsBatchPut(t *testing.T) {
 	// Build the key layout for the test Volume.
 	ctx := context.Background()
@@ -71,14 +88,13 @@ func TestVolumeForwardsBatchPut(t *testing.T) {
 		t.Fatalf("NewKVKey failed: %v", err)
 	}
 
-	// Open a Volume around a block store that counts batch calls.
+	// Open a Volume over a block domain whose block store counts batch calls.
 	inner := newCountingBatchStore()
-	vol, err := NewVolumeWithBlockStore(
+	vol, err := NewVolume(
 		ctx,
 		"hydra/test-volume",
 		kvKey,
-		store_kvtx_inmem.NewStore(),
-		inner,
+		&blockDomain{Store: store_kvtx_inmem.NewStore(), blocks: inner},
 		&store_kvtx.Config{},
 		false,
 		false,
@@ -86,7 +102,7 @@ func TestVolumeForwardsBatchPut(t *testing.T) {
 		nil,
 	)
 	if err != nil {
-		t.Fatalf("NewVolumeWithBlockStore failed: %v", err)
+		t.Fatalf("NewVolume failed: %v", err)
 	}
 	t.Cleanup(func() { _ = vol.Close() })
 
@@ -122,67 +138,6 @@ func TestVolumeForwardsBatchPut(t *testing.T) {
 	}
 	if inner.existsBatchCalls != 1 {
 		t.Fatalf("expected 1 GetBlockExistsBatch call, got %d", inner.existsBatchCalls)
-	}
-}
-
-func TestVolumeWithBlockStoreInitializesKeyedCoordinator(t *testing.T) {
-	// Open a Volume with the custom block store configuration.
-	ctx := context.Background()
-	vol, err := NewVolumeWithBlockStore(
-		ctx,
-		"hydra/test-volume",
-		store_kvkey.NewDefaultKVKey(),
-		store_kvtx_inmem.NewStore(),
-		newCountingBatchStore(),
-		&store_kvtx.Config{},
-		false,
-		false,
-		nil,
-		nil,
-	)
-	if err != nil {
-		t.Fatalf("NewVolumeWithBlockStore failed: %v", err)
-	}
-	t.Cleanup(func() { _ = vol.Close() })
-
-	// Verify the Volume coordinator grants and releases a scoped write lease.
-	lease, acquired, err := vol.TryAcquireWriteLease(ctx, coord.Scope{VolumeID: vol.GetID(), Key: "object-a"})
-	if err != nil || !acquired {
-		t.Fatalf("TryAcquireWriteLease failed: acquired=%v err=%v", acquired, err)
-	}
-	if err := lease.Release(ctx); err != nil {
-		t.Fatalf("WriteLease.Release failed: %v", err)
-	}
-}
-
-func TestVolumeWithBlockStoreAndGCInitializesKeyedCoordinator(t *testing.T) {
-	// Open a Volume with the custom block store configuration.
-	ctx := context.Background()
-	vol, err := NewVolumeWithBlockStoreAndGC(
-		ctx,
-		"hydra/test-volume",
-		store_kvkey.NewDefaultKVKey(),
-		store_kvtx_inmem.NewStore(),
-		newCountingBatchStore(),
-		nil,
-		&store_kvtx.Config{},
-		false,
-		false,
-		nil,
-		nil,
-	)
-	if err != nil {
-		t.Fatalf("NewVolumeWithBlockStoreAndGC failed: %v", err)
-	}
-	t.Cleanup(func() { _ = vol.Close() })
-
-	// Verify the Volume coordinator grants and releases a scoped write lease.
-	lease, acquired, err := vol.TryAcquireWriteLease(ctx, coord.Scope{VolumeID: vol.GetID(), Key: "object-a"})
-	if err != nil || !acquired {
-		t.Fatalf("TryAcquireWriteLease failed: acquired=%v err=%v", acquired, err)
-	}
-	if err := lease.Release(ctx); err != nil {
-		t.Fatalf("WriteLease.Release failed: %v", err)
 	}
 }
 
