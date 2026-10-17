@@ -24,8 +24,8 @@ github.com/aperturerobotics/circl v1.6.4-0.20260922203741-ec4e0985fb65 h1:W06v/e
 github.com/aperturerobotics/circl v1.6.4-0.20260922203741-ec4e0985fb65/go.mod h1:h5LNyxAc5nTue9DS5jT+48en2PSDYt3zdGnz5OstK6c=
 github.com/aperturerobotics/cli v1.1.1-0.20261008170756-47089de94fb3 h1:K1hko5Hh5zKsVKSgX/7RNbFDrEeIKu8VqP0npZ8zL24=
 github.com/aperturerobotics/cli v1.1.1-0.20261008170756-47089de94fb3/go.mod h1:M7BFP9wow5ytTzMyJQOOO991fGfsUqdTI7gGEsHfTQ8=
-github.com/aperturerobotics/common v0.35.5-0.20261016061622-bf2de3fd5864 h1:inOiVSMEEdwiD9XBSQZbYoAlo+9Sbf1aeLTbgrrZh24=
-github.com/aperturerobotics/common v0.35.5-0.20261016061622-bf2de3fd5864/go.mod h1:tNbjKQ9Jww5iGomDBPTOU1HBOxYxyaSivZ23tw6bpUA=
+github.com/aperturerobotics/common v0.35.5-0.20261016222212-4b09e721d4bb h1:/T9zYCDP+Y0Dp4bcovii691Nl9Yye/nvsuW4rtU6vMs=
+github.com/aperturerobotics/common v0.35.5-0.20261016222212-4b09e721d4bb/go.mod h1:El887+KhHZPio9Ui5bsiiSwwYVd1toythLcBUoeTKrA=
 github.com/aperturerobotics/controllerbus v0.53.6-0.20261007184646-7a3ab3aea145 h1:Hrdnazj/BgezSuRZEcFMElELklCuwPLk8rPSKdZRbsA=
 github.com/aperturerobotics/controllerbus v0.53.6-0.20261007184646-7a3ab3aea145/go.mod h1:oMdVjwUwfKUo9XgnO7GbDk6cVMvrlnVaRDp/epb7ydU=
 github.com/aperturerobotics/cpp-yamux v0.0.0-20260929192932-26bdf6cab5b3 h1:EG2wNzJrcVr5XVzPWAO+xJqGWMg9JLNRvH2aQ0sZh0w=
@@ -72,8 +72,8 @@ github.com/aperturerobotics/pion-webrtc/v4 v4.2.16-0.20260922235615-c5c6104de130
 github.com/aperturerobotics/pion-webrtc/v4 v4.2.16-0.20260922235615-c5c6104de130/go.mod h1:ELxOiwcmRnP/9lG9GuTZVkDLKRv6zHkOKD2RHTZ3/Dc=
 github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4 h1:4Dy3BAHh2kgVdHAqtlwcFsgY0kAwUe2m3rfFcaGwGQg=
 github.com/aperturerobotics/protobuf v0.0.0-20260203024654-8201686529c4/go.mod h1:tMgO7y6SJo/d9ZcvrpNqIQtdYT9de+QmYaHOZ4KnhOg=
-github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261006081947-6c15c9bde28b h1:aUxUXmr0qQZhieFMxzBXBGQO9Of0RwyJ5G2HhG3pVpo=
-github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261006081947-6c15c9bde28b/go.mod h1:3Ay/E7iaw2KWLirK3+dDdNJZHK0hu8Y1/kKeYeUa+8s=
+github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261016221735-380ab5fa526b h1:lwAwiJQGay1d4Msx1DOruLiJp8iz9YV7OcQdm9xEeU4=
+github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261016221735-380ab5fa526b/go.mod h1:3Ay/E7iaw2KWLirK3+dDdNJZHK0hu8Y1/kKeYeUa+8s=
 github.com/aperturerobotics/ristretto/v2 v2.0.0-20260922205806-ef08161157dc h1:MGYYHApsIoDOeqFv/HmO6WWEa9hYBk9acgjd7G5Gr3k=
 github.com/aperturerobotics/ristretto/v2 v2.0.0-20260922205806-ef08161157dc/go.mod h1:0KsrXtXvnv0EqnzyowllbVJB8yBonswa2lTCK2gGo9E=
 github.com/aperturerobotics/saucer v0.0.0-20260317232052-4db05a4e0b4c h1:32+9phqiA+X/w4YAT3sP8DyhfP81mo3k6v/RI/t1qGk=
