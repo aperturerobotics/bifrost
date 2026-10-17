@@ -7,7 +7,6 @@ import (
 
 	"github.com/s4wave/spacewave/db/block"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
-	block_store_kvtx "github.com/s4wave/spacewave/db/block/store/kvtx"
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
@@ -38,20 +37,15 @@ func (v *Volume) withDirectAtomic(ctx context.Context, fn func(block.StoreOps, *
 	}
 
 	// Open one physical transaction for block bytes and reference changes.
-	tx, err := v.kvtxStore.NewTransaction(ctx, true)
+	p, err := v.openPhysical(ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Discard()
-
-	// Open transaction-local block and reference graph adapters.
-	store := kvtx.NewTxStore(tx)
-	blocks := block_store_kvtx.NewKVTxBlock(v.kvKey, store, v.GetHashType(), v.atomicHashGet)
-	rg := openRefGraph(store)
+	defer p.tx.Discard()
 
 	// Apply the direct operation.
 	if fn != nil {
-		if err := fn(blocks, rg); err != nil {
+		if err := fn(p.blocks, p.rg); err != nil {
 			return err
 		}
 	}
@@ -59,16 +53,16 @@ func (v *Volume) withDirectAtomic(ctx context.Context, fn func(block.StoreOps, *
 	// Carry the deferred edits in a changing transaction only, and end an
 	// unchanged one without a commit.
 	var edits deferredEdits
-	if fn == nil || store.Wrote() {
-		edits, err = v.applyDeferred(ctx, blocks, rg)
+	if fn == nil || p.wrote() {
+		edits, err = v.applyDeferred(ctx, p.blocks, p.rg)
 	}
 	committed := false
-	if err == nil && store.Wrote() {
+	if err == nil && p.wrote() {
 		// Commit using the Volume write-ordering contract.
 		if v.ordered != nil {
-			err = kvtx.CommitOrdered(ctx, tx)
+			err = kvtx.CommitOrdered(ctx, p.tx)
 		} else {
-			err = tx.Commit(ctx)
+			err = p.tx.Commit(ctx)
 		}
 		committed = err == nil
 	}

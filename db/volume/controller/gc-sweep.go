@@ -17,6 +17,13 @@ type gcDelegator interface {
 	DelegatesGC()
 }
 
+// storageMaintainer is implemented by a volume whose storage reclaims the
+// space of removed blocks in a separate step.
+type storageMaintainer interface {
+	// Maintenance reclaims the space of removed blocks.
+	Maintenance(ctx context.Context) error
+}
+
 // markIntervals is the number of collection intervals between block passes.
 const markIntervals = 15
 
@@ -134,6 +141,14 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 				WithField("unknown", stats.UnknownBlocks).
 				WithField("sample", stats.UnknownSample).
 				Warn("gc block pass reached blocks of unknown references and swept no block")
+		}
+		// Let the storage reclaim the space of the swept blocks.
+		if stats.NodesSwept != 0 || stats.BlocksSwept != 0 {
+			if m, ok := vol.(storageMaintainer); ok {
+				if err := m.Maintenance(ctx); err != nil && ctx.Err() == nil {
+					c.le.WithError(err).Warn("storage maintenance failed")
+				}
+			}
 		}
 		if stats.More {
 			timer.Reset(0)

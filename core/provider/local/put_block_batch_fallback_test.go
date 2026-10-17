@@ -55,15 +55,12 @@ func TestVolumeBlockStoreOverlayUsesBatchPutBlock(t *testing.T) {
 		t.Fatalf("NewKVKey failed: %v", err)
 	}
 
-	// Open a volume whose lower block store counts batch writes.
-	kvStore := store_kvtx_inmem.NewStore()
-	lowerBlocks := newCountingBatchStore()
-	baseVol, err := common_kvtx.NewVolumeWithBlockStore(
+	// Open a volume and count the batch writes that reach it.
+	baseVol, err := common_kvtx.NewVolume(
 		ctx,
 		"alpha/test-volume",
 		kvKey,
-		kvStore,
-		lowerBlocks,
+		store_kvtx_inmem.NewStore(),
 		&store_kvtx.Config{},
 		false,
 		false,
@@ -71,16 +68,17 @@ func TestVolumeBlockStoreOverlayUsesBatchPutBlock(t *testing.T) {
 		nil,
 	)
 	if err != nil {
-		t.Fatalf("NewVolumeWithBlockStore failed: %v", err)
+		t.Fatalf("NewVolume failed: %v", err)
 	}
 	t.Cleanup(func() { _ = baseVol.Close() })
+	lowerBlocks := &countingBatchStore{StoreOps: baseVol}
 
 	// Wrap the volume with an upper-read-cache overlay.
 	upperBlocks := newCountingBatchStore()
 	overlay := block.NewOverlay(
 		ctx,
 		nil,
-		baseVol,
+		lowerBlocks,
 		upperBlocks,
 		block.OverlayMode_UPPER_READ_CACHE,
 		0,
@@ -111,7 +109,7 @@ func TestVolumeBlockStoreOverlayUsesBatchPutBlock(t *testing.T) {
 		t.Fatalf("upper store should be unused in UPPER_READ_CACHE writes: batch=%d put=%d", upperBlocks.putBatchCalls, upperBlocks.putCalls)
 	}
 	if lowerBlocks.putBatchCalls != 1 {
-		t.Fatalf("expected lower block store batch path to be preserved, got %d batch calls", lowerBlocks.putBatchCalls)
+		t.Fatalf("expected volume batch path to be preserved, got %d batch calls", lowerBlocks.putBatchCalls)
 	}
 	if lowerBlocks.putCalls != 0 {
 		t.Fatalf("expected no singleton PutBlock fallbacks, got %d", lowerBlocks.putCalls)
@@ -128,15 +126,12 @@ func TestGCStoreOpsPreservesWrappedLowerBatchPath(t *testing.T) {
 		t.Fatalf("NewKVKey failed: %v", err)
 	}
 
-	// Open a volume whose lower block store counts batch writes.
-	kvStore := store_kvtx_inmem.NewStore()
-	lowerBlocks := newCountingBatchStore()
-	baseVol, err := common_kvtx.NewVolumeWithBlockStore(
+	// Open a volume and count the batch writes that reach it.
+	baseVol, err := common_kvtx.NewVolume(
 		ctx,
 		"alpha/test-volume",
 		kvKey,
-		kvStore,
-		lowerBlocks,
+		store_kvtx_inmem.NewStore(),
 		&store_kvtx.Config{},
 		false,
 		false,
@@ -144,16 +139,17 @@ func TestGCStoreOpsPreservesWrappedLowerBatchPath(t *testing.T) {
 		nil,
 	)
 	if err != nil {
-		t.Fatalf("NewVolumeWithBlockStore failed: %v", err)
+		t.Fatalf("NewVolume failed: %v", err)
 	}
 	t.Cleanup(func() { _ = baseVol.Close() })
+	lowerBlocks := &countingBatchStore{StoreOps: baseVol}
 
 	// Wrap the volume and put a GC store in front of the overlay.
 	upperBlocks := newCountingBatchStore()
 	overlay := block.NewOverlay(
 		ctx,
 		nil,
-		baseVol,
+		lowerBlocks,
 		upperBlocks,
 		block.OverlayMode_UPPER_READ_CACHE,
 		0,
@@ -190,7 +186,7 @@ func TestGCStoreOpsPreservesWrappedLowerBatchPath(t *testing.T) {
 		t.Fatalf("upper store should be unused in UPPER_READ_CACHE writes: batch=%d put=%d", upperBlocks.putBatchCalls, upperBlocks.putCalls)
 	}
 	if lowerBlocks.putBatchCalls != 1 {
-		t.Fatalf("expected lower block store batch path to be preserved through GCStoreOps, got %d batch calls", lowerBlocks.putBatchCalls)
+		t.Fatalf("expected volume batch path to be preserved through GCStoreOps, got %d batch calls", lowerBlocks.putBatchCalls)
 	}
 	if lowerBlocks.putCalls != 0 {
 		t.Fatalf("expected no singleton PutBlock fallbacks through GCStoreOps, got %d", lowerBlocks.putCalls)

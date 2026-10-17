@@ -8,7 +8,6 @@ import (
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/s4wave/spacewave/db/block"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
-	block_store_kvtx "github.com/s4wave/spacewave/db/block/store/kvtx"
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
@@ -397,18 +396,15 @@ func (w *publicationWriter) run() {
 // group also carries the Volume's deferred edits, the edges of released reader
 // pins and pending root proofs, which therefore cost no commit of their own.
 func (w *publicationWriter) applyGroup(first *publicationRequest) (group []*publicationRequest, results []error, committed bool) {
-	// Open the physical writer before constructing any transaction-scoped consumer.
+	// Open one physical transaction shared by the blocks and the reference
+	// graph of every request in the group.
 	group = []*publicationRequest{first}
-	tx, err := w.volume.kvtxStore.NewTransaction(first.ctx, true)
+	p, err := w.volume.openPhysical(first.ctx)
 	if err != nil {
 		return group, []error{err}, false
 	}
-	defer tx.Discard()
-
-	// Share that transaction across addressed blocks and the reference graph.
-	store := kvtx.NewTxStore(tx)
-	blocks := block_store_kvtx.NewKVTxBlock(w.volume.kvKey, store, w.volume.GetHashType(), w.volume.atomicHashGet)
-	rg := openRefGraph(store)
+	defer p.tx.Discard()
+	tx, blocks, rg := p.tx, p.blocks, p.rg
 
 	// Preflight each request against prior accepted changes in this physical group.
 	accepted := 0

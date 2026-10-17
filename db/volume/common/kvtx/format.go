@@ -124,7 +124,7 @@ func migrateBase58BlockKeyBatch(
 		return nil, err
 	}
 	defer tx.Discard()
-	moves, more, err := collectBlockMoves(ctx, tx, prefix, start)
+	moves, more, err := collectMoves(ctx, tx, prefix, start)
 	if err != nil || len(moves) == 0 {
 		return nil, err
 	}
@@ -148,17 +148,17 @@ func migrateBase58BlockKeyBatch(
 	return keyAfter(moves[len(moves)-1].key), nil
 }
 
-// collectBlockMoves copies up to migrateBatchBytes of the blocks at or after
-// start, and reports whether more remain.
-func collectBlockMoves(ctx context.Context, tx kvtx.Tx, prefix, start []byte) ([]keyValue, bool, error) {
-	// Position the sorted iterator at the first base58 key.
+// collectMoves copies up to migrateBatchBytes of the records under prefix at
+// or after start, and reports whether more remain.
+func collectMoves(ctx context.Context, tx kvtx.Tx, prefix, start []byte) ([]keyValue, bool, error) {
+	// Position the sorted iterator at start.
 	it := tx.Iterate(ctx, prefix, true, false)
 	defer it.Close()
 	if err := it.Seek(start); err != nil {
 		return nil, false, err
 	}
 
-	// Copy blocks until the batch fills.
+	// Copy records until the batch fills.
 	var moves []keyValue
 	var size int
 	for ; it.Valid() && size < migrateBatchBytes; it.Next() {

@@ -35,6 +35,11 @@ func (d *Domain) GetBlockStore() block.StoreOps {
 	return &d.s.blockStore
 }
 
+// Maintenance reclaims the space of removed blocks, as Store.Maintenance does.
+func (d *Domain) Maintenance(ctx context.Context) error {
+	return d.s.Maintenance(ctx)
+}
+
 // SupportsAtomicCommit reports that a transaction's Commit publishes its
 // records and blocks synchronously and its Discard drops both.
 func (d *Domain) SupportsAtomicCommit() bool {

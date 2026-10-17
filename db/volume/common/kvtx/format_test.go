@@ -165,6 +165,61 @@ func TestUpgradeLegacyRefGraph(t *testing.T) {
 	checkLegacyRefGraph(t, store)
 }
 
+// TestAdoptRefGraph opens a Volume over a store whose version 2 graph sits
+// beside the Volume, as the browser engine kept it, and expects the graph in
+// the Volume at the current format with nothing left beside it.
+func TestAdoptRefGraph(t *testing.T) {
+	// Write a version 2 Volume store under m/.
+	ctx := context.Background()
+	root := store_kvtx_inmem.NewStore()
+	keys := store_kvkey.NewDefaultKVKey()
+	store := kvtx_prefixer.NewPrefixer(root, []byte("m/"))
+	writeLegacyStore(t, store, keys)
+
+	// Collect the version 2 records the Volume holds.
+	tx, err := root.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	inner := slices.Concat([]byte("m/"), legacyRefGraphPrefix)
+	var records [][]byte
+	err = tx.ScanPrefixKeys(ctx, inner, func(key []byte) error {
+		records = append(records, bytes.Clone(key))
+		return nil
+	})
+	if err != nil || len(records) == 0 {
+		t.Fatalf("%d records, err %v", len(records), err)
+	}
+
+	// Move them beside the Volume, under x/.
+	for _, key := range records {
+		if err := tx.Set(ctx, slices.Concat([]byte("x/"), key[len(inner):]), nil); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Delete(ctx, key); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Adopt the graph and open the Volume, which migrates it.
+	if err := AdoptRefGraph(ctx, root, []byte("m/"), []byte("x/"), []byte("y/")); err != nil {
+		t.Fatal(err)
+	}
+	vol, err := NewVolume(ctx, "hydra/test-volume", keys, store, nil, false, false, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = vol.Close() })
+	checkLegacyRefGraph(t, store)
+	if n := countPrefix(t, root, []byte("x/")); n != 0 {
+		t.Fatalf("%d records remain beside the Volume", n)
+	}
+}
+
 // TestMigrateLegacyRefGraphBatches moves more records than one batch holds,
 // resuming each batch after the last, and expects every record moved.
 func TestMigrateLegacyRefGraphBatches(t *testing.T) {
