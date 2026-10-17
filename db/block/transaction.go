@@ -20,14 +20,13 @@ var maxWriteConcurrency = runtime.GOMAXPROCS(0)
 // maxEncodeConcurrency is the maximum concurrency for hashing & marshaling blocks.
 var maxEncodeConcurrency = maxWriteConcurrency
 
-// orderState tracks a reachable node during the encode ordering walk.
+// orderState tracks a reachable node during the encode ordering walk. The
+// zero value is a node the walk has not reached.
 type orderState uint8
 
 const (
-	// orderPending is a node the walk has not reached.
-	orderPending orderState = iota
 	// orderVisiting is a node on the walk's current path.
-	orderVisiting
+	orderVisiting orderState = iota + 1
 	// orderDone is a node placed in the encode order.
 	orderDone
 )
