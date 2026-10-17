@@ -1,6 +1,6 @@
 // Package paylog is a volume engine shell over a storage Device: block
 // payloads append to a log of segment files, and one ordered index holds the
-// key-value store, the block locations, and the garbage collection journal.
+// key-value store and the block locations.
 //
 // Every durable index commit also publishes the locations of the blocks
 // written since the previous one. The commit's flush covers the earlier segment
@@ -44,8 +44,6 @@ const (
 	kvPrefix = "k/"
 	// blockPrefix maps a block reference key to its payload location.
 	blockPrefix = "b/"
-	// journalPrefix holds garbage collection journal entries by sequence.
-	journalPrefix = "j/"
 	// segmentStatsPrefix maps a segment number to the count and bytes of
 	// its published blocks.
 	segmentStatsPrefix = "s/"
@@ -75,7 +73,7 @@ type Store struct {
 
 	// dev holds the index and the segments.
 	dev device.Device
-	// index holds the key-value store, the block locations, and the journal.
+	// index holds the key-value store and the block locations.
 	index Index
 	// hashType is the hash type of new block references; zero selects the
 	// default.
@@ -98,12 +96,6 @@ type Store struct {
 	// pending holds the unpublished block writes and removes made outside a
 	// write transaction, by block key.
 	pending map[string]*pendingBlock
-	// journal is the sequence of the last journal entry.
-	journal uint64
-
-	// stw is held shared by journal appends and exclusively by a collector
-	// sweep, so a sweep sees each append entirely before or after it.
-	stw sync.RWMutex
 }
 
 // pendingBlock is one unpublished block write or remove.
@@ -125,20 +117,6 @@ func Open(ctx context.Context, dev device.Device, index Index, hashType hash.Has
 	}
 	s.Store = s.Domain(nil)
 	s.blockStore = blockStore{s: s}
-
-	// Find the last journal sequence.
-	err := s.view(ctx, func(tx kvtx.Tx) error {
-		it := tx.Iterate(ctx, []byte(journalPrefix), true, true)
-		defer it.Close()
-		if it.Next() {
-			s.journal = binary.BigEndian.Uint64(it.Key()[len(journalPrefix):])
-		}
-		return it.Err()
-	})
-	if err != nil {
-		_ = index.Close()
-		return nil, errors.Wrap(err, "read journal")
-	}
 
 	// Start a new segment after every existing one, since an unpublished tail
 	// of the last one may be torn.

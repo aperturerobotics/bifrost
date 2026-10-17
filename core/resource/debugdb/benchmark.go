@@ -163,7 +163,7 @@ func (r *BenchmarkRunner) allocateVolume(ctx context.Context) (*volume_browser.V
 	// Open the volume on the device the browser selects.
 	name := "debugdb-bench-" + time.Now().Format("20060102-150405.000000000")
 	conf := &volume_browser.Config{Name: name}
-	vol, err := volume_browser.NewVolume(ctx, r.le.WithField("volume", name), conf)
+	vol, err := volume_browser.NewVolume(ctx, conf)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create benchmark volume")
 	}

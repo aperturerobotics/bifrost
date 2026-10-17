@@ -108,15 +108,6 @@ func (b *bucketHandleTracker) execute(ctx context.Context) (exErr error) {
 		)
 		// Root the bucket node so the marker can reach bucket-owned blocks.
 		_ = rg.AddRef(ctx, block_gc.NodeGCRoot, bucketIRI)
-		// Propagate WAL appender if the volume provides one.
-		type walProvider interface {
-			GetWALAppender() block_gc.WALAppender
-		}
-		if wp, ok := vol.(walProvider); ok {
-			if wal := wp.GetWALAppender(); wal != nil {
-				handle.gcOps.SetWALAppender(wal)
-			}
-		}
 	}
 
 	// Publish the complete handle after its optional GC wrapper is ready.
@@ -526,13 +517,6 @@ func (b *bucketHandle) EndDeferFlush(ctx context.Context) error {
 	return nil
 }
 
-// _ asserts the bucket and deferred-flush contracts.
-var (
-	_ bucket.Bucket       = (*bucketHandle)(nil)
-	_ bucket.BucketHandle = (*bucketHandle)(nil)
-	_ block.DeferFlusher  = (*bucketHandle)(nil)
-)
-
 // SupportsAtomicPublication describes this handle's normal write domain, not a
 // transient read scope. No capability is manufactured for a remote/custom store.
 func (b *bucketHandle) SupportsAtomicPublication() bool {
@@ -540,7 +524,7 @@ func (b *bucketHandle) SupportsAtomicPublication() bool {
 		return false
 	}
 	publisher, ok := b.v.(block.AtomicPublisher)
-	return ok && publisher.SupportsAtomicPublication() && (b.gcOps == nil || !b.gcOps.HasWALAppender())
+	return ok && publisher.SupportsAtomicPublication()
 }
 
 // SubmitAtomic forwards admission to the underlying volume, scoping the
@@ -575,4 +559,10 @@ func (b *bucketHandle) PublishAtomic(ctx context.Context, p *block.AtomicPublica
 // AtomicPublicationVolumeID returns the underlying volume's publication namespace.
 func (b *bucketHandle) AtomicPublicationVolumeID() string { return b.v.GetID() }
 
-var _ block.AtomicPublisher = (*bucketHandle)(nil)
+// _ asserts the bucket, deferred-flush, and publication contracts.
+var (
+	_ bucket.Bucket         = (*bucketHandle)(nil)
+	_ bucket.BucketHandle   = (*bucketHandle)(nil)
+	_ block.DeferFlusher    = (*bucketHandle)(nil)
+	_ block.AtomicPublisher = (*bucketHandle)(nil)
+)

@@ -8,10 +8,10 @@ import (
 )
 
 // GetStoredBlock reads a block and its outgoing block edges. The edges come
-// from the ref graph, the journal edges it has not applied, and the edges this
-// store has buffered but not flushed. Blocks are immutable, so an edge once
-// recorded stays valid for the life of the block. Without outgoing refs or an
-// incoming edge, the graph cannot distinguish a leaf from an untracked block.
+// from the ref graph and the edges this store has buffered but not flushed.
+// Blocks are immutable, so an edge once recorded stays valid for the life of
+// the block. Without outgoing refs or an incoming edge, the graph cannot
+// distinguish a leaf from an untracked block.
 func (g *GCStoreOps) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
 	// Read the immutable block data before resolving its outgoing references.
 	data, found, err := g.store.GetBlock(ctx, ref)
@@ -35,7 +35,7 @@ func (g *GCStoreOps) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*
 
 // getBlockEdges resolves the outgoing edges of a stored block.
 func (g *GCStoreOps) getBlockEdges(ctx context.Context, ref *block.BlockRef, data []byte) (*block.StoredBlock, error) {
-	// Collect durable, journaled, and buffered references for the stored block.
+	// Collect the recorded and buffered references of the stored block.
 	node := BlockIRI(ref)
 	refs, err := g.getOutgoingBlockRefs(ctx, node)
 	if err != nil {
@@ -56,13 +56,6 @@ func (g *GCStoreOps) getBlockEdges(ctx context.Context, ref *block.BlockRef, dat
 
 	// Distinguish a tracked leaf from bytes whose edges were never recorded.
 	known := len(refs) != 0 || g.hasBufferedBlockEdges(node)
-	if !known && g.wal != nil {
-		incoming, err := g.wal.GetPendingIncomingRefs(ctx, node)
-		if err != nil {
-			return nil, err
-		}
-		known = len(incoming) != 0
-	}
 	if !known {
 		incoming, err := g.refGraph.GetIncomingRefs(ctx, node)
 		if err != nil {
@@ -99,17 +92,10 @@ func (g *GCStoreOps) hasBufferedBlockEdges(node string) bool {
 
 // getOutgoingBlockRefs collects the block targets of node's outgoing edges.
 func (g *GCStoreOps) getOutgoingBlockRefs(ctx context.Context, node string) ([]*block.BlockRef, error) {
-	// Read the durable outgoing edges and include pending journal entries.
+	// Read the recorded outgoing edges.
 	targets, err := g.refGraph.GetOutgoingRefs(ctx, node)
 	if err != nil {
 		return nil, err
-	}
-	if g.wal != nil {
-		journaled, err := g.wal.GetPendingOutgoingRefs(ctx, node)
-		if err != nil {
-			return nil, err
-		}
-		targets = append(targets, journaled...)
 	}
 
 	// Include edges buffered for the next flush, or left by a failed flush.

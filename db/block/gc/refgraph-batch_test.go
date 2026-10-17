@@ -56,7 +56,7 @@ func TestApplyRefBatchOwnershipSemantics(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Start a graph and apply the case's ownership transition.
-			graph := NewCollectorRefGraph(store_kvtx_inmem.NewStore())
+			graph := NewRefGraph(store_kvtx_inmem.NewStore())
 			if err := graph.ApplyRefBatch(ctx, test.seed, nil); err != nil {
 				t.Fatal(err)
 			}
@@ -81,7 +81,7 @@ func TestApplyRefBatchOwnershipSemantics(t *testing.T) {
 func TestRejectedTransactionLeavesNeitherHalfEdge(t *testing.T) {
 	// Reject an edge write and confirm the transaction rolls back both indexes.
 	ctx := context.Background()
-	graph := NewCollectorRefGraph(store_kvtx_inmem.NewStore())
+	graph := NewRefGraph(store_kvtx_inmem.NewStore())
 	rejected := errors.New("reject transaction")
 	edge := RefEdge{Subject: "owner", Object: "object"}
 
@@ -103,10 +103,8 @@ func TestRejectedTransactionLeavesNeitherHalfEdge(t *testing.T) {
 		t.Fatalf("error = %v, want %v", err, rejected)
 	}
 
-	// Confirm rollback removed the forward, reverse, and node records.
+	// Confirm rollback removed the forward and reverse records.
 	assertEdge(t, graph, edge, false)
-	assertRecord(t, graph, graphKey(kindNode, edge.Subject), false)
-	assertRecord(t, graph, graphKey(kindNode, edge.Object), false)
 }
 
 // assertEdge checks that both stored directions agree on edge existence.

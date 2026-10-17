@@ -51,7 +51,7 @@ func (b *bucketHandle) RootsComplete(ctx context.Context, refs []*block.BlockRef
 // SupportsRootRetention requires ownership and bytes in one physical transaction.
 func (b *bucketHandle) SupportsRootRetention() bool {
 	v, ok := b.v.(bucketRootVolume)
-	return ok && b.readOps == nil && v.SupportsAtomicPublication() && b.gcOps != nil && !b.gcOps.HasWALAppender()
+	return ok && b.readOps == nil && v.SupportsAtomicPublication() && b.gcOps != nil
 }
 
 // SetRetainedRoots writes entries owned by this bucket and replaces its named

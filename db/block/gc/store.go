@@ -26,20 +26,6 @@ type pendingReput struct {
 	targets []*block.BlockRef
 }
 
-// WALAppender appends batched ref graph edge operations to a write-ahead
-// log. When set on GCStoreOps, FlushPending writes to the WAL instead
-// of calling ApplyRefBatch on the RefGraph directly.
-type WALAppender interface {
-	// Append durably journals one batch of edge additions and removals.
-	Append(ctx context.Context, adds, removes []RefEdge) error
-	// GetPendingOutgoingRefs returns the targets of journaled edges from node
-	// that the ref graph has not applied yet, net of journaled removals.
-	GetPendingOutgoingRefs(ctx context.Context, node string) ([]string, error)
-	// GetPendingIncomingRefs returns the sources of journaled edges to node
-	// that the ref graph has not applied yet, net of journaled removals.
-	GetPendingIncomingRefs(ctx context.Context, node string) ([]string, error)
-}
-
 // GCStoreOps wraps a StoreOps with GC ref graph tracking.
 //
 // PutBlock is called from Transaction.Write's concurrent worker goroutines.
@@ -62,7 +48,6 @@ type WALAppender interface {
 type GCStoreOps struct {
 	store      block.StoreOps
 	refGraph   RefGraphOps
-	wal        WALAppender
 	parentIRI  string
 	flushTask  string
 	deferFlush atomic.Int64
@@ -136,18 +121,6 @@ func NewGCStoreOpsWithParentAndTraceTask(store block.StoreOps, refGraph RefGraph
 	}
 }
 
-// SetWALAppender sets the WAL appender for deferred ref graph updates.
-// When set, FlushPending writes to the WAL instead of calling
-// ApplyRefBatch on the RefGraph directly. Configure it before concurrent use.
-func (g *GCStoreOps) SetWALAppender(wal WALAppender) {
-	g.wal = wal
-}
-
-// HasWALAppender returns whether this GC store writes flushes to a WAL.
-func (g *GCStoreOps) HasWALAppender() bool {
-	return g != nil && g.wal != nil
-}
-
 // GetHashType returns the preferred hash type for the store.
 func (g *GCStoreOps) GetHashType() hash.HashType {
 	return g.store.GetHashType()
@@ -180,7 +153,6 @@ func (g *GCStoreOps) BeginReadOperation(ctx context.Context) (block.StoreOps, fu
 	scoped := &GCStoreOps{
 		store:     store,
 		refGraph:  g.refGraph,
-		wal:       g.wal,
 		parentIRI: g.parentIRI,
 		flushTask: g.flushTask,
 	}
@@ -500,15 +472,10 @@ func (g *GCStoreOps) FlushPending(ctx context.Context) error {
 		len(ununrefs) == 0 && len(releases) == 0 {
 		return nil
 	}
-	path := "direct"
-	if g.wal != nil {
-		path = "wal"
-	}
 	trace.Logf(
 		ctx,
 		"hydra/block-gc/store/flush-pending/pending",
-		"path=%s unrefs=%d refs=%d ununrefs=%d releases=%d",
-		path,
+		"unrefs=%d refs=%d ununrefs=%d releases=%d",
 		len(unrefs),
 		len(refs),
 		len(ununrefs),
@@ -562,8 +529,7 @@ func (g *GCStoreOps) FlushPending(ctx context.Context) error {
 	trace.Logf(
 		ctx,
 		"hydra/block-gc/store/flush-pending/normalized",
-		"path=%s adds_before=%d removes_before=%d adds_after=%d removes_after=%d",
-		path,
+		"adds_before=%d removes_before=%d adds_after=%d removes_after=%d",
 		preNormalizeAdds,
 		preNormalizeRemoves,
 		len(adds),
@@ -579,7 +545,7 @@ func (g *GCStoreOps) FlushPending(ctx context.Context) error {
 
 // recordLostEdges buffers the child edges of each buffered existing block that
 // holds no outgoing edge, adopting its children as a first write does. Edges
-// the graph, its journal or this store's buffers hold count as held. A failed
+// the graph or this store's buffers hold count as held. A failed
 // read leaves the unchecked blocks buffered for the next flush.
 func (g *GCStoreOps) recordLostEdges(ctx context.Context) error {
 	// Snapshot the buffered blocks, since writers keep appending to them.
@@ -610,22 +576,7 @@ func (g *GCStoreOps) recordLostEdges(ctx context.Context) error {
 
 // flushRefEdges retains every undelivered edge before reporting an error.
 func (g *GCStoreOps) flushRefEdges(ctx context.Context, adds, removes []RefEdge) error {
-	// Journal the ownership edges and retain them when delivery fails.
-	if g.wal != nil {
-		walCtx, walTask := trace.NewTask(ctx, "hydra/block-gc/store/flush-pending/wal-append")
-		if err := g.wal.Append(walCtx, adds, removes); err != nil {
-			walTask.End()
-			g.rebufferEdges(adds, removes)
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			return errors.Wrap(err, "flush WAL append")
-		}
-		walTask.End()
-		return nil
-	}
-
-	// Apply the ownership batch directly and retain its uncommitted remainder.
+	// Apply the ownership batch and retain its uncommitted remainder.
 	batchCtx, batchTask := trace.NewTask(ctx, "hydra/block-gc/store/flush-pending/apply-ref-batch")
 	if err := g.refGraph.ApplyRefBatch(batchCtx, adds, removes); err != nil {
 		batchTask.End()

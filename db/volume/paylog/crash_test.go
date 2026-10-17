@@ -5,7 +5,6 @@ package paylog
 import (
 	"context"
 	"math/rand/v2"
-	"slices"
 	"testing"
 
 	"github.com/s4wave/spacewave/db/block"
@@ -112,59 +111,53 @@ func maintainErr(ctx context.Context, s *Store) error {
 	return s.Maintenance(ctx)
 }
 
-// TestCrashReplay crashes journal replay into a graph in the same store at
-// each mutating device call and checks that a second replay converges.
-func TestCrashReplay(t *testing.T) {
+// TestCrashCollect crashes a Volume collection in the store's domain at each
+// mutating device call and checks that the recovered Volume keeps the owned
+// block and a second collection removes the orphan.
+func TestCrashCollect(t *testing.T) {
 	for _, e := range crashEngines {
 		t.Run(e.name, func(t *testing.T) {
 			calls := 0
 			for n := -1; n < calls; n++ {
-				// Journal two edges from a, remove one, and sync.
+				// Publish two blocks, orphan the second, and sync.
 				ctx := t.Context()
 				d := device.NewMemory()
 				s := reopen(t, e, d, nil)
-				adds := []block_gc.RefEdge{{Subject: "a", Object: "b"}, {Subject: "a", Object: "c"}}
-				if err := s.Append(ctx, adds, nil); err != nil {
-					t.Fatal(err)
-				}
-				if err := s.Append(ctx, nil, adds[:1]); err != nil {
-					t.Fatal(err)
-				}
+				v := openVolume(t, s)
+				keep, drop := publish(t, v, "keep"), publish(t, v, "drop")
+				orphan(t, v, drop)
 				if _, err := s.Sync(ctx); err != nil {
 					t.Fatal(err)
 				}
 
-				// Count the calls of an uncrashed replay on the first pass.
+				// Count the calls of an uncrashed collection on the first pass.
+				collector := block_gc.NewCollector(v.GetRefGraph(), v, nil)
 				if n < 0 {
 					base := d.Calls()
-					if _, err := s.ReplayWAL(ctx, newGraph(s)); err != nil {
+					if _, err := collector.Collect(ctx); err != nil {
 						t.Fatal(err)
 					}
 					calls = d.Calls() - base
+					_ = v.Close()
 					_ = s.Close()
 					continue
 				}
 
-				// Crash the replay, recover, and replay again.
+				// Crash the collection, recover, and collect again.
 				d.CrashAfter(n)
-				if _, err := s.ReplayWAL(ctx, newGraph(s)); err == nil {
-					t.Fatalf("crash %d: replay finished without crashing", n)
+				if _, err := collector.Collect(ctx); err == nil {
+					t.Fatalf("crash %d: collection finished without crashing", n)
 				}
+				_ = v.Close()
 				_ = s.Close()
 				d.PowerLoss(rand.New(rand.NewPCG(uint64(n), 1))) //nolint:gosec
 				s = reopen(t, e, d, nil)
-				graph := newGraph(s)
-				if _, err := s.ReplayWAL(ctx, graph); err != nil {
-					t.Fatal(err)
+				v = openVolume(t, s)
+				if _, err := block_gc.NewCollector(v.GetRefGraph(), v, nil).Collect(ctx); err != nil {
+					t.Fatalf("crash %d: %v", n, err)
 				}
-				checkPending(t, s)
-				refs, err := graph.GetOutgoingRefs(ctx, "a")
-				if err != nil {
-					t.Fatal(err)
-				}
-				if !slices.Equal(refs, []string{"c"}) {
-					t.Fatalf("crash %d: graph refs %v, want [c]", n, refs)
-				}
+				checkCollected(t, s, v, keep, drop)
+				_ = v.Close()
 				_ = s.Close()
 			}
 			t.Logf("%d crash points", calls)

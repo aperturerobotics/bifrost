@@ -1402,7 +1402,7 @@ func TestGraphKeyNodes(t *testing.T) {
 	// No node's key prefixes another's, so a prefix scan stays exact.
 	for _, a := range nodes {
 		for _, b := range nodes {
-			if a != b && bytes.HasPrefix(graphKey(kindNode, b), graphKey(kindNode, a)) {
+			if a != b && bytes.HasPrefix(graphKey(kindRoot, b), graphKey(kindRoot, a)) {
 				t.Fatalf("key of %q prefixes key of %q", a, b)
 			}
 		}

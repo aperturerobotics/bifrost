@@ -8,75 +8,23 @@ import (
 	"math/rand/v2"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
-	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
 // Target is the storage engine surface a replay drives: the key-value store
-// and block store a Volume serves, and its garbage collection journal.
+// and block store a Volume serves.
 type Target interface {
 	kvtx.Store
 	block.StoreOps
-	// AppendJournal durably journals reference graph changes.
-	AppendJournal(ctx context.Context, adds, removes []block_gc.RefEdge) error
-	// ReplayJournal passes every journaled change to apply, then removes it.
-	ReplayJournal(ctx context.Context, apply func(adds, removes []block_gc.RefEdge) error) error
-}
-
-// OrderedJournal is a Target that can journal with write ordering in place of
-// a full durability flush, like kvtx.OrderedCommitTx.
-type OrderedJournal interface {
-	// AppendJournalOrdered journals reference graph changes with write
-	// ordering only.
-	AppendJournalOrdered(ctx context.Context, adds, removes []block_gc.RefEdge) error
-}
-
-// DiscardJournal accepts replayed journal changes without applying them. A
-// replayed trace already carries the reference graph's own key-value writes.
-func DiscardJournal(adds, removes []block_gc.RefEdge) error {
-	return nil
 }
 
 // headSuffix ends the key of a shared object's head, whose commit publishes
 // the blocks and state before it.
 const headSuffix = "/host"
-
-// Result reports one replay.
-type Result struct {
-	// Ops is the number of records replayed.
-	Ops int
-	// Wall is the replay's elapsed time.
-	Wall time.Duration
-	// Latency holds each timed operation's latencies in replay order: commit,
-	// sync, put, put-batch, get-block, journal-append, and journal-replay.
-	Latency map[Op][]time.Duration
-	// CommitErrors counts commits the target rejected. A replay that commits
-	// transactions the recording interleaved may conflict where it did not.
-	CommitErrors int
-	// OrderedCommits counts commits and journal appends made with write
-	// ordering only.
-	OrderedCommits int
-	// BlockBytes is the payload written by block puts.
-	BlockBytes int64
-	// ValueBytes is the payload written by key-value sets.
-	ValueBytes int64
-}
-
-// Percentile returns the p-th percentile latency of op, or zero when op was
-// never timed.
-func (r *Result) Percentile(op Op, p float64) time.Duration {
-	samples := slices.Clone(r.Latency[op])
-	if len(samples) == 0 {
-		return 0
-	}
-	slices.Sort(samples)
-	return samples[int(p*float64(len(samples)-1))]
-}
 
 // Replay replays a recorded workload against a Target. Values and block
 // payloads are regenerated from their recorded lengths; a block keeps one
@@ -94,9 +42,8 @@ type Replay struct {
 	// values is a shared random buffer sliced for key-value values.
 	values []byte
 
-	// Ordered commits every key-value commit that writes no shared object head,
-	// and every journal append, with write ordering only, so only block Sync
-	// and head commits flush.
+	// Ordered commits every key-value commit that writes no shared object head
+	// with write ordering only, so only block Sync and head commits flush.
 	Ordered bool
 }
 
@@ -378,8 +325,6 @@ type replayRun struct {
 	batch *replayBatch
 	// exists gathers the references of an open existence batch.
 	exists *replayBatch
-	// journals numbers the journal entries this replay appended.
-	journals int
 	// result accumulates the report.
 	result *Result
 }
@@ -434,10 +379,6 @@ func (run *replayRun) apply(ctx context.Context, rec Record) error {
 			}
 		}
 		return it.Err()
-	case OpJournalAppend:
-		return run.appendJournal(ctx, rec.Size)
-	case OpJournalReplay:
-		return run.timed(OpJournalReplay, func() error { return run.target.ReplayJournal(ctx, DiscardJournal) })
 	}
 	return run.applyBlock(ctx, rec)
 }
@@ -617,29 +558,6 @@ func (run *replayRun) flushExists(ctx context.Context) error {
 	}
 	_, err := ops.GetBlockExistsBatch(ctx, batch.refs)
 	return err
-}
-
-// journalEdgeBytes approximates one generated edge's encoded length.
-const journalEdgeBytes = 256
-
-// journalPadding pads generated edge objects to journalEdgeBytes.
-var journalPadding = strings.Repeat("o", journalEdgeBytes)
-
-// appendJournal journals generated edges of about size encoded bytes.
-func (run *replayRun) appendJournal(ctx context.Context, size int64) error {
-	var adds []block_gc.RefEdge
-	for n := int64(0); n < size; n += journalEdgeBytes {
-		run.journals++
-		subject := "replay/" + strconv.Itoa(run.journals)
-		adds = append(adds, block_gc.RefEdge{Subject: subject, Object: journalPadding[:journalEdgeBytes-len(subject)-8]})
-	}
-	return run.timed(OpJournalAppend, func() error {
-		if oj, ok := run.target.(OrderedJournal); ok && run.replay.Ordered {
-			run.result.OrderedCommits++
-			return oj.AppendJournalOrdered(ctx, adds, nil)
-		}
-		return run.target.AppendJournal(ctx, adds, nil)
-	})
 }
 
 // timed runs fn and records its latency under op.

@@ -2,7 +2,7 @@
 // point of a randomized workload to a state its commits allow.
 //
 // The workload mixes durable and ordered key-value commits, block puts and
-// removes, journal appends, and syncs. A durable commit or sync makes the whole
+// removes, and syncs. A durable commit or sync makes the whole
 // live state durable. An ordered commit may survive a crash only after every
 // ordered commit before it, and block writes survive when they return or
 // only through a later commit that publishes them, depending on the target.
@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/s4wave/spacewave/db/block"
-	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	"github.com/s4wave/spacewave/db/kvtx"
 )
 
@@ -75,14 +74,6 @@ type Target interface {
 	kvtx.Store
 	block.StoreOps
 
-	// AppendJournal durably journals reference graph changes.
-	AppendJournal(ctx context.Context, adds, removes []block_gc.RefEdge) error
-	// AppendJournalOrdered journals reference graph changes with write
-	// ordering only.
-	AppendJournalOrdered(ctx context.Context, adds, removes []block_gc.RefEdge) error
-	// ReplayJournal passes every journal entry in order to apply and removes
-	// the entries.
-	ReplayJournal(ctx context.Context, apply func(adds, removes []block_gc.RefEdge) error) error
 	// Close releases the engine.
 	Close() error
 }
@@ -204,18 +195,16 @@ type state struct {
 	values map[string]string
 	// blocks holds the stored blocks by payload index.
 	blocks map[int]bool
-	// journal counts journal entries.
-	journal int
 }
 
 // clone returns a deep copy of the state.
 func (s state) clone() state {
-	return state{values: maps.Clone(s.values), blocks: maps.Clone(s.blocks), journal: s.journal}
+	return state{values: maps.Clone(s.values), blocks: maps.Clone(s.blocks)}
 }
 
 // equal reports whether two states match.
 func (s state) equal(o state) bool {
-	return maps.Equal(s.values, o.values) && maps.Equal(s.blocks, o.blocks) && s.journal == o.journal
+	return maps.Equal(s.values, o.values) && maps.Equal(s.blocks, o.blocks)
 }
 
 // commitKind is how a workload step commits.
@@ -251,7 +240,7 @@ func runWorkload(ctx context.Context, s Target, blocks Blocks, seed uint64) ([]s
 		nextLive, nextCommitted := live.clone(), committed.clone()
 		var err error
 		commit := commitDurable
-		switch rng.IntN(8) {
+		switch rng.IntN(6) {
 		case 0, 1:
 			key := "k" + strconv.Itoa(rng.IntN(keys))
 			value := "v" + strconv.Itoa(step)
@@ -269,20 +258,10 @@ func runWorkload(ctx context.Context, s Target, blocks Blocks, seed uint64) ([]s
 			err = s.RmBlock(ctx, blockRef(i))
 			commit = blocks.writeCommit()
 		case 4:
-			nextLive.journal++
-			edge := block_gc.RefEdge{Subject: "s" + strconv.Itoa(step), Object: "o"}
-			err = s.AppendJournal(ctx, []block_gc.RefEdge{edge}, nil)
-		case 5:
 			key := "k" + strconv.Itoa(rng.IntN(keys))
 			value := "o" + strconv.Itoa(step)
 			nextLive.values[key], nextCommitted.values[key] = value, value
 			err = setValue(ctx, s, key, value, true)
-			commit = commitOrdered
-		case 6:
-			nextLive.journal++
-			nextCommitted.journal++
-			edge := block_gc.RefEdge{Subject: "s" + strconv.Itoa(step), Object: "o"}
-			err = s.AppendJournalOrdered(ctx, []block_gc.RefEdge{edge}, nil)
 			commit = commitOrdered
 		default:
 			_, err = s.Sync(ctx)
@@ -338,8 +317,8 @@ func setValue(ctx context.Context, s Target, key, value string, ordered bool) er
 	return tx.Commit(ctx)
 }
 
-// readState reads the key-value store, the workload's blocks, and the journal
-// length from s, checking every stored payload.
+// readState reads the key-value store and the workload's blocks from s,
+// checking every stored payload.
 func readState(t *testing.T, s Target) state {
 	// Prepare the recovered target state for comparison with the workload.
 	ctx := t.Context()
@@ -372,15 +351,6 @@ func readState(t *testing.T, s Target) state {
 			t.Fatalf("block %d reads %q", i, data)
 		}
 		got.blocks[i] = true
-	}
-
-	// Count the journal entries.
-	err = s.ReplayJournal(ctx, func(adds, removes []block_gc.RefEdge) error {
-		got.journal++
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
 	}
 	return got
 }

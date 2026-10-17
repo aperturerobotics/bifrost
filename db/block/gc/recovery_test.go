@@ -8,72 +8,6 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 )
 
-type failingTraversal struct{ CollectorGraph }
-
-func (g failingTraversal) GetOutgoingRefs(context.Context, string) ([]string, error) {
-	return nil, errInjectedRefBatch
-}
-
-func TestMarkerRefusesIncompleteReachability(t *testing.T) {
-	// Connect the live node to its root before injecting traversal failure.
-	graph := newMockGraph()
-	graph.addRoot("root")
-	graph.addEdge("root", "live")
-
-	// Verify a failed traversal cannot authorize sweep candidates.
-	candidates, _, err := NewMarker(failingTraversal{graph}).Mark(t.Context())
-	if !errors.Is(err, errInjectedRefBatch) || len(candidates) != 0 {
-		t.Fatalf("failed mark authorized candidates %v: %v", candidates, err)
-	}
-}
-
-type retryAppender struct {
-	calls int
-	adds  []RefEdge
-}
-
-func (w *retryAppender) Append(_ context.Context, adds, _ []RefEdge) error {
-	w.calls++
-	if w.calls == 1 {
-		return errInjectedRefBatch
-	}
-	w.adds = append(w.adds, adds...)
-	return nil
-}
-
-// GetPendingOutgoingRefs reports no journaled edges.
-func (*retryAppender) GetPendingOutgoingRefs(context.Context, string) ([]string, error) {
-	return nil, nil
-}
-
-// GetPendingIncomingRefs reports no journaled edges.
-func (*retryAppender) GetPendingIncomingRefs(context.Context, string) ([]string, error) {
-	return nil, nil
-}
-
-func TestFlushRetainsFailedWALAppend(t *testing.T) {
-	// Create a GC store with a WAL append that fails once.
-	wal := &retryAppender{}
-	store := NewGCStoreOps(block.NopStoreOps{}, nil)
-	store.SetWALAppender(wal)
-	store.pendingUnref = []string{"block:test"}
-
-	// Verify a failed WAL append is reported.
-	if err := store.FlushPending(t.Context()); !errors.Is(err, errInjectedRefBatch) {
-		t.Fatal(err)
-	}
-
-	// Flush the retained WAL or staging changes.
-	if err := store.FlushPending(t.Context()); err != nil {
-		t.Fatal(err)
-	}
-
-	// Verify the repeated flush retains the failed WAL batch.
-	if len(wal.adds) != 1 || wal.adds[0].Object != "block:test" {
-		t.Fatalf("lost WAL batch: %v", wal.adds)
-	}
-}
-
 func TestReleasePreservesSharedBlockDependencies(t *testing.T) {
 	for _, batch := range []bool{false, true} {
 		// Choose the shared block release path.
@@ -134,33 +68,26 @@ func TestReleasePreservesSharedBlockDependencies(t *testing.T) {
 	}
 }
 
-type blockingAppender struct{ entered, release chan struct{} }
-
-func (w blockingAppender) Append(context.Context, []RefEdge, []RefEdge) error {
-	close(w.entered)
-	<-w.release
-	return nil
+// blockingGraph holds ApplyRefBatch until it is released.
+type blockingGraph struct {
+	RefGraphOps
+	entered, release chan struct{}
 }
 
-// GetPendingOutgoingRefs reports no journaled edges.
-func (blockingAppender) GetPendingOutgoingRefs(context.Context, string) ([]string, error) {
-	return nil, nil
-}
-
-// GetPendingIncomingRefs reports no journaled edges.
-func (blockingAppender) GetPendingIncomingRefs(context.Context, string) ([]string, error) {
-	return nil, nil
+func (g blockingGraph) ApplyRefBatch(ctx context.Context, adds, removes []RefEdge) error {
+	close(g.entered)
+	<-g.release
+	return g.RefGraphOps.ApplyRefBatch(ctx, adds, removes)
 }
 
 func TestConcurrentFlushCanCancelWhileOlderDeliveryRuns(t *testing.T) {
-	// Start a GC flush whose WAL delivery waits for release.
-	wal := blockingAppender{make(chan struct{}), make(chan struct{})}
-	store := NewGCStoreOps(block.NopStoreOps{}, nil)
-	store.SetWALAppender(wal)
+	// Start a GC flush whose delivery waits for release.
+	graph := blockingGraph{&recordingRefGraph{}, make(chan struct{}), make(chan struct{})}
+	store := NewGCStoreOps(block.NopStoreOps{}, graph)
 	store.pendingUnref = []string{"block:test"}
 	finished := make(chan error, 1)
 	go func() { finished <- store.FlushPending(t.Context()) }()
-	<-wal.entered
+	<-graph.entered
 
 	// Cancel the context for the overlapping flush.
 	ctx, cancel := context.WithCancel(t.Context())
@@ -168,7 +95,7 @@ func TestConcurrentFlushCanCancelWhileOlderDeliveryRuns(t *testing.T) {
 
 	// Release the older delivery after the overlapping flush returns.
 	err := store.FlushPending(ctx)
-	close(wal.release)
+	close(graph.release)
 
 	// Verify the overlapping flush returns cancellation.
 	if !errors.Is(err, context.Canceled) {
@@ -178,27 +105,6 @@ func TestConcurrentFlushCanCancelWhileOlderDeliveryRuns(t *testing.T) {
 	// Verify the older flush completes after delivery is released.
 	if err := <-finished; err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestSweepRechecksReachabilityAfterAnotherReplayDrainsWAL(t *testing.T) {
-	// Create an initially unreachable candidate beside the graph root.
-	graph := newMockGraph()
-	graph.addRoot("root")
-	graph.addNode("candidate")
-
-	// Run the sweep while another replay restores candidate reachability.
-	result, err := SweepCycle(t.Context(), SweepConfig{
-		Graph: graph, Target: &mockSweepTarget{}, ReplayWAL: noopReplay,
-		AcquireSTW: func() (func(), error) {
-			graph.addEdge("root", "candidate")
-			return func() {}, nil
-		},
-	})
-
-	// Verify the restored candidate is rescued from deletion.
-	if err != nil || result.Rescued != 1 || result.Swept != 0 {
-		t.Fatalf("lost rescue after external replay: %+v %v", result, err)
 	}
 }
 
@@ -326,7 +232,7 @@ func TestDeferFlushRecoversFromUnmatchedEnd(t *testing.T) {
 	store.BeginDeferFlush()
 	store.pendingUnref = []string{"block:test"}
 
-	// Flush the retained WAL or staging changes.
+	// Flush the retained staging changes.
 	if err := store.FlushPending(t.Context()); err != nil {
 		t.Fatal(err)
 	}

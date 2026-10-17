@@ -1486,8 +1486,8 @@ func openControllerBucket(
 			volume_browser.Version,
 			"opfs-chrometest@"+c.root,
 		),
-		func(ctx context.Context, le *logrus.Entry) (volume.Volume, error) {
-			return volume_browser.NewVolume(ctx, le, newVolumeConfig(c))
+		func(ctx context.Context, _ *logrus.Entry) (volume.Volume, error) {
+			return volume_browser.NewVolume(ctx, newVolumeConfig(c))
 		},
 	)
 	ctrlErrCh := make(chan error, 1)
@@ -2515,7 +2515,7 @@ func (s *generatedUploadTreeStream) RecvTo(req *s4wave_unixfs.HandleUploadTreeRe
 
 // openVolume opens the browser volume under the scenario's isolated root.
 func openVolume(ctx context.Context, c *config) (*volume_browser.Volume, error) {
-	return volume_browser.NewVolume(ctx, logrus.NewEntry(logrus.New()), newVolumeConfig(c))
+	return volume_browser.NewVolume(ctx, newVolumeConfig(c))
 }
 
 // newVolumeConfig names the volume by the scenario's isolated root.

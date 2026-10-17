@@ -14,11 +14,8 @@ import (
 	"github.com/s4wave/spacewave/db/volume/workload"
 )
 
-// _ checks that a Store serves a replay with ordered journal appends.
-var (
-	_ workload.Target         = (*Store)(nil)
-	_ workload.OrderedJournal = (*Store)(nil)
-)
+// _ checks that a Store serves a replay.
+var _ workload.Target = (*Store)(nil)
 
 // TestWorkloadReplayTraces replays the captured traces named by the
 // comma-separated WORKLOAD_TRACES against the store on a memory record store
@@ -82,16 +79,12 @@ func replayTrace(t *testing.T, path string, ordered bool, fillBlocks, fillSize i
 		t.Fatal(err)
 	}
 
-	// Reopen and recover the volume.
+	// Reopen the volume.
 	openStart := time.Now()
-	reopened, err := Open(ctx, rs)
-	if err != nil {
+	if _, err := Open(ctx, rs); err != nil {
 		t.Fatal(err)
 	}
 	openTime := time.Since(openStart)
-	if err := reopened.ReplayJournal(ctx, workload.DiscardJournal); err != nil {
-		t.Fatal(err)
-	}
 
 	// Report.
 	t.Logf("records %d, wall %s, ordered commits %d", result.Ops, result.Wall.Round(time.Microsecond), result.OrderedCommits)

@@ -75,7 +75,7 @@ func testBucketReadOperationUsesOneSnapshot(t *testing.T, withGC bool) {
 	// Build the bucket handle with optional GC wrapping.
 	handle := &bucketHandle{v: vol, bucketConf: &bucket.Config{Id: "test"}}
 	if withGC {
-		handle.gcOps = block_gc.NewGCStoreOps(vol, stubCollectorGraph{})
+		handle.gcOps = block_gc.NewGCStoreOps(vol, stubRefGraph{})
 	}
 
 	// Store one block to read back through the scope.

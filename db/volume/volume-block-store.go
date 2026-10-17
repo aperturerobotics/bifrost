@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/s4wave/spacewave/db/block"
-	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	block_store "github.com/s4wave/spacewave/db/block/store"
 	hash "github.com/s4wave/spacewave/net/hash"
 )
@@ -103,18 +102,6 @@ func (v *VolumeBlockStore) BeginDeferFlush() {
 // EndDeferFlush forwards closing the GC defer-flush scope to the wrapped block store.
 func (v *VolumeBlockStore) EndDeferFlush(ctx context.Context) error {
 	return block.EndDeferFlush(ctx, v.store)
-}
-
-// GetGCManagerHooks forwards WAL-backed GC manager hooks from the wrapped
-// volume when available.
-func (v *VolumeBlockStore) GetGCManagerHooks() (block_gc.ManagerHooks, bool) {
-	provider, ok := v.Volume.(interface {
-		GetGCManagerHooks() (block_gc.ManagerHooks, bool)
-	})
-	if !ok {
-		return block_gc.ManagerHooks{}, false
-	}
-	return provider.GetGCManagerHooks()
 }
 
 // _ is a type assertion

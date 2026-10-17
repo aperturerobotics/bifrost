@@ -17,8 +17,8 @@ message Config {
   bool no_generate_key = 3;
   // NoWriteKey disables writing a generated peer private key to storage.
   bool no_write_key = 4;
-  // Verbose enables verbose logging.
-  bool verbose = 5;
+  reserved 5;
+  reserved "verbose";
   // VolumeConfig is the volume controller config.
   .volume.controller.Config volume_config = 6;
   // StoreConfig is the store configuration for kvtx.

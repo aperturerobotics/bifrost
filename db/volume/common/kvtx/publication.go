@@ -18,10 +18,10 @@ func openRefGraph(store store_kvtx.Store) *block_gc.RefGraph {
 	return block_gc.NewRefGraph(store_kvtx_prefixer.NewPrefixer(store, refGraphPrefix))
 }
 
-// SupportsAtomicPublication excludes custom block domains, deferred Commit
-// wrappers and WAL-backed GC. Those configurations keep their existing path.
+// SupportsAtomicPublication reports whether the Volume's store commits
+// transactions atomically, which atomic publication needs.
 func (v *Volume) SupportsAtomicPublication() bool {
-	return v.publications != nil && v.walAppender == nil && v.gcManagerHooks == nil
+	return v.publications != nil
 }
 
 // SubmitAtomic admits an atomic publication and returns its completion receipt.

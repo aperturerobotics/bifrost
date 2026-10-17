@@ -67,11 +67,3 @@ const (
 	// OpSync makes every earlier block write durable.
 	OpSync Op = "sync"
 )
-
-// Garbage collection operations.
-const (
-	// OpJournalAppend durably journals a reference change of Size encoded bytes.
-	OpJournalAppend Op = "journal-append"
-	// OpJournalReplay applies and removes Size journal entries.
-	OpJournalReplay Op = "journal-replay"
-)

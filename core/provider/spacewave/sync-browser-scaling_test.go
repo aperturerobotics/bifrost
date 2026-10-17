@@ -59,7 +59,7 @@ func testSyncBrowserDrainScaling(t *testing.T, count int) {
 	// pack catalog over its metadata store.
 	ctx := t.Context()
 	name := "pending-upload-scaling-" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	volume, err := volume_browser.NewVolume(ctx, nil, &volume_browser.Config{Name: name})
+	volume, err := volume_browser.NewVolume(ctx, &volume_browser.Config{Name: name})
 	if err != nil {
 		t.Fatal(err)
 	}

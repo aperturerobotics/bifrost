@@ -43,12 +43,6 @@ export interface Config {
    */
   noWriteKey?: boolean
   /**
-   * Verbose enables verbose logging.
-   *
-   * @generated from field: bool verbose = 5;
-   */
-  verbose?: boolean
-  /**
    * VolumeConfig is the volume controller config.
    *
    * @generated from field: volume.controller.Config volume_config = 6;
@@ -69,7 +63,6 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
     { no: 2, name: 'kv_key_opts', kind: 'message', T: () => Config$1 },
     { no: 3, name: 'no_generate_key', kind: 'scalar', T: ScalarType.BOOL },
     { no: 4, name: 'no_write_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
     { no: 6, name: 'volume_config', kind: 'message', T: () => Config$2 },
     { no: 7, name: 'store_config', kind: 'message', T: () => Config$3 },
   ] satisfies readonly PartialFieldInfo[],

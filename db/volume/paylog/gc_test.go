@@ -10,68 +10,8 @@ import (
 	"testing"
 
 	"github.com/s4wave/spacewave/db/block"
-	block_gc "github.com/s4wave/spacewave/db/block/gc"
-	kvtx_prefixer "github.com/s4wave/spacewave/db/kvtx/prefixer"
 	"github.com/s4wave/spacewave/db/volume/device"
 )
-
-// newGraph opens a collector reference graph in the store's key-value
-// namespace, apart from other records.
-func newGraph(s *Store) *block_gc.RefGraph {
-	return block_gc.NewCollectorRefGraph(kvtx_prefixer.NewPrefixer(s, []byte{0x02}))
-}
-
-// TestJournalHooks checks pending outgoing refs and journal replay into a
-// graph stored in the same store.
-func TestJournalHooks(t *testing.T) {
-	for _, e := range engines {
-		t.Run(e.name, func(t *testing.T) {
-			// Journal two edges from a and remove one of them.
-			ctx := t.Context()
-			s := openStore(t, e, device.NewMemory())
-			adds := []block_gc.RefEdge{{Subject: "a", Object: "b"}, {Subject: "a", Object: "c"}}
-			if err := s.Append(ctx, adds, nil); err != nil {
-				t.Fatal(err)
-			}
-			if err := s.Append(ctx, nil, adds[:1]); err != nil {
-				t.Fatal(err)
-			}
-			checkPending(t, s, "c")
-
-			// Replay the journal into the graph and check it is consumed.
-			graph := newGraph(s)
-			for _, want := range []int{2, 0} {
-				n, err := s.ReplayWAL(ctx, graph)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if n != want {
-					t.Fatalf("replayed %d entries, want %d", n, want)
-				}
-			}
-			checkPending(t, s)
-			refs, err := graph.GetOutgoingRefs(ctx, "a")
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !slices.Equal(refs, []string{"c"}) {
-				t.Fatalf("graph refs %v, want [c]", refs)
-			}
-		})
-	}
-}
-
-// checkPending checks the pending outgoing refs of node a.
-func checkPending(t *testing.T, s *Store, want ...string) {
-	t.Helper()
-	got, err := s.GetPendingOutgoingRefs(t.Context(), "a")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !slices.Equal(got, want) {
-		t.Fatalf("pending refs %v, want %v", got, want)
-	}
-}
 
 // TestMaintenance checks that maintenance moves the live blocks out of a
 // mostly dead segment, removes the emptied segment, and keeps the statistics,
