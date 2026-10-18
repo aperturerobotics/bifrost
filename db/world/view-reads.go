@@ -2,6 +2,7 @@ package world
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -13,8 +14,10 @@ import (
 type viewReads struct {
 	// reads unions the reads of every transaction opened during the evaluation.
 	reads *ReadSet
-	// mtx guards wake.
+	// mtx guards shared and wake.
 	mtx sync.Mutex
+	// shared are the finished read sets added by AddViewReads.
+	shared []*ReadSet
 	// wake is the earliest requested rerun time, or zero.
 	wake time.Time
 }
@@ -46,6 +49,37 @@ func RerunAt(ctx context.Context, deadline time.Time) {
 	reads.mtx.Unlock()
 }
 
+// AddViewReads adds a finished read set to the running WatchView or SendViews
+// evaluation, so the view reruns when a change touches set, and asks for a
+// rerun at rerunAt like RerunAt. Use it for a value computed once on its own
+// tracked transaction and shared by many views. The caller must not add reads to
+// set afterward. It does nothing outside an evaluation. Call it before the
+// evaluation returns.
+func AddViewReads(ctx context.Context, set *ReadSet, rerunAt time.Time) {
+	// Ignore absent evaluations.
+	reads := getViewReads(ctx)
+	if reads == nil {
+		return
+	}
+
+	// Join the set once.
+	if set != nil {
+		reads.mtx.Lock()
+		if !slices.Contains(reads.shared, set) {
+			reads.shared = append(reads.shared, set)
+		}
+		reads.mtx.Unlock()
+	}
+	RerunAt(ctx, rerunAt)
+}
+
+// getShared returns the finished read sets added to the evaluation.
+func (r *viewReads) getShared() []*ReadSet {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	return slices.Clone(r.shared)
+}
+
 // getDeadline returns the earliest rerun time requested by the evaluation.
 func (r *viewReads) getDeadline() time.Time {
 	r.mtx.Lock()
@@ -54,7 +88,8 @@ func (r *viewReads) getDeadline() time.Time {
 }
 
 // wait ends when the evaluation's reads change or its deadline arrives.
-func (r *viewReads) wait(ctx context.Context, source WorldWaitSeqno, seqno uint64) error {
+// untouched, when set, is called with each seqno that leaves the reads untouched.
+func (r *viewReads) wait(ctx context.Context, source WorldWaitSeqno, seqno uint64, untouched func(uint64) error) error {
 	// A deadline belongs only to the wait, not the evaluation's reads.
 	wait := ctx
 	if deadline := r.getDeadline(); !deadline.IsZero() {
@@ -64,7 +99,7 @@ func (r *viewReads) wait(ctx context.Context, source WorldWaitSeqno, seqno uint6
 	}
 
 	// Distinguish our rerun deadline from caller cancellation and watch errors.
-	_, err := r.reads.WaitChange(wait, source, seqno)
+	_, err := r.reads.waitChange(wait, source, seqno, r.getShared(), untouched)
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

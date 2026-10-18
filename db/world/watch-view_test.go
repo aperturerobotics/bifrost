@@ -3,6 +3,7 @@ package world_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -246,5 +247,214 @@ func createViewObject(t *testing.T, ctx context.Context, engine world.Engine, ke
 	}
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestWatchViewSharedReads checks that a view reruns on a change to a finished
+// set added with AddViewReads, and only then.
+func TestWatchViewSharedReads(t *testing.T) {
+	// Compute the shared value's reads on their own tracked state.
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	tb := world_testbed.MustDefault(t, ctx)
+	shared := world.NewReadSet()
+	if _, err := shared.Track(tb.WorldState).HasObject(ctx, "view/shared"); err != nil {
+		t.Fatal(err)
+	}
+
+	// The view reads nothing itself and reruns only for the shared set.
+	runs := make(chan bool, 4)
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- world.WatchView(ctx, tb.Engine, func(ctx context.Context, ws world.WorldState) error {
+			world.AddViewReads(ctx, shared, time.Time{})
+			found, err := ws.HasObject(ctx, "view/shared")
+			runs <- found
+			return err
+		})
+	}()
+	if found := waitViewRun(t, ctx, runs); found {
+		t.Fatal("first run saw the shared object")
+	}
+
+	// An unrelated commit must not rerun the view.
+	createViewObject(t, ctx, tb.Engine, "view/unrelated")
+	select {
+	case <-runs:
+		t.Fatal("view reran for a change outside the shared set")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	// A commit to the shared set reruns it.
+	createViewObject(t, ctx, tb.Engine, "view/shared")
+	if found := waitViewRun(t, ctx, runs); !found {
+		t.Fatal("rerun did not see the shared object")
+	}
+	cancel()
+	if err := <-errCh; !errors.Is(err, context.Canceled) {
+		t.Fatalf("WatchView = %v, want context.Canceled", err)
+	}
+}
+
+// TestWatchViewAfterSeqno checks that a starting seqno skips the first run.
+func TestWatchViewAfterSeqno(t *testing.T) {
+	// Start the view at the seqno the caller already holds.
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	tb := world_testbed.MustDefault(t, ctx)
+
+	// Advance the World past zero and take that seqno.
+	createViewObject(t, ctx, tb.Engine, "view/held")
+	held, err := tb.Engine.GetSeqno(ctx)
+	if err != nil || held == 0 {
+		t.Fatalf("seqno = %d, %v", held, err)
+	}
+
+	// Run the view from the held seqno, reporting where each run reads.
+	runs := make(chan uint64, 4)
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- world.WatchViewWith(ctx, tb.Engine, world.WatchViewOptions{AfterSeqno: held}, func(ctx context.Context, ws world.WorldState) error {
+			seqno, err := ws.GetSeqno(ctx)
+			runs <- seqno
+			return err
+		})
+	}()
+
+	// No run happens while the World stays at the held seqno.
+	select {
+	case <-runs:
+		t.Fatal("view ran at the held seqno")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	// The next change runs it, at a later seqno.
+	createViewObject(t, ctx, tb.Engine, "view/next")
+	select {
+	case seqno := <-runs:
+		if seqno <= held {
+			t.Fatalf("first run at seqno %d, want above %d", seqno, held)
+		}
+	case <-ctx.Done():
+		t.Fatal("view did not run after the next change")
+	}
+	cancel()
+	<-errCh
+}
+
+// TestWatchViewUntouched checks the callback for a seqno that leaves the reads
+// untouched, and its silence for one that touches them.
+func TestWatchViewUntouched(t *testing.T) {
+	// Read one key and report untouched seqnos.
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	tb := world_testbed.MustDefault(t, ctx)
+
+	// Report each run and each untouched seqno.
+	runs := make(chan struct{}, 4)
+	untouched := make(chan uint64, 4)
+	errCh := make(chan error, 1)
+	opts := world.WatchViewOptions{Untouched: func(seqno uint64) error {
+		untouched <- seqno
+		return nil
+	}}
+
+	// Read one key in the view.
+	go func() {
+		errCh <- world.WatchViewWith(ctx, tb.Engine, opts, func(ctx context.Context, ws world.WorldState) error {
+			_, err := ws.HasObject(ctx, "view/read")
+			runs <- struct{}{}
+			return err
+		})
+	}()
+	<-runs
+
+	// A commit to another key is reported at its seqno, without a rerun.
+	createViewObject(t, ctx, tb.Engine, "view/other")
+	want, err := tb.Engine.GetSeqno(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case got := <-untouched:
+		if got != want {
+			t.Fatalf("untouched seqno = %d, want %d", got, want)
+		}
+	case <-ctx.Done():
+		t.Fatal("untouched callback did not run")
+	}
+	select {
+	case <-runs:
+		t.Fatal("view reran for an untouched change")
+	default:
+	}
+
+	// A commit to the read key reruns the view and is not reported.
+	createViewObject(t, ctx, tb.Engine, "view/read")
+	<-runs
+	select {
+	case got := <-untouched:
+		t.Fatalf("touching seqno %d reported as untouched", got)
+	default:
+	}
+	cancel()
+	<-errCh
+}
+
+// TestWatchViewMinInterval checks that a burst of touching commits reruns the
+// view once, and that the rerun reads the newest head.
+func TestWatchViewMinInterval(t *testing.T) {
+	// Watch two keys with a long interval.
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	tb := world_testbed.MustDefault(t, ctx)
+	const burst = 5
+	last := fmt.Sprintf("view/burst-%d", burst-1)
+
+	// Report whether each run sees the last object.
+	opts := world.WatchViewOptions{MinInterval: 300 * time.Millisecond}
+	runs := make(chan bool, 8)
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- world.WatchViewWith(ctx, tb.Engine, opts, func(ctx context.Context, ws world.WorldState) error {
+			found, err := ws.HasObject(ctx, last)
+			if err == nil {
+				_, err = ws.HasObject(ctx, "view/burst-0")
+			}
+			runs <- found
+			return err
+		})
+	}()
+	if found := waitViewRun(t, ctx, runs); found {
+		t.Fatal("first run saw the last object")
+	}
+
+	// Commit the burst well inside the interval.
+	for i := range burst {
+		createViewObject(t, ctx, tb.Engine, fmt.Sprintf("view/burst-%d", i))
+	}
+
+	// One rerun sees the newest head, and no second one follows.
+	if found := waitViewRun(t, ctx, runs); !found {
+		t.Fatal("rerun did not read the newest head")
+	}
+	select {
+	case <-runs:
+		t.Fatal("burst reran the view more than once")
+	case <-time.After(500 * time.Millisecond):
+	}
+	cancel()
+	<-errCh
+}
+
+// waitViewRun returns the next evaluation result, or fails at the deadline.
+func waitViewRun[T any](t *testing.T, ctx context.Context, runs <-chan T) T {
+	t.Helper()
+	select {
+	case v := <-runs:
+		return v
+	case <-ctx.Done():
+		t.Fatal("view did not run")
+		panic("unreachable")
 	}
 }

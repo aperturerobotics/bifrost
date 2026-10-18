@@ -2,6 +2,7 @@ package world
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -42,16 +43,44 @@ func WatchChanges(
 	}
 }
 
+// WatchViewOptions tunes WatchViewWith. The zero value is WatchView's behavior.
+type WatchViewOptions struct {
+	// AfterSeqno is a seqno the caller already holds the view at. When it is
+	// above zero, the first evaluation waits for the World to pass it.
+	AfterSeqno uint64
+	// Untouched is called with each seqno whose changes leave the last
+	// evaluation's reads untouched, so the caller learns its view still holds at
+	// that seqno. Seqnos that arrive while a rerun waits out MinInterval are
+	// not reported; that rerun reads the newest head. It runs on the watching
+	// goroutine and an error from it ends the watch.
+	Untouched func(seqno uint64) error
+	// MinInterval is the least time between the starts of two evaluations. A
+	// burst of touching commits reruns the view once per interval, and the rerun
+	// reads the newest head. Zero reruns as soon as a change or deadline arrives.
+	MinInterval time.Duration
+}
+
 // WatchView runs view immediately and again when a change touches its reads or
-// its earliest RerunAt deadline arrives. source must be an Engine or WorldState;
-// an Engine supplies a live, read-only WorldState. Every evaluation has a fresh
-// read set carried by its context. Transactions opened through a
-// ReadTrackingEngine with that context join the same set, including transactions
-// opened by clients captured by view. All transactions must read source's World,
-// and all evaluation work must finish before view returns. Unknown changes can
-// rerun an unchanged projection; use SendViews to suppress equal results.
-// Returns when ctx ends or view or the watch fails.
+// its earliest RerunAt deadline arrives. It is WatchViewWith with zero options.
 func WatchView(ctx context.Context, source WorldWaitSeqno, view func(ctx context.Context, ws WorldState) error) error {
+	return WatchViewWith(ctx, source, WatchViewOptions{}, view)
+}
+
+// WatchViewWith runs view like WatchView, tuned by opts. source must be an
+// Engine or WorldState; an Engine supplies a live, read-only WorldState. Every
+// evaluation has a fresh read set carried by its context. Transactions opened
+// through a ReadTrackingEngine with that context join the same set, including
+// transactions opened by clients captured by view, and AddViewReads joins a
+// finished set. All transactions must read source's World, and all evaluation
+// work must finish before view returns. Unknown changes can rerun an unchanged
+// projection; use SendViews to suppress equal results.
+// Returns when ctx ends or view or the watch fails.
+func WatchViewWith(
+	ctx context.Context,
+	source WorldWaitSeqno,
+	opts WatchViewOptions,
+	view func(ctx context.Context, ws WorldState) error,
+) error {
 	// Preserve an existing state's access policy, or build live engine reads.
 	ws, ok := source.(WorldState)
 	if !ok {
@@ -62,6 +91,13 @@ func WatchView(ctx context.Context, source WorldWaitSeqno, view func(ctx context
 		ws = NewEngineWorldState(engine, false)
 	}
 
+	// A caller that already holds a seqno needs only later changes.
+	if opts.AfterSeqno > 0 {
+		if _, err := source.WaitSeqno(ctx, opts.AfterSeqno+1); err != nil {
+			return err
+		}
+	}
+
 	// Record each evaluation's starting seqno before reading its dependencies.
 	for {
 		// Do not start another evaluation after cancellation.
@@ -70,6 +106,7 @@ func WatchView(ctx context.Context, source WorldWaitSeqno, view func(ctx context
 		}
 
 		// Run the view against the head, recording its reads.
+		started := time.Now()
 		seqno, err := source.GetSeqno(ctx)
 		if err != nil {
 			return err
@@ -80,8 +117,32 @@ func WatchView(ctx context.Context, source WorldWaitSeqno, view func(ctx context
 		}
 
 		// Wait for a relevant change, bounded by the evaluation's deadline.
-		if err := reads.wait(ctx, source, seqno); err != nil {
+		if err := reads.wait(ctx, source, seqno, opts.Untouched); err != nil {
 			return err
 		}
+
+		// Space reruns, so the next evaluation reads the newest head.
+		if err := sleepUntil(ctx, started.Add(opts.MinInterval)); err != nil {
+			return err
+		}
+	}
+}
+
+// sleepUntil waits for t, returning early with ctx's error if ctx ends first.
+func sleepUntil(ctx context.Context, t time.Time) error {
+	// Skip the timer when t has passed.
+	d := time.Until(t)
+	if d <= 0 {
+		return nil
+	}
+
+	// Wait for the timer or cancellation.
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
 }

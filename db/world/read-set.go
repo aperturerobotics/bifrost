@@ -29,6 +29,11 @@ type ReadSet struct {
 	graph bool
 	// all is set when the World was read beyond objects and the graph.
 	all bool
+	// memoChanges and memoTouched cache Touched for the last ChangeSet it
+	// checked, so views sharing this set test each change window once. Any
+	// recorded read clears memoChanges.
+	memoChanges *ChangeSet
+	memoTouched bool
 	// added closes when a read is recorded and is then replaced.
 	added chan struct{}
 }
@@ -54,6 +59,18 @@ func (r *ReadSet) Touched(changes *ChangeSet) bool {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
+	// A ChangeSet is immutable once delivered, so its answer holds until a read
+	// is recorded.
+	if changes == r.memoChanges {
+		return r.memoTouched
+	}
+	touched := r.touchedLocked(changes)
+	r.memoChanges, r.memoTouched = changes, touched
+	return touched
+}
+
+// touchedLocked checks changes against the reads. The caller holds mtx.
+func (r *ReadSet) touchedLocked(changes *ChangeSet) bool {
 	// Unknown and conservative reads match every non-empty change.
 	if changes.Unknown {
 		return true
@@ -90,6 +107,20 @@ func (r *ReadSet) Touched(changes *ChangeSet) bool {
 // checks them again whenever a read is recorded, so a change that lands before
 // the read of what it changed still ends the wait.
 func (r *ReadSet) WaitChange(ctx context.Context, w WorldWaitSeqno, afterSeqno uint64) (uint64, error) {
+	return r.waitChange(ctx, w, afterSeqno, nil, nil)
+}
+
+// waitChange is WaitChange that also ends when a change touches any of the
+// shared finished sets, and calls untouched, if set, with each seqno whose
+// merged changes since afterSeqno touch neither the reads nor a shared set.
+// An untouched error ends the wait.
+func (r *ReadSet) waitChange(
+	ctx context.Context,
+	w WorldWaitSeqno,
+	afterSeqno uint64,
+	shared []*ReadSet,
+	untouched func(uint64) error,
+) (uint64, error) {
 	// Stop and join this wait's subscription before another evaluation starts.
 	done := make(chan struct{})
 	ctx, cancel := context.WithCancel(ctx)
@@ -122,6 +153,7 @@ func (r *ReadSet) WaitChange(ctx context.Context, w WorldWaitSeqno, afterSeqno u
 	}()
 
 	// Check the merged changes after each change and each recorded read.
+	reported := afterSeqno
 	for {
 		// Capture the read signal before checking, so a read recorded after
 		// the check wakes the loop.
@@ -131,8 +163,18 @@ func (r *ReadSet) WaitChange(ctx context.Context, w WorldWaitSeqno, afterSeqno u
 		mtx.Lock()
 		cs, s := changes, seqno
 		mtx.Unlock()
-		if cs != nil && r.Touched(cs) {
-			return s, nil
+		if cs != nil {
+			if r.Touched(cs) || slices.ContainsFunc(shared, func(set *ReadSet) bool { return set.Touched(cs) }) {
+				return s, nil
+			}
+
+			// Tell the caller about each seqno once.
+			if untouched != nil && s > reported {
+				reported = s
+				if err := untouched(s); err != nil {
+					return 0, err
+				}
+			}
 		}
 		select {
 		case <-ctx.Done():
@@ -218,8 +260,10 @@ func (r *ReadSet) markAll() {
 	r.mtx.Unlock()
 }
 
-// signalLocked wakes the waits checking the reads. The caller holds mtx.
+// signalLocked wakes the waits checking the reads and drops the cached Touched
+// answer. The caller holds mtx.
 func (r *ReadSet) signalLocked() {
+	r.memoChanges = nil
 	close(r.added)
 	r.added = make(chan struct{})
 }
