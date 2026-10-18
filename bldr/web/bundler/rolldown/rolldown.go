@@ -245,6 +245,12 @@ func Build(ctx context.Context, le *logrus.Entry, stateDir, toolRoot string, req
 	return result, nil
 }
 
+// EnsureDependencyRoot returns the directory whose node_modules holds the
+// pinned Bldr dist dependencies for toolRoot, installing them if needed.
+func EnsureDependencyRoot(ctx context.Context, le *logrus.Entry, stateDir, toolRoot string) (string, error) {
+	return ensureDependencyRoot(ctx, le, stateDir, resolveToolRoot(toolRoot))
+}
+
 func resolveToolRoot(root string) string {
 	if _, err := os.Stat(filepath.Join(root, "dist", "deps", "package.json")); err == nil {
 		return root
