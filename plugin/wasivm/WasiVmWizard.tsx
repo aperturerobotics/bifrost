@@ -43,8 +43,8 @@ export default function WasiVmWizard(props: ObjectViewerComponentProps) {
   const [rootfsChoice, setRootfsChoice] = useState('')
   const [initPath, setInitPath] = useState('')
 
-  // List the published images and the filesystems in this Space; the default
-  // published image is the default choice. When the CDN is unreachable only
+  // List the published images, newest first, and the filesystems in this
+  // Space; the newest published image is the default choice. When the CDN is unreachable only
   // the Space filesystems are listed.
   const rootResource = useRootResource()
   const cdnImages =

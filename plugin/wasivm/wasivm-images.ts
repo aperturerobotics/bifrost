@@ -9,11 +9,6 @@ import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 
 import { mountCdnImageSpace } from '@s4wave/app/vm/cdn-image-space.js'
 
-// WASIVM_DEFAULT_CDN_IMAGE_OBJECT_KEY is the published image a new VM boots
-// unless the user picks another.
-export const WASIVM_DEFAULT_CDN_IMAGE_OBJECT_KEY =
-  'vm-image/skiffos-wasi/2026-10-14-r1'
-
 // WasiVmImageEntry is a WasiVmImage object and its metadata.
 export interface WasiVmImageEntry {
   objectKey: string
@@ -36,7 +31,7 @@ async function readWasiVmImage(
 }
 
 // listCdnWasiVmImages reads every WasiVmImage published on the default CDN,
-// the default image first and the rest by name.
+// newest first.
 export async function listCdnWasiVmImages(
   root: Root,
   signal: AbortSignal,
@@ -47,13 +42,13 @@ export async function listCdnWasiVmImages(
   const entries = await Promise.all(
     keys.map((key) => readWasiVmImage(world, key, signal)),
   )
-  const rank = (entry: WasiVmImageEntry) =>
-    entry.objectKey === WASIVM_DEFAULT_CDN_IMAGE_OBJECT_KEY ? 0 : 1
+  const created = (entry: WasiVmImageEntry) =>
+    entry.image.createdAt?.getTime() ?? 0
   return entries
     .filter((entry): entry is WasiVmImageEntry => !!entry)
     .sort(
       (a, b) =>
-        rank(a) - rank(b) ||
+        created(b) - created(a) ||
         (a.image.name ?? '').localeCompare(b.image.name ?? ''),
     )
 }
