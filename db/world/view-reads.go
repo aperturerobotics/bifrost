@@ -73,6 +73,24 @@ func AddViewReads(ctx context.Context, set *ReadSet, rerunAt time.Time) {
 	RerunAt(ctx, rerunAt)
 }
 
+// WithViewReads starts a child evaluation that records into set, for a value
+// computed once and shared by many views. Transactions opened through a
+// ReadTrackingEngine with the returned context, and AddViewReads and RerunAt
+// calls made with it, record into set and the child's deadline instead of the
+// running evaluation; nothing reaches the parent until the caller passes the
+// finished set to AddViewReads. finish folds the sets the child added into set
+// and returns its earliest rerun time, or zero; call it once, after every read
+// made with the context. It works outside a view too.
+func WithViewReads(ctx context.Context, set *ReadSet) (child context.Context, finish func() time.Time) {
+	reads := &viewReads{reads: set}
+	return context.WithValue(ctx, viewReadsKey{}, reads), func() time.Time {
+		for _, shared := range reads.getShared() {
+			set.addReadSet(shared)
+		}
+		return reads.getDeadline()
+	}
+}
+
 // getShared returns the finished read sets added to the evaluation.
 func (r *viewReads) getShared() []*ReadSet {
 	r.mtx.Lock()
