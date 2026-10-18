@@ -1,13 +1,21 @@
 package web_pkg_external
 
 import (
+	"errors"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/aperturerobotics/fastjson"
 )
 
+// TestBldrDistWebPkgRefsIncludeProtobufEsLiteRuntimeExports checks that the
+// served protobuf-es-lite modules are the runtime exports of the installed
+// package, so a release that adds or drops a module fails here and not in the
+// dev server's web pkg build.
 func TestBldrDistWebPkgRefsIncludeProtobufEsLiteRuntimeExports(t *testing.T) {
 	// Resolve distribution references from a representative build-pkgs directory.
 	const buildPkgsDir = "/build-pkgs"
@@ -26,38 +34,34 @@ func TestBldrDistWebPkgRefsIncludeProtobufEsLiteRuntimeExports(t *testing.T) {
 		break
 	}
 
-	// Require the distribution reference to expose a non-empty import set.
-	if len(refImports) == 0 {
-		t.Fatal("@aptre/protobuf-es-lite missing from Bldr dist web package refs")
+	// Read the installed package's exports.
+	data, err := os.ReadFile("../../../../node_modules/@aptre/protobuf-es-lite/package.json")
+	if errors.Is(err, fs.ErrNotExist) {
+		t.Skip("@aptre/protobuf-es-lite not installed; run bun install")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg, err := fastjson.ParseBytes(data)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	// Verify every protobuf runtime module is included in the package reference.
-	for _, imp := range []string{
-		"index.js",
-		"message.js",
-		"field.js",
-		"scalar.js",
-		"enum.js",
-		"binary.js",
-		"json.js",
-		"partial.js",
-		"proto-double.js",
-		"proto-int64.js",
-		"service-type.js",
-		"type-registry.js",
-		"google/protobuf/any.pb.js",
-		"google/protobuf/api.pb.js",
-		"google/protobuf/duration.pb.js",
-		"google/protobuf/empty.pb.js",
-		"google/protobuf/source_context.pb.js",
-		"google/protobuf/struct.pb.js",
-		"google/protobuf/timestamp.pb.js",
-		"google/protobuf/type.pb.js",
-		"google/protobuf/wrappers.pb.js",
-	} {
-		if !slices.Contains(refImports, imp) {
-			t.Fatalf("@aptre/protobuf-es-lite imports=%v, want %s", refImports, imp)
+	// Collect each export's module under dist, less the code generator.
+	var want []string
+	pkg.GetObject("exports").Visit(func(key []byte, v *fastjson.Value) {
+		if strings.HasPrefix(string(key), "./protoplugin") {
+			return
 		}
+		target := string(v.GetStringBytes("import"))
+		want = append(want, strings.TrimPrefix(target, "./dist/"))
+	})
+
+	// Compare the sorted lists.
+	got := slices.Sorted(slices.Values(refImports))
+	slices.Sort(want)
+	if !slices.Equal(got, want) {
+		t.Fatalf("@aptre/protobuf-es-lite imports=%v, want the installed exports %v", got, want)
 	}
 
 	// Require BldrExternal to load the protobuf runtime as a shared package.

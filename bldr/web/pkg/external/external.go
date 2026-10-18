@@ -62,19 +62,24 @@ var bldrSdkImports = []string{
 	"state/state_srpc.pb.ts",
 }
 
+// protobufEsLiteDistImports lists the runtime modules of protobuf-es-lite: the
+// targets of its package exports, less the code generator under protoplugin.
 var protobufEsLiteDistImports = []string{
 	"index.js",
+	"descriptor-set.js",
+	"create-descriptor-set.js",
 	"message.js",
-	"field.js",
 	"scalar.js",
 	"enum.js",
 	"binary.js",
+	"binary-encoding.js",
 	"json.js",
-	"partial.js",
+	"wkt.js",
 	"proto-int64.js",
 	"proto-double.js",
 	"type-registry.js",
 	"service-type.js",
+	"google/index.js",
 	"google/protobuf/any.pb.js",
 	"google/protobuf/api.pb.js",
 	"google/protobuf/duration.pb.js",
