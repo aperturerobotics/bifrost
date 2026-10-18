@@ -112,6 +112,8 @@ type SOStateParticipantHandle struct {
 	configEntry func(context.Context, []byte) (*SOConfigChange, error)
 	// verifier builds the operation set of the state.
 	verifier *SOOperationVerifier
+	// keyring decrypts the local peer's grants.
+	keyring *SOGrantKeyring
 
 	// mtx guards the fields below.
 	mtx sync.Mutex
@@ -139,6 +141,7 @@ func NewSOStateParticipantHandle(
 		peerID:         localPeerID,
 		peerIDStr:      localPeerID.String(),
 		verifier:       NewSOOperationVerifier(sharedObjectID),
+		keyring:        NewSOGrantKeyring(sharedObjectID),
 		transformers:   make(map[uint64]*block_transform.Transformer),
 	}
 }
@@ -155,6 +158,13 @@ func (s *SOStateParticipantHandle) WithConfigHistory(read func(context.Context, 
 // snapshots of one shared object share. Call it before sharing the handle.
 func (s *SOStateParticipantHandle) WithOperationVerifier(verifier *SOOperationVerifier) *SOStateParticipantHandle {
 	s.verifier = verifier
+	return s
+}
+
+// WithGrantKeyring decrypts the local peer's grants through keyring, which the
+// snapshots of one shared object share. Call it before sharing the handle.
+func (s *SOStateParticipantHandle) WithGrantKeyring(keyring *SOGrantKeyring) *SOStateParticipantHandle {
+	s.keyring = keyring
 	return s
 }
 
@@ -319,7 +329,7 @@ func (s *SOStateParticipantHandle) epochTransformConf(epoch uint64) (*block_tran
 	if grant == nil {
 		return nil, errors.Wrapf(ErrKeyEpochUnavailable, "epoch %d", epoch)
 	}
-	inner, err := grant.DecryptInnerData(s.privKey, s.sharedObjectID)
+	inner, err := s.keyring.Inner(grant, s.privKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "so grant: decode inner data")
 	}
@@ -349,7 +359,7 @@ func (s *SOStateParticipantHandle) GetTransformInfo(context.Context) (*Transform
 	if grant == nil {
 		return info, nil
 	}
-	inner, err := grant.DecryptInnerData(s.privKey, s.sharedObjectID)
+	inner, err := s.keyring.Inner(grant, s.privKey)
 	if err != nil {
 		return info, nil
 	}

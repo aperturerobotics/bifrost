@@ -106,7 +106,7 @@ func (l *LocalSOHost) buildSnapshot(state *sobject.SOState) *sobject.SOStatePart
 		state,
 		l.privKey,
 		l.peerID,
-	).WithConfigHistory(l.soHost.ReadConfigEntry).WithOperationVerifier(l.soHost.GetOperationVerifier())
+	).WithConfigHistory(l.soHost.ReadConfigEntry).WithOperationVerifier(l.soHost.GetOperationVerifier()).WithGrantKeyring(l.soHost.GetGrantKeyring())
 }
 
 // waitPublishedConfig waits until body readers can observe target or a verified descendant.

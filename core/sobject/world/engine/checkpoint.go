@@ -40,7 +40,7 @@ func CheckpointWorld(
 	sharedObjectID := so.GetSharedObjectID()
 	snap := sobject.NewSOStateParticipantHandle(le, sfs, sharedObjectID, state, privKey, peerID)
 	if host, ok := so.(sobject.StateHost); ok {
-		snap = snap.WithConfigHistory(host.GetSOHost().ReadConfigEntry).WithOperationVerifier(host.GetSOHost().GetOperationVerifier())
+		snap = snap.WithConfigHistory(host.GetSOHost().ReadConfigEntry).WithOperationVerifier(host.GetSOHost().GetOperationVerifier()).WithGrantKeyring(host.GetSOHost().GetGrantKeyring())
 	}
 	replayed, err := ReplayWorld(ctx, le, b, sfs, so, engineID, lookupOp, snap)
 	if err != nil {
@@ -253,7 +253,8 @@ func (e *soEngine) encodeCheckpointData(ctx context.Context, host sobject.StateH
 
 // participant returns the local participant's view of state.
 func (e *soEngine) participant(host sobject.StateHost, state *sobject.SOState) *sobject.SOStateParticipantHandle {
-	return sobject.NewSOStateParticipantHandle(e.c.le, e.c.sfs, e.so.GetSharedObjectID(), state, host.GetPrivKey(), e.so.GetPeerID())
+	return sobject.NewSOStateParticipantHandle(e.c.le, e.c.sfs, e.so.GetSharedObjectID(), state, host.GetPrivKey(), e.so.GetPeerID()).
+		WithGrantKeyring(host.GetSOHost().GetGrantKeyring())
 }
 
 // ProposeCheckpoint returns the checkpoint after the one state holds that

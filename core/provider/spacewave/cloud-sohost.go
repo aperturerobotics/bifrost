@@ -293,7 +293,7 @@ func (h *cloudSOHost) newSnapshot(state *sobject.SOState) *sobject.SOStatePartic
 	snap := sobject.NewSOStateParticipantHandle(h.le, h.sfs, h.soID, state, h.privKey, h.peerID)
 	return snap.WithConfigHistory(func(ctx context.Context, hash []byte) (*sobject.SOConfigChange, error) {
 		return h.readConfigEntry(ctx, h.soID, hash)
-	}).WithOperationVerifier(h.soHost.GetOperationVerifier())
+	}).WithOperationVerifier(h.soHost.GetOperationVerifier()).WithGrantKeyring(h.soHost.GetGrantKeyring())
 }
 
 // pullOnTrigger fetches fresh state via HTTP GET after a pull signal.

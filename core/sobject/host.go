@@ -32,6 +32,8 @@ type SOHost struct {
 	sharedObjectID string
 	// verifier builds the operation sets of the states of the shared object.
 	verifier *SOOperationVerifier
+	// keyring decrypts the local peer's grants in the states of the shared object.
+	keyring *SOGrantKeyring
 	// soRc contains the shared object refcount instance.
 	soRc *refcount.RefCount[ccontainer.Watchable[*SOState]]
 }
@@ -40,7 +42,7 @@ type SOHost struct {
 //
 // ctx can be nil.
 func NewSOHost(ctx context.Context, watchFn SOStateWatchFunc, lockFn SOStateLockFunc, sharedObjectID string, syncFuncs ...*SOHostSyncFuncs) *SOHost {
-	h := &SOHost{watchFn: watchFn, lockFn: lockFn, sharedObjectID: sharedObjectID, verifier: NewSOOperationVerifier(sharedObjectID)}
+	h := &SOHost{watchFn: watchFn, lockFn: lockFn, sharedObjectID: sharedObjectID, verifier: NewSOOperationVerifier(sharedObjectID), keyring: NewSOGrantKeyring(sharedObjectID)}
 	if len(syncFuncs) != 0 && syncFuncs[0] != nil {
 		h.syncFuncs = *syncFuncs[0]
 	}
@@ -73,6 +75,12 @@ func (s *SOHost) GetSharedObjectID() string {
 // verifies only that one.
 func (s *SOHost) GetOperationVerifier() *SOOperationVerifier {
 	return s.verifier
+}
+
+// GetGrantKeyring returns the keyring of the local peer's grants. Snapshots of
+// the host's states share it, so a new state decrypts only a new grant.
+func (s *SOHost) GetGrantKeyring() *SOGrantKeyring {
+	return s.keyring
 }
 
 // CanWatchSOState returns true if the host can watch shared object state.
@@ -552,7 +560,7 @@ func (s *SOHost) AddLocalOperation(
 	link := next.NextOperationLink(set, peerID.String())
 	var opDataEnc []byte
 	if len(opData) != 0 {
-		handle := NewSOStateParticipantHandle(le, sfs, s.sharedObjectID, next, privKey, peerID)
+		handle := NewSOStateParticipantHandle(le, sfs, s.sharedObjectID, next, privKey, peerID).WithGrantKeyring(s.keyring)
 		xfrm, err := handle.epochTransformer(link.KeyEpoch)
 		if err != nil {
 			return "", 0, err
