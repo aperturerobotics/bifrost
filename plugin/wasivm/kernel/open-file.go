@@ -38,7 +38,7 @@ type OpenFile struct {
 	counter *counter
 	// timer is the timer of a timerfd file, which adds to its counter, or
 	// nil.
-	timer *timerFile
+	timer *intervalTimer
 	// epoll is the interest list of an epoll file, or nil.
 	epoll *epollSet
 	// signals is the signal source of a signalfd file, or nil.

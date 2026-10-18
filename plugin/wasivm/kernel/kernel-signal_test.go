@@ -105,7 +105,7 @@ func TestSignalTrapHandler(t *testing.T) {
 }
 
 // TestCtrlCDuringSleep checks that Ctrl+C ends a foreground command and
-// returns to a working shell.
+// returns to a working shell, which can still start programs.
 func TestCtrlCDuringSleep(t *testing.T) {
 	// Start a long sleep in a child that prints first, so the child exists
 	// when Ctrl+C reaches the terminal, then press Ctrl+C.
@@ -115,7 +115,7 @@ func TestCtrlCDuringSleep(t *testing.T) {
 	tt.typeText("\x03")
 
 	// Run another command.
-	tt.typeText("echo after-$((2+2))\n")
+	tt.typeText("(echo after-$((2+2)))\n")
 	tt.waitFor("after-4")
 	tt.exit()
 }

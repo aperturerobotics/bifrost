@@ -1,6 +1,7 @@
 package kernel
 
 import (
+	"encoding/binary"
 	"time"
 
 	"github.com/s4wave/spacewave/plugin/wasivm/kernel/engine"
@@ -103,6 +104,19 @@ func readItimerval(mem engine.Memory, ptr uint32) (time.Duration, time.Duration,
 	return interval, value, 0
 }
 
+// writeItimerval writes interval and value as a wasm32 struct itimerval,
+// reporting false for an unwritable pointer.
+func writeItimerval(mem engine.Memory, ptr uint32, interval, value time.Duration) bool {
+	buf := make([]byte, 2*timevalSize)
+	for i, d := range []time.Duration{interval, value} {
+		// Round up, so an armed timer never reads as disarmed.
+		d = (d + time.Microsecond - 1).Truncate(time.Microsecond)
+		binary.LittleEndian.PutUint64(buf[i*timevalSize:], uint64(d/time.Second))
+		binary.LittleEndian.PutUint64(buf[i*timevalSize+8:], uint64(d%time.Second/time.Microsecond))
+	}
+	return mem.Write(ptr, buf)
+}
+
 // sysClockSettime sets the kernel's realtime clock from a timespec.
 func (p *Process) sysClockSettime(clockID, tpPtr uint32) uint64 {
 	// Only the realtime clock can be set.
@@ -137,41 +151,72 @@ func (p *Process) sysSettimeofday(tvPtr uint32) uint64 {
 	return 0
 }
 
-// sysGetitimer reports every interval timer as disarmed, since the kernel has
-// no timer signal delivery.
+// sysGetitimer writes the time until the interval timer which next expires
+// and its period. Only ITIMER_REAL runs; the CPU time timers read disarmed.
 func (p *Process) sysGetitimer(which, curPtr uint32) uint64 {
+	// Read the timer, then write its setting.
 	if which > itimerProf {
 		return negErrno(EINVAL)
 	}
-	if !p.inst.Memory().Write(curPtr, make([]byte, 2*timevalSize)) {
+	var value, interval time.Duration
+	if which == itimerReal && p.realTimer != nil {
+		value, interval = p.realTimer.get()
+	}
+	if !writeItimerval(p.inst.Memory(), curPtr, interval, value) {
 		return negErrno(EFAULT)
 	}
 	return 0
 }
 
-// sysSetitimer accepts only a request to disarm a timer, since the kernel has
-// no timer signal delivery.
+// sysSetitimer sets an interval timer from the itimerval at newPtr, writing
+// the old setting to oldPtr when it is set. ITIMER_REAL sends SIGALRM; the
+// kernel keeps no CPU time, so the CPU time timers can only be disarmed.
 func (p *Process) sysSetitimer(which, newPtr, oldPtr uint32) uint64 {
-	// Report the old timer.
-	if oldPtr != 0 {
-		if res := p.sysGetitimer(which, oldPtr); res != 0 {
-			return res
-		}
-	}
+	// Read the new setting.
 	if which > itimerProf {
 		return negErrno(EINVAL)
 	}
-
-	// Accept the new timer only when it disarms.
 	if newPtr == 0 {
 		return negErrno(EFAULT)
 	}
-	interval, value, errno := readItimerval(p.inst.Memory(), newPtr)
+	mem := p.inst.Memory()
+	interval, value, errno := readItimerval(mem, newPtr)
 	if errno != 0 {
 		return negErrno(errno)
 	}
-	if interval != 0 || value != 0 {
+
+	// Apply it and report the old one.
+	var oldValue, oldInterval time.Duration
+	switch {
+	case which == itimerReal:
+		oldValue, oldInterval = p.setRealTimer(value, interval)
+	case value != 0:
 		return enosys
 	}
+	if oldPtr != 0 && !writeItimerval(mem, oldPtr, oldInterval, oldValue) {
+		return negErrno(EFAULT)
+	}
 	return 0
+}
+
+// sysAlarm arms ITIMER_REAL to expire once after sec seconds, or disarms it
+// for zero, and returns the seconds left on the old setting, rounded up.
+func (p *Process) sysAlarm(sec uint32) uint64 {
+	old, _ := p.setRealTimer(time.Duration(sec)*time.Second, 0)
+	return uint64((old + time.Second - 1) / time.Second)
+}
+
+// setRealTimer sets ITIMER_REAL, which sends SIGALRM at each expiration, and
+// returns its old setting. The timer is created on first use and lives until
+// the process exits, passing to the program an exec runs.
+func (p *Process) setRealTimer(value, interval time.Duration) (oldValue, oldInterval time.Duration) {
+	if p.realTimer == nil {
+		if value == 0 {
+			return 0, 0
+		}
+		p.realTimer = newIntervalTimer(p.kernel, clockMonotonic, func(uint64) {
+			p.deliverSignal(SIGALRM)
+		}, nil)
+	}
+	return p.realTimer.set(value, interval, false)
 }

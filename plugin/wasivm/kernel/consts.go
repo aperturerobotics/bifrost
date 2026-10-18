@@ -20,6 +20,9 @@ const (
 	// SIGPIPE reports a write to a pipe with no reader.
 	SIGPIPE = 13
 
+	// SIGALRM reports the expiry of ITIMER_REAL.
+	SIGALRM = 14
+
 	// SIGTERM asks a process to terminate.
 	SIGTERM = 15
 
@@ -62,6 +65,7 @@ const sigTerminateMask = uint64(1)<<(SIGHUP-1) |
 	uint64(1)<<(SIGQUIT-1) |
 	uint64(1)<<(SIGKILL-1) |
 	uint64(1)<<(SIGPIPE-1) |
+	uint64(1)<<(SIGALRM-1) |
 	uint64(1)<<(SIGTERM-1)
 
 // sigKillStopMask is the sigset of signals that can never be blocked

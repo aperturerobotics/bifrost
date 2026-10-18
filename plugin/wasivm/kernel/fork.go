@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"cmp"
 	"context"
-	"maps"
 	"math/bits"
 	"strconv"
 	"strings"
@@ -83,7 +82,7 @@ func (p *Process) forkChild(pid int, inst engine.Instance) *Process {
 		inst:      inst,
 		module:    p.module,
 		globals:   p.globals,
-		jmpBufs:   maps.Clone(p.jmpBufs),
+		jmpBufs:   p.jmpBufs.clone(),
 		exitCh:    make(chan struct{}),
 	}
 	child.pid = pid
@@ -225,6 +224,10 @@ func (p *Process) execChild(args []string, env map[string]string, exe string) {
 	if env != nil {
 		child.env = env
 	}
+
+	// Keep ITIMER_REAL, as exec does: its SIGALRM reaches p, which passes it
+	// on to the program.
+	child.realTimer, p.realTimer = p.realTimer, nil
 
 	// Keep the signal mask, pending signals and ignored signals, as exec
 	// does. Later signals go to the program.

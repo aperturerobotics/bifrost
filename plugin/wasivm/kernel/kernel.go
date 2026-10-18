@@ -387,6 +387,9 @@ func (k *Kernel) exitProcess(p *Process) {
 		delete(p.fds, fd)
 	}
 	clear(p.cloexec)
+	if p.realTimer != nil {
+		p.realTimer.stop()
+	}
 	p.cancel()
 	close(p.exitCh)
 

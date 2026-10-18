@@ -187,7 +187,9 @@ func posixFunctions() map[string]hostFunc {
 		"getitimer": {"iii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysGetitimer(uint32(a[0]), uint32(a[1])))
 		}},
-		"alarm": returns("ii", 0),
+		"alarm": {"ii", func(_ context.Context, p *Process, a []uint64) uint64 {
+			return p.sysAlarm(uint32(a[0]))
+		}},
 		"sigtimedwait": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysSigtimedwait(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
@@ -247,7 +249,12 @@ func posixFunctions() map[string]hostFunc {
 			p.setjmp(ctx, uint32(a[0]))
 			return 0
 		}},
+		"_setjmp": {"ii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			p.setjmp(ctx, uint32(a[0]))
+			return 0
+		}},
 		"longjmp":    {"vii", longjmpFunc},
+		"_longjmp":   {"vii", longjmpFunc},
 		"siglongjmp": {"vii", longjmpFunc},
 
 		// Terminal control.
@@ -590,7 +597,7 @@ const sysinfoReserved = 56
 
 // forkFunc starts a child process that runs beside the caller.
 func forkFunc(ctx context.Context, p *Process, _ []uint64) uint64 {
-	return p.posixFork(ctx)
+	return p.posixResult(ctx, p.posixFork(ctx))
 }
 
 // exitFunc ends the process with the status in its argument.
@@ -613,7 +620,9 @@ func (p *Process) abort() {
 }
 
 // setjmp records the execution state for the jmp_buf at buf: the engine
-// snapshot and the C stack between the stack pointer and the heap base.
+// snapshot, the C stack between the stack pointer and the heap base, and the
+// signal handlers running. It writes the state's id in the buffer's first
+// word, where longjmp finds it.
 func (p *Process) setjmp(ctx context.Context, buf uint32) {
 	// Without snapshots, longjmp cannot return here.
 	snapshotter := p.kernel.runtime.Snapshotter(ctx)
@@ -623,7 +632,11 @@ func (p *Process) setjmp(ctx context.Context, buf uint32) {
 
 	// Copy the C stack, which a longjmp must restore along with the engine
 	// state.
-	entry := jmpBufEntry{snapshot: snapshotter.Snapshot()}
+	entry := jmpBufEntry{
+		snapshot:     snapshotter.Snapshot(),
+		buf:          buf,
+		handlerDepth: p.handlerDepth,
+	}
 	var heapBase uint32
 	if g := p.inst.ExportedGlobal(guestStackPointer); g != nil {
 		entry.sp = uint32(g.Get())
@@ -636,28 +649,27 @@ func (p *Process) setjmp(ctx context.Context, buf uint32) {
 			entry.cstack = append([]byte(nil), data...)
 		}
 	}
-	if p.jmpBufs == nil {
-		p.jmpBufs = make(map[uint32]jmpBufEntry)
-	}
-	p.jmpBufs[buf] = entry
+	p.inst.Memory().WriteUint32Le(buf, p.jmpBufs.record(entry))
 }
 
-// longjmp restores the state setjmp recorded for buf, making that setjmp
-// return val. A jump without a matching setjmp aborts the process.
+// longjmp restores the state setjmp recorded in the jmp_buf at buf, making
+// that setjmp return val. A jump without a live setjmp aborts the process.
 func (p *Process) longjmp(ctx context.Context, buf, val uint32) {
 	// Find the state.
-	entry, ok := p.jmpBufs[buf]
+	id, _ := p.inst.Memory().ReadUint32Le(buf)
+	entry, ok := p.jmpBufs.jump(id)
 	if !ok {
 		_, _ = io.WriteString(p.kernel.console.stderr, "longjmp: no matching setjmp\n")
 		p.abort()
 		return
 	}
 
-	// Restore the C stack and the engine state.
+	// Restore the C stack, the handler depth and the engine state.
 	if g := p.inst.ExportedGlobal(guestStackPointer); g != nil {
 		g.Set(uint64(entry.sp))
 	}
 	p.inst.Memory().Write(entry.sp, entry.cstack)
+	p.handlerDepth = entry.handlerDepth
 	entry.snapshot.Restore(ctx, []uint64{uint64(val)})
 }
 

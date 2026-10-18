@@ -43,8 +43,10 @@ type Process struct {
 	// caller waits on it. It is set under sigMu, which hands later signals
 	// to it.
 	selfExecProc *Process
-	// jmpBufs holds the state setjmp recorded, by jmp_buf address.
-	jmpBufs map[uint32]jmpBufEntry
+	// jmpBufs holds the states setjmp recorded.
+	jmpBufs jmpTable
+	// realTimer is ITIMER_REAL, or nil until the program first arms it.
+	realTimer *intervalTimer
 	// handlerDepth counts the signal handlers running.
 	handlerDepth int
 
@@ -109,16 +111,6 @@ func (s procState) clone() procState {
 	s.env = maps.Clone(s.env)
 	s.args = slices.Clone(s.args)
 	return s
-}
-
-// jmpBufEntry is the execution state setjmp records for longjmp: the engine
-// snapshot and the C stack, which the engine snapshot does not hold.
-type jmpBufEntry struct {
-	snapshot engine.Snapshot
-	// sp is the C stack pointer at the setjmp.
-	sp uint32
-	// cstack holds the C stack from sp to the heap base.
-	cstack []byte
 }
 
 // newProcess creates a process with the kernel's environment and its

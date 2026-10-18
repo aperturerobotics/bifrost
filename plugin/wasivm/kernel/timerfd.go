@@ -1,6 +1,7 @@
 package kernel
 
 import (
+	"context"
 	"encoding/binary"
 	"time"
 
@@ -38,11 +39,17 @@ func (p *Process) sysTimerfdCreate(clockID, flags uint32) uint64 {
 	if flags&guestTfdNonblock != 0 {
 		status = oNONBLOCK
 	}
-	timer := newTimerFile(p.kernel, clockID)
+
+	// Each expiration adds to the counter without waiting: a full count drops
+	// it. Setting the timer drops the unread expirations.
+	count := newCounter(0, false)
+	timer := newIntervalTimer(p.kernel, clockID, func(n uint64) {
+		count.add(nonblocking(context.Background()), n)
+	}, count.reset)
 	return uint64(p.installFD(&OpenFile{
 		path:    "anon_inode:[timerfd]",
 		flags:   oRDWR | status,
-		counter: timer.count,
+		counter: count,
 		timer:   timer,
 	}, flags&guestTfdCloexec != 0))
 }
