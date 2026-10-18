@@ -21,6 +21,7 @@ import (
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	plugin_host "github.com/s4wave/spacewave/bldr/plugin/host"
 	host_controller "github.com/s4wave/spacewave/bldr/plugin/host/controller"
+	"github.com/s4wave/spacewave/bldr/util/logline"
 	bldr_pipesock "github.com/s4wave/spacewave/bldr/util/pipesock"
 	"github.com/s4wave/spacewave/bldr/util/tailwriter"
 	"github.com/s4wave/spacewave/db/unixfs"
@@ -253,9 +254,9 @@ func (h *ProcessHost) ExecutePlugin(
 		return err
 	}
 
-	// Pipe stderr to the debug log and capture the last lines for error reporting.
-	debugWriter := le.WriterLevel(logrus.DebugLevel)
-	stderrTail := tailwriter.New(debugWriter, 20)
+	// Log stderr at each line's own level, so plugin warnings reach the host's
+	// log, and capture the last lines for error reporting.
+	stderrTail := tailwriter.New(logline.New(le, logrus.DebugLevel), 20)
 	entrypointProc.Stderr = stderrTail
 
 	// Apply any os-specific pre-start adjustment.
