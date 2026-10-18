@@ -140,10 +140,13 @@ func windowSize(s *s4wave_vm.WasiVmWindowSize) image.Point {
 	return image.Pt(int(s.GetWidth()), int(s.GetHeight()))
 }
 
+// framesAhead is how many frames the viewer may have sent but not yet
+// drawn. Two let the screen build a frame while the viewer draws the last.
+const framesAhead = 2
+
 // serveScreen streams the screen to the viewer through send and injects the
-// input recv returns, until either ends. It sends each frame only after the
-// viewer reported drawing the last, so the screen folds the changes made
-// meanwhile into the next frame.
+// input recv returns, until either ends. It holds a frame while framesAhead
+// are undrawn, so the screen folds the changes made meanwhile into the next.
 func serveScreen(
 	ctx context.Context,
 	send func(*s4wave_vm.WasiVmDisplayFrame) error,
@@ -156,7 +159,7 @@ func serveScreen(
 
 	// Inject the viewer's input until it leaves, and pass on its reports of
 	// drawn frames.
-	drawn := make(chan struct{}, 1)
+	drawn := make(chan struct{}, framesAhead)
 	go func() {
 		defer cancel()
 		for {
@@ -175,15 +178,20 @@ func serveScreen(
 		}
 	}()
 
-	// Stream the screen, holding each frame until the viewer drew the last.
+	// Stream the screen, holding the next frame while too many are undrawn.
+	undrawn := 0
 	return scr.Run(ctx, func(frame *s4wave_vm.WasiVmDisplayFrame) error {
 		if err := send(frame); err != nil {
 			return err
+		}
+		if undrawn++; undrawn < framesAhead {
+			return nil
 		}
 		select {
 		case <-ctx.Done():
 			return context.Cause(ctx)
 		case <-drawn:
+			undrawn--
 			return nil
 		}
 	})

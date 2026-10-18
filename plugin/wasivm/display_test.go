@@ -55,41 +55,52 @@ func (s *testScreen) Run(_ context.Context, send func(*s4wave_vm.WasiVmDisplayFr
 	return nil
 }
 
-// TestServeScreenPaced checks the viewer gets each frame only after it
-// reported drawing the last, while its input passes through at once.
+// TestServeScreenPaced checks the viewer gets frames up to framesAhead ahead
+// of its reports of drawing them, while its input passes through at once.
 func TestServeScreenPaced(t *testing.T) {
-	// Serve a screen with three frames.
+	// Serve a screen with four frames.
+	const n = 4
 	strm := &testStream{
 		ctx:    t.Context(),
-		frames: make(chan *s4wave_vm.WasiVmDisplayFrame, 3),
-		in:     make(chan *s4wave_vm.WasiVmDisplayInput, 3),
+		frames: make(chan *s4wave_vm.WasiVmDisplayFrame, n),
+		in:     make(chan *s4wave_vm.WasiVmDisplayInput, n),
 	}
-	scr := &testScreen{n: 3, input: make(chan *s4wave_vm.WasiVmDisplayInput, 1)}
+	scr := &testScreen{n: n, input: make(chan *s4wave_vm.WasiVmDisplayInput, 1)}
 	done := make(chan error, 1)
 	go func() { done <- serveScreen(t.Context(), strm.Send, strm.Recv, scr) }()
 
-	// Each frame waits for the report of the last.
-	drawn := &s4wave_vm.WasiVmDisplayInput{Body: &s4wave_vm.WasiVmDisplayInput_Drawn{Drawn: &s4wave_vm.WasiVmFrameDrawn{}}}
-	for i := range uint32(3) {
-		if f := <-strm.frames; f.GetScreenWidth() != i+1 {
-			t.Fatalf("frame %d has width %d", i+1, f.GetScreenWidth())
+	// The first framesAhead frames arrive at once.
+	next := func(want uint32) {
+		t.Helper()
+		if f := <-strm.frames; f.GetScreenWidth() != want {
+			t.Fatalf("frame %d has width %d", want, f.GetScreenWidth())
 		}
+	}
+	for i := range uint32(framesAhead) {
+		next(i + 1)
+	}
+
+	// Input passes through while the next frame is held.
+	key := &s4wave_vm.WasiVmDisplayInput{Body: &s4wave_vm.WasiVmDisplayInput_Key{Key: &s4wave_vm.WasiVmKeyEvent{Keysym: 'a', Down: true}}}
+	strm.in <- key
+	if got := <-scr.input; got != key {
+		t.Fatalf("the screen got %v, want the key", got)
+	}
+
+	// Each later frame waits for the report of one drawn.
+	drawn := &s4wave_vm.WasiVmDisplayInput{Body: &s4wave_vm.WasiVmDisplayInput_Drawn{Drawn: &s4wave_vm.WasiVmFrameDrawn{}}}
+	for i := uint32(framesAhead); i < n; i++ {
 		select {
 		case f := <-strm.frames:
-			t.Fatalf("frame %d arrived before frame %d was drawn", f.GetScreenWidth(), i+1)
+			t.Fatalf("frame %d arrived with %d undrawn", f.GetScreenWidth(), framesAhead)
 		case <-time.After(20 * time.Millisecond):
 		}
-
-		// Input passes through while the frame is held.
-		if i == 0 {
-			key := &s4wave_vm.WasiVmDisplayInput{Body: &s4wave_vm.WasiVmDisplayInput_Key{Key: &s4wave_vm.WasiVmKeyEvent{Keysym: 'a', Down: true}}}
-			strm.in <- key
-			if got := <-scr.input; got != key {
-				t.Fatalf("the screen got %v, want the key", got)
-			}
-		}
 		strm.in <- drawn
+		next(i + 1)
 	}
+
+	// The last frame returns once one more is drawn.
+	strm.in <- drawn
 	if err := <-done; err != nil {
 		t.Fatal(err)
 	}
