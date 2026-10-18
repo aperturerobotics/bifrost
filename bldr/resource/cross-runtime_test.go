@@ -52,6 +52,13 @@ func startCrossRuntimeProcess(
 	if err != nil {
 		t.Fatalf("resolve repository root: %v", err)
 	}
+	// Without node_modules, bun auto-installs packages outside the lockfile,
+	// and the fixtures fail inside mismatched generated code.
+	if name == "bun" {
+		if _, err := os.Stat(filepath.Join(root, "node_modules")); err != nil {
+			t.Fatalf("bun fixtures need the lockfile's packages: run bun install --frozen-lockfile in %s", root)
+		}
+	}
 	command := exec.CommandContext(ctx, name, args...)
 	command.Dir = root
 	command.Env = os.Environ()
@@ -540,7 +547,6 @@ func TestGoAttachedResourceTwoHopLifecycleAgainstTypeScriptServer(t *testing.T) 
 			childReleaseCount.Add(1)
 			childReleased <- struct{}{}
 		})
-
 		// Report the child ID to the test and answer the construct call.
 		if err != nil {
 			return true, err
