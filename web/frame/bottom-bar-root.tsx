@@ -12,9 +12,14 @@ export interface BottomBarRootProps {
   setOpenMenu?: (id: string) => void
 }
 
+// ItemsStore holds the registered items and the element the frame shows the
+// open overlay in. Levels portal their own overlay into that element, so an
+// overlay renders with its level's state and contexts.
 class ItemsStore {
   private items: BottomBarItem[] = []
   private listeners = new Set<() => void>()
+  private overlayHost: HTMLElement | null = null
+  private overlayHostListeners = new Set<() => void>()
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -29,31 +34,40 @@ class ItemsStore {
     }
   }
 
-  registerItem = (item: Omit<BottomBarItem, 'depth'> & { depth: number }) => {
-    const existingIndex = this.items.findIndex((i) => i.id === item.id)
-    if (existingIndex !== -1) {
-      const existing = this.items[existingIndex]
-      if (isQuietItemUpdate(existing, item)) {
-        existing.button = item.button
-        existing.overlay = item.overlay
-        existing.contextMenuItems = item.contextMenuItems
-        existing.contextMenuLabel = item.contextMenuLabel
-        existing.onBreadcrumbClick = item.onBreadcrumbClick
-        return
-      }
-
-      const updated = [...this.items]
-      updated[existingIndex] = item
-      updated.sort((a, b) => a.depth - b.depth)
-      this.items = updated
-      this.notify()
-      return
-    }
-
-    const next = [...this.items, item]
+  // registerItem adds item or replaces the item with its id. Levels memoize
+  // their item, so registering the same item again changes nothing.
+  registerItem = (item: BottomBarItem) => {
+    const index = this.items.findIndex((i) => i.id === item.id)
+    if (index !== -1 && this.items[index] === item) return
+    const next =
+      index === -1 ? [...this.items, item] : this.items.with(index, item)
     next.sort((a, b) => a.depth - b.depth)
     this.items = next
     this.notify()
+  }
+
+  subscribeOverlayHost = (listener: () => void) => {
+    this.overlayHostListeners.add(listener)
+    return () => this.overlayHostListeners.delete(listener)
+  }
+
+  getOverlayHost = () => this.overlayHost
+
+  // overlayHostRef names el as the overlay host until React detaches it. A
+  // detach only clears the host it set, so a replacing frame keeps its own.
+  overlayHostRef = (el: HTMLElement | null) => {
+    this.setOverlayHost(el)
+    return () => {
+      if (this.overlayHost === el) this.setOverlayHost(null)
+    }
+  }
+
+  private setOverlayHost(el: HTMLElement | null) {
+    if (this.overlayHost === el) return
+    this.overlayHost = el
+    for (const listener of this.overlayHostListeners) {
+      listener()
+    }
   }
 
   unregisterItem = (id: string) => {
@@ -63,21 +77,6 @@ class ItemsStore {
       this.notify()
     }
   }
-}
-
-function isQuietItemUpdate(a: BottomBarItem, b: BottomBarItem) {
-  return (
-    a.depth === b.depth &&
-    a.buttonKey === b.buttonKey &&
-    a.overlayKey === b.overlayKey &&
-    a.menuLabel === b.menuLabel &&
-    a.contextMenuKey === b.contextMenuKey &&
-    a.contextMenuLabel === b.contextMenuLabel &&
-    !!a.overlay === !!b.overlay &&
-    !!a.contextMenuItems === !!b.contextMenuItems &&
-    !!a.onBreadcrumbClick === !!b.onBreadcrumbClick &&
-    a.position === b.position
-  )
 }
 
 export function BottomBarRoot({
@@ -91,6 +90,9 @@ export function BottomBarRoot({
     () => ({
       subscribe: store.subscribe,
       getSnapshot: store.getSnapshot,
+      subscribeOverlayHost: store.subscribeOverlayHost,
+      getOverlayHost: store.getOverlayHost,
+      overlayHostRef: store.overlayHostRef,
       openMenu,
       setOpenMenu,
     }),

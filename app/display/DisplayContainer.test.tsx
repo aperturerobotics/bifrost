@@ -218,10 +218,7 @@ function buildViewerResult(overrides: Record<string, unknown> = {}) {
     },
     buttonRender: vi.fn(),
     overlayContent: undefined,
-    buttonKeyValue: 'button',
-    overlayKeyValue: 'overlay',
     contextMenuItems: undefined,
-    contextMenuKey: 'context',
     contextMenuLabel: 'Object actions',
     ...overrides,
   }

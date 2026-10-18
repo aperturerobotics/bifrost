@@ -1,8 +1,12 @@
 import React, { use, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import {
   BottomBarContext,
   BottomBarContextValue,
   type BottomBarContextMenuItem,
+  type BottomBarItem,
+  useBottomBarOpenMenu,
+  useBottomBarOverlayHost,
 } from './bottom-bar-context.js'
 
 export interface BottomBarLevelProps {
@@ -12,12 +16,11 @@ export interface BottomBarLevelProps {
     onClick: () => void,
     className?: string,
   ) => React.ReactNode
+  // overlay renders in the frame while this level's menu is open. It is part
+  // of this level's tree, so it reads this level's state and contexts.
   overlay?: React.ReactNode
-  buttonKey?: React.Key
-  overlayKey?: React.Key
   menuLabel?: React.ReactNode
   contextMenuLabel?: string
-  contextMenuKey?: React.Key
   contextMenuItems?: readonly BottomBarContextMenuItem[]
   onBreadcrumbClick?: () => void
   position?: 'left' | 'right'
@@ -28,11 +31,8 @@ export function BottomBarLevel({
   id,
   button,
   overlay,
-  buttonKey,
-  overlayKey,
   menuLabel,
   contextMenuLabel,
-  contextMenuKey,
   contextMenuItems,
   onBreadcrumbClick,
   position,
@@ -44,40 +44,32 @@ export function BottomBarLevel({
   const registerItem = parent?.registerItem
   const unregisterItem = parent?.unregisterItem
 
+  // The item changes only when something the frame renders changes.
   const hasOverlay = overlay !== undefined
-  const hasBreadcrumbClick = !!onBreadcrumbClick
-
-  const item = useMemo(() => {
-    return {
+  const item = useMemo<BottomBarItem>(
+    () => ({
       id,
       depth,
       button,
-      buttonKey,
-      overlay: hasOverlay ? () => overlay : undefined,
-      overlayKey,
+      hasOverlay,
       menuLabel,
       contextMenuLabel,
-      contextMenuKey,
       contextMenuItems,
-      onBreadcrumbClick: hasBreadcrumbClick ? onBreadcrumbClick : undefined,
+      onBreadcrumbClick,
       position,
-    }
-  }, [
-    id,
-    depth,
-    button,
-    hasOverlay,
-    overlay,
-    buttonKey,
-    overlayKey,
-    menuLabel,
-    contextMenuLabel,
-    contextMenuKey,
-    contextMenuItems,
-    hasBreadcrumbClick,
-    onBreadcrumbClick,
-    position,
-  ])
+    }),
+    [
+      id,
+      depth,
+      button,
+      hasOverlay,
+      menuLabel,
+      contextMenuLabel,
+      contextMenuItems,
+      onBreadcrumbClick,
+      position,
+    ],
+  )
 
   useEffect(() => {
     if (!registerItem) {
@@ -108,9 +100,20 @@ export function BottomBarLevel({
     [parent, depth],
   )
 
+  // Portal the overlay into the frame while this level's menu is open.
+  const openMenu = useBottomBarOpenMenu()
+  const overlayHost = useBottomBarOverlayHost()
+  const portal =
+    hasOverlay && openMenu === id && overlayHost
+      ? createPortal(overlay, overlayHost)
+      : null
+
   return (
-    <BottomBarContext.Provider value={value}>
-      {children}
-    </BottomBarContext.Provider>
+    <>
+      {portal}
+      <BottomBarContext.Provider value={value}>
+        {children}
+      </BottomBarContext.Provider>
+    </>
   )
 }

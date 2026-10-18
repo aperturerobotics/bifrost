@@ -278,10 +278,7 @@ function buildViewerResult(
     },
     buttonRender: vi.fn(),
     overlayContent: undefined,
-    buttonKeyValue: 'button',
-    overlayKeyValue: 'overlay',
     contextMenuItems: undefined,
-    contextMenuKey: 'context',
     contextMenuLabel: 'Object actions',
   }
 }

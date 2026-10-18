@@ -98,7 +98,6 @@ export function CliTerminalPage() {
       <BottomBarLevel
         id="sessionCliTerminal"
         button={renderTerminalBarItem}
-        buttonKey="session-cli-terminal"
         menuLabel="Terminal"
       >
         <div className="bg-background-dark flex min-h-0 flex-1 flex-col overflow-hidden">

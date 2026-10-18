@@ -1,20 +1,7 @@
-import React, {
-  CSSProperties,
-  createContext,
-  use,
-  useEffect,
-  useRef,
-} from 'react'
+import React, { CSSProperties, useEffect, useRef } from 'react'
 
 import { cn } from '@s4wave/web/style/utils.js'
 import { IBarProps, Bar } from './bar.js'
-
-const OverlayCloseContext = createContext<(() => void) | undefined>(undefined)
-
-// useOverlayClose returns the close handler for the current overlay.
-export function useOverlayClose() {
-  return use(OverlayCloseContext)
-}
 
 // IFrameProps are properties for Frame.
 export interface IFrameProps {
@@ -45,9 +32,12 @@ export interface IFrameProps {
 
 // Frame is a body with horizontal bars above and/or below it.
 export function Frame(props: IFrameProps) {
+  const groupRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDialogElement>(null)
+  const hasOverlay = !!props.overlay
+  const onCloseOverlay = props.onCloseOverlay
   const bottomBar = !props.bottomBar?.hidden ? (
-    <Bar hideTopBorder={!!props.overlay} {...props.bottomBar} />
+    <Bar hideTopBorder={hasOverlay} {...props.bottomBar} />
   ) : undefined
 
   const topBar =
@@ -57,11 +47,25 @@ export function Frame(props: IFrameProps) {
     ) : undefined
 
   useEffect(() => {
-    if (props.overlay) overlayRef.current?.focus()
-  }, [props.overlay])
+    if (hasOverlay) overlayRef.current?.focus()
+  }, [hasOverlay])
+
+  // Escape closes the overlay unless a layer inside it already handled the
+  // key. The listener is on the DOM because overlay content may be a portal
+  // whose React parents sit outside this frame.
+  useEffect(() => {
+    const group = groupRef.current
+    if (!group || !hasOverlay || !onCloseOverlay) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) onCloseOverlay()
+    }
+    group.addEventListener('keydown', handleKeyDown)
+    return () => group.removeEventListener('keydown', handleKeyDown)
+  }, [hasOverlay, onCloseOverlay])
 
   return (
     <div
+      ref={groupRef}
       role="group"
       className={cn(
         'relative flex-1 overflow-hidden',
@@ -69,15 +73,10 @@ export function Frame(props: IFrameProps) {
         props.className,
       )}
       style={props.style}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape' && props.overlay && props.onCloseOverlay) {
-          props.onCloseOverlay()
-        }
-      }}
     >
       {topBar}
 
-      {props.overlay ? (
+      {hasOverlay ? (
         <dialog
           ref={overlayRef}
           open
@@ -87,11 +86,6 @@ export function Frame(props: IFrameProps) {
             props.overlayClassName,
           )}
           tabIndex={-1}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape' && props.onCloseOverlay) {
-              props.onCloseOverlay()
-            }
-          }}
         >
           {props.overlay}
         </dialog>
@@ -100,11 +94,11 @@ export function Frame(props: IFrameProps) {
       <div
         className={cn(
           'relative flex flex-1 overflow-hidden border-r-0 border-b-0 border-l-0',
-          props.overlay && 'hidden',
+          hasOverlay && 'hidden',
           props.innerClassName,
         )}
-        aria-hidden={!!props.overlay}
-        hidden={!!props.overlay}
+        aria-hidden={hasOverlay}
+        hidden={hasOverlay}
       >
         {props.children}
       </div>

@@ -132,11 +132,8 @@ function ViewerBottomBarLevel({
       id={barId}
       button={viewer.buttonRender}
       overlay={viewer.overlayContent}
-      buttonKey={viewer.buttonKeyValue}
-      overlayKey={viewer.overlayKeyValue}
       menuLabel={barLabel}
       contextMenuLabel={viewer.contextMenuLabel}
-      contextMenuKey={viewer.contextMenuKey}
       contextMenuItems={viewer.contextMenuItems}
       onBreadcrumbClick={onBreadcrumbClick}
     >

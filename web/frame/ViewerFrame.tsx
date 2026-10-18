@@ -24,6 +24,7 @@ import {
   type BottomBarItem,
   useBottomBarItems,
   useBottomBarOpenMenu,
+  useBottomBarOverlayHostRef,
   useBottomBarSetOpenMenu,
 } from './bottom-bar-context.js'
 import {
@@ -298,6 +299,7 @@ export function ViewerFrame(props: ViewerFrameProps) {
   const phoneShell = usePhoneShell()
   const openMenu = useBottomBarOpenMenu() ?? ''
   const setOpenMenu = useBottomBarSetOpenMenu() ?? (() => {})
+  const overlayHostRef = useBottomBarOverlayHostRef()
   const [contextMenuState, setContextMenuState] =
     useState<BottomBarContextMenuState | null>(null)
   const contextMenuTriggerRef = useRef<HTMLElement | null>(null)
@@ -424,7 +426,10 @@ export function ViewerFrame(props: ViewerFrameProps) {
   )
 
   const activeItem = items.find((item) => item.id === openMenu)
-  const activeOverlay = activeItem?.overlay?.()
+  // The open item's level portals its overlay into this host element.
+  const activeOverlay = activeItem?.hasOverlay ? (
+    <div ref={overlayHostRef} className="contents" />
+  ) : undefined
   const contextMenuItem = contextMenuState
     ? items.find((item) => item.id === contextMenuState.itemId)
     : undefined

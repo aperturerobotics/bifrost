@@ -192,15 +192,12 @@ export function OrgContainer() {
     [orgId, orgState, orgName, degraded, isOwner, spaces, billingAccountId],
   )
 
-  const buttonKey = `${orgName}|${roleLabel}`
-
   return (
     <OrgContainerContext.Provider value={containerState}>
       <BottomBarLevel
         id="organization"
         button={orgButton}
         overlay={orgOverlay}
-        buttonKey={buttonKey}
         menuLabel={orgName}
         onBreadcrumbClick={handleBreadcrumbClick}
       >

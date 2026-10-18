@@ -1,12 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { describe, it, expect, beforeEach } from 'vitest'
-import {
-  render,
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-} from '@testing-library/react'
+import { render, cleanup, fireEvent, screen } from '@testing-library/react'
 import { useBottomBarItems, BottomBarItem } from './bottom-bar-context.js'
 import { BottomBarLevel } from './bottom-bar-level.js'
 import { BottomBarRoot } from './bottom-bar-root.js'
@@ -125,28 +119,29 @@ describe('BottomBarContext', () => {
       expect(getByTestId('selected').textContent).toBe('Selected')
     })
 
-    it('handles overlays', () => {
+    it('registers that a level has an overlay', () => {
       const TestComponent = () => {
         const items = useBottomBarItems()
-        const overlay = items[0]?.overlay?.()
-        return <div data-testid="overlay">{overlay}</div>
+        return (
+          <div data-testid="has-overlay">
+            {items[0]?.hasOverlay ? 'yes' : 'no'}
+          </div>
+        )
       }
-
-      const overlayContent = <div>Test Overlay</div>
 
       const { getByTestId } = render(
         <BottomBarRoot>
           <BottomBarLevel
             id="item"
             button={ItemButton}
-            overlay={overlayContent}
+            overlay={<div>Test Overlay</div>}
           >
             <TestComponent />
           </BottomBarLevel>
         </BottomBarRoot>,
       )
 
-      expect(getByTestId('overlay').textContent).toBe('Test Overlay')
+      expect(getByTestId('has-overlay').textContent).toBe('yes')
     })
 
     it('registers typed context menu actions for nested items', () => {
@@ -239,7 +234,24 @@ describe('BottomBarContext', () => {
       )
     })
 
-    it('updates the active overlay when child state changes overlay content', () => {
+    it('keeps the open overlay live with level state without remounting it', () => {
+      let mounts = 0
+
+      // DraftInput holds local state that a remount would discard.
+      function DraftInput() {
+        const [draft, setDraft] = useState('')
+        useEffect(() => {
+          mounts += 1
+        }, [])
+        return (
+          <input
+            aria-label="Draft"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+        )
+      }
+
       function TestRoot() {
         const [openMenu, setOpenMenu] = useState('')
         return (
@@ -257,8 +269,12 @@ describe('BottomBarContext', () => {
           <BottomBarLevel
             id="item"
             button={SelectableItemButton}
-            overlay={<div>Overlay {count}</div>}
-            overlayKey={count}
+            overlay={
+              <div>
+                <span>Overlay {count}</span>
+                <DraftInput />
+              </div>
+            }
           >
             <button type="button" onClick={() => setCount((n) => n + 1)}>
               Increment
@@ -271,12 +287,74 @@ describe('BottomBarContext', () => {
 
       fireEvent.click(screen.getByText('Item idle'))
       expect(screen.getByText('Overlay 0')).toBeDefined()
+      fireEvent.change(screen.getByLabelText('Draft'), {
+        target: { value: 'kept' },
+      })
 
       fireEvent.click(screen.getByText('Increment'))
       expect(screen.getByText('Overlay 1')).toBeDefined()
+      expect((screen.getByLabelText('Draft') as HTMLInputElement).value).toBe(
+        'kept',
+      )
+      expect(mounts).toBe(1)
     })
 
-    it('updates keyed button and overlay content without unregistering between item revisions', () => {
+    it('closes a portaled overlay on Escape', () => {
+      function TestRoot() {
+        const [openMenu, setOpenMenu] = useState('')
+        return (
+          <BottomBarRoot openMenu={openMenu} setOpenMenu={setOpenMenu}>
+            <ViewerFrame>
+              <BottomBarLevel
+                id="item"
+                button={SelectableItemButton}
+                overlay={<input aria-label="Overlay input" />}
+              >
+                <div>Child</div>
+              </BottomBarLevel>
+            </ViewerFrame>
+          </BottomBarRoot>
+        )
+      }
+
+      render(<TestRoot />)
+
+      fireEvent.click(screen.getByText('Item idle'))
+      fireEvent.keyDown(screen.getByLabelText('Overlay input'), {
+        key: 'Escape',
+      })
+      expect(screen.queryByLabelText('Overlay input')).toBeNull()
+    })
+
+    it('keeps the overlay open when a layer inside it handled Escape', () => {
+      function TestRoot() {
+        const [openMenu, setOpenMenu] = useState('')
+        return (
+          <BottomBarRoot openMenu={openMenu} setOpenMenu={setOpenMenu}>
+            <ViewerFrame>
+              <BottomBarLevel
+                id="item"
+                button={SelectableItemButton}
+                overlay={<input aria-label="Overlay input" />}
+              >
+                <div>Child</div>
+              </BottomBarLevel>
+            </ViewerFrame>
+          </BottomBarRoot>
+        )
+      }
+
+      render(<TestRoot />)
+
+      fireEvent.click(screen.getByText('Item idle'))
+      // A native listener, as a Radix layer uses, consumes the key first.
+      const input = screen.getByLabelText('Overlay input')
+      input.addEventListener('keydown', (e) => e.preventDefault())
+      fireEvent.keyDown(input, { key: 'Escape' })
+      expect(screen.queryByLabelText('Overlay input')).not.toBeNull()
+    })
+
+    it('updates button content without unregistering between item revisions', () => {
       const lengths: number[] = []
 
       function RegistryProbe() {
@@ -287,11 +365,8 @@ describe('BottomBarContext', () => {
       function RegisteredContentProbe() {
         const item = useBottomBarItems()[0]
         return (
-          <div>
-            <div data-testid="registered-button">
-              {item?.button(false, () => {}, '')}
-            </div>
-            <div data-testid="registered-overlay">{item?.overlay?.()}</div>
+          <div data-testid="registered-button">
+            {item?.button(false, () => {}, '')}
           </div>
         )
       }
@@ -306,16 +381,9 @@ describe('BottomBarContext', () => {
           ),
           [count],
         )
-        const overlay = useMemo(() => <div>Overlay {count}</div>, [count])
 
         return (
-          <BottomBarLevel
-            id="item"
-            button={button}
-            buttonKey={count}
-            overlay={overlay}
-            overlayKey={count}
-          >
+          <BottomBarLevel id="item" button={button}>
             <button type="button" onClick={() => setCount((n) => n + 1)}>
               Update
             </button>
@@ -339,20 +407,14 @@ describe('BottomBarContext', () => {
       render(<TestRoot />)
 
       expect(screen.getByTestId('registered-button').textContent).toBe('Item 0')
-      expect(screen.getByTestId('registered-overlay').textContent).toBe(
-        'Overlay 0',
-      )
       lengths.length = 0
 
       fireEvent.click(screen.getByText('Update'))
       expect(screen.getByTestId('registered-button').textContent).toBe('Item 1')
-      expect(screen.getByTestId('registered-overlay').textContent).toBe(
-        'Overlay 1',
-      )
       expect(lengths).not.toContain(0)
     })
 
-    it('updates keyed context menu actions without unregistering between item revisions', () => {
+    it('updates context menu actions without unregistering between item revisions', () => {
       const lengths: number[] = []
 
       function RegistryProbe() {
@@ -389,7 +451,6 @@ describe('BottomBarContext', () => {
             id="item"
             button={ItemButton}
             contextMenuItems={actions}
-            contextMenuKey={count}
           >
             <button type="button" onClick={() => setCount((n) => n + 1)}>
               Update
@@ -418,59 +479,6 @@ describe('BottomBarContext', () => {
         'Action 1',
       )
       expect(lengths).not.toContain(0)
-    })
-
-    it('quietly refreshes unkeyed context menu action contents', async () => {
-      let latestItems: BottomBarItem[] = []
-
-      function RegistryProbe() {
-        latestItems = useBottomBarItems()
-        return <div data-testid="item-count">{latestItems.length}</div>
-      }
-
-      function TestItem() {
-        const [count, setCount] = useState(0)
-        const actions = useMemo(
-          () => [
-            {
-              type: 'action' as const,
-              id: 'open',
-              label: `Action ${count}`,
-              onSelect: () => {},
-            },
-          ],
-          [count],
-        )
-
-        return (
-          <BottomBarLevel
-            id="item"
-            button={ItemButton}
-            contextMenuItems={actions}
-          >
-            <button type="button" onClick={() => setCount((n) => n + 1)}>
-              Update
-            </button>
-          </BottomBarLevel>
-        )
-      }
-
-      render(
-        <BottomBarRoot>
-          <RegistryProbe />
-          <ViewerFrame>
-            <TestItem />
-          </ViewerFrame>
-        </BottomBarRoot>,
-      )
-
-      expect(screen.getByTestId('item-count').textContent).toBe('1')
-      expect(firstContextMenuActionLabel(latestItems[0])).toBe('Action 0')
-
-      fireEvent.click(screen.getByText('Update'))
-      await waitFor(() => {
-        expect(firstContextMenuActionLabel(latestItems[0])).toBe('Action 1')
-      })
     })
 
     it('removes context menu actions from registered items', () => {
@@ -502,7 +510,6 @@ describe('BottomBarContext', () => {
             id="item"
             button={ItemButton}
             contextMenuItems={enabled ? actions : undefined}
-            contextMenuKey={enabled ? 'enabled' : 'disabled'}
           >
             <button type="button" onClick={() => setEnabled(false)}>
               Disable actions
@@ -562,8 +569,11 @@ describe('BottomBarContext', () => {
     it('handles missing overlay', () => {
       const TestComponent = () => {
         const items = useBottomBarItems()
-        const overlayFn = items[0]?.overlay
-        return <div data-testid="has-overlay">{overlayFn ? 'yes' : 'no'}</div>
+        return (
+          <div data-testid="has-overlay">
+            {items[0]?.hasOverlay ? 'yes' : 'no'}
+          </div>
+        )
       }
 
       const { getByTestId } = render(
@@ -881,8 +891,3 @@ describe('BottomBarContext', () => {
     })
   })
 })
-
-function firstContextMenuActionLabel(item: BottomBarItem | undefined) {
-  const action = item?.contextMenuItems?.[0]
-  return action?.type === 'action' ? action.label : undefined
-}

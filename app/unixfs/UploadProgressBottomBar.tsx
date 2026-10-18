@@ -456,16 +456,12 @@ export function UploadProgressBottomBar({
       id="upload-progress"
       position="right"
       button={buttonRender}
-      buttonKey={`${activeUploading}-${totalCount}-${doneCount}-${
-        feedback ? feedback.id : 'none'
-      }`}
       overlay={
         <UploadProgressOverlay
           uploadManager={uploadManager}
           onOpenStorageHealth={onOpenStorageHealth}
         />
       }
-      overlayKey={`${totalCount}-${activeUploading}-${doneCount}`}
     >
       {null}
     </BottomBarLevel>

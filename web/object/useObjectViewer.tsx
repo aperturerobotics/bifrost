@@ -63,10 +63,7 @@ export interface UseObjectViewerResult {
     className?: string,
   ) => React.ReactNode
   overlayContent: React.ReactNode | undefined
-  buttonKeyValue: string
-  overlayKeyValue: string
   contextMenuItems: readonly BottomBarContextMenuItem[] | undefined
-  contextMenuKey: string
   contextMenuLabel: string
 }
 
@@ -382,8 +379,7 @@ interface ViewerButtonOptions {
   onSelectComponent: (component: ObjectViewerComponent) => void
 }
 
-// useViewerButton renders the bottom bar button of the viewer and the key that
-// changes when it must re-render.
+// useViewerButton renders the bottom bar button of the viewer.
 function useViewerButton({
   barId,
   displayKey,
@@ -394,27 +390,6 @@ function useViewerButton({
 }: ViewerButtonOptions) {
   const isLastItem = useIsLastBottomBarItem(barId)
   const [selectorOpen, setSelectorOpen] = useState(false)
-  const selectedComponentIDDisplay = selectedComponent?.componentID ?? 'default'
-  const hasMultipleComponents = visibleComponents.length > 1
-
-  const buttonKeyValue = useMemo(
-    () =>
-      [
-        displayKey,
-        selectedComponentIDDisplay,
-        hasMultipleComponents ? 'multi' : 'single',
-        selectorOpen ? 'open' : 'closed',
-        typeID ?? 'none',
-      ].join(':'),
-    [
-      displayKey,
-      selectedComponentIDDisplay,
-      hasMultipleComponents,
-      selectorOpen,
-      typeID,
-    ],
-  )
-
   const buttonRender = useCallback(
     (selected: boolean, onClick: () => void, className?: string) => {
       const label =
@@ -469,7 +444,7 @@ function useViewerButton({
     ],
   )
 
-  return { buttonRender, buttonKeyValue, selectedComponentIDDisplay }
+  return buttonRender
 }
 
 interface ViewerOverlayOptions {
@@ -481,12 +456,10 @@ interface ViewerOverlayOptions {
   visibleComponents: ObjectViewerComponent[]
   selectedComponent: ObjectViewerComponent | undefined
   missingComponentID: string | undefined
-  selectedComponentIDDisplay: string
   onSelectComponent: (component: ObjectViewerComponent) => void
 }
 
-// useViewerOverlay renders the object details overlay and the key that changes
-// when it must re-render.
+// useViewerOverlay renders the object details overlay.
 function useViewerOverlay({
   spaceContext,
   objectKey,
@@ -496,22 +469,9 @@ function useViewerOverlay({
   visibleComponents,
   selectedComponent,
   missingComponentID,
-  selectedComponentIDDisplay,
   onSelectComponent,
 }: ViewerOverlayOptions) {
   const setOpenMenu = useBottomBarSetOpenMenu()
-
-  const overlayKeyValue = useMemo(
-    () =>
-      [
-        objectKey ?? 'none',
-        typeID ?? 'none',
-        rootRef ?? 'none',
-        selectedComponentIDDisplay,
-        spaceContext?.canDeleteObjects ? 'delete' : 'read-only',
-      ].join(':'),
-    [objectKey, typeID, rootRef, selectedComponentIDDisplay, spaceContext],
-  )
 
   const handleCloseDetails = useCallback(() => {
     setOpenMenu?.('')
@@ -558,7 +518,7 @@ function useViewerOverlay({
     ],
   )
 
-  return { overlayContent, overlayKeyValue }
+  return overlayContent
 }
 
 // useViewerContextMenu builds the bottom bar context menu that navigates
@@ -625,33 +585,8 @@ function useViewerContextMenu(
       handleSwitchObjectHere,
     ],
   )
-  const contextMenuKey = useMemo(
-    () =>
-      [
-        displayKey,
-        objectKey ?? 'none',
-        hasDetails ? 'details' : 'no-details',
-        spaceContext?.navigateToObjects ? 'open' : 'no-open',
-        hasObjectViewerSwitchOwner(positionOwner) ? 'switch' : 'no-switch',
-        spaceObjectTargets
-          .map((target) => `${target.objectKey}:${target.objectType}`)
-          .join('|'),
-        moreSpaceObjectTargets ? 'more' : 'all',
-      ].join(':'),
-    [
-      displayKey,
-      objectKey,
-      hasDetails,
-      spaceContext?.navigateToObjects,
-      positionOwner,
-      spaceObjectTargets,
-      moreSpaceObjectTargets,
-    ],
-  )
-
   return {
     contextMenuItems,
-    contextMenuKey,
     contextMenuLabel: `${displayKey} actions`,
   }
 }
@@ -696,7 +631,7 @@ export function useObjectViewer({
     selectedComponent,
   )
   useExportCommand(objectExportUrl)
-  const button = useViewerButton({
+  const buttonRender = useViewerButton({
     barId: bottomBarId ?? 'objectViewer',
     displayKey,
     typeID,
@@ -704,7 +639,7 @@ export function useObjectViewer({
     selectedComponent,
     onSelectComponent,
   })
-  const overlay = useViewerOverlay({
+  const overlayContent = useViewerOverlay({
     spaceContext,
     objectKey,
     typeID,
@@ -713,14 +648,13 @@ export function useObjectViewer({
     visibleComponents,
     selectedComponent,
     missingComponentID,
-    selectedComponentIDDisplay: button.selectedComponentIDDisplay,
     onSelectComponent,
   })
   const contextMenu = useViewerContextMenu(
     spaceContext,
     objectKey,
     displayKey,
-    !!overlay.overlayContent,
+    !!overlayContent,
   )
 
   return {
@@ -733,10 +667,8 @@ export function useObjectViewer({
     missingComponentID,
     onSelectComponent,
     viewerContextValue,
-    buttonRender: button.buttonRender,
-    overlayContent: overlay.overlayContent,
-    buttonKeyValue: button.buttonKeyValue,
-    overlayKeyValue: overlay.overlayKeyValue,
+    buttonRender,
+    overlayContent,
     ...contextMenu,
   }
 }

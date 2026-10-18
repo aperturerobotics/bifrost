@@ -239,24 +239,11 @@ export function AgentConnectButton() {
     return null
   }
 
-  // The bottom bar re-renders the button only when this key changes, so it
-  // names every value the panel and its callbacks read.
-  const buttonKey = [
-    routePath,
-    socketPath,
-    listener?.connectedClients ?? 0,
-    pairing?.code ?? '',
-    pairing?.remotePeerId ?? '',
-    pairing?.error ?? '',
-    copyState,
-  ].join('|')
-
   return (
     <BottomBarLevel
       id={AGENT_CONNECT_MENU_ID}
       position="right"
       button={buttonRender}
-      buttonKey={buttonKey}
     >
       {null}
     </BottomBarLevel>
