@@ -31,6 +31,8 @@ import (
 type SharedObject struct {
 	// tkr retains the provider account and shared object state.
 	tkr *sobjectTracker
+	// ctx ends when the tracker stops this cloud SharedObject.
+	ctx context.Context
 	// blkStore stores the shared object blocks.
 	blkStore bstore.BlockStore
 	// host runs the cloud-backed shared object.
@@ -329,6 +331,7 @@ func (t *sobjectTracker) executeSharedObjectTracker(rctx context.Context) (rerr 
 	// Run the host, publishing the SharedObject once its first state is ready.
 	so := &SharedObject{
 		tkr:      t,
+		ctx:      ctx,
 		blkStore: blkStore,
 		host:     host,
 		privKey:  sessionPriv,
