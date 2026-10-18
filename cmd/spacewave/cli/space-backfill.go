@@ -17,9 +17,10 @@ func newSpaceBackfillCommand(statePath *string, sessionIdx *uint) *cli.Command {
 		Name:      "backfill",
 		Usage:     "choose whether this device copies the whole space locally",
 		ArgsUsage: "[space-id] [on|off]",
-		Description: "With backfill on, this device copies the whole space into its " +
-			"local store in the background. With backfill off, the default, it " +
-			"fetches data when it is read and keeps what it wrote or read. " +
+		Description: "With backfill on, this device copies the installed World and its " +
+			"retained roots into its local store in the background. With backfill off, " +
+			"the default, it fetches blocks on demand into an evictable cache. Storage " +
+			"reclaim can remove cached blocks unless a retained root reaches them. " +
 			"Without on or off, it prints the current choice.",
 		Action: func(c *cli.Context) error {
 			// Take the optional choice from the last argument.
