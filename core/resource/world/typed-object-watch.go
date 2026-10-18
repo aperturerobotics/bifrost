@@ -166,7 +166,7 @@ func (w *typedObjectWatch) waitDone() {
 
 // run reconciles World and directive events while factories run outside callbacks.
 func (w *typedObjectWatch) run(ctx context.Context) (retErr error) {
-	// Observe the supplied World's events and serialize factory generations.
+	// Observe the supplied World's events.
 	worldObserver := routine.NewRoutineContainer()
 	worldObserver.SetRoutine(func(ctx context.Context) error {
 		err := w.observeWorld(ctx)
@@ -177,15 +177,11 @@ func (w *typedObjectWatch) run(ctx context.Context) (retErr error) {
 		return nil
 	})
 	worldObserver.SetContext(ctx, false)
-	factories := routine.NewStateRoutineContainer[*typedObjectWatchGeneration](func(a, b *typedObjectWatchGeneration) bool { return a == b })
-	factories.SetStateRoutine(w.build)
-	factories.SetContext(ctx, false)
 	defer func() {
 		// Withdraw observation, factory work and demand before publishing teardown.
 		worldObserver.ClearContext()
-		w.retire(factories)
+		w.retire()
 		w.releaseLookup()
-		factories.ClearContext()
 		w.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 			w.done, w.err = true, retErr
 			broadcast()
@@ -230,7 +226,7 @@ func (w *typedObjectWatch) run(ctx context.Context) (retErr error) {
 
 		// Replace demand when the object's type or existence changed.
 		if ready && (w.lookup == nil && typeID != "" || w.lookup != nil && (w.lookup.typeID != typeID || w.lookup.epoch != epoch)) {
-			w.retire(factories)
+			w.retire()
 			w.releaseLookup()
 			if typeID != "" {
 				if err := w.addLookup(typeID, epoch); err != nil {
@@ -243,7 +239,7 @@ func (w *typedObjectWatch) run(ctx context.Context) (retErr error) {
 
 		// Revoke the previous adopted child before admitting a new factory.
 		if generation != nil && generation.valueID != valueID {
-			w.retire(factories)
+			w.retire()
 			w.publish(0, typeID)
 			generation = nil
 		}
@@ -251,7 +247,7 @@ func (w *typedObjectWatch) run(ctx context.Context) (retErr error) {
 			factoryCtx, cancel := context.WithCancel(ctx)
 			generation = &typedObjectWatchGeneration{valueID: valueID, objectType: objectType, ctx: factoryCtx, cancel: cancel}
 			w.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) { w.generation = generation })
-			factories.SetState(generation)
+			go w.build(generation)
 		}
 
 		// Transfer a completed current factory into a revocable invocation child.
@@ -394,7 +390,10 @@ func (w *typedObjectWatch) releaseLookup() {
 }
 
 // build constructs a factory outside lifecycle locks and discards late results.
-func (w *typedObjectWatch) build(_ context.Context, generation *typedObjectWatchGeneration) error {
+//
+// Each generation runs in its own goroutine so a factory which ignores
+// cancellation cannot delay its replacement; it cleans up after itself.
+func (w *typedObjectWatch) build(generation *typedObjectWatchGeneration) {
 	// Invoke only this generation's factory against the exact granted state.
 	invoker, cleanup, err := generation.objectType.GetFactory()(generation.ctx, w.resource.le, w.resource.b, w.resource.engine, w.resource.ws, w.objectKey)
 	accepted := false
@@ -410,7 +409,6 @@ func (w *typedObjectWatch) build(_ context.Context, generation *typedObjectWatch
 	if !accepted && cleanup != nil {
 		cleanup()
 	}
-	return nil
 }
 
 // admit transfers a completed current factory to its child's release callback.
@@ -465,7 +463,7 @@ func (w *typedObjectWatch) admit(generation *typedObjectWatchGeneration, typeID 
 }
 
 // retire revokes an adopted child before relinquishing its factory generation.
-func (w *typedObjectWatch) retire(factories *routine.StateRoutineContainer[*typedObjectWatchGeneration]) {
+func (w *typedObjectWatch) retire() {
 	// Detach the generation so a late factory result can only clean itself up.
 	var generation *typedObjectWatchGeneration
 	var cleanup func()
@@ -486,7 +484,6 @@ func (w *typedObjectWatch) retire(factories *routine.StateRoutineContainer[*type
 			cleanup()
 		}
 	}
-	factories.SetState(nil)
 }
 
 // publish replaces the immutable snapshot only when availability changes.
