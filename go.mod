@@ -41,7 +41,7 @@ require (
 	github.com/aperturerobotics/go-winjob v0.0.0-20260705010911-656e088d1b05
 	github.com/aperturerobotics/json-iterator-lite v1.1.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261018054529-f60c4d2691ea // master
-	github.com/aperturerobotics/starpc v0.52.3 // master
+	github.com/aperturerobotics/starpc v0.52.4-0.20261018110213-574a40428279 // master
 	github.com/aperturerobotics/util v1.34.10-0.20261018070843-31e7f83b07e3 // master
 	github.com/cloudflare/circl v1.6.5
 	github.com/creack/pty v1.1.24
