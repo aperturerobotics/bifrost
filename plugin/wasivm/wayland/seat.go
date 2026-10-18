@@ -14,7 +14,7 @@ type grab struct {
 	w *surface
 	// edges is the mask of the edges a resize moves, or zero for a move.
 	edges uint32
-	// pointer is the pointer's position when the grab started.
+	// pointer is the pointer's position at the press that started the grab.
 	pointer image.Point
 	// rect is the window geometry's screen rectangle when the grab started.
 	rect image.Rectangle
@@ -193,8 +193,9 @@ func (c *Compositor) pointerInput(sp *space, ev *s4wave_vm.WasiVmPointerEvent) {
 		c.pointerSpace = sp
 	}
 
-	// Move the pointer within the space, from pixels to screen units, and
-	// note the buttons that changed.
+	// Move the pointer within the space, from pixels to screen units, note
+	// the buttons that changed, and keep where the pointer was while none
+	// were held.
 	c.pointer = image.Pt(
 		max(min(int(ev.GetX())/c.scale, sp.area.Max.X-1), sp.area.Min.X),
 		max(min(int(ev.GetY())/c.scale, sp.area.Max.Y-1), sp.area.Min.Y),
@@ -202,6 +203,9 @@ func (c *Compositor) pointerInput(sp *space, ev *s4wave_vm.WasiVmPointerEvent) {
 	changed := ev.GetButtons() ^ c.buttons
 	held := c.buttons&buttonBits != 0
 	c.buttons = ev.GetButtons()
+	if !held {
+		c.pressed = c.pointer
+	}
 
 	// Move or resize a grabbed window until the buttons release.
 	if c.grab != nil {
@@ -318,17 +322,20 @@ func (c *Compositor) startGrab(s *surface, edges uint32) {
 		return
 	}
 
-	// Take the pointer from the surfaces and tell a resized window.
+	// Take the pointer from the surfaces and tell a resized window. The grab
+	// starts from the press, so the window catches up with the pointer moved
+	// while the client's request was on its way.
 	c.grab = &grab{
 		w:       s,
 		edges:   edges,
-		pointer: c.pointer,
+		pointer: c.pressed,
 		rect:    image.Rectangle{Min: t.pos, Max: t.pos.Add(s.xdg.geometry().Size())},
 	}
 	c.setHover(nil)
 	if edges != 0 {
 		s.xdg.configure()
 	}
+	c.drag()
 }
 
 // drag moves the grabbed window with the pointer, or configures it at the

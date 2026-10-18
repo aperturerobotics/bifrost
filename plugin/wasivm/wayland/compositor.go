@@ -89,6 +89,9 @@ type Compositor struct {
 	pointer image.Point
 	// buttons is the mask of held pointer buttons, in viewer bit order.
 	buttons uint32
+	// pressed is where the pointer was when the held buttons were first
+	// pressed. A grab starts from it.
+	pressed image.Point
 	// keys is the held keys, as evdev key codes.
 	keys []uint32
 	// locked is the mask of locked modifiers: Caps Lock.

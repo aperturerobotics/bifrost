@@ -481,6 +481,38 @@ func TestMoveGrab(t *testing.T) {
 	}
 }
 
+// TestMoveGrabLate checks a window whose client asks to move it after the
+// pointer has already moved catches up with the pointer, as the request
+// takes a round trip through the client.
+func TestMoveGrabLate(t *testing.T) {
+	// Map a window showing a pattern.
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	w := c.window(32, 32, bufBlue)
+	pix := pattern(32, 32, 0)
+	c.request(newEvent(w.surface, surfaceAttach).uint(c.bufferOf(32, 32, 4*32, pix, shmFormatXRGB8888)).int(0).int(0))
+	c.request(newEvent(w.surface, surfaceDamage).int(0).int(0).int(32).int(32))
+	c.request(newEvent(w.surface, surfaceCommit))
+	tc.awaitPattern(image.Pt(cascadeStep, cascadeStep), 32, 32, pix)
+
+	// Press on it and drag by 20,10 before asking to move it.
+	pointer := c.newID()
+	c.request(newEvent(idSeat, seatGetPointer).uint(pointer))
+	c.roundtrip()
+	tc.pointer(cascadeStep+8, cascadeStep+8, 1)
+	serial := c.await(pointer, pointerButton).uint()
+	tc.pointer(cascadeStep+28, cascadeStep+18, 1)
+	c.request(newEvent(w.toplevel, toplevelMove).uint(idSeat).uint(serial))
+	c.roundtrip()
+
+	// The window jumps under the pointer without waiting for it to move,
+	// then keeps the offset of the press.
+	tc.awaitPattern(image.Pt(cascadeStep+20, cascadeStep+10), 32, 32, pix)
+	tc.pointer(cascadeStep+38, cascadeStep+28, 1)
+	tc.pointer(cascadeStep+38, cascadeStep+28, 0)
+	tc.awaitPattern(image.Pt(cascadeStep+30, cascadeStep+20), 32, 32, pix)
+}
+
 // TestMoveUnderPanel checks a window moved under a panel stays below it, and
 // the viewer still moves the window's pixels.
 func TestMoveUnderPanel(t *testing.T) {
