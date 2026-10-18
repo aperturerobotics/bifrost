@@ -1,6 +1,10 @@
 package world
 
-import "context"
+import (
+	"context"
+
+	"github.com/pkg/errors"
+)
 
 // ChangeWatcher is an Engine that reports what changed between seqnos.
 type ChangeWatcher interface {
@@ -38,25 +42,45 @@ func WatchChanges(
 	}
 }
 
-// WatchView runs view against ws, recording what it reads, and runs it again
-// each time a World change touches those reads. A view that sends a result
-// should compare it with the last one sent, since an unknown or coarse change
-// reruns the view without changing what it reads.
-// Returns when ctx is canceled or view returns an error.
-func WatchView(ctx context.Context, ws WorldState, view func(ctx context.Context, ws WorldState) error) error {
-	for {
-		// Run the view against the head, recording its reads.
-		seqno, err := ws.GetSeqno(ctx)
-		if err != nil {
-			return err
+// WatchView runs view immediately and again when a change touches its reads or
+// its earliest RerunAt deadline arrives. source must be an Engine or WorldState;
+// an Engine supplies a live, read-only WorldState. Every evaluation has a fresh
+// read set carried by its context. Transactions opened through a
+// ReadTrackingEngine with that context join the same set, including transactions
+// opened by clients captured by view. All transactions must read source's World,
+// and all evaluation work must finish before view returns. Unknown changes can
+// rerun an unchanged projection; use SendViews to suppress equal results.
+// Returns when ctx ends or view or the watch fails.
+func WatchView(ctx context.Context, source WorldWaitSeqno, view func(ctx context.Context, ws WorldState) error) error {
+	// Preserve an existing state's access policy, or build live engine reads.
+	ws, ok := source.(WorldState)
+	if !ok {
+		engine, ok := source.(Engine)
+		if !ok {
+			return errors.New("view source must be an Engine or WorldState")
 		}
-		reads := NewReadSet()
-		if err := view(ctx, reads.Track(ws)); err != nil {
+		ws = NewEngineWorldState(engine, false)
+	}
+
+	// Record each evaluation's starting seqno before reading its dependencies.
+	for {
+		// Do not start another evaluation after cancellation.
+		if err := ctx.Err(); err != nil {
 			return err
 		}
 
-		// Wait for a change to what the view read.
-		if _, err := reads.WaitChange(ctx, ws, seqno); err != nil {
+		// Run the view against the head, recording its reads.
+		seqno, err := source.GetSeqno(ctx)
+		if err != nil {
+			return err
+		}
+		reads := &viewReads{reads: NewReadSet()}
+		if err := view(context.WithValue(ctx, viewReadsKey{}, reads), reads.reads.Track(ws)); err != nil {
+			return err
+		}
+
+		// Wait for a relevant change, bounded by the evaluation's deadline.
+		if err := reads.wait(ctx, source, seqno); err != nil {
 			return err
 		}
 	}

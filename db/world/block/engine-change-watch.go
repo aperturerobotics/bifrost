@@ -15,6 +15,17 @@ import (
 // subscribers receive unknown changes.
 const changeDiffLimit = 4096
 
+// GetUnknownChangeCount returns the number of unknown spans produced by the
+// shared change watch over this Engine's lifetime, once per comparison, not per
+// subscriber. It excludes subscriber catch-up and coalescing, and comparisons
+// made only for object revision waiters, which do not request a ChangeSet.
+// The count survives idle watches and is guarded by the publication lock.
+func (e *Engine) GetUnknownChangeCount() uint64 {
+	locked := e.bcast.Lock()
+	defer locked.Unlock()
+	return e.unknownChanges
+}
+
 // engineChangeWatch is the Engine's change producer. It compares each new head
 // with the last compared head once for all watchers, wakes the object
 // revision waiters of the changed keys, hands the ChangeSet to every change
@@ -252,11 +263,13 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 		// comparison could not list the changes, hand the changes to the
 		// subscribers, and advance the base.
 		locked = e.bcast.Lock()
-		if keys != nil {
-			w.wakeKeysLocked(keys)
-		} else {
+		if listChanges && changes.Unknown {
+			e.unknownChanges++
+		}
+		if keys == nil {
 			w.wakeAllLocked()
 		}
+		w.wakeKeysLocked(keys)
 		for sub := range w.subs {
 			sub.addLocked(nextSeqno, changes)
 		}

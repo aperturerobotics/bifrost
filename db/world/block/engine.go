@@ -176,6 +176,8 @@ type Engine struct {
 	changeWatch *engineChangeWatch
 	// changeWatches counts change watch goroutines that Close must join.
 	changeWatches int
+	// unknownChanges counts unknown spans from the shared change watch, under bcast.
+	unknownChanges uint64
 	// watchedHeads records the recent published heads, oldest first, for
 	// change watchers. Guarded by bcast.
 	watchedHeads []*watchedHead

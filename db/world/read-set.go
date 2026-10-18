@@ -90,9 +90,15 @@ func (r *ReadSet) Touched(changes *ChangeSet) bool {
 // checks them again whenever a read is recorded, so a change that lands before
 // the read of what it changed still ends the wait.
 func (r *ReadSet) WaitChange(ctx context.Context, w WorldWaitSeqno, afterSeqno uint64) (uint64, error) {
-	// Merge the changes since afterSeqno in the background.
+	// Stop and join this wait's subscription before another evaluation starts.
+	done := make(chan struct{})
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	defer func() {
+		cancel()
+		<-done
+	}()
+
+	// Merge the changes since afterSeqno in the background.
 	var (
 		mtx     sync.Mutex
 		changes *ChangeSet
@@ -101,6 +107,7 @@ func (r *ReadSet) WaitChange(ctx context.Context, w WorldWaitSeqno, afterSeqno u
 	changed := make(chan struct{}, 1)
 	watchErr := make(chan error, 1)
 	go func() {
+		defer close(done)
 		watchErr <- WatchChanges(ctx, w, afterSeqno, func(s uint64, cs *ChangeSet) error {
 			// Merge the change and wake the check without blocking.
 			mtx.Lock()
