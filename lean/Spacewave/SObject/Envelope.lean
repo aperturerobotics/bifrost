@@ -166,10 +166,13 @@ def verifyCheckpoint (obj : String) (cp : Checkpoint) : Option (CheckpointBody �
 
 /--
 authorizeCheckpoint mirrors `SOCheckpoint.ValidateAuthority`: a verified
-checkpoint signed by an OWNER under `participants`.
+checkpoint signed by an OWNER under `participants`. Each signer is a distinct
+participant, so a checkpoint with more signatures than participants is refused
+before any signature is checked.
 -/
 def authorizeCheckpoint (obj : String) (participants : List Participant) (cp : Checkpoint) :
     Bool :=
+  if participants.length < cp.sigs.length then false else
   match verifyCheckpoint obj cp with
   | none => false
   | some (_, signers) =>
@@ -258,6 +261,8 @@ theorem authorizeCheckpoint_owner {obj : String} {participants : List Participan
     ∃ s ∈ cp.sigs, s.valid = true ∧
       ∃ p ∈ participants, p.role = Role.owner ∧ p.peer = s.signer := by
   unfold authorizeCheckpoint at h
+  split at h
+  · contradiction
   split at h
   · contradiction
   · rename_i b signers verified

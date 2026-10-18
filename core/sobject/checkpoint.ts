@@ -135,6 +135,12 @@ export async function verifySOCheckpointAuthority(
   checkpoint: SOCheckpoint,
   cfg: SharedObjectConfig,
 ): Promise<VerifiedSOCheckpoint> {
+  // Each signer is a distinct participant of cfg, so cfg bounds the
+  // signature work before any signature is checked.
+  if ((checkpoint.signatures?.length ?? 0) > (cfg.participants?.length ?? 0)) {
+    throw new Error('checkpoint signatures: maximum count exceeded')
+  }
+
   // Authenticate the body and its signatures.
   const verified = await verifySOCheckpoint(sharedObjectID, checkpoint)
   const hash = hashSOCheckpointInner(checkpoint.inner!)

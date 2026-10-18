@@ -199,6 +199,7 @@ func (c *SOCheckpoint) Verify(sharedObjectID string) (*SOCheckpointInner, []stri
 
 	// Every signature covers exactly the encoded body, once per signer.
 	signers := make([]string, 0, len(c.GetSignatures()))
+	seen := make(map[string]struct{}, len(c.GetSignatures()))
 	for i, sig := range c.GetSignatures() {
 		pubKey, err := sig.ParsePubKey()
 		if err != nil {
@@ -211,9 +212,10 @@ func (c *SOCheckpoint) Verify(sharedObjectID string) (*SOCheckpointInner, []stri
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "signatures[%d]", i)
 		}
-		if slices.Contains(signers, signer.String()) {
+		if _, ok := seen[signer.String()]; ok {
 			return nil, nil, errors.Errorf("signatures[%d]: duplicate signer", i)
 		}
+		seen[signer.String()] = struct{}{}
 		valid, err := sig.VerifyWithPublic(SOCheckpointSignatureContext, pubKey, c.GetInner())
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "signatures[%d]", i)
@@ -231,6 +233,12 @@ func (c *SOCheckpoint) Verify(sharedObjectID string) (*SOCheckpointInner, []stri
 // under group control, a commit of cfg's voters decided it under cfg, and
 // under owner control an owner of cfg signed it.
 func (c *SOCheckpoint) ValidateAuthority(sharedObjectID string, cfg *SharedObjectConfig) (*SOCheckpointInner, error) {
+	// Each signer is a distinct participant of cfg, so cfg bounds the
+	// signature work before any signature is checked.
+	if len(c.GetSignatures()) > len(cfg.GetParticipants()) {
+		return nil, errors.Wrap(ErrMaxCountExceeded, "checkpoint signatures")
+	}
+
 	// Authenticate the body and its signatures.
 	inner, signers, err := c.Verify(sharedObjectID)
 	if err != nil {

@@ -274,6 +274,7 @@ func buildCheckpointVectors(t *testing.T) []checkpointVector {
 	privA, peerA := vectorKey(t, "owner-a")
 	privB, peerB := vectorKey(t, "member-b")
 	privC, peerC := vectorKey(t, "owner-c")
+	privD, _ := vectorKey(t, "outsider-d")
 	config := &SharedObjectConfig{Participants: []*SOParticipantConfig{
 		{PeerId: peerA, Role: SOParticipantRole_SOParticipantRole_OWNER},
 		{PeerId: peerB, Role: SOParticipantRole_SOParticipantRole_WRITER},
@@ -334,6 +335,7 @@ func buildCheckpointVectors(t *testing.T) []checkpointVector {
 		{"signed-by-writer", sign(nextInner, privB)},
 		{"writer-and-owner", sign(nextInner, privB, privC)},
 		{"duplicate-signer", sign(nextInner, privA, privA)},
+		{"more-signers-than-participants", sign(nextInner, privA, privB, privC, privD)},
 		{"unsigned", sign(nextInner)},
 		{"signature-over-other-body", forged},
 		{"bound-to-other-object", sign(otherObject, privA)},
