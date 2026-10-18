@@ -2,6 +2,7 @@ package world
 
 import (
 	"context"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
@@ -256,6 +257,31 @@ func (r *ReadSet) markGraph() {
 func (r *ReadSet) markAll() {
 	r.mtx.Lock()
 	r.all = true
+	r.signalLocked()
+	r.mtx.Unlock()
+}
+
+// addReadSet records every read other recorded.
+func (r *ReadSet) addReadSet(other *ReadSet) {
+	// Copy other's reads without holding both locks.
+	other.mtx.Lock()
+	keys := maps.Clone(other.keys)
+	prefixes := slices.Clone(other.prefixes)
+	patterns := slices.Clone(other.patterns)
+	endpoints := maps.Clone(other.endpoints)
+	graph, all := other.graph, other.all
+	other.mtx.Unlock()
+
+	// Join the object and graph reads to r's.
+	r.mtx.Lock()
+	maps.Copy(r.keys, keys)
+	r.prefixes = append(r.prefixes, prefixes...)
+	r.patterns = append(r.patterns, patterns...)
+	maps.Copy(r.endpoints, endpoints)
+
+	// Keep the conservative marks and wake the waits.
+	r.graph = r.graph || graph
+	r.all = r.all || all
 	r.signalLocked()
 	r.mtx.Unlock()
 }

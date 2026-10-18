@@ -458,3 +458,85 @@ func waitViewRun[T any](t *testing.T, ctx context.Context, runs <-chan T) T {
 		panic("unreachable")
 	}
 }
+
+// TestWithViewReads checks that a child evaluation records its transactions,
+// nested shared sets and deadline into its own set, and that a view reruns
+// for a nested read once the caller adds the finished set.
+func TestWithViewReads(t *testing.T) {
+	// A nested shared value read view/nested.
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	tb := world_testbed.MustDefault(t, ctx)
+	engine := world.NewReadTrackingEngine(tb.Engine)
+	nested := world.NewReadSet()
+	if _, err := nested.Track(tb.WorldState).HasObject(ctx, "view/nested"); err != nil {
+		t.Fatal(err)
+	}
+
+	// The view computes a value in a child that reads view/inner and reuses
+	// the nested value, then adds the finished set.
+	deadline := time.Now().Add(time.Hour)
+	runs := make(chan bool, 4)
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- world.WatchView(ctx, tb.Engine, func(ctx context.Context, ws world.WorldState) error {
+			// Share the child's finished reads with the view.
+			set, err := computeShared(ctx, engine, nested, deadline)
+			if err != nil {
+				return err
+			}
+			world.AddViewReads(ctx, set, time.Time{})
+
+			// Report whether the nested object exists yet.
+			found, err := ws.HasObject(ctx, "view/nested")
+			runs <- found
+			return err
+		})
+	}()
+	if found := waitViewRun(t, ctx, runs); found {
+		t.Fatal("first run saw the nested object")
+	}
+
+	// A commit to the nested read reruns the view.
+	createViewObject(t, ctx, tb.Engine, "view/nested")
+	if found := waitViewRun(t, ctx, runs); !found {
+		t.Fatal("rerun did not see the nested object")
+	}
+	cancel()
+	if err := <-errCh; !errors.Is(err, context.Canceled) {
+		t.Fatalf("WatchView = %v, want context.Canceled", err)
+	}
+}
+
+// computeShared computes a shared value in a child evaluation that reads
+// view/inner, reuses nested and asks to rerun at deadline, and checks that the
+// finished set holds all three.
+func computeShared(ctx context.Context, engine world.Engine, nested *world.ReadSet, deadline time.Time) (*world.ReadSet, error) {
+	// Read view/inner through a tracked transaction in the child.
+	set := world.NewReadSet()
+	child, finish := world.WithViewReads(ctx, set)
+	tx, err := engine.NewTransaction(child, false)
+	if err != nil {
+		return nil, err
+	}
+	_, err = tx.HasObject(child, "view/inner")
+	tx.Discard()
+	if err != nil {
+		return nil, err
+	}
+
+	// Reuse the nested value and ask for a rerun.
+	world.AddViewReads(child, nested, time.Time{})
+	world.RerunAt(child, deadline)
+	if got := finish(); !got.Equal(deadline) {
+		return nil, fmt.Errorf("child deadline %v, want %v", got, deadline)
+	}
+
+	// The finished set holds both reads.
+	for _, key := range []string{"view/inner", "view/nested"} {
+		if !set.Touched(&world.ChangeSet{Keys: []string{key}}) {
+			return nil, fmt.Errorf("child set missed %s", key)
+		}
+	}
+	return set, nil
+}

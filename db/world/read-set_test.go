@@ -199,11 +199,14 @@ func TestReadSetKeepsObjectBodyBatch(t *testing.T) {
 // TestReadSetTouchedMemo checks that a cached answer for a ChangeSet does not
 // outlive a later recorded read.
 func TestReadSetTouchedMemo(t *testing.T) {
-	// Test the same ChangeSet twice against an empty set.
+	// Test the same ChangeSet twice against an empty set; the second answer
+	// comes from the memo.
 	set := NewReadSet()
 	changes := &ChangeSet{Keys: []string{"a"}}
-	if set.Touched(changes) || set.Touched(changes) {
-		t.Fatal("empty set touched")
+	for range 2 {
+		if set.Touched(changes) {
+			t.Fatal("empty set touched")
+		}
 	}
 
 	// A read recorded afterward must be visible to the same ChangeSet.
