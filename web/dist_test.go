@@ -105,7 +105,7 @@ func TestDistSourcesAreClosed(t *testing.T) {
 					return err
 				}
 				if !exists {
-					t.Errorf("%s imports source %s, which is not embedded", sourceName, match[1])
+					t.Errorf("%s imports source %s, which is not embedded; add it to the go:embed list in the dist.go that owns its directory", sourceName, match[1])
 				}
 			}
 			return nil
