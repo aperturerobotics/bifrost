@@ -794,3 +794,25 @@ func TestPattern(t *testing.T) {
 	}
 	tc.awaitPattern(origin, width, height, want)
 }
+
+// TestRestoreRedraw checks a window leaving the maximized state redraws the
+// screen it covered, before its client draws at the restored size.
+func TestRestoreRedraw(t *testing.T) {
+	// Map a window and maximize it.
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	w := c.window(16, 16, bufRed)
+	c.request(newEvent(w.toplevel, toplevelSetMaximized))
+	c.awaitSize(w.toplevel, image.Pt(160, 120))
+
+	// Draw it at the screen's size.
+	bid := c.buffer(160, 120, [4]byte{bufRed[0], bufRed[1], bufRed[2], 0}, shmFormatXRGB8888)
+	c.request(newEvent(w.surface, surfaceAttach).uint(bid).int(0).int(0))
+	c.request(newEvent(w.surface, surfaceDamage).int(0).int(0).int(160).int(120))
+	c.request(newEvent(w.surface, surfaceCommit))
+	tc.awaitPixel(image.Pt(4, 4), red)
+
+	// Restored, the corner it left shows the background at once.
+	c.request(newEvent(w.toplevel, toplevelUnsetMaximized))
+	tc.awaitPixel(image.Pt(4, 4), background)
+}

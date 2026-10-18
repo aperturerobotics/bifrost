@@ -209,7 +209,9 @@ func (c *Compositor) setState(s *surface, maximized, fullscreen bool) {
 	t.maximized, t.fullscreen = maximized, fullscreen
 
 	// Fill the usable area or the screen, or go back to the remembered
-	// place.
+	// place. The client's last image shows at the new place until it draws
+	// at the new size, so draw both places again.
+	before := c.bounds(s)
 	switch {
 	case fullscreen:
 		t.pos, t.size = c.desktop.area.Min, c.desktop.area.Size()
@@ -218,6 +220,7 @@ func (c *Compositor) setState(s *surface, maximized, fullscreen bool) {
 	case !wasNormal:
 		t.pos, t.size = t.restore.Min, t.restore.Size()
 	}
+	c.damage(c.desktop, before.Union(c.bounds(s)))
 	if s.xdg.configured {
 		s.xdg.configure()
 	}
