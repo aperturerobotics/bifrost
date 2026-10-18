@@ -26,6 +26,10 @@ type surface struct {
 	scaleNext int
 	// callbacks is the pending frame callbacks.
 	callbacks []uint32
+	// opaqueSet is set when the pending state sets the opaque region.
+	opaqueSet bool
+	// opaqueNext is the pending opaque region, or nil for none.
+	opaqueNext *region
 	// inputSet is set when the pending state sets the input region.
 	inputSet bool
 	// inputNext is the pending input region, or nil for the whole surface.
@@ -55,7 +59,12 @@ type surface struct {
 	image []byte
 	// entered is set once the surface was told it shows on the output.
 	entered bool
-	// opaque is set when every pixel of the image is opaque.
+	// opaqueFormat is set when the image's format has no alpha.
+	opaqueFormat bool
+	// opaqueRegion is the area the client promised is opaque, or nil.
+	opaqueRegion *region
+	// opaque is set when every pixel of the image is opaque: its format
+	// has no alpha or its opaque region covers it.
 	opaque bool
 	// input is the area that takes pointer input, clipped to the image, or
 	// nil for the whole image.
@@ -134,18 +143,22 @@ func (s *surface) request(op uint16, m *message) error {
 			return err
 		}
 		s.callbacks = append(s.callbacks, id)
-	case surfaceSetInputRegion:
+	case surfaceSetOpaqueRegion, surfaceSetInputRegion:
 		rid := m.uint()
 		if m.err != nil {
 			return nil
 		}
 		r, ok := s.c.objects[rid].(*region)
 		if rid != 0 && !ok {
-			return s.c.fail(s.id, errInvalidObject, "input region is not a region")
+			return s.c.fail(s.id, errInvalidObject, "region argument is not a region")
 		}
-		s.inputSet, s.inputNext = true, nil
 		if r != nil {
-			s.inputNext = r.clone()
+			r = r.clone()
+		}
+		if op == surfaceSetOpaqueRegion {
+			s.opaqueSet, s.opaqueNext = true, r
+		} else {
+			s.inputSet, s.inputNext = true, r
 		}
 	case surfaceCommit:
 		return s.commit()
@@ -191,8 +204,7 @@ func (s *surface) commit() error {
 		w := comp.rootOf(s)
 		sp, before := comp.spaceOf(w), comp.bounds(w)
 
-		// Apply the image and its scale, the subsurfaces' positions and the
-		// role.
+		// Apply the image and its scale.
 		relayout := s.attached && (buf == nil || size != s.pixels)
 		if s.attached {
 			s.update(buf, size, area, pix)
@@ -201,9 +213,18 @@ func (s *surface) commit() error {
 			s.scale, relayout = s.scaleNext, true
 		}
 		s.size = s.pixels.Div(s.scale)
+
+		// Apply the regions. The image is opaque when its format or its
+		// opaque region says so.
+		if s.opaqueSet {
+			s.opaqueRegion = s.opaqueNext
+		}
+		s.opaque = s.opaqueFormat || s.opaqueRegion != nil && s.opaqueRegion.covers(image.Rectangle{Max: s.size})
 		if s.inputSet {
 			s.input = s.inputNext
 		}
+
+		// Apply the subsurfaces' positions and the role.
 		for _, t := range s.stack {
 			if t.sub != nil && t.sub.offset != t.sub.pending {
 				t.sub.offset, relayout = t.sub.pending, true
@@ -242,6 +263,7 @@ func (s *surface) commit() error {
 
 	// Clear the pending state and tell the client to draw its next frame.
 	s.attached, s.buffer, s.damaged = false, nil, image.Rectangle{}
+	s.opaqueSet, s.opaqueNext = false, nil
 	s.inputSet, s.inputNext = false, nil
 	now := comp.now()
 	for _, id := range s.callbacks {
@@ -263,7 +285,7 @@ func (s *surface) update(buf *shmBuffer, size image.Point, area image.Rectangle,
 	case size != s.pixels || s.image == nil:
 		s.pixels, s.image = size, make([]byte, 4*size.X*size.Y)
 	}
-	s.opaque = buf.opaque
+	s.opaqueFormat = buf.opaque
 
 	// Copy the area's rows.
 	for y := range area.Dy() {

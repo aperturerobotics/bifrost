@@ -99,3 +99,43 @@ func TestSubtract(t *testing.T) {
 		}
 	}
 }
+
+// TestViewEdges checks a long list of thin areas, such as a moving window's
+// edges, merges into areas near their own size rather than their bounding
+// box.
+func TestViewEdges(t *testing.T) {
+	// Mark the left and right edges of ten windows stacked down the screen.
+	v := &view{}
+	marked := 0
+	for i := range 10 {
+		y := 100 * i
+		for _, r := range []image.Rectangle{image.Rect(0, y, 4, y+90), image.Rect(996, y, 1000, y+90)} {
+			v.add(r)
+			marked += areaOf(r)
+		}
+	}
+
+	// The list stays short and draws at most twice what was marked.
+	if len(v.damage) > maxDamage {
+		t.Fatalf("%d areas, want at most %d", len(v.damage), maxDamage)
+	}
+	drawn := 0
+	for _, d := range v.damage {
+		drawn += areaOf(d)
+	}
+	if drawn > 2*marked {
+		t.Fatalf("draws %d pixels for %d marked", drawn, marked)
+	}
+}
+
+// TestViewShifted checks a window edge marked again at each step of a drag
+// merges into one area over the path.
+func TestViewShifted(t *testing.T) {
+	v := &view{}
+	for i := range 8 {
+		v.add(image.Rect(0, 0, 900, 25).Add(image.Pt(6*i, 4*i)))
+	}
+	if want := image.Rect(0, 0, 942, 53); len(v.damage) != 1 || v.damage[0] != want {
+		t.Fatalf("marked %v, want [%v]", v.damage, want)
+	}
+}

@@ -515,6 +515,39 @@ func TestMoveUnderPanel(t *testing.T) {
 	}
 }
 
+// TestOpaqueRegion checks a window with an alpha channel and an opaque
+// region over all of it moves as a copy, like a window without alpha.
+func TestOpaqueRegion(t *testing.T) {
+	// Map a window showing an opaque pattern in a format with alpha.
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	w := c.window(32, 32, bufBlue)
+	pix := pattern(32, 32, 0)
+	for i := 3; i < len(pix); i += 4 {
+		pix[i] = 0xff
+	}
+
+	// Mark all of it opaque.
+	opaque := c.newID()
+	c.request(newEvent(idCompositor, compositorCreateRegion).uint(opaque))
+	c.request(newEvent(opaque, regionAdd).int(0).int(0).int(32).int(32))
+	c.request(newEvent(w.surface, surfaceSetOpaqueRegion).uint(opaque))
+	c.request(newEvent(w.surface, surfaceAttach).uint(c.bufferOf(32, 32, 4*32, pix, shmFormatARGB8888)).int(0).int(0))
+	c.request(newEvent(w.surface, surfaceDamage).int(0).int(0).int(32).int(32))
+	c.request(newEvent(w.surface, surfaceCommit))
+	tc.awaitPattern(image.Pt(cascadeStep, cascadeStep), 32, 32, pix)
+
+	// Drag it by 20,10 and release. The viewer moves its pixels.
+	tc.grabMove(c, w, image.Pt(cascadeStep+8, cascadeStep+8))
+	tc.pointer(cascadeStep+28, cascadeStep+18, 1)
+	tc.pointer(cascadeStep+28, cascadeStep+18, 0)
+	tc.awaitPattern(image.Pt(cascadeStep+20, cascadeStep+10), 32, 32, pix)
+	tc.awaitPixel(image.Pt(cascadeStep, cascadeStep), background)
+	if tc.copies == 0 {
+		t.Fatal("the move sent the window's pixels instead of a copy")
+	}
+}
+
 // grabMove presses on the window w at the screen point at and asks to move
 // it, so pointer motion with the button held drags it.
 func (tc *testCompositor) grabMove(c *testClient, w testWindow, at image.Point) {

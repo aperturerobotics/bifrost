@@ -6,8 +6,8 @@ import (
 )
 
 // maxDamage and maxCopies bound a view's lists. Past maxDamage areas the view
-// draws their bounding box instead; past maxCopies moves it draws each
-// move's destination instead of copying.
+// merges the two whose bounding box adds the least area; past maxCopies
+// moves it draws each move's destination instead of copying.
 const (
 	maxDamage = 16
 	maxCopies = 16
@@ -51,17 +51,53 @@ func (v *view) add(r image.Rectangle) {
 	if slices.ContainsFunc(v.damage, r.In) {
 		return
 	}
+
+	// Grow it over each marked area whose box with it draws no more than
+	// both, such as a window edge drawn again a few pixels over, then drop
+	// the areas it covers.
+	for {
+		i := slices.IndexFunc(v.damage, func(d image.Rectangle) bool { return waste(d, r) <= areaOf(d.Intersect(r)) })
+		if i < 0 {
+			break
+		}
+		r = r.Union(v.damage[i])
+		v.damage = slices.Delete(v.damage, i, i+1)
+	}
 	v.damage = slices.DeleteFunc(v.damage, func(d image.Rectangle) bool { return d.In(r) })
 	v.damage = append(v.damage, r)
 
-	// Fold a long list into its bounding box.
-	if len(v.damage) > maxDamage {
-		var u image.Rectangle
-		for _, d := range v.damage {
-			u = u.Union(d)
-		}
-		v.damage = append(v.damage[:0], u)
+	// Shorten a long list by merging the closest two areas, which keeps a
+	// moving window's thin edges thin rather than drawing all of it.
+	for len(v.damage) > maxDamage {
+		i, j := closest(v.damage)
+		u := v.damage[i].Union(v.damage[j])
+		v.damage = slices.DeleteFunc(v.damage, func(d image.Rectangle) bool { return d.In(u) })
+		v.damage = append(v.damage, u)
 	}
+}
+
+// closest returns the indexes of the two areas whose bounding box adds the
+// least area beyond theirs.
+func closest(areas []image.Rectangle) (int, int) {
+	bi, bj, best := 0, 1, -1
+	for i, a := range areas {
+		for j := i + 1; j < len(areas); j++ {
+			if w := waste(a, areas[j]); best < 0 || w < best {
+				bi, bj, best = i, j, w
+			}
+		}
+	}
+	return bi, bj
+}
+
+// waste returns the area of the bounding box of a and b outside both.
+func waste(a, b image.Rectangle) int {
+	return areaOf(a.Union(b)) - areaOf(a) - areaOf(b) + areaOf(a.Intersect(b))
+}
+
+// areaOf returns the area of r.
+func areaOf(r image.Rectangle) int {
+	return r.Dx() * r.Dy()
 }
 
 // copy moves the area src of the viewer's copy by by. The caller marks the

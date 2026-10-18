@@ -49,6 +49,25 @@ func (r *region) contains(pt image.Point) bool {
 	return false
 }
 
+// covers reports whether the region holds every point of rect. Like
+// contains, it lets the newest rectangle over each point decide.
+func (r *region) covers(rect image.Rectangle) bool {
+	left := []image.Rectangle{rect}
+	for _, v := range slices.Backward(r.ops) {
+		var next []image.Rectangle
+		for _, l := range left {
+			if !v.add && l.Overlaps(v.rect) {
+				return false
+			}
+			next = append(next, subtract(l, v.rect)...)
+		}
+		if left = next; len(left) == 0 {
+			return true
+		}
+	}
+	return rect.Empty()
+}
+
 // clone returns a copy of the region's rectangles that later requests do
 // not change.
 func (r *region) clone() *region {

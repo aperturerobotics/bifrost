@@ -38,14 +38,15 @@ const (
 
 // wl_surface.
 const (
-	surfaceDestroy        = 0
-	surfaceAttach         = 1
-	surfaceDamage         = 2
-	surfaceFrame          = 3
-	surfaceSetInputRegion = 5
-	surfaceCommit         = 6
-	surfaceSetBufferScale = 8
-	surfaceDamageBuffer   = 9
+	surfaceDestroy         = 0
+	surfaceAttach          = 1
+	surfaceDamage          = 2
+	surfaceFrame           = 3
+	surfaceSetOpaqueRegion = 4
+	surfaceSetInputRegion  = 5
+	surfaceCommit          = 6
+	surfaceSetBufferScale  = 8
+	surfaceDamageBuffer    = 9
 )
 
 // wl_surface events and errors.
