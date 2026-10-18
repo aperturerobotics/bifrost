@@ -471,14 +471,18 @@ func captureFileIdentities(sourcePath string, inputManifest *bldr_manifest_build
 	return nil
 }
 
-// resolveStartupInputPath resolves manifest file paths under the source tree.
-// Some bundlers emit relative paths that unnecessarily escape the source root
-// before re-entering it (for example "../../node_modules/..."). For startup
-// validation we resolve those back to the matching file under sourcePath.
+// resolveStartupInputPath resolves manifest file paths relative to the source root.
+// Bundler paths that escape and re-enter the root are rebased when the original
+// path does not exist, while local replacement inputs keep their external path.
 func resolveStartupInputPath(sourcePath, inputPath string) string {
 	// Resolve ordinary paths directly beneath the source root.
 	cleanPath := filepath.Clean(inputPath)
 	filePath := filepath.Join(sourcePath, cleanPath)
+	if strings.HasPrefix(cleanPath, "..") {
+		if fileInfo, err := os.Stat(filePath); err == nil && !fileInfo.IsDir() {
+			return filePath
+		}
+	}
 	if !strings.HasPrefix(cleanPath, "..") {
 		return filePath
 	}

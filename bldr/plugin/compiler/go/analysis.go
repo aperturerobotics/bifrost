@@ -40,6 +40,10 @@ type Analysis struct {
 	baseModFile *modfile.File
 	// module contains modules supplying discovered factories.
 	module map[string]*packages.Module
+	// localReplaceDirs are the roots of imported local module replacements.
+	localReplaceDirs []string
+	// localReplaceSourceFiles are the compiled, embedded, and other source files from local replacements.
+	localReplaceSourceFiles []string
 	// workDir is the source module directory.
 	workDir string
 	// controllerFactories indexes factory packages by generated import alias.
@@ -174,6 +178,12 @@ func AnalyzePackages(
 
 	// Fail the analysis when any package reports a load error.
 	if err := packageLoadFailureError(metadataPackages, packagesToLoad, buildTags, goos, goarch, workDir); err != nil {
+		return nil, err
+	}
+
+	// Record source files from imported local replacements for cache invalidation.
+	res.localReplaceDirs, res.localReplaceSourceFiles, err = collectLocalReplaceInputs(metadataPackages, baseModFile, workDir)
+	if err != nil {
 		return nil, err
 	}
 
@@ -319,6 +329,85 @@ func AnalyzePackages(
 	}
 
 	return res, nil
+}
+
+// collectLocalReplaceInputs records the source files from imported local module replacements.
+func collectLocalReplaceInputs(
+	metadataPackages []*packages.Package,
+	baseModFile *modfile.File,
+	workDir string,
+) ([]string, []string, error) {
+	// Deduplicate replacement roots and their source files across package metadata.
+	replaceDirs := make(map[string]struct{})
+	sourceFiles := make(map[string]struct{})
+
+	// Retain all local replacement roots, including modules used for GoScript overrides.
+	for _, replacement := range baseModFile.Replace {
+		if !modfile.IsDirectoryPath(replacement.New.Path) {
+			continue
+		}
+		replaceDir := replacement.New.Path
+		if !filepath.IsAbs(replaceDir) {
+			replaceDir = filepath.Join(workDir, replaceDir)
+		}
+		replaceDir, err := filepath.Abs(replaceDir)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "resolve local module replacement")
+		}
+		replaceDirs[replaceDir] = struct{}{}
+		sourceFiles[filepath.Join(replaceDir, "go.mod")] = struct{}{}
+	}
+
+	// Retain compiled files, embedded files, other source files, and module manifests.
+	for _, pkg := range metadataPackages {
+		if pkg.Module == nil || pkg.Module.Replace == nil {
+			continue
+		}
+		replacement := pkg.Module.Replace
+		if replacement.Version != "" || replacement.Dir == "" {
+			continue
+		}
+		replaceDir := replacement.Dir
+		if !filepath.IsAbs(replaceDir) {
+			replaceDir = filepath.Join(workDir, replaceDir)
+		}
+		replaceDir, err := filepath.Abs(replaceDir)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "resolve local module replacement")
+		}
+		replaceDirs[replaceDir] = struct{}{}
+
+		paths := slices.Concat(pkg.CompiledGoFiles, pkg.EmbedFiles, pkg.OtherFiles)
+		if replacement.GoMod != "" {
+			paths = append(paths, replacement.GoMod)
+		}
+		for _, sourcePath := range paths {
+			if sourcePath == "" {
+				continue
+			}
+			if !filepath.IsAbs(sourcePath) {
+				sourcePath = filepath.Join(workDir, sourcePath)
+			}
+			sourcePath, err = filepath.Abs(sourcePath)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "resolve local module source")
+			}
+			sourceFiles[sourcePath] = struct{}{}
+		}
+	}
+
+	// Sort both lists so the input manifest is deterministic.
+	localReplaceDirs := make([]string, 0, len(replaceDirs))
+	for replaceDir := range replaceDirs {
+		localReplaceDirs = append(localReplaceDirs, replaceDir)
+	}
+	slices.Sort(localReplaceDirs)
+	localReplaceSourceFiles := make([]string, 0, len(sourceFiles))
+	for sourcePath := range sourceFiles {
+		localReplaceSourceFiles = append(localReplaceSourceFiles, sourcePath)
+	}
+	slices.Sort(localReplaceSourceFiles)
+	return localReplaceDirs, localReplaceSourceFiles, nil
 }
 
 // packageLoadFailureError adds target and pattern context to package diagnostics.

@@ -279,7 +279,7 @@ func TestAppendInputManifestFilesKeepsGoInputsAppRootRelative(t *testing.T) {
 
 	// Append the candidate Go files to the input manifest.
 	inputManifest := &bldr_manifest_builder.InputManifest{}
-	if err := appendInputManifestFiles(inputManifest, sourcePath, InputFileKind_InputFileKind_GO, paths); err != nil {
+	if err := appendInputManifestFiles(inputManifest, sourcePath, InputFileKind_InputFileKind_GO, paths, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -321,6 +321,7 @@ func TestAppendInputManifestFilesRejectsExternalAssetInputs(t *testing.T) {
 		sourcePath,
 		InputFileKind_InputFileKind_ASSET,
 		[]string{externalAssetPath},
+		false,
 	)
 	if err == nil {
 		t.Fatal("expected external asset input to fail")

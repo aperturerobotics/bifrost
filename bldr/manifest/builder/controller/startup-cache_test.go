@@ -652,6 +652,61 @@ func TestControllerStartupCacheHitSkipsBuild(t *testing.T) {
 	}
 }
 
+// TestControllerStartupCacheTracksLocalReplaceSources invalidates a hit when a local replacement changes.
+func TestControllerStartupCacheTracksLocalReplaceSources(t *testing.T) {
+	// Create a plugin source root and a sibling local replacement module.
+	root := t.TempDir()
+	sourcePath := filepath.Join(root, "plugin")
+	replacementPath := filepath.Join(root, "replacement")
+	if err := os.MkdirAll(sourcePath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(replacementPath, "gs", "encoding", "binary"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write the module files and the source inputs recorded by the compiler.
+	writeSettledFile(t, filepath.Join(sourcePath, "main.go"), "package main\n")
+	writeSettledFile(t, filepath.Join(sourcePath, "go.mod"), "module example.com/plugin\n\ngo 1.27.0\n\nreplace example.com/replaced => ../replacement\n")
+	writeSettledFile(t, filepath.Join(replacementPath, "go.mod"), "module example.com/replaced\n\ngo 1.27.0\n")
+
+	// Write the replacement package and its GoScript override.
+	replacementSource := filepath.Join(replacementPath, "dep.go")
+	overrideSource := filepath.Join(replacementPath, "gs", "encoding", "binary", "override.go")
+	writeSettledFile(t, replacementSource, "package dep\n\nconst Value = 1\n")
+	writeSettledFile(t, overrideSource, "package binary\n\nconst Value = 1\n")
+
+	// List the source files recorded by the cached build.
+	inputPaths := []string{
+		"go.mod",
+		"../replacement/go.mod",
+		"../replacement/dep.go",
+		"../replacement/gs/encoding/binary/override.go",
+	}
+
+	// Use one test builder configuration for all startup attempts.
+	controllerConfig := newTestBuilderControllerProto(t)
+
+	// Unchanged replacement files permit the startup cache hit.
+	cached := buildStartupBuilderResult(t, sourcePath, controllerConfig, inputPaths...)
+	if _, buildCalls := runStartupExecuteTest(t, sourcePath, cached, true); buildCalls != 0 {
+		t.Fatalf("unchanged replacement build calls = %d, want 0", buildCalls)
+	}
+
+	// Editing only the replacement module source forces a rebuild.
+	writeSettledFile(t, replacementSource, "package dep\n\nconst Value = 2\n")
+	if _, buildCalls := runStartupExecuteTest(t, sourcePath, cached, true); buildCalls != 1 {
+		t.Fatalf("replacement source edit build calls = %d, want 1", buildCalls)
+	}
+
+	// Editing only its GoScript override also forces a rebuild.
+	cached = buildStartupBuilderResult(t, sourcePath, controllerConfig, inputPaths...)
+	writeSettledFile(t, overrideSource, "package binary\n\nconst Value = 2\n")
+	if _, buildCalls := runStartupExecuteTest(t, sourcePath, cached, true); buildCalls != 1 {
+		t.Fatalf("GoScript override edit build calls = %d, want 1", buildCalls)
+	}
+}
+
 func TestControllerPersistsAndReusesSubManifestResults(t *testing.T) {
 	// Write the parent and child source files.
 	tmpDir := t.TempDir()
@@ -1161,6 +1216,7 @@ func buildStartupBuilderResult(
 	t *testing.T,
 	sourcePath string,
 	controllerConfig *configset_proto.ControllerConfig,
+	additionalInputPaths ...string,
 ) *bldr_manifest_builder.BuilderResult {
 	// Mark the failure path on the test.
 	t.Helper()
@@ -1170,7 +1226,7 @@ func buildStartupBuilderResult(
 	builderResult := bldr_manifest_builder.NewBuilderResult(
 		bldr_manifest.NewManifest(meta, "dist/demo"),
 		&bucket.ObjectRef{BucketId: "startup-bucket"},
-		bldr_manifest_builder.NewInputManifest([]string{"main.go"}, nil),
+		bldr_manifest_builder.NewInputManifest(append([]string{"main.go"}, additionalInputPaths...), nil),
 	)
 	if _, err := enrichBuilderResultForStartupReuse(
 		&bldr_manifest_builder.BuilderConfig{

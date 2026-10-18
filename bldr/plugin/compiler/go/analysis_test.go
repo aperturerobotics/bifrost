@@ -30,6 +30,7 @@ go 1.26.2
 require example.com/dep v0.0.0
 
 replace example.com/dep => ./dep
+replace github.com/s4wave/goscript => ./goscript
 `)
 	writeFile(t, workDir, "dep/go.mod", `module example.com/dep
 
@@ -38,6 +39,18 @@ go 1.26.2
 	writeFile(t, workDir, "dep/dep.go", `package dep
 
 const Value = "dep"
+`)
+	writeFile(t, workDir, "dep/gs/encoding/binary/override.go", `package binary
+
+const Value = 1
+`)
+	writeFile(t, workDir, "goscript/go.mod", `module github.com/s4wave/goscript
+
+go 1.26.2
+`)
+	writeFile(t, workDir, "goscript/gs/runtime/override.go", `package runtime
+
+const Value = 1
 `)
 	writeFile(t, workDir, "bldr/web/bundler/output.go", `package bundler
 
@@ -64,6 +77,32 @@ var Value = dep.Value
 	)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	// Confirm source and module metadata are retained from the replacement.
+	if !slices.Contains(an.localReplaceSourceFiles, filepath.Join(workDir, "dep", "dep.go")) {
+		t.Fatal("expected source files from the local replacement")
+	}
+	if !slices.Contains(an.localReplaceSourceFiles, filepath.Join(workDir, "dep", "go.mod")) {
+		t.Fatal("expected the local replacement go.mod input")
+	}
+
+	// Include manifest inputs for replacements without imported packages.
+	if !slices.Contains(an.localReplaceSourceFiles, filepath.Join(workDir, "goscript", "go.mod")) {
+		t.Fatal("expected go.mod from an unused local replacement")
+	}
+
+	// Confirm GoScript override files are retained from the replacement.
+	overrideFiles, err := localReplaceGoScriptOverrideFiles(an.localReplaceDirs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantOverrides := []string{
+		filepath.Join(workDir, "dep", "gs", "encoding", "binary", "override.go"),
+		filepath.Join(workDir, "goscript", "gs", "runtime", "override.go"),
+	}
+	if !slices.Equal(overrideFiles, wantOverrides) {
+		t.Fatalf("local replacement overrides = %v, want %v", overrideFiles, wantOverrides)
 	}
 
 	// Untagged declarations must load no types and no vendor dir must exist.

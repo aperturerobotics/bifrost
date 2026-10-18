@@ -17,7 +17,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/configset"
 	configset_proto "github.com/aperturerobotics/controllerbus/controller/configset/proto"
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
-	"github.com/aperturerobotics/util/enabled"
 	"github.com/aperturerobotics/util/fsutil"
 	"github.com/pkg/errors"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
@@ -478,62 +477,6 @@ func goAnalysisEnv(buildPlatform bldr_platform.Platform) (string, string, error)
 		}
 	}
 	return goos, goarch, nil
-}
-
-// BuildPluginOpts is the configuration for one invocation of BuildPlugin.
-type BuildPluginOpts struct {
-	// JsMinification enables minification of bundled JavaScript output.
-	JsMinification bool
-	// JsSourcemaps enables source maps for bundled JavaScript output.
-	JsSourcemaps bool
-	// GoScriptCodeSplitting enables code splitting for GoScript builds.
-	GoScriptCodeSplitting bool
-
-	// OutBinName is the file name of the compiled plugin binary.
-	OutBinName string
-	// WorkingPath is the working directory used for the build.
-	WorkingPath string
-	// SourcePath is the path to the plugin source directory.
-	SourcePath string
-	// DistSourcePath is the source directory of the dist output to bundle.
-	DistSourcePath string
-	// OutDistPath is the output directory for the dist output.
-	OutDistPath string
-	// OutAssetsPath is the output directory for the assets output.
-	OutAssetsPath string
-
-	// GoPkgs is the list of go packages included in the plugin.
-	GoPkgs []string
-	// WebPkgs is the list of web package references included in the plugin.
-	WebPkgs []*bldr_web_bundler.WebPkgRefConfig
-	// WebPluginID is optional; if set, automatically adds controllers to configure the web plugin.
-	WebPluginID string
-	// DelveAddr optionally attaches a delve debugger listening on this address.
-	DelveAddr string
-	// LinkerFlags are extra linker flags merged into the build's -ldflags.
-	LinkerFlags []string
-
-	// DisableRpcFetch disables rpc fetch controllers in the plugin.
-	DisableRpcFetch bool
-
-	// ConfigSet is an additional config set embedded into the plugin.
-	ConfigSet map[string]*configset_proto.ControllerConfig
-	// HostConfigSet is an additional config set embedded into the plugin host.
-	HostConfigSet map[string]*configset_proto.ControllerConfig
-
-	// EnableCgoOpt enables cgo support on default false.
-	EnableCgoOpt enabled.Enabled
-	// GoCompilerOpt selects the go compiler used for the build.
-	GoCompilerOpt GoCompiler
-	// EnableImportedFactoryDiscoveryOpt enables imported factory discovery on default false.
-	EnableImportedFactoryDiscoveryOpt enabled.Enabled
-	// EnableCompressionOpt enables compression of the plugin binary on default depending on release mode.
-	EnableCompressionOpt enabled.Enabled
-
-	// BaseEsbuildFlags are extra flags passed to esbuild.
-	BaseEsbuildFlags []string
-	// DevInfoFile is the path of the dev info file to generate, if set.
-	DevInfoFile string
 }
 
 // BuildPlugin compiles the plugin once, committing it to the target world.
@@ -1275,6 +1218,16 @@ func (c *Controller) BuildPlugin(
 		sourcePath,
 		InputFileKind_InputFileKind_GO,
 		append(goSrcFiles, moduleSrcFiles...),
+		false,
+	); err != nil {
+		return nil, err
+	}
+	if err := appendInputManifestFiles(
+		inputManifest,
+		sourcePath,
+		InputFileKind_InputFileKind_GO,
+		an.localReplaceSourceFiles,
+		true,
 	); err != nil {
 		return nil, err
 	}
@@ -1283,6 +1236,7 @@ func (c *Controller) BuildPlugin(
 		sourcePath,
 		InputFileKind_InputFileKind_ASSET,
 		assetSrcFiles,
+		false,
 	); err != nil {
 		return nil, err
 	}
@@ -1298,6 +1252,20 @@ func (c *Controller) BuildPlugin(
 			sourcePath,
 			InputFileKind_InputFileKind_GOSCRIPT_OVERRIDE,
 			goScriptOverrideFiles,
+			false,
+		); err != nil {
+			return nil, err
+		}
+		replacedGoScriptOverrideFiles, err := localReplaceGoScriptOverrideFiles(an.localReplaceDirs)
+		if err != nil {
+			return nil, err
+		}
+		if err := appendInputManifestFiles(
+			inputManifest,
+			sourcePath,
+			InputFileKind_InputFileKind_GOSCRIPT_OVERRIDE,
+			replacedGoScriptOverrideFiles,
+			true,
 		); err != nil {
 			return nil, err
 		}
@@ -1339,16 +1307,17 @@ func newGoScriptBuildFlags(buildPlatform bldr_platform.Platform, buildType bldr_
 	return []string{"-tags=" + strings.Join(buildTags, ",")}
 }
 
-// appendInputManifestFiles records source-relative file paths of the given kind
-// in the input manifest. Go source files outside the source root are dropped.
+// appendInputManifestFiles records paths of the given kind in the input manifest.
+// includeExternalSources permits local replacement paths outside the source root.
 func appendInputManifestFiles(
 	inputManifest *bldr_manifest_builder.InputManifest,
 	sourcePath string,
 	kind InputFileKind,
 	srcPaths []string,
+	includeExternalSources bool,
 ) error {
-	// Drop Go source files outside the source root.
-	if kind == InputFileKind_InputFileKind_GO {
+	// Keep local Go inputs within the project unless they come from a replacement.
+	if kind == InputFileKind_InputFileKind_GO && !includeExternalSources {
 		srcPaths = filterPathsUnderBase(sourcePath, srcPaths)
 	}
 
@@ -1359,8 +1328,16 @@ func appendInputManifestFiles(
 		return err
 	}
 
-	// Convert the paths to be relative to the source root.
-	if err := fsutil.ConvertPathsToRelative(sourcePath, srcPaths); err != nil {
+	// Convert each path to source-root-relative form.
+	if includeExternalSources {
+		for i, srcPath := range srcPaths {
+			relPath, err := filepath.Rel(sourcePath, srcPath)
+			if err != nil {
+				return err
+			}
+			srcPaths[i] = filepath.ToSlash(relPath)
+		}
+	} else if err := fsutil.ConvertPathsToRelative(sourcePath, srcPaths); err != nil {
 		return err
 	}
 
@@ -1883,6 +1860,38 @@ func existingSourceDirs(sourcePath string, relPaths ...string) ([]string, []stri
 		existingRel = append(existingRel, relPath)
 	}
 	return existingAbs, existingRel
+}
+
+// localReplaceGoScriptOverrideFiles returns override sources under local replacement gs directories.
+func localReplaceGoScriptOverrideFiles(replaceDirs []string) ([]string, error) {
+	// Walk each existing replacement gs directory.
+	var files []string
+	for _, replaceDir := range replaceDirs {
+		overrideDir := filepath.Join(replaceDir, "gs")
+		fileInfo, err := os.Stat(overrideDir)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return nil, errors.Wrapf(err, "stat GoScript overrides at %s", overrideDir)
+		}
+		if !fileInfo.IsDir() {
+			continue
+		}
+
+		// Record every override file using its replacement module's root.
+		relPaths, err := sourceFilesUnderDirs(replaceDir, []string{"gs"})
+		if err != nil {
+			return nil, errors.Wrapf(err, "list GoScript overrides at %s", overrideDir)
+		}
+		for _, relPath := range relPaths {
+			files = append(files, filepath.Join(replaceDir, filepath.FromSlash(relPath)))
+		}
+	}
+
+	// Keep the override source order deterministic and unique.
+	slices.Sort(files)
+	return slices.Compact(files), nil
 }
 
 // sourceFilesUnderDirs walks the given source-relative directories and returns
