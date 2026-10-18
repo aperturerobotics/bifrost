@@ -25,7 +25,7 @@
     },
     {
       "name": "@aptre/protobuf-es-lite",
-      "version": "1.1.5",
+      "version": "1.2.1",
       "spdx": "Apache-2.0",
       "source": "js",
       "repo": "https://github.com/aperturerobotics/protobuf-es-lite",
@@ -806,7 +806,7 @@
     },
     {
       "name": "github.com/aperturerobotics/cayley",
-      "version": "v0.15.1-0.20261012101428-93d30ba80a9a",
+      "version": "v0.15.1-0.20261018071117-9956219e1674",
       "spdx": "Apache-2.0",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/cayley",
@@ -822,7 +822,7 @@
     },
     {
       "name": "github.com/aperturerobotics/common",
-      "version": "v0.35.5-0.20261016222212-4b09e721d4bb",
+      "version": "v0.36.0",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/common",
@@ -830,7 +830,7 @@
     },
     {
       "name": "github.com/aperturerobotics/controllerbus",
-      "version": "v0.53.6-0.20261007184646-7a3ab3aea145",
+      "version": "v0.53.6-0.20261018071028-dd2495c0aa2c",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/controllerbus",
@@ -934,7 +934,7 @@
     },
     {
       "name": "github.com/aperturerobotics/protobuf-go-lite",
-      "version": "v0.19.1-0.20261016221735-380ab5fa526b",
+      "version": "v0.19.1-0.20261018054529-f60c4d2691ea",
       "spdx": "BSD-3-Clause",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/protobuf-go-lite",
@@ -942,7 +942,7 @@
     },
     {
       "name": "github.com/aperturerobotics/starpc",
-      "version": "v0.52.3-0.20261006081950-e03641ffbcc3",
+      "version": "v0.52.3",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/starpc",
@@ -950,7 +950,7 @@
     },
     {
       "name": "github.com/aperturerobotics/util",
-      "version": "v1.34.10-0.20261017090517-f7b2a392b87e",
+      "version": "v1.34.10-0.20261018070843-31e7f83b07e3",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/util",
@@ -2039,7 +2039,7 @@
     },
     {
       "name": "starpc",
-      "version": "0.52.2",
+      "version": "0.52.3",
       "spdx": "MIT",
       "source": "js",
       "copyrightNotice": "Copyright (c) 2022-2025 Aperture Robotics, LLC.\nCopyright (c) 2022-2025 Christian Stewart <christian@cjs.zip>"
