@@ -1,8 +1,10 @@
 package sobject
 
 import (
+	"errors"
 	"slices"
 	"testing"
+	"time"
 )
 
 // TestSyncPeerAdmissionPreservesMountHealth keeps source availability separate
@@ -70,5 +72,39 @@ func TestWithoutSyncDenialsKeepsRecovery(t *testing.T) {
 	}
 	if unchanged := cleared.WithoutSyncDenials(); unchanged != cleared {
 		t.Fatal("clearing no denials produced another watch update")
+	}
+}
+
+// TestSyncPeerConnectionRecordsGap keeps peers sorted, keeps the snapshot while
+// a peer's state repeats, and records when a stream ended and why.
+func TestSyncPeerConnectionRecordsGap(t *testing.T) {
+	// Two peers connect out of order.
+	start := time.Unix(1000, 0)
+	health := NewSharedObjectReadyHealth(SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT).
+		WithSyncPeerConnection("peer-b", true, nil, start).
+		WithSyncPeerConnection("peer-a", true, nil, start)
+	peers := health.GetSyncPeers()
+	if len(peers) != 2 || peers[0].GetPeerId() != "peer-a" || peers[1].GetPeerId() != "peer-b" {
+		t.Fatalf("peers = %v", peers)
+	}
+	if unchanged := health.WithSyncPeerConnection("peer-a", true, nil, start.Add(time.Minute)); unchanged != health {
+		t.Fatal("a repeated connection produced another watch update")
+	}
+
+	// One stream ends with an error; the other peer and the earlier snapshot stay.
+	ended := start.Add(time.Hour)
+	cut := health.WithSyncPeerConnection("peer-b", false, errors.New("link cut"), ended)
+	got := cut.GetSyncPeers()[1]
+	if got.GetConnected() || got.GetError() != "link cut" || !got.GetSince().AsTime().Equal(ended) {
+		t.Fatalf("ended peer = %v", got)
+	}
+	if !cut.GetSyncPeers()[0].GetConnected() || !health.GetSyncPeers()[1].GetConnected() {
+		t.Fatal("ending one stream changed another peer or the earlier snapshot")
+	}
+
+	// Reconnecting clears the error.
+	resumed := cut.WithSyncPeerConnection("peer-b", true, nil, ended.Add(time.Second))
+	if got := resumed.GetSyncPeers()[1]; !got.GetConnected() || got.GetError() != "" {
+		t.Fatalf("resumed peer = %v", got)
 	}
 }

@@ -64,6 +64,8 @@ type SOSync struct {
 	peerAdmission func(peer.ID, bool)
 	// peerRecovery reports trusted recovery requirements independently of admission.
 	peerRecovery func(peer.ID, bool)
+	// peerConnection reports each authenticated stream's start and end.
+	peerConnection func(peer.ID, bool, error)
 	// failures remembers the last logged stream failure of each peer.
 	failures syncFailures
 	// digest memoizes the digest of the latest watched state for every stream.
@@ -126,6 +128,14 @@ func NewSOSync(
 // streams.
 func (s *SOSync) SetPeerRecoveryObserver(observer func(peer.ID, bool)) {
 	s.peerRecovery = observer
+}
+
+// SetPeerConnectionObserver configures stream observation before Execute
+// starts. The observer sees connected once a participant authenticates, then
+// not connected with the error that ended the stream. It must return promptly;
+// calls can come from concurrent peer streams.
+func (s *SOSync) SetPeerConnectionObserver(observer func(remoteID peer.ID, connected bool, err error)) {
+	s.peerConnection = observer
 }
 
 // Execute runs the SO sync, emitting a SolicitProtocol directive and
@@ -413,6 +423,12 @@ func (s *SOSync) runStream(
 	}()
 	if err != nil {
 		return err
+	}
+
+	// Report the authenticated stream until it ends.
+	if s.peerConnection != nil {
+		s.peerConnection(remoteID, true, nil)
+		defer func() { s.peerConnection(remoteID, false, rerr) }()
 	}
 	if err := strm.SetDeadline(time.Time{}); err != nil {
 		return err

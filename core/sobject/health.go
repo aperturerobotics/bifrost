@@ -1,6 +1,12 @@
 package sobject
 
-import "slices"
+import (
+	"slices"
+	"strings"
+	"time"
+
+	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
+)
 
 // AuthoritativeSyncDenied reports whether a retained owner has denied this
 // object identity. Denial from a non-owner cannot revoke another participant.
@@ -65,6 +71,37 @@ func (h *SharedObjectHealth) WithSyncPeerRecovery(peerID string, required bool) 
 	}
 	next.SyncRecoveryPeerIds = append(next.SyncRecoveryPeerIds, peerID)
 	slices.Sort(next.SyncRecoveryPeerIds)
+	return next
+}
+
+// WithSyncPeerConnection returns a snapshot recording that the sync stream with
+// an authenticated participant started, or ended with err, at now. An
+// unchanged connection and error keep the snapshot and its time.
+func (h *SharedObjectHealth) WithSyncPeerConnection(peerID string, connected bool, err error, now time.Time) *SharedObjectHealth {
+	// Keep the snapshot when the peer's state is unchanged.
+	var errText string
+	if err != nil {
+		errText = err.Error()
+	}
+	peers := h.GetSyncPeers()
+	i, found := slices.BinarySearchFunc(peers, peerID, func(p *SOSyncPeer, id string) int {
+		return strings.Compare(p.GetPeerId(), id)
+	})
+	if found && peers[i].GetConnected() == connected && peers[i].GetError() == errText {
+		return h
+	}
+
+	// Copy the snapshot with the peer's new state.
+	next := h.CloneVT()
+	if next == nil {
+		next = NewSharedObjectLoadingHealth(SharedObjectHealthLayer_SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT)
+	}
+	syncPeer := &SOSyncPeer{PeerId: peerID, Connected: connected, Since: timestamppb.New(now), Error: errText}
+	if found {
+		next.SyncPeers[i] = syncPeer
+		return next
+	}
+	next.SyncPeers = slices.Insert(next.SyncPeers, i, syncPeer)
 	return next
 }
 
