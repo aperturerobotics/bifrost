@@ -39,6 +39,40 @@ describe('spaceAddTabRequest', () => {
     )
   })
 
+  it('opens a UnixFS file at its UnixFS route with the file path', () => {
+    const request = createObjectLayoutAddTabRequest({
+      id: 'f',
+      name: 'a.txt',
+      objectInfo: {
+        info: {
+          case: 'unixfsObjectInfo',
+          value: { unixfsId: 'files/drive', path: '/docs/a.txt' },
+        },
+      },
+    })
+    const out = spaceAddTabRequest(request, parentPaths)
+    expect(tabPath(out.tab?.data)).toBe(
+      '/u/1/so/space-1/-/files/drive/-/docs/a.txt',
+    )
+    expect(out.tab?.name).toBe('a.txt')
+  })
+
+  it('opens the root of a UnixFS at its route', () => {
+    const request = createObjectLayoutAddTabRequest({
+      id: 'r',
+      name: 'Drive',
+      objectInfo: {
+        info: {
+          case: 'unixfsObjectInfo',
+          value: { unixfsId: 'files/drive', path: '/' },
+        },
+      },
+    })
+    expect(tabPath(spaceAddTabRequest(request, parentPaths).tab?.data)).toBe(
+      '/u/1/so/space-1/-/files/drive',
+    )
+  })
+
   it('passes a request without an object through', () => {
     const request = {
       tab: {
