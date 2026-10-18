@@ -264,9 +264,15 @@ func TestHostCollectsSpacePluginVolume(t *testing.T) {
 	hostVol := tb.Volume
 	hostGraph := hostVol.GetRefGraph()
 
-	// The host roots a block of its own.
+	// The host roots a block of its own. A raw volume write records no child
+	// list, and a collection sweeps nothing past a block of unknown references,
+	// so each block is tracked as a bucket write tracks it: staged as
+	// unreferenced, which records its list.
 	hostRef, _, err := hostVol.PutBlock(ctx, []byte("host"), &block.PutOpts{})
 	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if err := hostGraph.AddRef(ctx, block_gc.NodeUnreferenced, block_gc.BlockIRI(hostRef)); err != nil {
 		t.Fatal(err.Error())
 	}
 	if err := hostGraph.AddRef(ctx, block_gc.NodeGCRoot, block_gc.BlockIRI(hostRef)); err != nil {
@@ -284,6 +290,9 @@ func TestHostCollectsSpacePluginVolume(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 		graph := view.GetRefGraph()
+		if err := graph.AddRef(ctx, block_gc.NodeUnreferenced, block_gc.BlockIRI(ref)); err != nil {
+			t.Fatal(err.Error())
+		}
 		if err := graph.AddObjectRoot(ctx, "head", ref); err != nil {
 			t.Fatal(err.Error())
 		}
