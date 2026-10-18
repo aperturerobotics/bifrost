@@ -42,7 +42,7 @@ require (
 	github.com/aperturerobotics/json-iterator-lite v1.1.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261018054529-f60c4d2691ea // master
 	github.com/aperturerobotics/starpc v0.52.4-0.20261018110213-574a40428279 // master
-	github.com/aperturerobotics/util v1.34.10-0.20261018070843-31e7f83b07e3 // master
+	github.com/aperturerobotics/util v1.34.10-0.20261018211851-3e8e694574ad // master
 	github.com/cloudflare/circl v1.6.5
 	github.com/creack/pty v1.1.24
 	github.com/dgraph-io/ristretto/v2 v2.4.2
@@ -77,7 +77,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quic-go/quic-go v0.63.0
 	github.com/restic/chunker v0.5.0
-	github.com/s4wave/goscript v0.4.7-0.20261018031538-d01b13008e80
+	github.com/s4wave/goscript v0.4.7-0.20261018212935-b14a8f6f3ee2
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0
