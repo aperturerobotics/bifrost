@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	manifest "github.com/s4wave/spacewave/bldr/manifest"
 	"github.com/s4wave/spacewave/db/world"
+	world_types "github.com/s4wave/spacewave/db/world/types"
 	"github.com/s4wave/spacewave/net/peer"
 	"github.com/sirupsen/logrus"
 )
@@ -42,8 +43,12 @@ func ExStoreManifestOp(
 // only, so a store of an already stored manifest needs no write transaction.
 func (o *StoreManifestOp) ChangesWorld(ctx context.Context, ws world.WorldState) (bool, error) {
 	// Check the manifest object and its root ref.
-	if o.hasReleaseAuthorization() {
-		stored, err := checkManifestRefStored(ctx, ws, o.GetObjectKey(), o.GetManifestRef())
+	ref, err := o.resolveManifestRef(ctx, ws)
+	if err != nil {
+		return false, err
+	}
+	if ref.GetReleaseAuthorization() != nil {
+		stored, err := checkManifestRefStored(ctx, ws, o.GetObjectKey(), ref)
 		if err != nil || !stored {
 			return !stored, err
 		}
@@ -56,7 +61,7 @@ func (o *StoreManifestOp) ChangesWorld(ctx context.Context, ws world.WorldState)
 		if !objOk {
 			return true, nil
 		}
-		replace, err := manifestRootRefReplaces(ctx, ws, obj, o.GetManifestRef().GetManifestRef())
+		replace, err := manifestObjectReplaces(ctx, ws, o.GetObjectKey(), obj, ref.GetManifestRef())
 		if err != nil || replace {
 			return replace, err
 		}
@@ -108,11 +113,15 @@ func (o *StoreManifestOp) ApplyWorldOp(
 	sender peer.ID,
 ) (sysErr bool, err error) {
 	// Store the manifest object, or the authorized reference to it.
+	ref, err := o.resolveManifestRef(ctx, ws)
+	if err != nil {
+		return false, err
+	}
 	var changed bool
-	if o.hasReleaseAuthorization() {
-		changed, err = SetManifestRef(ctx, ws, o.GetObjectKey(), o.GetManifestRef())
+	if ref.GetReleaseAuthorization() != nil {
+		changed, err = SetManifestRef(ctx, ws, o.GetObjectKey(), ref)
 	} else {
-		_, changed, err = SetManifest(ctx, ws, sender, o.GetObjectKey(), o.GetManifestRef().GetManifestRef())
+		_, changed, err = SetManifest(ctx, ws, sender, o.GetObjectKey(), ref.GetManifestRef())
 	}
 	if err != nil {
 		return false, err
@@ -150,10 +159,39 @@ func (o *StoreManifestOp) ApplyWorldOp(
 	return false, nil
 }
 
-// hasReleaseAuthorization reports whether the op stores a release-authorized
-// ManifestRef.
-func (o *StoreManifestOp) hasReleaseAuthorization() bool {
-	return o.GetManifestRef().GetReleaseAuthorization() != nil
+// resolveManifestRef returns the ManifestRef the op stores at its object key.
+//
+// A release authorization signs the Manifest root, not the location of its
+// blocks. When the op carries none and the object already holds an authorized
+// ManifestRef of the same Manifest root, such as when a download relocates the
+// manifest into the World bucket, the stored authorization still applies and
+// the result keeps it. Otherwise the result is the op's ManifestRef.
+func (o *StoreManifestOp) resolveManifestRef(ctx context.Context, ws world.WorldState) (*manifest.ManifestRef, error) {
+	// An op that carries an authorization stores it as given.
+	ref := o.GetManifestRef()
+	if ref.GetReleaseAuthorization() != nil {
+		return ref, nil
+	}
+
+	// Only an existing ManifestRef object can hold an authorization to keep.
+	objKey := o.GetObjectKey()
+	objType, err := world_types.GetObjectType(ctx, ws, objKey)
+	if err != nil || objType != ManifestRefTypeID {
+		return ref, err
+	}
+	curr, _, err := readManifestRefObject(ctx, ws, objKey)
+	if err != nil {
+		return nil, err
+	}
+	if curr.GetReleaseAuthorization() == nil ||
+		!ManifestObjectRefsSameExecutable(curr.GetManifestRef(), ref.GetManifestRef()) {
+		return ref, nil
+	}
+
+	// Keep the stored authorization of the same manifest.
+	kept := ref.CloneVT()
+	kept.ReleaseAuthorization = curr.GetReleaseAuthorization().CloneVT()
+	return kept, nil
 }
 
 // _ is a type assertion

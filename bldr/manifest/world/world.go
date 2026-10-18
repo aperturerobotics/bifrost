@@ -362,15 +362,19 @@ func SetManifest(
 		return nil, false, err
 	}
 
-	// Update an existing object's root ref when it changes the manifest.
+	// Update an existing object when it changes the manifest or its type.
 	if objOk {
 		var replace bool
-		replace, err = manifestRootRefReplaces(ctx, ws, obj, rootRef)
+		replace, err = manifestObjectReplaces(ctx, ws, objKey, obj, rootRef)
 		if err != nil {
 			return nil, false, err
 		}
 		if replace {
 			_, err = obj.SetRootRef(ctx, rootRef)
+			if err == nil {
+				// The root is a Manifest, so the type must be too.
+				err = world_types.SetObjectType(ctx, ws, objKey, ManifestTypeID)
+			}
 			changed = err == nil
 		}
 	} else {
@@ -467,6 +471,24 @@ func lookupWorldBucketID(ctx context.Context, ws world.WorldState) (string, erro
 		return nil
 	})
 	return bucketID, err
+}
+
+// manifestObjectReplaces reports whether storing rootRef as a Manifest object
+// replaces the existing object obj at objKey. An object not typed as a Manifest
+// is replaced, so the stored type always matches the stored root.
+func manifestObjectReplaces(
+	ctx context.Context,
+	ws world.WorldState,
+	objKey string,
+	obj world.ObjectState,
+	rootRef *bucket.ObjectRef,
+) (bool, error) {
+	// A root of another type is replaced by the Manifest.
+	objType, err := world_types.GetObjectType(ctx, ws, objKey)
+	if err != nil || objType != ManifestTypeID {
+		return true, err
+	}
+	return manifestRootRefReplaces(ctx, ws, obj, rootRef)
 }
 
 // manifestRootRefReplaces reports whether storing rootRef replaces the root ref
