@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	cli_entrypoint "github.com/s4wave/spacewave/bldr/cli/entrypoint"
 	s4wave_git_core "github.com/s4wave/spacewave/core/git"
+	"github.com/s4wave/spacewave/core/sobject"
 	space_world "github.com/s4wave/spacewave/core/space/world"
 	space_world_ops "github.com/s4wave/spacewave/core/space/world/ops"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
@@ -304,7 +305,8 @@ func newSpaceInfoCommand(statePath *string, sessionIdx *uint) *cli.Command {
 				return formatOutput(data, c.String("output"))
 			default:
 				storage := readSpaceStorage(ctx, sess, spaceID)
-				printSpaceState(spaceID, state, storage, readSpaceBackfill(ctx, spaceSvc))
+				health := readSpaceHealth(ctx, sess, spaceID)
+				printSpaceState(spaceID, state, storage, readSpaceBackfill(ctx, spaceSvc), health)
 				return nil
 			}
 		},
@@ -841,8 +843,9 @@ func printSpaceState(
 	state *s4wave_space.SpaceState,
 	storage *s4wave_session.WatchSpaceStorageResponse,
 	backfill *s4wave_space.SpaceBackfillState,
+	health *sobject.SharedObjectHealth,
 ) {
-	// Write the Space state, storage, and plugin list.
+	// Write the Space state, storage, sync peers, and plugin list.
 	w := os.Stdout
 	stateStr := "loading"
 	if state.GetReady() {
@@ -858,7 +861,11 @@ func printSpaceState(
 	if backfill != nil {
 		fields = append(fields, [2]string{"Backfill", formatBackfill(backfill.GetBackfill())})
 	}
+	if health != nil {
+		fields = append(fields, [2]string{"Sync", formatSyncPeerCount(health.GetSyncPeers())})
+	}
 	writeFields(w, fields)
+	writeSyncPeers(w, health.GetSyncPeers())
 	if state.GetReady() {
 		if settings := state.GetSettings(); settings != nil {
 			plugins := settings.GetPluginIds()

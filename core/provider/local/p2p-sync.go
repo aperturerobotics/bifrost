@@ -3,6 +3,7 @@ package provider_local
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/loader"
@@ -1031,7 +1032,7 @@ func (a *ProviderAccount) startSOSync(
 		return err
 	}
 
-	// Report peer admission and recovery to the object's health.
+	// Report peer admission, recovery, and connections to the object's health.
 	soSync := sobject_sync.NewSOSync(
 		a.le,
 		childBus,
@@ -1049,6 +1050,11 @@ func (a *ProviderAccount) startSOSync(
 	soSync.SetPeerRecoveryObserver(func(remoteID peer.ID, required bool) {
 		localSO.tkr.healthCtr.SwapValue(func(health *sobject.SharedObjectHealth) *sobject.SharedObjectHealth {
 			return health.WithSyncPeerRecovery(remoteID.String(), required)
+		})
+	})
+	soSync.SetPeerConnectionObserver(func(remoteID peer.ID, connected bool, err error) {
+		localSO.tkr.healthCtr.SwapValue(func(health *sobject.SharedObjectHealth) *sobject.SharedObjectHealth {
+			return health.WithSyncPeerConnection(remoteID.String(), connected, err, time.Now())
 		})
 	})
 

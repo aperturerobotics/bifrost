@@ -8,8 +8,8 @@ import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { Signature } from '../../net/peer/peer.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
+import { Signature } from '../../net/peer/peer.pb.js'
 import { Config } from '../../db/block/transform/transform.pb.js'
 
 /**
@@ -742,6 +742,50 @@ export const SOCheckpointMismatch: MessageType<SOCheckpointMismatch> =
   })
 
 /**
+ * SOSyncPeer is this device's sync stream with one authenticated participant.
+ *
+ * @generated from message sobject.SOSyncPeer
+ */
+export interface SOSyncPeer {
+  /**
+   * PeerId is the participant's base58 peer ID.
+   *
+   * @generated from field: string peer_id = 1;
+   */
+  peerId?: string
+  /**
+   * Connected is true while an authenticated stream with the participant runs.
+   *
+   * @generated from field: bool connected = 2;
+   */
+  connected?: boolean
+  /**
+   * Since is when Connected last changed.
+   *
+   * @generated from field: google.protobuf.Timestamp since = 3;
+   */
+  since?: Date
+  /**
+   * Error is the failure that ended the latest stream. It is empty while
+   * connected and after a stream that ended without one.
+   *
+   * @generated from field: string error = 4;
+   */
+  error?: string
+}
+
+export const SOSyncPeer: MessageType<SOSyncPeer> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 'sobject.SOSyncPeer',
+    fields: [
+      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
+      { no: 2, name: 'connected', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 3, name: 'since', kind: 'message', T: () => Timestamp },
+      { no: 4, name: 'error', kind: 'scalar', T: ScalarType.STRING },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * SharedObjectHealth describes the current lifecycle and failure state of a SharedObject.
  * This payload is shared across local, spacewave, and CDN providers.
  *
@@ -824,6 +868,13 @@ export interface SharedObjectHealth {
    * @generated from field: uint32 unordered_count = 11;
    */
   unorderedCount?: number
+  /**
+   * SyncPeers lists this device's sync stream with each participant it has
+   * authenticated since the object mounted, sorted by peer ID.
+   *
+   * @generated from field: repeated sobject.SOSyncPeer sync_peers = 12;
+   */
+  syncPeers?: SOSyncPeer[]
 }
 
 export const SharedObjectHealth: MessageType<SharedObjectHealth> =
@@ -874,6 +925,13 @@ export const SharedObjectHealth: MessageType<SharedObjectHealth> =
         T: SOCheckpointMismatch,
       },
       { no: 11, name: 'unordered_count', kind: 'scalar', T: ScalarType.UINT32 },
+      {
+        no: 12,
+        name: 'sync_peers',
+        kind: 'message',
+        T: SOSyncPeer,
+        repeated: true,
+      },
     ] satisfies readonly PartialFieldInfo[],
   })
 

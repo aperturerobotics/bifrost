@@ -171,6 +171,26 @@ message SharedObjectHealth {
   // UnorderedCount is the number of operations this device holds that the
   // appointed sequencer has not placed yet. It is zero under Merge.
   uint32 unordered_count = 11;
+
+  // SyncPeers lists this device's sync stream with each participant it has
+  // authenticated since the object mounted, sorted by peer ID.
+  repeated SOSyncPeer sync_peers = 12;
+}
+
+// SOSyncPeer is this device's sync stream with one authenticated participant.
+message SOSyncPeer {
+  // PeerId is the participant's base58 peer ID.
+  string peer_id = 1;
+
+  // Connected is true while an authenticated stream with the participant runs.
+  bool connected = 2;
+
+  // Since is when Connected last changed.
+  .google.protobuf.Timestamp since = 3;
+
+  // Error is the failure that ended the latest stream. It is empty while
+  // connected and after a stream that ended without one.
+  string error = 4;
 }
 
 // SORejectedEdit is an operation of this device that replay no longer applies.

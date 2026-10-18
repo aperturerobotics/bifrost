@@ -701,6 +701,9 @@ type SharedObjectHealth struct {
 	// UnorderedCount is the number of operations this device holds that the
 	// appointed sequencer has not placed yet. It is zero under Merge.
 	UnorderedCount uint32 `protobuf:"varint,11,opt,name=unordered_count,json=unorderedCount,proto3" json:"unorderedCount,omitempty"`
+	// SyncPeers lists this device's sync stream with each participant it has
+	// authenticated since the object mounted, sorted by peer ID.
+	SyncPeers []*SOSyncPeer `protobuf:"bytes,12,rep,name=sync_peers,json=syncPeers,proto3" json:"syncPeers,omitempty"`
 }
 
 func (x *SharedObjectHealth) Reset() {
@@ -784,6 +787,61 @@ func (x *SharedObjectHealth) GetUnorderedCount() uint32 {
 		return x.UnorderedCount
 	}
 	return 0
+}
+
+func (x *SharedObjectHealth) GetSyncPeers() []*SOSyncPeer {
+	if x != nil {
+		return x.SyncPeers
+	}
+	return nil
+}
+
+// SOSyncPeer is this device's sync stream with one authenticated participant.
+type SOSyncPeer struct {
+	unknownFields []byte
+	// PeerId is the participant's base58 peer ID.
+	PeerId string `protobuf:"bytes,1,opt,name=peer_id,json=peerId,proto3" json:"peerId,omitempty"`
+	// Connected is true while an authenticated stream with the participant runs.
+	Connected bool `protobuf:"varint,2,opt,name=connected,proto3" json:"connected,omitempty"`
+	// Since is when Connected last changed.
+	Since *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=since,proto3" json:"since,omitempty"`
+	// Error is the failure that ended the latest stream. It is empty while
+	// connected and after a stream that ended without one.
+	Error string `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+}
+
+func (x *SOSyncPeer) Reset() {
+	*x = SOSyncPeer{}
+}
+
+func (*SOSyncPeer) ProtoMessage() {}
+
+func (x *SOSyncPeer) GetPeerId() string {
+	if x != nil {
+		return x.PeerId
+	}
+	return ""
+}
+
+func (x *SOSyncPeer) GetConnected() bool {
+	if x != nil {
+		return x.Connected
+	}
+	return false
+}
+
+func (x *SOSyncPeer) GetSince() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Since
+	}
+	return nil
+}
+
+func (x *SOSyncPeer) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
 }
 
 // SORejectedEdit is an operation of this device that replay no longer applies.
@@ -2759,6 +2817,7 @@ func (m *SharedObjectHealth) CloneVT() *SharedObjectHealth {
 	r.SyncRecoveryPeerIds = protobuf_go_lite.CloneSlice(m.SyncRecoveryPeerIds)
 	r.RejectedEdits = protobuf_go_lite.CloneVTSlice(m.RejectedEdits)
 	r.CheckpointMismatch = protobuf_go_lite.CloneVTValue(m.CheckpointMismatch)
+	r.SyncPeers = protobuf_go_lite.CloneVTSlice(m.SyncPeers)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -2766,6 +2825,25 @@ func (m *SharedObjectHealth) CloneVT() *SharedObjectHealth {
 }
 
 func (m *SharedObjectHealth) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SOSyncPeer) CloneVT() *SOSyncPeer {
+	if m == nil {
+		return (*SOSyncPeer)(nil)
+	}
+	r := new(SOSyncPeer)
+	r.PeerId = m.PeerId
+	r.Connected = m.Connected
+	r.Error = m.Error
+	r.Since = protobuf_go_lite.CloneVTValue(m.Since)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SOSyncPeer) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -3640,11 +3718,43 @@ func (this *SharedObjectHealth) EqualVT(that *SharedObjectHealth) bool {
 	if this.UnorderedCount != that.UnorderedCount {
 		return false
 	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.SyncPeers, that.SyncPeers, func() *SOSyncPeer { return &SOSyncPeer{} }) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *SharedObjectHealth) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*SharedObjectHealth)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SOSyncPeer) EqualVT(that *SOSyncPeer) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.PeerId != that.PeerId {
+		return false
+	}
+	if this.Connected != that.Connected {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Since, that.Since) {
+		return false
+	}
+	if this.Error != that.Error {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SOSyncPeer) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SOSyncPeer)
 	if !ok {
 		return false
 	}
@@ -5488,6 +5598,17 @@ func (x *SharedObjectHealth) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("unorderedCount")
 		s.WriteUint32(x.UnorderedCount)
 	}
+	if len(x.SyncPeers) > 0 || s.HasField("syncPeers") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("syncPeers")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.SyncPeers {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("syncPeers"))
+		}
+		s.WriteArrayEnd()
+	}
 	s.WriteObjectEnd()
 }
 
@@ -5565,12 +5686,100 @@ func (x *SharedObjectHealth) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "unordered_count", "unorderedCount":
 			s.AddField("unordered_count")
 			x.UnorderedCount = s.ReadUint32()
+		case "sync_peers", "syncPeers":
+			s.AddField("sync_peers")
+			if s.ReadNil() {
+				x.SyncPeers = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.SyncPeers = append(x.SyncPeers, nil)
+					return
+				}
+				v := &SOSyncPeer{}
+				v.UnmarshalProtoJSON(s.WithField("sync_peers", false))
+				if s.Err() != nil {
+					return
+				}
+				x.SyncPeers = append(x.SyncPeers, v)
+			})
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the SharedObjectHealth from JSON.
 func (x *SharedObjectHealth) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SOSyncPeer message to JSON.
+func (x *SOSyncPeer) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.PeerId != "" || s.HasField("peerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("peerId")
+		s.WriteString(x.PeerId)
+	}
+	if x.Connected || s.HasField("connected") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("connected")
+		s.WriteBool(x.Connected)
+	}
+	if x.Since != nil || s.HasField("since") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("since")
+		x.Since.MarshalProtoJSON(s.WithField("since"))
+	}
+	if x.Error != "" || s.HasField("error") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("error")
+		s.WriteString(x.Error)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SOSyncPeer to JSON.
+func (x *SOSyncPeer) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SOSyncPeer message from JSON.
+func (x *SOSyncPeer) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "peer_id", "peerId":
+			s.AddField("peer_id")
+			x.PeerId = s.ReadString()
+		case "connected":
+			s.AddField("connected")
+			x.Connected = s.ReadBool()
+		case "since":
+			if s.ReadNil() {
+				x.Since = nil
+				return
+			}
+			x.Since = &timestamppb.Timestamp{}
+			x.Since.UnmarshalProtoJSON(s.WithField("since", true))
+		case "error":
+			s.AddField("error")
+			x.Error = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SOSyncPeer from JSON.
+func (x *SOSyncPeer) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -8811,6 +9020,18 @@ func (m *SharedObjectHealth) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.SyncPeers) > 0 {
+		for iNdEx := len(m.SyncPeers) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.SyncPeers[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x62
+		}
+	}
 	if m.UnorderedCount != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.UnorderedCount))
 		i--
@@ -8881,6 +9102,63 @@ func (m *SharedObjectHealth) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Status))
 		i--
 		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOSyncPeer) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SOSyncPeer) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncPeer) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Error) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Error)
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Since != nil {
+		size, err := m.Since.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Connected {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Connected)
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.PeerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.PeerId)
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -11223,6 +11501,27 @@ func (m *SharedObjectHealth) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.UnorderedCount)
+	for _, e := range m.SyncPeers {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SOSyncPeer) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PeerId)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Connected)
+	if m.Since != nil {
+		l = m.Since.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Error)
 	n += len(m.unknownFields)
 	return n
 }
@@ -12105,10 +12404,48 @@ func (x *SharedObjectHealth) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "unordered_count")
 		protobuf_go_lite.TextWriteUint(&sb, x.UnorderedCount)
 	}
+	if len(x.SyncPeers) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "sync_peers")
+		for i, v := range x.SyncPeers {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOSyncPeer{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *SharedObjectHealth) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SOSyncPeer) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOSyncPeer")
+	if x.PeerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "peer_id")
+		protobuf_go_lite.TextWriteString(&sb, x.PeerId)
+	}
+	if x.Connected != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "connected")
+		protobuf_go_lite.TextWriteBool(&sb, x.Connected)
+	}
+	if x.Since != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "since")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Since)
+	}
+	if x.Error != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "error")
+		protobuf_go_lite.TextWriteString(&sb, x.Error)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SOSyncPeer) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -13684,6 +14021,107 @@ func (m *SharedObjectHealth) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SyncPeers", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SyncPeers = append(m.SyncPeers, &SOSyncPeer{})
+			if err := m.SyncPeers[len(m.SyncPeers)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SOSyncPeer) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SOSyncPeer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SOSyncPeer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.PeerId = v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Connected", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Connected = bool(v)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Since", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Since == nil {
+				m.Since = &timestamppb.Timestamp{}
+			}
+			if err := m.Since.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Error", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Error = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

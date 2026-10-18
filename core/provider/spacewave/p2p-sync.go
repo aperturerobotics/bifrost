@@ -3,6 +3,7 @@ package provider_spacewave
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
@@ -315,6 +316,11 @@ func (a *ProviderAccount) runP2PSpace(ctx context.Context, childBus bus.Bus, sta
 	syncer.SetPeerRecoveryObserver(func(remoteID peer.ID, required bool) {
 		swSO.tkr.healthCtr.SwapValue(func(health *sobject.SharedObjectHealth) *sobject.SharedObjectHealth {
 			return health.WithSyncPeerRecovery(remoteID.String(), required)
+		})
+	})
+	syncer.SetPeerConnectionObserver(func(remoteID peer.ID, connected bool, err error) {
+		swSO.tkr.healthCtr.SwapValue(func(health *sobject.SharedObjectHealth) *sobject.SharedObjectHealth {
+			return health.WithSyncPeerConnection(remoteID.String(), connected, err, time.Now())
 		})
 	})
 	return syncer.Execute(ctx)
