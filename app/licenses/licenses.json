@@ -25,7 +25,7 @@
     },
     {
       "name": "@aptre/protobuf-es-lite",
-      "version": "1.2.1",
+      "version": "1.2.3",
       "spdx": "Apache-2.0",
       "source": "js",
       "repo": "https://github.com/aperturerobotics/protobuf-es-lite",
@@ -950,7 +950,7 @@
     },
     {
       "name": "github.com/aperturerobotics/util",
-      "version": "v1.34.10-0.20261018070843-31e7f83b07e3",
+      "version": "v1.34.10-0.20261018211851-3e8e694574ad",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/util",
@@ -1504,7 +1504,7 @@
     },
     {
       "name": "github.com/s4wave/goscript",
-      "version": "v0.4.7-0.20261018031538-d01b13008e80",
+      "version": "v0.4.7-0.20261018212935-b14a8f6f3ee2",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/s4wave/goscript",
