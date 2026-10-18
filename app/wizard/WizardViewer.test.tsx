@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   updateState: vi.fn().mockResolvedValue({}),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
+  closeShellTab: vi.fn(),
 }))
 
 let currentState = {
@@ -41,6 +42,13 @@ let currentWizards: ObjectWizard[] = [
   },
 ]
 let currentPeerId = ''
+// watchedObject is what the world watch of the wizard object reports: the
+// object while it exists, null once it is gone.
+let watchedObject: {
+  value: boolean | null
+  loading: boolean
+  error: Error | null
+} = { value: true, loading: false, error: null }
 
 vi.mock('@s4wave/web/hooks/useAccessTypedHandle.js', () => ({
   useAccessTypedHandle: () => ({
@@ -54,6 +62,15 @@ vi.mock('@aptre/bldr-sdk/hooks/useStreamingResource.js', () => ({
   useStreamingResource: () => ({
     value: currentState,
   }),
+}))
+
+vi.mock('@s4wave/web/sync/useObjectQuery.js', () => ({
+  useObjectQuery: () => ({ ...watchedObject, retry: vi.fn() }),
+}))
+
+vi.mock('../ShellTabContext.js', () => ({
+  useTabId: () => 'tab-1',
+  useShellTabs: () => ({ closeShellTab: mocks.closeShellTab }),
 }))
 
 vi.mock('../space/useObjectWizards.js', () => ({
@@ -157,6 +174,7 @@ describe('WizardViewer', () => {
       },
     ]
     currentPeerId = ''
+    watchedObject = { value: true, loading: false, error: null }
     vi.clearAllMocks()
   })
 
@@ -333,5 +351,36 @@ describe('WizardViewer', () => {
     expect(mocks.deleteObject).toHaveBeenCalledWith('wizard/test-canvas')
     expect(mocks.openCommand).not.toHaveBeenCalled()
     expect(mocks.navigateToObjects).not.toHaveBeenCalled()
+  })
+
+  it('shows a deleted state with a close-tab action once the watched object is gone', async () => {
+    const user = userEvent.setup()
+    watchedObject = { value: null, loading: false, error: null }
+    renderViewer()
+
+    expect(screen.getByText('Wizard deleted')).toBeTruthy()
+    expect(screen.queryByText('Loading wizard')).toBeNull()
+    expect(screen.queryByRole('button', { name: /create/i })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: /close tab/i }))
+    expect(mocks.closeShellTab).toHaveBeenCalledWith('tab-1')
+  })
+
+  it('shows the deleted state when the wizard state never streamed', () => {
+    watchedObject = { value: null, loading: false, error: null }
+    currentState = undefined as never
+    renderViewer()
+
+    expect(screen.getByText('Wizard deleted')).toBeTruthy()
+    expect(screen.queryByText('Loading wizard')).toBeNull()
+  })
+
+  it('keeps loading while the object watch has not settled', () => {
+    watchedObject = { value: null, loading: true, error: null }
+    currentState = undefined as never
+    renderViewer()
+
+    expect(screen.getByText('Loading wizard')).toBeTruthy()
+    expect(screen.queryByText('Wizard deleted')).toBeNull()
   })
 })
