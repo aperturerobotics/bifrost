@@ -224,19 +224,15 @@ export const SyncResponse: MessageType<SyncResponse> =
 export interface SyncThroughRequest {
   /**
    * Seqno is the World seqno the durable head must cover.
-   *
-   * @generated from field: uint64 seqno = 1;
    */
   seqno?: bigint
 }
 
 export const SyncThroughRequest: MessageType<SyncThroughRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SyncThroughRequest',
-    fields: [
-      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SyncThroughRequest>(
+    's4wave.world.SyncThroughRequest',
+    () => [[1, 'seqno', 4]],
+  )
 
 /**
  * SyncThroughResponse is the response type for SyncThrough.
@@ -246,19 +242,15 @@ export const SyncThroughRequest: MessageType<SyncThroughRequest> =
 export interface SyncThroughResponse {
   /**
    * DurableSeqno is the seqno of the durable head, at or above the requested seqno.
-   *
-   * @generated from field: uint64 durable_seqno = 1;
    */
   durableSeqno?: bigint
 }
 
 export const SyncThroughResponse: MessageType<SyncThroughResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SyncThroughResponse',
-    fields: [
-      { no: 1, name: 'durable_seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SyncThroughResponse>(
+    's4wave.world.SyncThroughResponse',
+    () => [[1, 'durable_seqno', 4]],
+  )
 
 /**
  * EngineInfo contains metadata about a world engine.
