@@ -97,6 +97,17 @@ func (e *RefCountEngine) Sync(ctx context.Context) (bool, error) {
 	return fenced, err
 }
 
+// SyncThrough fences durable storage through seqno via the engine.
+func (e *RefCountEngine) SyncThrough(ctx context.Context, seqno uint64) (uint64, error) {
+	var durable uint64
+	err := e.rc.Access(ctx, func(ctx context.Context, val *Engine) error {
+		var err error
+		durable, err = (*val).SyncThrough(ctx, seqno)
+		return err
+	})
+	return durable, err
+}
+
 // BuildStorageCursor builds a cursor to the world storage with an empty ref.
 // The cursor should be released independently of the WorldState.
 // Be sure to call Release on the cursor when done.

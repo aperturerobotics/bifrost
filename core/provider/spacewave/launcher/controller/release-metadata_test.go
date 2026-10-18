@@ -1295,6 +1295,11 @@ func (e *releaseWorldTestEngine) OperationAuthor(context.Context) (peer.ID, stri
 	return "", "", nil
 }
 
+// SyncThrough has nothing to fence in this read-only release fixture.
+func (e *releaseWorldTestEngine) SyncThrough(ctx context.Context, seqno uint64) (uint64, error) {
+	return e.WaitSeqno(ctx, seqno)
+}
+
 func (e *releaseWorldTestEngine) NewTransaction(context.Context, bool) (world.Tx, error) {
 	return &releaseWorldTestTx{WorldState: e.WorldState}, nil
 }

@@ -98,6 +98,8 @@ import {
   StageWorldStateResponse,
   SyncRequest,
   SyncResponse,
+  SyncThroughRequest,
+  SyncThroughResponse,
   ValidRequest,
   ValidResponse,
   WaitObjectRevRequest,
@@ -197,6 +199,19 @@ export const EngineResourceServiceDefinition = {
       name: 'Sync',
       I: SyncRequest,
       O: SyncResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * SyncThrough returns once every commit with a seqno at or below the
+     * request's seqno is durable and covered by the durable head. It does not
+     * wait for commits admitted after that seqno.
+     *
+     * @generated from rpc s4wave.world.EngineResourceService.SyncThrough
+     */
+    SyncThrough: {
+      name: 'SyncThrough',
+      I: SyncThroughRequest,
+      O: SyncThroughResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -340,6 +355,18 @@ export interface EngineResourceService {
   Sync(request: SyncRequest, abortSignal?: AbortSignal): Promise<SyncResponse>
 
   /**
+   * SyncThrough returns once every commit with a seqno at or below the
+   * request's seqno is durable and covered by the durable head. It does not
+   * wait for commits admitted after that seqno.
+   *
+   * @generated from rpc s4wave.world.EngineResourceService.SyncThrough
+   */
+  SyncThrough(
+    request: SyncThroughRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SyncThroughResponse>
+
+  /**
    * @generated from rpc s4wave.world.EngineResourceService.GetSeqno
    */
   GetSeqno(
@@ -481,6 +508,19 @@ export interface EngineResourceServiceHandler {
   ): Promise<SyncResponse>
 
   /**
+   * SyncThrough returns once every commit with a seqno at or below the
+   * request's seqno is durable and covered by the durable head. It does not
+   * wait for commits admitted after that seqno.
+   *
+   * @generated from rpc s4wave.world.EngineResourceService.SyncThrough
+   */
+  SyncThrough(
+    request: SyncThroughRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<SyncThroughResponse>
+
+  /**
    * @generated from rpc s4wave.world.EngineResourceService.GetSeqno
    */
   GetSeqno(
@@ -570,6 +610,7 @@ export class EngineResourceServiceClient implements EngineResourceService {
     this.NewTransaction = this.NewTransaction.bind(this)
     this.ExecuteWorldOp = this.ExecuteWorldOp.bind(this)
     this.Sync = this.Sync.bind(this)
+    this.SyncThrough = this.SyncThrough.bind(this)
     this.GetSeqno = this.GetSeqno.bind(this)
     this.WaitSeqno = this.WaitSeqno.bind(this)
     this.WatchChanges = this.WatchChanges.bind(this)
@@ -702,6 +743,27 @@ export class EngineResourceServiceClient implements EngineResourceService {
       abortSignal || undefined,
     )
     return SyncResponse.fromBinary(result)
+  }
+
+  /**
+   * SyncThrough returns once every commit with a seqno at or below the
+   * request's seqno is durable and covered by the durable head. It does not
+   * wait for commits admitted after that seqno.
+   *
+   * @generated from rpc s4wave.world.EngineResourceService.SyncThrough
+   */
+  async SyncThrough(
+    request: SyncThroughRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SyncThroughResponse> {
+    const requestMsg = SyncThroughRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      EngineResourceServiceDefinition.methods.SyncThrough.name,
+      SyncThroughRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return SyncThroughResponse.fromBinary(result)
   }
 
   /**

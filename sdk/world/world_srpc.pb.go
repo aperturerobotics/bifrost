@@ -30,6 +30,10 @@ type SRPCEngineResourceServiceClient interface {
 	ExecuteWorldOp(ctx context.Context, in *ApplyWorldOpRequest) (*ApplyWorldOpResponse, error)
 
 	Sync(ctx context.Context, in *SyncRequest) (*SyncResponse, error)
+	// SyncThrough returns once every commit with a seqno at or below the
+	// request's seqno is durable and covered by the durable head. It does not
+	// wait for commits admitted after that seqno.
+	SyncThrough(ctx context.Context, in *SyncThroughRequest) (*SyncThroughResponse, error)
 
 	GetSeqno(ctx context.Context, in *GetSeqnoRequest) (*GetSeqnoResponse, error)
 
@@ -155,6 +159,15 @@ func (c *srpcEngineResourceServiceClient) Sync(ctx context.Context, in *SyncRequ
 	return out, nil
 }
 
+func (c *srpcEngineResourceServiceClient) SyncThrough(ctx context.Context, in *SyncThroughRequest) (*SyncThroughResponse, error) {
+	out := new(SyncThroughResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "SyncThrough", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *srpcEngineResourceServiceClient) GetSeqno(ctx context.Context, in *GetSeqnoRequest) (*GetSeqnoResponse, error) {
 	out := new(GetSeqnoResponse)
 	err := c.cc.ExecCall(ctx, c.serviceID, "GetSeqno", in, out)
@@ -259,6 +272,10 @@ type SRPCEngineResourceServiceServer interface {
 	ExecuteWorldOp(context.Context, *ApplyWorldOpRequest) (*ApplyWorldOpResponse, error)
 
 	Sync(context.Context, *SyncRequest) (*SyncResponse, error)
+	// SyncThrough returns once every commit with a seqno at or below the
+	// request's seqno is durable and covered by the durable head. It does not
+	// wait for commits admitted after that seqno.
+	SyncThrough(context.Context, *SyncThroughRequest) (*SyncThroughResponse, error)
 
 	GetSeqno(context.Context, *GetSeqnoRequest) (*GetSeqnoResponse, error)
 
@@ -312,6 +329,7 @@ func (SRPCEngineResourceServiceHandler) GetMethodIDs() []string {
 		"NewTransaction",
 		"ExecuteWorldOp",
 		"Sync",
+		"SyncThrough",
 		"GetSeqno",
 		"WaitSeqno",
 		"WatchChanges",
@@ -345,6 +363,8 @@ func (d *SRPCEngineResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_ExecuteWorldOp(d.impl, strm)
 	case "Sync":
 		return true, d.InvokeMethod_Sync(d.impl, strm)
+	case "SyncThrough":
+		return true, d.InvokeMethod_SyncThrough(d.impl, strm)
 	case "GetSeqno":
 		return true, d.InvokeMethod_GetSeqno(d.impl, strm)
 	case "WaitSeqno":
@@ -439,6 +459,18 @@ func (SRPCEngineResourceServiceHandler) InvokeMethod_Sync(impl SRPCEngineResourc
 		return err
 	}
 	out, err := impl.Sync(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCEngineResourceServiceHandler) InvokeMethod_SyncThrough(impl SRPCEngineResourceServiceServer, strm srpc.Stream) error {
+	req := new(SyncThroughRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.SyncThrough(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -594,6 +626,14 @@ type SRPCEngineResourceService_SyncStream interface {
 }
 
 type srpcEngineResourceService_SyncStream struct {
+	srpc.Stream
+}
+
+type SRPCEngineResourceService_SyncThroughStream interface {
+	srpc.Stream
+}
+
+type srpcEngineResourceService_SyncThroughStream struct {
 	srpc.Stream
 }
 

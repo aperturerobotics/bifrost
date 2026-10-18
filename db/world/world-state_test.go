@@ -622,6 +622,10 @@ func (e *staleRetryEngine) Sync(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
+func (e *staleRetryEngine) SyncThrough(ctx context.Context, seqno uint64) (uint64, error) {
+	return seqno, nil
+}
+
 func (e *staleRetryEngine) BuildStorageCursor(ctx context.Context) (*bucket_lookup.Cursor, error) {
 	panic("unexpected BuildStorageCursor call")
 }

@@ -26,6 +26,11 @@ service EngineResourceService {
 
   rpc Sync(SyncRequest) returns (SyncResponse);
 
+  // SyncThrough returns once every commit with a seqno at or below the
+  // request's seqno is durable and covered by the durable head. It does not
+  // wait for commits admitted after that seqno.
+  rpc SyncThrough(SyncThroughRequest) returns (SyncThroughResponse);
+
   rpc GetSeqno(GetSeqnoRequest) returns (GetSeqnoResponse);
 
   rpc WaitSeqno(WaitSeqnoRequest) returns (WaitSeqnoResponse);
@@ -84,6 +89,18 @@ message SyncRequest {}
 message SyncResponse {
   // Fenced indicates whether a durability fence was applied.
   bool fenced = 1;
+}
+
+// SyncThroughRequest is the request type for SyncThrough.
+message SyncThroughRequest {
+  // Seqno is the World seqno the durable head must cover.
+  uint64 seqno = 1;
+}
+
+// SyncThroughResponse is the response type for SyncThrough.
+message SyncThroughResponse {
+  // DurableSeqno is the seqno of the durable head, at or above the requested seqno.
+  uint64 durable_seqno = 1;
 }
 
 // EngineInfo contains metadata about a world engine.

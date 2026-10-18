@@ -143,6 +143,11 @@ type Engine struct {
 	// single-writer path the durable head is advanced only by Sync, so root can
 	// run ahead of durableHeadRef between fences. Guarded by bcast.
 	durableHeadRef *bucket.ObjectRef
+	// durableSeqno is the seqno of the durable head: every commit at or below
+	// it is durable and covered by the head. In deferred-durability mode only
+	// Sync advances it; otherwise a head becomes published only once durable,
+	// so it follows the published head. Guarded by bcast.
+	durableSeqno uint64
 	// writeBlockStore is the long-lived block store backing write transactions.
 	// In the single-writer path with a store that is not self-buffered it is a
 	// deferred BufferedStore wrapping the bucket store: block writes accumulate
@@ -281,7 +286,7 @@ func NewEngine(
 	// in stay durable-on-write and use the bucket directly.
 	rawWriteStore := e.head.root.GetBucket()
 	e.writeBlockStore = rawWriteStore
-	if e.deferDurability && e.writeCoordinator == nil {
+	if e.deferredDurability() {
 		if rawWriteStore.GetSupportedFeatures()&block.StoreFeatureSelfBuffered == 0 {
 			// Not self-buffered (e.g. s4db): defer behind one long-lived
 			// BufferedStore that accumulates writes in memory until Sync.
@@ -319,6 +324,7 @@ func NewEngine(
 		_ = e.Close()
 		return nil, err
 	}
+	e.durableSeqno = e.headSeqnoLocked()
 
 	// External head observation belongs to the engine's resource lifetime.
 	// Constructor cancellation does not invalidate retained engine handles.
@@ -329,6 +335,12 @@ func NewEngine(
 		go e.watchCoordinatorHead(watchCtx)
 	}
 	return e, nil
+}
+
+// deferredDurability reports whether block writes and the durable head batch
+// until Sync: the single-writer mode, since a coordinator stays durable on write.
+func (e *Engine) deferredDurability() bool {
+	return e.deferDurability && e.writeCoordinator == nil
 }
 
 // GetRootRef gets the current root cursor reference.
@@ -382,7 +394,59 @@ func (e *Engine) Sync(ctx context.Context) (bool, error) {
 	if e.closed {
 		return false, ErrEngineClosed
 	}
+	return e.syncHeadLocked(ctx)
+}
 
+// SyncThrough returns once every commit with seqno <= seqno is durable and
+// covered by the durable head, and returns the durable seqno, >= seqno.
+//
+// It waits only for the published head to reach seqno. Commits admitted after
+// seqno are not joined: a coordinated publication installs its head, and so
+// advances the durable seqno, only after it is durable, in admission order. So
+// a head at seqno needs no submission fence. In deferred-durability mode no
+// submissions exist, and a head not yet covered by the durable head takes the
+// same ordered fence as Sync. The shared BufferedStore flushes every pending
+// block, not only those reachable from seqno, and the durable head advances to
+// the published head, which can be newer than seqno.
+func (e *Engine) SyncThrough(ctx context.Context, seqno uint64) (uint64, error) {
+	// Trace the fence as one task.
+	ctx, task := trace.NewTask(ctx, "hydra/world-block/engine/sync-through")
+	defer task.End()
+
+	// Wait for the head to publish seqno, unless the durable head covers it.
+	for {
+		locked := e.bcast.Lock()
+		if e.closed {
+			locked.Unlock()
+			return 0, ErrEngineClosed
+		}
+		if e.durableSeqno >= seqno {
+			durable := e.durableSeqno
+			locked.Unlock()
+			return durable, nil
+		}
+		if e.headSeqnoLocked() >= seqno {
+			defer locked.Unlock()
+			break
+		}
+		locked.Unlock()
+		if _, err := e.WaitSeqno(ctx, seqno); err != nil {
+			return 0, err
+		}
+	}
+
+	// The head holds seqno without a durable head covering it: fence now,
+	// with the published head stable across the fence.
+	if _, err := e.syncHeadLocked(ctx); err != nil {
+		return 0, err
+	}
+	return e.durableSeqno, nil
+}
+
+// syncHeadLocked runs the ordered durability fence for the published head and
+// records the durable seqno it reaches. The caller must hold bcast, with no
+// publication borrow outstanding.
+func (e *Engine) syncHeadLocked(ctx context.Context) (bool, error) {
 	// Transactions write into the engine-retained overlay before they are
 	// submitted. Fence those bytes as durable preparation as well, without
 	// changing a head. The watermark wait above left no publication borrow
@@ -414,6 +478,7 @@ func (e *Engine) Sync(ctx context.Context) (bool, error) {
 			e.durableHeadRef = cur.Clone()
 		}
 	}
+	e.durableSeqno = max(e.durableSeqno, e.headSeqnoLocked())
 	return fenced, nil
 }
 
@@ -571,6 +636,10 @@ func (e *Engine) installRootRefLocked(ctx context.Context, ref *bucket.ObjectRef
 		root:   nextRoot,
 		pin:    pin,
 		readTx: NewTx(nextWorld),
+	}
+	if !e.deferredDurability() {
+		// A head publishes only once durable outside deferred mode.
+		e.durableSeqno = max(e.durableSeqno, seqno)
 	}
 	e.signalHeadLocked()
 	return e.beginRetirementLocked(retirement), nil
@@ -1068,7 +1137,7 @@ func (e *Engine) StageWorldState(ctx context.Context) (world.WorldStage, error) 
 
 	// Durable-on-write commits reference the build before they return.
 	stage := world.NewStorageStage(engineStorage{e: e})
-	if !e.deferDurability || e.writeCoordinator != nil {
+	if !e.deferredDurability() {
 		return stage, nil
 	}
 	return &deferredStage{WorldStage: stage, e: e}, nil

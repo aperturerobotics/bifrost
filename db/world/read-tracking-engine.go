@@ -51,6 +51,11 @@ func (e *ReadTrackingEngine) Sync(ctx context.Context) (bool, error) {
 	return e.inner.Sync(ctx)
 }
 
+// SyncThrough fences writes through seqno via the underlying engine.
+func (e *ReadTrackingEngine) SyncThrough(ctx context.Context, seqno uint64) (uint64, error) {
+	return e.inner.SyncThrough(ctx, seqno)
+}
+
 // BuildStorageCursor builds an empty cursor through the underlying engine.
 func (e *ReadTrackingEngine) BuildStorageCursor(ctx context.Context) (*bucket_lookup.Cursor, error) {
 	return e.inner.BuildStorageCursor(ctx)

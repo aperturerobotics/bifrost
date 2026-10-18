@@ -84,4 +84,12 @@ func (e *BatchEngine) Sync(ctx context.Context) (bool, error) {
 	return e.Engine.Sync(ctx)
 }
 
+// SyncThrough cannot establish durability inside an uncommitted batch.
+func (e *BatchEngine) SyncThrough(ctx context.Context, seqno uint64) (uint64, error) {
+	if ctx.Value(e) != nil {
+		return 0, errors.New("World batch must complete before SyncThrough")
+	}
+	return e.Engine.SyncThrough(ctx, seqno)
+}
+
 var _ Engine = (*BatchEngine)(nil)

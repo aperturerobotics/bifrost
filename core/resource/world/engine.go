@@ -203,6 +203,17 @@ func (r *EngineResource) Sync(ctx context.Context, req *s4wave_world.SyncRequest
 	return &s4wave_world.SyncResponse{Fenced: fenced}, nil
 }
 
+// SyncThrough fences durable storage through the requested seqno via the engine.
+func (r *EngineResource) SyncThrough(ctx context.Context, req *s4wave_world.SyncThroughRequest) (*s4wave_world.SyncThroughResponse, error) {
+	// Fence the engine, then notify browser observers of the new durable head.
+	durable, err := r.engine.SyncThrough(ctx, req.GetSeqno())
+	if err != nil {
+		return nil, err
+	}
+	notifyDurableMutationToBrowser()
+	return &s4wave_world.SyncThroughResponse{DurableSeqno: durable}, nil
+}
+
 // WaitSeqno waits for the seqno of the world state to be >= value.
 func (r *EngineResource) WaitSeqno(ctx context.Context, req *s4wave_world.WaitSeqnoRequest) (*s4wave_world.WaitSeqnoResponse, error) {
 	seqno, err := r.engine.WaitSeqno(ctx, req.GetSeqno())

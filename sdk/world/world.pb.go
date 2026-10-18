@@ -245,6 +245,46 @@ func (x *SyncResponse) GetFenced() bool {
 	return false
 }
 
+// SyncThroughRequest is the request type for SyncThrough.
+type SyncThroughRequest struct {
+	unknownFields []byte
+	// Seqno is the World seqno the durable head must cover.
+	Seqno uint64 `protobuf:"varint,1,opt,name=seqno,proto3" json:"seqno,omitempty"`
+}
+
+func (x *SyncThroughRequest) Reset() {
+	*x = SyncThroughRequest{}
+}
+
+func (*SyncThroughRequest) ProtoMessage() {}
+
+func (x *SyncThroughRequest) GetSeqno() uint64 {
+	if x != nil {
+		return x.Seqno
+	}
+	return 0
+}
+
+// SyncThroughResponse is the response type for SyncThrough.
+type SyncThroughResponse struct {
+	unknownFields []byte
+	// DurableSeqno is the seqno of the durable head, at or above the requested seqno.
+	DurableSeqno uint64 `protobuf:"varint,1,opt,name=durable_seqno,json=durableSeqno,proto3" json:"durableSeqno,omitempty"`
+}
+
+func (x *SyncThroughResponse) Reset() {
+	*x = SyncThroughResponse{}
+}
+
+func (*SyncThroughResponse) ProtoMessage() {}
+
+func (x *SyncThroughResponse) GetDurableSeqno() uint64 {
+	if x != nil {
+		return x.DurableSeqno
+	}
+	return 0
+}
+
 // EngineInfo contains metadata about a world engine.
 type EngineInfo struct {
 	unknownFields []byte
@@ -3312,6 +3352,38 @@ func (m *SyncResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *SyncThroughRequest) CloneVT() *SyncThroughRequest {
+	if m == nil {
+		return (*SyncThroughRequest)(nil)
+	}
+	r := new(SyncThroughRequest)
+	r.Seqno = m.Seqno
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SyncThroughRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SyncThroughResponse) CloneVT() *SyncThroughResponse {
+	if m == nil {
+		return (*SyncThroughResponse)(nil)
+	}
+	r := new(SyncThroughResponse)
+	r.DurableSeqno = m.DurableSeqno
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SyncThroughResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *EngineInfo) CloneVT() *EngineInfo {
 	if m == nil {
 		return (*EngineInfo)(nil)
@@ -5456,6 +5528,46 @@ func (this *SyncResponse) EqualVT(that *SyncResponse) bool {
 
 func (this *SyncResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*SyncResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SyncThroughRequest) EqualVT(that *SyncThroughRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Seqno != that.Seqno {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SyncThroughRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SyncThroughRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SyncThroughResponse) EqualVT(that *SyncThroughResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.DurableSeqno != that.DurableSeqno {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SyncThroughResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SyncThroughResponse)
 	if !ok {
 		return false
 	}
@@ -8463,6 +8575,90 @@ func (x *SyncResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the SyncResponse from JSON.
 func (x *SyncResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SyncThroughRequest message to JSON.
+func (x *SyncThroughRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Seqno != 0 || s.HasField("seqno") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("seqno")
+		s.WriteUint64(x.Seqno)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SyncThroughRequest to JSON.
+func (x *SyncThroughRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SyncThroughRequest message from JSON.
+func (x *SyncThroughRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "seqno":
+			s.AddField("seqno")
+			x.Seqno = s.ReadUint64()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SyncThroughRequest from JSON.
+func (x *SyncThroughRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SyncThroughResponse message to JSON.
+func (x *SyncThroughResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.DurableSeqno != 0 || s.HasField("durableSeqno") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("durableSeqno")
+		s.WriteUint64(x.DurableSeqno)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SyncThroughResponse to JSON.
+func (x *SyncThroughResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SyncThroughResponse message from JSON.
+func (x *SyncThroughResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "durable_seqno", "durableSeqno":
+			s.AddField("durable_seqno")
+			x.DurableSeqno = s.ReadUint64()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SyncThroughResponse from JSON.
+func (x *SyncThroughResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -14502,6 +14698,80 @@ func (m *SyncResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *SyncThroughRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SyncThroughRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SyncThroughRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Seqno != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Seqno))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SyncThroughResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SyncThroughResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SyncThroughResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.DurableSeqno != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.DurableSeqno))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *EngineInfo) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -19589,6 +19859,28 @@ func (m *SyncResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *SyncThroughRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Seqno)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SyncThroughResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.DurableSeqno)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *EngineInfo) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -21229,6 +21521,34 @@ func (x *SyncResponse) MarshalProtoText() string {
 }
 
 func (x *SyncResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SyncThroughRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SyncThroughRequest")
+	if x.Seqno != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "seqno")
+		protobuf_go_lite.TextWriteUint(&sb, x.Seqno)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SyncThroughRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SyncThroughResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SyncThroughResponse")
+	if x.DurableSeqno != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "durable_seqno")
+		protobuf_go_lite.TextWriteUint(&sb, x.DurableSeqno)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SyncThroughResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -23583,6 +23903,110 @@ func (m *SyncResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Fenced = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SyncThroughRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SyncThroughRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SyncThroughRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Seqno", wireType)
+			}
+			m.Seqno = 0
+			m.Seqno, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SyncThroughResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SyncThroughResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SyncThroughResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DurableSeqno", wireType)
+			}
+			m.DurableSeqno = 0
+			m.DurableSeqno, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

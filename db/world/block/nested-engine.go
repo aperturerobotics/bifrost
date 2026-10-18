@@ -75,6 +75,12 @@ func (e *NestedEngine) Sync(context.Context) (bool, error) {
 	return false, nil
 }
 
+// SyncThrough has nothing to fence: the nested World accepts no writes. It
+// returns once the outer object reaches revision seqno.
+func (e *NestedEngine) SyncThrough(ctx context.Context, seqno uint64) (uint64, error) {
+	return e.WaitSeqno(ctx, seqno)
+}
+
 // BuildStorageCursor builds a cursor to the outer World storage.
 func (e *NestedEngine) BuildStorageCursor(ctx context.Context) (*bucket_lookup.Cursor, error) {
 	return e.storage.BuildStorageCursor(ctx)

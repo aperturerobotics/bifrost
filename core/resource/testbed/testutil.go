@@ -49,6 +49,15 @@ func SetupResourceClient(ctx context.Context, t testing.TB, tb *world_testbed.Te
 	logger.SetLevel(logrus.DebugLevel)
 	le := logrus.NewEntry(logger)
 
+	// Serve the testbed resource server as the root.
+	testbedResource := NewTestbedResourceServer(ctx, le, tb.Bus, tb.Volume.GetID(), tb.BucketId)
+	return SetupResourceClientWithRoot(ctx, t, testbedResource.GetMux())
+}
+
+// SetupResourceClientWithRoot creates pipes, muxed connections, and a resource
+// client whose root resource is served by root.
+// Returns the resource client and a cleanup function.
+func SetupResourceClientWithRoot(ctx context.Context, t testing.TB, root srpc.Invoker) (*resource_client.Client, func()) {
 	// Create pipes for in-memory communication
 	clientPipe, serverPipe := net.Pipe()
 
@@ -63,11 +72,8 @@ func SetupResourceClient(ctx context.Context, t testing.TB, tb *world_testbed.Te
 	mux := srpc.NewMux()
 	server := srpc.NewServer(mux)
 
-	// Create TestbedResourceServer as root
-	volumeID := tb.Volume.GetID()
-	bucketID := tb.BucketId
-	testbedResource := NewTestbedResourceServer(ctx, le, tb.Bus, volumeID, bucketID)
-	resourceServer := resource_server.NewResourceServer(testbedResource.GetMux())
+	// Serve root as the root resource
+	resourceServer := resource_server.NewResourceServer(root)
 	err = resourceServer.Register(mux)
 	if err != nil {
 		t.Fatal(err.Error())

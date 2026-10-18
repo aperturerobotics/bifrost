@@ -28,6 +28,14 @@ type Engine interface {
 	// store is always-durable and no fence was required.
 	Sync(ctx context.Context) (bool, error)
 
+	// SyncThrough returns once every commit with seqno <= seqno is durable and
+	// covered by the durable head. It returns without a fence when the durable
+	// head already covers seqno, and it waits for commits up to seqno to be
+	// published but not for commits admitted after seqno. It returns the
+	// durable seqno, >= seqno. An engine whose commits are durable on write
+	// returns at once.
+	SyncThrough(ctx context.Context, seqno uint64) (durable uint64, err error)
+
 	// WorldStorage provides access to the world storage via bucket cursors.
 	WorldStorage
 

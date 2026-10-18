@@ -155,7 +155,7 @@ func (e *EngineTx) CommitBlockTransaction(ctx context.Context) (*bucket.ObjectRe
 				// Deferred single-writer mode postpones both steps until Sync makes
 				// buffered blocks durable. Per-commit validation in that mode would
 				// read the raw bucket and miss buffered, undrained blocks.
-				deferred := e.engine.deferDurability && e.engine.writeCoordinator == nil
+				deferred := e.engine.deferredDurability()
 				if !deferred {
 					if commitErr == nil {
 						_, commitErr = e.engine.writeBlockStore.Sync(ctx)

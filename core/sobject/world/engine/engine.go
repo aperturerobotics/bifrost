@@ -346,6 +346,11 @@ func (e *soEngine) Sync(ctx context.Context) (bool, error) {
 	return e.bengine.Sync(ctx)
 }
 
+// SyncThrough fences durable storage through seqno via the engine.
+func (e *soEngine) SyncThrough(ctx context.Context, seqno uint64) (uint64, error) {
+	return e.bengine.SyncThrough(ctx, seqno)
+}
+
 // WaitSeqno waits for the seqno of the world state to be >= value.
 // Returns the seqno when the condition is reached.
 // If value == 0, this might return immediately unconditionally.
