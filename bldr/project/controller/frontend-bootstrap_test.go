@@ -33,8 +33,10 @@ func TestFrontendBootstrapAttachesStartup(t *testing.T) {
 	}
 
 	// Publish a ready compiler capability without starting a native process.
+	// The development result reports the shared package bindings the graph serves.
 	service.ready.SetResult(&frontendEnvironment{result: &vite.DevelopmentResult{
-		Session: &frontend.Session{Id: "first", RoutePrefix: "/b/fe/first/"},
+		Session:       &frontend.Session{Id: "first", RoutePrefix: "/b/fe/first/"},
+		WebPkgImports: map[string]string{"bldr-web-pkg/sonner/": "/b/pkg/sonner/"},
 	}}, nil)
 	response := httptest.NewRecorder()
 	service.ServeBootstrap(response, httptest.NewRequest(http.MethodGet, "/bldr-dev/frontend-boot.mjs", nil), "entrypoint/entrypoint.mjs", "app/startup.tsx")
