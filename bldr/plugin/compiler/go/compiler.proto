@@ -138,6 +138,15 @@ message Config {
   // GoPkgs for controller factories. The default is disabled so GoPkgs is the
   // explicit generated factory surface.
   .enabled.Enabled enable_imported_factory_discovery = 18;
+
+  // LinkerFlags are extra linker flags for the plugin binary, e.g.
+  // "-X github.com/example/app/sdk.Version=1.2.3". Each entry is one
+  // whitespace-separated group of flags; an entry holding a value with spaces
+  // must quote it in the syntax of go build -ldflags. The compiler merges them
+  // after its own flags (-w -s in release builds, the Delve address in dev
+  // builds) into the single -ldflags argument of the build. Build type and
+  // platform type overrides append to the base list.
+  repeated string linker_flags = 20;
 }
 
 // PreBuildHookResult is the output of a pre-build hook.

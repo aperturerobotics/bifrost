@@ -285,6 +285,14 @@ type Config struct {
 	// GoPkgs for controller factories. The default is disabled so GoPkgs is the
 	// explicit generated factory surface.
 	EnableImportedFactoryDiscovery enabled.Enabled `protobuf:"varint,18,opt,name=enable_imported_factory_discovery,json=enableImportedFactoryDiscovery,proto3" json:"enableImportedFactoryDiscovery,omitempty"`
+	// LinkerFlags are extra linker flags for the plugin binary, e.g.
+	// "-X github.com/example/app/sdk.Version=1.2.3". Each entry is one
+	// whitespace-separated group of flags; an entry holding a value with spaces
+	// must quote it in the syntax of go build -ldflags. The compiler merges them
+	// after its own flags (-w -s in release builds, the Delve address in dev
+	// builds) into the single -ldflags argument of the build. Build type and
+	// platform type overrides append to the base list.
+	LinkerFlags []string `protobuf:"bytes,20,rep,name=linker_flags,json=linkerFlags,proto3" json:"linkerFlags,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -417,6 +425,13 @@ func (x *Config) GetEnableImportedFactoryDiscovery() enabled.Enabled {
 		return x.EnableImportedFactoryDiscovery
 	}
 	return enabled.Enabled(0)
+}
+
+func (x *Config) GetLinkerFlags() []string {
+	if x != nil {
+		return x.LinkerFlags
+	}
+	return nil
 }
 
 // PreBuildHookResult is the output of a pre-build hook.
@@ -914,6 +929,7 @@ func (m *Config) CloneVT() *Config {
 	r.EsbuildFlags = protobuf_go_lite.CloneSlice(m.EsbuildFlags)
 	r.BuildTypes = protobuf_go_lite.CloneVTMap(m.BuildTypes)
 	r.PlatformTypes = protobuf_go_lite.CloneVTMap(m.PlatformTypes)
+	r.LinkerFlags = protobuf_go_lite.CloneSlice(m.LinkerFlags)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1119,6 +1135,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualSlice(this.GoscriptDeferredFunctions, that.GoscriptDeferredFunctions) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.LinkerFlags, that.LinkerFlags) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1859,6 +1878,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("goscriptDeferredFunctions")
 		s.WriteStringArray(x.GoscriptDeferredFunctions)
 	}
+	if len(x.LinkerFlags) > 0 || s.HasField("linkerFlags") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("linkerFlags")
+		s.WriteStringArray(x.LinkerFlags)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1997,6 +2021,13 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				return
 			}
 			x.GoscriptDeferredFunctions = s.ReadStringArray()
+		case "linker_flags", "linkerFlags":
+			s.AddField("linker_flags")
+			if s.ReadNil() {
+				x.LinkerFlags = nil
+				return
+			}
+			x.LinkerFlags = s.ReadStringArray()
 		}
 	})
 }
@@ -2729,6 +2760,15 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.LinkerFlags) > 0 {
+		for iNdEx := len(m.LinkerFlags) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.LinkerFlags[iNdEx])
+			i--
+			dAtA[i] = 0x1
+			i--
+			dAtA[i] = 0xa2
+		}
+	}
 	if len(m.GoscriptDeferredFunctions) > 0 {
 		for iNdEx := len(m.GoscriptDeferredFunctions) - 1; iNdEx >= 0; iNdEx-- {
 			i = protobuf_go_lite.EncodeString(dAtA, i, m.GoscriptDeferredFunctions[iNdEx])
@@ -3430,6 +3470,7 @@ func (m *Config) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(2, m.EnableImportedFactoryDiscovery)
 	n += protobuf_go_lite.SizeStringSlice(2, m.GoscriptDeferredFunctions)
+	n += protobuf_go_lite.SizeStringSlice(2, m.LinkerFlags)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3792,6 +3833,14 @@ func (x *Config) MarshalProtoText() string {
 	if len(x.GoscriptDeferredFunctions) > 0 {
 		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "goscript_deferred_functions")
 		for i, v := range x.GoscriptDeferredFunctions {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.LinkerFlags) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "linker_flags")
+		for i, v := range x.LinkerFlags {
 			protobuf_go_lite.TextWriteListSeparator(&sb, i)
 			protobuf_go_lite.TextWriteString(&sb, v)
 		}
@@ -4445,6 +4494,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.GoscriptDeferredFunctions = append(m.GoscriptDeferredFunctions, v)
+		case 20:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LinkerFlags", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.LinkerFlags = append(m.LinkerFlags, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -307,6 +308,7 @@ func (m *ModuleCompiler) CompilePlugin(
 	buildType bldr_manifest.BuildType,
 	enableCgo bool,
 	useTinygo bool,
+	linkerFlags []string,
 ) error {
 	workDir := m.pluginCodegenPath
 	return gocompiler.ExecBuildEntrypoint(
@@ -319,7 +321,7 @@ func (m *ModuleCompiler) CompilePlugin(
 		enableCgo,
 		useTinygo,
 		nil,
-		nil,
+		linkerFlags,
 	)
 }
 
@@ -369,6 +371,7 @@ func (m *ModuleCompiler) CompilePluginDevWrapper(
 	buildPlatform bldr_platform.Platform,
 	buildType bldr_manifest.BuildType,
 	enableCgo bool,
+	linkerFlags []string,
 ) error {
 	// Create the host-only development wrapper below the generated directory.
 	devSrcDir := filepath.Join(m.pluginCodegenPath, "dev")
@@ -382,16 +385,7 @@ func (m *ModuleCompiler) CompilePluginDevWrapper(
 	}
 
 	// Carry compiler and target flags into the wrapper's runtime build command.
-	goArgs := gocompiler.GetDefaultArgs()
-
-	// Add the build type's tags to the wrapper build.
-	buildTags := gocompiler.NewBuildTags(buildType)
-	if len(buildTags) != 0 {
-		goArgs = append(goArgs, "-tags="+strings.Join(buildTags, ","))
-	}
-
-	// Retain source paths and disable optimizations for debugger attachment.
-	goArgs = append(goArgs, "-gcflags", "-N -l")
+	goArgs := devPluginBuildFlags(buildType, linkerFlags)
 
 	// The development wrapper runs on the build host.
 	goEnv := gocompiler.GetDefaultEnv()
@@ -422,22 +416,64 @@ func (m *ModuleCompiler) CompilePluginDevWrapper(
 	}
 
 	// Compile the wrapper with an optional validated debugger address.
-	args := append([]string{"build", "-trimpath", "-o", outFile}, gocompiler.GetDefaultArgs()...)
-
-	// Validate the optional debugger address and link it into the wrapper.
-	if dlvAddr != "" {
-		if err := ValidateDelveAddr(dlvAddr); err != nil {
-			return errors.Wrap(err, "dlv_addr")
-		}
-		args = append(args, "-ldflags", "-X 'main.DelveAddr="+dlvAddr+"'")
+	args, err := devWrapperBuildArgs(outFile, dlvAddr, linkerFlags)
+	if err != nil {
+		return err
 	}
-
-	// Run in the generated wrapper module and retain the host's environment.
-	args = append(args, ".")
 
 	// Build the wrapper with the host Go toolchain.
 	ecmd := gocompiler.NewGoCompilerCmd(ctx, "go", args...)
 	ecmd.Env = append(ecmd.Env, "GOOS=", "GOARCH=") // host, ignore cgo-enabled
 	ecmd.Dir = devSrcDir
 	return gocompiler.ExecGoCompiler(m.le, ecmd)
+}
+
+// devPluginBuildFlags returns the go build flags the development wrapper uses
+// to build the plugin at run time: compiler flags, build type tags, debugger
+// friendly gcflags, and the configured linker flags in one -ldflags argument.
+func devPluginBuildFlags(buildType bldr_manifest.BuildType, linkerFlags []string) []string {
+	// Start from the shared compiler flags.
+	goArgs := gocompiler.GetDefaultArgs()
+
+	// Add the build type's tags to the build.
+	buildTags := gocompiler.NewBuildTags(buildType)
+	if len(buildTags) != 0 {
+		goArgs = append(goArgs, "-tags="+strings.Join(buildTags, ","))
+	}
+
+	// Retain source paths and disable optimizations for debugger attachment.
+	goArgs = append(goArgs, "-gcflags", "-N -l")
+	return append(goArgs, ldflagsArgs(linkerFlags)...)
+}
+
+// devWrapperBuildArgs returns the go build arguments that compile the
+// development wrapper to outFile. A validated debugger address is linked into
+// the wrapper and merged with the configured linker flags into one -ldflags
+// argument.
+func devWrapperBuildArgs(outFile, dlvAddr string, linkerFlags []string) ([]string, error) {
+	// Start from the shared compiler flags.
+	args := append([]string{"build", "-trimpath", "-o", outFile}, gocompiler.GetDefaultArgs()...)
+
+	// Validate the optional debugger address and link it into the wrapper.
+	ldFlags := slices.Clone(linkerFlags)
+	if dlvAddr != "" {
+		if err := ValidateDelveAddr(dlvAddr); err != nil {
+			return nil, errors.Wrap(err, "dlv_addr")
+		}
+		ldFlags = append(ldFlags, "-X 'main.DelveAddr="+dlvAddr+"'")
+	}
+	args = append(args, ldflagsArgs(ldFlags)...)
+
+	// Run in the generated wrapper module and retain the host's environment.
+	return append(args, "."), nil
+}
+
+// ldflagsArgs returns the single -ldflags argument carrying linkerFlags, or
+// nil when there are none. The go command takes at most one effective
+// -ldflags per build, so callers merge every linker flag into this argument.
+func ldflagsArgs(linkerFlags []string) []string {
+	if len(linkerFlags) == 0 {
+		return nil
+	}
+	return []string{"-ldflags", strings.Join(linkerFlags, " ")}
 }

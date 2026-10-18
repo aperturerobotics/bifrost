@@ -185,6 +185,9 @@ func (c *Config) Merge(o *Config) {
 	c.EnableImportedFactoryDiscovery = c.EnableImportedFactoryDiscovery.Merge(o.GetEnableImportedFactoryDiscovery())
 	c.EnableCompression = c.EnableCompression.Merge(o.GetEnableCompression())
 
+	// Append the linker flags override.
+	c.LinkerFlags = append(c.LinkerFlags, o.GetLinkerFlags()...)
+
 	// Append the esbuild flags override.
 	if esbuildFlags := o.GetEsbuildFlags(); len(esbuildFlags) != 0 {
 		c.EsbuildFlags = append(c.EsbuildFlags, esbuildFlags...)

@@ -355,6 +355,7 @@ func (c *Controller) BuildManifest(
 				WebPkgs:                           pluginBuildConf.GetWebPkgs(),
 				WebPluginID:                       pluginBuildConf.GetWebPluginId(),
 				DelveAddr:                         pluginBuildConf.GetDelveAddr(),
+				LinkerFlags:                       pluginBuildConf.GetLinkerFlags(),
 				DisableRpcFetch:                   pluginBuildConf.GetDisableRpcFetch(),
 				ConfigSet:                         pluginBuildConf.GetConfigSet(),
 				HostConfigSet:                     pluginBuildConf.GetHostConfigSet(),
@@ -509,6 +510,8 @@ type BuildPluginOpts struct {
 	WebPluginID string
 	// DelveAddr optionally attaches a delve debugger listening on this address.
 	DelveAddr string
+	// LinkerFlags are extra linker flags merged into the build's -ldflags.
+	LinkerFlags []string
 
 	// DisableRpcFetch disables rpc fetch controllers in the plugin.
 	DisableRpcFetch bool
@@ -1133,6 +1136,7 @@ func (c *Controller) BuildPlugin(
 			buildType,
 			enableCgo,
 			enableTinygo,
+			opts.LinkerFlags,
 		); err != nil {
 			return nil, err
 		}
@@ -1164,7 +1168,7 @@ func (c *Controller) BuildPlugin(
 	}
 	if compileDevWrapper {
 		le.Info("compiling plugin dev wrapper binary")
-		if err := mc.CompilePluginDevWrapper(ctx, le, outDistBinary, delveAddr, buildPlatform, buildType, enableCgo); err != nil {
+		if err := mc.CompilePluginDevWrapper(ctx, le, outDistBinary, delveAddr, buildPlatform, buildType, enableCgo, opts.LinkerFlags); err != nil {
 			return nil, err
 		}
 		copyFiles = append(copyFiles, "plugin.go", "config-set.bin")

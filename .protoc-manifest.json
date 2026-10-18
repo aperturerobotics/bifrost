@@ -274,7 +274,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/plugin/compiler/go": {
-      "hash": "ea2f299ef150a409efa3bba7f798794108d49d0728473d1a39a51631a16e070c",
+      "hash": "c3193be425494bc8e99bb8f59c2657517461fed5f6b717a21d88383b5a15f144",
       "generatedFiles": [
         "bldr/plugin/compiler/go/compiler.pb.go",
         "bldr/plugin/compiler/go/compiler.pb.ts"

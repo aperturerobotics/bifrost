@@ -327,6 +327,18 @@ export interface Config {
    * @generated from field: enabled.Enabled enable_imported_factory_discovery = 18;
    */
   enableImportedFactoryDiscovery?: Enabled
+  /**
+   * LinkerFlags are extra linker flags for the plugin binary, e.g.
+   * "-X github.com/example/app/sdk.Version=1.2.3". Each entry is one
+   * whitespace-separated group of flags; an entry holding a value with spaces
+   * must quote it in the syntax of go build -ldflags. The compiler merges them
+   * after its own flags (-w -s in release builds, the Delve address in dev
+   * builds) into the single -ldflags argument of the build. Build type and
+   * platform type overrides append to the base list.
+   *
+   * @generated from field: repeated string linker_flags = 20;
+   */
+  linkerFlags?: string[]
 }
 
 export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
@@ -413,6 +425,13 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
       name: 'enable_imported_factory_discovery',
       kind: 'enum',
       T: Enabled_Enum,
+    },
+    {
+      no: 20,
+      name: 'linker_flags',
+      kind: 'scalar',
+      T: ScalarType.STRING,
+      repeated: true,
     },
   ] satisfies readonly PartialFieldInfo[],
 })
