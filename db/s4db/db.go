@@ -616,8 +616,9 @@ func (db *DB) WaitDurable(ctx context.Context) error {
 // lock without waiting, and closes the file. It leaves the overlay in the log
 // for the next open to replay, which reads the log in order, rather than
 // building a checkpoint, which reads index pages across the file. Transactions
-// must end and leases be released first; Close waits for an abandoned lease
-// wait to return.
+// must end first. A lease still held ends with the file, which drops its
+// lock, and releasing it afterwards returns nil. Close waits for an abandoned
+// lease wait to return.
 func (db *DB) Close() error {
 	// Stop the warm-up so its snapshot does not hold space, and drop a
 	// running background checkpoint at its next page.
@@ -655,6 +656,13 @@ func (db *DB) Close() error {
 		err = serr
 	}
 
+	// Mark the handle closed and wake waiters before the file goes away, so a
+	// lease released from here on leaves the descriptor alone.
+	l := db.bcast.Lock()
+	db.closed.Store(true)
+	l.Broadcast()
+	l.Unlock()
+
 	// Close the watcher last, once no lease lock call is pending: on darwin
 	// closing any descriptor of the file drops the process's record locks.
 	db.lockWaits.Wait()
@@ -662,12 +670,6 @@ func (db *DB) Close() error {
 	if cerr := db.s.close(); err == nil {
 		err = cerr
 	}
-
-	// Wake waiters.
-	l := db.bcast.Lock()
-	db.closed.Store(true)
-	l.Broadcast()
-	l.Unlock()
 	return err
 }
 

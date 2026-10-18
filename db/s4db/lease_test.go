@@ -65,3 +65,34 @@ func TestLease(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// TestLeaseReleaseAfterClose checks that a lease held across Close releases
+// cleanly afterwards, and that reopening the file finds the name free.
+func TestLeaseReleaseAfterClose(t *testing.T) {
+	// Hold a lease and close the handle under it.
+	path := filepath.Join(t.TempDir(), "lease.s4wave")
+	db := openTest(t, path, Options{})
+	held, ok, err := db.TryLease("a")
+	if err != nil || !ok {
+		t.Fatalf("TryLease(a) = %v, %v", ok, err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// The release leaves the closed file alone.
+	if err := held.Release(); err != nil {
+		t.Fatalf("Release after Close = %v", err)
+	}
+
+	// The closed file dropped the lock, so a new handle takes the name.
+	db = openTest(t, path, Options{})
+	defer db.Close()
+	next, ok, err := db.TryLease("a")
+	if err != nil || !ok {
+		t.Fatalf("TryLease(a) after reopen = %v, %v", ok, err)
+	}
+	if err := next.Release(); err != nil {
+		t.Fatal(err)
+	}
+}
