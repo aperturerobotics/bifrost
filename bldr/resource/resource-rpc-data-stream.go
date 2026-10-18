@@ -1,7 +1,10 @@
 package resource
 
 import (
+	"errors"
+
 	"github.com/aperturerobotics/starpc/rpcstream"
+	"github.com/aperturerobotics/starpc/srpc"
 )
 
 // resourceRpcDataStream adapts negotiated Resource data to the SRPC codec.
@@ -10,7 +13,8 @@ type resourceRpcDataStream struct {
 	ResourceRpcStream
 	// retain leaves closure to ExecCall on clients and the route reader on servers.
 	retain bool
-	// onSendError ends responses when nested completion cannot reach the caller.
+	// onSendError ends responses when a failed transport cannot carry nested
+	// completion to the caller.
 	onSendError func()
 }
 
@@ -30,9 +34,11 @@ func (s *resourceRpcDataStream) Send(packet *rpcstream.RpcStreamPacket) error {
 		return rpcstream.ErrUnexpectedPacket
 	}
 
-	// A failed response transport cannot deliver nested completion to its caller.
+	// A failed response transport cannot deliver nested completion to its
+	// caller. An oversized packet leaves the transport intact, so the handler's
+	// error completion still reaches the caller.
 	err := s.ResourceRpcStream.Send(&ResourceRpcPacket{Body: &ResourceRpcPacket_Data{Data: data.Data}})
-	if err != nil && s.onSendError != nil {
+	if err != nil && !errors.Is(err, srpc.ErrMessageTooLarge) && s.onSendError != nil {
 		s.onSendError()
 	}
 	return err
