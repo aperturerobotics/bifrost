@@ -727,183 +727,341 @@ func (x *WasiVmWindowSize) GetHeight() uint32 {
 	return 0
 }
 
-// WasiVmDisplayFrame is a change to the screen: areas the viewer moves on its
-// copy, then regions it draws over the result.
-type WasiVmDisplayFrame struct {
+// WasiVmScene is a change to the scene a viewer draws: the screen, the
+// surfaces stacked on it as layers, where their roots sit, and pixels for the
+// layers' textures. Each field left unset keeps what the viewer has. The
+// viewer applies the screen, the layers and the roots, then the patches, and
+// draws the result.
+type WasiVmScene struct {
 	unknownFields []byte
-	// ScreenWidth is the screen's width in pixels.
-	ScreenWidth uint32 `protobuf:"varint,1,opt,name=screen_width,json=screenWidth,proto3" json:"screenWidth,omitempty"`
-	// ScreenHeight is the screen's height in pixels.
-	ScreenHeight uint32 `protobuf:"varint,2,opt,name=screen_height,json=screenHeight,proto3" json:"screenHeight,omitempty"`
-	// Copies move areas of the viewer's screen, in order, before the regions
-	// draw.
-	Copies []*WasiVmDisplayCopy `protobuf:"bytes,3,rep,name=copies,proto3" json:"copies,omitempty"`
-	// Regions draw pixels over the screen after the copies.
-	Regions []*WasiVmDisplayRegion `protobuf:"bytes,4,rep,name=regions,proto3" json:"regions,omitempty"`
-	// Scale is the number of screen pixels per CSS pixel the viewer shows the
-	// screen at; zero means one.
-	Scale uint32 `protobuf:"varint,5,opt,name=scale,proto3" json:"scale,omitempty"`
+	// Screen is the screen's size and scale, when they change.
+	Screen *WasiVmSceneScreen `protobuf:"bytes,1,opt,name=screen,proto3" json:"screen,omitempty"`
+	// Layers is every visible surface, bottom to top, when the arrangement
+	// changes. A layer missing from the list is dropped with its texture.
+	Layers *WasiVmSceneLayers `protobuf:"bytes,2,opt,name=layers,proto3" json:"layers,omitempty"`
+	// Roots is the position of every root, when any moves.
+	Roots *WasiVmSceneRoots `protobuf:"bytes,3,opt,name=roots,proto3" json:"roots,omitempty"`
+	// Patches draws pixels into the layers' textures, in order.
+	Patches []*WasiVmScenePatch `protobuf:"bytes,4,rep,name=patches,proto3" json:"patches,omitempty"`
 }
 
-func (x *WasiVmDisplayFrame) Reset() {
-	*x = WasiVmDisplayFrame{}
+func (x *WasiVmScene) Reset() {
+	*x = WasiVmScene{}
 }
 
-func (*WasiVmDisplayFrame) ProtoMessage() {}
+func (*WasiVmScene) ProtoMessage() {}
 
-func (x *WasiVmDisplayFrame) GetScreenWidth() uint32 {
+func (x *WasiVmScene) GetScreen() *WasiVmSceneScreen {
 	if x != nil {
-		return x.ScreenWidth
-	}
-	return 0
-}
-
-func (x *WasiVmDisplayFrame) GetScreenHeight() uint32 {
-	if x != nil {
-		return x.ScreenHeight
-	}
-	return 0
-}
-
-func (x *WasiVmDisplayFrame) GetCopies() []*WasiVmDisplayCopy {
-	if x != nil {
-		return x.Copies
+		return x.Screen
 	}
 	return nil
 }
 
-func (x *WasiVmDisplayFrame) GetRegions() []*WasiVmDisplayRegion {
+func (x *WasiVmScene) GetLayers() *WasiVmSceneLayers {
 	if x != nil {
-		return x.Regions
+		return x.Layers
 	}
 	return nil
 }
 
-func (x *WasiVmDisplayFrame) GetScale() uint32 {
+func (x *WasiVmScene) GetRoots() *WasiVmSceneRoots {
+	if x != nil {
+		return x.Roots
+	}
+	return nil
+}
+
+func (x *WasiVmScene) GetPatches() []*WasiVmScenePatch {
+	if x != nil {
+		return x.Patches
+	}
+	return nil
+}
+
+// WasiVmSceneScreen is the screen's size in units, the viewer's CSS pixels,
+// and the scale it is drawn at.
+type WasiVmSceneScreen struct {
+	unknownFields []byte
+	// Width is the screen's width in units.
+	Width uint32 `protobuf:"varint,1,opt,name=width,proto3" json:"width,omitempty"`
+	// Height is the screen's height in units.
+	Height uint32 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	// Scale is the screen pixels a side per unit; zero means one.
+	Scale uint32 `protobuf:"varint,3,opt,name=scale,proto3" json:"scale,omitempty"`
+	// Background is the color behind the layers, as red, green, blue and
+	// alpha bytes from the most significant.
+	Background uint32 `protobuf:"fixed32,4,opt,name=background,proto3" json:"background,omitempty"`
+}
+
+func (x *WasiVmSceneScreen) Reset() {
+	*x = WasiVmSceneScreen{}
+}
+
+func (*WasiVmSceneScreen) ProtoMessage() {}
+
+func (x *WasiVmSceneScreen) GetWidth() uint32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *WasiVmSceneScreen) GetHeight() uint32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *WasiVmSceneScreen) GetScale() uint32 {
 	if x != nil {
 		return x.Scale
 	}
 	return 0
 }
 
-// WasiVmDisplayCopy moves an area of the viewer's screen, as a window that
-// moves on screen does, so its pixels need not be sent again. The source and
-// the destination lie inside the screen and may overlap.
-type WasiVmDisplayCopy struct {
+func (x *WasiVmSceneScreen) GetBackground() uint32 {
+	if x != nil {
+		return x.Background
+	}
+	return 0
+}
+
+// WasiVmSceneLayers is the scene's layers, bottom to top.
+type WasiVmSceneLayers struct {
 	unknownFields []byte
-	// X is the left edge of the source area.
-	X uint32 `protobuf:"varint,1,opt,name=x,proto3" json:"x,omitempty"`
-	// Y is the top edge of the source area.
-	Y uint32 `protobuf:"varint,2,opt,name=y,proto3" json:"y,omitempty"`
-	// Width is the area's width in pixels.
-	Width uint32 `protobuf:"varint,3,opt,name=width,proto3" json:"width,omitempty"`
-	// Height is the area's height in pixels.
-	Height uint32 `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty"`
-	// ToX is the left edge of the destination.
-	ToX uint32 `protobuf:"varint,5,opt,name=to_x,json=toX,proto3" json:"toX,omitempty"`
-	// ToY is the top edge of the destination.
-	ToY uint32 `protobuf:"varint,6,opt,name=to_y,json=toY,proto3" json:"toY,omitempty"`
+	// Layers is the layers, bottom to top.
+	Layers []*WasiVmSceneLayer `protobuf:"bytes,1,rep,name=layers,proto3" json:"layers,omitempty"`
 }
 
-func (x *WasiVmDisplayCopy) Reset() {
-	*x = WasiVmDisplayCopy{}
+func (x *WasiVmSceneLayers) Reset() {
+	*x = WasiVmSceneLayers{}
 }
 
-func (*WasiVmDisplayCopy) ProtoMessage() {}
+func (*WasiVmSceneLayers) ProtoMessage() {}
 
-func (x *WasiVmDisplayCopy) GetX() uint32 {
+func (x *WasiVmSceneLayers) GetLayers() []*WasiVmSceneLayer {
+	if x != nil {
+		return x.Layers
+	}
+	return nil
+}
+
+// WasiVmSceneLayer is one surface: a texture drawn at an offset from its root.
+type WasiVmSceneLayer struct {
+	unknownFields []byte
+	// Id identifies the layer and its texture for the life of the stream.
+	Id uint32 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Root is the id of the root the layer moves with: its window or layer
+	// shell surface.
+	Root uint32 `protobuf:"varint,2,opt,name=root,proto3" json:"root,omitempty"`
+	// X is the left edge in units from the root's position.
+	X int32 `protobuf:"varint,3,opt,name=x,proto3" json:"x,omitempty"`
+	// Y is the top edge in units from the root's position.
+	Y int32 `protobuf:"varint,4,opt,name=y,proto3" json:"y,omitempty"`
+	// Width is the width the layer covers in units.
+	Width uint32 `protobuf:"varint,5,opt,name=width,proto3" json:"width,omitempty"`
+	// Height is the height the layer covers in units.
+	Height uint32 `protobuf:"varint,6,opt,name=height,proto3" json:"height,omitempty"`
+	// TextureWidth is the texture's width in pixels. A layer whose texture
+	// size changes gets a new texture, which a patch then fills.
+	TextureWidth uint32 `protobuf:"varint,7,opt,name=texture_width,json=textureWidth,proto3" json:"textureWidth,omitempty"`
+	// TextureHeight is the texture's height in pixels.
+	TextureHeight uint32 `protobuf:"varint,8,opt,name=texture_height,json=textureHeight,proto3" json:"textureHeight,omitempty"`
+	// Opaque is set when every pixel of the texture is opaque, so the layer
+	// replaces what is under it instead of blending.
+	Opaque bool `protobuf:"varint,9,opt,name=opaque,proto3" json:"opaque,omitempty"`
+}
+
+func (x *WasiVmSceneLayer) Reset() {
+	*x = WasiVmSceneLayer{}
+}
+
+func (*WasiVmSceneLayer) ProtoMessage() {}
+
+func (x *WasiVmSceneLayer) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *WasiVmSceneLayer) GetRoot() uint32 {
+	if x != nil {
+		return x.Root
+	}
+	return 0
+}
+
+func (x *WasiVmSceneLayer) GetX() int32 {
 	if x != nil {
 		return x.X
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayCopy) GetY() uint32 {
+func (x *WasiVmSceneLayer) GetY() int32 {
 	if x != nil {
 		return x.Y
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayCopy) GetWidth() uint32 {
+func (x *WasiVmSceneLayer) GetWidth() uint32 {
 	if x != nil {
 		return x.Width
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayCopy) GetHeight() uint32 {
+func (x *WasiVmSceneLayer) GetHeight() uint32 {
 	if x != nil {
 		return x.Height
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayCopy) GetToX() uint32 {
+func (x *WasiVmSceneLayer) GetTextureWidth() uint32 {
 	if x != nil {
-		return x.ToX
+		return x.TextureWidth
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayCopy) GetToY() uint32 {
+func (x *WasiVmSceneLayer) GetTextureHeight() uint32 {
 	if x != nil {
-		return x.ToY
+		return x.TextureHeight
 	}
 	return 0
 }
 
-// WasiVmDisplayRegion is a rectangle of the screen's pixels.
-type WasiVmDisplayRegion struct {
+func (x *WasiVmSceneLayer) GetOpaque() bool {
+	if x != nil {
+		return x.Opaque
+	}
+	return false
+}
+
+// WasiVmSceneRoots is the position of every root.
+type WasiVmSceneRoots struct {
 	unknownFields []byte
-	// X is the left edge of the region.
-	X uint32 `protobuf:"varint,1,opt,name=x,proto3" json:"x,omitempty"`
-	// Y is the top edge of the region.
-	Y uint32 `protobuf:"varint,2,opt,name=y,proto3" json:"y,omitempty"`
-	// Width is the region's width in pixels.
-	Width uint32 `protobuf:"varint,3,opt,name=width,proto3" json:"width,omitempty"`
-	// Height is the region's height in pixels.
-	Height uint32 `protobuf:"varint,4,opt,name=height,proto3" json:"height,omitempty"`
-	// Rgba holds the region's pixels row by row, four bytes each: red, green,
-	// blue and an opaque alpha.
-	Rgba []byte `protobuf:"bytes,5,opt,name=rgba,proto3" json:"rgba,omitempty"`
+	// Roots is the roots, in any order.
+	Roots []*WasiVmSceneRoot `protobuf:"bytes,1,rep,name=roots,proto3" json:"roots,omitempty"`
 }
 
-func (x *WasiVmDisplayRegion) Reset() {
-	*x = WasiVmDisplayRegion{}
+func (x *WasiVmSceneRoots) Reset() {
+	*x = WasiVmSceneRoots{}
 }
 
-func (*WasiVmDisplayRegion) ProtoMessage() {}
+func (*WasiVmSceneRoots) ProtoMessage() {}
 
-func (x *WasiVmDisplayRegion) GetX() uint32 {
+func (x *WasiVmSceneRoots) GetRoots() []*WasiVmSceneRoot {
+	if x != nil {
+		return x.Roots
+	}
+	return nil
+}
+
+// WasiVmSceneRoot is a window or layer shell surface that its layers move
+// with.
+type WasiVmSceneRoot struct {
+	unknownFields []byte
+	// Id identifies the root for the life of the stream.
+	Id uint32 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// X is the root's left edge on the screen in units.
+	X int32 `protobuf:"varint,2,opt,name=x,proto3" json:"x,omitempty"`
+	// Y is the root's top edge on the screen in units.
+	Y int32 `protobuf:"varint,3,opt,name=y,proto3" json:"y,omitempty"`
+}
+
+func (x *WasiVmSceneRoot) Reset() {
+	*x = WasiVmSceneRoot{}
+}
+
+func (*WasiVmSceneRoot) ProtoMessage() {}
+
+func (x *WasiVmSceneRoot) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *WasiVmSceneRoot) GetX() int32 {
 	if x != nil {
 		return x.X
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayRegion) GetY() uint32 {
+func (x *WasiVmSceneRoot) GetY() int32 {
 	if x != nil {
 		return x.Y
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayRegion) GetWidth() uint32 {
+// WasiVmScenePatch is a rectangle of a layer's texture.
+type WasiVmScenePatch struct {
+	unknownFields []byte
+	// Layer is the id of the layer whose texture the patch draws into.
+	Layer uint32 `protobuf:"varint,1,opt,name=layer,proto3" json:"layer,omitempty"`
+	// X is the left edge in texture pixels.
+	X uint32 `protobuf:"varint,2,opt,name=x,proto3" json:"x,omitempty"`
+	// Y is the top edge in texture pixels.
+	Y uint32 `protobuf:"varint,3,opt,name=y,proto3" json:"y,omitempty"`
+	// Width is the width in texture pixels.
+	Width uint32 `protobuf:"varint,4,opt,name=width,proto3" json:"width,omitempty"`
+	// Height is the height in texture pixels.
+	Height uint32 `protobuf:"varint,5,opt,name=height,proto3" json:"height,omitempty"`
+	// Rgba holds the pixels row by row, four bytes each: red, green and blue
+	// premultiplied by alpha, then alpha.
+	Rgba []byte `protobuf:"bytes,6,opt,name=rgba,proto3" json:"rgba,omitempty"`
+}
+
+func (x *WasiVmScenePatch) Reset() {
+	*x = WasiVmScenePatch{}
+}
+
+func (*WasiVmScenePatch) ProtoMessage() {}
+
+func (x *WasiVmScenePatch) GetLayer() uint32 {
+	if x != nil {
+		return x.Layer
+	}
+	return 0
+}
+
+func (x *WasiVmScenePatch) GetX() uint32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *WasiVmScenePatch) GetY() uint32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *WasiVmScenePatch) GetWidth() uint32 {
 	if x != nil {
 		return x.Width
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayRegion) GetHeight() uint32 {
+func (x *WasiVmScenePatch) GetHeight() uint32 {
 	if x != nil {
 		return x.Height
 	}
 	return 0
 }
 
-func (x *WasiVmDisplayRegion) GetRgba() []byte {
+func (x *WasiVmScenePatch) GetRgba() []byte {
 	if x != nil {
 		return x.Rgba
 	}
@@ -1453,52 +1611,124 @@ func (m *WasiVmWindowSize) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
-func (m *WasiVmDisplayFrame) CloneVT() *WasiVmDisplayFrame {
+func (m *WasiVmScene) CloneVT() *WasiVmScene {
 	if m == nil {
-		return (*WasiVmDisplayFrame)(nil)
+		return (*WasiVmScene)(nil)
 	}
-	r := new(WasiVmDisplayFrame)
-	r.ScreenWidth = m.ScreenWidth
-	r.ScreenHeight = m.ScreenHeight
-	r.Scale = m.Scale
-	r.Copies = protobuf_go_lite.CloneVTSlice(m.Copies)
-	r.Regions = protobuf_go_lite.CloneVTSlice(m.Regions)
+	r := new(WasiVmScene)
+	r.Screen = protobuf_go_lite.CloneVTValue(m.Screen)
+	r.Layers = protobuf_go_lite.CloneVTValue(m.Layers)
+	r.Roots = protobuf_go_lite.CloneVTValue(m.Roots)
+	r.Patches = protobuf_go_lite.CloneVTSlice(m.Patches)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
 	return r
 }
 
-func (m *WasiVmDisplayFrame) CloneMessageVT() protobuf_go_lite.CloneMessage {
+func (m *WasiVmScene) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
-func (m *WasiVmDisplayCopy) CloneVT() *WasiVmDisplayCopy {
+func (m *WasiVmSceneScreen) CloneVT() *WasiVmSceneScreen {
 	if m == nil {
-		return (*WasiVmDisplayCopy)(nil)
+		return (*WasiVmSceneScreen)(nil)
 	}
-	r := new(WasiVmDisplayCopy)
+	r := new(WasiVmSceneScreen)
+	r.Width = m.Width
+	r.Height = m.Height
+	r.Scale = m.Scale
+	r.Background = m.Background
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmSceneScreen) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmSceneLayers) CloneVT() *WasiVmSceneLayers {
+	if m == nil {
+		return (*WasiVmSceneLayers)(nil)
+	}
+	r := new(WasiVmSceneLayers)
+	r.Layers = protobuf_go_lite.CloneVTSlice(m.Layers)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmSceneLayers) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmSceneLayer) CloneVT() *WasiVmSceneLayer {
+	if m == nil {
+		return (*WasiVmSceneLayer)(nil)
+	}
+	r := new(WasiVmSceneLayer)
+	r.Id = m.Id
+	r.Root = m.Root
 	r.X = m.X
 	r.Y = m.Y
 	r.Width = m.Width
 	r.Height = m.Height
-	r.ToX = m.ToX
-	r.ToY = m.ToY
+	r.TextureWidth = m.TextureWidth
+	r.TextureHeight = m.TextureHeight
+	r.Opaque = m.Opaque
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
 	return r
 }
 
-func (m *WasiVmDisplayCopy) CloneMessageVT() protobuf_go_lite.CloneMessage {
+func (m *WasiVmSceneLayer) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
-func (m *WasiVmDisplayRegion) CloneVT() *WasiVmDisplayRegion {
+func (m *WasiVmSceneRoots) CloneVT() *WasiVmSceneRoots {
 	if m == nil {
-		return (*WasiVmDisplayRegion)(nil)
+		return (*WasiVmSceneRoots)(nil)
 	}
-	r := new(WasiVmDisplayRegion)
+	r := new(WasiVmSceneRoots)
+	r.Roots = protobuf_go_lite.CloneVTSlice(m.Roots)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmSceneRoots) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmSceneRoot) CloneVT() *WasiVmSceneRoot {
+	if m == nil {
+		return (*WasiVmSceneRoot)(nil)
+	}
+	r := new(WasiVmSceneRoot)
+	r.Id = m.Id
+	r.X = m.X
+	r.Y = m.Y
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmSceneRoot) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmScenePatch) CloneVT() *WasiVmScenePatch {
+	if m == nil {
+		return (*WasiVmScenePatch)(nil)
+	}
+	r := new(WasiVmScenePatch)
+	r.Layer = m.Layer
 	r.X = m.X
 	r.Y = m.Y
 	r.Width = m.Width
@@ -1510,7 +1740,7 @@ func (m *WasiVmDisplayRegion) CloneVT() *WasiVmDisplayRegion {
 	return r
 }
 
-func (m *WasiVmDisplayRegion) CloneMessageVT() protobuf_go_lite.CloneMessage {
+func (m *WasiVmScenePatch) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -2128,42 +2358,94 @@ func (this *WasiVmWindowSize) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
-func (this *WasiVmDisplayFrame) EqualVT(that *WasiVmDisplayFrame) bool {
+func (this *WasiVmScene) EqualVT(that *WasiVmScene) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
 		return false
 	}
-	if this.ScreenWidth != that.ScreenWidth {
+	if !protobuf_go_lite.IsEqualVT(this.Screen, that.Screen) {
 		return false
 	}
-	if this.ScreenHeight != that.ScreenHeight {
+	if !protobuf_go_lite.IsEqualVT(this.Layers, that.Layers) {
 		return false
 	}
-	if !protobuf_go_lite.EqualVTSliceImplicit(this.Copies, that.Copies, func() *WasiVmDisplayCopy { return &WasiVmDisplayCopy{} }) {
+	if !protobuf_go_lite.IsEqualVT(this.Roots, that.Roots) {
 		return false
 	}
-	if !protobuf_go_lite.EqualVTSliceImplicit(this.Regions, that.Regions, func() *WasiVmDisplayRegion { return &WasiVmDisplayRegion{} }) {
-		return false
-	}
-	if this.Scale != that.Scale {
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Patches, that.Patches, func() *WasiVmScenePatch { return &WasiVmScenePatch{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
-func (this *WasiVmDisplayFrame) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*WasiVmDisplayFrame)
+func (this *WasiVmScene) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmScene)
 	if !ok {
 		return false
 	}
 	return this.EqualVT(that)
 }
 
-func (this *WasiVmDisplayCopy) EqualVT(that *WasiVmDisplayCopy) bool {
+func (this *WasiVmSceneScreen) EqualVT(that *WasiVmSceneScreen) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Width != that.Width {
+		return false
+	}
+	if this.Height != that.Height {
+		return false
+	}
+	if this.Scale != that.Scale {
+		return false
+	}
+	if this.Background != that.Background {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmSceneScreen) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneScreen)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmSceneLayers) EqualVT(that *WasiVmSceneLayers) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Layers, that.Layers, func() *WasiVmSceneLayer { return &WasiVmSceneLayer{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmSceneLayers) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneLayers)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmSceneLayer) EqualVT(that *WasiVmSceneLayer) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Id != that.Id {
+		return false
+	}
+	if this.Root != that.Root {
 		return false
 	}
 	if this.X != that.X {
@@ -2178,27 +2460,79 @@ func (this *WasiVmDisplayCopy) EqualVT(that *WasiVmDisplayCopy) bool {
 	if this.Height != that.Height {
 		return false
 	}
-	if this.ToX != that.ToX {
+	if this.TextureWidth != that.TextureWidth {
 		return false
 	}
-	if this.ToY != that.ToY {
+	if this.TextureHeight != that.TextureHeight {
+		return false
+	}
+	if this.Opaque != that.Opaque {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
-func (this *WasiVmDisplayCopy) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*WasiVmDisplayCopy)
+func (this *WasiVmSceneLayer) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneLayer)
 	if !ok {
 		return false
 	}
 	return this.EqualVT(that)
 }
 
-func (this *WasiVmDisplayRegion) EqualVT(that *WasiVmDisplayRegion) bool {
+func (this *WasiVmSceneRoots) EqualVT(that *WasiVmSceneRoots) bool {
 	if this == that {
 		return true
 	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Roots, that.Roots, func() *WasiVmSceneRoot { return &WasiVmSceneRoot{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmSceneRoots) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneRoots)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmSceneRoot) EqualVT(that *WasiVmSceneRoot) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Id != that.Id {
+		return false
+	}
+	if this.X != that.X {
+		return false
+	}
+	if this.Y != that.Y {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmSceneRoot) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneRoot)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmScenePatch) EqualVT(that *WasiVmScenePatch) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Layer != that.Layer {
 		return false
 	}
 	if this.X != that.X {
@@ -2219,8 +2553,8 @@ func (this *WasiVmDisplayRegion) EqualVT(that *WasiVmDisplayRegion) bool {
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
-func (this *WasiVmDisplayRegion) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*WasiVmDisplayRegion)
+func (this *WasiVmScenePatch) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmScenePatch)
 	if !ok {
 		return false
 	}
@@ -3547,61 +3881,50 @@ func (x *WasiVmWindowSize) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-// MarshalProtoJSON marshals the WasiVmDisplayFrame message to JSON.
-func (x *WasiVmDisplayFrame) MarshalProtoJSON(s *json.MarshalState) {
+// MarshalProtoJSON marshals the WasiVmScene message to JSON.
+func (x *WasiVmScene) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
 		s.WriteNil()
 		return
 	}
 	s.WriteObjectStart()
 	var wroteField bool
-	if x.ScreenWidth != 0 || s.HasField("screenWidth") {
+	if x.Screen != nil || s.HasField("screen") {
 		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("screenWidth")
-		s.WriteUint32(x.ScreenWidth)
+		s.WriteObjectField("screen")
+		x.Screen.MarshalProtoJSON(s.WithField("screen"))
 	}
-	if x.ScreenHeight != 0 || s.HasField("screenHeight") {
+	if x.Layers != nil || s.HasField("layers") {
 		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("screenHeight")
-		s.WriteUint32(x.ScreenHeight)
+		s.WriteObjectField("layers")
+		x.Layers.MarshalProtoJSON(s.WithField("layers"))
 	}
-	if len(x.Copies) > 0 || s.HasField("copies") {
+	if x.Roots != nil || s.HasField("roots") {
 		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("copies")
+		s.WriteObjectField("roots")
+		x.Roots.MarshalProtoJSON(s.WithField("roots"))
+	}
+	if len(x.Patches) > 0 || s.HasField("patches") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("patches")
 		s.WriteArrayStart()
 		var wroteElement bool
-		for _, element := range x.Copies {
+		for _, element := range x.Patches {
 			s.WriteMoreIf(&wroteElement)
-			element.MarshalProtoJSON(s.WithField("copies"))
+			element.MarshalProtoJSON(s.WithField("patches"))
 		}
 		s.WriteArrayEnd()
-	}
-	if len(x.Regions) > 0 || s.HasField("regions") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("regions")
-		s.WriteArrayStart()
-		var wroteElement bool
-		for _, element := range x.Regions {
-			s.WriteMoreIf(&wroteElement)
-			element.MarshalProtoJSON(s.WithField("regions"))
-		}
-		s.WriteArrayEnd()
-	}
-	if x.Scale != 0 || s.HasField("scale") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("scale")
-		s.WriteUint32(x.Scale)
 	}
 	s.WriteObjectEnd()
 }
 
-// MarshalJSON marshals the WasiVmDisplayFrame to JSON.
-func (x *WasiVmDisplayFrame) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the WasiVmScene to JSON.
+func (x *WasiVmScene) MarshalJSON() ([]byte, error) {
 	return json.DefaultMarshalerConfig.Marshal(x)
 }
 
-// UnmarshalProtoJSON unmarshals the WasiVmDisplayFrame message from JSON.
-func (x *WasiVmDisplayFrame) UnmarshalProtoJSON(s *json.UnmarshalState) {
+// UnmarshalProtoJSON unmarshals the WasiVmScene message from JSON.
+func (x *WasiVmScene) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
@@ -3609,77 +3932,210 @@ func (x *WasiVmDisplayFrame) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		switch key {
 		default:
 			s.Skip() // ignore unknown field
-		case "screen_width", "screenWidth":
-			s.AddField("screen_width")
-			x.ScreenWidth = s.ReadUint32()
-		case "screen_height", "screenHeight":
-			s.AddField("screen_height")
-			x.ScreenHeight = s.ReadUint32()
-		case "copies":
-			s.AddField("copies")
+		case "screen":
 			if s.ReadNil() {
-				x.Copies = nil
+				x.Screen = nil
+				return
+			}
+			x.Screen = &WasiVmSceneScreen{}
+			x.Screen.UnmarshalProtoJSON(s.WithField("screen", true))
+		case "layers":
+			if s.ReadNil() {
+				x.Layers = nil
+				return
+			}
+			x.Layers = &WasiVmSceneLayers{}
+			x.Layers.UnmarshalProtoJSON(s.WithField("layers", true))
+		case "roots":
+			if s.ReadNil() {
+				x.Roots = nil
+				return
+			}
+			x.Roots = &WasiVmSceneRoots{}
+			x.Roots.UnmarshalProtoJSON(s.WithField("roots", true))
+		case "patches":
+			s.AddField("patches")
+			if s.ReadNil() {
+				x.Patches = nil
 				return
 			}
 			s.ReadArray(func() {
 				if s.ReadNil() {
-					x.Copies = append(x.Copies, nil)
+					x.Patches = append(x.Patches, nil)
 					return
 				}
-				v := &WasiVmDisplayCopy{}
-				v.UnmarshalProtoJSON(s.WithField("copies", false))
+				v := &WasiVmScenePatch{}
+				v.UnmarshalProtoJSON(s.WithField("patches", false))
 				if s.Err() != nil {
 					return
 				}
-				x.Copies = append(x.Copies, v)
+				x.Patches = append(x.Patches, v)
 			})
-		case "regions":
-			s.AddField("regions")
-			if s.ReadNil() {
-				x.Regions = nil
-				return
-			}
-			s.ReadArray(func() {
-				if s.ReadNil() {
-					x.Regions = append(x.Regions, nil)
-					return
-				}
-				v := &WasiVmDisplayRegion{}
-				v.UnmarshalProtoJSON(s.WithField("regions", false))
-				if s.Err() != nil {
-					return
-				}
-				x.Regions = append(x.Regions, v)
-			})
-		case "scale":
-			s.AddField("scale")
-			x.Scale = s.ReadUint32()
 		}
 	})
 }
 
-// UnmarshalJSON unmarshals the WasiVmDisplayFrame from JSON.
-func (x *WasiVmDisplayFrame) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals the WasiVmScene from JSON.
+func (x *WasiVmScene) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-// MarshalProtoJSON marshals the WasiVmDisplayCopy message to JSON.
-func (x *WasiVmDisplayCopy) MarshalProtoJSON(s *json.MarshalState) {
+// MarshalProtoJSON marshals the WasiVmSceneScreen message to JSON.
+func (x *WasiVmSceneScreen) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
 		s.WriteNil()
 		return
 	}
 	s.WriteObjectStart()
 	var wroteField bool
+	if x.Width != 0 || s.HasField("width") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("width")
+		s.WriteUint32(x.Width)
+	}
+	if x.Height != 0 || s.HasField("height") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("height")
+		s.WriteUint32(x.Height)
+	}
+	if x.Scale != 0 || s.HasField("scale") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("scale")
+		s.WriteUint32(x.Scale)
+	}
+	if x.Background != 0 || s.HasField("background") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("background")
+		s.WriteUint32(x.Background)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmSceneScreen to JSON.
+func (x *WasiVmSceneScreen) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneScreen message from JSON.
+func (x *WasiVmSceneScreen) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "width":
+			s.AddField("width")
+			x.Width = s.ReadUint32()
+		case "height":
+			s.AddField("height")
+			x.Height = s.ReadUint32()
+		case "scale":
+			s.AddField("scale")
+			x.Scale = s.ReadUint32()
+		case "background":
+			s.AddField("background")
+			x.Background = s.ReadUint32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneScreen from JSON.
+func (x *WasiVmSceneScreen) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmSceneLayers message to JSON.
+func (x *WasiVmSceneLayers) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Layers) > 0 || s.HasField("layers") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("layers")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Layers {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("layers"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmSceneLayers to JSON.
+func (x *WasiVmSceneLayers) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneLayers message from JSON.
+func (x *WasiVmSceneLayers) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "layers":
+			s.AddField("layers")
+			if s.ReadNil() {
+				x.Layers = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Layers = append(x.Layers, nil)
+					return
+				}
+				v := &WasiVmSceneLayer{}
+				v.UnmarshalProtoJSON(s.WithField("layers", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Layers = append(x.Layers, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneLayers from JSON.
+func (x *WasiVmSceneLayers) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmSceneLayer message to JSON.
+func (x *WasiVmSceneLayer) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Id != 0 || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteUint32(x.Id)
+	}
+	if x.Root != 0 || s.HasField("root") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("root")
+		s.WriteUint32(x.Root)
+	}
 	if x.X != 0 || s.HasField("x") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("x")
-		s.WriteUint32(x.X)
+		s.WriteInt32(x.X)
 	}
 	if x.Y != 0 || s.HasField("y") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("y")
-		s.WriteUint32(x.Y)
+		s.WriteInt32(x.Y)
 	}
 	if x.Width != 0 || s.HasField("width") {
 		s.WriteMoreIf(&wroteField)
@@ -3691,26 +4147,31 @@ func (x *WasiVmDisplayCopy) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("height")
 		s.WriteUint32(x.Height)
 	}
-	if x.ToX != 0 || s.HasField("toX") {
+	if x.TextureWidth != 0 || s.HasField("textureWidth") {
 		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("toX")
-		s.WriteUint32(x.ToX)
+		s.WriteObjectField("textureWidth")
+		s.WriteUint32(x.TextureWidth)
 	}
-	if x.ToY != 0 || s.HasField("toY") {
+	if x.TextureHeight != 0 || s.HasField("textureHeight") {
 		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("toY")
-		s.WriteUint32(x.ToY)
+		s.WriteObjectField("textureHeight")
+		s.WriteUint32(x.TextureHeight)
+	}
+	if x.Opaque || s.HasField("opaque") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("opaque")
+		s.WriteBool(x.Opaque)
 	}
 	s.WriteObjectEnd()
 }
 
-// MarshalJSON marshals the WasiVmDisplayCopy to JSON.
-func (x *WasiVmDisplayCopy) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the WasiVmSceneLayer to JSON.
+func (x *WasiVmSceneLayer) MarshalJSON() ([]byte, error) {
 	return json.DefaultMarshalerConfig.Marshal(x)
 }
 
-// UnmarshalProtoJSON unmarshals the WasiVmDisplayCopy message from JSON.
-func (x *WasiVmDisplayCopy) UnmarshalProtoJSON(s *json.UnmarshalState) {
+// UnmarshalProtoJSON unmarshals the WasiVmSceneLayer message from JSON.
+func (x *WasiVmSceneLayer) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
@@ -3718,41 +4179,176 @@ func (x *WasiVmDisplayCopy) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		switch key {
 		default:
 			s.Skip() // ignore unknown field
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadUint32()
+		case "root":
+			s.AddField("root")
+			x.Root = s.ReadUint32()
 		case "x":
 			s.AddField("x")
-			x.X = s.ReadUint32()
+			x.X = s.ReadInt32()
 		case "y":
 			s.AddField("y")
-			x.Y = s.ReadUint32()
+			x.Y = s.ReadInt32()
 		case "width":
 			s.AddField("width")
 			x.Width = s.ReadUint32()
 		case "height":
 			s.AddField("height")
 			x.Height = s.ReadUint32()
-		case "to_x", "toX":
-			s.AddField("to_x")
-			x.ToX = s.ReadUint32()
-		case "to_y", "toY":
-			s.AddField("to_y")
-			x.ToY = s.ReadUint32()
+		case "texture_width", "textureWidth":
+			s.AddField("texture_width")
+			x.TextureWidth = s.ReadUint32()
+		case "texture_height", "textureHeight":
+			s.AddField("texture_height")
+			x.TextureHeight = s.ReadUint32()
+		case "opaque":
+			s.AddField("opaque")
+			x.Opaque = s.ReadBool()
 		}
 	})
 }
 
-// UnmarshalJSON unmarshals the WasiVmDisplayCopy from JSON.
-func (x *WasiVmDisplayCopy) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals the WasiVmSceneLayer from JSON.
+func (x *WasiVmSceneLayer) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-// MarshalProtoJSON marshals the WasiVmDisplayRegion message to JSON.
-func (x *WasiVmDisplayRegion) MarshalProtoJSON(s *json.MarshalState) {
+// MarshalProtoJSON marshals the WasiVmSceneRoots message to JSON.
+func (x *WasiVmSceneRoots) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
 		s.WriteNil()
 		return
 	}
 	s.WriteObjectStart()
 	var wroteField bool
+	if len(x.Roots) > 0 || s.HasField("roots") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("roots")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Roots {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("roots"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmSceneRoots to JSON.
+func (x *WasiVmSceneRoots) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneRoots message from JSON.
+func (x *WasiVmSceneRoots) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "roots":
+			s.AddField("roots")
+			if s.ReadNil() {
+				x.Roots = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Roots = append(x.Roots, nil)
+					return
+				}
+				v := &WasiVmSceneRoot{}
+				v.UnmarshalProtoJSON(s.WithField("roots", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Roots = append(x.Roots, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneRoots from JSON.
+func (x *WasiVmSceneRoots) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmSceneRoot message to JSON.
+func (x *WasiVmSceneRoot) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Id != 0 || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteUint32(x.Id)
+	}
+	if x.X != 0 || s.HasField("x") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("x")
+		s.WriteInt32(x.X)
+	}
+	if x.Y != 0 || s.HasField("y") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("y")
+		s.WriteInt32(x.Y)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmSceneRoot to JSON.
+func (x *WasiVmSceneRoot) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneRoot message from JSON.
+func (x *WasiVmSceneRoot) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadUint32()
+		case "x":
+			s.AddField("x")
+			x.X = s.ReadInt32()
+		case "y":
+			s.AddField("y")
+			x.Y = s.ReadInt32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneRoot from JSON.
+func (x *WasiVmSceneRoot) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmScenePatch message to JSON.
+func (x *WasiVmScenePatch) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Layer != 0 || s.HasField("layer") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("layer")
+		s.WriteUint32(x.Layer)
+	}
 	if x.X != 0 || s.HasField("x") {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("x")
@@ -3781,13 +4377,13 @@ func (x *WasiVmDisplayRegion) MarshalProtoJSON(s *json.MarshalState) {
 	s.WriteObjectEnd()
 }
 
-// MarshalJSON marshals the WasiVmDisplayRegion to JSON.
-func (x *WasiVmDisplayRegion) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the WasiVmScenePatch to JSON.
+func (x *WasiVmScenePatch) MarshalJSON() ([]byte, error) {
 	return json.DefaultMarshalerConfig.Marshal(x)
 }
 
-// UnmarshalProtoJSON unmarshals the WasiVmDisplayRegion message from JSON.
-func (x *WasiVmDisplayRegion) UnmarshalProtoJSON(s *json.UnmarshalState) {
+// UnmarshalProtoJSON unmarshals the WasiVmScenePatch message from JSON.
+func (x *WasiVmScenePatch) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	if s.ReadNil() {
 		return
 	}
@@ -3795,6 +4391,9 @@ func (x *WasiVmDisplayRegion) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		switch key {
 		default:
 			s.Skip() // ignore unknown field
+		case "layer":
+			s.AddField("layer")
+			x.Layer = s.ReadUint32()
 		case "x":
 			s.AddField("x")
 			x.X = s.ReadUint32()
@@ -3814,8 +4413,8 @@ func (x *WasiVmDisplayRegion) UnmarshalProtoJSON(s *json.UnmarshalState) {
 	})
 }
 
-// UnmarshalJSON unmarshals the WasiVmDisplayRegion from JSON.
-func (x *WasiVmDisplayRegion) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON unmarshals the WasiVmScenePatch from JSON.
+func (x *WasiVmScenePatch) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -4998,7 +5597,7 @@ func (m *WasiVmWindowSize) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *WasiVmDisplayFrame) MarshalVT() (dAtA []byte, err error) {
+func (m *WasiVmScene) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -5011,12 +5610,12 @@ func (m *WasiVmDisplayFrame) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *WasiVmDisplayFrame) MarshalToVT(dAtA []byte) (int, error) {
+func (m *WasiVmScene) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *WasiVmDisplayFrame) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *WasiVmScene) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -5027,14 +5626,9 @@ func (m *WasiVmDisplayFrame) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
-	if m.Scale != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Scale))
-		i--
-		dAtA[i] = 0x28
-	}
-	if len(m.Regions) > 0 {
-		for iNdEx := len(m.Regions) - 1; iNdEx >= 0; iNdEx-- {
-			size, err := m.Regions[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+	if len(m.Patches) > 0 {
+		for iNdEx := len(m.Patches) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Patches[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -5044,32 +5638,40 @@ func (m *WasiVmDisplayFrame) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 			dAtA[i] = 0x22
 		}
 	}
-	if len(m.Copies) > 0 {
-		for iNdEx := len(m.Copies) - 1; iNdEx >= 0; iNdEx-- {
-			size, err := m.Copies[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
-			i--
-			dAtA[i] = 0x1a
+	if m.Roots != nil {
+		size, err := m.Roots.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-	}
-	if m.ScreenHeight != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ScreenHeight))
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x1a
 	}
-	if m.ScreenWidth != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ScreenWidth))
+	if m.Layers != nil {
+		size, err := m.Layers.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0x12
+	}
+	if m.Screen != nil {
+		size, err := m.Screen.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *WasiVmDisplayCopy) MarshalVT() (dAtA []byte, err error) {
+func (m *WasiVmSceneScreen) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -5082,12 +5684,12 @@ func (m *WasiVmDisplayCopy) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *WasiVmDisplayCopy) MarshalToVT(dAtA []byte) (int, error) {
+func (m *WasiVmSceneScreen) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *WasiVmDisplayCopy) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *WasiVmSceneScreen) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -5098,40 +5700,30 @@ func (m *WasiVmDisplayCopy) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
-	if m.ToY != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ToY))
+	if m.Background != 0 {
+		i = protobuf_go_lite.EncodeFixed32(dAtA, i, uint32(m.Background))
 		i--
-		dAtA[i] = 0x30
+		dAtA[i] = 0x25
 	}
-	if m.ToX != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ToX))
+	if m.Scale != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Scale))
 		i--
-		dAtA[i] = 0x28
+		dAtA[i] = 0x18
 	}
 	if m.Height != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Height))
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x10
 	}
 	if m.Width != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Width))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Y != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.X != 0 {
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
 		i--
 		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *WasiVmDisplayRegion) MarshalVT() (dAtA []byte, err error) {
+func (m *WasiVmSceneLayers) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -5144,12 +5736,224 @@ func (m *WasiVmDisplayRegion) MarshalVT() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *WasiVmDisplayRegion) MarshalToVT(dAtA []byte) (int, error) {
+func (m *WasiVmSceneLayers) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
 }
 
-func (m *WasiVmDisplayRegion) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+func (m *WasiVmSceneLayers) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Layers) > 0 {
+		for iNdEx := len(m.Layers) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Layers[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmSceneLayer) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmSceneLayer) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmSceneLayer) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Opaque {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Opaque)
+		i--
+		dAtA[i] = 0x48
+	}
+	if m.TextureHeight != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.TextureHeight))
+		i--
+		dAtA[i] = 0x40
+	}
+	if m.TextureWidth != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.TextureWidth))
+		i--
+		dAtA[i] = 0x38
+	}
+	if m.Height != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.Width != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Width))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.Y != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.X != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.Root != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Root))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Id != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmSceneRoots) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmSceneRoots) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmSceneRoots) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Roots) > 0 {
+		for iNdEx := len(m.Roots) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Roots[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmSceneRoot) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmSceneRoot) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmSceneRoot) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Y != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.X != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Id != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmScenePatch) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmScenePatch) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmScenePatch) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -5163,25 +5967,30 @@ func (m *WasiVmDisplayRegion) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if len(m.Rgba) > 0 {
 		i = protobuf_go_lite.EncodeBytes(dAtA, i, m.Rgba)
 		i--
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x32
 	}
 	if m.Height != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Height))
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x28
 	}
 	if m.Width != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Width))
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x20
 	}
 	if m.Y != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x18
 	}
 	if m.X != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Layer != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Layer))
 		i--
 		dAtA[i] = 0x8
 	}
@@ -5782,49 +6591,113 @@ func (m *WasiVmWindowSize) SizeVT() (n int) {
 	return n
 }
 
-func (m *WasiVmDisplayFrame) SizeVT() (n int) {
+func (m *WasiVmScene) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.ScreenWidth)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.ScreenHeight)
-	for _, e := range m.Copies {
+	if m.Screen != nil {
+		l = m.Screen.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.Layers != nil {
+		l = m.Layers.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.Roots != nil {
+		l = m.Roots.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	for _, e := range m.Patches {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
-	for _, e := range m.Regions {
-		l = e.SizeVT()
-		n += protobuf_go_lite.SizeMessage(1, l)
-	}
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.Scale)
 	n += len(m.unknownFields)
 	return n
 }
 
-func (m *WasiVmDisplayCopy) SizeVT() (n int) {
+func (m *WasiVmSceneScreen) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Width)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Height)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Scale)
+	n += protobuf_go_lite.SizeFixed32NonZero(1, m.Background)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmSceneLayers) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Layers {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmSceneLayer) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Id)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Root)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.X)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Y)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Width)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Height)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.ToX)
-	n += protobuf_go_lite.SizeVarintNonZero(1, m.ToY)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.TextureWidth)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.TextureHeight)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Opaque)
 	n += len(m.unknownFields)
 	return n
 }
 
-func (m *WasiVmDisplayRegion) SizeVT() (n int) {
+func (m *WasiVmSceneRoots) SizeVT() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	for _, e := range m.Roots {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmSceneRoot) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Id)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.X)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Y)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmScenePatch) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Layer)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.X)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Y)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Width)
@@ -6369,62 +7242,106 @@ func (x *WasiVmWindowSize) String() string {
 	return x.MarshalProtoText()
 }
 
-func (x *WasiVmDisplayFrame) MarshalProtoText() string {
+func (x *WasiVmScene) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmDisplayFrame")
-	if x.ScreenWidth != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "screen_width")
-		protobuf_go_lite.TextWriteUint(&sb, x.ScreenWidth)
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmScene")
+	if x.Screen != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "screen")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Screen)
 	}
-	if x.ScreenHeight != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "screen_height")
-		protobuf_go_lite.TextWriteUint(&sb, x.ScreenHeight)
+	if x.Layers != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "layers")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Layers)
 	}
-	if len(x.Copies) > 0 {
-		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "copies")
-		for i, v := range x.Copies {
+	if x.Roots != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "roots")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Roots)
+	}
+	if len(x.Patches) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "patches")
+		for i, v := range x.Patches {
 			protobuf_go_lite.TextWriteListSeparator(&sb, i)
 			if v == nil {
-				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmDisplayCopy{})
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmScenePatch{})
 			} else {
 				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
 			}
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
-	if len(x.Regions) > 0 {
-		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "regions")
-		for i, v := range x.Regions {
-			protobuf_go_lite.TextWriteListSeparator(&sb, i)
-			if v == nil {
-				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmDisplayRegion{})
-			} else {
-				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
-			}
-		}
-		protobuf_go_lite.TextWriteListEnd(&sb)
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmScene) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmSceneScreen) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneScreen")
+	if x.Width != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "width")
+		protobuf_go_lite.TextWriteUint(&sb, x.Width)
+	}
+	if x.Height != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "height")
+		protobuf_go_lite.TextWriteUint(&sb, x.Height)
 	}
 	if x.Scale != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "scale")
 		protobuf_go_lite.TextWriteUint(&sb, x.Scale)
 	}
+	if x.Background != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "background")
+		protobuf_go_lite.TextWriteUint(&sb, x.Background)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
-func (x *WasiVmDisplayFrame) String() string {
+func (x *WasiVmSceneScreen) String() string {
 	return x.MarshalProtoText()
 }
 
-func (x *WasiVmDisplayCopy) MarshalProtoText() string {
+func (x *WasiVmSceneLayers) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmDisplayCopy")
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneLayers")
+	if len(x.Layers) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "layers")
+		for i, v := range x.Layers {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmSceneLayer{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmSceneLayers) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmSceneLayer) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneLayer")
+	if x.Id != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteUint(&sb, x.Id)
+	}
+	if x.Root != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "root")
+		protobuf_go_lite.TextWriteUint(&sb, x.Root)
+	}
 	if x.X != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "x")
-		protobuf_go_lite.TextWriteUint(&sb, x.X)
+		protobuf_go_lite.TextWriteInt(&sb, x.X)
 	}
 	if x.Y != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "y")
-		protobuf_go_lite.TextWriteUint(&sb, x.Y)
+		protobuf_go_lite.TextWriteInt(&sb, x.Y)
 	}
 	if x.Width != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "width")
@@ -6434,24 +7351,76 @@ func (x *WasiVmDisplayCopy) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "height")
 		protobuf_go_lite.TextWriteUint(&sb, x.Height)
 	}
-	if x.ToX != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "to_x")
-		protobuf_go_lite.TextWriteUint(&sb, x.ToX)
+	if x.TextureWidth != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "texture_width")
+		protobuf_go_lite.TextWriteUint(&sb, x.TextureWidth)
 	}
-	if x.ToY != 0 {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "to_y")
-		protobuf_go_lite.TextWriteUint(&sb, x.ToY)
+	if x.TextureHeight != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "texture_height")
+		protobuf_go_lite.TextWriteUint(&sb, x.TextureHeight)
+	}
+	if x.Opaque != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "opaque")
+		protobuf_go_lite.TextWriteBool(&sb, x.Opaque)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
-func (x *WasiVmDisplayCopy) String() string {
+func (x *WasiVmSceneLayer) String() string {
 	return x.MarshalProtoText()
 }
 
-func (x *WasiVmDisplayRegion) MarshalProtoText() string {
+func (x *WasiVmSceneRoots) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmDisplayRegion")
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneRoots")
+	if len(x.Roots) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "roots")
+		for i, v := range x.Roots {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmSceneRoot{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmSceneRoots) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmSceneRoot) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneRoot")
+	if x.Id != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteUint(&sb, x.Id)
+	}
+	if x.X != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "x")
+		protobuf_go_lite.TextWriteInt(&sb, x.X)
+	}
+	if x.Y != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "y")
+		protobuf_go_lite.TextWriteInt(&sb, x.Y)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmSceneRoot) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmScenePatch) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmScenePatch")
+	if x.Layer != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "layer")
+		protobuf_go_lite.TextWriteUint(&sb, x.Layer)
+	}
 	if x.X != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "x")
 		protobuf_go_lite.TextWriteUint(&sb, x.X)
@@ -6475,7 +7444,7 @@ func (x *WasiVmDisplayRegion) MarshalProtoText() string {
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
-func (x *WasiVmDisplayRegion) String() string {
+func (x *WasiVmScenePatch) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -7893,7 +8862,7 @@ func (m *WasiVmWindowSize) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
-func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
+func (m *WasiVmScene) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	var err error
@@ -7907,57 +8876,132 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WasiVmDisplayFrame: wiretype end group for non-group")
+			return fmt.Errorf("proto: WasiVmScene: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WasiVmDisplayFrame: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: WasiVmScene: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ScreenWidth", wireType)
-			}
-			m.ScreenWidth = 0
-			m.ScreenWidth, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ScreenHeight", wireType)
-			}
-			m.ScreenHeight = 0
-			m.ScreenHeight, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Copies", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Screen", wireType)
 			}
 			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
-			m.Copies = append(m.Copies, &WasiVmDisplayCopy{})
-			if err := m.Copies[len(m.Copies)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+			if m.Screen == nil {
+				m.Screen = &WasiVmSceneScreen{}
+			}
+			if err := m.Screen.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Layers", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Layers == nil {
+				m.Layers = &WasiVmSceneLayers{}
+			}
+			if err := m.Layers.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Roots", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Roots == nil {
+				m.Roots = &WasiVmSceneRoots{}
+			}
+			if err := m.Roots.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Regions", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Patches", wireType)
 			}
 			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
-			m.Regions = append(m.Regions, &WasiVmDisplayRegion{})
-			if err := m.Regions[len(m.Regions)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+			m.Patches = append(m.Patches, &WasiVmScenePatch{})
+			if err := m.Patches[len(m.Patches)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmSceneScreen) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmSceneScreen: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmSceneScreen: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Width", wireType)
+			}
+			m.Width = 0
+			m.Width, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			m.Height, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Scale", wireType)
 			}
@@ -7966,6 +9010,17 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 4:
+			if wireType != 5 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Background", wireType)
+			}
+			m.Background = 0
+			var _v32 uint32
+			_v32, iNdEx, err = protobuf_go_lite.DecodeFixed32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Background = uint32(_v32)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -7989,7 +9044,7 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
-func (m *WasiVmDisplayCopy) UnmarshalVT(dAtA []byte) error {
+func (m *WasiVmSceneLayers) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	var err error
@@ -8003,63 +9058,273 @@ func (m *WasiVmDisplayCopy) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WasiVmDisplayCopy: wiretype end group for non-group")
+			return fmt.Errorf("proto: WasiVmSceneLayers: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WasiVmDisplayCopy: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: WasiVmSceneLayers: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Layers", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Layers = append(m.Layers, &WasiVmSceneLayer{})
+			if err := m.Layers[len(m.Layers)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmSceneLayer) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmSceneLayer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmSceneLayer: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field X", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
 			}
-			m.X = 0
-			m.X, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			m.Id = 0
+			m.Id, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Y", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Root", wireType)
 			}
-			m.Y = 0
-			m.Y, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			m.Root = 0
+			m.Root, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Width", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field X", wireType)
 			}
-			m.Width = 0
-			m.Width, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			m.X = 0
+			m.X, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
 		case 4:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Y", wireType)
 			}
-			m.Height = 0
-			m.Height, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			m.Y = 0
+			m.Y, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
 		case 5:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToX", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Width", wireType)
 			}
-			m.ToX = 0
-			m.ToX, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			m.Width = 0
+			m.Width, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
 		case 6:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToY", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
 			}
-			m.ToY = 0
-			m.ToY, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			m.Height = 0
+			m.Height, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TextureWidth", wireType)
+			}
+			m.TextureWidth = 0
+			m.TextureWidth, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TextureHeight", wireType)
+			}
+			m.TextureHeight = 0
+			m.TextureHeight, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Opaque", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Opaque = bool(v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmSceneRoots) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmSceneRoots: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmSceneRoots: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Roots", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Roots = append(m.Roots, &WasiVmSceneRoot{})
+			if err := m.Roots[len(m.Roots)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmSceneRoot) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmSceneRoot: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmSceneRoot: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			m.Id, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field X", wireType)
+			}
+			m.X = 0
+			m.X, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Y", wireType)
+			}
+			m.Y = 0
+			m.Y, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
@@ -8086,7 +9351,7 @@ func (m *WasiVmDisplayCopy) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
-func (m *WasiVmDisplayRegion) UnmarshalVT(dAtA []byte) error {
+func (m *WasiVmScenePatch) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	var err error
@@ -8100,13 +9365,22 @@ func (m *WasiVmDisplayRegion) UnmarshalVT(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WasiVmDisplayRegion: wiretype end group for non-group")
+			return fmt.Errorf("proto: WasiVmScenePatch: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WasiVmDisplayRegion: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: WasiVmScenePatch: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Layer", wireType)
+			}
+			m.Layer = 0
+			m.Layer, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field X", wireType)
 			}
@@ -8115,7 +9389,7 @@ func (m *WasiVmDisplayRegion) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 2:
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Y", wireType)
 			}
@@ -8124,7 +9398,7 @@ func (m *WasiVmDisplayRegion) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 3:
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Width", wireType)
 			}
@@ -8133,7 +9407,7 @@ func (m *WasiVmDisplayRegion) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 4:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
 			}
@@ -8142,7 +9416,7 @@ func (m *WasiVmDisplayRegion) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-		case 5:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Rgba", wireType)
 			}

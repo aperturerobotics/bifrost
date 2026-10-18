@@ -3,20 +3,23 @@ import { useEffect, useReducer, useRef, useState } from 'react'
 import type { MessageStream } from 'starpc'
 
 import type {
-  WasiVmDisplayFrame,
   WasiVmDisplayInput,
+  WasiVmScene,
 } from '@s4wave/sdk/vm/wasivm.pb.js'
 import { cn } from '@s4wave/web/style/utils.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import type { LoadingView } from '@s4wave/web/ui/loading/types.js'
 
+import { openCanvasRenderer } from './display-canvas.js'
+import { openGpuRenderer } from './display-gpu.js'
 import { keysymOf, xButtons } from './display-input.js'
+import { Scene, type SceneRenderer, type SceneScreen } from './display-scene.js'
 
 // WasiVmDisplayConnector opens the display stream of a running VM.
 export type WasiVmDisplayConnector = (
   input: MessageStream<WasiVmDisplayInput>,
   signal: AbortSignal,
-) => MessageStream<WasiVmDisplayFrame>
+) => MessageStream<WasiVmScene>
 
 // WasiVmPaneSize is the size of the pane a display fits in, in CSS pixels.
 export interface WasiVmPaneSize {
@@ -25,7 +28,7 @@ export interface WasiVmPaneSize {
 }
 
 // WasiVmDisplayViews describes a display that is not showing: waiting for
-// its first frame, closed by the VM, or failed. retry reconnects.
+// its first scene, closed by the VM, or failed. retry reconnects.
 export interface WasiVmDisplayViews {
   waiting: LoadingView
   closed: (retry: () => void) => LoadingView
@@ -64,7 +67,7 @@ const desktopViews: WasiVmDisplayViews = {
 }
 
 // DisplayStatus is the state of the display stream: waiting for the first
-// frame, showing the screen, closed by the VM, or failed with a reason.
+// scene, showing the screen, closed by the VM, or failed with a reason.
 type DisplayStatus =
   | { kind: 'waiting' }
   | { kind: 'ready' }
@@ -76,12 +79,30 @@ type DisplayStatus =
 const wheelUp = 1 << 3
 const wheelDown = 1 << 4
 
+// gpuFailed is set once a WebGPU device is lost and cannot be opened again,
+// after which displays draw with Canvas 2D.
+let gpuFailed = false
+
+// openRenderer opens a WebGPU renderer on canvas, or a Canvas 2D one when
+// WebGPU is missing, failed before, or cannot open a device.
+async function openRenderer(
+  canvas: HTMLCanvasElement,
+  onLost: () => void,
+): Promise<SceneRenderer | null> {
+  if (!gpuFailed && 'gpu' in navigator) {
+    const gpu = await openGpuRenderer(canvas, onLost).catch(() => null)
+    if (gpu) return gpu
+  }
+  return openCanvasRenderer(canvas)
+}
+
 // watchPixelRatio calls onChange with the device pixels per CSS pixel,
 // rounded up, now and each time it changes, as when the window moves to
 // another screen or zooms, until the returned function stops it.
 function watchPixelRatio(onChange: (scale: number) => void): () => void {
   let query: MediaQueryList | null = null
   const check = () => {
+    // Report the ratio and watch for the next change.
     query?.removeEventListener('change', check)
     const ratio = window.devicePixelRatio || 1
     onChange(Math.max(1, Math.ceil(ratio - 0.001)))
@@ -92,15 +113,15 @@ function watchPixelRatio(onChange: (scale: number) => void): () => void {
   return () => query?.removeEventListener('change', check)
 }
 
-// fitCanvas shows the canvas at the screen's size in CSS pixels, its pixels
-// over scale, shrunk to fit the pane.
+// fitCanvas shows the canvas at the screen's size in units, which are CSS
+// pixels, shrunk to fit the pane.
 function fitCanvas(
   canvas: HTMLCanvasElement,
   pane: HTMLElement,
-  scale: number,
+  screen: SceneScreen,
 ) {
-  const width = canvas.width / scale
-  const height = canvas.height / scale
+  // Scale the screen's size down to the pane, never up.
+  const { width, height } = screen
   if (!width || !height) return
   const fit = Math.min(1, pane.clientWidth / width, pane.clientHeight / height)
   canvas.style.width = `${width * fit}px`
@@ -115,26 +136,32 @@ export function WasiVmDisplay({
   views = desktopViews,
   onPaneSize,
 }: WasiVmDisplayProps) {
+  // Hold the elements, the input stream, the last scene's screen, and each
+  // held key's keysym by code, so a release sends the keysym its press sent
+  // after a modifier changes.
   const paneRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const inputRef = useRef<Pushable<WasiVmDisplayInput> | null>(null)
-  // scaleRef is the screen pixels per CSS pixel of the last frame.
-  const scaleRef = useRef(1)
-  // heldKeys maps each held key's code to the keysym its press sent, so the
-  // release sends the same keysym after a modifier changes.
+  const screenRef = useRef<SceneScreen>(new Scene().screen)
   const heldKeys = useRef(new Map<string, number>())
+
+  // Track the stream's status and the connection attempt Retry advances.
   const [status, setStatus] = useState<DisplayStatus>({ kind: 'waiting' })
   const [attempt, retry] = useReducer((n: number) => n + 1, 0)
 
   // Fit the canvas to the pane and report the pane's size as it changes.
   useEffect(() => {
+    // Watch the pane.
     const pane = paneRef.current
     if (!pane) return
     let last = ''
     const observer = new ResizeObserver(() => {
+      // Refit the canvas.
       if (canvasRef.current) {
-        fitCanvas(canvasRef.current, pane, scaleRef.current)
+        fitCanvas(canvasRef.current, pane, screenRef.current)
       }
+
+      // Report a new pane size once.
       const width = Math.floor(pane.clientWidth)
       const height = Math.floor(pane.clientHeight)
       const key = width + 'x' + height
@@ -146,12 +173,13 @@ export function WasiVmDisplay({
     return () => observer.disconnect()
   }, [onPaneSize])
 
-  // Stream the screen onto the canvas.
+  // Stream the scene and draw it on the canvas each animation frame it
+  // changes.
   useEffect(() => {
+    // Open the input stream.
     const canvas = canvasRef.current
     const pane = paneRef.current
-    const ctx = canvas?.getContext('2d')
-    if (!connectDisplay || !canvas || !pane || !ctx) return
+    if (!connectDisplay || !canvas || !pane) return
     const abort = new AbortController()
     const input = pushable<WasiVmDisplayInput>({ objectMode: true })
     inputRef.current = input
@@ -163,64 +191,72 @@ export function WasiVmDisplay({
     )
 
     // cancelled is set once the effect is cleaned up, after which no state
-    // is set.
+    // is set and no renderer is kept.
     let cancelled = false
+    const fail = (detail: string) => {
+      if (!cancelled) setStatus({ kind: 'failed', detail })
+    }
+
+    // draw draws the scene on the next animation frame, once however many
+    // updates arrive before it.
+    const scene = new Scene()
+    let renderer: SceneRenderer | null = null
+    let frame = 0
+    const draw = () => {
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        renderer?.draw(scene)
+      })
+    }
+
+    // Open a renderer. A lost GPU device is reopened once and every
+    // texture uploaded again from the scene; a second loss fails the
+    // display, and Retry draws with Canvas 2D on a new canvas.
+    const open = async (onLost: () => void) => {
+      // Keep the renderer only while the effect lasts.
+      const r = await openRenderer(canvas, onLost)
+      if (cancelled) {
+        r?.destroy()
+        return
+      }
+      if (!r) {
+        fail('This browser cannot draw the display.')
+        return
+      }
+
+      // Draw the whole scene with it.
+      renderer = r
+      scene.allDirty()
+      draw()
+    }
+    const lostTwice = () => {
+      gpuFailed = true
+      renderer?.destroy()
+      renderer = null
+      fail('The graphics device was lost.')
+    }
+    void open(() => {
+      renderer?.destroy()
+      renderer = null
+      void open(lostTwice)
+    })
+
+    // Apply each update until the stream ends.
     void (async () => {
       let ready = false
       try {
-        for await (const frame of connectDisplay(input, abort.signal)) {
-          // Size the canvas to the screen, which clears it, and show it
-          // at the screen's size in CSS pixels.
-          const screenWidth = frame.screenWidth ?? 0
-          const screenHeight = frame.screenHeight ?? 0
-          const scale = frame.scale || 1
-          if (
-            canvas.width !== screenWidth ||
-            canvas.height !== screenHeight ||
-            scaleRef.current !== scale
-          ) {
-            canvas.width = screenWidth
-            canvas.height = screenHeight
-            scaleRef.current = scale
-            fitCanvas(canvas, pane, scale)
+        for await (const update of connectDisplay(input, abort.signal)) {
+          // Fold the update into the scene, refit the canvas when the
+          // screen changed, and draw on the next frame.
+          scene.apply(update)
+          if (update.screen) {
+            screenRef.current = scene.screen
+            fitCanvas(canvas, pane, scene.screen)
           }
+          draw()
 
-          // Move the copied areas in order, then draw the regions.
-          for (const m of frame.copies ?? []) {
-            const width = m.width ?? 0
-            const height = m.height ?? 0
-            if (width && height) {
-              ctx.drawImage(
-                canvas,
-                m.x ?? 0,
-                m.y ?? 0,
-                width,
-                height,
-                m.toX ?? 0,
-                m.toY ?? 0,
-                width,
-                height,
-              )
-            }
-          }
-          for (const r of frame.regions ?? []) {
-            const width = r.width ?? 0
-            const height = r.height ?? 0
-            const rgba = r.rgba
-            if (width && height && rgba?.length === width * height * 4) {
-              const pixels = new Uint8ClampedArray(
-                rgba.buffer,
-                rgba.byteOffset,
-                rgba.length,
-              )
-              ctx.putImageData(
-                new ImageData(pixels, width, height),
-                r.x ?? 0,
-                r.y ?? 0,
-              )
-            }
-          }
-          // Take the next frame, which holds every change made meanwhile.
+          // Take the next update, which holds every change made meanwhile.
           input.push({ body: { case: 'drawn', value: {} } })
           if (!ready && !cancelled) {
             ready = true
@@ -231,15 +267,16 @@ export function WasiVmDisplay({
           setStatus({ kind: 'closed' })
         }
       } catch (err) {
-        if (!cancelled) {
-          const detail = err instanceof Error ? err.message : String(err)
-          setStatus({ kind: 'failed', detail })
-        }
+        fail(err instanceof Error ? err.message : String(err))
       }
     })()
 
     return () => {
+      // Stop drawing, then close the streams.
       cancelled = true
+      cancelAnimationFrame(frame)
+      renderer?.destroy()
+      renderer = null
       stopScale()
       abort.abort()
       input.end()
@@ -258,15 +295,17 @@ export function WasiVmDisplay({
     e: { clientX: number; clientY: number; buttons: number },
     extra = 0,
   ) => {
+    // Map the client position to screen pixels.
     const canvas = canvasRef.current
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     if (!rect.width || !rect.height) return
+    const { width, height, scale } = screenRef.current
     send({
       case: 'pointer',
       value: {
-        x: Math.floor(((e.clientX - rect.left) * canvas.width) / rect.width),
-        y: Math.floor(((e.clientY - rect.top) * canvas.height) / rect.height),
+        x: Math.floor(((e.clientX - rect.left) * width * scale) / rect.width),
+        y: Math.floor(((e.clientY - rect.top) * height * scale) / rect.height),
         buttons: xButtons(e.buttons) | extra,
       },
     })
@@ -292,6 +331,7 @@ export function WasiVmDisplay({
       className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black"
     >
       <canvas
+        key={attempt}
         ref={canvasRef}
         tabIndex={0}
         aria-label="VM display"
@@ -315,6 +355,7 @@ export function WasiVmDisplay({
           sendPointer(e)
         }}
         onKeyDown={(e) => {
+          // Send the key's keysym and remember it for the release.
           const keysym = heldKeys.current.get(e.code) ?? keysymOf(e.key, e.code)
           if (!keysym) return
           e.preventDefault()
@@ -322,6 +363,7 @@ export function WasiVmDisplay({
           send({ case: 'key', value: { keysym, down: true } })
         }}
         onKeyUp={(e) => {
+          // Release the keysym the press sent.
           const keysym = heldKeys.current.get(e.code)
           if (keysym === undefined) return
           e.preventDefault()

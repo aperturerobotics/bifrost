@@ -9,44 +9,46 @@ import (
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
 
-// frameSource serves the Display method as the WasiVM plugin does, but sends
-// pre-encoded frame bytes, so a test controls exactly what is on the wire.
-type frameSource struct {
-	frame []byte
+// updateSource serves the Display method as the WasiVM plugin does, but sends
+// pre-encoded update bytes, so a test controls exactly what is on the wire.
+type updateSource struct {
+	update []byte
 }
 
-// InvokeMethod sends the frame once and ends the stream.
-func (s *frameSource) InvokeMethod(serviceID, methodID string, strm srpc.Stream) (bool, error) {
+// InvokeMethod sends the update once and ends the stream.
+func (s *updateSource) InvokeMethod(serviceID, methodID string, strm srpc.Stream) (bool, error) {
 	if serviceID != s4wave_vm.SRPCWasiVmDisplayServiceServiceID || methodID != "Display" {
 		return false, nil
 	}
-	return true, strm.MsgSend(srpc.NewRawMessage(s.frame, true))
+	return true, strm.MsgSend(srpc.NewRawMessage(s.update, true))
 }
 
-// TestDisplayFrameRelayedUnchanged checks a hop that forwards the Display RPC
+// TestDisplayUpdateRelayedUnchanged checks a hop that forwards the Display RPC
 // with srpc.NewClientInvoker, as the core plugin does for a plugin's
-// resource, delivers a frame's bytes as the plugin encoded them. The frame
+// resource, delivers an update's bytes as the plugin encoded them. The update
 // is written with its fields out of order, which decoding and encoding the
-// frame would put back in order.
-func TestDisplayFrameRelayedUnchanged(t *testing.T) {
-	// Encode a frame the way the plugin does, then put the screen height first.
-	frame := &s4wave_vm.WasiVmDisplayFrame{
-		ScreenWidth:  640,
-		ScreenHeight: 480,
-		Copies:       []*s4wave_vm.WasiVmDisplayCopy{{X: 1, Y: 2, Width: 3, Height: 4, ToX: 5, ToY: 6}},
-		Regions: []*s4wave_vm.WasiVmDisplayRegion{{
-			X: 10, Y: 20, Width: 256, Height: 256,
+// update would put back in order.
+func TestDisplayUpdateRelayedUnchanged(t *testing.T) {
+	// Encode an update the way the plugin does, then append its screen,
+	// which an encoder writes first.
+	update := &s4wave_vm.WasiVmScene{
+		Patches: []*s4wave_vm.WasiVmScenePatch{{
+			Layer: 1, X: 10, Y: 20, Width: 256, Height: 256,
 			Rgba: bytes.Repeat([]byte{1, 2, 3, 255}, 256*256),
 		}},
 	}
-	encoded, err := frame.MarshalVT()
+	encoded, err := update.MarshalVT()
 	if err != nil {
 		t.Fatal(err)
 	}
-	wire := append([]byte{0x10, 0xe0, 0x03}, encoded...)
+	screen, err := (&s4wave_vm.WasiVmScene{Screen: &s4wave_vm.WasiVmSceneScreen{Width: 640, Height: 480}}).MarshalVT()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wire := append(encoded, screen...)
 
-	// Control: decoding and encoding the frame puts the fields back in order.
-	var decoded s4wave_vm.WasiVmDisplayFrame
+	// Control: decoding and encoding the update puts the fields back in order.
+	var decoded s4wave_vm.WasiVmScene
 	if err := decoded.UnmarshalVT(wire); err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +57,7 @@ func TestDisplayFrameRelayedUnchanged(t *testing.T) {
 	}
 
 	// Relay the plugin's Display RPC through a client invoker.
-	pluginClient := srpc.NewClient(srpc.NewServerPipe(srpc.NewServer(&frameSource{frame: wire})))
+	pluginClient := srpc.NewClient(srpc.NewServerPipe(srpc.NewServer(&updateSource{update: wire})))
 	relayClient := srpc.NewClient(srpc.NewServerPipe(srpc.NewServer(srpc.NewClientInvoker(pluginClient))))
 
 	// The viewer receives the plugin's bytes without a decode on the way.
@@ -71,6 +73,6 @@ func TestDisplayFrameRelayedUnchanged(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(got.GetData(), wire) {
-		t.Fatalf("the relayed frame is %d bytes, want the plugin's %d bytes unchanged", len(got.GetData()), len(wire))
+		t.Fatalf("the relayed update is %d bytes, want the plugin's %d bytes unchanged", len(got.GetData()), len(wire))
 	}
 }

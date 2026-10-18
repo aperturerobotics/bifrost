@@ -12,9 +12,9 @@ import {
   ServerContext,
 } from 'starpc'
 import {
-  WasiVmDisplayFrame,
   WasiVmDisplayInput,
   WasiVmDownloads,
+  WasiVmScene,
   WasiVmWindowInput,
   WasiVmWindowList,
   WatchWasiVmDownloadsRequest,
@@ -125,20 +125,20 @@ export const WasiVmDisplayServiceDefinition = {
   typeName: 's4wave.vm.WasiVmDisplayService',
   methods: {
     /**
-     * Display streams the screen and carries input back. Once the guest brings
-     * up a display, an X server on display 0 or a Wayland client, the VM sends
-     * the whole screen, then each change. The viewer sends pointer and key
-     * input, and reports each frame it draws; the VM sends the next frame only
-     * after that report, so a slow viewer gets fewer frames, each covering
-     * every change since the last, instead of a growing queue. The stream ends
-     * when the display closes.
+     * Display streams the screen's scene and carries input back. Once the
+     * guest brings up a display, an X server on display 0 or a Wayland client,
+     * the VM sends the whole scene, then each change. The viewer sends pointer
+     * and key input, and reports each update it draws; the VM runs at most two
+     * updates ahead of those reports, so a slow viewer gets fewer updates, each
+     * covering every change since the last, instead of a growing queue. The
+     * stream ends when the display closes.
      *
      * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
      */
     Display: {
       name: 'Display',
       I: WasiVmDisplayInput,
-      O: WasiVmDisplayFrame,
+      O: WasiVmScene,
       kind: MethodKind.BiDiStreaming,
     },
     /**
@@ -166,7 +166,7 @@ export const WasiVmDisplayServiceDefinition = {
     Window: {
       name: 'Window',
       I: WasiVmWindowInput,
-      O: WasiVmDisplayFrame,
+      O: WasiVmScene,
       kind: MethodKind.BiDiStreaming,
     },
   },
@@ -180,20 +180,20 @@ export const WasiVmDisplayServiceDefinition = {
  */
 export interface WasiVmDisplayService {
   /**
-   * Display streams the screen and carries input back. Once the guest brings
-   * up a display, an X server on display 0 or a Wayland client, the VM sends
-   * the whole screen, then each change. The viewer sends pointer and key
-   * input, and reports each frame it draws; the VM sends the next frame only
-   * after that report, so a slow viewer gets fewer frames, each covering
-   * every change since the last, instead of a growing queue. The stream ends
-   * when the display closes.
+   * Display streams the screen's scene and carries input back. Once the
+   * guest brings up a display, an X server on display 0 or a Wayland client,
+   * the VM sends the whole scene, then each change. The viewer sends pointer
+   * and key input, and reports each update it draws; the VM runs at most two
+   * updates ahead of those reports, so a slow viewer gets fewer updates, each
+   * covering every change since the last, instead of a growing queue. The
+   * stream ends when the display closes.
    *
    * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
    */
   Display(
     request: MessageStream<WasiVmDisplayInput>,
     abortSignal?: AbortSignal,
-  ): MessageStream<WasiVmDisplayFrame>
+  ): MessageStream<WasiVmScene>
 
   /**
    * WatchWindows streams the Wayland windows of the display, then the list
@@ -219,7 +219,7 @@ export interface WasiVmDisplayService {
   Window(
     request: MessageStream<WasiVmWindowInput>,
     abortSignal?: AbortSignal,
-  ): MessageStream<WasiVmDisplayFrame>
+  ): MessageStream<WasiVmScene>
 }
 
 /**
@@ -230,13 +230,13 @@ export interface WasiVmDisplayService {
  */
 export interface WasiVmDisplayServiceHandler {
   /**
-   * Display streams the screen and carries input back. Once the guest brings
-   * up a display, an X server on display 0 or a Wayland client, the VM sends
-   * the whole screen, then each change. The viewer sends pointer and key
-   * input, and reports each frame it draws; the VM sends the next frame only
-   * after that report, so a slow viewer gets fewer frames, each covering
-   * every change since the last, instead of a growing queue. The stream ends
-   * when the display closes.
+   * Display streams the screen's scene and carries input back. Once the
+   * guest brings up a display, an X server on display 0 or a Wayland client,
+   * the VM sends the whole scene, then each change. The viewer sends pointer
+   * and key input, and reports each update it draws; the VM runs at most two
+   * updates ahead of those reports, so a slow viewer gets fewer updates, each
+   * covering every change since the last, instead of a growing queue. The
+   * stream ends when the display closes.
    *
    * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
    */
@@ -244,7 +244,7 @@ export interface WasiVmDisplayServiceHandler {
     request: MessageStream<WasiVmDisplayInput>,
     abortSignal: AbortSignal,
     context: ServerContext,
-  ): MessageStream<WasiVmDisplayFrame>
+  ): MessageStream<WasiVmScene>
 
   /**
    * WatchWindows streams the Wayland windows of the display, then the list
@@ -272,7 +272,7 @@ export interface WasiVmDisplayServiceHandler {
     request: MessageStream<WasiVmWindowInput>,
     abortSignal: AbortSignal,
     context: ServerContext,
-  ): MessageStream<WasiVmDisplayFrame>
+  ): MessageStream<WasiVmScene>
 }
 
 export const WasiVmDisplayServiceServiceName =
@@ -289,27 +289,27 @@ export class WasiVmDisplayServiceClient implements WasiVmDisplayService {
     this.Window = this.Window.bind(this)
   }
   /**
-   * Display streams the screen and carries input back. Once the guest brings
-   * up a display, an X server on display 0 or a Wayland client, the VM sends
-   * the whole screen, then each change. The viewer sends pointer and key
-   * input, and reports each frame it draws; the VM sends the next frame only
-   * after that report, so a slow viewer gets fewer frames, each covering
-   * every change since the last, instead of a growing queue. The stream ends
-   * when the display closes.
+   * Display streams the screen's scene and carries input back. Once the
+   * guest brings up a display, an X server on display 0 or a Wayland client,
+   * the VM sends the whole scene, then each change. The viewer sends pointer
+   * and key input, and reports each update it draws; the VM runs at most two
+   * updates ahead of those reports, so a slow viewer gets fewer updates, each
+   * covering every change since the last, instead of a growing queue. The
+   * stream ends when the display closes.
    *
    * @generated from rpc s4wave.vm.WasiVmDisplayService.Display
    */
   Display(
     request: MessageStream<WasiVmDisplayInput>,
     abortSignal?: AbortSignal,
-  ): MessageStream<WasiVmDisplayFrame> {
+  ): MessageStream<WasiVmScene> {
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       WasiVmDisplayServiceDefinition.methods.Display.name,
       buildEncodeMessageTransform(WasiVmDisplayInput)(request),
       abortSignal || undefined,
     )
-    return buildDecodeMessageTransform(WasiVmDisplayFrame)(result)
+    return buildDecodeMessageTransform(WasiVmScene)(result)
   }
 
   /**
@@ -345,14 +345,14 @@ export class WasiVmDisplayServiceClient implements WasiVmDisplayService {
   Window(
     request: MessageStream<WasiVmWindowInput>,
     abortSignal?: AbortSignal,
-  ): MessageStream<WasiVmDisplayFrame> {
+  ): MessageStream<WasiVmScene> {
     const result = this.rpc.bidirectionalStreamingRequest(
       this.service,
       WasiVmDisplayServiceDefinition.methods.Window.name,
       buildEncodeMessageTransform(WasiVmWindowInput)(request),
       abortSignal || undefined,
     )
-    return buildDecodeMessageTransform(WasiVmDisplayFrame)(result)
+    return buildDecodeMessageTransform(WasiVmScene)(result)
   }
 }
 /**

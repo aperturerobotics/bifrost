@@ -15,6 +15,8 @@ type surface struct {
 	c *client
 	// id is the surface's object id.
 	id uint32
+	// sceneID is the surface's id in the viewers' scenes.
+	sceneID uint32
 
 	// attached is set when the pending state attaches a buffer, or none.
 	attached bool
@@ -93,7 +95,7 @@ type subsurface struct {
 
 // newSurface makes a surface with no role.
 func newSurface(c *client, id uint32) *surface {
-	s := &surface{c: c, id: id, scaleNext: 1, scale: 1}
+	s := &surface{c: c, id: id, sceneID: c.comp.lastSceneID.Add(1), scaleNext: 1, scale: 1}
 	s.stack = []*surface{s}
 	return s
 }
@@ -196,13 +198,12 @@ func (s *surface) commit() error {
 		s.c.send(newEvent(buf.id, bufferRelease))
 	}
 
-	// Apply the state, then redraw the area it changed: the pixels alone,
-	// or the whole window when its layout moved.
+	// Apply the state, then send the pixels it changed, and the layout when
+	// it moved.
 	comp := s.c.comp
 	comp.update(func() {
-		// Note where the surface's tree was.
+		// Note which tree the surface was in.
 		w := comp.rootOf(s)
-		sp, before := comp.spaceOf(w), comp.bounds(w)
 
 		// Apply the image and its scale.
 		relayout := s.attached && (buf == nil || size != s.pixels)
@@ -237,17 +238,16 @@ func (s *surface) commit() error {
 			relayout = true
 		}
 
-		// Redraw where the tree was and is. Mapping draws a new tree. An
-		// unmapped tree is drawn again where it was, since a null buffer
-		// emptied its bounds before the unmap saw them.
-		switch {
-		case w != comp.rootOf(s):
-			comp.damage(sp, before)
-		case relayout:
-			comp.damage(sp, before.Union(comp.bounds(w)))
+		// Send the committed pixels, and have the viewers compare the layout
+		// when the tree shows or just stopped showing.
+		if s.attached && s.image != nil {
+			comp.damageTexture(s, area)
+		}
+		if w != nil || comp.rootOf(s) != nil {
+			comp.changed = true
+		}
+		if relayout && w != nil && w == comp.rootOf(s) {
 			comp.refocusPointer()
-		case w != nil:
-			comp.damage(sp, unscaleRect(area, s.scale).Add(s.origin()))
 		}
 		if s.inputSet {
 			comp.refocusPointer()
@@ -342,9 +342,9 @@ func (s *surface) mapped() bool {
 // its subsurfaces and popups lose theirs, and it unmaps. The caller holds
 // the compositor's lock.
 func (s *surface) detach() {
-	// Redraw where the surface's tree was.
+	// Have the viewers drop it.
 	comp := s.c.comp
-	comp.redrawTree(s)
+	comp.changed = true
 
 	// Unmap it, leave the parent and orphan the children.
 	comp.unmap(s)
@@ -413,8 +413,8 @@ func (s *surface) subsurfaceRequest(op uint16, m *message) error {
 		// Take the surface off its parent.
 		id := s.sub.id
 		s.c.comp.update(func() {
-			// Redraw where its tree was, then remove it.
-			s.c.comp.redrawTree(s)
+			// Remove it from its tree.
+			s.c.comp.changed = true
 			s.unparent()
 			s.sub = nil
 			s.c.comp.refocusPointer()
@@ -438,7 +438,7 @@ func (s *surface) subsurfaceRequest(op uint16, m *message) error {
 
 		// Move the surface beside it.
 		s.c.comp.update(func() {
-			// Insert it above or below the sibling and redraw its tree.
+			// Insert it above or below the sibling.
 			p := s.parent
 			p.stack = slices.DeleteFunc(p.stack, func(t *surface) bool { return t == s })
 			at := slices.Index(p.stack, sibling)
@@ -446,7 +446,7 @@ func (s *surface) subsurfaceRequest(op uint16, m *message) error {
 				at++
 			}
 			p.stack = slices.Insert(p.stack, at, s)
-			s.c.comp.redrawTree(s)
+			s.c.comp.changed = true
 		})
 	}
 	return nil

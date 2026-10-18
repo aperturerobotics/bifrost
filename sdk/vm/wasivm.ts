@@ -4,7 +4,7 @@ import type { MessageStream } from 'starpc'
 
 import type { TerminalFrame } from '../terminal/terminal.pb.js'
 import type {
-  WasiVmDisplayFrame,
+  WasiVmScene,
   WasiVmDisplayInput,
   WasiVmDownloads,
   WasiVmWindowInput,
@@ -83,7 +83,7 @@ export class WasiVmHandle extends Resource {
   public connectDisplay(
     input: MessageStream<WasiVmDisplayInput>,
     abortSignal?: AbortSignal,
-  ): MessageStream<WasiVmDisplayFrame> {
+  ): MessageStream<WasiVmScene> {
     return this.display.Display(input, abortSignal)
   }
 
@@ -105,7 +105,7 @@ export class WasiVmHandle extends Resource {
   public connectWindow(
     input: MessageStream<WasiVmWindowInput>,
     abortSignal?: AbortSignal,
-  ): MessageStream<WasiVmDisplayFrame> {
+  ): MessageStream<WasiVmScene> {
     return this.display.Window(input, abortSignal)
   }
 

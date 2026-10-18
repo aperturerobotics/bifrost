@@ -277,12 +277,10 @@ func (l *layerSurface) place(area image.Rectangle) {
 		pos.Y = in.Max.Y - drawn.Y
 	}
 
-	// Move it there, redrawing both places.
+	// Move it there.
 	if pos != l.pos {
-		comp := c.comp
-		before := comp.bounds(comp.rootOf(l.s))
 		l.pos = pos
-		comp.damage(comp.desktop, before.Union(comp.bounds(comp.rootOf(l.s))))
+		c.comp.changed = true
 	}
 }
 

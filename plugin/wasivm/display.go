@@ -23,10 +23,9 @@ type vmDisplay struct {
 type screen interface {
 	// Input injects a pointer or key event.
 	Input(in *s4wave_vm.WasiVmDisplayInput)
-	// Run streams the whole screen, then each area that changes, until the
-	// display or ctx ends. Changes made while send blocks go in the next
-	// frame.
-	Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplayFrame) error) error
+	// Run streams the whole scene, then each change, until the display or
+	// ctx ends. Changes made while send blocks go in the next update.
+	Run(ctx context.Context, send func(*s4wave_vm.WasiVmScene) error) error
 }
 
 // attached is a screen with the function that detaches from it, or the error
@@ -140,16 +139,18 @@ func windowSize(s *s4wave_vm.WasiVmWindowSize) image.Point {
 	return image.Pt(int(s.GetWidth()), int(s.GetHeight()))
 }
 
-// framesAhead is how many frames the viewer may have sent but not yet
-// drawn. Two let the screen build a frame while the viewer draws the last.
+// framesAhead is how many scene updates the viewer may have been sent but
+// not yet drawn. Two let the screen build an update while the viewer draws
+// the last.
 const framesAhead = 2
 
 // serveScreen streams the screen to the viewer through send and injects the
-// input recv returns, until either ends. It holds a frame while framesAhead
-// are undrawn, so the screen folds the changes made meanwhile into the next.
+// input recv returns, until either ends. It holds an update while
+// framesAhead are undrawn, so the screen folds the changes made meanwhile into
+// the next.
 func serveScreen(
 	ctx context.Context,
-	send func(*s4wave_vm.WasiVmDisplayFrame) error,
+	send func(*s4wave_vm.WasiVmScene) error,
 	recv func() (*s4wave_vm.WasiVmDisplayInput, error),
 	scr screen,
 ) error {
@@ -158,7 +159,7 @@ func serveScreen(
 	defer cancel()
 
 	// Inject the viewer's input until it leaves, and pass on its reports of
-	// drawn frames.
+	// drawn updates.
 	drawn := make(chan struct{}, framesAhead)
 	go func() {
 		defer cancel()
@@ -178,10 +179,10 @@ func serveScreen(
 		}
 	}()
 
-	// Stream the screen, holding the next frame while too many are undrawn.
+	// Stream the scene, holding the next update while too many are undrawn.
 	undrawn := 0
-	return scr.Run(ctx, func(frame *s4wave_vm.WasiVmDisplayFrame) error {
-		if err := send(frame); err != nil {
+	return scr.Run(ctx, func(update *s4wave_vm.WasiVmScene) error {
+		if err := send(update); err != nil {
 			return err
 		}
 		if undrawn++; undrawn < framesAhead {

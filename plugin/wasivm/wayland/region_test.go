@@ -31,3 +31,30 @@ func TestRegionCovers(t *testing.T) {
 		}
 	}
 }
+
+// TestSubtract checks the parts of a rectangle outside another cover exactly
+// the difference.
+func TestSubtract(t *testing.T) {
+	a := image.Rect(0, 0, 10, 10)
+	for _, b := range []image.Rectangle{
+		image.Rect(2, 3, 5, 7),
+		image.Rect(-5, -5, 4, 20),
+		image.Rect(20, 20, 30, 30),
+		image.Rect(0, 0, 10, 10),
+	} {
+		parts := subtract(a, b)
+		for y := a.Min.Y; y < a.Max.Y; y++ {
+			for x := a.Min.X; x < a.Max.X; x++ {
+				pt, n := image.Pt(x, y), 0
+				for _, p := range parts {
+					if pt.In(p) {
+						n++
+					}
+				}
+				if want := map[bool]int{true: 0, false: 1}[pt.In(b)]; n != want {
+					t.Fatalf("subtract(%v, %v): %v is in %d parts, want %d", a, b, pt, n, want)
+				}
+			}
+		}
+	}
+}

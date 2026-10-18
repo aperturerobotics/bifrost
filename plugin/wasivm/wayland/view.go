@@ -3,76 +3,73 @@ package wayland
 import (
 	"image"
 	"slices"
+
+	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
 
-// maxDamage and maxCopies bound a view's lists. Past maxDamage areas the view
-// merges the two whose bounding box adds the least area; past maxCopies
-// moves it draws each move's destination instead of copying.
-const (
-	maxDamage = 16
-	maxCopies = 16
-)
+// maxDamage bounds a texture's damage list. Past it the texture merges the
+// two areas whose bounding box adds the least area.
+const maxDamage = 16
 
-// view is what one viewer's copy of the screen lacks: the moves to make on
-// it, in order, then the areas to draw again from the screen. The compositor's
-// lock guards it.
+// view is what one viewer has of a space's scene: the screen, layers and
+// roots last sent, and the texture of each layer. The compositor's lock
+// guards it.
 type view struct {
-	// copies is the moves, oldest first.
-	copies []move
-	// damage is the areas to draw after the moves.
+	// screen is the screen last sent, or nil.
+	screen *s4wave_vm.WasiVmSceneScreen
+	// layers is the layers last sent, or nil.
+	layers *s4wave_vm.WasiVmSceneLayers
+	// roots is the roots last sent, or nil.
+	roots *s4wave_vm.WasiVmSceneRoots
+	// textures is the texture the viewer holds for each surface shown.
+	textures map[*surface]*texture
+}
+
+// newView returns a view holding nothing.
+func newView() *view {
+	return &view{textures: make(map[*surface]*texture)}
+}
+
+// texture is a viewer's copy of a surface's image: its size in pixels and
+// the areas of it to send again.
+type texture struct {
+	// size is the texture's size in pixels.
+	size image.Point
+	// damage is the areas to send again, in texture pixels.
 	damage []image.Rectangle
 }
 
-// move is an area of the screen that moves by an offset, both ends inside
-// the screen.
-type move struct {
-	// src is the area before the move.
-	src image.Rectangle
-	// by is the offset it moves by.
-	by image.Point
-}
-
-// dst returns the area after the move.
-func (m move) dst() image.Rectangle {
-	return m.src.Add(m.by)
-}
-
-// empty reports whether the viewer's copy is current.
-func (v *view) empty() bool {
-	return len(v.copies) == 0 && len(v.damage) == 0
-}
-
-// add marks the area r, inside the screen, to draw again.
-func (v *view) add(r image.Rectangle) {
+// add marks the area r, inside the texture, to send again.
+func (t *texture) add(r image.Rectangle) {
 	// Skip an area already marked and drop those it covers.
 	if r.Empty() {
 		return
 	}
-	if slices.ContainsFunc(v.damage, r.In) {
+	if slices.ContainsFunc(t.damage, r.In) {
 		return
 	}
 
-	// Grow it over each marked area whose box with it draws no more than
-	// both, such as a window edge drawn again a few pixels over, then drop
-	// the areas it covers.
+	// Grow it over each marked area whose box with it sends no more than
+	// both, such as a line redrawn a few pixels over, then drop the areas it
+	// covers.
 	for {
-		i := slices.IndexFunc(v.damage, func(d image.Rectangle) bool { return waste(d, r) <= areaOf(d.Intersect(r)) })
+		i := slices.IndexFunc(t.damage, func(d image.Rectangle) bool { return waste(d, r) <= areaOf(d.Intersect(r)) })
 		if i < 0 {
 			break
 		}
-		r = r.Union(v.damage[i])
-		v.damage = slices.Delete(v.damage, i, i+1)
+		r = r.Union(t.damage[i])
+		t.damage = slices.Delete(t.damage, i, i+1)
 	}
-	v.damage = slices.DeleteFunc(v.damage, func(d image.Rectangle) bool { return d.In(r) })
-	v.damage = append(v.damage, r)
+	t.damage = slices.DeleteFunc(t.damage, func(d image.Rectangle) bool { return d.In(r) })
+	t.damage = append(t.damage, r)
 
-	// Shorten a long list by merging the closest two areas, which keeps a
-	// moving window's thin edges thin rather than drawing all of it.
-	for len(v.damage) > maxDamage {
-		i, j := closest(v.damage)
-		u := v.damage[i].Union(v.damage[j])
-		v.damage = slices.DeleteFunc(v.damage, func(d image.Rectangle) bool { return d.In(u) })
-		v.damage = append(v.damage, u)
+	// Shorten a long list by merging the closest two areas, which keeps
+	// thin edges thin rather than sending all of the image.
+	for len(t.damage) > maxDamage {
+		i, j := closest(t.damage)
+		u := t.damage[i].Union(t.damage[j])
+		t.damage = slices.DeleteFunc(t.damage, func(d image.Rectangle) bool { return d.In(u) })
+		t.damage = append(t.damage, u)
 	}
 }
 
@@ -98,67 +95,4 @@ func waste(a, b image.Rectangle) int {
 // areaOf returns the area of r.
 func areaOf(r image.Rectangle) int {
 	return r.Dx() * r.Dy()
-}
-
-// copy moves the area src of the viewer's copy by by. The caller marks the
-// areas the move uncovers.
-func (v *view) copy(src image.Rectangle, by image.Point) {
-	// The stale pixels inside src land stale at the destination.
-	var stale []image.Rectangle
-	for _, d := range v.damage {
-		if in := d.Intersect(src); !in.Empty() {
-			stale = append(stale, in.Add(by))
-		}
-	}
-	for _, r := range stale {
-		v.add(r)
-	}
-
-	// Fold a move of the last move's destination into the last move. The
-	// part of that destination the folded move leaves is not copied, so it
-	// is drawn instead.
-	if n := len(v.copies); n != 0 {
-		if last := &v.copies[n-1]; src.In(last.dst()) {
-			for _, r := range subtract(last.dst(), src.Add(by)) {
-				v.add(r)
-			}
-			last.src, last.by = src.Sub(last.by), last.by.Add(by)
-			return
-		}
-	}
-
-	// Queue the move, or draw the destinations of too many.
-	v.copies = append(v.copies, move{src: src, by: by})
-	if len(v.copies) > maxCopies {
-		for _, m := range v.copies {
-			v.add(m.dst())
-		}
-		v.copies = v.copies[:0]
-	}
-}
-
-// subtract returns the parts of a outside b, as up to four rectangles.
-func subtract(a, b image.Rectangle) []image.Rectangle {
-	// Keep a whole when b misses it.
-	in := a.Intersect(b)
-	switch {
-	case a.Empty():
-		return nil
-	case in.Empty():
-		return []image.Rectangle{a}
-	}
-
-	// Take the bands above and below the overlap, then the sides beside it.
-	var out []image.Rectangle
-	for _, r := range [...]image.Rectangle{
-		{Min: a.Min, Max: image.Pt(a.Max.X, in.Min.Y)},
-		{Min: image.Pt(a.Min.X, in.Max.Y), Max: a.Max},
-		{Min: image.Pt(a.Min.X, in.Min.Y), Max: image.Pt(in.Min.X, in.Max.Y)},
-		{Min: image.Pt(in.Max.X, in.Min.Y), Max: image.Pt(a.Max.X, in.Max.Y)},
-	} {
-		if !r.Empty() {
-			out = append(out, r)
-		}
-	}
-	return out
 }

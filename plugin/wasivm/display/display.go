@@ -182,16 +182,30 @@ func readKeycodes(xc *xgb.Conn, setup *xproto.SetupInfo) (map[xproto.Keysym]xpro
 	return keycodes, nil
 }
 
-// Run sends the whole screen to send, then each region that changes, until
-// the X server closes the connection or ctx ends. Each region is the bounding
-// box of the changes since the last one.
-func (c *Client) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplayFrame) error) error {
+// Run sends the screen to send as a scene of one opaque layer, then each
+// region that changes as a patch of it, until the X server closes the
+// connection or ctx ends. Each region is the bounding box of the changes since
+// the last one.
+func (c *Client) Run(ctx context.Context, send func(*s4wave_vm.WasiVmScene) error) error {
 	// End the connection with ctx, which ends the wait for events.
 	stop := context.AfterFunc(ctx, c.conn.Close)
 	defer stop()
 
-	// Send the whole screen.
-	if err := c.sendRegion(send, xproto.Rectangle{Width: c.width, Height: c.height}); err != nil {
+	// Send the scene with the whole screen.
+	w, h := uint32(c.width), uint32(c.height)
+	scene := &s4wave_vm.WasiVmScene{
+		Screen: &s4wave_vm.WasiVmSceneScreen{Width: w, Height: h, Scale: 1, Background: 0x000000ff},
+		Layers: &s4wave_vm.WasiVmSceneLayers{Layers: []*s4wave_vm.WasiVmSceneLayer{{
+			Id: screenLayer, Root: screenLayer, Width: w, Height: h, TextureWidth: w, TextureHeight: h, Opaque: true,
+		}}},
+		Roots: &s4wave_vm.WasiVmSceneRoots{Roots: []*s4wave_vm.WasiVmSceneRoot{{Id: screenLayer}}},
+	}
+	patch, err := c.readRegion(xproto.Rectangle{Width: c.width, Height: c.height})
+	if err != nil {
+		return err
+	}
+	scene.Patches = append(scene.Patches, patch)
+	if err := send(scene); err != nil {
 		return err
 	}
 
@@ -209,7 +223,7 @@ func (c *Client) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplayFram
 // sendDamage waits for damage, clears it and sends the bounding box of the
 // cleared region. The cleared region, not the events, bounds what to read, so
 // damage that lands after the last event is sent too.
-func (c *Client) sendDamage(send func(*s4wave_vm.WasiVmDisplayFrame) error) error {
+func (c *Client) sendDamage(send func(*s4wave_vm.WasiVmScene) error) error {
 	// Wait for the first event, then discard those queued behind it.
 	ev, xerr := c.conn.WaitForEvent()
 	if ev == nil && xerr == nil {
@@ -229,15 +243,23 @@ func (c *Client) sendDamage(send func(*s4wave_vm.WasiVmDisplayFrame) error) erro
 	if err != nil {
 		return errors.Wrap(err, "read the damage")
 	}
-	return c.sendRegion(send, region.Extents)
+	patch, err := c.readRegion(region.Extents)
+	if err != nil || patch == nil {
+		return err
+	}
+	return send(&s4wave_vm.WasiVmScene{Patches: []*s4wave_vm.WasiVmScenePatch{patch}})
 }
 
-// sendRegion reads the screen inside area and sends it as RGBA.
-func (c *Client) sendRegion(send func(*s4wave_vm.WasiVmDisplayFrame) error, area xproto.Rectangle) error {
+// screenLayer is the id of the scene's one layer and its root: the screen.
+const screenLayer = 1
+
+// readRegion reads the screen inside area as a patch of the screen's layer,
+// or returns nil when the area misses the screen.
+func (c *Client) readRegion(area xproto.Rectangle) (*s4wave_vm.WasiVmScenePatch, error) {
 	// Clip the area to the screen.
 	area = clip(area, c.width, c.height)
 	if area.Width == 0 || area.Height == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Read its pixels, which arrive as blue, green, red and padding, and
@@ -245,23 +267,20 @@ func (c *Client) sendRegion(send func(*s4wave_vm.WasiVmDisplayFrame) error, area
 	img, err := xproto.GetImage(c.conn, xproto.ImageFormatZPixmap, xproto.Drawable(c.root),
 		area.X, area.Y, area.Width, area.Height, ^uint32(0)).Reply()
 	if err != nil {
-		return errors.Wrap(err, "read the screen")
+		return nil, errors.Wrap(err, "read the screen")
 	}
 	pix := img.Data
 	for i := 0; i+3 < len(pix); i += 4 {
 		pix[i], pix[i+2], pix[i+3] = pix[i+2], pix[i], 0xff
 	}
-	return send(&s4wave_vm.WasiVmDisplayFrame{
-		ScreenWidth:  uint32(c.width),
-		ScreenHeight: uint32(c.height),
-		Regions: []*s4wave_vm.WasiVmDisplayRegion{{
-			X:      uint32(area.X), //nolint:gosec // clipped to the screen.
-			Y:      uint32(area.Y), //nolint:gosec // clipped to the screen.
-			Width:  uint32(area.Width),
-			Height: uint32(area.Height),
-			Rgba:   pix,
-		}},
-	})
+	return &s4wave_vm.WasiVmScenePatch{
+		Layer:  screenLayer,
+		X:      uint32(area.X), //nolint:gosec // clipped to the screen.
+		Y:      uint32(area.Y), //nolint:gosec // clipped to the screen.
+		Width:  uint32(area.Width),
+		Height: uint32(area.Height),
+		Rgba:   pix,
+	}, nil
 }
 
 // clip returns the part of r inside a screen of width by height.

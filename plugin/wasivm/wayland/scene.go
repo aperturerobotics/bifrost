@@ -1,6 +1,7 @@
 package wayland
 
 import (
+	"encoding/binary"
 	"image"
 	"slices"
 
@@ -34,7 +35,6 @@ func (c *Compositor) mapWindow(s *surface) {
 	x.mapped = true
 	c.windows = append(c.windows, s)
 	c.changed = true
-	c.damage(c.desktop, c.bounds(s))
 	c.activate(s)
 	c.refocusPointer()
 }
@@ -47,7 +47,7 @@ func (c *Compositor) mapLayer(s *surface) {
 	l.mapped = true
 	c.layers[l.layer] = append(c.layers[l.layer], s)
 	c.arrange()
-	c.damage(c.desktop, c.bounds(s))
+	c.changed = true
 	c.refocusKeyboard()
 	c.refocusPointer()
 }
@@ -61,7 +61,7 @@ func (c *Compositor) unmap(s *surface) {
 	if !s.mapped() {
 		return
 	}
-	c.redrawTree(s)
+	c.changed = true
 	for _, p := range slices.Clone(s.popups) {
 		c.dismiss(p, true)
 	}
@@ -137,54 +137,31 @@ func (c *Compositor) arrange() {
 	c.usable = usable
 	for _, w := range c.windows {
 		if t := w.xdg.toplevel; t.maximized && !t.fullscreen {
-			before := c.bounds(w)
 			t.pos, t.size = usable.Min, usable.Size()
-			c.damage(c.desktop, before.Union(c.bounds(w)))
+			c.changed = true
 			w.xdg.configure()
 		}
 	}
 }
 
-// raise moves the mapped window w to the top of the stack, drawing again
-// the parts of it the windows above covered. The caller holds the lock.
+// raise moves the mapped window w to the top of the stack. The caller holds
+// the lock.
 func (c *Compositor) raise(w *surface) {
 	i := slices.Index(c.windows, w)
-	b := c.bounds(w)
-	for _, above := range c.windows[i+1:] {
-		c.damage(c.desktop, b.Intersect(c.bounds(above)))
-	}
-	c.windows = append(slices.Delete(c.windows, i, i+1), w)
-}
-
-// moveWindow moves the window w so its geometry's corner sits at pos. When
-// its surface is opaque, the viewers move the pixels they have and draw only
-// what the move uncovers and the trees above it. The caller holds the lock.
-func (c *Compositor) moveWindow(w *surface, pos image.Point) {
-	// Move it.
-	before, from := c.bounds(w), w.origin()
-	w.xdg.toplevel.pos = pos
-	after, by := c.bounds(w), w.origin().Sub(from)
-	if by == (image.Point{}) {
+	if i == len(c.windows)-1 {
 		return
 	}
+	c.windows = append(slices.Delete(c.windows, i, i+1), w)
+	c.changed = true
+}
 
-	// Move the pixels of an opaque surface. The copy carries along the trees
-	// drawn above its source and covers those above its destination, so draw
-	// both again.
-	var moved image.Rectangle
-	if w.opaque && w.image != nil {
-		moved = c.shift(image.Rectangle{Min: from, Max: from.Add(w.size)}, by)
-		roots := c.roots()
-		for _, above := range roots[slices.Index(roots, w)+1:] {
-			b := c.bounds(above)
-			c.damage(c.desktop, moved.Intersect(b))
-			c.damage(c.desktop, moved.Intersect(b.Add(by)))
-		}
-	}
-
-	// Draw the rest of both places.
-	for _, r := range slices.Concat(subtract(before, moved), subtract(after, moved)) {
-		c.damage(c.desktop, r)
+// moveWindow moves the window w so its geometry's corner sits at pos. The
+// viewers move the textures they hold, so no pixels are sent. The caller
+// holds the lock.
+func (c *Compositor) moveWindow(w *surface, pos image.Point) {
+	if t := w.xdg.toplevel; t.pos != pos {
+		t.pos = pos
+		c.changed = true
 	}
 }
 
@@ -210,8 +187,7 @@ func (c *Compositor) setState(s *surface, maximized, fullscreen bool) {
 
 	// Fill the usable area or the screen, or go back to the remembered
 	// place. The client's last image shows at the new place until it draws
-	// at the new size, so draw both places again.
-	before := c.bounds(s)
+	// at the new size.
 	switch {
 	case fullscreen:
 		t.pos, t.size = c.desktop.area.Min, c.desktop.area.Size()
@@ -220,7 +196,7 @@ func (c *Compositor) setState(s *surface, maximized, fullscreen bool) {
 	case !wasNormal:
 		t.pos, t.size = t.restore.Min, t.restore.Size()
 	}
-	c.damage(c.desktop, before.Union(c.bounds(s)))
+	c.changed = true
 	if s.xdg.configured {
 		s.xdg.configure()
 	}
@@ -248,20 +224,6 @@ func (c *Compositor) rootOf(s *surface) *surface {
 // layers. The caller holds the lock.
 func (c *Compositor) roots() []*surface {
 	return slices.Concat(c.layers[layerBackground], c.layers[layerBottom], c.windows, c.layers[layerTop], c.layers[layerOverlay])
-}
-
-// bounds returns the screen area of the tree of s, or nothing for nil. The
-// caller holds the lock.
-func (c *Compositor) bounds(s *surface) image.Rectangle {
-	var r image.Rectangle
-	if s == nil {
-		return r
-	}
-	c.walk(s, s.origin(), func(t *surface, at image.Point) bool {
-		r = r.Union(image.Rectangle{Min: at, Max: at.Add(t.size)})
-		return false
-	})
-	return r
 }
 
 // walk calls fn on each surface of the tree of s, bottom to top, with its
@@ -304,110 +266,99 @@ func (c *Compositor) surfaceAt(sp *space, pt image.Point) *surface {
 	return nil
 }
 
-// readFrame takes what the view v of the space sp lacks as a frame: its
-// moves, then its areas read from the space, in pixels at the output's
-// scale. The caller holds the lock.
-func (c *Compositor) readFrame(sp *space, v *view) *s4wave_vm.WasiVmDisplayFrame {
-	// List the moves, then read each area after them.
-	n := c.scale
-	f := &s4wave_vm.WasiVmDisplayFrame{
-		ScreenWidth:  uint32(sp.area.Dx() * n), //nolint:gosec // space sizes are small.
-		ScreenHeight: uint32(sp.area.Dy() * n), //nolint:gosec // space sizes are small.
-		Scale:        uint32(n),                //nolint:gosec // at most maxScale.
+// readScene returns what the view v of the space sp lacks as a scene
+// update, or nil when it lacks nothing: the screen, layers and roots when
+// they differ from those last sent, and the damaged areas of each texture,
+// all of a new or resized one. It forgets the textures of the surfaces no
+// longer shown. The caller holds the lock.
+func (c *Compositor) readScene(sp *space, v *view) *s4wave_vm.WasiVmScene {
+	// Describe the screen.
+	u := &s4wave_vm.WasiVmScene{}
+	screen := &s4wave_vm.WasiVmSceneScreen{
+		Width:      uint32(sp.area.Dx()), //nolint:gosec // space sizes are small.
+		Height:     uint32(sp.area.Dy()), //nolint:gosec // space sizes are small.
+		Scale:      uint32(c.scale),      //nolint:gosec // at most maxScale.
+		Background: binary.BigEndian.Uint32(background[:]),
 	}
-	for _, m := range v.copies {
-		src, dst := scaleRect(m.src, n), scaleRect(m.dst(), n)
-		f.Copies = append(f.Copies, &s4wave_vm.WasiVmDisplayCopy{
-			X:      uint32(src.Min.X), //nolint:gosec // inside the screen.
-			Y:      uint32(src.Min.Y), //nolint:gosec // inside the screen.
-			Width:  uint32(src.Dx()),  //nolint:gosec // inside the screen.
-			Height: uint32(src.Dy()),  //nolint:gosec // inside the screen.
-			ToX:    uint32(dst.Min.X), //nolint:gosec // inside the screen.
-			ToY:    uint32(dst.Min.Y), //nolint:gosec // inside the screen.
-		})
-	}
-	for _, r := range v.damage {
-		f.Regions = append(f.Regions, c.readSpace(sp, r))
-	}
-	v.copies, v.damage = v.copies[:0], v.damage[:0]
-	return f
-}
-
-// readSpace composites the area r of the space sp at the output's scale:
-// its windows and layer surfaces, bottom to top, over the background. The
-// caller holds the lock.
-func (c *Compositor) readSpace(sp *space, r image.Rectangle) *s4wave_vm.WasiVmDisplayRegion {
-	// Fill the background: one pixel, then double the filled prefix, so a
-	// large area takes a few long copies instead of one per pixel.
-	px := scaleRect(r, c.scale)
-	pix := make([]byte, 4*px.Dx()*px.Dy())
-	for n := copy(pix, background[:]); n < len(pix); {
-		n += copy(pix[n:], pix[:n])
+	if !screen.EqualVT(v.screen) {
+		u.Screen, v.screen = screen, screen
 	}
 
-	// Draw each surface of each tree.
+	// Describe each root and the layers of its tree, reading the textures
+	// the view lacks.
+	layers, roots := &s4wave_vm.WasiVmSceneLayers{}, &s4wave_vm.WasiVmSceneRoots{}
+	shown := make(map[*surface]struct{})
 	for _, w := range c.spaceRoots(sp) {
+		root := w.origin().Sub(sp.area.Min)
+		roots.Roots = append(roots.Roots, &s4wave_vm.WasiVmSceneRoot{
+			Id: w.sceneID,
+			X:  int32(root.X), //nolint:gosec // screen positions are small.
+			Y:  int32(root.Y), //nolint:gosec // screen positions are small.
+		})
 		c.walk(w, w.origin(), func(s *surface, at image.Point) bool {
-			blend(pix, r, c.scale, s, at)
+			// Describe the layer.
+			off := at.Sub(w.origin())
+			layers.Layers = append(layers.Layers, &s4wave_vm.WasiVmSceneLayer{
+				Id:            s.sceneID,
+				Root:          w.sceneID,
+				X:             int32(off.X),       //nolint:gosec // surface offsets are small.
+				Y:             int32(off.Y),       //nolint:gosec // surface offsets are small.
+				Width:         uint32(s.size.X),   //nolint:gosec // at most maxImageSize.
+				Height:        uint32(s.size.Y),   //nolint:gosec // at most maxImageSize.
+				TextureWidth:  uint32(s.pixels.X), //nolint:gosec // at most maxImageSize.
+				TextureHeight: uint32(s.pixels.Y), //nolint:gosec // at most maxImageSize.
+				Opaque:        s.opaque,
+			})
+			shown[s] = struct{}{}
+
+			// Read all of a texture the view lacks at this size, or the
+			// areas it marked.
+			t := v.textures[s]
+			if t == nil || t.size != s.pixels {
+				t = &texture{size: s.pixels}
+				t.add(image.Rectangle{Max: s.pixels})
+				v.textures[s] = t
+			}
+			for _, r := range t.damage {
+				u.Patches = append(u.Patches, readTexture(s, r))
+			}
+			t.damage = t.damage[:0]
 			return false
 		})
 	}
-	return &s4wave_vm.WasiVmDisplayRegion{
-		X:      uint32(px.Min.X), //nolint:gosec // inside the screen.
-		Y:      uint32(px.Min.Y), //nolint:gosec // inside the screen.
-		Width:  uint32(px.Dx()),  //nolint:gosec // inside the screen.
-		Height: uint32(px.Dy()),  //nolint:gosec // inside the screen.
-		Rgba:   pix,
+	for s := range v.textures {
+		if _, ok := shown[s]; !ok {
+			delete(v.textures, s)
+		}
 	}
+
+	// Send the arrangement and the positions when they changed.
+	if !layers.EqualVT(v.layers) {
+		u.Layers, v.layers = layers, layers
+	}
+	if !roots.EqualVT(v.roots) {
+		u.Roots, v.roots = roots, roots
+	}
+	if u.Screen == nil && u.Layers == nil && u.Roots == nil && len(u.Patches) == 0 {
+		return nil
+	}
+	return u
 }
 
-// blend draws the image of s, at screen position at, over pix, the opaque
-// RGBA pixels of the screen area r drawn at scale pixels a unit. Each source
-// pixel is premultiplied, so the result is the source plus the destination
-// scaled by the source's transparency. An image drawn at another scale is
-// sampled at the pixel nearest each one drawn.
-func blend(pix []byte, r image.Rectangle, scale int, s *surface, at image.Point) {
-	// Find the area both cover, in pixels.
-	in := scaleRect(r.Intersect(image.Rectangle{Min: at, Max: at.Add(s.size)}), scale)
-	if in.Empty() {
-		return
+// readTexture returns the area r of the image of s, in its pixels, as a
+// patch of its layer. The caller holds the lock.
+func readTexture(s *surface, r image.Rectangle) *s4wave_vm.WasiVmScenePatch {
+	pix := make([]byte, 4*r.Dx()*r.Dy())
+	for y := range r.Dy() {
+		copy(pix[4*y*r.Dx():][:4*r.Dx()], s.image[4*((r.Min.Y+y)*s.pixels.X+r.Min.X):])
 	}
-	r, at = scaleRect(r, scale), at.Mul(scale)
-
-	// Map each column to the image's when the scales differ.
-	var cols []int
-	var row []byte
-	if s.scale != scale {
-		cols, row = make([]int, in.Dx()), make([]byte, 4*in.Dx())
-		for i := range cols {
-			cols[i] = 4 * ((in.Min.X + i - at.X) * s.scale / scale)
-		}
-	}
-	for y := in.Min.Y; y < in.Max.Y; y++ {
-		// Read the row from the image.
-		line := s.image[4*((y-at.Y)*s.scale/scale)*s.pixels.X:]
-		var from []byte
-		if cols == nil {
-			from = line[4*(in.Min.X-at.X):][:4*in.Dx()]
-		} else {
-			for i, x := range cols {
-				copy(row[4*i:4*i+4], line[x:])
-			}
-			from = row
-		}
-		to := pix[4*((y-r.Min.Y)*r.Dx()+in.Min.X-r.Min.X):][:4*in.Dx()]
-
-		// Copy an opaque row, or blend each pixel.
-		if s.opaque {
-			copy(to, from)
-			continue
-		}
-		for i := 0; i < len(from); i += 4 {
-			keep := 255 - uint32(from[i+3])
-			for j := range 3 {
-				to[i+j] = from[i+j] + byte((uint32(to[i+j])*keep+127)/255) //nolint:gosec // at most 255.
-			}
-		}
+	return &s4wave_vm.WasiVmScenePatch{
+		Layer:  s.sceneID,
+		X:      uint32(r.Min.X), //nolint:gosec // inside the image.
+		Y:      uint32(r.Min.Y), //nolint:gosec // inside the image.
+		Width:  uint32(r.Dx()),  //nolint:gosec // inside the image.
+		Height: uint32(r.Dy()),  //nolint:gosec // inside the image.
+		Rgba:   pix,
 	}
 }
 
@@ -446,7 +397,7 @@ func (c *Compositor) dismiss(s *surface, notify bool) {
 	}
 
 	// Take it off its parent.
-	c.redrawTree(s)
+	c.changed = true
 	s.unparent()
 	c.popupGrabs = slices.DeleteFunc(c.popupGrabs, func(p *surface) bool { return p == s })
 	if notify && s.xdg != nil && s.xdg.popup != nil {

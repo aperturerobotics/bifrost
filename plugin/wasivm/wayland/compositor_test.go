@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/binary"
 	"image"
-	"image/draw"
 	"slices"
 	"strings"
 	"testing"
@@ -40,31 +39,38 @@ type testCompositor struct {
 	comp *Compositor
 }
 
-// testView is a viewer whose frames build a copy of a space.
+// testView is a viewer that draws the scene updates it receives on a copy of
+// a space, as the browser viewer does.
 type testView struct {
 	// t is the test.
 	t *testing.T
-	// frames is the viewer's frames.
-	frames chan *s4wave_vm.WasiVmDisplayFrame
-	// screen is the space's RGBA pixels as the frames so far draw it.
+	// updates is the viewer's scene updates.
+	updates chan *s4wave_vm.WasiVmScene
+	// scene is the screen, the layers and the roots the updates so far set.
+	scene *s4wave_vm.WasiVmScene
+	// textures is each layer's texture by layer id.
+	textures map[uint32]*image.RGBA
+	// screen is the space's RGBA pixels as the scene so far draws it.
 	screen *image.RGBA
-	// copies counts the moves the frames so far made.
-	copies int
+	// patched counts the texture pixels the updates so far carried.
+	patched int
 	// done receives the error that ended the stream.
 	done chan error
 }
 
 // newTestView starts a viewer of the stream run.
-func newTestView(t *testing.T, run func(context.Context, func(*s4wave_vm.WasiVmDisplayFrame) error) error) *testView {
+func newTestView(t *testing.T, run func(context.Context, func(*s4wave_vm.WasiVmScene) error) error) *testView {
 	tv := &testView{
-		t:      t,
-		frames: make(chan *s4wave_vm.WasiVmDisplayFrame, 64),
-		screen: image.NewRGBA(image.Rectangle{}),
-		done:   make(chan error, 1),
+		t:        t,
+		updates:  make(chan *s4wave_vm.WasiVmScene, 64),
+		scene:    &s4wave_vm.WasiVmScene{},
+		textures: make(map[uint32]*image.RGBA),
+		screen:   image.NewRGBA(image.Rectangle{}),
+		done:     make(chan error, 1),
 	}
 	go func() {
-		tv.done <- run(t.Context(), func(f *s4wave_vm.WasiVmDisplayFrame) error {
-			tv.frames <- f
+		tv.done <- run(t.Context(), func(u *s4wave_vm.WasiVmScene) error {
+			tv.updates <- u
 			return nil
 		})
 	}()
@@ -93,7 +99,7 @@ func newTestCompositor(t *testing.T, width, height int) *testCompositor {
 	return &testCompositor{testView: newTestView(t, comp.Run), k: k, comp: comp}
 }
 
-// awaitPixel applies the viewer's frames until the pixel at pt is want, in
+// awaitPixel applies the viewer's updates until the pixel at pt is want, in
 // RGBA.
 func (tc *testView) awaitPixel(pt image.Point, want [4]byte) {
 	tc.t.Helper()
@@ -103,34 +109,102 @@ func (tc *testView) awaitPixel(pt image.Point, want [4]byte) {
 			return
 		}
 		select {
-		case f := <-tc.frames:
-			tc.apply(f)
+		case u := <-tc.updates:
+			tc.apply(u)
 		case <-deadline:
 			tc.t.Fatalf("pixel at %v in %v = %x, want %x", pt, tc.screen.Rect, tc.screen.At(pt.X, pt.Y), want)
 		}
 	}
 }
 
-// apply draws the frame f on the viewer's copy of the space, as the viewer
-// does: a fresh copy when the size changed, then its copies in order, each
-// reading the space before it writes, then its regions.
-func (tc *testView) apply(f *s4wave_vm.WasiVmDisplayFrame) {
-	if size := image.Pt(int(f.GetScreenWidth()), int(f.GetScreenHeight())); size != tc.screen.Rect.Size() {
-		tc.screen = image.NewRGBA(image.Rectangle{Max: size})
+// apply applies the update u as the browser viewer does: the screen, the
+// layers and the roots it sets, then its patches, and draws the scene.
+func (tc *testView) apply(u *s4wave_vm.WasiVmScene) {
+	// Take the screen, the layers and the roots, dropping the textures of
+	// layers gone and giving a resized layer a new texture.
+	if u.GetScreen() != nil {
+		tc.scene.Screen = u.GetScreen()
 	}
-	tc.copies += len(f.GetCopies())
-	for _, m := range f.GetCopies() {
-		src := image.Rect(int(m.GetX()), int(m.GetY()), int(m.GetX()+m.GetWidth()), int(m.GetY()+m.GetHeight()))
-		from := image.NewRGBA(src)
-		draw.Draw(from, src, tc.screen, src.Min, draw.Src)
-		draw.Draw(tc.screen, src.Sub(src.Min).Add(image.Pt(int(m.GetToX()), int(m.GetToY()))), from, src.Min, draw.Src)
+	if u.GetRoots() != nil {
+		tc.scene.Roots = u.GetRoots()
 	}
-	for _, g := range f.GetRegions() {
-		r := image.Rect(int(g.GetX()), int(g.GetY()), int(g.GetX()+g.GetWidth()), int(g.GetY()+g.GetHeight()))
+	if u.GetLayers() != nil {
+		tc.scene.Layers = u.GetLayers()
+		textures := make(map[uint32]*image.RGBA)
+		for _, l := range u.GetLayers().GetLayers() {
+			size := image.Pt(int(l.GetTextureWidth()), int(l.GetTextureHeight()))
+			if t := tc.textures[l.GetId()]; t != nil && t.Rect.Size() == size {
+				textures[l.GetId()] = t
+			} else {
+				textures[l.GetId()] = image.NewRGBA(image.Rectangle{Max: size})
+			}
+		}
+		tc.textures = textures
+	}
+
+	// Draw the patches into the textures.
+	for _, p := range u.GetPatches() {
+		t := tc.textures[p.GetLayer()]
+		if t == nil {
+			tc.t.Fatalf("a patch for layer %d, which the scene lacks", p.GetLayer())
+		}
+		r := image.Rect(int(p.GetX()), int(p.GetY()), int(p.GetX()+p.GetWidth()), int(p.GetY()+p.GetHeight()))
 		for y := range r.Dy() {
-			copy(tc.screen.Pix[tc.screen.PixOffset(r.Min.X, r.Min.Y+y):], g.GetRgba()[4*y*r.Dx():][:4*r.Dx()])
+			copy(t.Pix[t.PixOffset(r.Min.X, r.Min.Y+y):], p.GetRgba()[4*y*r.Dx():][:4*r.Dx()])
+		}
+		tc.patched += r.Dx() * r.Dy()
+	}
+	tc.draw()
+}
+
+// draw composites the scene on the screen at its scale: the background, then
+// each layer at its root's position plus its offset, sampling its texture at
+// the pixel nearest each one drawn and blending its premultiplied pixels.
+func (tc *testView) draw() {
+	// Fill the background.
+	sc := tc.scene.GetScreen()
+	n := max(int(sc.GetScale()), 1)
+	tc.screen = image.NewRGBA(image.Rect(0, 0, int(sc.GetWidth())*n, int(sc.GetHeight())*n))
+	var bg [4]byte
+	binary.BigEndian.PutUint32(bg[:], sc.GetBackground())
+	for i := 0; i < len(tc.screen.Pix); i += 4 {
+		copy(tc.screen.Pix[i:], bg[:])
+	}
+
+	// Draw each layer.
+	roots := make(map[uint32]image.Point)
+	for _, r := range tc.scene.GetRoots().GetRoots() {
+		roots[r.GetId()] = image.Pt(int(r.GetX()), int(r.GetY()))
+	}
+	for _, l := range tc.scene.GetLayers().GetLayers() {
+		t := tc.textures[l.GetId()]
+		at := roots[l.GetRoot()].Add(image.Pt(int(l.GetX()), int(l.GetY()))).Mul(n)
+		size := image.Pt(int(l.GetWidth()), int(l.GetHeight())).Mul(n)
+		in := image.Rectangle{Min: at, Max: at.Add(size)}.Intersect(tc.screen.Rect)
+		for y := in.Min.Y; y < in.Max.Y; y++ {
+			for x := in.Min.X; x < in.Max.X; x++ {
+				from := t.Pix[t.PixOffset((x-at.X)*t.Rect.Dx()/size.X, (y-at.Y)*t.Rect.Dy()/size.Y):][:4]
+				to := tc.screen.Pix[tc.screen.PixOffset(x, y):][:4]
+				if l.GetOpaque() {
+					copy(to, from)
+					continue
+				}
+				keep := 255 - uint32(from[3])
+				for j := range 4 {
+					to[j] = from[j] + byte((uint32(to[j])*keep+127)/255) //nolint:gosec // at most 255.
+				}
+			}
 		}
 	}
+}
+
+// topLayer returns the topmost layer the scene so far shows, or nil.
+func (tc *testView) topLayer() *s4wave_vm.WasiVmSceneLayer {
+	layers := tc.scene.GetLayers().GetLayers()
+	if len(layers) == 0 {
+		return nil
+	}
+	return layers[len(layers)-1]
 }
 
 // pointer sends a viewer's pointer event.
@@ -467,17 +541,18 @@ func TestMoveGrab(t *testing.T) {
 	c.request(newEvent(w.surface, surfaceCommit))
 	tc.awaitPattern(image.Pt(cascadeStep, cascadeStep), 32, 32, pix)
 
-	// Drag it by 20,10 and release.
+	// Drag it by 20,10 and release, noting the pixels sent so far.
+	patched := tc.patched
 	tc.grabMove(c, w, image.Pt(cascadeStep+8, cascadeStep+8))
 	tc.pointer(cascadeStep+28, cascadeStep+18, 1)
 	tc.pointer(cascadeStep+28, cascadeStep+18, 0)
 
 	// The window follows, leaving the background behind. The viewer moves
-	// the opaque window's pixels rather than receiving them again.
+	// the window's texture rather than receiving its pixels again.
 	tc.awaitPattern(image.Pt(cascadeStep+20, cascadeStep+10), 32, 32, pix)
 	tc.awaitPixel(image.Pt(cascadeStep, cascadeStep), background)
-	if tc.copies == 0 {
-		t.Fatal("the move sent the window's pixels instead of a copy")
+	if tc.patched != patched {
+		t.Fatalf("the move sent %d pixels, want none", tc.patched-patched)
 	}
 }
 
@@ -513,8 +588,7 @@ func TestMoveGrabLate(t *testing.T) {
 	tc.awaitPattern(image.Pt(cascadeStep+30, cascadeStep+20), 32, 32, pix)
 }
 
-// TestMoveUnderPanel checks a window moved under a panel stays below it, and
-// the viewer still moves the window's pixels.
+// TestMoveUnderPanel checks a window moved under a panel stays below it.
 func TestMoveUnderPanel(t *testing.T) {
 	// Map a red panel along the bottom.
 	tc := newTestCompositor(t, 160, 120)
@@ -542,13 +616,11 @@ func TestMoveUnderPanel(t *testing.T) {
 	tc.awaitPattern(to, 32, 16, pix[:4*32*16])
 	tc.awaitPixel(image.Pt(to.X+8, 120-panel+4), red)
 	tc.awaitPixel(image.Pt(cascadeStep, cascadeStep), background)
-	if tc.copies == 0 {
-		t.Fatal("the move sent the window's pixels instead of a copy")
-	}
 }
 
 // TestOpaqueRegion checks a window with an alpha channel and an opaque
-// region over all of it moves as a copy, like a window without alpha.
+// region over all of it shows as an opaque layer, like a window without
+// alpha.
 func TestOpaqueRegion(t *testing.T) {
 	// Map a window showing an opaque pattern in a format with alpha.
 	tc := newTestCompositor(t, 160, 120)
@@ -564,19 +636,14 @@ func TestOpaqueRegion(t *testing.T) {
 	c.request(newEvent(idCompositor, compositorCreateRegion).uint(opaque))
 	c.request(newEvent(opaque, regionAdd).int(0).int(0).int(32).int(32))
 	c.request(newEvent(w.surface, surfaceSetOpaqueRegion).uint(opaque))
+
+	// Draw it. Its layer is opaque.
 	c.request(newEvent(w.surface, surfaceAttach).uint(c.bufferOf(32, 32, 4*32, pix, shmFormatARGB8888)).int(0).int(0))
 	c.request(newEvent(w.surface, surfaceDamage).int(0).int(0).int(32).int(32))
 	c.request(newEvent(w.surface, surfaceCommit))
 	tc.awaitPattern(image.Pt(cascadeStep, cascadeStep), 32, 32, pix)
-
-	// Drag it by 20,10 and release. The viewer moves its pixels.
-	tc.grabMove(c, w, image.Pt(cascadeStep+8, cascadeStep+8))
-	tc.pointer(cascadeStep+28, cascadeStep+18, 1)
-	tc.pointer(cascadeStep+28, cascadeStep+18, 0)
-	tc.awaitPattern(image.Pt(cascadeStep+20, cascadeStep+10), 32, 32, pix)
-	tc.awaitPixel(image.Pt(cascadeStep, cascadeStep), background)
-	if tc.copies == 0 {
-		t.Fatal("the move sent the window's pixels instead of a copy")
+	if l := tc.topLayer(); !l.GetOpaque() {
+		t.Fatalf("the window's layer %v is not opaque", l)
 	}
 }
 
@@ -777,7 +844,7 @@ func TestWaitClient(t *testing.T) {
 	// Close ends a viewer.
 	done := make(chan error, 1)
 	go func() {
-		done <- tc.comp.Run(t.Context(), func(*s4wave_vm.WasiVmDisplayFrame) error { return nil })
+		done <- tc.comp.Run(t.Context(), func(*s4wave_vm.WasiVmScene) error { return nil })
 	}()
 	tc.comp.Close()
 	select {

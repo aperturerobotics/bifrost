@@ -17,6 +17,7 @@ import (
 	"context"
 	"image"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"github.com/aperturerobotics/util/broadcast"
@@ -35,6 +36,9 @@ type Compositor struct {
 	listener *kernel.UnixListener
 	// start is the origin of event timestamps.
 	start time.Time
+	// lastSceneID is the last scene id given to a surface. Scene ids name
+	// layers and roots to the viewers; object ids repeat across clients.
+	lastSceneID atomic.Uint32
 	// keymap is the keyboard's xkbcommon keymap, sent to each keyboard.
 	keymap *kernel.File
 
@@ -80,7 +84,7 @@ type Compositor struct {
 	// popupGrabs is the popups that close on a press outside them, oldest
 	// first.
 	popupGrabs []*surface
-	// changed is set when a viewer's copy fell behind or the window list
+	// changed is set when what the viewers or the window watchers show
 	// changed under the current lock.
 	changed bool
 	// pointerSpace is the space the pointer is on.
@@ -194,9 +198,9 @@ func (c *Compositor) WaitClient(ctx context.Context) error {
 	}
 }
 
-// Run sends the whole screen to send, then the changes since each frame,
-// until Close or ctx ends.
-func (c *Compositor) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplayFrame) error) error {
+// Run sends the desktop's whole scene to send, then each change, until Close
+// or ctx ends.
+func (c *Compositor) Run(ctx context.Context, send func(*s4wave_vm.WasiVmScene) error) error {
 	return c.run(ctx, c.desktop, send)
 }
 
@@ -206,29 +210,28 @@ func (c *Compositor) Input(in *s4wave_vm.WasiVmDisplayInput) {
 	c.input(c.desktop, in)
 }
 
-// run sends the whole space sp to send, then the changes since each frame,
+// run sends the whole scene of the space sp to send, then each change,
 // until Close, the window leaves sp, or ctx ends.
-func (c *Compositor) run(ctx context.Context, sp *space, send func(*s4wave_vm.WasiVmDisplayFrame) error) error {
-	// Register the viewer with the whole space to draw.
-	v := &view{}
+func (c *Compositor) run(ctx context.Context, sp *space, send func(*s4wave_vm.WasiVmScene) error) error {
+	// Register the viewer holding nothing.
+	v := newView()
 	c.bcast.HoldLock(func(func(), func() <-chan struct{}) {
-		v.add(sp.area)
 		sp.viewers[v] = struct{}{}
 	})
 	defer c.bcast.HoldLock(func(func(), func() <-chan struct{}) {
 		delete(sp.viewers, v)
 	})
 
-	// Send the changes each time the viewer falls behind.
+	// Send what the viewer lacks each time the scene changes.
 	for {
-		var frame *s4wave_vm.WasiVmDisplayFrame
+		var update *s4wave_vm.WasiVmScene
 		var closed, done bool
 		var waitCh <-chan struct{}
 		c.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
-			if !v.empty() {
-				frame = c.readFrame(sp, v)
-			}
 			closed, done, waitCh = c.closed, sp.done, getWaitCh()
+			if !closed && !done {
+				update = c.readScene(sp, v)
+			}
 		})
 		switch {
 		case closed:
@@ -236,8 +239,8 @@ func (c *Compositor) run(ctx context.Context, sp *space, send func(*s4wave_vm.Wa
 		case done:
 			return ErrWindowClosed
 		}
-		if frame != nil {
-			if err := send(frame); err != nil {
+		if update != nil {
+			if err := send(update); err != nil {
 				return err
 			}
 		}
@@ -261,43 +264,25 @@ func (c *Compositor) update(fn func()) {
 	})
 }
 
-// damage marks the area r of the space sp for each of its viewers to draw
-// again. The caller holds the lock through update, which wakes the viewers.
-func (c *Compositor) damage(sp *space, r image.Rectangle) {
-	r = r.Intersect(sp.area)
-	if r.Empty() {
+// damageTexture marks the area r of the image of s, in its pixels, for each
+// viewer of its space holding its texture to receive again. A viewer without
+// it receives all of it once s shows. The caller holds the lock through
+// update, which wakes the viewers.
+func (c *Compositor) damageTexture(s *surface, r image.Rectangle) {
+	// Skip an empty area or a surface not shown.
+	r = r.Intersect(image.Rectangle{Max: s.pixels})
+	w := c.rootOf(s)
+	if r.Empty() || w == nil {
 		return
 	}
-	for v := range sp.viewers {
-		v.add(r)
+
+	// Mark it on each texture of the same size.
+	for v := range c.spaceOf(w).viewers {
+		if t := v.textures[s]; t != nil && t.size == s.pixels {
+			t.add(r)
+		}
 	}
 	c.changed = true
-}
-
-// redrawTree marks the whole tree holding s, if it shows, for the viewers of
-// its space to draw again. The caller holds the lock.
-func (c *Compositor) redrawTree(s *surface) {
-	w := c.rootOf(s)
-	c.damage(c.spaceOf(w), c.bounds(w))
-}
-
-// shift has every desktop viewer move the screen area src by by, as far as
-// both ends stay on the screen, and returns the area it moved to. The caller
-// marks the areas the move uncovers, and holds the lock through update.
-func (c *Compositor) shift(src image.Rectangle, by image.Point) image.Rectangle {
-	// Keep the part whose source and destination are on the screen.
-	screen := c.desktop.area
-	src = src.Intersect(screen).Intersect(screen.Sub(by))
-	if src.Empty() || by == (image.Point{}) {
-		return image.Rectangle{}
-	}
-
-	// Queue the move for every viewer.
-	for v := range c.desktop.viewers {
-		v.copy(src, by)
-	}
-	c.changed = true
-	return src.Add(by)
 }
 
 // nextSerial returns a new event serial. The caller holds the lock.

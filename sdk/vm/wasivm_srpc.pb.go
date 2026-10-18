@@ -177,13 +177,13 @@ type SRPCWasiVmDisplayServiceClient interface {
 	// SRPCClient returns the underlying SRPC client.
 	SRPCClient() srpc.Client
 
-	// Display streams the screen and carries input back. Once the guest brings
-	// up a display, an X server on display 0 or a Wayland client, the VM sends
-	// the whole screen, then each change. The viewer sends pointer and key
-	// input, and reports each frame it draws; the VM sends the next frame only
-	// after that report, so a slow viewer gets fewer frames, each covering
-	// every change since the last, instead of a growing queue. The stream ends
-	// when the display closes.
+	// Display streams the screen's scene and carries input back. Once the
+	// guest brings up a display, an X server on display 0 or a Wayland client,
+	// the VM sends the whole scene, then each change. The viewer sends pointer
+	// and key input, and reports each update it draws; the VM runs at most two
+	// updates ahead of those reports, so a slow viewer gets fewer updates, each
+	// covering every change since the last, instead of a growing queue. The
+	// stream ends when the display closes.
 	Display(ctx context.Context) (SRPCWasiVmDisplayService_DisplayClient, error)
 	// WatchWindows streams the Wayland windows of the display, then the list
 	// again each time a window maps, unmaps, is renamed, or moves between the
@@ -227,8 +227,8 @@ func (c *srpcWasiVmDisplayServiceClient) Display(ctx context.Context) (SRPCWasiV
 type SRPCWasiVmDisplayService_DisplayClient interface {
 	srpc.Stream
 	Send(*WasiVmDisplayInput) error
-	Recv() (*WasiVmDisplayFrame, error)
-	RecvTo(*WasiVmDisplayFrame) error
+	Recv() (*WasiVmScene, error)
+	RecvTo(*WasiVmScene) error
 }
 
 type srpcWasiVmDisplayService_DisplayClient struct {
@@ -242,15 +242,15 @@ func (x *srpcWasiVmDisplayService_DisplayClient) Send(m *WasiVmDisplayInput) err
 	return x.MsgSend(m)
 }
 
-func (x *srpcWasiVmDisplayService_DisplayClient) Recv() (*WasiVmDisplayFrame, error) {
-	m := new(WasiVmDisplayFrame)
+func (x *srpcWasiVmDisplayService_DisplayClient) Recv() (*WasiVmScene, error) {
+	m := new(WasiVmScene)
 	if err := x.MsgRecv(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (x *srpcWasiVmDisplayService_DisplayClient) RecvTo(m *WasiVmDisplayFrame) error {
+func (x *srpcWasiVmDisplayService_DisplayClient) RecvTo(m *WasiVmScene) error {
 	return x.MsgRecv(m)
 }
 
@@ -299,8 +299,8 @@ func (c *srpcWasiVmDisplayServiceClient) Window(ctx context.Context) (SRPCWasiVm
 type SRPCWasiVmDisplayService_WindowClient interface {
 	srpc.Stream
 	Send(*WasiVmWindowInput) error
-	Recv() (*WasiVmDisplayFrame, error)
-	RecvTo(*WasiVmDisplayFrame) error
+	Recv() (*WasiVmScene, error)
+	RecvTo(*WasiVmScene) error
 }
 
 type srpcWasiVmDisplayService_WindowClient struct {
@@ -314,26 +314,26 @@ func (x *srpcWasiVmDisplayService_WindowClient) Send(m *WasiVmWindowInput) error
 	return x.MsgSend(m)
 }
 
-func (x *srpcWasiVmDisplayService_WindowClient) Recv() (*WasiVmDisplayFrame, error) {
-	m := new(WasiVmDisplayFrame)
+func (x *srpcWasiVmDisplayService_WindowClient) Recv() (*WasiVmScene, error) {
+	m := new(WasiVmScene)
 	if err := x.MsgRecv(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (x *srpcWasiVmDisplayService_WindowClient) RecvTo(m *WasiVmDisplayFrame) error {
+func (x *srpcWasiVmDisplayService_WindowClient) RecvTo(m *WasiVmScene) error {
 	return x.MsgRecv(m)
 }
 
 type SRPCWasiVmDisplayServiceServer interface {
-	// Display streams the screen and carries input back. Once the guest brings
-	// up a display, an X server on display 0 or a Wayland client, the VM sends
-	// the whole screen, then each change. The viewer sends pointer and key
-	// input, and reports each frame it draws; the VM sends the next frame only
-	// after that report, so a slow viewer gets fewer frames, each covering
-	// every change since the last, instead of a growing queue. The stream ends
-	// when the display closes.
+	// Display streams the screen's scene and carries input back. Once the
+	// guest brings up a display, an X server on display 0 or a Wayland client,
+	// the VM sends the whole scene, then each change. The viewer sends pointer
+	// and key input, and reports each update it draws; the VM runs at most two
+	// updates ahead of those reports, so a slow viewer gets fewer updates, each
+	// covering every change since the last, instead of a growing queue. The
+	// stream ends when the display closes.
 	Display(SRPCWasiVmDisplayService_DisplayStream) error
 	// WatchWindows streams the Wayland windows of the display, then the list
 	// again each time a window maps, unmaps, is renamed, or moves between the
@@ -420,8 +420,8 @@ func (SRPCWasiVmDisplayServiceHandler) InvokeMethod_Window(impl SRPCWasiVmDispla
 
 type SRPCWasiVmDisplayService_DisplayStream interface {
 	srpc.Stream
-	Send(*WasiVmDisplayFrame) error
-	SendAndClose(*WasiVmDisplayFrame) error
+	Send(*WasiVmScene) error
+	SendAndClose(*WasiVmScene) error
 	Recv() (*WasiVmDisplayInput, error)
 	RecvTo(*WasiVmDisplayInput) error
 }
@@ -430,11 +430,11 @@ type srpcWasiVmDisplayService_DisplayStream struct {
 	srpc.Stream
 }
 
-func (x *srpcWasiVmDisplayService_DisplayStream) Send(m *WasiVmDisplayFrame) error {
+func (x *srpcWasiVmDisplayService_DisplayStream) Send(m *WasiVmScene) error {
 	return x.MsgSend(m)
 }
 
-func (x *srpcWasiVmDisplayService_DisplayStream) SendAndClose(m *WasiVmDisplayFrame) error {
+func (x *srpcWasiVmDisplayService_DisplayStream) SendAndClose(m *WasiVmScene) error {
 	if m != nil {
 		if err := x.MsgSend(m); err != nil {
 			return err
@@ -480,8 +480,8 @@ func (x *srpcWasiVmDisplayService_WatchWindowsStream) SendAndClose(m *WasiVmWind
 
 type SRPCWasiVmDisplayService_WindowStream interface {
 	srpc.Stream
-	Send(*WasiVmDisplayFrame) error
-	SendAndClose(*WasiVmDisplayFrame) error
+	Send(*WasiVmScene) error
+	SendAndClose(*WasiVmScene) error
 	Recv() (*WasiVmWindowInput, error)
 	RecvTo(*WasiVmWindowInput) error
 }
@@ -490,11 +490,11 @@ type srpcWasiVmDisplayService_WindowStream struct {
 	srpc.Stream
 }
 
-func (x *srpcWasiVmDisplayService_WindowStream) Send(m *WasiVmDisplayFrame) error {
+func (x *srpcWasiVmDisplayService_WindowStream) Send(m *WasiVmScene) error {
 	return x.MsgSend(m)
 }
 
-func (x *srpcWasiVmDisplayService_WindowStream) SendAndClose(m *WasiVmDisplayFrame) error {
+func (x *srpcWasiVmDisplayService_WindowStream) SendAndClose(m *WasiVmScene) error {
 	if m != nil {
 		if err := x.MsgSend(m); err != nil {
 			return err

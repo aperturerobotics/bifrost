@@ -26,7 +26,7 @@ type space struct {
 	area image.Rectangle
 	// window is the window shown alone, or nil for the desktop.
 	window *surface
-	// viewers holds what each viewer's copy of the space lacks.
+	// viewers holds what each viewer of the space has.
 	viewers map[*view]struct{}
 	// held counts the viewers holding the window in the space.
 	held int
@@ -109,9 +109,9 @@ func (w *Window) Resize(size image.Point) {
 	})
 }
 
-// Run streams the window, then each change, until the window closes or ctx
+// Run streams the window's scene, then each change, until the window closes or ctx
 // ends.
-func (w *Window) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplayFrame) error) error {
+func (w *Window) Run(ctx context.Context, send func(*s4wave_vm.WasiVmScene) error) error {
 	return w.c.run(ctx, w.sp, send)
 }
 
@@ -135,7 +135,6 @@ func (w *Window) Close() {
 // configured maximized at the space's size. The caller holds the lock.
 func (c *Compositor) popOut(s *surface) *space {
 	// Take it off the desktop and out of a grab.
-	c.damage(c.desktop, c.bounds(s))
 	c.windows = slices.DeleteFunc(c.windows, func(w *surface) bool { return w == s })
 	c.apart = append(c.apart, s)
 	if c.grab != nil && c.grab.w == s {
@@ -152,10 +151,9 @@ func (c *Compositor) popOut(s *surface) *space {
 	return t.own
 }
 
-// resizeSpace sets the window space sp to size, within one pixel and
-// maxWindowSize a side, and configures its window to fill it. Each viewer
-// drops what it lacked of the old size and draws the whole space again. The
-// caller holds the lock.
+// resizeSpace sets the window space sp to size, within one unit and
+// maxWindowSize a side, and configures its window to fill it. The caller
+// holds the lock.
 func (c *Compositor) resizeSpace(sp *space, size image.Point) {
 	// Size the space.
 	size = image.Pt(max(min(size.X, maxWindowSize), 1), max(min(size.Y, maxWindowSize), 1))
@@ -163,7 +161,7 @@ func (c *Compositor) resizeSpace(sp *space, size image.Point) {
 		return
 	}
 	sp.area = image.Rectangle{Max: size}
-	c.redrawSpace(sp)
+	c.changed = true
 
 	// Fit the window to it.
 	t := sp.window.xdg.toplevel
@@ -200,7 +198,7 @@ func (c *Compositor) popIn(s *surface) {
 	// pointer.
 	c.leaveSpace(s)
 	c.windows = append(c.windows, s)
-	c.damage(c.desktop, c.bounds(s))
+	c.changed = true
 	s.xdg.configure()
 	c.refocusPointer()
 }

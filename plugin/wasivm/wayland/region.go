@@ -74,5 +74,31 @@ func (r *region) clone() *region {
 	return &region{ops: slices.Clone(r.ops)}
 }
 
+// subtract returns the parts of a outside b, as up to four rectangles.
+func subtract(a, b image.Rectangle) []image.Rectangle {
+	// Keep a whole when b misses it.
+	in := a.Intersect(b)
+	switch {
+	case a.Empty():
+		return nil
+	case in.Empty():
+		return []image.Rectangle{a}
+	}
+
+	// Take the bands above and below the overlap, then the sides beside it.
+	var out []image.Rectangle
+	for _, r := range [...]image.Rectangle{
+		{Min: a.Min, Max: image.Pt(a.Max.X, in.Min.Y)},
+		{Min: image.Pt(a.Min.X, in.Max.Y), Max: a.Max},
+		{Min: image.Pt(a.Min.X, in.Min.Y), Max: image.Pt(in.Min.X, in.Max.Y)},
+		{Min: image.Pt(in.Max.X, in.Min.Y), Max: image.Pt(a.Max.X, in.Max.Y)},
+	} {
+		if !r.Empty() {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
 // _ is a type assertion.
 var _ object = (*region)(nil)

@@ -545,133 +545,255 @@ export const WasiVmWindowSize: MessageType<WasiVmWindowSize> =
   )
 
 /**
- * WasiVmDisplayFrame is a change to the screen: areas the viewer moves on its
- * copy, then regions it draws over the result.
+ * WasiVmScene is a change to the scene a viewer draws: the screen, the
+ * surfaces stacked on it as layers, where their roots sit, and pixels for the
+ * layers' textures. Each field left unset keeps what the viewer has. The
+ * viewer applies the screen, the layers and the roots, then the patches, and
+ * draws the result.
  *
- * @generated from message s4wave.vm.WasiVmDisplayFrame
+ * @generated from message s4wave.vm.WasiVmScene
  */
-export interface WasiVmDisplayFrame {
+export interface WasiVmScene {
   /**
-   * ScreenWidth is the screen's width in pixels.
+   * Screen is the screen's size and scale, when they change.
    */
-  screenWidth?: number
+  screen?: WasiVmSceneScreen
   /**
-   * ScreenHeight is the screen's height in pixels.
+   * Layers is every visible surface, bottom to top, when the arrangement
+   * changes. A layer missing from the list is dropped with its texture.
    */
-  screenHeight?: number
+  layers?: WasiVmSceneLayers
   /**
-   * Copies move areas of the viewer's screen, in order, before the regions
-   * draw.
+   * Roots is the position of every root, when any moves.
    */
-  copies?: WasiVmDisplayCopy[]
+  roots?: WasiVmSceneRoots
   /**
-   * Regions draw pixels over the screen after the copies.
+   * Patches draws pixels into the layers' textures, in order.
    */
-  regions?: WasiVmDisplayRegion[]
+  patches?: WasiVmScenePatch[]
+}
+
+export const WasiVmScene: MessageType<WasiVmScene> =
+  /* @__PURE__ */ createMessageType<WasiVmScene>(
+    's4wave.vm.WasiVmScene',
+    () => [
+      [1, 'screen', 11, 0, WasiVmSceneScreen.codec],
+      [2, 'layers', 11, 0, WasiVmSceneLayers.codec],
+      [3, 'roots', 11, 0, WasiVmSceneRoots.codec],
+      [4, 'patches', 11, 1, WasiVmScenePatch.codec],
+    ],
+  )
+
+/**
+ * WasiVmSceneScreen is the screen's size in units, the viewer's CSS pixels,
+ * and the scale it is drawn at.
+ *
+ * @generated from message s4wave.vm.WasiVmSceneScreen
+ */
+export interface WasiVmSceneScreen {
   /**
-   * Scale is the number of screen pixels per CSS pixel the viewer shows the
-   * screen at; zero means one.
+   * Width is the screen's width in units.
+   */
+  width?: number
+  /**
+   * Height is the screen's height in units.
+   */
+  height?: number
+  /**
+   * Scale is the screen pixels a side per unit; zero means one.
    */
   scale?: number
+  /**
+   * Background is the color behind the layers, as red, green, blue and
+   * alpha bytes from the most significant.
+   */
+  background?: number
 }
 
-export const WasiVmDisplayFrame: MessageType<WasiVmDisplayFrame> =
-  /* @__PURE__ */ createMessageType<WasiVmDisplayFrame>(
-    's4wave.vm.WasiVmDisplayFrame',
+export const WasiVmSceneScreen: MessageType<WasiVmSceneScreen> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneScreen>(
+    's4wave.vm.WasiVmSceneScreen',
     () => [
-      [1, 'screen_width', 13],
-      [2, 'screen_height', 13],
-      [3, 'copies', 11, 1, WasiVmDisplayCopy.codec],
-      [4, 'regions', 11, 1, WasiVmDisplayRegion.codec],
-      [5, 'scale', 13],
+      [1, 'width', 13],
+      [2, 'height', 13],
+      [3, 'scale', 13],
+      [4, 'background', 7],
     ],
   )
 
 /**
- * WasiVmDisplayCopy moves an area of the viewer's screen, as a window that
- * moves on screen does, so its pixels need not be sent again. The source and
- * the destination lie inside the screen and may overlap.
+ * WasiVmSceneLayers is the scene's layers, bottom to top.
  *
- * @generated from message s4wave.vm.WasiVmDisplayCopy
+ * @generated from message s4wave.vm.WasiVmSceneLayers
  */
-export interface WasiVmDisplayCopy {
+export interface WasiVmSceneLayers {
   /**
-   * X is the left edge of the source area.
+   * Layers is the layers, bottom to top.
+   */
+  layers?: WasiVmSceneLayer[]
+}
+
+export const WasiVmSceneLayers: MessageType<WasiVmSceneLayers> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneLayers>(
+    's4wave.vm.WasiVmSceneLayers',
+    () => [[1, 'layers', 11, 1, WasiVmSceneLayer.codec]],
+  )
+
+/**
+ * WasiVmSceneLayer is one surface: a texture drawn at an offset from its root.
+ *
+ * @generated from message s4wave.vm.WasiVmSceneLayer
+ */
+export interface WasiVmSceneLayer {
+  /**
+   * Id identifies the layer and its texture for the life of the stream.
+   */
+  id?: number
+  /**
+   * Root is the id of the root the layer moves with: its window or layer
+   * shell surface.
+   */
+  root?: number
+  /**
+   * X is the left edge in units from the root's position.
    */
   x?: number
   /**
-   * Y is the top edge of the source area.
+   * Y is the top edge in units from the root's position.
    */
   y?: number
   /**
-   * Width is the area's width in pixels.
+   * Width is the width the layer covers in units.
    */
   width?: number
   /**
-   * Height is the area's height in pixels.
+   * Height is the height the layer covers in units.
    */
   height?: number
   /**
-   * ToX is the left edge of the destination.
+   * TextureWidth is the texture's width in pixels. A layer whose texture
+   * size changes gets a new texture, which a patch then fills.
    */
-  toX?: number
+  textureWidth?: number
   /**
-   * ToY is the top edge of the destination.
+   * TextureHeight is the texture's height in pixels.
    */
-  toY?: number
+  textureHeight?: number
+  /**
+   * Opaque is set when every pixel of the texture is opaque, so the layer
+   * replaces what is under it instead of blending.
+   */
+  opaque?: boolean
 }
 
-export const WasiVmDisplayCopy: MessageType<WasiVmDisplayCopy> =
-  /* @__PURE__ */ createMessageType<WasiVmDisplayCopy>(
-    's4wave.vm.WasiVmDisplayCopy',
+export const WasiVmSceneLayer: MessageType<WasiVmSceneLayer> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneLayer>(
+    's4wave.vm.WasiVmSceneLayer',
     () => [
-      [1, 'x', 13],
-      [2, 'y', 13],
-      [3, 'width', 13],
-      [4, 'height', 13],
-      [5, 'to_x', 13],
-      [6, 'to_y', 13],
+      [1, 'id', 13],
+      [2, 'root', 13],
+      [3, 'x', 5],
+      [4, 'y', 5],
+      [5, 'width', 13],
+      [6, 'height', 13],
+      [7, 'texture_width', 13],
+      [8, 'texture_height', 13],
+      [9, 'opaque', 8],
     ],
   )
 
 /**
- * WasiVmDisplayRegion is a rectangle of the screen's pixels.
+ * WasiVmSceneRoots is the position of every root.
  *
- * @generated from message s4wave.vm.WasiVmDisplayRegion
+ * @generated from message s4wave.vm.WasiVmSceneRoots
  */
-export interface WasiVmDisplayRegion {
+export interface WasiVmSceneRoots {
   /**
-   * X is the left edge of the region.
+   * Roots is the roots, in any order.
+   */
+  roots?: WasiVmSceneRoot[]
+}
+
+export const WasiVmSceneRoots: MessageType<WasiVmSceneRoots> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneRoots>(
+    's4wave.vm.WasiVmSceneRoots',
+    () => [[1, 'roots', 11, 1, WasiVmSceneRoot.codec]],
+  )
+
+/**
+ * WasiVmSceneRoot is a window or layer shell surface that its layers move
+ * with.
+ *
+ * @generated from message s4wave.vm.WasiVmSceneRoot
+ */
+export interface WasiVmSceneRoot {
+  /**
+   * Id identifies the root for the life of the stream.
+   */
+  id?: number
+  /**
+   * X is the root's left edge on the screen in units.
    */
   x?: number
   /**
-   * Y is the top edge of the region.
+   * Y is the root's top edge on the screen in units.
+   */
+  y?: number
+}
+
+export const WasiVmSceneRoot: MessageType<WasiVmSceneRoot> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneRoot>(
+    's4wave.vm.WasiVmSceneRoot',
+    () => [
+      [1, 'id', 13],
+      [2, 'x', 5],
+      [3, 'y', 5],
+    ],
+  )
+
+/**
+ * WasiVmScenePatch is a rectangle of a layer's texture.
+ *
+ * @generated from message s4wave.vm.WasiVmScenePatch
+ */
+export interface WasiVmScenePatch {
+  /**
+   * Layer is the id of the layer whose texture the patch draws into.
+   */
+  layer?: number
+  /**
+   * X is the left edge in texture pixels.
+   */
+  x?: number
+  /**
+   * Y is the top edge in texture pixels.
    */
   y?: number
   /**
-   * Width is the region's width in pixels.
+   * Width is the width in texture pixels.
    */
   width?: number
   /**
-   * Height is the region's height in pixels.
+   * Height is the height in texture pixels.
    */
   height?: number
   /**
-   * Rgba holds the region's pixels row by row, four bytes each: red, green,
-   * blue and an opaque alpha.
+   * Rgba holds the pixels row by row, four bytes each: red, green and blue
+   * premultiplied by alpha, then alpha.
    */
   rgba?: Uint8Array
 }
 
-export const WasiVmDisplayRegion: MessageType<WasiVmDisplayRegion> =
-  /* @__PURE__ */ createMessageType<WasiVmDisplayRegion>(
-    's4wave.vm.WasiVmDisplayRegion',
+export const WasiVmScenePatch: MessageType<WasiVmScenePatch> =
+  /* @__PURE__ */ createMessageType<WasiVmScenePatch>(
+    's4wave.vm.WasiVmScenePatch',
     () => [
-      [1, 'x', 13],
-      [2, 'y', 13],
-      [3, 'width', 13],
-      [4, 'height', 13],
-      [5, 'rgba', 12],
+      [1, 'layer', 13],
+      [2, 'x', 13],
+      [3, 'y', 13],
+      [4, 'width', 13],
+      [5, 'height', 13],
+      [6, 'rgba', 12],
     ],
   )
 
