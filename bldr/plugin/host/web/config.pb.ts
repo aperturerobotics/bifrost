@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the WebWorker PluginHost controller configuration.
@@ -15,36 +13,23 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * WebRuntimeId is the identifier for the web runtime.
-   *
-   * @generated from field: string web_runtime_id = 1;
    */
   webRuntimeId?: string
   /**
    * ForceDedicatedWorkers overrides the default SharedWorker mode to use
    * dedicated Workers instead. Useful for testing with Playwright which
    * can capture console output from dedicated workers but not shared.
-   *
-   * @generated from field: bool force_dedicated_workers = 2;
    */
   forceDedicatedWorkers?: boolean
   /**
    * PlatformId is the plugin platform this host serves.
-   *
-   * @generated from field: string platform_id = 3;
    */
   platformId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'plugin.host.web.Config',
-  fields: [
-    { no: 1, name: 'web_runtime_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'force_dedicated_workers',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    { no: 3, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('plugin.host.web.Config', () => [
+    [1, 'web_runtime_id', 9],
+    [2, 'force_dedicated_workers', 8],
+    [3, 'platform_id', 9],
+  ])

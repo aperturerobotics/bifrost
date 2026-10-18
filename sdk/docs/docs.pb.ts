@@ -4,9 +4,7 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Documentation is a world object representing a documentation site.
@@ -18,14 +16,10 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Documentation {
   /**
    * Name is the display name of the documentation site.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Description is a short description of the documentation.
-   *
-   * @generated from field: string description = 2;
    */
   description?: string
   /**
@@ -34,21 +28,19 @@ export interface Documentation {
    * Links (via graph edges, not proto fields):
    *   doc/source -> UnixFS object (markdown root directory)
    *   doc/git-repo -> GitRepo object (optional, for version history)
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 3;
    */
   createdAt?: Date
 }
 
 export const Documentation: MessageType<Documentation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.docs.Documentation',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'created_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Documentation>(
+    's4wave.docs.Documentation',
+    () => [
+      [1, 'name', 9],
+      [2, 'description', 9],
+      [3, 'created_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * CreateDocumentationOp creates a new Documentation world object.
@@ -58,37 +50,29 @@ export const Documentation: MessageType<Documentation> =
 export interface CreateDocumentationOp {
   /**
    * ObjectKey is the key to create the documentation at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the display name.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Description is a short description.
-   *
-   * @generated from field: string description = 3;
    */
   description?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
 }
 
 export const CreateDocumentationOp: MessageType<CreateDocumentationOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.docs.CreateDocumentationOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateDocumentationOp>(
+    's4wave.docs.CreateDocumentationOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'description', 9],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

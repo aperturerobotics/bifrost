@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the Space Plugin Controller.
@@ -17,100 +15,66 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * SpaceId is the Space identifier.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * PluginIds lists manifest IDs of plugins to load (from SpaceSettings).
-   *
-   * @generated from field: repeated string plugin_ids = 2;
    */
   pluginIds?: string[]
   /**
    * VolumeId is the volume ID for the PlatformAccount object store.
    * If empty, uses the default bldr plugin volume.
-   *
-   * @generated from field: string volume_id = 3;
    */
   volumeId?: string
   /**
    * ObjectStoreId is the object store ID within the volume.
    * If empty, uses "platform-account".
-   *
-   * @generated from field: string object_store_id = 4;
    */
   objectStoreId?: string
   /**
    * EngineId is the Hydra engine ID for watching the Space world.
    * Required for FetchManifest resolution.
-   *
-   * @generated from field: string engine_id = 5;
    */
   engineId?: string
   /**
    * ObjectKeys is the list of object keys to collect manifests from.
    * If empty, manifests are collected from every manifest store.
-   *
-   * @generated from field: repeated string object_keys = 6;
    */
   objectKeys?: string[]
   /**
    * SessionPeerId is the base58-encoded peer ID of the local session.
    * Used by ObjectType factories that need session-scoped behavior
    * (e.g., ForgeWorkerFactory checks if this session should run the worker).
-   *
-   * @generated from field: string session_peer_id = 7;
    */
   sessionPeerId?: string
   /**
    * WorldBucketId is the bucket ID backing the mounted Space world.
    * If set, the controller forwards this block store to the plugin host.
-   *
-   * @generated from field: string world_bucket_id = 8;
    */
   worldBucketId?: string
   /**
    * HostPluginId is the plugin ID of the host that mounts this Space.
    * Required when world_bucket_id is set so the forwarded block store
    * configset registers under the correct plugin service prefix.
-   *
-   * @generated from field: string host_plugin_id = 9;
    */
   hostPluginId?: string
   /**
    * HostStorageId selects the parent runtime Storage for every child plugin.
    * Empty preserves the ordinary platform storage selection.
-   *
-   * @generated from field: string host_storage_id = 10;
    */
   hostStorageId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'plugin.space.Config',
-  fields: [
-    { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 3, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 6,
-      name: 'object_keys',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 7, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 8, name: 'world_bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 9, name: 'host_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 10, name: 'host_storage_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('plugin.space.Config', () => [
+    [1, 'space_id', 9],
+    [2, 'plugin_ids', 9, 1],
+    [3, 'volume_id', 9],
+    [4, 'object_store_id', 9],
+    [5, 'engine_id', 9],
+    [6, 'object_keys', 9, 1],
+    [7, 'session_peer_id', 9],
+    [8, 'world_bucket_id', 9],
+    [9, 'host_plugin_id', 9],
+    [10, 'host_storage_id', 9],
+  ])

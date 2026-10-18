@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the gzip compression transform.
@@ -16,15 +14,11 @@ export interface Config {
   /**
    * CompressionLevel sets the gzip level from -2 to 9.
    * Defaults to gzip.DefaultCompression.
-   *
-   * @generated from field: int32 compression_level = 1;
    */
   compressionLevel?: number
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'transform.gzip.Config',
-  fields: [
-    { no: 1, name: 'compression_level', kind: 'scalar', T: ScalarType.INT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('transform.gzip.Config', () => [
+    [1, 'compression_level', 5],
+  ])

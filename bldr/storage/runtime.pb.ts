@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * StorageInfo is information about an available storage method.
@@ -16,7 +16,7 @@ import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
 export interface StorageInfo {}
 
 export const StorageInfo: MessageType<StorageInfo> =
-  /* @__PURE__ */ createEmptyMessageType<StorageInfo>(
+  /* @__PURE__ */ createMessageType<StorageInfo>(
     'storage.StorageInfo',
-    true,
+    () => [],
   )

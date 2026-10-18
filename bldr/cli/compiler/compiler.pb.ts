@@ -5,8 +5,6 @@
 import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the CLI compiler controller.
@@ -20,65 +18,35 @@ export interface Config {
   /**
    * GoPkgs is a list of Go packages to scan for controller factories.
    * Looks for package-level NewFactory(b bus.Bus) controller.Factory functions.
-   *
-   * @generated from field: repeated string go_pkgs = 1;
    */
   goPkgs?: string[]
   /**
    * CliPkgs is a list of Go packages providing CLI commands.
    * Each package must export NewCliCommands.
-   *
-   * @generated from field: repeated string cli_pkgs = 2;
    */
   cliPkgs?: string[]
   /**
    * ConfigSet is a ConfigSet to apply on CLI startup.
    * This will be embedded in the CLI binary.
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> config_set = 3;
    */
   configSet?: { [key: string]: ControllerConfig }
   /**
    * ProjectId overrides the project id set in the project config.
-   *
-   * @generated from field: string project_id = 4;
    */
   projectId?: string
   /**
    * ComposePackage is a Go package exporting Compose() *compose.Composition
    * from bldr/entrypoint/compose. The CLI calls it once at startup and adds the
    * returned factories and commands. May be relative to the project module.
-   *
-   * @generated from field: string compose_package = 5;
    */
   composePackage?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.cli.compiler.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'go_pkgs',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 2,
-      name: 'cli_pkgs',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 3,
-      name: 'config_set',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => ControllerConfig },
-    },
-    { no: 4, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'compose_package', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('bldr.cli.compiler.Config', () => [
+    [1, 'go_pkgs', 9, 1],
+    [2, 'cli_pkgs', 9, 1],
+    [3, 'config_set', 11, 584, ControllerConfig.codec],
+    [4, 'project_id', 9],
+    [5, 'compose_package', 9],
+  ])

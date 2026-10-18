@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the link establish controller config.
@@ -16,29 +14,20 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * PeerIds is the list of peer IDs to attempt to establish links to.
-   *
-   * @generated from field: repeated string peer_ids = 1;
    */
   peerIds?: string[]
   /**
    * SrcPeerId is the source peer id to establish links from.
    * Can be empty.
-   *
-   * @generated from field: string src_peer_id = 2;
    */
   srcPeerId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'link.establish.controller.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'peer_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 2, name: 'src_peer_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'link.establish.controller.Config',
+    () => [
+      [1, 'peer_ids', 9, 1],
+      [2, 'src_peer_id', 9],
+    ],
+  )

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the Demo controller.
@@ -15,18 +13,14 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * RunDemo runs the full demo routine.
-   *
-   * @generated from field: bool run_demo = 1;
    */
   runDemo?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.example.Config',
-  fields: [
-    { no: 1, name: 'run_demo', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('bldr.example.Config', () => [
+    [1, 'run_demo', 8],
+  ])
 
 /**
  * ExampleProps contains properties for the example component.
@@ -36,16 +30,12 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
 export interface ExampleProps {
   /**
    * Msg is the message to display.
-   *
-   * @generated from field: string msg = 1;
    */
   msg?: string
 }
 
 export const ExampleProps: MessageType<ExampleProps> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.example.ExampleProps',
-    fields: [
-      { no: 1, name: 'msg', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ExampleProps>(
+    'bldr.example.ExampleProps',
+    () => [[1, 'msg', 9]],
+  )

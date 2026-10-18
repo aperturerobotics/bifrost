@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the solicitation-based DEX controller.
@@ -15,47 +13,35 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BucketId is the bucket ID to use to serve and store blocks.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
   /**
    * PeerId is the peer ID to use for DEX.
    * If empty, attaches to any available peer.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * TransportId sets a transport ID constraint.
    * Can be empty.
-   *
-   * @generated from field: uint64 transport_id = 3;
    */
   transportId?: bigint
   /**
    * MaxForwardHops is the maximum number of times a request can be
    * forwarded between peers. Zero disables forwarding (default).
-   *
-   * @generated from field: uint32 max_forward_hops = 4;
    */
   maxForwardHops?: number
   /**
    * ProtocolContext matches peers that expose the same logical block store.
    * If empty, BucketId is used for compatibility with local-only callers.
-   *
-   * @generated from field: bytes protocol_context = 5;
    */
   protocolContext?: Uint8Array
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'dex.solicit.Config',
-  fields: [
-    { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'transport_id', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 4, name: 'max_forward_hops', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 5, name: 'protocol_context', kind: 'scalar', T: ScalarType.BYTES },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('dex.solicit.Config', () => [
+    [1, 'bucket_id', 9],
+    [2, 'peer_id', 9],
+    [3, 'transport_id', 4],
+    [4, 'max_forward_hops', 13],
+    [5, 'protocol_context', 12],
+  ])

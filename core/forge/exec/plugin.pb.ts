@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Value } from '../../../forge/value/value.pb.js'
 
 /**
@@ -16,53 +14,37 @@ import { Value } from '../../../forge/value/value.pb.js'
 export interface PluginBuildConfig {
   /**
    * ManifestId selects the plugin manifest for an immutable build.
-   *
-   * @generated from field: string manifest_id = 1;
    */
   manifestId?: string
   /**
    * ConfigPath is relative to the source tree; empty selects bldr.yaml.
-   *
-   * @generated from field: string config_path = 2;
    */
   configPath?: string
   /**
    * FrontendId grants a temporary live compiler attachment instead of building.
    * Its UUID namespaces the device RPC service for this execution only.
-   *
-   * @generated from field: string frontend_id = 3;
    */
   frontendId?: string
   /**
    * FrontendPeerId is the only authenticated Session allowed to use that service.
    * Releasing its authoring Resource cancels the execution and this grant.
-   *
-   * @generated from field: string frontend_peer_id = 4;
    */
   frontendPeerId?: string
   /**
    * FrontendRoutePrefix routes same-origin modules back to the authoring Resource.
-   *
-   * @generated from field: string frontend_route_prefix = 5;
    */
   frontendRoutePrefix?: string
   /**
    * PlatformId is the platform of the immutable build, such as js or
    * desktop/linux/amd64. Required unless FrontendId is set.
-   *
-   * @generated from field: string platform_id = 6;
    */
   platformId?: string
   /**
    * MilliCpu is the CPU the build requests from its Worker in milli-cores.
-   *
-   * @generated from field: uint64 milli_cpu = 7;
    */
   milliCpu?: bigint
   /**
    * MemoryBytes is the memory the build requests from its Worker in bytes.
-   *
-   * @generated from field: uint64 memory_bytes = 8;
    */
   memoryBytes?: bigint
   /**
@@ -70,37 +52,25 @@ export interface PluginBuildConfig {
    * to install plugins in the Space. When set, a successful immutable build
    * installs its manifest in the Space as that Session in the same transaction
    * that retains the build. A failed or canceled build installs nothing.
-   *
-   * @generated from field: string installer_peer_id = 9;
    */
   installerPeerId?: string
 }
 
 export const PluginBuildConfig: MessageType<PluginBuildConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.exec.PluginBuildConfig',
-    fields: [
-      { no: 1, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'config_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'frontend_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'frontend_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'frontend_route_prefix',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 6, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'milli_cpu', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 8, name: 'memory_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 9,
-        name: 'installer_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginBuildConfig>(
+    'space.exec.PluginBuildConfig',
+    () => [
+      [1, 'manifest_id', 9],
+      [2, 'config_path', 9],
+      [3, 'frontend_id', 9],
+      [4, 'frontend_peer_id', 9],
+      [5, 'frontend_route_prefix', 9],
+      [6, 'platform_id', 9],
+      [7, 'milli_cpu', 4],
+      [8, 'memory_bytes', 4],
+      [9, 'installer_peer_id', 9],
+    ],
+  )
 
 /**
  * PluginExecConfig configures the generic plugin execution bridge.
@@ -110,41 +80,33 @@ export const PluginBuildConfig: MessageType<PluginBuildConfig> =
 export interface PluginExecConfig {
   /**
    * PluginId is the plugin to load before executing.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * ControllerId is the plugin-owned execution controller id to invoke.
-   *
-   * @generated from field: string controller_id = 2;
    */
   controllerId?: string
   /**
    * ControllerConfig is opaque config bytes for the plugin-owned controller.
-   *
-   * @generated from field: bytes controller_config = 3;
    */
   controllerConfig?: Uint8Array
   /**
    * AttachWorld grants the plugin the execution's World through a Resource
    * connection that remains alive only for this execution.
-   *
-   * @generated from field: bool attach_world = 4;
    */
   attachWorld?: boolean
 }
 
 export const PluginExecConfig: MessageType<PluginExecConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.exec.PluginExecConfig',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'controller_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'controller_config', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'attach_world', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginExecConfig>(
+    'space.exec.PluginExecConfig',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'controller_id', 9],
+      [3, 'controller_config', 12],
+      [4, 'attach_world', 8],
+    ],
+  )
 
 /**
  * PluginExecRequest asks a loaded plugin to execute a controller.
@@ -154,74 +116,46 @@ export const PluginExecConfig: MessageType<PluginExecConfig> =
 export interface PluginExecRequest {
   /**
    * ControllerId is the plugin-owned execution controller id to invoke.
-   *
-   * @generated from field: string controller_id = 1;
    */
   controllerId?: string
   /**
    * ControllerConfig is opaque config bytes for the plugin-owned controller.
-   *
-   * @generated from field: bytes controller_config = 2;
    */
   controllerConfig?: Uint8Array
   /**
    * Inputs are the Forge execution inputs.
-   *
-   * @generated from field: repeated forge.value.Value inputs = 3;
    */
   inputs?: Value[]
   /**
    * AttachedEngineResourceId identifies the caller's attached World resource.
    * It is scoped to this Resource client generation and is never persisted.
-   *
-   * @generated from field: uint32 attached_engine_resource_id = 4;
    */
   attachedEngineResourceId?: number
   /**
    * ExecutionObjectKey identifies the Execution attempt that granted this call.
    * An access-only handle supplies its synthetic caller identity.
-   *
-   * @generated from field: string execution_object_key = 5;
    */
   executionObjectKey?: string
   /**
    * ClaimEpoch is the Execution claim epoch granted to the caller's handle.
    * It is fixed for this invocation, even if the stored Execution is reclaimed.
    * Zero indicates an access-only handle with no Execution claim.
-   *
-   * @generated from field: uint64 claim_epoch = 6;
    */
   claimEpoch?: bigint
 }
 
 export const PluginExecRequest: MessageType<PluginExecRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.exec.PluginExecRequest',
-    fields: [
-      { no: 1, name: 'controller_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'controller_config', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 3,
-        name: 'inputs',
-        kind: 'message',
-        T: () => Value,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'attached_engine_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 5,
-        name: 'execution_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 6, name: 'claim_epoch', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginExecRequest>(
+    'space.exec.PluginExecRequest',
+    () => [
+      [1, 'controller_id', 9],
+      [2, 'controller_config', 12],
+      [3, 'inputs', 11, 1, Value.codec],
+      [4, 'attached_engine_resource_id', 13],
+      [5, 'execution_object_key', 9],
+      [6, 'claim_epoch', 4],
+    ],
+  )
 
 /**
  * PluginExecLog is a log entry emitted by a plugin execution controller.
@@ -231,26 +165,22 @@ export const PluginExecRequest: MessageType<PluginExecRequest> =
 export interface PluginExecLog {
   /**
    * Level is the log severity.
-   *
-   * @generated from field: string level = 1;
    */
   level?: string
   /**
    * Message is the log message.
-   *
-   * @generated from field: string message = 2;
    */
   message?: string
 }
 
 export const PluginExecLog: MessageType<PluginExecLog> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.exec.PluginExecLog',
-    fields: [
-      { no: 1, name: 'level', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginExecLog>(
+    'space.exec.PluginExecLog',
+    () => [
+      [1, 'level', 9],
+      [2, 'message', 9],
+    ],
+  )
 
 /**
  * PluginExecOutputFile is one captured output file from a plugin controller.
@@ -260,26 +190,22 @@ export const PluginExecLog: MessageType<PluginExecLog> =
 export interface PluginExecOutputFile {
   /**
    * Path is the slash-separated path relative to the output root.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
   /**
    * Data is the file contents.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
 }
 
 export const PluginExecOutputFile: MessageType<PluginExecOutputFile> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.exec.PluginExecOutputFile',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginExecOutputFile>(
+    'space.exec.PluginExecOutputFile',
+    () => [
+      [1, 'path', 9],
+      [2, 'data', 12],
+    ],
+  )
 
 /**
  * PluginExecResponse contains controller logs, outputs, and optional failure.
@@ -289,55 +215,29 @@ export const PluginExecOutputFile: MessageType<PluginExecOutputFile> =
 export interface PluginExecResponse {
   /**
    * Logs are execution logs to append to the Forge execution.
-   *
-   * @generated from field: repeated space.exec.PluginExecLog logs = 1;
    */
   logs?: PluginExecLog[]
   /**
    * Outputs are Forge execution outputs to set.
-   *
-   * @generated from field: repeated forge.value.Value outputs = 2;
    */
   outputs?: Value[]
   /**
    * Error is the plugin execution failure message, if any.
-   *
-   * @generated from field: string error = 3;
    */
   error?: string
   /**
    * OutputFiles are files to import as the default UnixFS "output" value.
-   *
-   * @generated from field: repeated space.exec.PluginExecOutputFile output_files = 4;
    */
   outputFiles?: PluginExecOutputFile[]
 }
 
 export const PluginExecResponse: MessageType<PluginExecResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.exec.PluginExecResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'logs',
-        kind: 'message',
-        T: PluginExecLog,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'outputs',
-        kind: 'message',
-        T: () => Value,
-        repeated: true,
-      },
-      { no: 3, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'output_files',
-        kind: 'message',
-        T: PluginExecOutputFile,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginExecResponse>(
+    'space.exec.PluginExecResponse',
+    () => [
+      [1, 'logs', 11, 1, PluginExecLog.codec],
+      [2, 'outputs', 11, 1, Value.codec],
+      [3, 'error', 9],
+      [4, 'output_files', 11, 1, PluginExecOutputFile.codec],
+    ],
+  )

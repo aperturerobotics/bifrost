@@ -5,8 +5,6 @@
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures forwarding block lookups to plugins.
@@ -19,39 +17,32 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * PluginId is the plugin to load and use as .
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * ServiceIdRegex is the regex of service IDs to forward.
    * If empty, will forward any.
-   *
-   * @generated from field: string service_id_regex = 2;
    */
   serviceIdRegex?: string
   /**
    * ServerIdRegex is the regex of server IDs to forward for.
    * If empty, will forward any.
-   *
-   * @generated from field: string server_id_regex = 3;
    */
   serverIdRegex?: string
   /**
    * Backoff is the backoff config for calling the RPC service.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff backoff = 4;
    */
   backoff?: Backoff
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.plugin.forward_lookup_block.Config',
-  fields: [
-    { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'service_id_regex', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'server_id_regex', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'backoff', kind: 'message', T: () => Backoff },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.plugin.forward_lookup_block.Config',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'service_id_regex', 9],
+      [3, 'server_id_regex', 9],
+      [4, 'backoff', 11, 0, Backoff.codec],
+    ],
+  )

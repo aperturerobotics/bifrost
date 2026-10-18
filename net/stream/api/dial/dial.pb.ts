@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the dial controller.
@@ -15,38 +13,28 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * PeerId is the remote peer ID to dial.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * LocalPeerId is the peer ID to dial with.
    * Can be empty to accept any loaded peer.
-   *
-   * @generated from field: string local_peer_id = 2;
    */
   localPeerId?: string
   /**
    * ProtocolId is the protocol ID to dial with.
-   *
-   * @generated from field: string protocol_id = 3;
    */
   protocolId?: string
   /**
    * TransportId constrains the transport ID to dial with.
    * Can be empty.
-   *
-   * @generated from field: uint64 transport_id = 4;
    */
   transportId?: bigint
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'stream.api.dial.Config',
-  fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'local_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'transport_id', kind: 'scalar', T: ScalarType.UINT64 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('stream.api.dial.Config', () => [
+    [1, 'peer_id', 9],
+    [2, 'local_peer_id', 9],
+    [3, 'protocol_id', 9],
+    [4, 'transport_id', 4],
+  ])

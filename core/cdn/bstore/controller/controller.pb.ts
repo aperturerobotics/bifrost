@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures an anonymous CDN block store controller.
@@ -15,115 +13,68 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BlockStoreId is the block store id to use on the bus.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * SpaceId is the public CDN Space id.
-   *
-   * @generated from field: string space_id = 2;
    */
   spaceId?: string
   /**
    * CdnBaseUrl is the public CDN base URL.
-   *
-   * @generated from field: string cdn_base_url = 3;
    */
   cdnBaseUrl?: string
   /**
    * PointerTtlDur is the cached root pointer TTL.
    * Empty uses the CDN block store default. Negative disables expiry.
-   *
-   * @generated from field: string pointer_ttl_dur = 4;
    */
   pointerTtlDur?: string
   /**
    * CacheBlockStoreId optionally resolves a local block store for co-block
    * writeback while reading remote pack ranges.
-   *
-   * @generated from field: string cache_block_store_id = 5;
    */
   cacheBlockStoreId?: string
   /**
    * WritebackWindowBytes sets the semantic co-block writeback window.
-   *
-   * @generated from field: int64 writeback_window_bytes = 6;
    */
   writebackWindowBytes?: bigint
   /**
    * RangeCacheMaxBytes sets the resident range-cache budget per pack reader.
-   *
-   * @generated from field: int64 range_cache_max_bytes = 7;
    */
   rangeCacheMaxBytes?: bigint
   /**
    * BucketIds is a list of bucket ids to serve LookupBlockFromNetwork directives.
-   *
-   * @generated from field: repeated string bucket_ids = 8;
    */
   bucketIds?: string[]
   /**
    * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 9;
    */
   skipNotFound?: boolean
   /**
    * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 10;
    */
   verbose?: boolean
   /**
    * RootPointerBaseUrl optionally serves root.packedmsg from another base URL,
    * so an owner can serve the mutable pointer from its own server and keep the
    * CDN hostname immutable. Empty reads the pointer from cdn_base_url.
-   *
-   * @generated from field: string root_pointer_base_url = 11;
    */
   rootPointerBaseUrl?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'cdn.bstore.controller.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'cdn_base_url', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'pointer_ttl_dur', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 5,
-      name: 'cache_block_store_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 6,
-      name: 'writeback_window_bytes',
-      kind: 'scalar',
-      T: ScalarType.INT64,
-    },
-    {
-      no: 7,
-      name: 'range_cache_max_bytes',
-      kind: 'scalar',
-      T: ScalarType.INT64,
-    },
-    {
-      no: 8,
-      name: 'bucket_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 9, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 10, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 11,
-      name: 'root_pointer_base_url',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'cdn.bstore.controller.Config',
+    () => [
+      [1, 'block_store_id', 9],
+      [2, 'space_id', 9],
+      [3, 'cdn_base_url', 9],
+      [4, 'pointer_ttl_dur', 9],
+      [5, 'cache_block_store_id', 9],
+      [6, 'writeback_window_bytes', 3],
+      [7, 'range_cache_max_bytes', 3],
+      [8, 'bucket_ids', 9, 1],
+      [9, 'skip_not_found', 8],
+      [10, 'verbose', 8],
+      [11, 'root_pointer_base_url', 9],
+    ],
+  )

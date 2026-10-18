@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
 /**
@@ -16,25 +14,22 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export interface AppRead {
   /**
    * Name identifies the read in the snapshot and is unique within a connector.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Path is the request path and query, appended to the connector base URL.
-   *
-   * @generated from field: string path = 2;
    */
   path?: string
 }
 
-export const AppRead: MessageType<AppRead> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.appconnector.AppRead',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const AppRead: MessageType<AppRead> =
+  /* @__PURE__ */ createMessageType<AppRead>(
+    's4wave.appconnector.AppRead',
+    () => [
+      [1, 'name', 9],
+      [2, 'path', 9],
+    ],
+  )
 
 /**
  * AppConnector is the Space's authorized connection to one application's
@@ -46,76 +41,55 @@ export const AppRead: MessageType<AppRead> = /* @__PURE__ */ createMessageType({
 export interface AppConnector {
   /**
    * Label is the operator-visible connector label.
-   *
-   * @generated from field: string label = 1;
    */
   label?: string
   /**
    * BaseUrl is the application origin, such as https://admin.example.com.
-   *
-   * @generated from field: string base_url = 2;
    */
   baseUrl?: string
   /**
    * Reads are the requests made on every poll.
-   *
-   * @generated from field: repeated s4wave.appconnector.AppRead reads = 3;
    */
   reads?: AppRead[]
   /**
    * TokenSecretObjectKey points at an API token Secret. The Secret object key is
    * external identity for the fetcher's reader grant check, not a graph
    * relationship.
-   *
-   * @generated from field: string token_secret_object_key = 4;
    */
   tokenSecretObjectKey?: string
   /**
    * PollIntervalMs is the time between polls in milliseconds.
-   *
-   * @generated from field: uint32 poll_interval_ms = 5;
    */
   pollIntervalMs?: number
   /**
    * MaxBodyBytes is the largest response body the snapshot retains. A larger
    * response is an error, never a truncated body.
-   *
-   * @generated from field: uint32 max_body_bytes = 6;
    */
   maxBodyBytes?: number
   /**
    * CreatedAt is when this connector was created.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 7;
    */
   createdAt?: Date
   /**
    * UpdatedAt is when this connector was last updated.
-   *
-   * @generated from field: google.protobuf.Timestamp updated_at = 8;
    */
   updatedAt?: Date
 }
 
 export const AppConnector: MessageType<AppConnector> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.appconnector.AppConnector',
-    fields: [
-      { no: 1, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'base_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'reads', kind: 'message', T: AppRead, repeated: true },
-      {
-        no: 4,
-        name: 'token_secret_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 5, name: 'poll_interval_ms', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 6, name: 'max_body_bytes', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 8, name: 'updated_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AppConnector>(
+    's4wave.appconnector.AppConnector',
+    () => [
+      [1, 'label', 9],
+      [2, 'base_url', 9],
+      [3, 'reads', 11, 1, AppRead.codec],
+      [4, 'token_secret_object_key', 9],
+      [5, 'poll_interval_ms', 13],
+      [6, 'max_body_bytes', 13],
+      [7, 'created_at', 11, 0, Timestamp.codec],
+      [8, 'updated_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * AppReadSnapshot is the last state of one named read.
@@ -125,61 +99,47 @@ export const AppConnector: MessageType<AppConnector> =
 export interface AppReadSnapshot {
   /**
    * Name is the AppRead name.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Status is the HTTP status of the last good body.
-   *
-   * @generated from field: uint32 status = 2;
    */
   status?: number
   /**
    * ContentType is the content type of the last good body.
-   *
-   * @generated from field: string content_type = 3;
    */
   contentType?: string
   /**
    * Body is the opaque last good response body.
-   *
-   * @generated from field: bytes body = 4;
    */
   body?: Uint8Array
   /**
    * FetchedAt is when the last good body was fetched.
-   *
-   * @generated from field: google.protobuf.Timestamp fetched_at = 5;
    */
   fetchedAt?: Date
   /**
    * Error is the error of the last failed attempt, empty after a success.
-   *
-   * @generated from field: string error = 6;
    */
   error?: string
   /**
    * ErrorAt is when the last failed attempt happened.
-   *
-   * @generated from field: google.protobuf.Timestamp error_at = 7;
    */
   errorAt?: Date
 }
 
 export const AppReadSnapshot: MessageType<AppReadSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.appconnector.AppReadSnapshot',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'content_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'body', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 5, name: 'fetched_at', kind: 'message', T: () => Timestamp },
-      { no: 6, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'error_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AppReadSnapshot>(
+    's4wave.appconnector.AppReadSnapshot',
+    () => [
+      [1, 'name', 9],
+      [2, 'status', 13],
+      [3, 'content_type', 9],
+      [4, 'body', 12],
+      [5, 'fetched_at', 11, 0, Timestamp.codec],
+      [6, 'error', 9],
+      [7, 'error_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * AppSnapshot is the retained result of an AppConnector's reads. Only the
@@ -190,25 +150,15 @@ export const AppReadSnapshot: MessageType<AppReadSnapshot> =
 export interface AppSnapshot {
   /**
    * Reads holds one entry per connector read, in connector order.
-   *
-   * @generated from field: repeated s4wave.appconnector.AppReadSnapshot reads = 1;
    */
   reads?: AppReadSnapshot[]
 }
 
 export const AppSnapshot: MessageType<AppSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.appconnector.AppSnapshot',
-    fields: [
-      {
-        no: 1,
-        name: 'reads',
-        kind: 'message',
-        T: AppReadSnapshot,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AppSnapshot>(
+    's4wave.appconnector.AppSnapshot',
+    () => [[1, 'reads', 11, 1, AppReadSnapshot.codec]],
+  )
 
 /**
  * CreateAppConnectorOp creates an AppConnector and its AppSnapshot.
@@ -219,70 +169,49 @@ export interface CreateAppConnectorOp {
   /**
    * ObjectKey is the key to create the connector at. The snapshot lives at
    * ObjectKey + "/snapshot".
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Label is the operator-visible connector label.
-   *
-   * @generated from field: string label = 2;
    */
   label?: string
   /**
    * BaseUrl is the application origin.
-   *
-   * @generated from field: string base_url = 3;
    */
   baseUrl?: string
   /**
    * Reads are the requests made on every poll.
-   *
-   * @generated from field: repeated s4wave.appconnector.AppRead reads = 4;
    */
   reads?: AppRead[]
   /**
    * TokenSecretObjectKey points at an API token Secret.
-   *
-   * @generated from field: string token_secret_object_key = 5;
    */
   tokenSecretObjectKey?: string
   /**
    * PollIntervalMs is the time between polls. Zero selects the default.
-   *
-   * @generated from field: uint32 poll_interval_ms = 6;
    */
   pollIntervalMs?: number
   /**
    * MaxBodyBytes is the largest retained response body. Zero selects the default.
-   *
-   * @generated from field: uint32 max_body_bytes = 7;
    */
   maxBodyBytes?: number
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 8;
    */
   timestamp?: Date
 }
 
 export const CreateAppConnectorOp: MessageType<CreateAppConnectorOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.appconnector.CreateAppConnectorOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'base_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'reads', kind: 'message', T: AppRead, repeated: true },
-      {
-        no: 5,
-        name: 'token_secret_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 6, name: 'poll_interval_ms', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'max_body_bytes', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 8, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateAppConnectorOp>(
+    's4wave.appconnector.CreateAppConnectorOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'label', 9],
+      [3, 'base_url', 9],
+      [4, 'reads', 11, 1, AppRead.codec],
+      [5, 'token_secret_object_key', 9],
+      [6, 'poll_interval_ms', 13],
+      [7, 'max_body_bytes', 13],
+      [8, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

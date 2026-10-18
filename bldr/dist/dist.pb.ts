@@ -5,8 +5,6 @@
 import { ObjectRef } from '@go/github.com/s4wave/spacewave/db/bucket/bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * DistMeta is metadata embedded in a distribution entrypoint.
@@ -18,93 +16,58 @@ export interface DistMeta {
    * ProjectId is the project identifier.
    * Must be a valid-dns-label.
    * Used to construct the application storage and dist bundle filenames.
-   *
-   * @generated from field: string project_id = 1;
    */
   projectId?: string
   /**
    * PlatformId is the destination platform ID.
-   *
-   * @generated from field: string platform_id = 2;
    */
   platformId?: string
   /**
    * StartupPlugins is the list of plugins to run on startup.
-   *
-   * @generated from field: repeated string startup_plugins = 3;
    */
   startupPlugins?: string[]
   /**
    * DistWorldRef is the root object ref to the static assets kvfile block-backed world.
    * Contains the transform configuration.
-   *
-   * @generated from field: bucket.ObjectRef dist_world_ref = 4;
    */
   distWorldRef?: ObjectRef
   /**
    * DistObjectKey is the root object key to search for manifests in the dist world.
-   *
-   * @generated from field: string dist_object_key = 5;
    */
   distObjectKey?: string
   /**
    * EntrypointRole is the release role for this entrypoint.
    * Expected values are "desktop", "browser", and "cli".
-   *
-   * @generated from field: string entrypoint_role = 6;
    */
   entrypointRole?: string
   /**
    * ChannelKey is the release channel this entrypoint was built for.
-   *
-   * @generated from field: string channel_key = 7;
    */
   channelKey?: string
   /**
    * ManifestId is the Bldr Manifest id for this entrypoint binary.
-   *
-   * @generated from field: string manifest_id = 8;
    */
   manifestId?: string
   /**
    * ManifestRev is the Bldr Manifest revision for this entrypoint binary.
-   *
-   * @generated from field: uint64 manifest_rev = 9;
    */
   manifestRev?: bigint
   /**
    * UpdateGuardPluginIds name plugins that quiesce owned work before replacement.
-   *
-   * @generated from field: repeated string update_guard_plugin_ids = 10;
    */
   updateGuardPluginIds?: string[]
 }
 
 export const DistMeta: MessageType<DistMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.dist.DistMeta',
-    fields: [
-      { no: 1, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'startup_plugins',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 4, name: 'dist_world_ref', kind: 'message', T: () => ObjectRef },
-      { no: 5, name: 'dist_object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'entrypoint_role', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'manifest_rev', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 10,
-        name: 'update_guard_plugin_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DistMeta>('bldr.dist.DistMeta', () => [
+    [1, 'project_id', 9],
+    [2, 'platform_id', 9],
+    [3, 'startup_plugins', 9, 1],
+    [4, 'dist_world_ref', 11, 0, ObjectRef.codec],
+    [5, 'dist_object_key', 9],
+    [6, 'entrypoint_role', 9],
+    [7, 'channel_key', 9],
+    [8, 'manifest_id', 9],
+    [9, 'manifest_rev', 4],
+    [10, 'update_guard_plugin_ids', 9, 1],
+  ])

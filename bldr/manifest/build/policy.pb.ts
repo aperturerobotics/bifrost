@@ -6,8 +6,6 @@ import type { Enabled } from '@go/github.com/aperturerobotics/util/enabled/enabl
 import { Enabled_Enum } from '@go/github.com/aperturerobotics/util/enabled/enabled.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * BuildPolicy configures build-scoped behavior shared by Manifest builders.
@@ -20,8 +18,6 @@ export interface BuildPolicy {
    *
    * DEFAULT preserves build-type defaults: release builds minify JavaScript,
    * while dev builds leave JavaScript readable.
-   *
-   * @generated from field: enabled.Enabled js_minification = 1;
    */
   jsMinification?: Enabled
   /**
@@ -29,8 +25,6 @@ export interface BuildPolicy {
    *
    * DEFAULT preserves build-type defaults: dev builds emit sourcemaps where
    * builders previously did, while release builds do not emit sourcemaps.
-   *
-   * @generated from field: enabled.Enabled js_sourcemaps = 2;
    */
   jsSourcemaps?: Enabled
   /**
@@ -38,32 +32,23 @@ export interface BuildPolicy {
    * wrapper bundles.
    * DEFAULT emits split GoScript wrapper bundles. ENABLE also permits chunk
    * output; DISABLE forces single-file output.
-   *
-   * @generated from field: enabled.Enabled goscript_code_splitting = 3;
    */
   goscriptCodeSplitting?: Enabled
   /**
    * FrontendDevelopment selects the active project service instead of immutable
    * frontend bundles. Only an attached web development session enables it.
    * It participates in build and startup-cache identity and propagates to children.
-   *
-   * @generated from field: bool frontend_development = 4;
    */
   frontendDevelopment?: boolean
 }
 
 export const BuildPolicy: MessageType<BuildPolicy> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.build.BuildPolicy',
-    fields: [
-      { no: 1, name: 'js_minification', kind: 'enum', T: Enabled_Enum },
-      { no: 2, name: 'js_sourcemaps', kind: 'enum', T: Enabled_Enum },
-      { no: 3, name: 'goscript_code_splitting', kind: 'enum', T: Enabled_Enum },
-      {
-        no: 4,
-        name: 'frontend_development',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildPolicy>(
+    'bldr.manifest.build.BuildPolicy',
+    () => [
+      [1, 'js_minification', 14, 0, Enabled_Enum],
+      [2, 'js_sourcemaps', 14, 0, Enabled_Enum],
+      [3, 'goscript_code_splitting', 14, 0, Enabled_Enum],
+      [4, 'frontend_development', 8],
+    ],
+  )

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures a http server that listens on a port.
@@ -19,47 +17,38 @@ export interface Config {
    * Addr is the address to listen.
    *
    * Example: 0.0.0.0:8080
-   *
-   * @generated from field: string addr = 1;
    */
   addr?: string
   /**
    * ClientId is the client id to set on LookupHTTPHandler.
-   *
-   * @generated from field: string client_id = 2;
    */
   clientId?: string
   /**
    * CertFile is the path to the certificate file to use for https.
    * Can be unset to use HTTP.
-   *
-   * @generated from field: string cert_file = 3;
    */
   certFile?: string
   /**
    * KeyFile is the path to the key file to use for https.
    * Cannot be unset if cert_file is set.
    * Otherwise can be unset.
-   *
-   * @generated from field: string key_file = 4;
    */
   keyFile?: string
   /**
    * Wait indicates to wait for LookupHTTPHandler even if it becomes idle.
    * If false: returns 404 not found if LookupHTTPHandler becomes idle.
-   *
-   * @generated from field: bool wait = 5;
    */
   wait?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bifrost.http.listener.Config',
-  fields: [
-    { no: 1, name: 'addr', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'client_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'cert_file', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'key_file', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'wait', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bifrost.http.listener.Config',
+    () => [
+      [1, 'addr', 9],
+      [2, 'client_id', 9],
+      [3, 'cert_file', 9],
+      [4, 'key_file', 9],
+      [5, 'wait', 8],
+    ],
+  )

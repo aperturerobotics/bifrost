@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ProviderFeature is a list of available provider features.
@@ -16,43 +14,39 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ProviderFeature {
   /**
    * ProviderFeature_NONE is the zero value.
-   *
-   * @generated from enum value: ProviderFeature_NONE = 0;
    */
   ProviderFeature_NONE = 0,
 
   /**
    * ProviderFeature_SESSION is the session (account identity => session) feature.
-   *
-   * @generated from enum value: ProviderFeature_SESSION = 1;
    */
   ProviderFeature_SESSION = 1,
 
   /**
    * ProviderFeature_SHARED_OBJECT is the shared object service (root state refs).
-   *
-   * @generated from enum value: ProviderFeature_SHARED_OBJECT = 2;
    */
   ProviderFeature_SHARED_OBJECT = 2,
 
   /**
    * ProviderFeature_BLOCK_STORE is the block store (Content-ID) feature.
-   *
-   * @generated from enum value: ProviderFeature_BLOCK_STORE = 3;
    */
   ProviderFeature_BLOCK_STORE = 3,
 
   /**
    * ProviderFeature_SHARED_OBJECT_RECOVERY is same-entity shared object recovery.
-   *
-   * @generated from enum value: ProviderFeature_SHARED_OBJECT_RECOVERY = 4;
    */
   ProviderFeature_SHARED_OBJECT_RECOVERY = 4,
 }
 
 export const ProviderFeature_Enum = /* @__PURE__ */ createEnumType(
   'provider.ProviderFeature',
-  ProviderFeature,
+  [
+    [0, 'ProviderFeature_NONE'],
+    [1, 'ProviderFeature_SESSION'],
+    [2, 'ProviderFeature_SHARED_OBJECT'],
+    [3, 'ProviderFeature_BLOCK_STORE'],
+    [4, 'ProviderFeature_SHARED_OBJECT_RECOVERY'],
+  ],
 )
 
 /**
@@ -63,44 +57,32 @@ export const ProviderFeature_Enum = /* @__PURE__ */ createEnumType(
 export enum ProviderAccountStatus {
   /**
    * ProviderAccountStatus_NONE is if the account was not created yet (zero value)
-   *
-   * @generated from enum value: ProviderAccountStatus_NONE = 0;
    */
   ProviderAccountStatus_NONE = 0,
 
   /**
    * ProviderAccountStatus_PENDING is the pending state (account is being created).
-   *
-   * @generated from enum value: ProviderAccountStatus_PENDING = 1;
    */
   ProviderAccountStatus_PENDING = 1,
 
   /**
    * ProviderAccountStatus_READY is the ready state (account is ready).
-   *
-   * @generated from enum value: ProviderAccountStatus_READY = 2;
    */
   ProviderAccountStatus_READY = 2,
 
   /**
    * ProviderAccountStatus_DELETED is the deleted state (account was deleted).
-   *
-   * @generated from enum value: ProviderAccountStatus_DELETED = 3;
    */
   ProviderAccountStatus_DELETED = 3,
 
   /**
    * ProviderAccountStatus_FAILED is the failed state (account was not able to be created).
-   *
-   * @generated from enum value: ProviderAccountStatus_FAILED = 4;
    */
   ProviderAccountStatus_FAILED = 4,
 
   /**
    * ProviderAccountStatus_UNAUTHENTICATED is set when the session key is stale
    * but the account still exists on the cloud. Recoverable via re-login.
-   *
-   * @generated from enum value: ProviderAccountStatus_UNAUTHENTICATED = 5;
    */
   ProviderAccountStatus_UNAUTHENTICATED = 5,
 
@@ -108,15 +90,21 @@ export enum ProviderAccountStatus {
    * ProviderAccountStatus_DORMANT is set when the session is connected but
    * access is gated (e.g. no active subscription). The WS tracker enters idle
    * mode and wakes when account state changes.
-   *
-   * @generated from enum value: ProviderAccountStatus_DORMANT = 6;
    */
   ProviderAccountStatus_DORMANT = 6,
 }
 
 export const ProviderAccountStatus_Enum = /* @__PURE__ */ createEnumType(
   'provider.ProviderAccountStatus',
-  ProviderAccountStatus,
+  [
+    [0, 'ProviderAccountStatus_NONE'],
+    [1, 'ProviderAccountStatus_PENDING'],
+    [2, 'ProviderAccountStatus_READY'],
+    [3, 'ProviderAccountStatus_DELETED'],
+    [4, 'ProviderAccountStatus_FAILED'],
+    [5, 'ProviderAccountStatus_UNAUTHENTICATED'],
+    [6, 'ProviderAccountStatus_DORMANT'],
+  ],
 )
 
 /**
@@ -127,79 +115,22 @@ export const ProviderAccountStatus_Enum = /* @__PURE__ */ createEnumType(
 export interface ProviderInfo {
   /**
    * ProviderId is the provider identifier.
-   *
-   * @generated from field: string provider_id = 1;
    */
   providerId?: string
   /**
    * ProviderFeatures is the list of available provider features.
-   *
-   * @generated from field: repeated provider.ProviderFeature provider_features = 2;
    */
   providerFeatures?: ProviderFeature[]
 }
 
 export const ProviderInfo: MessageType<ProviderInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.ProviderInfo',
-    fields: [
-      { no: 1, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'provider_features',
-        kind: 'enum',
-        T: ProviderFeature_Enum,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ProviderFeatureMapItem is an item in the ProviderFeatureMap.
- *
- * @generated from message provider.ProviderFeatureMapItem
- */
-export interface ProviderFeatureMapItem {
-  /**
-   * ProviderFeatures is the set of features we are mapping.
-   *
-   * @generated from field: repeated provider.ProviderFeature provider_features = 1;
-   */
-  providerFeatures?: ProviderFeature[]
-  /**
-   * ProviderId is the provider identifier.
-   *
-   * @generated from field: string provider_id = 2;
-   */
-  providerId?: string
-  /**
-   * ProviderAccountId is the provider account identifier.
-   *
-   * @generated from field: string provider_account_id = 3;
-   */
-  providerAccountId?: string
-}
-
-export const ProviderFeatureMapItem: MessageType<ProviderFeatureMapItem> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.ProviderFeatureMapItem',
-    fields: [
-      {
-        no: 1,
-        name: 'provider_features',
-        kind: 'enum',
-        T: ProviderFeature_Enum,
-        repeated: true,
-      },
-      { no: 2, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'provider_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ProviderInfo>(
+    'provider.ProviderInfo',
+    () => [
+      [1, 'provider_id', 9],
+      [2, 'provider_features', 14, 3, ProviderFeature_Enum],
+    ],
+  )
 
 /**
  * ProviderFeatureMap is a mapping between ProviderFeature and provider ID.
@@ -212,25 +143,45 @@ export interface ProviderFeatureMap {
    * MapItems is the list of provider feature map items.
    * The list is evaluated from beginning to end.
    * Items later in the list are secondary to items earlier in the list.
-   *
-   * @generated from field: repeated provider.ProviderFeatureMapItem map_items = 1;
    */
   mapItems?: ProviderFeatureMapItem[]
 }
 
 export const ProviderFeatureMap: MessageType<ProviderFeatureMap> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.ProviderFeatureMap',
-    fields: [
-      {
-        no: 1,
-        name: 'map_items',
-        kind: 'message',
-        T: ProviderFeatureMapItem,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ProviderFeatureMap>(
+    'provider.ProviderFeatureMap',
+    () => [[1, 'map_items', 11, 1, ProviderFeatureMapItem.codec]],
+  )
+
+/**
+ * ProviderFeatureMapItem is an item in the ProviderFeatureMap.
+ *
+ * @generated from message provider.ProviderFeatureMapItem
+ */
+export interface ProviderFeatureMapItem {
+  /**
+   * ProviderFeatures is the set of features we are mapping.
+   */
+  providerFeatures?: ProviderFeature[]
+  /**
+   * ProviderId is the provider identifier.
+   */
+  providerId?: string
+  /**
+   * ProviderAccountId is the provider account identifier.
+   */
+  providerAccountId?: string
+}
+
+export const ProviderFeatureMapItem: MessageType<ProviderFeatureMapItem> =
+  /* @__PURE__ */ createMessageType<ProviderFeatureMapItem>(
+    'provider.ProviderFeatureMapItem',
+    () => [
+      [1, 'provider_features', 14, 3, ProviderFeature_Enum],
+      [2, 'provider_id', 9],
+      [3, 'provider_account_id', 9],
+    ],
+  )
 
 /**
  * ProviderAccountInfo contains details about an account on a Provider.
@@ -240,69 +191,38 @@ export const ProviderFeatureMap: MessageType<ProviderFeatureMap> =
 export interface ProviderAccountInfo {
   /**
    * ProviderId is the provider identifier.
-   *
-   * @generated from field: string provider_id = 1;
    */
   providerId?: string
   /**
    * ProviderAccountId is the provider account identifier.
-   *
-   * @generated from field: string provider_account_id = 2;
    */
   providerAccountId?: string
   /**
    * ProviderFeatures is the set of features configured for the account.
-   *
-   * @generated from field: repeated provider.ProviderFeature provider_features = 3;
    */
   providerFeatures?: ProviderFeature[]
   /**
    * ProviderAccountStatus contains the status of the account.
-   *
-   * @generated from field: provider.ProviderAccountStatus provider_account_status = 4;
    */
   providerAccountStatus?: ProviderAccountStatus
   /**
    * ProviderAccountState contains serialized account info.
    * The format is per-provider.
-   *
-   * @generated from field: bytes provider_account_state = 5;
    */
   providerAccountState?: Uint8Array
 }
 
 export const ProviderAccountInfo: MessageType<ProviderAccountInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.ProviderAccountInfo',
-    fields: [
-      { no: 1, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'provider_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 3,
-        name: 'provider_features',
-        kind: 'enum',
-        T: ProviderFeature_Enum,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'provider_account_status',
-        kind: 'enum',
-        T: ProviderAccountStatus_Enum,
-      },
-      {
-        no: 5,
-        name: 'provider_account_state',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ProviderAccountInfo>(
+    'provider.ProviderAccountInfo',
+    () => [
+      [1, 'provider_id', 9],
+      [2, 'provider_account_id', 9],
+      [3, 'provider_features', 14, 3, ProviderFeature_Enum],
+      [4, 'provider_account_status', 14, 0, ProviderAccountStatus_Enum],
+      [5, 'provider_account_state', 12],
+    ],
+  )
 
 /**
  * ProviderResourceRef is a common reference type to a resource stored on a provider.
@@ -312,39 +232,28 @@ export const ProviderAccountInfo: MessageType<ProviderAccountInfo> =
 export interface ProviderResourceRef {
   /**
    * Id is the resource id, unique to the provider.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * ProviderId is the provider identifier.
    * This corresponds to a provider controller.
-   *
-   * @generated from field: string provider_id = 2;
    */
   providerId?: string
   /**
    * ProviderAccountId is the provider account identifier.
-   *
-   * @generated from field: string provider_account_id = 3;
    */
   providerAccountId?: string
 }
 
 export const ProviderResourceRef: MessageType<ProviderResourceRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.ProviderResourceRef',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'provider_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ProviderResourceRef>(
+    'provider.ProviderResourceRef',
+    () => [
+      [1, 'id', 9],
+      [2, 'provider_id', 9],
+      [3, 'provider_account_id', 9],
+    ],
+  )
 
 /**
  * ProviderFeatureResourceRef is a reference to a resource with a feature and metadata on a provider.
@@ -354,49 +263,28 @@ export const ProviderResourceRef: MessageType<ProviderResourceRef> =
 export interface ProviderFeatureResourceRef {
   /**
    * ProviderResourceRef is the reference to the resource on the provider.
-   *
-   * @generated from field: provider.ProviderResourceRef provider_resource_ref = 1;
    */
   providerResourceRef?: ProviderResourceRef
   /**
    * ProviderFeature is the feature implemented by this resource.
-   *
-   * @generated from field: provider.ProviderFeature provider_feature = 2;
    */
   providerFeature?: ProviderFeature
   /**
    * ProviderFeatureMeta is encoded metadata specific to the resource type.
    * Max size 120kb
-   *
-   * @generated from field: bytes provider_feature_meta = 3;
    */
   providerFeatureMeta?: Uint8Array
 }
 
 export const ProviderFeatureResourceRef: MessageType<ProviderFeatureResourceRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.ProviderFeatureResourceRef',
-    fields: [
-      {
-        no: 1,
-        name: 'provider_resource_ref',
-        kind: 'message',
-        T: ProviderResourceRef,
-      },
-      {
-        no: 2,
-        name: 'provider_feature',
-        kind: 'enum',
-        T: ProviderFeature_Enum,
-      },
-      {
-        no: 3,
-        name: 'provider_feature_meta',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ProviderFeatureResourceRef>(
+    'provider.ProviderFeatureResourceRef',
+    () => [
+      [1, 'provider_resource_ref', 11, 0, ProviderResourceRef.codec],
+      [2, 'provider_feature', 14, 0, ProviderFeature_Enum],
+      [3, 'provider_feature_meta', 12],
+    ],
+  )
 
 /**
  * AccountTransition is the durable, provider-authorized result of an account merge.
@@ -407,75 +295,44 @@ export const ProviderFeatureResourceRef: MessageType<ProviderFeatureResourceRef>
 export interface AccountTransition {
   /**
    * OperationId identifies this source-to-destination transition across retries.
-   *
-   * @generated from field: string operation_id = 1;
    */
   operationId?: string
   /**
    * Source identifies the account whose Sessions and resources are moving.
-   *
-   * @generated from field: provider.ProviderResourceRef source = 2;
    */
   source?: ProviderResourceRef
   /**
    * Destination identifies the surviving account; id is its settings object ID.
-   *
-   * @generated from field: provider.ProviderResourceRef destination = 3;
    */
   destination?: ProviderResourceRef
   /**
    * DestinationEndpoint must match the receiver's configured cloud provider.
-   *
-   * @generated from field: string destination_endpoint = 4;
    */
   destinationEndpoint?: string
   /**
    * DestinationPeerIds are the destination's independently authorized transport peers.
-   *
-   * @generated from field: repeated string destination_peer_ids = 5;
    */
   destinationPeerIds?: string[]
   /**
    * SessionPeerIds is the exact set of source Sessions approved for the transition.
-   *
-   * @generated from field: repeated string session_peer_ids = 6;
    */
   sessionPeerIds?: string[]
   /**
    * SourceEndpoint identifies cloud authority; empty identifies a local account.
-   *
-   * @generated from field: string source_endpoint = 7;
    */
   sourceEndpoint?: string
 }
 
 export const AccountTransition: MessageType<AccountTransition> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.AccountTransition',
-    fields: [
-      { no: 1, name: 'operation_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'source', kind: 'message', T: ProviderResourceRef },
-      { no: 3, name: 'destination', kind: 'message', T: ProviderResourceRef },
-      {
-        no: 4,
-        name: 'destination_endpoint',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 5,
-        name: 'destination_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'session_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 7, name: 'source_endpoint', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccountTransition>(
+    'provider.AccountTransition',
+    () => [
+      [1, 'operation_id', 9],
+      [2, 'source', 11, 0, ProviderResourceRef.codec],
+      [3, 'destination', 11, 0, ProviderResourceRef.codec],
+      [4, 'destination_endpoint', 9],
+      [5, 'destination_peer_ids', 9, 1],
+      [6, 'session_peer_ids', 9, 1],
+      [7, 'source_endpoint', 9],
+    ],
+  )

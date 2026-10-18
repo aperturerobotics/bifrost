@@ -3,13 +3,11 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
-import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Opts } from '../common/quic/quic.pb.js'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import { DialerOpts } from '../common/dialer/dialer.pb.js'
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * IceTransportPolicy contains the set of allowed ICE transport policies.
@@ -19,52 +17,131 @@ import { DialerOpts } from '../common/dialer/dialer.pb.js'
 export enum IceTransportPolicy {
   /**
    * IceTransportPolicy_ALL allows any kind of ICE candidate.
-   *
-   * @generated from enum value: IceTransportPolicy_ALL = 0;
    */
   IceTransportPolicy_ALL = 0,
 
   /**
    * IceTransportPolicy_RELAY allows only media relay candidates (TURN).
-   *
-   * @generated from enum value: IceTransportPolicy_RELAY = 1;
    */
   IceTransportPolicy_RELAY = 1,
 }
 
 export const IceTransportPolicy_Enum = /* @__PURE__ */ createEnumType(
   'webrtc.IceTransportPolicy',
-  IceTransportPolicy,
+  [
+    [0, 'IceTransportPolicy_ALL'],
+    [1, 'IceTransportPolicy_RELAY'],
+  ],
 )
 
 /**
- * OauthCredential is an OAuth credential information for the ICE server.
+ * Config is the configuration for the WebRTC Signal RPC transport.
  *
- * @generated from message webrtc.IceServerConfig.OauthCredential
+ * @generated from message webrtc.Config
  */
-export interface IceServerConfig_OauthCredential {
+export interface Config {
   /**
-   * MacKey is a base64-url format.
-   *
-   * @generated from field: string mac_key = 1;
+   * SignalingId is the signaling channel identifier.
+   * Cannot be empty.
    */
-  macKey?: string
+  signalingId?: string
   /**
-   * AccessToken is the access token in base64-encoded format.
-   *
-   * @generated from field: string access_token = 2;
+   * TransportPeerId sets the peer ID to attach the transport to.
+   * If unset, attaches to any running peer with a private key.
+   * Must match the transport peer ID of the signaling transport.
    */
-  accessToken?: string
+  transportPeerId?: string
+  /**
+   * TransportType overrides the transport type id for dial addresses.
+   * Defaults to "webrtc"
+   * Configures the scheme for addr matching to this transport.
+   * E.x.: webrtc://
+   */
+  transportType?: string
+  /**
+   * Quic contains the quic protocol options.
+   *
+   * The WebRTC transport always disables FEC and several other UDP-centric
+   * features which are unnecessary due to the "reliable" nature of WebRTC.
+   */
+  quic?: Opts
+  /**
+   * WebRtc contains the WebRTC protocol options.
+   */
+  webRtc?: WebRtcConfig
+  /**
+   * Backoff is the backoff config for connecting to a PeerConnection.
+   * If unset, defaults to reasonable defaults.
+   */
+  backoff?: Backoff
+  /**
+   * Dialers maps peer IDs to dialers.
+   * This allows mapping which peer ID should be dialed via this transport.
+   */
+  dialers?: { [key: string]: DialerOpts }
+  /**
+   * AllPeers tells the transport to attempt to negotiate a WebRTC session with
+   * any peer, even those not listed in the Dialers map.
+   */
+  allPeers?: boolean
+  /**
+   * DisableListen disables listening for incoming Links.
+   * If set, we will only dial out, not accept incoming links.
+   */
+  disableListen?: boolean
+  /**
+   * BlockPeers is a list of peer ids that will not be contacted via this transport.
+   */
+  blockPeers?: string[]
+  /**
+   * Verbose enables very verbose logging.
+   */
+  verbose?: boolean
 }
 
-export const IceServerConfig_OauthCredential: MessageType<IceServerConfig_OauthCredential> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'webrtc.IceServerConfig.OauthCredential',
-    fields: [
-      { no: 1, name: 'mac_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'access_token', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('webrtc.Config', () => [
+    [1, 'signaling_id', 9],
+    [2, 'transport_peer_id', 9],
+    [3, 'transport_type', 9],
+    [4, 'quic', 11, 0, Opts.codec],
+    [5, 'web_rtc', 11, 0, WebRtcConfig.codec],
+    [6, 'backoff', 11, 0, Backoff.codec],
+    [7, 'dialers', 11, 584, DialerOpts.codec],
+    [8, 'all_peers', 8],
+    [9, 'disable_listen', 8],
+    [10, 'block_peers', 9, 1],
+    [11, 'verbose', 8],
+  ])
+
+/**
+ * WebRtcConfig configures the WebRTC PeerConnection.
+ *
+ * @generated from message webrtc.WebRtcConfig
+ */
+export interface WebRtcConfig {
+  /**
+   * IceServers contains the list of ICE servers to use.
+   */
+  iceServers?: IceServerConfig[]
+  /**
+   * IceTransportPolicy defines the policy for permitted ICE candidates.
+   * Optional.
+   */
+  iceTransportPolicy?: IceTransportPolicy
+  /**
+   * IceCandidatePoolSize defines the size of the prefetched ICE pool.
+   * Optional.
+   */
+  iceCandidatePoolSize?: number
+}
+
+export const WebRtcConfig: MessageType<WebRtcConfig> =
+  /* @__PURE__ */ createMessageType<WebRtcConfig>('webrtc.WebRtcConfig', () => [
+    [1, 'ice_servers', 11, 1, IceServerConfig.codec],
+    [2, 'ice_transport_policy', 14, 0, IceTransportPolicy_Enum],
+    [3, 'ice_candidate_pool_size', 13],
+  ])
 
 /**
  * IceServer is a WebRTC ICE server config.
@@ -80,324 +157,58 @@ export interface IceServerConfig {
    * - stun:stun.l.google.com:19302
    * - stun:stun.stunprotocol.org:3478
    * - turns:google.de?transport=tcp
-   *
-   * @generated from field: repeated string urls = 1;
    */
   urls?: string[]
   /**
    * Username is the username for the ICE server.
-   *
-   * @generated from field: string username = 2;
    */
   username?: string
-
   /**
    * Credential contains the ice server credential, if any.
    *
    * @generated from oneof webrtc.IceServerConfig.credential
    */
   credential?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Password contains the ICE server password.
-         *
-         * @generated from field: string password = 3;
-         */
-        value: string
-        case: 'password'
-      }
-    | {
-        /**
-         * Oauth contains an OAuth credential.
-         *
-         * @generated from field: webrtc.IceServerConfig.OauthCredential oauth = 4;
-         */
-        value: IceServerConfig_OauthCredential
-        case: 'oauth'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: string; case: 'password' }
+    | { value: IceServerConfig_OauthCredential; case: 'oauth' }
 }
 
 export const IceServerConfig: MessageType<IceServerConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'webrtc.IceServerConfig',
-    fields: [
-      {
-        no: 1,
-        name: 'urls',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'password',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'credential',
-      },
-      {
-        no: 4,
-        name: 'oauth',
-        kind: 'message',
-        T: IceServerConfig_OauthCredential,
-        oneof: 'credential',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IceServerConfig>(
+    'webrtc.IceServerConfig',
+    () => [
+      [1, 'urls', 9, 1],
+      [2, 'username', 9],
+      [3, 'password', 9, 0, 0, 'credential'],
+      [4, 'oauth', 11, 0, IceServerConfig_OauthCredential.codec, 'credential'],
+    ],
+  )
 
 /**
- * WebRtcConfig configures the WebRTC PeerConnection.
+ * OauthCredential is an OAuth credential information for the ICE server.
  *
- * @generated from message webrtc.WebRtcConfig
+ * @generated from message webrtc.IceServerConfig.OauthCredential
  */
-export interface WebRtcConfig {
+export interface IceServerConfig_OauthCredential {
   /**
-   * IceServers contains the list of ICE servers to use.
-   *
-   * @generated from field: repeated webrtc.IceServerConfig ice_servers = 1;
+   * MacKey is a base64-url format.
    */
-  iceServers?: IceServerConfig[]
+  macKey?: string
   /**
-   * IceTransportPolicy defines the policy for permitted ICE candidates.
-   * Optional.
-   *
-   * @generated from field: webrtc.IceTransportPolicy ice_transport_policy = 2;
+   * AccessToken is the access token in base64-encoded format.
    */
-  iceTransportPolicy?: IceTransportPolicy
-  /**
-   * IceCandidatePoolSize defines the size of the prefetched ICE pool.
-   * Optional.
-   *
-   * @generated from field: uint32 ice_candidate_pool_size = 3;
-   */
-  iceCandidatePoolSize?: number
+  accessToken?: string
 }
 
-export const WebRtcConfig: MessageType<WebRtcConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'webrtc.WebRtcConfig',
-    fields: [
-      {
-        no: 1,
-        name: 'ice_servers',
-        kind: 'message',
-        T: IceServerConfig,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'ice_transport_policy',
-        kind: 'enum',
-        T: IceTransportPolicy_Enum,
-      },
-      {
-        no: 3,
-        name: 'ice_candidate_pool_size',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Config is the configuration for the WebRTC Signal RPC transport.
- *
- * @generated from message webrtc.Config
- */
-export interface Config {
-  /**
-   * SignalingId is the signaling channel identifier.
-   * Cannot be empty.
-   *
-   * @generated from field: string signaling_id = 1;
-   */
-  signalingId?: string
-  /**
-   * TransportPeerId sets the peer ID to attach the transport to.
-   * If unset, attaches to any running peer with a private key.
-   * Must match the transport peer ID of the signaling transport.
-   *
-   * @generated from field: string transport_peer_id = 2;
-   */
-  transportPeerId?: string
-  /**
-   * TransportType overrides the transport type id for dial addresses.
-   * Defaults to "webrtc"
-   * Configures the scheme for addr matching to this transport.
-   * E.x.: webrtc://
-   *
-   * @generated from field: string transport_type = 3;
-   */
-  transportType?: string
-  /**
-   * Quic contains the quic protocol options.
-   *
-   * The WebRTC transport always disables FEC and several other UDP-centric
-   * features which are unnecessary due to the "reliable" nature of WebRTC.
-   *
-   * @generated from field: transport.quic.Opts quic = 4;
-   */
-  quic?: Opts
-  /**
-   * WebRtc contains the WebRTC protocol options.
-   *
-   * @generated from field: webrtc.WebRtcConfig web_rtc = 5;
-   */
-  webRtc?: WebRtcConfig
-  /**
-   * Backoff is the backoff config for connecting to a PeerConnection.
-   * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff backoff = 6;
-   */
-  backoff?: Backoff
-  /**
-   * Dialers maps peer IDs to dialers.
-   * This allows mapping which peer ID should be dialed via this transport.
-   *
-   * @generated from field: map<string, dialer.DialerOpts> dialers = 7;
-   */
-  dialers?: { [key: string]: DialerOpts }
-  /**
-   * AllPeers tells the transport to attempt to negotiate a WebRTC session with
-   * any peer, even those not listed in the Dialers map.
-   *
-   * @generated from field: bool all_peers = 8;
-   */
-  allPeers?: boolean
-  /**
-   * DisableListen disables listening for incoming Links.
-   * If set, we will only dial out, not accept incoming links.
-   *
-   * @generated from field: bool disable_listen = 9;
-   */
-  disableListen?: boolean
-  /**
-   * BlockPeers is a list of peer ids that will not be contacted via this transport.
-   *
-   * @generated from field: repeated string block_peers = 10;
-   */
-  blockPeers?: string[]
-  /**
-   * Verbose enables very verbose logging.
-   *
-   * @generated from field: bool verbose = 11;
-   */
-  verbose?: boolean
-}
-
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'webrtc.Config',
-  fields: [
-    { no: 1, name: 'signaling_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'transport_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'transport_type', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'quic', kind: 'message', T: () => Opts },
-    { no: 5, name: 'web_rtc', kind: 'message', T: WebRtcConfig },
-    { no: 6, name: 'backoff', kind: 'message', T: () => Backoff },
-    {
-      no: 7,
-      name: 'dialers',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => DialerOpts },
-    },
-    { no: 8, name: 'all_peers', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 9, name: 'disable_listen', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 10,
-      name: 'block_peers',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 11, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * WebRtcSdp contains the SDP offer or answer.
- *
- * @generated from message webrtc.WebRtcSdp
- */
-export interface WebRtcSdp {
-  /**
-   * TxSeqno is the sequence number of the transmitting peer.
-   * The receiver should update the local seqno to match.
-   *
-   * @generated from field: uint64 tx_seqno = 1;
-   */
-  txSeqno?: bigint
-  /**
-   * SdpType is the string encoded type of the sdp.
-   * Examples: "offer" "answer"
-   *
-   * @generated from field: string sdp_type = 2;
-   */
-  sdpType?: string
-  /**
-   * Sdp contains the WebRTC session description.
-   *
-   * @generated from field: string sdp = 3;
-   */
-  sdp?: string
-  /**
-   * OfferId is the SHA-256 of the exact offer SDP bytes this description
-   * belongs to. Offers carry their own digest; answers echo the digest of
-   * the offer they answer. Signals whose offer_id does not match the active
-   * generation are rejected before Pion.
-   *
-   * @generated from field: bytes offer_id = 4;
-   */
-  offerId?: Uint8Array
-}
-
-export const WebRtcSdp: MessageType<WebRtcSdp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'webrtc.WebRtcSdp',
-    fields: [
-      { no: 1, name: 'tx_seqno', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'sdp_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'sdp', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'offer_id', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WebRtcIce contains an ICE candidate.
- *
- * @generated from message webrtc.WebRtcIce
- */
-export interface WebRtcIce {
-  /**
-   * Candidate contains the JSON-encoded ICE candidate.
-   *
-   * @generated from field: string candidate = 1;
-   */
-  candidate?: string
-  /**
-   * OfferId echoes the SHA-256 of the exact offer SDP bytes of the active
-   * generation. Candidates and end-of-candidates markers whose offer_id does
-   * not match the active generation are rejected before Pion.
-   *
-   * @generated from field: bytes offer_id = 2;
-   */
-  offerId?: Uint8Array
-}
-
-export const WebRtcIce: MessageType<WebRtcIce> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'webrtc.WebRtcIce',
-    fields: [
-      { no: 1, name: 'candidate', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'offer_id', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const IceServerConfig_OauthCredential: MessageType<IceServerConfig_OauthCredential> =
+  /* @__PURE__ */ createMessageType<IceServerConfig_OauthCredential>(
+    'webrtc.IceServerConfig.OauthCredential',
+    () => [
+      [1, 'mac_key', 9],
+      [2, 'access_token', 9],
+    ],
+  )
 
 /**
  * WebRtcSignal is a WebRTC Signaling message sent via the Signaling channel.
@@ -411,52 +222,76 @@ export interface WebRtcSignal {
    * @generated from oneof webrtc.WebRtcSignal.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * RequestOffer requests a new offer from the offerer with the local session seqno.
-         * Incremented when negotiation is needed (something changes about the session).
-         *
-         * @generated from field: uint64 request_offer = 1;
-         */
-        value: bigint
-        case: 'requestOffer'
-      }
-    | {
-        /**
-         * Sdp contains the sdp offer or answer.
-         *
-         * @generated from field: webrtc.WebRtcSdp sdp = 2;
-         */
-        value: WebRtcSdp
-        case: 'sdp'
-      }
-    | {
-        /**
-         * Ice contains an ICE candidate.
-         *
-         * @generated from field: webrtc.WebRtcIce ice = 3;
-         */
-        value: WebRtcIce
-        case: 'ice'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: bigint; case: 'requestOffer' }
+    | { value: WebRtcSdp; case: 'sdp' }
+    | { value: WebRtcIce; case: 'ice' }
 }
 
 export const WebRtcSignal: MessageType<WebRtcSignal> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'webrtc.WebRtcSignal',
-    fields: [
-      {
-        no: 1,
-        name: 'request_offer',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        oneof: 'body',
-      },
-      { no: 2, name: 'sdp', kind: 'message', T: WebRtcSdp, oneof: 'body' },
-      { no: 3, name: 'ice', kind: 'message', T: WebRtcIce, oneof: 'body' },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebRtcSignal>('webrtc.WebRtcSignal', () => [
+    [1, 'request_offer', 4, 0, 0, 'body'],
+    [2, 'sdp', 11, 0, WebRtcSdp.codec, 'body'],
+    [3, 'ice', 11, 0, WebRtcIce.codec, 'body'],
+  ])
+
+/**
+ * WebRtcSdp contains the SDP offer or answer.
+ *
+ * @generated from message webrtc.WebRtcSdp
+ */
+export interface WebRtcSdp {
+  /**
+   * TxSeqno is the sequence number of the transmitting peer.
+   * The receiver should update the local seqno to match.
+   */
+  txSeqno?: bigint
+  /**
+   * SdpType is the string encoded type of the sdp.
+   * Examples: "offer" "answer"
+   */
+  sdpType?: string
+  /**
+   * Sdp contains the WebRTC session description.
+   */
+  sdp?: string
+  /**
+   * OfferId is the SHA-256 of the exact offer SDP bytes this description
+   * belongs to. Offers carry their own digest; answers echo the digest of
+   * the offer they answer. Signals whose offer_id does not match the active
+   * generation are rejected before Pion.
+   */
+  offerId?: Uint8Array
+}
+
+export const WebRtcSdp: MessageType<WebRtcSdp> =
+  /* @__PURE__ */ createMessageType<WebRtcSdp>('webrtc.WebRtcSdp', () => [
+    [1, 'tx_seqno', 4],
+    [2, 'sdp_type', 9],
+    [3, 'sdp', 9],
+    [4, 'offer_id', 12],
+  ])
+
+/**
+ * WebRtcIce contains an ICE candidate.
+ *
+ * @generated from message webrtc.WebRtcIce
+ */
+export interface WebRtcIce {
+  /**
+   * Candidate contains the JSON-encoded ICE candidate.
+   */
+  candidate?: string
+  /**
+   * OfferId echoes the SHA-256 of the exact offer SDP bytes of the active
+   * generation. Candidates and end-of-candidates markers whose offer_id does
+   * not match the active generation are rejected before Pion.
+   */
+  offerId?: Uint8Array
+}
+
+export const WebRtcIce: MessageType<WebRtcIce> =
+  /* @__PURE__ */ createMessageType<WebRtcIce>('webrtc.WebRtcIce', () => [
+    [1, 'candidate', 9],
+    [2, 'offer_id', 12],
+  ])

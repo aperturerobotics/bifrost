@@ -2,37 +2,10 @@
 // @generated from file github.com/s4wave/spacewave/sdk/sql/query-result/query-result.proto (package s4wave.sql.query_result, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ColumnSchema, RowBatch } from '../../../db/sql/sql.pb.js'
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-
-/**
- * QueryResultError captures a SQL execution error.
- *
- * @generated from message s4wave.sql.query_result.QueryResultError
- */
-export interface QueryResultError {
-  /**
-   * Message is the execution error text.
-   *
-   * @generated from field: string message = 1;
-   */
-  message?: string
-}
-
-export const QueryResultError: MessageType<QueryResultError> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.query_result.QueryResultError',
-    fields: [
-      { no: 1, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * QueryResult is a standalone SQL query execution result world object.
@@ -42,90 +15,70 @@ export const QueryResultError: MessageType<QueryResultError> =
 export interface QueryResult {
   /**
    * Columns describes the returned result columns.
-   *
-   * @generated from field: repeated sql.ColumnSchema columns = 1;
    */
   columns?: ColumnSchema[]
   /**
    * RowBatches stores returned rows in column order.
-   *
-   * @generated from field: repeated sql.RowBatch row_batches = 2;
    */
   rowBatches?: RowBatch[]
   /**
    * ExecutedAt is the execution timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp executed_at = 3;
    */
   executedAt?: Date
   /**
    * Truncated indicates rows were omitted by the run row limit.
-   *
-   * @generated from field: bool truncated = 4;
    */
   truncated?: boolean
   /**
    * Error records an execution error when no rows were returned.
-   *
-   * @generated from field: s4wave.sql.query_result.QueryResultError error = 5;
    */
   error?: QueryResultError
   /**
    * SourceQueryObjectKey is the sql/query object that produced this result.
-   *
-   * @generated from field: string source_query_object_key = 6;
    */
   sourceQueryObjectKey?: string
   /**
    * TargetDbObjectKey is the sql/db object used for execution.
-   *
-   * @generated from field: string target_db_object_key = 7;
    */
   targetDbObjectKey?: string
   /**
    * RowCount is the number of persisted rows.
-   *
-   * @generated from field: uint64 row_count = 8;
    */
   rowCount?: bigint
 }
 
 export const QueryResult: MessageType<QueryResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.query_result.QueryResult',
-    fields: [
-      {
-        no: 1,
-        name: 'columns',
-        kind: 'message',
-        T: () => ColumnSchema,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'row_batches',
-        kind: 'message',
-        T: () => RowBatch,
-        repeated: true,
-      },
-      { no: 3, name: 'executed_at', kind: 'message', T: () => Timestamp },
-      { no: 4, name: 'truncated', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'error', kind: 'message', T: QueryResultError },
-      {
-        no: 6,
-        name: 'source_query_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 7,
-        name: 'target_db_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 8, name: 'row_count', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<QueryResult>(
+    's4wave.sql.query_result.QueryResult',
+    () => [
+      [1, 'columns', 11, 1, ColumnSchema.codec],
+      [2, 'row_batches', 11, 1, RowBatch.codec],
+      [3, 'executed_at', 11, 0, Timestamp.codec],
+      [4, 'truncated', 8],
+      [5, 'error', 11, 0, QueryResultError.codec],
+      [6, 'source_query_object_key', 9],
+      [7, 'target_db_object_key', 9],
+      [8, 'row_count', 4],
+    ],
+  )
+
+/**
+ * QueryResultError captures a SQL execution error.
+ *
+ * @generated from message s4wave.sql.query_result.QueryResultError
+ */
+export interface QueryResultError {
+  /**
+   * Message is the execution error text.
+   */
+  message?: string
+}
+
+export const QueryResultError: MessageType<QueryResultError> =
+  /* @__PURE__ */ createMessageType<QueryResultError>(
+    's4wave.sql.query_result.QueryResultError',
+    () => [[1, 'message', 9]],
+  )
 
 /**
  * GetResultGridRequest is a request for the result grid.
@@ -135,9 +88,9 @@ export const QueryResult: MessageType<QueryResult> =
 export interface GetResultGridRequest {}
 
 export const GetResultGridRequest: MessageType<GetResultGridRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetResultGridRequest>(
+  /* @__PURE__ */ createMessageType<GetResultGridRequest>(
     's4wave.sql.query_result.GetResultGridRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -148,87 +101,49 @@ export const GetResultGridRequest: MessageType<GetResultGridRequest> =
 export interface GetResultGridResponse {
   /**
    * Columns describes the returned result columns.
-   *
-   * @generated from field: repeated sql.ColumnSchema columns = 1;
    */
   columns?: ColumnSchema[]
   /**
    * RowBatches stores returned rows in column order.
-   *
-   * @generated from field: repeated sql.RowBatch row_batches = 2;
    */
   rowBatches?: RowBatch[]
   /**
    * ExecutedAt is the execution timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp executed_at = 3;
    */
   executedAt?: Date
   /**
    * Truncated indicates rows were omitted by the run row limit.
-   *
-   * @generated from field: bool truncated = 4;
    */
   truncated?: boolean
   /**
    * Error records an execution error when no rows were returned.
-   *
-   * @generated from field: s4wave.sql.query_result.QueryResultError error = 5;
    */
   error?: QueryResultError
   /**
    * SourceQueryObjectKey is the sql/query object that produced this result.
-   *
-   * @generated from field: string source_query_object_key = 6;
    */
   sourceQueryObjectKey?: string
   /**
    * TargetDbObjectKey is the sql/db object used for execution.
-   *
-   * @generated from field: string target_db_object_key = 7;
    */
   targetDbObjectKey?: string
   /**
    * RowCount is the number of persisted rows.
-   *
-   * @generated from field: uint64 row_count = 8;
    */
   rowCount?: bigint
 }
 
 export const GetResultGridResponse: MessageType<GetResultGridResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.query_result.GetResultGridResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'columns',
-        kind: 'message',
-        T: () => ColumnSchema,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'row_batches',
-        kind: 'message',
-        T: () => RowBatch,
-        repeated: true,
-      },
-      { no: 3, name: 'executed_at', kind: 'message', T: () => Timestamp },
-      { no: 4, name: 'truncated', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'error', kind: 'message', T: QueryResultError },
-      {
-        no: 6,
-        name: 'source_query_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 7,
-        name: 'target_db_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 8, name: 'row_count', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetResultGridResponse>(
+    's4wave.sql.query_result.GetResultGridResponse',
+    () => [
+      [1, 'columns', 11, 1, ColumnSchema.codec],
+      [2, 'row_batches', 11, 1, RowBatch.codec],
+      [3, 'executed_at', 11, 0, Timestamp.codec],
+      [4, 'truncated', 8],
+      [5, 'error', 11, 0, QueryResultError.codec],
+      [6, 'source_query_object_key', 9],
+      [7, 'target_db_object_key', 9],
+      [8, 'row_count', 4],
+    ],
+  )

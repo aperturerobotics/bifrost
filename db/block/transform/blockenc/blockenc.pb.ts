@@ -6,8 +6,6 @@ import type { BlockEnc } from '../../../util/blockenc/blockenc.pb.js'
 import { BlockEnc_Enum } from '../../../util/blockenc/blockenc.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the block encrypt transform.
@@ -17,22 +15,16 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BlockEnc is the block encrypt method to use.
-   *
-   * @generated from field: blockenc.BlockEnc block_enc = 1;
    */
   blockEnc?: BlockEnc
   /**
    * Key is the key to use.
-   *
-   * @generated from field: bytes key = 2;
    */
   key?: Uint8Array
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'transform.blockenc.Config',
-  fields: [
-    { no: 1, name: 'block_enc', kind: 'enum', T: BlockEnc_Enum },
-    { no: 2, name: 'key', kind: 'scalar', T: ScalarType.BYTES },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('transform.blockenc.Config', () => [
+    [1, 'block_enc', 14, 0, BlockEnc_Enum],
+    [2, 'key', 12],
+  ])

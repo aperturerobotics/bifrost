@@ -7,8 +7,6 @@ import { Config as Config$2 } from '../controller/controller.pb.js'
 import { Config as Config$3 } from '../../store/kvtx/kvtx.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the s4db volume controller config.
@@ -18,54 +16,38 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * Path is the database file, created when absent.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
   /**
    * KvKeyOpts are key/value key constants.
-   *
-   * @generated from field: store.kvkey.Config kv_key_opts = 2;
    */
   kvKeyOpts?: Config$1
   /**
    * NoGenerateKey disables generating a peer private key when the volume has
    * none.
-   *
-   * @generated from field: bool no_generate_key = 3;
    */
   noGenerateKey?: boolean
   /**
    * NoWriteKey disables writing a generated peer private key to storage, so
    * the peer identity is ephemeral until a key is stored.
-   *
-   * @generated from field: bool no_write_key = 4;
    */
   noWriteKey?: boolean
   /**
    * Verbose enables verbose logging.
-   *
-   * @generated from field: bool verbose = 5;
    */
   verbose?: boolean
   /**
    * VolumeConfig is the volume controller config.
-   *
-   * @generated from field: volume.controller.Config volume_config = 6;
    */
   volumeConfig?: Config$2
   /**
    * StoreConfig is the store configuration for kvtx.
-   *
-   * @generated from field: store.kvtx.Config store_config = 7;
    */
   storeConfig?: Config$3
   /**
    * CacheBytes bounds the memory of decoded index pages. Zero selects the
    * s4db default. A cache that holds the index spares a checkpoint and a
    * lookup their page reads.
-   *
-   * @generated from field: int64 cache_bytes = 8;
    */
   cacheBytes?: bigint
   /**
@@ -73,37 +55,26 @@ export interface Config {
    * Zero selects the s4db default. A larger overlay folds more commits into
    * each rewrite of the index pages they touch, at the cost of overlay memory
    * and log replay at open.
-   *
-   * @generated from field: int64 checkpoint_max_bytes = 9;
    */
   checkpointMaxBytes?: bigint
   /**
    * SingleProcess skips watching the file for other processes' commits and
    * holds its writer lock from open to close, so checkpoints write without
    * waiting for writers. Set it only when no other process opens the file.
-   *
-   * @generated from field: bool single_process = 10;
    */
   singleProcess?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'volume.s4db.Config',
-  fields: [
-    { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'kv_key_opts', kind: 'message', T: () => Config$1 },
-    { no: 3, name: 'no_generate_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'no_write_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 6, name: 'volume_config', kind: 'message', T: () => Config$2 },
-    { no: 7, name: 'store_config', kind: 'message', T: () => Config$3 },
-    { no: 8, name: 'cache_bytes', kind: 'scalar', T: ScalarType.INT64 },
-    {
-      no: 9,
-      name: 'checkpoint_max_bytes',
-      kind: 'scalar',
-      T: ScalarType.INT64,
-    },
-    { no: 10, name: 'single_process', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('volume.s4db.Config', () => [
+    [1, 'path', 9],
+    [2, 'kv_key_opts', 11, 0, Config$1.codec],
+    [3, 'no_generate_key', 8],
+    [4, 'no_write_key', 8],
+    [5, 'verbose', 8],
+    [6, 'volume_config', 11, 0, Config$2.codec],
+    [7, 'store_config', 11, 0, Config$3.codec],
+    [8, 'cache_bytes', 3],
+    [9, 'checkpoint_max_bytes', 3],
+    [10, 'single_process', 8],
+  ])

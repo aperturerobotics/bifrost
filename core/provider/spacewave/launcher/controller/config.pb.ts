@@ -2,46 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/core/provider/spacewave/launcher/controller/config.proto (package spacewave.launcher.controller, syntax proto3)
 /* eslint-disable */
 
+import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
-
-/**
- * HttpEndpoint is an http endpoint.
- *
- * @generated from message spacewave.launcher.controller.HttpEndpoint
- */
-export interface HttpEndpoint {
-  /**
-   * Url is the url to the endpoint.
-   *
-   * @generated from field: string url = 1;
-   */
-  url?: string
-  /**
-   * Headers are optional headers to add to the request.
-   *
-   * @generated from field: map<string, string> headers = 2;
-   */
-  headers?: { [key: string]: string }
-}
-
-export const HttpEndpoint: MessageType<HttpEndpoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.controller.HttpEndpoint',
-    fields: [
-      { no: 1, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'headers',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Config configures the launcher controller.
@@ -52,139 +15,115 @@ export interface Config {
   /**
    * ObjectStoreId is the object store to use for state.
    * Defaults to "spacewave/launcher"
-   *
-   * @generated from field: string object_store_id = 1;
    */
   objectStoreId?: string
   /**
    * ObjectStoreKey is the object store key to store the dist conf.
    * Defaults to "dist-conf"
-   *
-   * @generated from field: string object_store_key = 2;
    */
   objectStoreKey?: string
   /**
    * VolumeId is the volume id to use for storage.
    * Defaults to the plugin host volume.
-   *
-   * @generated from field: string volume_id = 3;
    */
   volumeId?: string
   /**
    * ProjectId is the project identifier that must match the dist config project id.
-   *
-   * @generated from field: string project_id = 4;
    */
   projectId?: string
   /**
    * DistPeerIds are the peer IDs we accept for distribution signatures.
-   *
-   * @generated from field: repeated string dist_peer_ids = 5;
    */
   distPeerIds?: string[]
   /**
    * Endpoints is the list of HTTPs endpoints to check for updates.
-   *
-   * @generated from field: repeated spacewave.launcher.controller.HttpEndpoint endpoints = 6;
    */
   endpoints?: HttpEndpoint[]
   /**
    * RefetchDur is the frequency to re-fetch the config after success.
    * If empty or zero disables refetch.
    * Staggers by +/- 10%
-   *
-   * @generated from field: string refetch_dur = 7;
    */
   refetchDur?: string
   /**
    * EndpointsBackoff is the backoff config for calling the endpoints.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff endpoints_backoff = 8;
    */
   endpointsBackoff?: Backoff
   /**
    * InitDistConfig is the initial distribution configuration packedmsg.
    * If unset, uses a blank config.
-   *
-   * @generated from field: string init_dist_config = 9;
    */
   initDistConfig?: string
   /**
    * DisableEndpointFetch disables all endpoint DistConfig fetches.
    * Use this only for embedded/offline builds that must run from init_dist_config.
-   *
-   * @generated from field: bool disable_endpoint_fetch = 10;
    */
   disableEndpointFetch?: boolean
   /**
    * EntrypointManifestId selects the desktop manifest to stage.
    * Empty preserves the Spacewave default, "spacewave-dist".
-   *
-   * @generated from field: string entrypoint_manifest_id = 11;
    */
   entrypointManifestId?: string
   /**
    * CliManifestId selects the companion CLI manifest to stage.
    * Empty preserves the Spacewave default, "spacewave-cli".
-   *
-   * @generated from field: string cli_manifest_id = 12;
    */
   cliManifestId?: string
   /**
    * DisableCliUpdate allows applications distributed without a companion CLI.
    * When true, no CLI manifest, binary, or managed CLI sidecar is required.
-   *
-   * @generated from field: bool disable_cli_update = 13;
    */
   disableCliUpdate?: boolean
   /**
    * ChannelKey restricts signed configs to the channel embedded by the producer.
    * Empty allows any channel selected by a trusted signer.
-   *
-   * @generated from field: string channel_key = 14;
    */
   channelKey?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'spacewave.launcher.controller.Config',
-  fields: [
-    { no: 1, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'object_store_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 5,
-      name: 'dist_peer_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 6,
-      name: 'endpoints',
-      kind: 'message',
-      T: HttpEndpoint,
-      repeated: true,
-    },
-    { no: 7, name: 'refetch_dur', kind: 'scalar', T: ScalarType.STRING },
-    { no: 8, name: 'endpoints_backoff', kind: 'message', T: () => Backoff },
-    { no: 9, name: 'init_dist_config', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 10,
-      name: 'disable_endpoint_fetch',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    {
-      no: 11,
-      name: 'entrypoint_manifest_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 12, name: 'cli_manifest_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 13, name: 'disable_cli_update', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 14, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'spacewave.launcher.controller.Config',
+    () => [
+      [1, 'object_store_id', 9],
+      [2, 'object_store_key', 9],
+      [3, 'volume_id', 9],
+      [4, 'project_id', 9],
+      [5, 'dist_peer_ids', 9, 1],
+      [6, 'endpoints', 11, 1, HttpEndpoint.codec],
+      [7, 'refetch_dur', 9],
+      [8, 'endpoints_backoff', 11, 0, Backoff.codec],
+      [9, 'init_dist_config', 9],
+      [10, 'disable_endpoint_fetch', 8],
+      [11, 'entrypoint_manifest_id', 9],
+      [12, 'cli_manifest_id', 9],
+      [13, 'disable_cli_update', 8],
+      [14, 'channel_key', 9],
+    ],
+  )
+
+/**
+ * HttpEndpoint is an http endpoint.
+ *
+ * @generated from message spacewave.launcher.controller.HttpEndpoint
+ */
+export interface HttpEndpoint {
+  /**
+   * Url is the url to the endpoint.
+   */
+  url?: string
+  /**
+   * Headers are optional headers to add to the request.
+   */
+  headers?: { [key: string]: string }
+}
+
+export const HttpEndpoint: MessageType<HttpEndpoint> =
+  /* @__PURE__ */ createMessageType<HttpEndpoint>(
+    'spacewave.launcher.controller.HttpEndpoint',
+    () => [
+      [1, 'url', 9],
+      [2, 'headers', 9, 584],
+    ],
+  )

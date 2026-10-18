@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * CreateWorldRequest is the request type for CreateWorld.
@@ -18,19 +13,15 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface CreateWorldRequest {
   /**
    * EngineId is the ID for the world engine (optional, will be generated if empty).
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
 }
 
 export const CreateWorldRequest: MessageType<CreateWorldRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.testbed.CreateWorldRequest',
-    fields: [
-      { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWorldRequest>(
+    's4wave.testbed.CreateWorldRequest',
+    () => [[1, 'engine_id', 9]],
+  )
 
 /**
  * CreateWorldResponse is the response type for CreateWorld.
@@ -40,19 +31,15 @@ export const CreateWorldRequest: MessageType<CreateWorldRequest> =
 export interface CreateWorldResponse {
   /**
    * ResourceId is the ID of the created engine resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const CreateWorldResponse: MessageType<CreateWorldResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.testbed.CreateWorldResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWorldResponse>(
+    's4wave.testbed.CreateWorldResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * MarkTestResultRequest is the request type for MarkTestResult.
@@ -62,26 +49,22 @@ export const CreateWorldResponse: MessageType<CreateWorldResponse> =
 export interface MarkTestResultRequest {
   /**
    * Success indicates if the test passed.
-   *
-   * @generated from field: bool success = 1;
    */
   success?: boolean
   /**
    * ErrorMessage contains the error message if the test failed.
-   *
-   * @generated from field: string error_message = 2;
    */
   errorMessage?: string
 }
 
 export const MarkTestResultRequest: MessageType<MarkTestResultRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.testbed.MarkTestResultRequest',
-    fields: [
-      { no: 1, name: 'success', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MarkTestResultRequest>(
+    's4wave.testbed.MarkTestResultRequest',
+    () => [
+      [1, 'success', 8],
+      [2, 'error_message', 9],
+    ],
+  )
 
 /**
  * MarkTestResultResponse is the response type for MarkTestResult.
@@ -91,9 +74,9 @@ export const MarkTestResultRequest: MessageType<MarkTestResultRequest> =
 export interface MarkTestResultResponse {}
 
 export const MarkTestResultResponse: MessageType<MarkTestResultResponse> =
-  /* @__PURE__ */ createEmptyMessageType<MarkTestResultResponse>(
+  /* @__PURE__ */ createMessageType<MarkTestResultResponse>(
     's4wave.testbed.MarkTestResultResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -105,19 +88,15 @@ export interface AccessStateAtomRequest {
   /**
    * StoreId is the identifier for the state store.
    * If empty, uses the default "ui-state" store.
-   *
-   * @generated from field: string store_id = 1;
    */
   storeId?: string
 }
 
 export const AccessStateAtomRequest: MessageType<AccessStateAtomRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.testbed.AccessStateAtomRequest',
-    fields: [
-      { no: 1, name: 'store_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessStateAtomRequest>(
+    's4wave.testbed.AccessStateAtomRequest',
+    () => [[1, 'store_id', 9]],
+  )
 
 /**
  * AccessStateAtomResponse is the response for AccessStateAtom.
@@ -127,16 +106,12 @@ export const AccessStateAtomRequest: MessageType<AccessStateAtomRequest> =
 export interface AccessStateAtomResponse {
   /**
    * ResourceId is the ID of the state atom resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessStateAtomResponse: MessageType<AccessStateAtomResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.testbed.AccessStateAtomResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessStateAtomResponse>(
+    's4wave.testbed.AccessStateAtomResponse',
+    () => [[1, 'resource_id', 13]],
+  )

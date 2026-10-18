@@ -5,7 +5,6 @@
 import { WebViewHandlersConfig } from '../handler.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the web view handler controller.
@@ -15,20 +14,12 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * Handlers configures the set of web view handlers.
-   *
-   * @generated from field: web.view.handler.WebViewHandlersConfig handlers = 1;
    */
   handlers?: WebViewHandlersConfig
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'web.view.handler.controller.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'handlers',
-      kind: 'message',
-      T: () => WebViewHandlersConfig,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'web.view.handler.controller.Config',
+    () => [[1, 'handlers', 11, 0, WebViewHandlersConfig.codec]],
+  )

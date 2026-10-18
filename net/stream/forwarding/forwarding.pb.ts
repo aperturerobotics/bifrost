@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the forwarding controller.
@@ -16,30 +14,22 @@ export interface Config {
   /**
    * PeerId is the peer ID to listen for incoming streams.
    * Can be empty to accept any.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * ProtocolId is the protocol ID to filter incoming streams.
    * Cannot be empty.
-   *
-   * @generated from field: string protocol_id = 2;
    */
   protocolId?: string
   /**
    * TargetMultiaddr is the target multiaddress to dial.
-   *
-   * @generated from field: string target_multiaddr = 3;
    */
   targetMultiaddr?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'stream.forwarding.Config',
-  fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'target_multiaddr', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('stream.forwarding.Config', () => [
+    [1, 'peer_id', 9],
+    [2, 'protocol_id', 9],
+    [3, 'target_multiaddr', 9],
+  ])

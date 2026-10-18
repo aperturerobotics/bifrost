@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * UpdateTarget identifies the installed component selected for replacement.
@@ -16,30 +14,27 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 export enum UpdateTarget {
   /**
    * UPDATE_TARGET_UNKNOWN is invalid for an apply request.
-   *
-   * @generated from enum value: UPDATE_TARGET_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * UPDATE_TARGET_APP selects the installed desktop application.
-   *
-   * @generated from enum value: UPDATE_TARGET_APP = 1;
    */
   APP = 1,
 
   /**
    * UPDATE_TARGET_DAEMON selects the executing shared daemon.
-   *
-   * @generated from enum value: UPDATE_TARGET_DAEMON = 2;
    */
   DAEMON = 2,
 }
 
 export const UpdateTarget_Enum = /* @__PURE__ */ createEnumType(
   'bldr.desktop.update.UpdateTarget',
-  UpdateTarget,
-  'UPDATE_TARGET_',
+  [
+    [0, 'UPDATE_TARGET_UNKNOWN'],
+    [1, 'UPDATE_TARGET_APP'],
+    [2, 'UPDATE_TARGET_DAEMON'],
+  ],
 )
 
 /**
@@ -50,19 +45,15 @@ export const UpdateTarget_Enum = /* @__PURE__ */ createEnumType(
 export interface ApplyUpdateRequest {
   /**
    * Target identifies the installed component to update.
-   *
-   * @generated from field: bldr.desktop.update.UpdateTarget target = 1;
    */
   target?: UpdateTarget
 }
 
 export const ApplyUpdateRequest: MessageType<ApplyUpdateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.update.ApplyUpdateRequest',
-    fields: [
-      { no: 1, name: 'target', kind: 'enum', T: UpdateTarget_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyUpdateRequest>(
+    'bldr.desktop.update.ApplyUpdateRequest',
+    () => [[1, 'target', 14, 0, UpdateTarget_Enum]],
+  )
 
 /**
  * ApplyUpdateResponse hands a verified app artifact to its process owner.
@@ -72,16 +63,12 @@ export const ApplyUpdateRequest: MessageType<ApplyUpdateRequest> =
 export interface ApplyUpdateResponse {
   /**
    * StagedPath is the verified desktop artifact; Electron owns its replacement.
-   *
-   * @generated from field: string staged_path = 1;
    */
   stagedPath?: string
 }
 
 export const ApplyUpdateResponse: MessageType<ApplyUpdateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.update.ApplyUpdateResponse',
-    fields: [
-      { no: 1, name: 'staged_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyUpdateResponse>(
+    'bldr.desktop.update.ApplyUpdateResponse',
+    () => [[1, 'staged_path', 9]],
+  )

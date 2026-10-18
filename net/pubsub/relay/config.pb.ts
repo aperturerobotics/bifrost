@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the pubsub relay configuration.
@@ -16,28 +14,16 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * PeerId is the peer ID to look up and use private key for.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * TopicIds are the list of topic IDs to subscribe to.
-   *
-   * @generated from field: repeated string topic_ids = 2;
    */
   topicIds?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'pubsub.relay.Config',
-  fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'topic_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('pubsub.relay.Config', () => [
+    [1, 'peer_id', 9],
+    [2, 'topic_ids', 9, 1],
+  ])

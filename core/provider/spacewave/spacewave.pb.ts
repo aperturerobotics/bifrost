@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * SyncMode is the sync mode for block stores.
@@ -16,22 +14,21 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum SyncMode {
   /**
    * SyncMode_CACHE only fetches blocks on demand.
-   *
-   * @generated from enum value: SyncMode_CACHE = 0;
    */
   SyncMode_CACHE = 0,
 
   /**
    * SyncMode_MIRROR downloads all blocks from new packfiles.
-   *
-   * @generated from enum value: SyncMode_MIRROR = 1;
    */
   SyncMode_MIRROR = 1,
 }
 
 export const SyncMode_Enum = /* @__PURE__ */ createEnumType(
   'provider.spacewave.SyncMode',
-  SyncMode,
+  [
+    [0, 'SyncMode_CACHE'],
+    [1, 'SyncMode_MIRROR'],
+  ],
 )
 
 /**
@@ -42,46 +39,33 @@ export const SyncMode_Enum = /* @__PURE__ */ createEnumType(
 export interface PendingUploadState {
   /**
    * Count is the number of pending block records.
-   *
-   * @generated from field: uint64 count = 1;
    */
   count?: bigint
   /**
    * SizeBytes is the total stored size of pending blocks.
-   *
-   * @generated from field: int64 size_bytes = 2;
    */
   sizeBytes?: bigint
   /**
    * LastSequence is the highest assigned queue position, retained while empty.
-   *
-   * @generated from field: uint64 last_sequence = 3;
    */
   lastSequence?: bigint
   /**
    * PendingSinceNanos is the first pending change's Unix time in nanoseconds.
    * Zero indicates an empty queue. Later writes never extend this deadline.
-   *
-   * @generated from field: int64 pending_since_nanos = 4;
    */
   pendingSinceNanos?: bigint
 }
 
 export const PendingUploadState: MessageType<PendingUploadState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.PendingUploadState',
-    fields: [
-      { no: 1, name: 'count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'size_bytes', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 3, name: 'last_sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 4,
-        name: 'pending_since_nanos',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PendingUploadState>(
+    'provider.spacewave.PendingUploadState',
+    () => [
+      [1, 'count', 4],
+      [2, 'size_bytes', 3],
+      [3, 'last_sequence', 4],
+      [4, 'pending_since_nanos', 3],
+    ],
+  )
 
 /**
  * PendingUploadBlock is stored under dirty-order/<big-endian uint64 sequence>.
@@ -92,33 +76,27 @@ export const PendingUploadState: MessageType<PendingUploadState> =
 export interface PendingUploadBlock {
   /**
    * Sequence is this insertion's immutable queue position.
-   *
-   * @generated from field: uint64 sequence = 1;
    */
   sequence?: bigint
   /**
    * SizeBytes is the block's stored size, used for pack selection and accounting.
-   *
-   * @generated from field: int64 size_bytes = 2;
    */
   sizeBytes?: bigint
   /**
    * Hash is the block's base58 identity, also indexed for duplicate marking.
-   *
-   * @generated from field: string hash = 3;
    */
   hash?: string
 }
 
 export const PendingUploadBlock: MessageType<PendingUploadBlock> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.PendingUploadBlock',
-    fields: [
-      { no: 1, name: 'sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'size_bytes', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 3, name: 'hash', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PendingUploadBlock>(
+    'provider.spacewave.PendingUploadBlock',
+    () => [
+      [1, 'sequence', 4],
+      [2, 'size_bytes', 3],
+      [3, 'hash', 9],
+    ],
+  )
 
 /**
  * ReclaimState is stored under sync/reclaim. It records the last storage
@@ -129,26 +107,71 @@ export const PendingUploadBlock: MessageType<PendingUploadBlock> =
 export interface ReclaimState {
   /**
    * CatalogBytes is the size of the catalog packs the last pass judged.
-   *
-   * @generated from field: uint64 catalog_bytes = 1;
    */
   catalogBytes?: bigint
   /**
    * PassedAtNanos is the last pass's Unix time in nanoseconds.
-   *
-   * @generated from field: int64 passed_at_nanos = 2;
    */
   passedAtNanos?: bigint
 }
 
 export const ReclaimState: MessageType<ReclaimState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.ReclaimState',
-    fields: [
-      { no: 1, name: 'catalog_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'passed_at_nanos', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReclaimState>(
+    'provider.spacewave.ReclaimState',
+    () => [
+      [1, 'catalog_bytes', 4],
+      [2, 'passed_at_nanos', 3],
+    ],
+  )
+
+/**
+ * Config configures the Spacewave cloud provider controller.
+ *
+ * @generated from message provider.spacewave.Config
+ */
+export interface Config {
+  /**
+   * ProviderId is the provider identifier.
+   */
+  providerId?: string
+  /**
+   * Endpoint is the Spacewave cloud API endpoint.
+   */
+  endpoint?: string
+  /**
+   * PeerId is the peer ID constraint for the entity.
+   */
+  peerId?: string
+  /**
+   * Sync is the sync configuration.
+   */
+  sync?: SyncConfig
+  /**
+   * AccountEndpoint is the account service endpoint (e.g. https://account.spacewave.app).
+   * SSO entry, OAuth callback, and related auth flows are served from this endpoint.
+   */
+  accountEndpoint?: string
+  /**
+   * PublicBaseUrl is the public Spacewave app URL (e.g. https://spacewave.app).
+   * Browser-facing recovery and checkout links should use this base URL.
+   */
+  publicBaseUrl?: string
+  /**
+   * SigningEnvPrefix is the request-signing environment prefix expected by the cloud.
+   */
+  signingEnvPrefix?: string
+}
+
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('provider.spacewave.Config', () => [
+    [1, 'provider_id', 9],
+    [2, 'endpoint', 9],
+    [3, 'peer_id', 9],
+    [4, 'sync', 11, 0, SyncConfig.codec],
+    [7, 'account_endpoint', 9],
+    [8, 'public_base_url', 9],
+    [9, 'signing_env_prefix', 9],
+  ])
 
 /**
  * SyncConfig configures block store synchronization behavior.
@@ -159,122 +182,37 @@ export interface SyncConfig {
   /**
    * CheckpointIntervalSecs bounds the delay from the first pending cloud change.
    * Later changes do not reset this interval. Zero uses thirty seconds.
-   *
-   * @generated from field: uint32 checkpoint_interval_secs = 1;
    */
   checkpointIntervalSecs?: number
   /**
    * SizeThresholdBytes is the dirty size threshold in bytes before flushing.
    * Zero uses 48 MiB.
-   *
-   * @generated from field: uint32 size_threshold_bytes = 2;
    */
   sizeThresholdBytes?: number
   /**
    * AutoSync enables automatic sync on block writes.
    * Default: true.
-   *
-   * @generated from field: bool auto_sync = 3;
    */
   autoSync?: boolean
   /**
    * SyncMode is the sync mode.
-   *
-   * @generated from field: provider.spacewave.SyncMode sync_mode = 4;
    */
   syncMode?: SyncMode
   /**
    * DisableCompaction stops merging small cloud packs into one replacement
    * pack after the dirty queue drains.
-   *
-   * @generated from field: bool disable_compaction = 5;
    */
   disableCompaction?: boolean
 }
 
 export const SyncConfig: MessageType<SyncConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.SyncConfig',
-    fields: [
-      {
-        no: 1,
-        name: 'checkpoint_interval_secs',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 2,
-        name: 'size_threshold_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 3, name: 'auto_sync', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'sync_mode', kind: 'enum', T: SyncMode_Enum },
-      { no: 5, name: 'disable_compaction', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Config configures the Spacewave cloud provider controller.
- *
- * @generated from message provider.spacewave.Config
- */
-export interface Config {
-  /**
-   * ProviderId is the provider identifier.
-   *
-   * @generated from field: string provider_id = 1;
-   */
-  providerId?: string
-  /**
-   * Endpoint is the Spacewave cloud API endpoint.
-   *
-   * @generated from field: string endpoint = 2;
-   */
-  endpoint?: string
-  /**
-   * PeerId is the peer ID constraint for the entity.
-   *
-   * @generated from field: string peer_id = 3;
-   */
-  peerId?: string
-  /**
-   * Sync is the sync configuration.
-   *
-   * @generated from field: provider.spacewave.SyncConfig sync = 4;
-   */
-  sync?: SyncConfig
-  /**
-   * AccountEndpoint is the account service endpoint (e.g. https://account.spacewave.app).
-   * SSO entry, OAuth callback, and related auth flows are served from this endpoint.
-   *
-   * @generated from field: string account_endpoint = 7;
-   */
-  accountEndpoint?: string
-  /**
-   * PublicBaseUrl is the public Spacewave app URL (e.g. https://spacewave.app).
-   * Browser-facing recovery and checkout links should use this base URL.
-   *
-   * @generated from field: string public_base_url = 8;
-   */
-  publicBaseUrl?: string
-  /**
-   * SigningEnvPrefix is the request-signing environment prefix expected by the cloud.
-   *
-   * @generated from field: string signing_env_prefix = 9;
-   */
-  signingEnvPrefix?: string
-}
-
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'provider.spacewave.Config',
-  fields: [
-    { no: 1, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'endpoint', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'sync', kind: 'message', T: SyncConfig },
-    { no: 7, name: 'account_endpoint', kind: 'scalar', T: ScalarType.STRING },
-    { no: 8, name: 'public_base_url', kind: 'scalar', T: ScalarType.STRING },
-    { no: 9, name: 'signing_env_prefix', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+  /* @__PURE__ */ createMessageType<SyncConfig>(
+    'provider.spacewave.SyncConfig',
+    () => [
+      [1, 'checkpoint_interval_secs', 13],
+      [2, 'size_threshold_bytes', 13],
+      [3, 'auto_sync', 8],
+      [4, 'sync_mode', 14, 0, SyncMode_Enum],
+      [5, 'disable_compaction', 8],
+    ],
+  )

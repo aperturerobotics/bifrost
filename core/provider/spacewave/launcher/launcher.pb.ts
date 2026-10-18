@@ -5,15 +5,10 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import type { UpdateTarget } from '../../../../bldr/desktop/update/update.pb.js'
 import { UpdateTarget_Enum } from '../../../../bldr/desktop/update/update.pb.js'
-import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
 /**
  * DistConfigSource is where the launcher found its selected DistConfig.
@@ -23,60 +18,53 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export enum DistConfigSource {
   /**
    * DIST_CONFIG_SOURCE_UNKNOWN means the launcher has not selected a config.
-   *
-   * @generated from enum value: DIST_CONFIG_SOURCE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * DIST_CONFIG_SOURCE_NONE means no DistConfig was available at startup.
-   *
-   * @generated from enum value: DIST_CONFIG_SOURCE_NONE = 1;
    */
   NONE = 1,
 
   /**
    * DIST_CONFIG_SOURCE_STORED means the config came from launcher storage.
-   *
-   * @generated from enum value: DIST_CONFIG_SOURCE_STORED = 2;
    */
   STORED = 2,
 
   /**
    * DIST_CONFIG_SOURCE_PACKAGE means the config came from the app package.
-   *
-   * @generated from enum value: DIST_CONFIG_SOURCE_PACKAGE = 3;
    */
   PACKAGE = 3,
 
   /**
    * DIST_CONFIG_SOURCE_EMBEDDED_DEFAULT means the config came from the
    * default built into the launcher.
-   *
-   * @generated from enum value: DIST_CONFIG_SOURCE_EMBEDDED_DEFAULT = 4;
    */
   EMBEDDED_DEFAULT = 4,
 
   /**
    * DIST_CONFIG_SOURCE_ENDPOINT means the config came from a dist endpoint.
-   *
-   * @generated from enum value: DIST_CONFIG_SOURCE_ENDPOINT = 5;
    */
   ENDPOINT = 5,
 
   /**
    * DIST_CONFIG_SOURCE_PUSH means the config was pushed to the launcher,
    * such as by a linked peer.
-   *
-   * @generated from enum value: DIST_CONFIG_SOURCE_PUSH = 6;
    */
   PUSH = 6,
 }
 
 export const DistConfigSource_Enum = /* @__PURE__ */ createEnumType(
   'spacewave.launcher.DistConfigSource',
-  DistConfigSource,
-  'DIST_CONFIG_SOURCE_',
+  [
+    [0, 'DIST_CONFIG_SOURCE_UNKNOWN'],
+    [1, 'DIST_CONFIG_SOURCE_NONE'],
+    [2, 'DIST_CONFIG_SOURCE_STORED'],
+    [3, 'DIST_CONFIG_SOURCE_PACKAGE'],
+    [4, 'DIST_CONFIG_SOURCE_EMBEDDED_DEFAULT'],
+    [5, 'DIST_CONFIG_SOURCE_ENDPOINT'],
+    [6, 'DIST_CONFIG_SOURCE_PUSH'],
+  ],
 )
 
 /**
@@ -88,78 +76,69 @@ export const DistConfigSource_Enum = /* @__PURE__ */ createEnumType(
 export enum ReleaseMetadataOutcome {
   /**
    * RELEASE_METADATA_OUTCOME_UNKNOWN means resolution has not reported.
-   *
-   * @generated from enum value: RELEASE_METADATA_OUTCOME_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * RELEASE_METADATA_OUTCOME_PENDING means the launcher started and has not
    * resolved release metadata yet.
-   *
-   * @generated from enum value: RELEASE_METADATA_OUTCOME_PENDING = 1;
    */
   PENDING = 1,
 
   /**
    * RELEASE_METADATA_OUTCOME_IDLE means no DistConfig is selected.
-   *
-   * @generated from enum value: RELEASE_METADATA_OUTCOME_IDLE = 2;
    */
   IDLE = 2,
 
   /**
    * RELEASE_METADATA_OUTCOME_RESOLVING means the launcher is reading the
    * channel from the Release World.
-   *
-   * @generated from enum value: RELEASE_METADATA_OUTCOME_RESOLVING = 3;
    */
   RESOLVING = 3,
 
   /**
    * RELEASE_METADATA_OUTCOME_REFRESHING means the Release World head is behind
    * the selector and the launcher is refreshing it.
-   *
-   * @generated from enum value: RELEASE_METADATA_OUTCOME_REFRESHING = 4;
    */
   REFRESHING = 4,
 
   /**
    * RELEASE_METADATA_OUTCOME_CURRENT means the running entrypoint matches the
    * selected release.
-   *
-   * @generated from enum value: RELEASE_METADATA_OUTCOME_CURRENT = 5;
    */
   CURRENT = 5,
 
   /**
    * RELEASE_METADATA_OUTCOME_DOWNLOADING means the selected entrypoint is
    * being downloaded.
-   *
-   * @generated from enum value: RELEASE_METADATA_OUTCOME_DOWNLOADING = 6;
    */
   DOWNLOADING = 6,
 
   /**
    * RELEASE_METADATA_OUTCOME_STAGED means the selected entrypoint is staged
    * for install.
-   *
-   * @generated from enum value: RELEASE_METADATA_OUTCOME_STAGED = 7;
    */
   STAGED = 7,
 
   /**
    * RELEASE_METADATA_OUTCOME_ERROR means resolution failed and will retry.
-   *
-   * @generated from enum value: RELEASE_METADATA_OUTCOME_ERROR = 8;
    */
   ERROR = 8,
 }
 
 export const ReleaseMetadataOutcome_Enum = /* @__PURE__ */ createEnumType(
   'spacewave.launcher.ReleaseMetadataOutcome',
-  ReleaseMetadataOutcome,
-  'RELEASE_METADATA_OUTCOME_',
+  [
+    [0, 'RELEASE_METADATA_OUTCOME_UNKNOWN'],
+    [1, 'RELEASE_METADATA_OUTCOME_PENDING'],
+    [2, 'RELEASE_METADATA_OUTCOME_IDLE'],
+    [3, 'RELEASE_METADATA_OUTCOME_RESOLVING'],
+    [4, 'RELEASE_METADATA_OUTCOME_REFRESHING'],
+    [5, 'RELEASE_METADATA_OUTCOME_CURRENT'],
+    [6, 'RELEASE_METADATA_OUTCOME_DOWNLOADING'],
+    [7, 'RELEASE_METADATA_OUTCOME_STAGED'],
+    [8, 'RELEASE_METADATA_OUTCOME_ERROR'],
+  ],
 )
 
 /**
@@ -170,44 +149,39 @@ export const ReleaseMetadataOutcome_Enum = /* @__PURE__ */ createEnumType(
 export enum UpdatePhase {
   /**
    * UPDATE_PHASE_UNKNOWN means no update is in progress.
-   *
-   * @generated from enum value: UPDATE_PHASE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * UPDATE_PHASE_DOWNLOADING means the update is being downloaded.
-   *
-   * @generated from enum value: UPDATE_PHASE_DOWNLOADING = 1;
    */
   DOWNLOADING = 1,
 
   /**
    * UPDATE_PHASE_STAGED means the update is downloaded and ready to install.
-   *
-   * @generated from enum value: UPDATE_PHASE_STAGED = 2;
    */
   STAGED = 2,
 
   /**
    * UPDATE_PHASE_APPLYING means the update is being applied.
-   *
-   * @generated from enum value: UPDATE_PHASE_APPLYING = 3;
    */
   APPLYING = 3,
 
   /**
    * UPDATE_PHASE_ERROR means the update failed.
-   *
-   * @generated from enum value: UPDATE_PHASE_ERROR = 4;
    */
   ERROR = 4,
 }
 
 export const UpdatePhase_Enum = /* @__PURE__ */ createEnumType(
   'spacewave.launcher.UpdatePhase',
-  UpdatePhase,
-  'UPDATE_PHASE_',
+  [
+    [0, 'UPDATE_PHASE_UNKNOWN'],
+    [1, 'UPDATE_PHASE_DOWNLOADING'],
+    [2, 'UPDATE_PHASE_STAGED'],
+    [3, 'UPDATE_PHASE_APPLYING'],
+    [4, 'UPDATE_PHASE_ERROR'],
+  ],
 )
 
 /**
@@ -224,374 +198,81 @@ export interface DistConfig {
    * ProjectId is the identifier of the project.
    * usually matches the id: field in the project config.
    * if this doesn't match the app config is ignored.
-   *
-   * @generated from field: string project_id = 1;
    */
   projectId?: string
   /**
    * Rev is the revision of this app config object.
-   *
-   * @generated from field: uint64 rev = 2;
    */
   rev?: bigint
   /**
    * LauncherConfigSet is a ConfigSet to apply to the launcher host bus.
    * This signed field carries trusted release-time host services such as the
    * Release World CDN block-store provider.
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> launcher_config_set = 3;
    */
   launcherConfigSet?: { [key: string]: ControllerConfig }
   /**
    * ChannelKey selects the release channel this DistConfig targets.
-   *
-   * @generated from field: string channel_key = 8;
    */
   channelKey?: string
 }
 
 export const DistConfig: MessageType<DistConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.DistConfig',
-    fields: [
-      { no: 1, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 3,
-        name: 'launcher_config_set',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: () => ControllerConfig },
-      },
-      { no: 8, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DistConfig>(
+    'spacewave.launcher.DistConfig',
+    () => [
+      [1, 'project_id', 9],
+      [2, 'rev', 4],
+      [3, 'launcher_config_set', 11, 584, ControllerConfig.codec],
+      [8, 'channel_key', 9],
+    ],
+  )
 
 /**
- * UpdateState describes one explicit installed-app or daemon update target.
+ * LauncherInfo contains information about the state of the launcher.
  *
- * @generated from message spacewave.launcher.UpdateState
+ * @generated from message spacewave.launcher.LauncherInfo
  */
-export interface UpdateState {
+export interface LauncherInfo {
   /**
-   * Phase is the current update phase.
-   *
-   * @generated from field: spacewave.launcher.UpdatePhase phase = 1;
+   * DistConfig contains the latest app dist config object.
+   * May be empty if the config is not known / fetched yet.
    */
-  phase?: UpdatePhase
+  distConfig?: DistConfig
   /**
-   * Version is the target update version.
-   *
-   * @generated from field: string version = 2;
+   * UpdateState describes the installed-app update state.
    */
-  version?: string
+  updateState?: UpdateState
   /**
-   * DownloadProgress is download progress percentage (0-100).
-   *
-   * @generated from field: uint32 download_progress = 3;
+   * FetchStatus describes DistConfig fetching and release selection.
    */
-  downloadProgress?: number
+  fetchStatus?: FetchStatus
   /**
-   * StagedPath is the path to the staged binary (when phase is STAGED).
-   *
-   * @generated from field: string staged_path = 4;
+   * DaemonUpdateState describes the separately staged daemon artifact.
    */
-  stagedPath?: string
+  daemonUpdateState?: UpdateState
   /**
-   * ErrorMessage contains any error message.
-   *
-   * @generated from field: string error_message = 5;
+   * DaemonUpdateWait describes an accepted daemon update waiting for other work.
    */
-  errorMessage?: string
+  daemonUpdateWait?: DaemonUpdateWait
   /**
-   * Target identifies the component this state can replace.
-   *
-   * @generated from field: bldr.desktop.update.UpdateTarget target = 6;
+   * DistConfigMsg is the signed packedmsg dist_config was parsed from.
+   * Empty when dist_config is empty.
    */
-  target?: UpdateTarget
-  /**
-   * ArtifactManifestId identifies the selected signed release artifact.
-   *
-   * @generated from field: string artifact_manifest_id = 7;
-   */
-  artifactManifestId?: string
-  /**
-   * StagedSha256 identifies the verified executable bytes for a daemon handoff.
-   *
-   * @generated from field: string staged_sha256 = 8;
-   */
-  stagedSha256?: string
+  distConfigMsg?: string
 }
 
-export const UpdateState: MessageType<UpdateState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.UpdateState',
-    fields: [
-      { no: 1, name: 'phase', kind: 'enum', T: UpdatePhase_Enum },
-      { no: 2, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'download_progress',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 4, name: 'staged_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'target', kind: 'enum', T: UpdateTarget_Enum },
-      {
-        no: 7,
-        name: 'artifact_manifest_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 8, name: 'staged_sha256', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * FetchStatus describes the launcher's DistConfig fetch and Release World
- * selection state. The launcher controller replaces it on every transition.
- *
- * @generated from message spacewave.launcher.FetchStatus
- */
-export interface FetchStatus {
-  /**
-   * Fetching is true while an endpoint fetch is in flight.
-   *
-   * @generated from field: bool fetching = 1;
-   */
-  fetching?: boolean
-  /**
-   * HasConfig is true once the launcher selected a non-empty DistConfig from
-   * storage, the package, the built-in default, or an endpoint.
-   *
-   * @generated from field: bool has_config = 2;
-   */
-  hasConfig?: boolean
-  /**
-   * SelectedConfigRev is the revision of the selected DistConfig.
-   *
-   * @generated from field: uint64 selected_config_rev = 3;
-   */
-  selectedConfigRev?: bigint
-  /**
-   * SelectedConfigSource is the source of the selected DistConfig.
-   *
-   * @generated from field: spacewave.launcher.DistConfigSource selected_config_source = 4;
-   */
-  selectedConfigSource?: DistConfigSource
-  /**
-   * FetchedConfigRev is the most recent valid endpoint DistConfig revision.
-   *
-   * @generated from field: uint64 fetched_config_rev = 5;
-   */
-  fetchedConfigRev?: bigint
-  /**
-   * FetchedConfigSource is the endpoint URL that produced FetchedConfigRev.
-   *
-   * @generated from field: string fetched_config_source = 6;
-   */
-  fetchedConfigSource?: string
-  /**
-   * ReleaseMetadataOutcome is the latest Release World metadata resolution
-   * result for the selected DistConfig.
-   *
-   * @generated from field: spacewave.launcher.ReleaseMetadataOutcome release_metadata_outcome = 7;
-   */
-  releaseMetadataOutcome?: ReleaseMetadataOutcome
-  /**
-   * ReleaseWorldHeadRef is the Release World root ref used for the latest
-   * metadata resolution.
-   *
-   * @generated from field: string release_world_head_ref = 8;
-   */
-  releaseWorldHeadRef?: string
-  /**
-   * SelectedEntrypointManifestId identifies the native entrypoint manifest
-   * selected from release metadata for staging.
-   *
-   * @generated from field: string selected_entrypoint_manifest_id = 9;
-   */
-  selectedEntrypointManifestId?: string
-  /**
-   * SelectedEntrypointPlatformId is the desktop platform of the selected
-   * native entrypoint manifest.
-   *
-   * @generated from field: string selected_entrypoint_platform_id = 10;
-   */
-  selectedEntrypointPlatformId?: string
-  /**
-   * SelectedEntrypointManifestRev is the revision of the selected native
-   * entrypoint manifest.
-   *
-   * @generated from field: uint64 selected_entrypoint_manifest_rev = 11;
-   */
-  selectedEntrypointManifestRev?: bigint
-  /**
-   * SelectedEntrypointManifestRef is the selected native entrypoint object
-   * ref in string form.
-   *
-   * @generated from field: string selected_entrypoint_manifest_ref = 12;
-   */
-  selectedEntrypointManifestRef?: string
-  /**
-   * SelectedCliManifestId identifies the CLI entrypoint manifest selected
-   * from release metadata for the desktop-managed CLI.
-   *
-   * @generated from field: string selected_cli_manifest_id = 13;
-   */
-  selectedCliManifestId?: string
-  /**
-   * SelectedCliPlatformId is the desktop platform of the selected CLI
-   * entrypoint manifest.
-   *
-   * @generated from field: string selected_cli_platform_id = 14;
-   */
-  selectedCliPlatformId?: string
-  /**
-   * SelectedCliManifestRev is the revision of the selected CLI entrypoint
-   * manifest.
-   *
-   * @generated from field: uint64 selected_cli_manifest_rev = 15;
-   */
-  selectedCliManifestRev?: bigint
-  /**
-   * SelectedCliManifestRef is the selected CLI entrypoint object ref in
-   * string form.
-   *
-   * @generated from field: string selected_cli_manifest_ref = 16;
-   */
-  selectedCliManifestRef?: string
-  /**
-   * SelectedCliBinaryPath is the local staged CLI binary path written to the
-   * managed CLI release sidecar.
-   *
-   * @generated from field: string selected_cli_binary_path = 17;
-   */
-  selectedCliBinaryPath?: string
-  /**
-   * LastError is the most recent endpoint fetch error, empty when the last
-   * attempt succeeded or no fetch has run.
-   *
-   * @generated from field: string last_error = 18;
-   */
-  lastError?: string
-  /**
-   * Attempts counts endpoint rounds since the last successful fetch.
-   *
-   * @generated from field: uint32 attempts = 19;
-   */
-  attempts?: number
-  /**
-   * NextRetryAt is the time of the next scheduled fetch. Empty while a fetch
-   * is in flight or when none is scheduled.
-   *
-   * @generated from field: google.protobuf.Timestamp next_retry_at = 20;
-   */
-  nextRetryAt?: Date
-}
-
-export const FetchStatus: MessageType<FetchStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.FetchStatus',
-    fields: [
-      { no: 1, name: 'fetching', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'has_config', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'selected_config_rev',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 4,
-        name: 'selected_config_source',
-        kind: 'enum',
-        T: DistConfigSource_Enum,
-      },
-      {
-        no: 5,
-        name: 'fetched_config_rev',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 6,
-        name: 'fetched_config_source',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 7,
-        name: 'release_metadata_outcome',
-        kind: 'enum',
-        T: ReleaseMetadataOutcome_Enum,
-      },
-      {
-        no: 8,
-        name: 'release_world_head_ref',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 9,
-        name: 'selected_entrypoint_manifest_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 10,
-        name: 'selected_entrypoint_platform_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 11,
-        name: 'selected_entrypoint_manifest_rev',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 12,
-        name: 'selected_entrypoint_manifest_ref',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 13,
-        name: 'selected_cli_manifest_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 14,
-        name: 'selected_cli_platform_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 15,
-        name: 'selected_cli_manifest_rev',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 16,
-        name: 'selected_cli_manifest_ref',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 17,
-        name: 'selected_cli_binary_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 18, name: 'last_error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 19, name: 'attempts', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 20, name: 'next_retry_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const LauncherInfo: MessageType<LauncherInfo> =
+  /* @__PURE__ */ createMessageType<LauncherInfo>(
+    'spacewave.launcher.LauncherInfo',
+    () => [
+      [1, 'dist_config', 11, 0, DistConfig.codec],
+      [2, 'update_state', 11, 0, UpdateState.codec],
+      [3, 'fetch_status', 11, 0, FetchStatus.codec],
+      [4, 'daemon_update_state', 11, 0, UpdateState.codec],
+      [5, 'daemon_update_wait', 11, 0, DaemonUpdateWait.codec],
+      [6, 'dist_config_msg', 9],
+    ],
+  )
 
 /**
  * DaemonUpdateWait reports the work keeping an accepted daemon update from
@@ -603,96 +284,207 @@ export interface DaemonUpdateWait {
   /**
    * OtherWork names the clients and services besides the desktop, sorted,
    * with a count suffix on a repeated name.
-   *
-   * @generated from field: repeated string other_work = 1;
    */
   otherWork?: string[]
   /**
    * RestartNow asks the daemon to hand off without waiting for other work.
-   *
-   * @generated from field: bool restart_now = 2;
    */
   restartNow?: boolean
 }
 
 export const DaemonUpdateWait: MessageType<DaemonUpdateWait> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.DaemonUpdateWait',
-    fields: [
-      {
-        no: 1,
-        name: 'other_work',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'restart_now', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DaemonUpdateWait>(
+    'spacewave.launcher.DaemonUpdateWait',
+    () => [
+      [1, 'other_work', 9, 1],
+      [2, 'restart_now', 8],
+    ],
+  )
 
 /**
- * LauncherInfo contains information about the state of the launcher.
+ * FetchStatus describes the launcher's DistConfig fetch and Release World
+ * selection state. The launcher controller replaces it on every transition.
  *
- * @generated from message spacewave.launcher.LauncherInfo
+ * @generated from message spacewave.launcher.FetchStatus
  */
-export interface LauncherInfo {
+export interface FetchStatus {
   /**
-   * DistConfig contains the latest app dist config object.
-   * May be empty if the config is not known / fetched yet.
-   *
-   * @generated from field: spacewave.launcher.DistConfig dist_config = 1;
+   * Fetching is true while an endpoint fetch is in flight.
    */
-  distConfig?: DistConfig
+  fetching?: boolean
   /**
-   * UpdateState describes the installed-app update state.
-   *
-   * @generated from field: spacewave.launcher.UpdateState update_state = 2;
+   * HasConfig is true once the launcher selected a non-empty DistConfig from
+   * storage, the package, the built-in default, or an endpoint.
    */
-  updateState?: UpdateState
+  hasConfig?: boolean
   /**
-   * FetchStatus describes DistConfig fetching and release selection.
-   *
-   * @generated from field: spacewave.launcher.FetchStatus fetch_status = 3;
+   * SelectedConfigRev is the revision of the selected DistConfig.
    */
-  fetchStatus?: FetchStatus
+  selectedConfigRev?: bigint
   /**
-   * DaemonUpdateState describes the separately staged daemon artifact.
-   *
-   * @generated from field: spacewave.launcher.UpdateState daemon_update_state = 4;
+   * SelectedConfigSource is the source of the selected DistConfig.
    */
-  daemonUpdateState?: UpdateState
+  selectedConfigSource?: DistConfigSource
   /**
-   * DaemonUpdateWait describes an accepted daemon update waiting for other work.
-   *
-   * @generated from field: spacewave.launcher.DaemonUpdateWait daemon_update_wait = 5;
+   * FetchedConfigRev is the most recent valid endpoint DistConfig revision.
    */
-  daemonUpdateWait?: DaemonUpdateWait
+  fetchedConfigRev?: bigint
   /**
-   * DistConfigMsg is the signed packedmsg dist_config was parsed from.
-   * Empty when dist_config is empty.
-   *
-   * @generated from field: string dist_config_msg = 6;
+   * FetchedConfigSource is the endpoint URL that produced FetchedConfigRev.
    */
-  distConfigMsg?: string
+  fetchedConfigSource?: string
+  /**
+   * ReleaseMetadataOutcome is the latest Release World metadata resolution
+   * result for the selected DistConfig.
+   */
+  releaseMetadataOutcome?: ReleaseMetadataOutcome
+  /**
+   * ReleaseWorldHeadRef is the Release World root ref used for the latest
+   * metadata resolution.
+   */
+  releaseWorldHeadRef?: string
+  /**
+   * SelectedEntrypointManifestId identifies the native entrypoint manifest
+   * selected from release metadata for staging.
+   */
+  selectedEntrypointManifestId?: string
+  /**
+   * SelectedEntrypointPlatformId is the desktop platform of the selected
+   * native entrypoint manifest.
+   */
+  selectedEntrypointPlatformId?: string
+  /**
+   * SelectedEntrypointManifestRev is the revision of the selected native
+   * entrypoint manifest.
+   */
+  selectedEntrypointManifestRev?: bigint
+  /**
+   * SelectedEntrypointManifestRef is the selected native entrypoint object
+   * ref in string form.
+   */
+  selectedEntrypointManifestRef?: string
+  /**
+   * SelectedCliManifestId identifies the CLI entrypoint manifest selected
+   * from release metadata for the desktop-managed CLI.
+   */
+  selectedCliManifestId?: string
+  /**
+   * SelectedCliPlatformId is the desktop platform of the selected CLI
+   * entrypoint manifest.
+   */
+  selectedCliPlatformId?: string
+  /**
+   * SelectedCliManifestRev is the revision of the selected CLI entrypoint
+   * manifest.
+   */
+  selectedCliManifestRev?: bigint
+  /**
+   * SelectedCliManifestRef is the selected CLI entrypoint object ref in
+   * string form.
+   */
+  selectedCliManifestRef?: string
+  /**
+   * SelectedCliBinaryPath is the local staged CLI binary path written to the
+   * managed CLI release sidecar.
+   */
+  selectedCliBinaryPath?: string
+  /**
+   * LastError is the most recent endpoint fetch error, empty when the last
+   * attempt succeeded or no fetch has run.
+   */
+  lastError?: string
+  /**
+   * Attempts counts endpoint rounds since the last successful fetch.
+   */
+  attempts?: number
+  /**
+   * NextRetryAt is the time of the next scheduled fetch. Empty while a fetch
+   * is in flight or when none is scheduled.
+   */
+  nextRetryAt?: Date
 }
 
-export const LauncherInfo: MessageType<LauncherInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.LauncherInfo',
-    fields: [
-      { no: 1, name: 'dist_config', kind: 'message', T: DistConfig },
-      { no: 2, name: 'update_state', kind: 'message', T: UpdateState },
-      { no: 3, name: 'fetch_status', kind: 'message', T: FetchStatus },
-      { no: 4, name: 'daemon_update_state', kind: 'message', T: UpdateState },
-      {
-        no: 5,
-        name: 'daemon_update_wait',
-        kind: 'message',
-        T: DaemonUpdateWait,
-      },
-      { no: 6, name: 'dist_config_msg', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const FetchStatus: MessageType<FetchStatus> =
+  /* @__PURE__ */ createMessageType<FetchStatus>(
+    'spacewave.launcher.FetchStatus',
+    () => [
+      [1, 'fetching', 8],
+      [2, 'has_config', 8],
+      [3, 'selected_config_rev', 4],
+      [4, 'selected_config_source', 14, 0, DistConfigSource_Enum],
+      [5, 'fetched_config_rev', 4],
+      [6, 'fetched_config_source', 9],
+      [7, 'release_metadata_outcome', 14, 0, ReleaseMetadataOutcome_Enum],
+      [8, 'release_world_head_ref', 9],
+      [9, 'selected_entrypoint_manifest_id', 9],
+      [10, 'selected_entrypoint_platform_id', 9],
+      [11, 'selected_entrypoint_manifest_rev', 4],
+      [12, 'selected_entrypoint_manifest_ref', 9],
+      [13, 'selected_cli_manifest_id', 9],
+      [14, 'selected_cli_platform_id', 9],
+      [15, 'selected_cli_manifest_rev', 4],
+      [16, 'selected_cli_manifest_ref', 9],
+      [17, 'selected_cli_binary_path', 9],
+      [18, 'last_error', 9],
+      [19, 'attempts', 13],
+      [20, 'next_retry_at', 11, 0, Timestamp.codec],
+    ],
+  )
+
+/**
+ * UpdateState describes one explicit installed-app or daemon update target.
+ *
+ * @generated from message spacewave.launcher.UpdateState
+ */
+export interface UpdateState {
+  /**
+   * Phase is the current update phase.
+   */
+  phase?: UpdatePhase
+  /**
+   * Version is the target update version.
+   */
+  version?: string
+  /**
+   * DownloadProgress is download progress percentage (0-100).
+   */
+  downloadProgress?: number
+  /**
+   * StagedPath is the path to the staged binary (when phase is STAGED).
+   */
+  stagedPath?: string
+  /**
+   * ErrorMessage contains any error message.
+   */
+  errorMessage?: string
+  /**
+   * Target identifies the component this state can replace.
+   */
+  target?: UpdateTarget
+  /**
+   * ArtifactManifestId identifies the selected signed release artifact.
+   */
+  artifactManifestId?: string
+  /**
+   * StagedSha256 identifies the verified executable bytes for a daemon handoff.
+   */
+  stagedSha256?: string
+}
+
+export const UpdateState: MessageType<UpdateState> =
+  /* @__PURE__ */ createMessageType<UpdateState>(
+    'spacewave.launcher.UpdateState',
+    () => [
+      [1, 'phase', 14, 0, UpdatePhase_Enum],
+      [2, 'version', 9],
+      [3, 'download_progress', 13],
+      [4, 'staged_path', 9],
+      [5, 'error_message', 9],
+      [6, 'target', 14, 0, UpdateTarget_Enum],
+      [7, 'artifact_manifest_id', 9],
+      [8, 'staged_sha256', 9],
+    ],
+  )
 
 /**
  * ReportDaemonUpdateWaitRequest identifies the accepted selection and its wait.
@@ -702,33 +494,23 @@ export const LauncherInfo: MessageType<LauncherInfo> =
 export interface ReportDaemonUpdateWaitRequest {
   /**
    * Selection is the APPLYING state observed by the serving daemon.
-   *
-   * @generated from field: spacewave.launcher.UpdateState selection = 1;
    */
   selection?: UpdateState
   /**
    * OtherWork names the clients and services besides the desktop, sorted,
    * with a count suffix on a repeated name.
-   *
-   * @generated from field: repeated string other_work = 2;
    */
   otherWork?: string[]
 }
 
 export const ReportDaemonUpdateWaitRequest: MessageType<ReportDaemonUpdateWaitRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.ReportDaemonUpdateWaitRequest',
-    fields: [
-      { no: 1, name: 'selection', kind: 'message', T: UpdateState },
-      {
-        no: 2,
-        name: 'other_work',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReportDaemonUpdateWaitRequest>(
+    'spacewave.launcher.ReportDaemonUpdateWaitRequest',
+    () => [
+      [1, 'selection', 11, 0, UpdateState.codec],
+      [2, 'other_work', 9, 1],
+    ],
+  )
 
 /**
  * ReportDaemonUpdateWaitResponse says whether the current selection was updated.
@@ -738,19 +520,15 @@ export const ReportDaemonUpdateWaitRequest: MessageType<ReportDaemonUpdateWaitRe
 export interface ReportDaemonUpdateWaitResponse {
   /**
    * Reported is false if the accepted selection has already changed.
-   *
-   * @generated from field: bool reported = 1;
    */
   reported?: boolean
 }
 
 export const ReportDaemonUpdateWaitResponse: MessageType<ReportDaemonUpdateWaitResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.ReportDaemonUpdateWaitResponse',
-    fields: [
-      { no: 1, name: 'reported', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReportDaemonUpdateWaitResponse>(
+    'spacewave.launcher.ReportDaemonUpdateWaitResponse',
+    () => [[1, 'reported', 8]],
+  )
 
 /**
  * RestartDaemonUpdateNowRequest asks the waiting daemon update to proceed.
@@ -760,9 +538,9 @@ export const ReportDaemonUpdateWaitResponse: MessageType<ReportDaemonUpdateWaitR
 export interface RestartDaemonUpdateNowRequest {}
 
 export const RestartDaemonUpdateNowRequest: MessageType<RestartDaemonUpdateNowRequest> =
-  /* @__PURE__ */ createEmptyMessageType<RestartDaemonUpdateNowRequest>(
+  /* @__PURE__ */ createMessageType<RestartDaemonUpdateNowRequest>(
     'spacewave.launcher.RestartDaemonUpdateNowRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -773,9 +551,9 @@ export const RestartDaemonUpdateNowRequest: MessageType<RestartDaemonUpdateNowRe
 export interface RestartDaemonUpdateNowResponse {}
 
 export const RestartDaemonUpdateNowResponse: MessageType<RestartDaemonUpdateNowResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RestartDaemonUpdateNowResponse>(
+  /* @__PURE__ */ createMessageType<RestartDaemonUpdateNowResponse>(
     'spacewave.launcher.RestartDaemonUpdateNowResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -786,19 +564,15 @@ export const RestartDaemonUpdateNowResponse: MessageType<RestartDaemonUpdateNowR
 export interface ClaimDaemonUpdateRequest {
   /**
    * Selection is the APPLYING state observed by the serving daemon.
-   *
-   * @generated from field: spacewave.launcher.UpdateState selection = 1;
    */
   selection?: UpdateState
 }
 
 export const ClaimDaemonUpdateRequest: MessageType<ClaimDaemonUpdateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.ClaimDaemonUpdateRequest',
-    fields: [
-      { no: 1, name: 'selection', kind: 'message', T: UpdateState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClaimDaemonUpdateRequest>(
+    'spacewave.launcher.ClaimDaemonUpdateRequest',
+    () => [[1, 'selection', 11, 0, UpdateState.codec]],
+  )
 
 /**
  * ClaimDaemonUpdateResponse says whether the current selection was claimed.
@@ -808,19 +582,15 @@ export const ClaimDaemonUpdateRequest: MessageType<ClaimDaemonUpdateRequest> =
 export interface ClaimDaemonUpdateResponse {
   /**
    * Claimed is false if the accepted selection has already changed.
-   *
-   * @generated from field: bool claimed = 1;
    */
   claimed?: boolean
 }
 
 export const ClaimDaemonUpdateResponse: MessageType<ClaimDaemonUpdateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.ClaimDaemonUpdateResponse',
-    fields: [
-      { no: 1, name: 'claimed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClaimDaemonUpdateResponse>(
+    'spacewave.launcher.ClaimDaemonUpdateResponse',
+    () => [[1, 'claimed', 8]],
+  )
 
 /**
  * ReportDaemonUpdateFailureRequest identifies the accepted selection that failed.
@@ -830,26 +600,22 @@ export const ClaimDaemonUpdateResponse: MessageType<ClaimDaemonUpdateResponse> =
 export interface ReportDaemonUpdateFailureRequest {
   /**
    * Selection is the APPLYING state observed by the serving daemon.
-   *
-   * @generated from field: spacewave.launcher.UpdateState selection = 1;
    */
   selection?: UpdateState
   /**
    * ErrorMessage describes the failure before the daemon claimed full idle.
-   *
-   * @generated from field: string error_message = 2;
    */
   errorMessage?: string
 }
 
 export const ReportDaemonUpdateFailureRequest: MessageType<ReportDaemonUpdateFailureRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.ReportDaemonUpdateFailureRequest',
-    fields: [
-      { no: 1, name: 'selection', kind: 'message', T: UpdateState },
-      { no: 2, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReportDaemonUpdateFailureRequest>(
+    'spacewave.launcher.ReportDaemonUpdateFailureRequest',
+    () => [
+      [1, 'selection', 11, 0, UpdateState.codec],
+      [2, 'error_message', 9],
+    ],
+  )
 
 /**
  * ReportDaemonUpdateFailureResponse says whether the current selection failed.
@@ -859,19 +625,15 @@ export const ReportDaemonUpdateFailureRequest: MessageType<ReportDaemonUpdateFai
 export interface ReportDaemonUpdateFailureResponse {
   /**
    * Reported is false if the selected update has already changed.
-   *
-   * @generated from field: bool reported = 1;
    */
   reported?: boolean
 }
 
 export const ReportDaemonUpdateFailureResponse: MessageType<ReportDaemonUpdateFailureResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.ReportDaemonUpdateFailureResponse',
-    fields: [
-      { no: 1, name: 'reported', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReportDaemonUpdateFailureResponse>(
+    'spacewave.launcher.ReportDaemonUpdateFailureResponse',
+    () => [[1, 'reported', 8]],
+  )
 
 /**
  * RecheckDistConfigRequest is a request to immediately recheck for updates.
@@ -881,9 +643,9 @@ export const ReportDaemonUpdateFailureResponse: MessageType<ReportDaemonUpdateFa
 export interface RecheckDistConfigRequest {}
 
 export const RecheckDistConfigRequest: MessageType<RecheckDistConfigRequest> =
-  /* @__PURE__ */ createEmptyMessageType<RecheckDistConfigRequest>(
+  /* @__PURE__ */ createMessageType<RecheckDistConfigRequest>(
     'spacewave.launcher.RecheckDistConfigRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -894,9 +656,9 @@ export const RecheckDistConfigRequest: MessageType<RecheckDistConfigRequest> =
 export interface RecheckDistConfigResponse {}
 
 export const RecheckDistConfigResponse: MessageType<RecheckDistConfigResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RecheckDistConfigResponse>(
+  /* @__PURE__ */ createMessageType<RecheckDistConfigResponse>(
     'spacewave.launcher.RecheckDistConfigResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -907,19 +669,15 @@ export const RecheckDistConfigResponse: MessageType<RecheckDistConfigResponse> =
 export interface WatchLauncherInfoRequest {
   /**
    * DaemonOwner registers this stream as the serving daemon's update watch.
-   *
-   * @generated from field: bool daemon_owner = 1;
    */
   daemonOwner?: boolean
 }
 
 export const WatchLauncherInfoRequest: MessageType<WatchLauncherInfoRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.WatchLauncherInfoRequest',
-    fields: [
-      { no: 1, name: 'daemon_owner', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchLauncherInfoRequest>(
+    'spacewave.launcher.WatchLauncherInfoRequest',
+    () => [[1, 'daemon_owner', 8]],
+  )
 
 /**
  * PushDistConfigRequest is the request to push an app dist config signed message.
@@ -930,19 +688,15 @@ export interface PushDistConfigRequest {
   /**
    * Body is the block of text containing the packedmsg.
    * We will scan the body of message for a valid signed packedmsg.
-   *
-   * @generated from field: string body = 1;
    */
   body?: string
 }
 
 export const PushDistConfigRequest: MessageType<PushDistConfigRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.PushDistConfigRequest',
-    fields: [
-      { no: 1, name: 'body', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PushDistConfigRequest>(
+    'spacewave.launcher.PushDistConfigRequest',
+    () => [[1, 'body', 9]],
+  )
 
 /**
  * PushDistConfigResponse is the response to PushDistConfigRequest.
@@ -953,30 +707,24 @@ export const PushDistConfigRequest: MessageType<PushDistConfigRequest> =
 export interface PushDistConfigResponse {
   /**
    * Updated indicates that the found packedmsg is now the latest.
-   *
-   * @generated from field: bool updated = 1;
    */
   updated?: boolean
   /**
    * Rev is the revision of the found app config object.
-   *
-   * @generated from field: uint64 rev = 2;
    */
   rev?: bigint
   /**
    * PrevRev is the revision of the previous app config object. 0 if none.
-   *
-   * @generated from field: uint64 prev_rev = 3;
    */
   prevRev?: bigint
 }
 
 export const PushDistConfigResponse: MessageType<PushDistConfigResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.PushDistConfigResponse',
-    fields: [
-      { no: 1, name: 'updated', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'prev_rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PushDistConfigResponse>(
+    'spacewave.launcher.PushDistConfigResponse',
+    () => [
+      [1, 'updated', 8],
+      [2, 'rev', 4],
+      [3, 'prev_rev', 4],
+    ],
+  )

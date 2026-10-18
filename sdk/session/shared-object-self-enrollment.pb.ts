@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * SharedObjectSelfEnrollmentErrorCategory classifies per-object failures.
@@ -19,29 +14,21 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum SharedObjectSelfEnrollmentErrorCategory {
   /**
    * SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_UNKNOWN is unset.
-   *
-   * @generated from enum value: SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_RETRY means retry can run in place.
-   *
-   * @generated from enum value: SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_RETRY = 1;
    */
   RETRY = 1,
 
   /**
    * SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_OPEN_OBJECT means the object route owns repair.
-   *
-   * @generated from enum value: SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_OPEN_OBJECT = 2;
    */
   OPEN_OBJECT = 2,
 
   /**
    * SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_REPORT means the issue needs reporting.
-   *
-   * @generated from enum value: SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_REPORT = 3;
    */
   REPORT = 3,
 }
@@ -49,8 +36,12 @@ export enum SharedObjectSelfEnrollmentErrorCategory {
 export const SharedObjectSelfEnrollmentErrorCategory_Enum =
   /* @__PURE__ */ createEnumType(
     's4wave.session.SharedObjectSelfEnrollmentErrorCategory',
-    SharedObjectSelfEnrollmentErrorCategory,
-    'SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_',
+    [
+      [0, 'SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_UNKNOWN'],
+      [1, 'SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_RETRY'],
+      [2, 'SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_OPEN_OBJECT'],
+      [3, 'SHARED_OBJECT_SELF_ENROLLMENT_ERROR_CATEGORY_REPORT'],
+    ],
   )
 
 /**
@@ -61,51 +52,10 @@ export const SharedObjectSelfEnrollmentErrorCategory_Enum =
 export interface WatchSharedObjectSelfEnrollmentStateRequest {}
 
 export const WatchSharedObjectSelfEnrollmentStateRequest: MessageType<WatchSharedObjectSelfEnrollmentStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSharedObjectSelfEnrollmentStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchSharedObjectSelfEnrollmentStateRequest>(
     's4wave.session.WatchSharedObjectSelfEnrollmentStateRequest',
-    true,
+    () => [],
   )
-
-/**
- * SharedObjectSelfEnrollmentFailure describes a failed per-object enrollment.
- *
- * @generated from message s4wave.session.SharedObjectSelfEnrollmentFailure
- */
-export interface SharedObjectSelfEnrollmentFailure {
-  /**
-   * SharedObjectId is the shared object that failed.
-   *
-   * @generated from field: string shared_object_id = 1;
-   */
-  sharedObjectId?: string
-  /**
-   * Category is the UI routing category for the failure.
-   *
-   * @generated from field: s4wave.session.SharedObjectSelfEnrollmentErrorCategory category = 2;
-   */
-  category?: SharedObjectSelfEnrollmentErrorCategory
-  /**
-   * Message is the operator-facing error summary.
-   *
-   * @generated from field: string message = 3;
-   */
-  message?: string
-}
-
-export const SharedObjectSelfEnrollmentFailure: MessageType<SharedObjectSelfEnrollmentFailure> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SharedObjectSelfEnrollmentFailure',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'category',
-        kind: 'enum',
-        T: SharedObjectSelfEnrollmentErrorCategory_Enum,
-      },
-      { no: 3, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * WatchSharedObjectSelfEnrollmentStateResponse contains the current session
@@ -117,115 +67,92 @@ export interface WatchSharedObjectSelfEnrollmentStateResponse {
   /**
    * SharedObjectIds is the sorted set of shared objects needing
    * self-enrollment for the current session peer.
-   *
-   * @generated from field: repeated string shared_object_ids = 1;
    */
   sharedObjectIds?: string[]
   /**
    * GenerationKey identifies the current pending self-enrollment set.
-   *
-   * @generated from field: string generation_key = 2;
    */
   generationKey?: string
   /**
    * Count is the number of shared objects pending self-enrollment.
-   *
-   * @generated from field: uint32 count = 3;
    */
   count?: number
   /**
    * CredentialRequired indicates Start needs an unlocked entity keypair.
-   *
-   * @generated from field: bool credential_required = 4;
    */
   credentialRequired?: boolean
   /**
    * Running indicates Start is currently processing the pending set.
-   *
-   * @generated from field: bool running = 5;
    */
   running?: boolean
   /**
    * CurrentSharedObjectId is the shared object currently being processed.
-   *
-   * @generated from field: string current_shared_object_id = 6;
    */
   currentSharedObjectId?: string
   /**
    * CompletedSharedObjectIds is the set completed by the current run.
-   *
-   * @generated from field: repeated string completed_shared_object_ids = 7;
    */
   completedSharedObjectIds?: string[]
   /**
    * Skipped indicates the current generation is skipped on the backend.
-   *
-   * @generated from field: bool skipped = 8;
    */
   skipped?: boolean
   /**
    * SkippedGenerationKey is the backend skip generation key, if any.
-   *
-   * @generated from field: string skipped_generation_key = 9;
    */
   skippedGenerationKey?: string
   /**
    * Failures is the set of per-object failures from the current run.
-   *
-   * @generated from field: repeated s4wave.session.SharedObjectSelfEnrollmentFailure failures = 10;
    */
   failures?: SharedObjectSelfEnrollmentFailure[]
 }
 
 export const WatchSharedObjectSelfEnrollmentStateResponse: MessageType<WatchSharedObjectSelfEnrollmentStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchSharedObjectSelfEnrollmentStateResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'shared_object_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'generation_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'count', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 4,
-        name: 'credential_required',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 5, name: 'running', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 6,
-        name: 'current_shared_object_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 7,
-        name: 'completed_shared_object_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 8, name: 'skipped', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 9,
-        name: 'skipped_generation_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 10,
-        name: 'failures',
-        kind: 'message',
-        T: SharedObjectSelfEnrollmentFailure,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchSharedObjectSelfEnrollmentStateResponse>(
+    's4wave.session.WatchSharedObjectSelfEnrollmentStateResponse',
+    () => [
+      [1, 'shared_object_ids', 9, 1],
+      [2, 'generation_key', 9],
+      [3, 'count', 13],
+      [4, 'credential_required', 8],
+      [5, 'running', 8],
+      [6, 'current_shared_object_id', 9],
+      [7, 'completed_shared_object_ids', 9, 1],
+      [8, 'skipped', 8],
+      [9, 'skipped_generation_key', 9],
+      [10, 'failures', 11, 1, SharedObjectSelfEnrollmentFailure.codec],
+    ],
+  )
+
+/**
+ * SharedObjectSelfEnrollmentFailure describes a failed per-object enrollment.
+ *
+ * @generated from message s4wave.session.SharedObjectSelfEnrollmentFailure
+ */
+export interface SharedObjectSelfEnrollmentFailure {
+  /**
+   * SharedObjectId is the shared object that failed.
+   */
+  sharedObjectId?: string
+  /**
+   * Category is the UI routing category for the failure.
+   */
+  category?: SharedObjectSelfEnrollmentErrorCategory
+  /**
+   * Message is the operator-facing error summary.
+   */
+  message?: string
+}
+
+export const SharedObjectSelfEnrollmentFailure: MessageType<SharedObjectSelfEnrollmentFailure> =
+  /* @__PURE__ */ createMessageType<SharedObjectSelfEnrollmentFailure>(
+    's4wave.session.SharedObjectSelfEnrollmentFailure',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'category', 14, 0, SharedObjectSelfEnrollmentErrorCategory_Enum],
+      [3, 'message', 9],
+    ],
+  )
 
 /**
  * StartSharedObjectSelfEnrollmentRequest is the request for Start.
@@ -235,9 +162,9 @@ export const WatchSharedObjectSelfEnrollmentStateResponse: MessageType<WatchShar
 export interface StartSharedObjectSelfEnrollmentRequest {}
 
 export const StartSharedObjectSelfEnrollmentRequest: MessageType<StartSharedObjectSelfEnrollmentRequest> =
-  /* @__PURE__ */ createEmptyMessageType<StartSharedObjectSelfEnrollmentRequest>(
+  /* @__PURE__ */ createMessageType<StartSharedObjectSelfEnrollmentRequest>(
     's4wave.session.StartSharedObjectSelfEnrollmentRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -248,9 +175,9 @@ export const StartSharedObjectSelfEnrollmentRequest: MessageType<StartSharedObje
 export interface StartSharedObjectSelfEnrollmentResponse {}
 
 export const StartSharedObjectSelfEnrollmentResponse: MessageType<StartSharedObjectSelfEnrollmentResponse> =
-  /* @__PURE__ */ createEmptyMessageType<StartSharedObjectSelfEnrollmentResponse>(
+  /* @__PURE__ */ createMessageType<StartSharedObjectSelfEnrollmentResponse>(
     's4wave.session.StartSharedObjectSelfEnrollmentResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -261,19 +188,15 @@ export const StartSharedObjectSelfEnrollmentResponse: MessageType<StartSharedObj
 export interface SkipSharedObjectSelfEnrollmentRequest {
   /**
    * GenerationKey is the generation to skip.
-   *
-   * @generated from field: string generation_key = 1;
    */
   generationKey?: string
 }
 
 export const SkipSharedObjectSelfEnrollmentRequest: MessageType<SkipSharedObjectSelfEnrollmentRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SkipSharedObjectSelfEnrollmentRequest',
-    fields: [
-      { no: 1, name: 'generation_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SkipSharedObjectSelfEnrollmentRequest>(
+    's4wave.session.SkipSharedObjectSelfEnrollmentRequest',
+    () => [[1, 'generation_key', 9]],
+  )
 
 /**
  * SkipSharedObjectSelfEnrollmentResponse is the response for Skip.
@@ -283,7 +206,7 @@ export const SkipSharedObjectSelfEnrollmentRequest: MessageType<SkipSharedObject
 export interface SkipSharedObjectSelfEnrollmentResponse {}
 
 export const SkipSharedObjectSelfEnrollmentResponse: MessageType<SkipSharedObjectSelfEnrollmentResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SkipSharedObjectSelfEnrollmentResponse>(
+  /* @__PURE__ */ createMessageType<SkipSharedObjectSelfEnrollmentResponse>(
     's4wave.session.SkipSharedObjectSelfEnrollmentResponse',
-    true,
+    () => [],
   )

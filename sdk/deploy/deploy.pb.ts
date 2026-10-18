@@ -2,127 +2,10 @@
 // @generated from file github.com/s4wave/spacewave/sdk/deploy/deploy.proto (package s4wave.deploy, syntax proto3)
 /* eslint-disable */
 
-import { ManifestRef } from '../../bldr/manifest/manifest.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { ManifestRef } from '../../bldr/manifest/manifest.pb.js'
 import { BlockRef } from '../../db/block/block.pb.js'
-
-/**
- * DeployManifestsRequest identifies one plugin-host manifest set.
- *
- * @generated from message s4wave.deploy.DeployManifestsRequest
- */
-export interface DeployManifestsRequest {
-  /**
-   * ObjectKey identifies the Space plugin-host manifest-store object.
-   *
-   * @generated from field: string object_key = 1;
-   */
-  objectKey?: string
-  /**
-   * ManifestRefs contains one latest revision for every deployed platform.
-   *
-   * @generated from field: repeated bldr.manifest.ManifestRef manifest_refs = 2;
-   */
-  manifestRefs?: ManifestRef[]
-}
-
-export const DeployManifestsRequest: MessageType<DeployManifestsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.deploy.DeployManifestsRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'manifest_refs',
-        kind: 'message',
-        T: () => ManifestRef,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BlockRequest asks for one block reachable from a manifest root.
- *
- * @generated from message s4wave.deploy.BlockRequest
- */
-export interface BlockRequest {
-  /**
-   * Ref identifies the requested block.
-   *
-   * @generated from field: block.BlockRef ref = 1;
-   */
-  ref?: BlockRef
-}
-
-export const BlockRequest: MessageType<BlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.deploy.BlockRequest',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BlockResponse returns block data for exactly the requested reference.
- *
- * @generated from message s4wave.deploy.BlockResponse
- */
-export interface BlockResponse {
-  /**
-   * Ref must equal the requested block reference.
-   *
-   * @generated from field: block.BlockRef ref = 1;
-   */
-  ref?: BlockRef
-  /**
-   * Data contains the raw content-addressed block bytes.
-   *
-   * @generated from field: bytes data = 2;
-   */
-  data?: Uint8Array
-  /**
-   * NotFound indicates the block is unavailable in the source.
-   *
-   * @generated from field: bool not_found = 3;
-   */
-  notFound?: boolean
-}
-
-export const BlockResponse: MessageType<BlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.deploy.BlockResponse',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'not_found', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DeployManifestsResult reports completion of the manifest-set deployment.
- *
- * @generated from message s4wave.deploy.DeployManifestsResult
- */
-export interface DeployManifestsResult {
-  /**
-   * Error describes a failed or ambiguously completed deployment exchange.
-   *
-   * @generated from field: string error = 1;
-   */
-  error?: string
-}
-
-export const DeployManifestsResult: MessageType<DeployManifestsResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.deploy.DeployManifestsResult',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * DeployManifestsMessage is the bidirectional message for manifest-set deployment.
@@ -134,79 +17,111 @@ export interface DeployManifestsMessage {
    * @generated from oneof s4wave.deploy.DeployManifestsMessage.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * DeployManifestsRequest starts one complete manifest-set deployment.
-         *
-         * @generated from field: s4wave.deploy.DeployManifestsRequest request = 1;
-         */
-        value: DeployManifestsRequest
-        case: 'request'
-      }
-    | {
-        /**
-         * BlockRequest asks the client for one content-addressed block.
-         *
-         * @generated from field: s4wave.deploy.BlockRequest block_request = 2;
-         */
-        value: BlockRequest
-        case: 'blockRequest'
-      }
-    | {
-        /**
-         * BlockResponse returns the requested block or reports it missing.
-         *
-         * @generated from field: s4wave.deploy.BlockResponse block_response = 3;
-         */
-        value: BlockResponse
-        case: 'blockResponse'
-      }
-    | {
-        /**
-         * DeployManifestsResult reports the deployment outcome.
-         *
-         * @generated from field: s4wave.deploy.DeployManifestsResult result = 4;
-         */
-        value: DeployManifestsResult
-        case: 'result'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: DeployManifestsRequest; case: 'request' }
+    | { value: BlockRequest; case: 'blockRequest' }
+    | { value: BlockResponse; case: 'blockResponse' }
+    | { value: DeployManifestsResult; case: 'result' }
 }
 
 export const DeployManifestsMessage: MessageType<DeployManifestsMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.deploy.DeployManifestsMessage',
-    fields: [
-      {
-        no: 1,
-        name: 'request',
-        kind: 'message',
-        T: DeployManifestsRequest,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'block_request',
-        kind: 'message',
-        T: BlockRequest,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'block_response',
-        kind: 'message',
-        T: BlockResponse,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'result',
-        kind: 'message',
-        T: DeployManifestsResult,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeployManifestsMessage>(
+    's4wave.deploy.DeployManifestsMessage',
+    () => [
+      [1, 'request', 11, 0, DeployManifestsRequest.codec, 'body'],
+      [2, 'block_request', 11, 0, BlockRequest.codec, 'body'],
+      [3, 'block_response', 11, 0, BlockResponse.codec, 'body'],
+      [4, 'result', 11, 0, DeployManifestsResult.codec, 'body'],
+    ],
+  )
+
+/**
+ * DeployManifestsRequest identifies one plugin-host manifest set.
+ *
+ * @generated from message s4wave.deploy.DeployManifestsRequest
+ */
+export interface DeployManifestsRequest {
+  /**
+   * ObjectKey identifies the Space plugin-host manifest-store object.
+   */
+  objectKey?: string
+  /**
+   * ManifestRefs contains one latest revision for every deployed platform.
+   */
+  manifestRefs?: ManifestRef[]
+}
+
+export const DeployManifestsRequest: MessageType<DeployManifestsRequest> =
+  /* @__PURE__ */ createMessageType<DeployManifestsRequest>(
+    's4wave.deploy.DeployManifestsRequest',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'manifest_refs', 11, 1, ManifestRef.codec],
+    ],
+  )
+
+/**
+ * BlockRequest asks for one block reachable from a manifest root.
+ *
+ * @generated from message s4wave.deploy.BlockRequest
+ */
+export interface BlockRequest {
+  /**
+   * Ref identifies the requested block.
+   */
+  ref?: BlockRef
+}
+
+export const BlockRequest: MessageType<BlockRequest> =
+  /* @__PURE__ */ createMessageType<BlockRequest>(
+    's4wave.deploy.BlockRequest',
+    () => [[1, 'ref', 11, 0, BlockRef.codec]],
+  )
+
+/**
+ * BlockResponse returns block data for exactly the requested reference.
+ *
+ * @generated from message s4wave.deploy.BlockResponse
+ */
+export interface BlockResponse {
+  /**
+   * Ref must equal the requested block reference.
+   */
+  ref?: BlockRef
+  /**
+   * Data contains the raw content-addressed block bytes.
+   */
+  data?: Uint8Array
+  /**
+   * NotFound indicates the block is unavailable in the source.
+   */
+  notFound?: boolean
+}
+
+export const BlockResponse: MessageType<BlockResponse> =
+  /* @__PURE__ */ createMessageType<BlockResponse>(
+    's4wave.deploy.BlockResponse',
+    () => [
+      [1, 'ref', 11, 0, BlockRef.codec],
+      [2, 'data', 12],
+      [3, 'not_found', 8],
+    ],
+  )
+
+/**
+ * DeployManifestsResult reports completion of the manifest-set deployment.
+ *
+ * @generated from message s4wave.deploy.DeployManifestsResult
+ */
+export interface DeployManifestsResult {
+  /**
+   * Error describes a failed or ambiguously completed deployment exchange.
+   */
+  error?: string
+}
+
+export const DeployManifestsResult: MessageType<DeployManifestsResult> =
+  /* @__PURE__ */ createMessageType<DeployManifestsResult>(
+    's4wave.deploy.DeployManifestsResult',
+    () => [[1, 'error', 9]],
+  )

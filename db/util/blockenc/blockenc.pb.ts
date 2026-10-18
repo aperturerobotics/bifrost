@@ -13,15 +13,11 @@ import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 export enum BlockEnc {
   /**
    * BlockEnc_UNKNOWN is reserved for unset configuration.
-   *
-   * @generated from enum value: BlockEnc_UNKNOWN = 0;
    */
   BlockEnc_UNKNOWN = 0,
 
   /**
    * BlockEnc_NONE is unencrypted.
-   *
-   * @generated from enum value: BlockEnc_NONE = 1;
    */
   BlockEnc_NONE = 1,
 
@@ -30,8 +26,6 @@ export enum BlockEnc {
    * Key size of 32 bytes.
    * Derives the nonce with blake3 key derivation.
    * Stores the nonce in the first 24 bytes of the ciphertext.
-   *
-   * @generated from enum value: BlockEnc_XCHACHA20_POLY1305 = 2;
    */
   BlockEnc_XCHACHA20_POLY1305 = 2,
 
@@ -40,8 +34,6 @@ export enum BlockEnc {
    * Key size of 32 bytes.
    * Derives the nonce with blake3 key derivation.
    * Stores the nonce in the first 24 bytes of the ciphertext.
-   *
-   * @generated from enum value: BlockEnc_SECRET_BOX = 3;
    */
   BlockEnc_SECRET_BOX = 3,
 
@@ -50,13 +42,17 @@ export enum BlockEnc {
    * Key size of 32 bytes.
    * Derives the nonce with SHA256.
    * Stores the nonce in the first 12 bytes of the ciphertext.
-   *
-   * @generated from enum value: BlockEnc_AES_256_GCM = 4;
    */
   BlockEnc_AES_256_GCM = 4,
 }
 
 export const BlockEnc_Enum = /* @__PURE__ */ createEnumType(
   'blockenc.BlockEnc',
-  BlockEnc,
+  [
+    [0, 'BlockEnc_UNKNOWN'],
+    [1, 'BlockEnc_NONE'],
+    [2, 'BlockEnc_XCHACHA20_POLY1305'],
+    [3, 'BlockEnc_SECRET_BOX'],
+    [4, 'BlockEnc_AES_256_GCM'],
+  ],
 )

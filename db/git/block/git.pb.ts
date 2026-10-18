@@ -3,13 +3,11 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
-import { KeyValueStore } from '../../kvtx/block/kvtx.pb.js'
+import { BlockRef } from '../../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { KeyValueStore } from '../../kvtx/block/kvtx.pb.js'
 import { Blob, ChunkerArgs } from '../../block/blob/blob.pb.js'
-import { BlockRef } from '../../block/block.pb.js'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Hash } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
@@ -20,25 +18,18 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
  * @generated from enum git.block.ReferenceType
  */
 export enum ReferenceType {
-  /**
-   * @generated from enum value: ReferenceType_INVALID = 0;
-   */
   ReferenceType_INVALID = 0,
-
-  /**
-   * @generated from enum value: ReferenceType_HASH = 1;
-   */
   ReferenceType_HASH = 1,
-
-  /**
-   * @generated from enum value: ReferenceType_SYMBOLIC = 2;
-   */
   ReferenceType_SYMBOLIC = 2,
 }
 
 export const ReferenceType_Enum = /* @__PURE__ */ createEnumType(
   'git.block.ReferenceType',
-  ReferenceType,
+  [
+    [0, 'ReferenceType_INVALID'],
+    [1, 'ReferenceType_HASH'],
+    [2, 'ReferenceType_SYMBOLIC'],
+  ],
 )
 
 /**
@@ -48,47 +39,30 @@ export const ReferenceType_Enum = /* @__PURE__ */ createEnumType(
  * @generated from enum git.block.EncodedObjectType
  */
 export enum EncodedObjectType {
-  /**
-   * @generated from enum value: EncodedObjectType_INVALID = 0;
-   */
   EncodedObjectType_INVALID = 0,
-
-  /**
-   * @generated from enum value: EncodedObjectType_COMMIT = 1;
-   */
   EncodedObjectType_COMMIT = 1,
-
-  /**
-   * @generated from enum value: EncodedObjectType_TREE = 2;
-   */
   EncodedObjectType_TREE = 2,
-
-  /**
-   * @generated from enum value: EncodedObjectType_BLOB = 3;
-   */
   EncodedObjectType_BLOB = 3,
-
-  /**
-   * @generated from enum value: EncodedObjectType_TAG = 4;
-   */
   EncodedObjectType_TAG = 4,
 
   /**
    * 5 reserved for future expansion
-   *
-   * @generated from enum value: EncodedObjectType_OFS_DELTA = 6;
    */
   EncodedObjectType_OFS_DELTA = 6,
-
-  /**
-   * @generated from enum value: EncodedObjectType_REF_DELTA = 7;
-   */
   EncodedObjectType_REF_DELTA = 7,
 }
 
 export const EncodedObjectType_Enum = /* @__PURE__ */ createEnumType(
   'git.block.EncodedObjectType',
-  EncodedObjectType,
+  [
+    [0, 'EncodedObjectType_INVALID'],
+    [1, 'EncodedObjectType_COMMIT'],
+    [2, 'EncodedObjectType_TREE'],
+    [3, 'EncodedObjectType_BLOB'],
+    [4, 'EncodedObjectType_TAG'],
+    [6, 'EncodedObjectType_OFS_DELTA'],
+    [7, 'EncodedObjectType_REF_DELTA'],
+  ],
 )
 
 /**
@@ -100,124 +74,34 @@ export enum TagMode {
   /**
    * TagMode_DEFAULT indicates to use default tag mode.
    * Default is to fetch ALL.
-   *
-   * @generated from enum value: TagMode_DEFAULT = 0;
    */
   TagMode_DEFAULT = 0,
 
   /**
    * TagMode_NONE fetches no tags from the remote.
-   *
-   * @generated from enum value: TagMode_NONE = 1;
    */
   TagMode_NONE = 1,
 
   /**
    * TagMode_ALL fetches all tags from the remote.
-   *
-   * @generated from enum value: TagMode_ALL = 2;
    */
   TagMode_ALL = 2,
 
   /**
    * TagMode_FOLLOWING fetches only tags that refer to commits being cloned.
-   *
-   * @generated from enum value: TagMode_FOLLOWING = 3;
    */
   TagMode_FOLLOWING = 3,
 }
 
 export const TagMode_Enum = /* @__PURE__ */ createEnumType(
   'git.block.TagMode',
-  TagMode,
+  [
+    [0, 'TagMode_DEFAULT'],
+    [1, 'TagMode_NONE'],
+    [2, 'TagMode_ALL'],
+    [3, 'TagMode_FOLLOWING'],
+  ],
 )
-
-/**
- * ReferencesStore maps between ReferenceName and Reference.
- *
- * @generated from message git.block.ReferencesStore
- */
-export interface ReferencesStore {
-  /**
-   * KvtxRoot is the root of the reference tree.
-   * Contains value type Reference.
-   *
-   * @generated from field: kvtx.block.KeyValueStore kvtx_root = 1;
-   */
-  kvtxRoot?: KeyValueStore
-}
-
-export const ReferencesStore: MessageType<ReferencesStore> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.ReferencesStore',
-    fields: [
-      { no: 1, name: 'kvtx_root', kind: 'message', T: () => KeyValueStore },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ModuleReferences maps between submodule name and a block ref to the Repo.
- *
- * @generated from message git.block.ModuleReferencesStore
- */
-export interface ModuleReferencesStore {
-  /**
-   * KvtxRoot is the root of the module reference tree.
-   * Key: submodule name, value: Submodule object.
-   *
-   * @generated from field: kvtx.block.KeyValueStore kvtx_root = 1;
-   */
-  kvtxRoot?: KeyValueStore
-}
-
-export const ModuleReferencesStore: MessageType<ModuleReferencesStore> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.ModuleReferencesStore',
-    fields: [
-      { no: 1, name: 'kvtx_root', kind: 'message', T: () => KeyValueStore },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * EncodedObjectStore contains the encoded objects store.
- *
- * @generated from message git.block.EncodedObjectStore
- */
-export interface EncodedObjectStore {
-  /**
-   * KvtxRoot is the root of the object tree.
-   *
-   * @generated from field: kvtx.block.KeyValueStore kvtx_root = 1;
-   */
-  kvtxRoot?: KeyValueStore
-  /**
-   * ChunkerArgs are arguments passed to ensure consistent chunking.
-   *
-   * @generated from field: blob.ChunkerArgs chunker_args = 2;
-   */
-  chunkerArgs?: ChunkerArgs
-  /**
-   * PackfileKvtxRoot is the root of the packfile metadata tree.
-   *
-   * @generated from field: kvtx.block.KeyValueStore packfile_kvtx_root = 3;
-   */
-  packfileKvtxRoot?: KeyValueStore
-}
-
-export const EncodedObjectStore: MessageType<EncodedObjectStore> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.EncodedObjectStore',
-    fields: [
-      { no: 1, name: 'kvtx_root', kind: 'message', T: () => KeyValueStore },
-      { no: 2, name: 'chunker_args', kind: 'message', T: () => ChunkerArgs },
-      {
-        no: 3,
-        name: 'packfile_kvtx_root',
-        kind: 'message',
-        T: () => KeyValueStore,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Repo contains a Git repository.
@@ -228,62 +112,67 @@ export const EncodedObjectStore: MessageType<EncodedObjectStore> =
 export interface Repo {
   /**
    * ReferencesStore contains the named references store.
-   *
-   * @generated from field: git.block.ReferencesStore references_store = 1;
    */
   referencesStore?: ReferencesStore
   /**
    * ModuleReferencesStore contains the named submodules store.
-   *
-   * @generated from field: git.block.ModuleReferencesStore module_references_store = 2;
    */
   moduleReferencesStore?: ModuleReferencesStore
   /**
    * EncodedObjectStore contains the encoded objects tree.
-   *
-   * @generated from field: git.block.EncodedObjectStore encoded_object_store = 3;
    */
   encodedObjectStore?: EncodedObjectStore
   /**
    * ShallowRefsStoreRef contains the list of shallow refs.
-   *
-   * @generated from field: block.BlockRef shallow_refs_store_ref = 4;
    */
   shallowRefsStoreRef?: BlockRef
   /**
    * GitConfig contains the git configuration marshaled in Git format.
    * Some fields are always dropped, and repo is always marked as bare.
-   *
-   * @generated from field: string git_config = 5;
    */
   gitConfig?: string
 }
 
-export const Repo: MessageType<Repo> = /* @__PURE__ */ createMessageType({
-  typeName: 'git.block.Repo',
-  fields: [
-    { no: 1, name: 'references_store', kind: 'message', T: ReferencesStore },
-    {
-      no: 2,
-      name: 'module_references_store',
-      kind: 'message',
-      T: ModuleReferencesStore,
-    },
-    {
-      no: 3,
-      name: 'encoded_object_store',
-      kind: 'message',
-      T: EncodedObjectStore,
-    },
-    {
-      no: 4,
-      name: 'shallow_refs_store_ref',
-      kind: 'message',
-      T: () => BlockRef,
-    },
-    { no: 5, name: 'git_config', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Repo: MessageType<Repo> = /* @__PURE__ */ createMessageType<Repo>(
+  'git.block.Repo',
+  () => [
+    [1, 'references_store', 11, 0, ReferencesStore.codec],
+    [2, 'module_references_store', 11, 0, ModuleReferencesStore.codec],
+    [3, 'encoded_object_store', 11, 0, EncodedObjectStore.codec],
+    [4, 'shallow_refs_store_ref', 11, 0, BlockRef.codec],
+    [5, 'git_config', 9],
+  ],
+)
+
+/**
+ * EncodedObjectStore contains the encoded objects store.
+ *
+ * @generated from message git.block.EncodedObjectStore
+ */
+export interface EncodedObjectStore {
+  /**
+   * KvtxRoot is the root of the object tree.
+   */
+  kvtxRoot?: KeyValueStore
+  /**
+   * ChunkerArgs are arguments passed to ensure consistent chunking.
+   */
+  chunkerArgs?: ChunkerArgs
+  /**
+   * PackfileKvtxRoot is the root of the packfile metadata tree.
+   */
+  packfileKvtxRoot?: KeyValueStore
+}
+
+export const EncodedObjectStore: MessageType<EncodedObjectStore> =
+  /* @__PURE__ */ createMessageType<EncodedObjectStore>(
+    'git.block.EncodedObjectStore',
+    () => [
+      [1, 'kvtx_root', 11, 0, KeyValueStore.codec],
+      [2, 'chunker_args', 11, 0, ChunkerArgs.codec],
+      [3, 'packfile_kvtx_root', 11, 0, KeyValueStore.codec],
+    ],
+  )
 
 /**
  * Packfile contains a Git packfile and its index.
@@ -294,54 +183,77 @@ export interface Packfile {
   /**
    * PackHash contains the packfile checksum.
    * Note: currently, this is enforced to hash type SHA1.
-   *
-   * @generated from field: hash.Hash pack_hash = 1;
    */
   packHash?: Hash
   /**
    * PackBlob contains the raw Git packfile bytes.
-   *
-   * @generated from field: blob.Blob pack_blob = 2;
    */
   packBlob?: Blob
   /**
    * IdxBlob contains the Git pack index bytes.
-   *
-   * @generated from field: blob.Blob idx_blob = 3;
    */
   idxBlob?: Blob
   /**
    * ObjectCount is the number of objects in the pack index.
-   *
-   * @generated from field: uint64 object_count = 4;
    */
   objectCount?: bigint
   /**
    * PackSize is the byte size of the packfile.
-   *
-   * @generated from field: uint64 pack_size = 5;
    */
   packSize?: bigint
   /**
    * IdxSize is the byte size of the index file.
-   *
-   * @generated from field: uint64 idx_size = 6;
    */
   idxSize?: bigint
 }
 
 export const Packfile: MessageType<Packfile> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.Packfile',
-    fields: [
-      { no: 1, name: 'pack_hash', kind: 'message', T: () => Hash },
-      { no: 2, name: 'pack_blob', kind: 'message', T: () => Blob },
-      { no: 3, name: 'idx_blob', kind: 'message', T: () => Blob },
-      { no: 4, name: 'object_count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'pack_size', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 6, name: 'idx_size', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Packfile>('git.block.Packfile', () => [
+    [1, 'pack_hash', 11, 0, Hash.codec],
+    [2, 'pack_blob', 11, 0, Blob.codec],
+    [3, 'idx_blob', 11, 0, Blob.codec],
+    [4, 'object_count', 4],
+    [5, 'pack_size', 4],
+    [6, 'idx_size', 4],
+  ])
+
+/**
+ * ReferencesStore maps between ReferenceName and Reference.
+ *
+ * @generated from message git.block.ReferencesStore
+ */
+export interface ReferencesStore {
+  /**
+   * KvtxRoot is the root of the reference tree.
+   * Contains value type Reference.
+   */
+  kvtxRoot?: KeyValueStore
+}
+
+export const ReferencesStore: MessageType<ReferencesStore> =
+  /* @__PURE__ */ createMessageType<ReferencesStore>(
+    'git.block.ReferencesStore',
+    () => [[1, 'kvtx_root', 11, 0, KeyValueStore.codec]],
+  )
+
+/**
+ * ModuleReferences maps between submodule name and a block ref to the Repo.
+ *
+ * @generated from message git.block.ModuleReferencesStore
+ */
+export interface ModuleReferencesStore {
+  /**
+   * KvtxRoot is the root of the module reference tree.
+   * Key: submodule name, value: Submodule object.
+   */
+  kvtxRoot?: KeyValueStore
+}
+
+export const ModuleReferencesStore: MessageType<ModuleReferencesStore> =
+  /* @__PURE__ */ createMessageType<ModuleReferencesStore>(
+    'git.block.ModuleReferencesStore',
+    () => [[1, 'kvtx_root', 11, 0, KeyValueStore.codec]],
+  )
 
 /**
  * ShallowRefsStore contains the list of shallow refs.
@@ -351,25 +263,15 @@ export const Packfile: MessageType<Packfile> =
 export interface ShallowRefsStore {
   /**
    * ShallowRefs contains the list of shallow reference hashes.
-   *
-   * @generated from field: repeated hash.Hash shallow_refs = 1;
    */
   shallowRefs?: Hash[]
 }
 
 export const ShallowRefsStore: MessageType<ShallowRefsStore> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.ShallowRefsStore',
-    fields: [
-      {
-        no: 1,
-        name: 'shallow_refs',
-        kind: 'message',
-        T: () => Hash,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ShallowRefsStore>(
+    'git.block.ShallowRefsStore',
+    () => [[1, 'shallow_refs', 11, 1, Hash.codec]],
+  )
 
 /**
  * Submodule contains a sub-module reference.
@@ -379,26 +281,19 @@ export const ShallowRefsStore: MessageType<ShallowRefsStore> =
 export interface Submodule {
   /**
    * Name is the name of the submodule.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * RepoRef is the reference to the Repo object.
-   *
-   * @generated from field: block.BlockRef repo_ref = 2;
    */
   repoRef?: BlockRef
 }
 
 export const Submodule: MessageType<Submodule> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.Submodule',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'repo_ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Submodule>('git.block.Submodule', () => [
+    [1, 'name', 9],
+    [2, 'repo_ref', 11, 0, BlockRef.codec],
+  ])
 
 /**
  * Reference contains a repository reference.
@@ -410,47 +305,31 @@ export interface Reference {
   /**
    * Name contains the reference name.
    * Go type: plumbing.ReferenceName
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * ReferenceType contains the reference type.
    * One of: HashReference(1), SymbolicReference(2)
-   *
-   * @generated from field: git.block.ReferenceType reference_type = 2;
    */
   referenceType?: ReferenceType
   /**
    * Hash contains the sha1 hash (20 bytes) if hash reference.
    * Note: currently, this is enforced to hash type SHA1.
-   *
-   * @generated from field: hash.Hash hash = 3;
    */
   hash?: Hash
   /**
    * TargetReferenceName is the target reference name if symbolic.
-   *
-   * @generated from field: string target_reference_name = 4;
    */
   targetReferenceName?: string
 }
 
 export const Reference: MessageType<Reference> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.Reference',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'reference_type', kind: 'enum', T: ReferenceType_Enum },
-      { no: 3, name: 'hash', kind: 'message', T: () => Hash },
-      {
-        no: 4,
-        name: 'target_reference_name',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Reference>('git.block.Reference', () => [
+    [1, 'name', 9],
+    [2, 'reference_type', 14, 0, ReferenceType_Enum],
+    [3, 'hash', 11, 0, Hash.codec],
+    [4, 'target_reference_name', 9],
+  ])
 
 /**
  * EncodedObject contains an encoded object, stored as a Blob.
@@ -460,194 +339,65 @@ export const Reference: MessageType<Reference> =
 export interface EncodedObject {
   /**
    * DataBlob is the encoded object data.
-   *
-   * @generated from field: blob.Blob data_blob = 1;
    */
   dataBlob?: Blob
   /**
    * DataHash is the hash of DataBlob.
    * Note: currently, this is enforced to hash type SHA1.
-   *
-   * @generated from field: hash.Hash data_hash = 2;
    */
   dataHash?: Hash
   /**
    * ObjectType is the encoded object type.
-   *
-   * @generated from field: git.block.EncodedObjectType encoded_object_type = 3;
    */
   encodedObjectType?: EncodedObjectType
 }
 
 export const EncodedObject: MessageType<EncodedObject> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.EncodedObject',
-    fields: [
-      { no: 1, name: 'data_blob', kind: 'message', T: () => Blob },
-      { no: 2, name: 'data_hash', kind: 'message', T: () => Hash },
-      {
-        no: 3,
-        name: 'encoded_object_type',
-        kind: 'enum',
-        T: EncodedObjectType_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EncodedObject>(
+    'git.block.EncodedObject',
+    () => [
+      [1, 'data_blob', 11, 0, Blob.codec],
+      [2, 'data_hash', 11, 0, Hash.codec],
+      [3, 'encoded_object_type', 14, 0, EncodedObjectType_Enum],
+    ],
+  )
 
 /**
- * IndexEntry stores an entry in the git index.
+ * Index stores a git index.
  *
- * @generated from message git.block.IndexEntry
+ * @generated from message git.block.Index
  */
-export interface IndexEntry {
+export interface Index {
   /**
-   * DataHash is the hash of the index entry.
-   * Note: currently, this is enforced to hash type SHA1.
-   *
-   * @generated from field: hash.Hash data_hash = 1;
+   * Version is the index version (usually 2).
    */
-  dataHash?: Hash
+  version?: number
   /**
-   * Name is the entry path name relative to top directory.
-   *
-   * @generated from field: string name = 2;
+   * Entries is the list of entries represented by the Index.
    */
-  name?: string
+  entries?: IndexEntry[]
   /**
-   * CreatedAt is the time when the path was created.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 3;
+   * Cache represents the "cached tree" extension.
    */
-  createdAt?: Date
+  cache?: Tree
   /**
-   * ModifiedAt is the time when the path was modified.
-   *
-   * @generated from field: google.protobuf.Timestamp modified_at = 4;
+   * ResolveUndo represents the "resolve undo" extension.
    */
-  modifiedAt?: Date
+  resolveUndo?: ResolveUndo
   /**
-   * Dev is the device of the tracked path.
-   *
-   * @generated from field: uint32 dev = 5;
+   * EndOfIndexEntry represents the "End of Index Entry" extension
    */
-  dev?: number
-  /**
-   * Inode is the inode of the tracked path.
-   *
-   * @generated from field: uint32 inode = 6;
-   */
-  inode?: number
-  /**
-   * Mode is the Git file mode used for the entry.
-   * i.e. Dir, Regular, Executable, Symlink, Submodule
-   *
-   * @generated from field: uint32 file_mode = 7;
-   */
-  fileMode?: number
-  /**
-   * Uid is the user id of the owner.
-   *
-   * @generated from field: uint32 uid = 8;
-   */
-  uid?: number
-  /**
-   * Gid is the group id of the owner.
-   *
-   * @generated from field: uint32 gid = 9;
-   */
-  gid?: number
-  /**
-   * Size is the length in bytes for regular files.
-   *
-   * @generated from field: uint32 size = 10;
-   */
-  size?: number
-  /**
-   * Stage contains the merging state of the index item.
-   * https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging
-   *
-   * @generated from field: uint32 stage = 11;
-   */
-  stage?: number
-  /**
-   * SkipWorktree is used in sparse checkouts.
-   *
-   * @generated from field: bool skip_worktree = 12;
-   */
-  skipWorktree?: boolean
-  /**
-   * IntentToAdd indicates the path will be added later.
-   * git add -N
-   *
-   * @generated from field: bool intent_to_add = 13;
-   */
-  intentToAdd?: boolean
+  endOfIndexEntry?: EndOfIndexEntry
 }
 
-export const IndexEntry: MessageType<IndexEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.IndexEntry',
-    fields: [
-      { no: 1, name: 'data_hash', kind: 'message', T: () => Hash },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 4, name: 'modified_at', kind: 'message', T: () => Timestamp },
-      { no: 5, name: 'dev', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 6, name: 'inode', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'file_mode', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 8, name: 'uid', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 9, name: 'gid', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 10, name: 'size', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 11, name: 'stage', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 12, name: 'skip_worktree', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 13, name: 'intent_to_add', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TreeEntry is an entry in the tree.
- *
- * @generated from message git.block.TreeEntry
- */
-export interface TreeEntry {
-  /**
-   * Path is the path within the parent directory.
-   *
-   * @generated from field: string path = 1;
-   */
-  path?: string
-  /**
-   * Entries is the number of entries in the index that is covered by the tree
-   * this entry represents.
-   *
-   * @generated from field: int32 entries = 2;
-   */
-  entries?: number
-  /**
-   * Trees is the number that represents the number of subtrees this tree has.
-   *
-   * @generated from field: int32 trees = 3;
-   */
-  trees?: number
-  /**
-   * Hash is the hash of the object that would result from writing this span of
-   * index as a tree. Note: currently this is sha1.
-   *
-   * @generated from field: hash.Hash hash = 4;
-   */
-  hash?: Hash
-}
-
-export const TreeEntry: MessageType<TreeEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.TreeEntry',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'entries', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 3, name: 'trees', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 4, name: 'hash', kind: 'message', T: () => Hash },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const Index: MessageType<Index> =
+  /* @__PURE__ */ createMessageType<Index>('git.block.Index', () => [
+    [1, 'version', 13],
+    [2, 'entries', 11, 1, IndexEntry.codec],
+    [3, 'cache', 11, 0, Tree.codec],
+    [4, 'resolve_undo', 11, 0, ResolveUndo.codec],
+    [5, 'end_of_index_entry', 11, 0, EndOfIndexEntry.codec],
+  ])
 
 /**
  * Tree contains pre-computed hashes for trees that can be derived from the
@@ -658,53 +408,48 @@ export const TreeEntry: MessageType<TreeEntry> =
 export interface Tree {
   /**
    * Entries are entries in the tree.
-   *
-   * @generated from field: repeated git.block.TreeEntry entries = 1;
    */
   entries?: TreeEntry[]
 }
 
-export const Tree: MessageType<Tree> = /* @__PURE__ */ createMessageType({
-  typeName: 'git.block.Tree',
-  fields: [
-    { no: 1, name: 'entries', kind: 'message', T: TreeEntry, repeated: true },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Tree: MessageType<Tree> = /* @__PURE__ */ createMessageType<Tree>(
+  'git.block.Tree',
+  () => [[1, 'entries', 11, 1, TreeEntry.codec]],
+)
 
 /**
- * ResolveUndoEntry contains the information about a conflict when is resolved.
+ * TreeEntry is an entry in the tree.
  *
- * @generated from message git.block.ResolveUndoEntry
+ * @generated from message git.block.TreeEntry
  */
-export interface ResolveUndoEntry {
+export interface TreeEntry {
   /**
    * Path is the path within the parent directory.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
   /**
-   * Stages are the merge conflict stages.
-   *
-   * @generated from field: map<uint32, hash.Hash> stages = 2;
+   * Entries is the number of entries in the index that is covered by the tree
+   * this entry represents.
    */
-  stages?: { [key: number]: Hash }
+  entries?: number
+  /**
+   * Trees is the number that represents the number of subtrees this tree has.
+   */
+  trees?: number
+  /**
+   * Hash is the hash of the object that would result from writing this span of
+   * index as a tree. Note: currently this is sha1.
+   */
+  hash?: Hash
 }
 
-export const ResolveUndoEntry: MessageType<ResolveUndoEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.ResolveUndoEntry',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'stages',
-        kind: 'map',
-        K: ScalarType.UINT32,
-        V: { kind: 'message', T: () => Hash },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const TreeEntry: MessageType<TreeEntry> =
+  /* @__PURE__ */ createMessageType<TreeEntry>('git.block.TreeEntry', () => [
+    [1, 'path', 9],
+    [2, 'entries', 5],
+    [3, 'trees', 5],
+    [4, 'hash', 11, 0, Hash.codec],
+  ])
 
 /**
  * ResolveUndo is used when a conflict is resolved (e.g. with "git add path"),
@@ -717,25 +462,40 @@ export const ResolveUndoEntry: MessageType<ResolveUndoEntry> =
 export interface ResolveUndo {
   /**
    * Entries is the list of resolve undo entries.
-   *
-   * @generated from field: repeated git.block.ResolveUndoEntry entries = 1;
    */
   entries?: ResolveUndoEntry[]
 }
 
 export const ResolveUndo: MessageType<ResolveUndo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.ResolveUndo',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'message',
-        T: ResolveUndoEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResolveUndo>(
+    'git.block.ResolveUndo',
+    () => [[1, 'entries', 11, 1, ResolveUndoEntry.codec]],
+  )
+
+/**
+ * ResolveUndoEntry contains the information about a conflict when is resolved.
+ *
+ * @generated from message git.block.ResolveUndoEntry
+ */
+export interface ResolveUndoEntry {
+  /**
+   * Path is the path within the parent directory.
+   */
+  path?: string
+  /**
+   * Stages are the merge conflict stages.
+   */
+  stages?: { [key: number]: Hash }
+}
+
+export const ResolveUndoEntry: MessageType<ResolveUndoEntry> =
+  /* @__PURE__ */ createMessageType<ResolveUndoEntry>(
+    'git.block.ResolveUndoEntry',
+    () => [
+      [1, 'path', 9],
+      [2, 'stages', 11, 840, Hash.codec],
+    ],
+  )
 
 /**
  * EndOfIndexEntry is the End of Index Entry (EOIE) is used to locate the end of
@@ -746,75 +506,103 @@ export const ResolveUndo: MessageType<ResolveUndo> =
 export interface EndOfIndexEntry {
   /**
    * Offset is the offset to the end of the index entries.
-   *
-   * @generated from field: uint32 offset = 1;
    */
   offset?: number
   /**
    * Hash is the sha-1 of the extension types and their sizes.
-   *
-   * @generated from field: hash.Hash hash = 2;
    */
   hash?: Hash
 }
 
 export const EndOfIndexEntry: MessageType<EndOfIndexEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.EndOfIndexEntry',
-    fields: [
-      { no: 1, name: 'offset', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'hash', kind: 'message', T: () => Hash },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EndOfIndexEntry>(
+    'git.block.EndOfIndexEntry',
+    () => [
+      [1, 'offset', 13],
+      [2, 'hash', 11, 0, Hash.codec],
+    ],
+  )
 
 /**
- * Index stores a git index.
+ * IndexEntry stores an entry in the git index.
  *
- * @generated from message git.block.Index
+ * @generated from message git.block.IndexEntry
  */
-export interface Index {
+export interface IndexEntry {
   /**
-   * Version is the index version (usually 2).
-   *
-   * @generated from field: uint32 version = 1;
+   * DataHash is the hash of the index entry.
+   * Note: currently, this is enforced to hash type SHA1.
    */
-  version?: number
+  dataHash?: Hash
   /**
-   * Entries is the list of entries represented by the Index.
-   *
-   * @generated from field: repeated git.block.IndexEntry entries = 2;
+   * Name is the entry path name relative to top directory.
    */
-  entries?: IndexEntry[]
+  name?: string
   /**
-   * Cache represents the "cached tree" extension.
-   *
-   * @generated from field: git.block.Tree cache = 3;
+   * CreatedAt is the time when the path was created.
    */
-  cache?: Tree
+  createdAt?: Date
   /**
-   * ResolveUndo represents the "resolve undo" extension.
-   *
-   * @generated from field: git.block.ResolveUndo resolve_undo = 4;
+   * ModifiedAt is the time when the path was modified.
    */
-  resolveUndo?: ResolveUndo
+  modifiedAt?: Date
   /**
-   * EndOfIndexEntry represents the "End of Index Entry" extension
-   *
-   * @generated from field: git.block.EndOfIndexEntry end_of_index_entry = 5;
+   * Dev is the device of the tracked path.
    */
-  endOfIndexEntry?: EndOfIndexEntry
+  dev?: number
+  /**
+   * Inode is the inode of the tracked path.
+   */
+  inode?: number
+  /**
+   * Mode is the Git file mode used for the entry.
+   * i.e. Dir, Regular, Executable, Symlink, Submodule
+   */
+  fileMode?: number
+  /**
+   * Uid is the user id of the owner.
+   */
+  uid?: number
+  /**
+   * Gid is the group id of the owner.
+   */
+  gid?: number
+  /**
+   * Size is the length in bytes for regular files.
+   */
+  size?: number
+  /**
+   * Stage contains the merging state of the index item.
+   * https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging
+   */
+  stage?: number
+  /**
+   * SkipWorktree is used in sparse checkouts.
+   */
+  skipWorktree?: boolean
+  /**
+   * IntentToAdd indicates the path will be added later.
+   * git add -N
+   */
+  intentToAdd?: boolean
 }
 
-export const Index: MessageType<Index> = /* @__PURE__ */ createMessageType({
-  typeName: 'git.block.Index',
-  fields: [
-    { no: 1, name: 'version', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 2, name: 'entries', kind: 'message', T: IndexEntry, repeated: true },
-    { no: 3, name: 'cache', kind: 'message', T: Tree },
-    { no: 4, name: 'resolve_undo', kind: 'message', T: ResolveUndo },
-    { no: 5, name: 'end_of_index_entry', kind: 'message', T: EndOfIndexEntry },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const IndexEntry: MessageType<IndexEntry> =
+  /* @__PURE__ */ createMessageType<IndexEntry>('git.block.IndexEntry', () => [
+    [1, 'data_hash', 11, 0, Hash.codec],
+    [2, 'name', 9],
+    [3, 'created_at', 11, 0, Timestamp.codec],
+    [4, 'modified_at', 11, 0, Timestamp.codec],
+    [5, 'dev', 13],
+    [6, 'inode', 13],
+    [7, 'file_mode', 13],
+    [8, 'uid', 13],
+    [9, 'gid', 13],
+    [10, 'size', 13],
+    [11, 'stage', 13],
+    [12, 'skip_worktree', 8],
+    [13, 'intent_to_add', 8],
+  ])
 
 /**
  * AuthOpts configures strategies for authenticating with a Git server.
@@ -824,26 +612,19 @@ export const Index: MessageType<Index> = /* @__PURE__ */ createMessageType({
 export interface AuthOpts {
   /**
    * Username is the ssh username to authenticate with.
-   *
-   * @generated from field: string username = 1;
    */
   username?: string
   /**
    * PeerId configures looking up peer priv key by id for ssh.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
 }
 
 export const AuthOpts: MessageType<AuthOpts> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.AuthOpts',
-    fields: [
-      { no: 1, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AuthOpts>('git.block.AuthOpts', () => [
+    [1, 'username', 9],
+    [2, 'peer_id', 9],
+  ])
 
 /**
  * CloneOpts are options for a Git clone.
@@ -853,91 +634,66 @@ export const AuthOpts: MessageType<AuthOpts> =
 export interface CloneOpts {
   /**
    * Url is the Git URL to clone from.
-   *
-   * @generated from field: string url = 1;
    */
   url?: string
   /**
    * RemoteName is the name of the remote to add, by default "origin."
-   *
-   * @generated from field: string remote_name = 2;
    */
   remoteName?: string
   /**
    * Ref is the reference name to clone, uses default if empty.
-   *
-   * @generated from field: string ref = 3;
    */
   ref?: string
   /**
    * SingleBranch fetches the ref and nothing more.
-   *
-   * @generated from field: bool single_branch = 4;
    */
   singleBranch?: boolean
   /**
    * DisableCheckout disables setting the Worktree and Workdir.
-   *
-   * @generated from field: bool disable_checkout = 5;
    */
   disableCheckout?: boolean
   /**
    * Depth limits to the specific number of commits.
    * If zero, fetches all of the commits.
-   *
-   * @generated from field: uint32 depth = 6;
    */
   depth?: number
   /**
    * Recursive indicates submodules will be fetched as well.
-   *
-   * @generated from field: bool recursive = 7;
    */
   recursive?: boolean
   /**
    * RecursionDepth overrides the default submodule recursion depth (10).
    * Only used when recursive is true. Zero means use the default.
-   *
-   * @generated from field: uint32 recursion_depth = 11;
    */
   recursionDepth?: number
   /**
    * TagMode controls the fetching of tags.
-   *
-   * @generated from field: git.block.TagMode tag_mode = 8;
    */
   tagMode?: TagMode
   /**
    * Insecure indicates that TLS checks should be skipped.
-   *
-   * @generated from field: bool insecure = 9;
    */
   insecure?: boolean
   /**
    * CaBundle contains additional CA certificates to trust.
-   *
-   * @generated from field: string ca_bundle = 10;
    */
   caBundle?: string
 }
 
 export const CloneOpts: MessageType<CloneOpts> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.CloneOpts',
-    fields: [
-      { no: 1, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'remote_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'ref', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'single_branch', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'disable_checkout', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'depth', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'recursive', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 11, name: 'recursion_depth', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 8, name: 'tag_mode', kind: 'enum', T: TagMode_Enum },
-      { no: 9, name: 'insecure', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 10, name: 'ca_bundle', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CloneOpts>('git.block.CloneOpts', () => [
+    [1, 'url', 9],
+    [2, 'remote_name', 9],
+    [3, 'ref', 9],
+    [4, 'single_branch', 8],
+    [5, 'disable_checkout', 8],
+    [6, 'depth', 13],
+    [7, 'recursive', 8],
+    [8, 'tag_mode', 14, 0, TagMode_Enum],
+    [9, 'insecure', 8],
+    [10, 'ca_bundle', 9],
+    [11, 'recursion_depth', 13],
+  ])
 
 /**
  * FetchOpts are options for a Git fetch.
@@ -947,85 +703,58 @@ export const CloneOpts: MessageType<CloneOpts> =
 export interface FetchOpts {
   /**
    * RemoteName is the name of the remote to fetch from, by default "origin."
-   *
-   * @generated from field: string remote_name = 1;
    */
   remoteName?: string
   /**
    * RemoteUrl overrides the remote repo address with a custom URL.
-   *
-   * @generated from field: string remote_url = 2;
    */
   remoteUrl?: string
   /**
    * RefSpecs are the refspecs to use for the fetch.
    * If empty, uses the default refspecs for the remote.
-   *
-   * @generated from field: repeated string ref_specs = 3;
    */
   refSpecs?: string[]
   /**
    * Depth limits to the specific number of commits.
    * If zero, fetches all of the commits.
-   *
-   * @generated from field: uint32 depth = 4;
    */
   depth?: number
   /**
    * TagMode controls the fetching of tags.
-   *
-   * @generated from field: git.block.TagMode tag_mode = 5;
    */
   tagMode?: TagMode
   /**
    * Force allows the fetch to update a local branch even when the remote
    * branch does not descend from it.
-   *
-   * @generated from field: bool force = 6;
    */
   force?: boolean
   /**
    * Insecure indicates that TLS checks should be skipped.
-   *
-   * @generated from field: bool insecure = 7;
    */
   insecure?: boolean
   /**
    * CaBundle contains additional CA certificates to trust.
-   *
-   * @generated from field: string ca_bundle = 8;
    */
   caBundle?: string
   /**
    * Prune indicates that local refs matching RefSpecs that do not exist
    * remotely will be removed.
-   *
-   * @generated from field: bool prune = 9;
    */
   prune?: boolean
 }
 
 export const FetchOpts: MessageType<FetchOpts> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.FetchOpts',
-    fields: [
-      { no: 1, name: 'remote_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'remote_url', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'ref_specs',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 4, name: 'depth', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'tag_mode', kind: 'enum', T: TagMode_Enum },
-      { no: 6, name: 'force', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'insecure', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'ca_bundle', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'prune', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchOpts>('git.block.FetchOpts', () => [
+    [1, 'remote_name', 9],
+    [2, 'remote_url', 9],
+    [3, 'ref_specs', 9, 1],
+    [4, 'depth', 13],
+    [5, 'tag_mode', 14, 0, TagMode_Enum],
+    [6, 'force', 8],
+    [7, 'insecure', 8],
+    [8, 'ca_bundle', 9],
+    [9, 'prune', 8],
+  ])
 
 /**
  * CheckoutOpts are options when checking out a repo.
@@ -1036,47 +765,37 @@ export interface CheckoutOpts {
   /**
    * Commit is the commit hash to check out.
    * Note: currently, this is enforced to hash type SHA1.
-   *
-   * @generated from field: hash.Hash commit = 1;
    */
   commit?: Hash
   /**
    * Branch is the branch to check out.
    * If !create, cannot be set if commit is also set.
-   *
-   * @generated from field: string branch = 2;
    */
   branch?: string
   /**
    * Create indicates to create a branch from the specified commit.
-   *
-   * @generated from field: bool create = 3;
    */
   create?: boolean
   /**
    * Force indicates to continue even if index or working tree is not HEAD.
    * Throws away any changes when checking out.
-   *
-   * @generated from field: bool force = 4;
    */
   force?: boolean
   /**
    * Keep maintains index or working dir changes.
    * Cannot be set if force is also set.
-   *
-   * @generated from field: bool keep = 5;
    */
   keep?: boolean
 }
 
 export const CheckoutOpts: MessageType<CheckoutOpts> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.block.CheckoutOpts',
-    fields: [
-      { no: 1, name: 'commit', kind: 'message', T: () => Hash },
-      { no: 2, name: 'branch', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'create', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'force', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'keep', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CheckoutOpts>(
+    'git.block.CheckoutOpts',
+    () => [
+      [1, 'commit', 11, 0, Hash.codec],
+      [2, 'branch', 9],
+      [3, 'create', 8],
+      [4, 'force', 8],
+      [5, 'keep', 8],
+    ],
+  )

@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Config configures the app2 controller.
@@ -13,4 +13,4 @@ import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
 export interface Config {}
 
 export const Config: MessageType<Config> =
-  /* @__PURE__ */ createEmptyMessageType<Config>('app2.Config', true)
+  /* @__PURE__ */ createMessageType<Config>('app2.Config', () => [])

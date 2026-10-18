@@ -4,43 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * Mount configures one docker bind mount.
- *
- * @generated from message forge.lib.docker.Mount
- */
-export interface Mount {
-  /**
-   * HostPath is the host source path.
-   *
-   * @generated from field: string host_path = 1;
-   */
-  hostPath?: string
-  /**
-   * ContainerPath is the target path inside the container.
-   *
-   * @generated from field: string container_path = 2;
-   */
-  containerPath?: string
-  /**
-   * ReadOnly marks the bind mount read-only.
-   *
-   * @generated from field: bool read_only = 3;
-   */
-  readOnly?: boolean
-}
-
-export const Mount: MessageType<Mount> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.lib.docker.Mount',
-  fields: [
-    { no: 1, name: 'host_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'container_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'read_only', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
 
 /**
  * Config configures the docker CLI exec controller.
@@ -53,127 +16,99 @@ export interface Config {
   /**
    * DockerPath is the docker CLI executable path.
    * Defaults to "docker" when empty.
-   *
-   * @generated from field: string docker_path = 1;
    */
   dockerPath?: string
   /**
    * DockerEnv is the explicit environment for the docker CLI subprocess.
    * No host environment is inherited unless configured here.
-   *
-   * @generated from field: map<string, string> docker_env = 2;
    */
   dockerEnv?: { [key: string]: string }
   /**
    * Image is the container image to create.
-   *
-   * @generated from field: string image = 3;
    */
   image?: string
   /**
    * Workdir is the container working directory.
-   *
-   * @generated from field: string workdir = 4;
    */
   workdir?: string
   /**
    * Env is the explicit environment passed to the container.
    * No host environment is inherited.
-   *
-   * @generated from field: map<string, string> env = 5;
    */
   env?: { [key: string]: string }
   /**
    * Mounts is the ordered list of bind mounts passed to docker create.
-   *
-   * @generated from field: repeated forge.lib.docker.Mount mounts = 6;
    */
   mounts?: Mount[]
   /**
    * Command is appended after the image as the container command.
-   *
-   * @generated from field: repeated string command = 7;
    */
   command?: string[]
   /**
    * StopTimeoutSeconds is passed to docker stop when cancellation stops a
    * container. Docker's default stop timeout is used when zero.
-   *
-   * @generated from field: uint32 stop_timeout_seconds = 8;
    */
   stopTimeoutSeconds?: number
   /**
    * MilliCpu is the CPU requested by this target in milli-cores.
-   *
-   * @generated from field: uint64 milli_cpu = 9;
    */
   milliCpu?: bigint
   /**
    * MemoryBytes is the memory requested by this target in bytes.
-   *
-   * @generated from field: uint64 memory_bytes = 10;
    */
   memoryBytes?: bigint
   /**
    * OutputDir is the container directory where the command writes outputs.
    * Each file named after an entry in outputs becomes that output after a zero
    * exit. Required when outputs is set.
-   *
-   * @generated from field: string output_dir = 11;
    */
   outputDir?: string
   /**
    * Outputs lists the output names the command may write to output_dir.
    * A file absent after exit leaves its output unset.
-   *
-   * @generated from field: repeated string outputs = 12;
    */
   outputs?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.lib.docker.Config',
-  fields: [
-    { no: 1, name: 'docker_path', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'docker_env',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'scalar', T: ScalarType.STRING },
-    },
-    { no: 3, name: 'image', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'workdir', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 5,
-      name: 'env',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'scalar', T: ScalarType.STRING },
-    },
-    { no: 6, name: 'mounts', kind: 'message', T: Mount, repeated: true },
-    {
-      no: 7,
-      name: 'command',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 8,
-      name: 'stop_timeout_seconds',
-      kind: 'scalar',
-      T: ScalarType.UINT32,
-    },
-    { no: 9, name: 'milli_cpu', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 10, name: 'memory_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 11, name: 'output_dir', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 12,
-      name: 'outputs',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('forge.lib.docker.Config', () => [
+    [1, 'docker_path', 9],
+    [2, 'docker_env', 9, 584],
+    [3, 'image', 9],
+    [4, 'workdir', 9],
+    [5, 'env', 9, 584],
+    [6, 'mounts', 11, 1, Mount.codec],
+    [7, 'command', 9, 1],
+    [8, 'stop_timeout_seconds', 13],
+    [9, 'milli_cpu', 4],
+    [10, 'memory_bytes', 4],
+    [11, 'output_dir', 9],
+    [12, 'outputs', 9, 1],
+  ])
+
+/**
+ * Mount configures one docker bind mount.
+ *
+ * @generated from message forge.lib.docker.Mount
+ */
+export interface Mount {
+  /**
+   * HostPath is the host source path.
+   */
+  hostPath?: string
+  /**
+   * ContainerPath is the target path inside the container.
+   */
+  containerPath?: string
+  /**
+   * ReadOnly marks the bind mount read-only.
+   */
+  readOnly?: boolean
+}
+
+export const Mount: MessageType<Mount> =
+  /* @__PURE__ */ createMessageType<Mount>('forge.lib.docker.Mount', () => [
+    [1, 'host_path', 9],
+    [2, 'container_path', 9],
+    [3, 'read_only', 8],
+  ])

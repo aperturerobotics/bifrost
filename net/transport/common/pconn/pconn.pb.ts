@@ -5,8 +5,6 @@
 import { Opts as Opts$1 } from '../quic/quic.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Opts are extra options for the packet conn.
@@ -16,22 +14,18 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Opts {
   /**
    * Quic are the quic protocol options.
-   *
-   * @generated from field: transport.quic.Opts quic = 1;
    */
   quic?: Opts$1
   /**
    * Verbose turns on verbose debug logging.
-   *
-   * @generated from field: bool verbose = 2;
    */
   verbose?: boolean
 }
 
-export const Opts: MessageType<Opts> = /* @__PURE__ */ createMessageType({
-  typeName: 'pconn.Opts',
-  fields: [
-    { no: 1, name: 'quic', kind: 'message', T: () => Opts$1 },
-    { no: 2, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Opts: MessageType<Opts> = /* @__PURE__ */ createMessageType<Opts>(
+  'pconn.Opts',
+  () => [
+    [1, 'quic', 11, 0, Opts$1.codec],
+    [2, 'verbose', 8],
+  ],
+)

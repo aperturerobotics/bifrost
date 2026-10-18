@@ -9,9 +9,7 @@ import { Result } from '../value/value.pb.js'
 import { Placement } from '../worker/worker.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * State contains the possible Task states.
@@ -21,8 +19,6 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum State {
   /**
    * TaskState_UNKNOWN is the unknown type.
-   *
-   * @generated from enum value: TaskState_UNKNOWN = 0;
    */
   TaskState_UNKNOWN = 0,
 
@@ -31,8 +27,6 @@ export enum State {
    * If the <task/target> link or other inputs are not set, remains in PENDING state.
    * Transitions to RUNNING state when inputs are resolved and Pass is created.
    * Transitions to PENDING when the target or input values are updated.
-   *
-   * @generated from enum value: TaskState_PENDING = 1;
    */
   TaskState_PENDING = 1,
 
@@ -41,8 +35,6 @@ export enum State {
    * If the linked Target does not match the linked pass, cancel the pass.
    * If the inputs do not match the linked Pass inputs, cancel the pass.
    * If the pass becomes canceled, return to PENDING state.
-   *
-   * @generated from enum value: TaskState_RUNNING = 2;
    */
   TaskState_RUNNING = 2,
 
@@ -50,8 +42,6 @@ export enum State {
    * TaskState_CHECKING is the state when the Pass has completed.
    * The Task controller will then check the Pass results.
    * Transition to COMPLETE state on failure (invalid) or success (validation).
-   *
-   * @generated from enum value: TaskState_CHECKING = 3;
    */
   TaskState_CHECKING = 3,
 
@@ -60,8 +50,6 @@ export enum State {
    * A target or watched input change transitions the Task to PENDING.
    * An explicitly canceled Task remains stopped until retried.
    * COMPLETE includes both success and failure results.
-   *
-   * @generated from enum value: TaskState_COMPLETE = 4;
    */
   TaskState_COMPLETE = 4,
 
@@ -69,16 +57,18 @@ export enum State {
    * TaskState_RETRY wait for a change in Inputs before retrying with a new Pass.
    * When the assigned Pass is deleted or Inputs are different from latest resolved,
    * remove the <task/pass> graph link and transition to PENDING.
-   *
-   * @generated from enum value: TaskState_RETRY = 5;
    */
   TaskState_RETRY = 5,
 }
 
-export const State_Enum = /* @__PURE__ */ createEnumType(
-  'forge.task.State',
-  State,
-)
+export const State_Enum = /* @__PURE__ */ createEnumType('forge.task.State', [
+  [0, 'TaskState_UNKNOWN'],
+  [1, 'TaskState_PENDING'],
+  [2, 'TaskState_RUNNING'],
+  [3, 'TaskState_CHECKING'],
+  [4, 'TaskState_COMPLETE'],
+  [5, 'TaskState_RETRY'],
+])
 
 /**
  * Task contains state for running a Target.
@@ -95,32 +85,24 @@ export const State_Enum = /* @__PURE__ */ createEnumType(
 export interface Task {
   /**
    * TaskState is the current state of the task.
-   *
-   * @generated from field: forge.task.State task_state = 1;
    */
   taskState?: State
   /**
    * Name is the human readable Task name.
    * Example: "my-task-1"
    * Must be a valid DNS label as defined in RFC 1123.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * PeerId is the Task controller peer ID.
    * Usually the peer ID of the Cluster controller managing this Task.
    * Can be empty.
-   *
-   * @generated from field: string peer_id = 3;
    */
   peerId?: string
   /**
    * Replicas is the configured number of replicas for the created Pass.
    * Cannot be zero.
    * Task transitions to PENDING if different from latest Pass.
-   *
-   * @generated from field: uint32 replicas = 5;
    */
   replicas?: number
   /**
@@ -128,16 +110,12 @@ export interface Task {
    * Incremented when a new pass is added.
    * Can be initially zero when no Pass exists.
    * Task transitions to PENDING if different from latest Pass.
-   *
-   * @generated from field: uint64 pass_nonce = 6;
    */
   passNonce?: bigint
   /**
    * TargetRef is the block reference to the Target for the Task.
    * Can be initially empty.
    * Task transitions to PENDING when changed.
-   *
-   * @generated from field: block.BlockRef target_ref = 7;
    */
   targetRef?: BlockRef
   /**
@@ -146,14 +124,10 @@ export interface Task {
    * Can be initially empty.
    * If inputs change while a Pass is live, the Task remains RUNNING until the
    * Pass completes canceled, then transitions to PENDING.
-   *
-   * @generated from field: forge.target.ValueSet value_set = 8;
    */
   valueSet?: ValueSet
   /**
    * Result is information about the outcome of a completed Pass.
-   *
-   * @generated from field: forge.value.Result result = 9;
    */
   result?: Result
   /**
@@ -161,30 +135,26 @@ export interface Task {
    * Used as a reference timestamp to make all ops deterministic.
    * For example: all unixfs timestamps will be set to this value.
    * Must be set.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 10;
    */
   timestamp?: Date
   /**
    * Placement freezes the selected Worker and Device peer for every Pass of this Task.
-   *
-   * @generated from field: forge.worker.Placement placement = 11;
    */
   placement?: Placement
 }
 
-export const Task: MessageType<Task> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.task.Task',
-  fields: [
-    { no: 1, name: 'task_state', kind: 'enum', T: State_Enum },
-    { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'replicas', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 6, name: 'pass_nonce', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 7, name: 'target_ref', kind: 'message', T: () => BlockRef },
-    { no: 8, name: 'value_set', kind: 'message', T: () => ValueSet },
-    { no: 9, name: 'result', kind: 'message', T: () => Result },
-    { no: 10, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    { no: 11, name: 'placement', kind: 'message', T: () => Placement },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Task: MessageType<Task> = /* @__PURE__ */ createMessageType<Task>(
+  'forge.task.Task',
+  () => [
+    [1, 'task_state', 14, 0, State_Enum],
+    [2, 'name', 9],
+    [3, 'peer_id', 9],
+    [5, 'replicas', 13],
+    [6, 'pass_nonce', 4],
+    [7, 'target_ref', 11, 0, BlockRef.codec],
+    [8, 'value_set', 11, 0, ValueSet.codec],
+    [9, 'result', 11, 0, Result.codec],
+    [10, 'timestamp', 11, 0, Timestamp.codec],
+    [11, 'placement', 11, 0, Placement.codec],
+  ],
+)

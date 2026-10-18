@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * RuntimeCapabilityFlagRequest switches one runtime capability for the current
@@ -17,24 +15,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface RuntimeCapabilityFlagRequest {
   /**
    * Capability names the gated feature, such as storage.public-origin.
-   *
-   * @generated from field: string capability = 1;
    */
   capability?: string
-  /**
-   * @generated from field: bool enabled = 2;
-   */
   enabled?: boolean
 }
 
 export const RuntimeCapabilityFlagRequest: MessageType<RuntimeCapabilityFlagRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RuntimeCapabilityFlagRequest',
-    fields: [
-      { no: 1, name: 'capability', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RuntimeCapabilityFlagRequest>(
+    'provider.spacewave.api.RuntimeCapabilityFlagRequest',
+    () => [
+      [1, 'capability', 9],
+      [2, 'enabled', 8],
+    ],
+  )
 
 /**
  * RuntimeCapabilityFlagResponse reports the persisted setting.
@@ -42,21 +35,15 @@ export const RuntimeCapabilityFlagRequest: MessageType<RuntimeCapabilityFlagRequ
  * @generated from message provider.spacewave.api.RuntimeCapabilityFlagResponse
  */
 export interface RuntimeCapabilityFlagResponse {
-  /**
-   * @generated from field: string capability = 1;
-   */
   capability?: string
-  /**
-   * @generated from field: bool enabled = 2;
-   */
   enabled?: boolean
 }
 
 export const RuntimeCapabilityFlagResponse: MessageType<RuntimeCapabilityFlagResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RuntimeCapabilityFlagResponse',
-    fields: [
-      { no: 1, name: 'capability', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RuntimeCapabilityFlagResponse>(
+    'provider.spacewave.api.RuntimeCapabilityFlagResponse',
+    () => [
+      [1, 'capability', 9],
+      [2, 'enabled', 8],
+    ],
+  )

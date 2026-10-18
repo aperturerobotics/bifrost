@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Quad implements a graph quad backed by a protobuf.
@@ -15,36 +13,28 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Quad {
   /**
    * Subject is the subject field.
-   *
-   * @generated from field: string subject = 1;
    */
   subject?: string
   /**
    * Predicate is the object field.
-   *
-   * @generated from field: string predicate = 2;
    */
   predicate?: string
   /**
    * Obj is the object field.
-   *
-   * @generated from field: string obj = 3;
    */
   obj?: string
   /**
    * Label is the label field.
-   *
-   * @generated from field: string label = 4;
    */
   label?: string
 }
 
-export const Quad: MessageType<Quad> = /* @__PURE__ */ createMessageType({
-  typeName: 'quad.Quad',
-  fields: [
-    { no: 1, name: 'subject', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'predicate', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'obj', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Quad: MessageType<Quad> = /* @__PURE__ */ createMessageType<Quad>(
+  'quad.Quad',
+  () => [
+    [1, 'subject', 9],
+    [2, 'predicate', 9],
+    [3, 'obj', 9],
+    [4, 'label', 9],
+  ],
+)

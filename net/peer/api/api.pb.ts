@@ -5,10 +5,8 @@
 import { Config } from '../controller/config.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import type { ControllerStatus } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
 import { ControllerStatus_Enum } from '@go/github.com/aperturerobotics/controllerbus/controller/exec/exec.pb.js'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * IdentifyRequest is a request to load an identity.
@@ -18,19 +16,15 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 export interface IdentifyRequest {
   /**
    * Config is the request to configure the peer controller.
-   *
-   * @generated from field: peer.controller.Config config = 1;
    */
   config?: Config
 }
 
 export const IdentifyRequest: MessageType<IdentifyRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'peer.api.IdentifyRequest',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: () => Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IdentifyRequest>(
+    'peer.api.IdentifyRequest',
+    () => [[1, 'config', 11, 0, Config.codec]],
+  )
 
 /**
  * IdentifyResponse is a response to an identify request.
@@ -40,24 +34,15 @@ export const IdentifyRequest: MessageType<IdentifyRequest> =
 export interface IdentifyResponse {
   /**
    * ControllerStatus is the status of the peer controller.
-   *
-   * @generated from field: controller.exec.ControllerStatus controller_status = 1;
    */
   controllerStatus?: ControllerStatus
 }
 
 export const IdentifyResponse: MessageType<IdentifyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'peer.api.IdentifyResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'controller_status',
-        kind: 'enum',
-        T: ControllerStatus_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IdentifyResponse>(
+    'peer.api.IdentifyResponse',
+    () => [[1, 'controller_status', 14, 0, ControllerStatus_Enum]],
+  )
 
 /**
  * GetPeerInfoRequest is the request type for GetPeerInfo.
@@ -67,19 +52,15 @@ export const IdentifyResponse: MessageType<IdentifyResponse> =
 export interface GetPeerInfoRequest {
   /**
    * PeerId restricts the response to a specific peer ID.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const GetPeerInfoRequest: MessageType<GetPeerInfoRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'peer.api.GetPeerInfoRequest',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetPeerInfoRequest>(
+    'peer.api.GetPeerInfoRequest',
+    () => [[1, 'peer_id', 9]],
+  )
 
 /**
  * PeerInfo is basic information about a peer.
@@ -89,19 +70,14 @@ export const GetPeerInfoRequest: MessageType<GetPeerInfoRequest> =
 export interface PeerInfo {
   /**
    * PeerId is the b58 peer ID.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const PeerInfo: MessageType<PeerInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'peer.api.PeerInfo',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PeerInfo>('peer.api.PeerInfo', () => [
+    [1, 'peer_id', 9],
+  ])
 
 /**
  * GetPeerInfoResponse is the response type for GetPeerInfo.
@@ -111,22 +87,12 @@ export const PeerInfo: MessageType<PeerInfo> =
 export interface GetPeerInfoResponse {
   /**
    * LocalPeers is the set of peers loaded.
-   *
-   * @generated from field: repeated peer.api.PeerInfo local_peers = 1;
    */
   localPeers?: PeerInfo[]
 }
 
 export const GetPeerInfoResponse: MessageType<GetPeerInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'peer.api.GetPeerInfoResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'local_peers',
-        kind: 'message',
-        T: PeerInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetPeerInfoResponse>(
+    'peer.api.GetPeerInfoResponse',
+    () => [[1, 'local_peers', 11, 1, PeerInfo.codec]],
+  )

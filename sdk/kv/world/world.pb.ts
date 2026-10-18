@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ObjectRef } from '../../../db/bucket/bucket.pb.js'
 
 /**
@@ -17,30 +15,27 @@ import { ObjectRef } from '../../../db/bucket/bucket.pb.js'
 export enum KvMutationKind {
   /**
    * KV_MUTATION_KIND_UNSPECIFIED is invalid.
-   *
-   * @generated from enum value: KV_MUTATION_KIND_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * KV_MUTATION_KIND_SET stores a value at a key.
-   *
-   * @generated from enum value: KV_MUTATION_KIND_SET = 1;
    */
   SET = 1,
 
   /**
    * KV_MUTATION_KIND_DELETE removes a key.
-   *
-   * @generated from enum value: KV_MUTATION_KIND_DELETE = 2;
    */
   DELETE = 2,
 }
 
 export const KvMutationKind_Enum = /* @__PURE__ */ createEnumType(
   's4wave.kv.world.KvMutationKind',
-  KvMutationKind,
-  'KV_MUTATION_KIND_',
+  [
+    [0, 'KV_MUTATION_KIND_UNSPECIFIED'],
+    [1, 'KV_MUTATION_KIND_SET'],
+    [2, 'KV_MUTATION_KIND_DELETE'],
+  ],
 )
 
 /**
@@ -51,33 +46,27 @@ export const KvMutationKind_Enum = /* @__PURE__ */ createEnumType(
 export interface KvMutation {
   /**
    * Kind is the mutation operation.
-   *
-   * @generated from field: s4wave.kv.world.KvMutationKind kind = 1;
    */
   kind?: KvMutationKind
   /**
    * Key is the KVTX key.
-   *
-   * @generated from field: bytes key = 2;
    */
   key?: Uint8Array
   /**
    * Value is the KVTX value for set mutations.
-   *
-   * @generated from field: bytes value = 3;
    */
   value?: Uint8Array
 }
 
 export const KvMutation: MessageType<KvMutation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.kv.world.KvMutation',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: KvMutationKind_Enum },
-      { no: 2, name: 'key', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'value', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KvMutation>(
+    's4wave.kv.world.KvMutation',
+    () => [
+      [1, 'kind', 14, 0, KvMutationKind_Enum],
+      [2, 'key', 12],
+      [3, 'value', 12],
+    ],
+  )
 
 /**
  * KvSetRootOp advances a kv/store world object's root after a KVTX commit.
@@ -87,43 +76,29 @@ export const KvMutation: MessageType<KvMutation> =
 export interface KvSetRootOp {
   /**
    * ObjectKey is the kv/store object key to update.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RootRef is the committed KVTX root reference.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
    */
   rootRef?: ObjectRef
   /**
    * BaseRef is the object root the transaction committed from.
-   *
-   * @generated from field: bucket.ObjectRef base_ref = 3;
    */
   baseRef?: ObjectRef
   /**
    * Mutations are the committed writes needed to rebase from a moved base.
-   *
-   * @generated from field: repeated s4wave.kv.world.KvMutation mutations = 4;
    */
   mutations?: KvMutation[]
 }
 
 export const KvSetRootOp: MessageType<KvSetRootOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.kv.world.KvSetRootOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-      { no: 3, name: 'base_ref', kind: 'message', T: () => ObjectRef },
-      {
-        no: 4,
-        name: 'mutations',
-        kind: 'message',
-        T: KvMutation,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KvSetRootOp>(
+    's4wave.kv.world.KvSetRootOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+      [3, 'base_ref', 11, 0, ObjectRef.codec],
+      [4, 'mutations', 11, 1, KvMutation.codec],
+    ],
+  )

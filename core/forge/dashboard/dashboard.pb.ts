@@ -4,9 +4,7 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ForgeDashboard is a unified control panel linking to Forge entities in a
@@ -17,26 +15,22 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface ForgeDashboard {
   /**
    * Name is the display name of this dashboard.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * CreatedAt is the time this dashboard was created.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 2;
    */
   createdAt?: Date
 }
 
 export const ForgeDashboard: MessageType<ForgeDashboard> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.forge.dashboard.ForgeDashboard',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'created_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ForgeDashboard>(
+    's4wave.forge.dashboard.ForgeDashboard',
+    () => [
+      [1, 'name', 9],
+      [2, 'created_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * CreateForgeDashboardOp creates a new ForgeDashboard world object.
@@ -46,33 +40,27 @@ export const ForgeDashboard: MessageType<ForgeDashboard> =
 export interface CreateForgeDashboardOp {
   /**
    * ObjectKey is the key to create the dashboard at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the display name of the dashboard.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
 }
 
 export const CreateForgeDashboardOp: MessageType<CreateForgeDashboardOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.forge.dashboard.CreateForgeDashboardOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateForgeDashboardOp>(
+    's4wave.forge.dashboard.CreateForgeDashboardOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * LinkForgeDashboardOp links a Forge entity to a ForgeDashboard.
@@ -82,26 +70,22 @@ export const CreateForgeDashboardOp: MessageType<CreateForgeDashboardOp> =
 export interface LinkForgeDashboardOp {
   /**
    * DashboardKey is the dashboard object key.
-   *
-   * @generated from field: string dashboard_key = 1;
    */
   dashboardKey?: string
   /**
    * EntityKey is the Forge entity object key to link.
-   *
-   * @generated from field: string entity_key = 2;
    */
   entityKey?: string
 }
 
 export const LinkForgeDashboardOp: MessageType<LinkForgeDashboardOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.forge.dashboard.LinkForgeDashboardOp',
-    fields: [
-      { no: 1, name: 'dashboard_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'entity_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LinkForgeDashboardOp>(
+    's4wave.forge.dashboard.LinkForgeDashboardOp',
+    () => [
+      [1, 'dashboard_key', 9],
+      [2, 'entity_key', 9],
+    ],
+  )
 
 /**
  * InitForgeQuickstartOp creates a complete Forge environment:
@@ -113,60 +97,46 @@ export const LinkForgeDashboardOp: MessageType<LinkForgeDashboardOp> =
 export interface InitForgeQuickstartOp {
   /**
    * LayoutKey is the object key for the ObjectLayout.
-   *
-   * @generated from field: string layout_key = 1;
    */
   layoutKey?: string
   /**
    * DashboardKey is the object key for the Forge Dashboard.
-   *
-   * @generated from field: string dashboard_key = 2;
    */
   dashboardKey?: string
   /**
    * ClusterKey is the object key for the Forge Cluster.
-   *
-   * @generated from field: string cluster_key = 3;
    */
   clusterKey?: string
   /**
    * ClusterName is the display name for the cluster.
-   *
-   * @generated from field: string cluster_name = 4;
    */
   clusterName?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 5;
    */
   timestamp?: Date
   /**
    * WorkerKey is the object key for the session worker.
    * If empty, no worker is created.
-   *
-   * @generated from field: string worker_key = 6;
    */
   workerKey?: string
   /**
    * SessionPeerId is the peer ID of the creating session.
    * Used to link the worker to the session's keypair.
-   *
-   * @generated from field: string session_peer_id = 7;
    */
   sessionPeerId?: string
 }
 
 export const InitForgeQuickstartOp: MessageType<InitForgeQuickstartOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.forge.dashboard.InitForgeQuickstartOp',
-    fields: [
-      { no: 1, name: 'layout_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'dashboard_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'cluster_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 6, name: 'worker_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitForgeQuickstartOp>(
+    's4wave.forge.dashboard.InitForgeQuickstartOp',
+    () => [
+      [1, 'layout_key', 9],
+      [2, 'dashboard_key', 9],
+      [3, 'cluster_key', 9],
+      [4, 'cluster_name', 9],
+      [5, 'timestamp', 11, 0, Timestamp.codec],
+      [6, 'worker_key', 9],
+      [7, 'session_peer_id', 9],
+    ],
+  )

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the root resource server controller.
@@ -17,28 +15,19 @@ export interface Config {
    * ServiceId overrides which service id the controller will respond to.
    * Defaults to s4wave.resource.ResourceService
    * Can be empty.
-   *
-   * @generated from field: string service_id = 1;
    */
   serviceId?: string
   /**
    * AppPluginIds declares the plugins this application supplies to mounted Spaces.
-   *
-   * @generated from field: repeated string app_plugin_ids = 2;
    */
   appPluginIds?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'resource.root.controller.Config',
-  fields: [
-    { no: 1, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'app_plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'resource.root.controller.Config',
+    () => [
+      [1, 'service_id', 9],
+      [2, 'app_plugin_ids', 9, 1],
+    ],
+  )

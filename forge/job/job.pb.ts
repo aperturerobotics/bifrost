@@ -8,7 +8,6 @@ import { Placement } from '../worker/worker.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * State contains the possible Job states.
@@ -18,16 +17,12 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum State {
   /**
    * JobState_UNKNOWN is the unknown type.
-   *
-   * @generated from enum value: JobState_UNKNOWN = 0;
    */
   JobState_UNKNOWN = 0,
 
   /**
    * JobState_PENDING indicates the job is queued for execution.
    * Transitions to RUNNING state when the scheduler starts the job.
-   *
-   * @generated from enum value: JobState_PENDING = 1;
    */
   JobState_PENDING = 1,
 
@@ -36,24 +31,22 @@ export enum State {
    *
    * If the job is returned to PENDING, all ongoing Pass are canceled, and
    * replaced with new Pass in PENDING state.
-   *
-   * @generated from enum value: JobState_RUNNING = 2;
    */
   JobState_RUNNING = 2,
 
   /**
    * JobState_COMPLETE is the normal terminal state of the job.
    * This includes both success and failure termination states.
-   *
-   * @generated from enum value: JobState_COMPLETE = 3;
    */
   JobState_COMPLETE = 3,
 }
 
-export const State_Enum = /* @__PURE__ */ createEnumType(
-  'forge.job.State',
-  State,
-)
+export const State_Enum = /* @__PURE__ */ createEnumType('forge.job.State', [
+  [0, 'JobState_UNKNOWN'],
+  [1, 'JobState_PENDING'],
+  [2, 'JobState_RUNNING'],
+  [3, 'JobState_COMPLETE'],
+])
 
 /**
  * Job contains state for running a set of Tasks.
@@ -72,14 +65,10 @@ export const State_Enum = /* @__PURE__ */ createEnumType(
 export interface Job {
   /**
    * JobState is the current state of the job.
-   *
-   * @generated from field: forge.job.State job_state = 1;
    */
   jobState?: State
   /**
    * Result is information about the outcome of a completed Job.
-   *
-   * @generated from field: forge.value.Result result = 2;
    */
   result?: Result
   /**
@@ -87,24 +76,20 @@ export interface Job {
    * Used as a reference timestamp to make all ops deterministic.
    * For example: all unixfs timestamps will be set to this value.
    * Must be set.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
   /**
    * Placement is the immutable Worker and Device peer selected when this Job was created.
-   *
-   * @generated from field: forge.worker.Placement placement = 4;
    */
   placement?: Placement
 }
 
-export const Job: MessageType<Job> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.job.Job',
-  fields: [
-    { no: 1, name: 'job_state', kind: 'enum', T: State_Enum },
-    { no: 2, name: 'result', kind: 'message', T: () => Result },
-    { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    { no: 4, name: 'placement', kind: 'message', T: () => Placement },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Job: MessageType<Job> = /* @__PURE__ */ createMessageType<Job>(
+  'forge.job.Job',
+  () => [
+    [1, 'job_state', 14, 0, State_Enum],
+    [2, 'result', 11, 0, Result.codec],
+    [3, 'timestamp', 11, 0, Timestamp.codec],
+    [4, 'placement', 11, 0, Placement.codec],
+  ],
+)

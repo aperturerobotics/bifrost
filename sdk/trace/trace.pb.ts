@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * StartTraceRequest is the request for StartTrace.
@@ -18,19 +13,15 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface StartTraceRequest {
   /**
    * Label is an optional human-readable label for the capture.
-   *
-   * @generated from field: string label = 1;
    */
   label?: string
 }
 
 export const StartTraceRequest: MessageType<StartTraceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.trace.StartTraceRequest',
-    fields: [
-      { no: 1, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartTraceRequest>(
+    's4wave.trace.StartTraceRequest',
+    () => [[1, 'label', 9]],
+  )
 
 /**
  * StartTraceResponse is the response for StartTrace.
@@ -40,9 +31,9 @@ export const StartTraceRequest: MessageType<StartTraceRequest> =
 export interface StartTraceResponse {}
 
 export const StartTraceResponse: MessageType<StartTraceResponse> =
-  /* @__PURE__ */ createEmptyMessageType<StartTraceResponse>(
+  /* @__PURE__ */ createMessageType<StartTraceResponse>(
     's4wave.trace.StartTraceResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -53,9 +44,9 @@ export const StartTraceResponse: MessageType<StartTraceResponse> =
 export interface StopTraceRequest {}
 
 export const StopTraceRequest: MessageType<StopTraceRequest> =
-  /* @__PURE__ */ createEmptyMessageType<StopTraceRequest>(
+  /* @__PURE__ */ createMessageType<StopTraceRequest>(
     's4wave.trace.StopTraceRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -66,19 +57,15 @@ export const StopTraceRequest: MessageType<StopTraceRequest> =
 export interface StopTraceResponse {
   /**
    * Data is a chunk of the raw runtime trace bytes.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
 }
 
 export const StopTraceResponse: MessageType<StopTraceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.trace.StopTraceResponse',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StopTraceResponse>(
+    's4wave.trace.StopTraceResponse',
+    () => [[1, 'data', 12]],
+  )
 
 /**
  * CaptureCPUProfileRequest is the request for CaptureCPUProfile.
@@ -88,26 +75,22 @@ export const StopTraceResponse: MessageType<StopTraceResponse> =
 export interface CaptureCPUProfileRequest {
   /**
    * DurationMillis is the CPU profile capture duration in milliseconds.
-   *
-   * @generated from field: uint32 duration_millis = 1;
    */
   durationMillis?: number
   /**
    * Label is an optional human-readable label for the capture.
-   *
-   * @generated from field: string label = 2;
    */
   label?: string
 }
 
 export const CaptureCPUProfileRequest: MessageType<CaptureCPUProfileRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.trace.CaptureCPUProfileRequest',
-    fields: [
-      { no: 1, name: 'duration_millis', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CaptureCPUProfileRequest>(
+    's4wave.trace.CaptureCPUProfileRequest',
+    () => [
+      [1, 'duration_millis', 13],
+      [2, 'label', 9],
+    ],
+  )
 
 /**
  * CaptureCPUProfileResponse is a streamed response chunk for CaptureCPUProfile.
@@ -117,19 +100,15 @@ export const CaptureCPUProfileRequest: MessageType<CaptureCPUProfileRequest> =
 export interface CaptureCPUProfileResponse {
   /**
    * Data is a chunk of the raw pprof CPU profile bytes.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
 }
 
 export const CaptureCPUProfileResponse: MessageType<CaptureCPUProfileResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.trace.CaptureCPUProfileResponse',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CaptureCPUProfileResponse>(
+    's4wave.trace.CaptureCPUProfileResponse',
+    () => [[1, 'data', 12]],
+  )
 
 /**
  * CaptureMemoryProfileRequest is the request for CaptureMemoryProfile.
@@ -139,33 +118,27 @@ export const CaptureCPUProfileResponse: MessageType<CaptureCPUProfileResponse> =
 export interface CaptureMemoryProfileRequest {
   /**
    * Profile is the runtime/pprof memory profile name: "heap" or "allocs".
-   *
-   * @generated from field: string profile = 1;
    */
   profile?: string
   /**
    * Gc forces a garbage collection before capturing the profile.
-   *
-   * @generated from field: bool gc = 2;
    */
   gc?: boolean
   /**
    * Debug is the pprof output debug level.
-   *
-   * @generated from field: int32 debug = 3;
    */
   debug?: number
 }
 
 export const CaptureMemoryProfileRequest: MessageType<CaptureMemoryProfileRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.trace.CaptureMemoryProfileRequest',
-    fields: [
-      { no: 1, name: 'profile', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'gc', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'debug', kind: 'scalar', T: ScalarType.INT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CaptureMemoryProfileRequest>(
+    's4wave.trace.CaptureMemoryProfileRequest',
+    () => [
+      [1, 'profile', 9],
+      [2, 'gc', 8],
+      [3, 'debug', 5],
+    ],
+  )
 
 /**
  * CaptureMemoryProfileResponse is a streamed response chunk for CaptureMemoryProfile.
@@ -175,16 +148,12 @@ export const CaptureMemoryProfileRequest: MessageType<CaptureMemoryProfileReques
 export interface CaptureMemoryProfileResponse {
   /**
    * Data is a chunk of the raw pprof memory profile bytes.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
 }
 
 export const CaptureMemoryProfileResponse: MessageType<CaptureMemoryProfileResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.trace.CaptureMemoryProfileResponse',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CaptureMemoryProfileResponse>(
+    's4wave.trace.CaptureMemoryProfileResponse',
+    () => [[1, 'data', 12]],
+  )

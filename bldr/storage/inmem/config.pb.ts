@@ -5,8 +5,6 @@
 import { Config } from '@go/github.com/s4wave/spacewave/db/volume/controller/controller.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * VolumeConfig configures a volume backed by in-memory storage.
@@ -16,35 +14,24 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface VolumeConfig {
   /**
    * StorageId identifies the storage that owns the volume.
-   *
-   * @generated from field: string storage_id = 1;
    */
   storageId?: string
   /**
    * StorageVolumeId identifies the volume within the storage.
-   *
-   * @generated from field: string storage_volume_id = 2;
    */
   storageVolumeId?: string
   /**
    * VolumeConfig is the volume controller config.
-   *
-   * @generated from field: volume.controller.Config volume_config = 3;
    */
   volumeConfig?: Config
 }
 
 export const VolumeConfig: MessageType<VolumeConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'storage.inmem.VolumeConfig',
-    fields: [
-      { no: 1, name: 'storage_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'storage_volume_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'volume_config', kind: 'message', T: () => Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<VolumeConfig>(
+    'storage.inmem.VolumeConfig',
+    () => [
+      [1, 'storage_id', 9],
+      [2, 'storage_volume_id', 9],
+      [3, 'volume_config', 11, 0, Config.codec],
+    ],
+  )

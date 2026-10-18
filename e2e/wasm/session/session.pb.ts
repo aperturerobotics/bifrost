@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * EstablishLinkState represents the state of link establishment.
@@ -19,36 +14,33 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum EstablishLinkState {
   /**
    * EstablishLinkState_UNKNOWN is the default state.
-   *
-   * @generated from enum value: EstablishLinkState_UNKNOWN = 0;
    */
   EstablishLinkState_UNKNOWN = 0,
 
   /**
    * EstablishLinkState_PENDING indicates the link is being established.
-   *
-   * @generated from enum value: EstablishLinkState_PENDING = 1;
    */
   EstablishLinkState_PENDING = 1,
 
   /**
    * EstablishLinkState_CONNECTED indicates the bifrost link is up.
-   *
-   * @generated from enum value: EstablishLinkState_CONNECTED = 2;
    */
   EstablishLinkState_CONNECTED = 2,
 
   /**
    * EstablishLinkState_FAILED indicates link establishment failed.
-   *
-   * @generated from enum value: EstablishLinkState_FAILED = 3;
    */
   EstablishLinkState_FAILED = 3,
 }
 
 export const EstablishLinkState_Enum = /* @__PURE__ */ createEnumType(
   'e2e.wasm.session.EstablishLinkState',
-  EstablishLinkState,
+  [
+    [0, 'EstablishLinkState_UNKNOWN'],
+    [1, 'EstablishLinkState_PENDING'],
+    [2, 'EstablishLinkState_CONNECTED'],
+    [3, 'EstablishLinkState_FAILED'],
+  ],
 )
 
 /**
@@ -59,9 +51,9 @@ export const EstablishLinkState_Enum = /* @__PURE__ */ createEnumType(
 export interface GetPeerInfoRequest {}
 
 export const GetPeerInfoRequest: MessageType<GetPeerInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetPeerInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetPeerInfoRequest>(
     'e2e.wasm.session.GetPeerInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -72,19 +64,15 @@ export const GetPeerInfoRequest: MessageType<GetPeerInfoRequest> =
 export interface GetPeerInfoResponse {
   /**
    * PeerId is the local bifrost peer ID (base58-encoded).
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const GetPeerInfoResponse: MessageType<GetPeerInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'e2e.wasm.session.GetPeerInfoResponse',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetPeerInfoResponse>(
+    'e2e.wasm.session.GetPeerInfoResponse',
+    () => [[1, 'peer_id', 9]],
+  )
 
 /**
  * RunQuicRwcFixtureRequest is the request type for RunQuicRwcFixture.
@@ -94,19 +82,15 @@ export const GetPeerInfoResponse: MessageType<GetPeerInfoResponse> =
 export interface RunQuicRwcFixtureRequest {
   /**
    * Payload is the stream payload to echo.
-   *
-   * @generated from field: bytes payload = 1;
    */
   payload?: Uint8Array
 }
 
 export const RunQuicRwcFixtureRequest: MessageType<RunQuicRwcFixtureRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'e2e.wasm.session.RunQuicRwcFixtureRequest',
-    fields: [
-      { no: 1, name: 'payload', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RunQuicRwcFixtureRequest>(
+    'e2e.wasm.session.RunQuicRwcFixtureRequest',
+    () => [[1, 'payload', 12]],
+  )
 
 /**
  * RunQuicRwcFixtureResponse is the response type for RunQuicRwcFixture.
@@ -116,19 +100,15 @@ export const RunQuicRwcFixtureRequest: MessageType<RunQuicRwcFixtureRequest> =
 export interface RunQuicRwcFixtureResponse {
   /**
    * EchoedPayload is the payload returned over a QUIC stream.
-   *
-   * @generated from field: bytes echoed_payload = 1;
    */
   echoedPayload?: Uint8Array
 }
 
 export const RunQuicRwcFixtureResponse: MessageType<RunQuicRwcFixtureResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'e2e.wasm.session.RunQuicRwcFixtureResponse',
-    fields: [
-      { no: 1, name: 'echoed_payload', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RunQuicRwcFixtureResponse>(
+    'e2e.wasm.session.RunQuicRwcFixtureResponse',
+    () => [[1, 'echoed_payload', 12]],
+  )
 
 /**
  * WatchStateRequest is the request type for WatchState.
@@ -138,19 +118,15 @@ export const RunQuicRwcFixtureResponse: MessageType<RunQuicRwcFixtureResponse> =
 export interface WatchStateRequest {
   /**
    * TargetPeerId is the base58-encoded peer ID to establish a link with.
-   *
-   * @generated from field: string target_peer_id = 1;
    */
   targetPeerId?: string
 }
 
 export const WatchStateRequest: MessageType<WatchStateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'e2e.wasm.session.WatchStateRequest',
-    fields: [
-      { no: 1, name: 'target_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchStateRequest>(
+    'e2e.wasm.session.WatchStateRequest',
+    () => [[1, 'target_peer_id', 9]],
+  )
 
 /**
  * WatchStateResponse is the response type for WatchState.
@@ -160,41 +136,15 @@ export const WatchStateRequest: MessageType<WatchStateRequest> =
 export interface WatchStateResponse {
   /**
    * State is the current link establishment state.
-   *
-   * @generated from field: e2e.wasm.session.EstablishLinkState state = 1;
    */
   state?: EstablishLinkState
 }
 
 export const WatchStateResponse: MessageType<WatchStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'e2e.wasm.session.WatchStateResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'enum', T: EstablishLinkState_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SignalRelayInit identifies the remote peer for the relay session.
- *
- * @generated from message e2e.wasm.session.SignalRelayInit
- */
-export interface SignalRelayInit {
-  /**
-   * RemotePeerId is the base58-encoded peer ID of the remote peer.
-   *
-   * @generated from field: string remote_peer_id = 1;
-   */
-  remotePeerId?: string
-}
-
-export const SignalRelayInit: MessageType<SignalRelayInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'e2e.wasm.session.SignalRelayInit',
-    fields: [
-      { no: 1, name: 'remote_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchStateResponse>(
+    'e2e.wasm.session.WatchStateResponse',
+    () => [[1, 'state', 14, 0, EstablishLinkState_Enum]],
+  )
 
 /**
  * SignalRelayMessage is a message in the SignalRelay bidirectional stream.
@@ -206,48 +156,34 @@ export interface SignalRelayMessage {
    * @generated from oneof e2e.wasm.session.SignalRelayMessage.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Init identifies the remote peer for the relay session. Must be the
-         * first message sent by the client.
-         *
-         * @generated from field: e2e.wasm.session.SignalRelayInit init = 1;
-         */
-        value: SignalRelayInit
-        case: 'init'
-      }
-    | {
-        /**
-         * Data carries opaque signaling bytes.
-         *
-         * @generated from field: bytes data = 2;
-         */
-        value: Uint8Array
-        case: 'data'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: SignalRelayInit; case: 'init' }
+    | { value: Uint8Array; case: 'data' }
 }
 
 export const SignalRelayMessage: MessageType<SignalRelayMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'e2e.wasm.session.SignalRelayMessage',
-    fields: [
-      {
-        no: 1,
-        name: 'init',
-        kind: 'message',
-        T: SignalRelayInit,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'data',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SignalRelayMessage>(
+    'e2e.wasm.session.SignalRelayMessage',
+    () => [
+      [1, 'init', 11, 0, SignalRelayInit.codec, 'body'],
+      [2, 'data', 12, 0, 0, 'body'],
+    ],
+  )
+
+/**
+ * SignalRelayInit identifies the remote peer for the relay session.
+ *
+ * @generated from message e2e.wasm.session.SignalRelayInit
+ */
+export interface SignalRelayInit {
+  /**
+   * RemotePeerId is the base58-encoded peer ID of the remote peer.
+   */
+  remotePeerId?: string
+}
+
+export const SignalRelayInit: MessageType<SignalRelayInit> =
+  /* @__PURE__ */ createMessageType<SignalRelayInit>(
+    'e2e.wasm.session.SignalRelayInit',
+    () => [[1, 'remote_peer_id', 9]],
+  )

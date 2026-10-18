@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * RefreshRequest optionally limits an invalidation to its published Space.
@@ -15,19 +13,15 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface RefreshRequest {
   /**
    * SpaceId is empty for an explicit refresh of the configured mount.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
 }
 
 export const RefreshRequest: MessageType<RefreshRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'cdn.world.controller.RefreshRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RefreshRequest>(
+    'cdn.world.controller.RefreshRequest',
+    () => [[1, 'space_id', 9]],
+  )
 
 /**
  * RefreshResponse confirms that a matching mount accepted the invalidation.
@@ -37,19 +31,15 @@ export const RefreshRequest: MessageType<RefreshRequest> =
 export interface RefreshResponse {
   /**
    * Accepted is true when the mount queued the requested refresh.
-   *
-   * @generated from field: bool accepted = 1;
    */
   accepted?: boolean
 }
 
 export const RefreshResponse: MessageType<RefreshResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'cdn.world.controller.RefreshResponse',
-    fields: [
-      { no: 1, name: 'accepted', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RefreshResponse>(
+    'cdn.world.controller.RefreshResponse',
+    () => [[1, 'accepted', 8]],
+  )
 
 /**
  * Config configures a read-only CDN-backed world engine controller.
@@ -59,40 +49,28 @@ export const RefreshResponse: MessageType<RefreshResponse> =
 export interface Config {
   /**
    * EngineId is the world engine id exposed on the bus.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
    * SpaceId is the public CDN Space id.
-   *
-   * @generated from field: string space_id = 2;
    */
   spaceId?: string
   /**
    * CdnBaseUrl is the public CDN base URL.
-   *
-   * @generated from field: string cdn_base_url = 3;
    */
   cdnBaseUrl?: string
   /**
    * PointerTtlDur is the cached root pointer TTL.
    * Empty uses the CDN block store default. Negative disables expiry.
-   *
-   * @generated from field: string pointer_ttl_dur = 4;
    */
   pointerTtlDur?: string
   /**
    * CacheBlockStoreId optionally resolves the lifecycle-owned local block store
    * used for durable writeback while reading remote pack ranges.
-   *
-   * @generated from field: string cache_block_store_id = 5;
    */
   cacheBlockStoreId?: string
   /**
    * WritebackWindowBytes sets the semantic co-block writeback window.
-   *
-   * @generated from field: int64 writeback_window_bytes = 6;
    */
   writebackWindowBytes?: bigint
   /**
@@ -103,50 +81,27 @@ export interface Config {
    * store RPC. The controller fetches the root pointer independently to build
    * its world head. It resolves no LookupBlockStore because it owns no store.
    * Mutually exclusive with cache_block_store_id.
-   *
-   * @generated from field: string supplied_block_store_id = 7;
    */
   suppliedBlockStoreId?: string
   /**
    * RootPointerBaseUrl optionally serves root.packedmsg from another base URL,
    * so an owner can serve the mutable pointer from its own server and keep the
    * CDN hostname immutable. Empty reads the pointer from cdn_base_url.
-   *
-   * @generated from field: string root_pointer_base_url = 8;
    */
   rootPointerBaseUrl?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'cdn.world.controller.Config',
-  fields: [
-    { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'cdn_base_url', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'pointer_ttl_dur', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 5,
-      name: 'cache_block_store_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 6,
-      name: 'writeback_window_bytes',
-      kind: 'scalar',
-      T: ScalarType.INT64,
-    },
-    {
-      no: 7,
-      name: 'supplied_block_store_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 8,
-      name: 'root_pointer_base_url',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'cdn.world.controller.Config',
+    () => [
+      [1, 'engine_id', 9],
+      [2, 'space_id', 9],
+      [3, 'cdn_base_url', 9],
+      [4, 'pointer_ttl_dur', 9],
+      [5, 'cache_block_store_id', 9],
+      [6, 'writeback_window_bytes', 3],
+      [7, 'supplied_block_store_id', 9],
+      [8, 'root_pointer_base_url', 9],
+    ],
+  )

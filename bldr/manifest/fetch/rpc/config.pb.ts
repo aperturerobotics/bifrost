@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures a controller to fetch via the ManifestFetch service.
@@ -17,35 +15,22 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * ServiceId is the service id to contact with LookupRpcClient.
-   *
-   * @generated from field: string service_id = 1;
    */
   serviceId?: string
   /**
    * ClientId is the client identifier to use to contact the rpc service.
-   *
-   * @generated from field: string client_id = 2;
    */
   clientId?: string
   /**
    * FetchManifestIdRe is the regex of manifest IDs to fetch with this controller.
    * If empty, will forward any FetchManifest directive to the service.
-   *
-   * @generated from field: string fetch_manifest_id_re = 3;
    */
   fetchManifestIdRe?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'manifest.fetch.rpc.Config',
-  fields: [
-    { no: 1, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'client_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'fetch_manifest_id_re',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('manifest.fetch.rpc.Config', () => [
+    [1, 'service_id', 9],
+    [2, 'client_id', 9],
+    [3, 'fetch_manifest_id_re', 9],
+  ])

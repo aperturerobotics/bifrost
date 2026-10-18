@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { BlockRef } from '@go/github.com/s4wave/spacewave/db/block/block.pb.js'
 import { ObjectRef } from '@go/github.com/s4wave/spacewave/db/bucket/bucket.pb.js'
 import { SignedMsg } from '@go/github.com/s4wave/spacewave/net/peer/peer.pb.js'
@@ -22,58 +17,46 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export interface ManifestMeta {
   /**
    * ManifestId is the identifier of the manifest.
-   *
-   * @generated from field: string manifest_id = 1;
    */
   manifestId?: string
   /**
    * BuildType is the type of build this is.
    * Usually "development" or "production".
-   *
-   * @generated from field: string build_type = 2;
    */
   buildType?: string
   /**
    * PlatformId is the target platform ID.
-   *
-   * @generated from field: string platform_id = 3;
    */
   platformId?: string
   /**
    * Rev is the rev number of the manifest.
    * Higher revision numbers take priority over lower.
    * The number is incremented with each manifest build.
-   *
-   * @generated from field: uint64 rev = 4;
    */
   rev?: bigint
   /**
    * Description is a short human-readable description of the manifest.
-   *
-   * @generated from field: string description = 5;
    */
   description?: string
   /**
    * Background declares that the plugin can run without an open view.
    * A Session runs it in the background only after its user confirms.
-   *
-   * @generated from field: bool background = 6;
    */
   background?: boolean
 }
 
 export const ManifestMeta: MessageType<ManifestMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.ManifestMeta',
-    fields: [
-      { no: 1, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'build_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'background', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ManifestMeta>(
+    'bldr.manifest.ManifestMeta',
+    () => [
+      [1, 'manifest_id', 9],
+      [2, 'build_type', 9],
+      [3, 'platform_id', 9],
+      [4, 'rev', 4],
+      [5, 'description', 9],
+      [6, 'background', 8],
+    ],
+  )
 
 /**
  * Manifest contains metadata and contents.
@@ -84,57 +67,38 @@ export const ManifestMeta: MessageType<ManifestMeta> =
 export interface Manifest {
   /**
    * Meta is the manifest metadata.
-   *
-   * @generated from field: bldr.manifest.ManifestMeta meta = 1;
    */
   meta?: ManifestMeta
   /**
    * Entrypoint is the path in the dist fs to the entrypoint binary.
-   *
-   * @generated from field: string entrypoint = 2;
    */
   entrypoint?: string
   /**
    * DistFsRef references a UnixFS FS_NODE containing distribution files.
    * Dist files are checked out to the disk when starting the plugin.
-   *
-   * @generated from field: block.BlockRef dist_fs_ref = 3;
    */
   distFsRef?: BlockRef
   /**
    * AssetsFsRef references a UnixFS FS_NODE containing assets.
    * Asset files are accessible by the plugin at runtime in-memory.
-   *
-   * @generated from field: block.BlockRef assets_fs_ref = 4;
    */
   assetsFsRef?: BlockRef
   /**
    * Deps lists the plugin IDs this plugin depends on, sorted.
    * The plugin host loads each one alongside this plugin and holds it while
    * this plugin runs.
-   *
-   * @generated from field: repeated string deps = 5;
    */
   deps?: string[]
 }
 
 export const Manifest: MessageType<Manifest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.Manifest',
-    fields: [
-      { no: 1, name: 'meta', kind: 'message', T: ManifestMeta },
-      { no: 2, name: 'entrypoint', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'dist_fs_ref', kind: 'message', T: () => BlockRef },
-      { no: 4, name: 'assets_fs_ref', kind: 'message', T: () => BlockRef },
-      {
-        no: 5,
-        name: 'deps',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Manifest>('bldr.manifest.Manifest', () => [
+    [1, 'meta', 11, 0, ManifestMeta.codec],
+    [2, 'entrypoint', 9],
+    [3, 'dist_fs_ref', 11, 0, BlockRef.codec],
+    [4, 'assets_fs_ref', 11, 0, BlockRef.codec],
+    [5, 'deps', 9, 1],
+  ])
 
 /**
  * ManifestRef is a reference to a Manifest with some hints.
@@ -145,39 +109,28 @@ export interface ManifestRef {
   /**
    * Meta is the manifest metadata.
    * Must match the ManifestRef.Meta field.
-   *
-   * @generated from field: bldr.manifest.ManifestMeta meta = 1;
    */
   meta?: ManifestMeta
   /**
    * ManifestRef is the reference to the manifest.
-   *
-   * @generated from field: bucket.ObjectRef manifest_ref = 2;
    */
   manifestRef?: ObjectRef
   /**
    * ReleaseAuthorization is a purpose-bound SignedMsg of ReleaseAuthorization.
    * The release peer signs the exact Manifest root independently of its location.
-   *
-   * @generated from field: peer.SignedMsg release_authorization = 3;
    */
   releaseAuthorization?: SignedMsg
 }
 
 export const ManifestRef: MessageType<ManifestRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.ManifestRef',
-    fields: [
-      { no: 1, name: 'meta', kind: 'message', T: ManifestMeta },
-      { no: 2, name: 'manifest_ref', kind: 'message', T: () => ObjectRef },
-      {
-        no: 3,
-        name: 'release_authorization',
-        kind: 'message',
-        T: () => SignedMsg,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ManifestRef>(
+    'bldr.manifest.ManifestRef',
+    () => [
+      [1, 'meta', 11, 0, ManifestMeta.codec],
+      [2, 'manifest_ref', 11, 0, ObjectRef.codec],
+      [3, 'release_authorization', 11, 0, SignedMsg.codec],
+    ],
+  )
 
 /**
  * ReleaseAuthorization permits execution of one immutable Manifest root.
@@ -188,19 +141,15 @@ export const ManifestRef: MessageType<ManifestRef> =
 export interface ReleaseAuthorization {
   /**
    * ManifestRoot is the exact content-addressed Manifest block being authorized.
-   *
-   * @generated from field: block.BlockRef manifest_root = 1;
    */
   manifestRoot?: BlockRef
 }
 
 export const ReleaseAuthorization: MessageType<ReleaseAuthorization> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.ReleaseAuthorization',
-    fields: [
-      { no: 1, name: 'manifest_root', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReleaseAuthorization>(
+    'bldr.manifest.ReleaseAuthorization',
+    () => [[1, 'manifest_root', 11, 0, BlockRef.codec]],
+  )
 
 /**
  * GetReleasePeerIdsRequest requests the launcher's resolved signer pins.
@@ -210,9 +159,9 @@ export const ReleaseAuthorization: MessageType<ReleaseAuthorization> =
 export interface GetReleasePeerIdsRequest {}
 
 export const GetReleasePeerIdsRequest: MessageType<GetReleasePeerIdsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetReleasePeerIdsRequest>(
+  /* @__PURE__ */ createMessageType<GetReleasePeerIdsRequest>(
     'bldr.manifest.GetReleasePeerIdsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -223,25 +172,15 @@ export const GetReleasePeerIdsRequest: MessageType<GetReleasePeerIdsRequest> =
 export interface GetReleasePeerIdsResponse {
   /**
    * PeerIds contains the base58-encoded release signer peer IDs.
-   *
-   * @generated from field: repeated string peer_ids = 1;
    */
   peerIds?: string[]
 }
 
 export const GetReleasePeerIdsResponse: MessageType<GetReleasePeerIdsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.GetReleasePeerIdsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetReleasePeerIdsResponse>(
+    'bldr.manifest.GetReleasePeerIdsResponse',
+    () => [[1, 'peer_ids', 9, 1]],
+  )
 
 /**
  * ManifestBundle contains the metadata for a bundle of Manifest.
@@ -251,32 +190,22 @@ export const GetReleasePeerIdsResponse: MessageType<GetReleasePeerIdsResponse> =
 export interface ManifestBundle {
   /**
    * ManifestRefs contains the set of manifest references.
-   *
-   * @generated from field: repeated bldr.manifest.ManifestRef manifest_refs = 1;
    */
   manifestRefs?: ManifestRef[]
   /**
    * Timestamp is the timestamp the bundle was created.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
 }
 
 export const ManifestBundle: MessageType<ManifestBundle> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.ManifestBundle',
-    fields: [
-      {
-        no: 1,
-        name: 'manifest_refs',
-        kind: 'message',
-        T: ManifestRef,
-        repeated: true,
-      },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ManifestBundle>(
+    'bldr.manifest.ManifestBundle',
+    () => [
+      [1, 'manifest_refs', 11, 1, ManifestRef.codec],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * ManifestSnapshot is a manifest reference with the manifest value fetched.
@@ -287,26 +216,22 @@ export interface ManifestSnapshot {
   /**
    * ManifestRef is the reference to the manifest.
    * Must match the manifest field.
-   *
-   * @generated from field: bucket.ObjectRef manifest_ref = 1;
    */
   manifestRef?: ObjectRef
   /**
    * Manifest is the fetched manifest object.
-   *
-   * @generated from field: bldr.manifest.Manifest manifest = 2;
    */
   manifest?: Manifest
 }
 
 export const ManifestSnapshot: MessageType<ManifestSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.ManifestSnapshot',
-    fields: [
-      { no: 1, name: 'manifest_ref', kind: 'message', T: () => ObjectRef },
-      { no: 2, name: 'manifest', kind: 'message', T: Manifest },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ManifestSnapshot>(
+    'bldr.manifest.ManifestSnapshot',
+    () => [
+      [1, 'manifest_ref', 11, 0, ObjectRef.codec],
+      [2, 'manifest', 11, 0, Manifest.codec],
+    ],
+  )
 
 /**
  * FetchManifestRequest is a request to fetch a manifest binary.
@@ -316,53 +241,33 @@ export const ManifestSnapshot: MessageType<ManifestSnapshot> =
 export interface FetchManifestRequest {
   /**
    * ManifestId is the identifier of the manifest.
-   *
-   * @generated from field: string manifest_id = 1;
    */
   manifestId?: string
   /**
    * BuildTypes is a slice of build types to match, if empty match all.
-   *
-   * @generated from field: repeated string build_types = 2;
    */
   buildTypes?: string[]
   /**
    * PlatformIds is a slice of platform IDs to match, if empty match any.
-   *
-   * @generated from field: repeated string platform_ids = 3;
    */
   platformIds?: string[]
   /**
    * Rev is the minimum revision number of the manifest(s) to accept.
    * If set to 0, match any.
-   *
-   * @generated from field: uint64 rev = 4;
    */
   rev?: bigint
 }
 
 export const FetchManifestRequest: MessageType<FetchManifestRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.FetchManifestRequest',
-    fields: [
-      { no: 1, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'build_types',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'platform_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 4, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchManifestRequest>(
+    'bldr.manifest.FetchManifestRequest',
+    () => [
+      [1, 'manifest_id', 9],
+      [2, 'build_types', 9, 1],
+      [3, 'platform_ids', 9, 1],
+      [4, 'rev', 4],
+    ],
+  )
 
 /**
  * FetchManifestValue is the result of the FetchManifest directive.
@@ -373,25 +278,15 @@ export interface FetchManifestValue {
   /**
    * ManifestRefs is the list of references to the fetched manifests.
    * We fetch multiple in one pass to avoid race conditions.
-   *
-   * @generated from field: repeated bldr.manifest.ManifestRef manifest_refs = 1;
    */
   manifestRefs?: ManifestRef[]
 }
 
 export const FetchManifestValue: MessageType<FetchManifestValue> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.FetchManifestValue',
-    fields: [
-      {
-        no: 1,
-        name: 'manifest_refs',
-        kind: 'message',
-        T: ManifestRef,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchManifestValue>(
+    'bldr.manifest.FetchManifestValue',
+    () => [[1, 'manifest_refs', 11, 1, ManifestRef.codec]],
+  )
 
 /**
  * FetchManifestResponse is a response to a FetchManifest request.
@@ -401,20 +296,14 @@ export const FetchManifestValue: MessageType<FetchManifestValue> =
 export interface FetchManifestResponse {
   /**
    * ValueId is set to a non-zero integer w/ the value ID.
-   *
-   * @generated from field: uint32 value_id = 1;
    */
   valueId?: number
   /**
    * Value is the value if we are adding a value.
-   *
-   * @generated from field: bldr.manifest.FetchManifestValue value = 2;
    */
   value?: FetchManifestValue
   /**
    * Removed indicates removal of the value with value_id.
-   *
-   * @generated from field: bool removed = 3;
    */
   removed?: boolean
   /**
@@ -422,19 +311,17 @@ export interface FetchManifestResponse {
    *
    * 1 = not idle
    * 2 = idle
-   *
-   * @generated from field: uint32 idle = 4;
    */
   idle?: number
 }
 
 export const FetchManifestResponse: MessageType<FetchManifestResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.FetchManifestResponse',
-    fields: [
-      { no: 1, name: 'value_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'value', kind: 'message', T: FetchManifestValue },
-      { no: 3, name: 'removed', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'idle', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchManifestResponse>(
+    'bldr.manifest.FetchManifestResponse',
+    () => [
+      [1, 'value_id', 13],
+      [2, 'value', 11, 0, FetchManifestValue.codec],
+      [3, 'removed', 8],
+      [4, 'idle', 13],
+    ],
+  )

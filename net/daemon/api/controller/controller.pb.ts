@@ -6,8 +6,6 @@ import { Config as Config$1 } from '../api.pb.js'
 import { Config as Config$2 } from '@go/github.com/aperturerobotics/controllerbus/bus/api/api.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the API.
@@ -17,37 +15,30 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * ListenAddr is the address to listen on for connections.
-   *
-   * @generated from field: string listen_addr = 1;
    */
   listenAddr?: string
   /**
    * ApiConfig are api config options.
-   *
-   * @generated from field: bifrost.api.Config api_config = 2;
    */
   apiConfig?: Config$1
   /**
    * DisableBusApi disables the bus api.
-   *
-   * @generated from field: bool disable_bus_api = 3;
    */
   disableBusApi?: boolean
   /**
    * BusApiConfig are controller-bus bus api config options.
    * BusApiConfig are options for controller bus api.
-   *
-   * @generated from field: bus.api.Config bus_api_config = 4;
    */
   busApiConfig?: Config$2
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bifrost.api.controller.Config',
-  fields: [
-    { no: 1, name: 'listen_addr', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'api_config', kind: 'message', T: () => Config$1 },
-    { no: 3, name: 'disable_bus_api', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'bus_api_config', kind: 'message', T: () => Config$2 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bifrost.api.controller.Config',
+    () => [
+      [1, 'listen_addr', 9],
+      [2, 'api_config', 11, 0, Config$1.codec],
+      [3, 'disable_bus_api', 8],
+      [4, 'bus_api_config', 11, 0, Config$2.codec],
+    ],
+  )

@@ -6,8 +6,6 @@ import { Config as Config$1 } from '../controller/config.pb.js'
 import { RemoteConfig } from '../project.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the project file watcher.
@@ -18,49 +16,31 @@ export interface Config {
   /**
    * ConfigPath is the path to load the bldr.yaml configuration.
    * If the path is empty, starts the project controller with a blank config.
-   *
-   * @generated from field: string config_path = 1;
    */
   configPath?: string
   /**
    * ProjectControllerConfig configures the project controller.
    * The loaded project controller config will be merged into this config.
-   *
-   * @generated from field: bldr.project.controller.Config project_controller_config = 2;
    */
   projectControllerConfig?: Config$1
   /**
    * DisableWatch disables watching the file (loads once only).
-   *
-   * @generated from field: bool disable_watch = 3;
    */
   disableWatch?: boolean
   /**
    * BoundRemotes are caller-supplied World capabilities. These bindings take
    * precedence over source configuration, including watched configuration edits.
-   *
-   * @generated from field: map<string, bldr.project.RemoteConfig> bound_remotes = 4;
    */
   boundRemotes?: { [key: string]: RemoteConfig }
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.project.watcher.Config',
-  fields: [
-    { no: 1, name: 'config_path', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'project_controller_config',
-      kind: 'message',
-      T: () => Config$1,
-    },
-    { no: 3, name: 'disable_watch', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 4,
-      name: 'bound_remotes',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => RemoteConfig },
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.project.watcher.Config',
+    () => [
+      [1, 'config_path', 9],
+      [2, 'project_controller_config', 11, 0, Config$1.codec],
+      [3, 'disable_watch', 8],
+      [4, 'bound_remotes', 11, 584, RemoteConfig.codec],
+    ],
+  )

@@ -3,1243 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * V86fsMountRequest mounts a named filesystem root.
- *
- * @generated from message unixfs.v86fs.V86fsMountRequest
- */
-export interface V86fsMountRequest {
-  /**
-   * name identifies which filesystem to mount (empty = root).
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-}
-
-export const V86fsMountRequest: MessageType<V86fsMountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsMountRequest',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsLookupRequest looks up a child entry in a directory.
- *
- * @generated from message unixfs.v86fs.V86fsLookupRequest
- */
-export interface V86fsLookupRequest {
-  /**
-   * parent_id is the inode ID of the parent directory.
-   *
-   * @generated from field: uint64 parent_id = 1;
-   */
-  parentId?: bigint
-  /**
-   * name is the child entry name to look up.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-}
-
-export const V86fsLookupRequest: MessageType<V86fsLookupRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsLookupRequest',
-    fields: [
-      { no: 1, name: 'parent_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsGetattrRequest gets attributes of an inode.
- *
- * @generated from message unixfs.v86fs.V86fsGetattrRequest
- */
-export interface V86fsGetattrRequest {
-  /**
-   * inode_id is the inode to query.
-   *
-   * @generated from field: uint64 inode_id = 1;
-   */
-  inodeId?: bigint
-}
-
-export const V86fsGetattrRequest: MessageType<V86fsGetattrRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsGetattrRequest',
-    fields: [
-      { no: 1, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsReaddirRequest reads directory entries.
- *
- * @generated from message unixfs.v86fs.V86fsReaddirRequest
- */
-export interface V86fsReaddirRequest {
-  /**
-   * dir_id is the inode ID of the directory.
-   *
-   * @generated from field: uint64 dir_id = 1;
-   */
-  dirId?: bigint
-}
-
-export const V86fsReaddirRequest: MessageType<V86fsReaddirRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsReaddirRequest',
-    fields: [
-      { no: 1, name: 'dir_id', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsOpenRequest opens a file handle.
- *
- * @generated from message unixfs.v86fs.V86fsOpenRequest
- */
-export interface V86fsOpenRequest {
-  /**
-   * inode_id is the inode to open.
-   *
-   * @generated from field: uint64 inode_id = 1;
-   */
-  inodeId?: bigint
-  /**
-   * flags are the open flags.
-   *
-   * @generated from field: uint32 flags = 2;
-   */
-  flags?: number
-}
-
-export const V86fsOpenRequest: MessageType<V86fsOpenRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsOpenRequest',
-    fields: [
-      { no: 1, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'flags', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsCloseRequest closes a file handle.
- *
- * @generated from message unixfs.v86fs.V86fsCloseRequest
- */
-export interface V86fsCloseRequest {
-  /**
-   * handle_id is the file handle to close.
-   *
-   * @generated from field: uint64 handle_id = 1;
-   */
-  handleId?: bigint
-}
-
-export const V86fsCloseRequest: MessageType<V86fsCloseRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsCloseRequest',
-    fields: [
-      { no: 1, name: 'handle_id', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsReadRequest reads data from a file.
- *
- * @generated from message unixfs.v86fs.V86fsReadRequest
- */
-export interface V86fsReadRequest {
-  /**
-   * handle_id is the open file handle.
-   *
-   * @generated from field: uint64 handle_id = 1;
-   */
-  handleId?: bigint
-  /**
-   * offset is the byte offset to read from.
-   *
-   * @generated from field: uint64 offset = 2;
-   */
-  offset?: bigint
-  /**
-   * size is the number of bytes to read.
-   *
-   * @generated from field: uint32 size = 3;
-   */
-  size?: number
-}
-
-export const V86fsReadRequest: MessageType<V86fsReadRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsReadRequest',
-    fields: [
-      { no: 1, name: 'handle_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'offset', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'size', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsCreateRequest creates a new file in a directory.
- *
- * @generated from message unixfs.v86fs.V86fsCreateRequest
- */
-export interface V86fsCreateRequest {
-  /**
-   * parent_id is the parent directory inode ID.
-   *
-   * @generated from field: uint64 parent_id = 1;
-   */
-  parentId?: bigint
-  /**
-   * name is the new file name.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-  /**
-   * mode is the file mode to set.
-   *
-   * @generated from field: uint32 mode = 3;
-   */
-  mode?: number
-}
-
-export const V86fsCreateRequest: MessageType<V86fsCreateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsCreateRequest',
-    fields: [
-      { no: 1, name: 'parent_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'mode', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsWriteRequest writes data to a file.
- *
- * @generated from message unixfs.v86fs.V86fsWriteRequest
- */
-export interface V86fsWriteRequest {
-  /**
-   * inode_id is the file inode to write to.
-   *
-   * @generated from field: uint64 inode_id = 1;
-   */
-  inodeId?: bigint
-  /**
-   * offset is the byte offset to write at.
-   *
-   * @generated from field: uint64 offset = 2;
-   */
-  offset?: bigint
-  /**
-   * data is the bytes to write.
-   *
-   * @generated from field: bytes data = 3;
-   */
-  data?: Uint8Array
-}
-
-export const V86fsWriteRequest: MessageType<V86fsWriteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsWriteRequest',
-    fields: [
-      { no: 1, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'offset', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsMkdirRequest creates a directory.
- *
- * @generated from message unixfs.v86fs.V86fsMkdirRequest
- */
-export interface V86fsMkdirRequest {
-  /**
-   * parent_id is the parent directory inode ID.
-   *
-   * @generated from field: uint64 parent_id = 1;
-   */
-  parentId?: bigint
-  /**
-   * name is the directory name.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-  /**
-   * mode is the directory mode.
-   *
-   * @generated from field: uint32 mode = 3;
-   */
-  mode?: number
-}
-
-export const V86fsMkdirRequest: MessageType<V86fsMkdirRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsMkdirRequest',
-    fields: [
-      { no: 1, name: 'parent_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'mode', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsSetattrRequest sets attributes on an inode.
- *
- * @generated from message unixfs.v86fs.V86fsSetattrRequest
- */
-export interface V86fsSetattrRequest {
-  /**
-   * inode_id is the inode to modify.
-   *
-   * @generated from field: uint64 inode_id = 1;
-   */
-  inodeId?: bigint
-  /**
-   * valid is the bitmask of fields to set (ATTR_MODE=1, ATTR_SIZE=8).
-   *
-   * @generated from field: uint32 valid = 2;
-   */
-  valid?: number
-  /**
-   * mode is the new file mode (if ATTR_MODE set).
-   *
-   * @generated from field: uint32 mode = 3;
-   */
-  mode?: number
-  /**
-   * size is the new file size (if ATTR_SIZE set).
-   *
-   * @generated from field: uint64 size = 4;
-   */
-  size?: bigint
-}
-
-export const V86fsSetattrRequest: MessageType<V86fsSetattrRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsSetattrRequest',
-    fields: [
-      { no: 1, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'valid', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'mode', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsFsyncRequest flushes a file to storage.
- *
- * @generated from message unixfs.v86fs.V86fsFsyncRequest
- */
-export interface V86fsFsyncRequest {
-  /**
-   * inode_id is the inode to sync.
-   *
-   * @generated from field: uint64 inode_id = 1;
-   */
-  inodeId?: bigint
-}
-
-export const V86fsFsyncRequest: MessageType<V86fsFsyncRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsFsyncRequest',
-    fields: [
-      { no: 1, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsUnlinkRequest removes a directory entry.
- *
- * @generated from message unixfs.v86fs.V86fsUnlinkRequest
- */
-export interface V86fsUnlinkRequest {
-  /**
-   * parent_id is the parent directory inode ID.
-   *
-   * @generated from field: uint64 parent_id = 1;
-   */
-  parentId?: bigint
-  /**
-   * name is the entry to remove.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-}
-
-export const V86fsUnlinkRequest: MessageType<V86fsUnlinkRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsUnlinkRequest',
-    fields: [
-      { no: 1, name: 'parent_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsRenameRequest renames/moves a directory entry.
- *
- * @generated from message unixfs.v86fs.V86fsRenameRequest
- */
-export interface V86fsRenameRequest {
-  /**
-   * old_parent_id is the source directory inode ID.
-   *
-   * @generated from field: uint64 old_parent_id = 1;
-   */
-  oldParentId?: bigint
-  /**
-   * old_name is the source entry name.
-   *
-   * @generated from field: string old_name = 2;
-   */
-  oldName?: string
-  /**
-   * new_parent_id is the destination directory inode ID.
-   *
-   * @generated from field: uint64 new_parent_id = 3;
-   */
-  newParentId?: bigint
-  /**
-   * new_name is the destination entry name.
-   *
-   * @generated from field: string new_name = 4;
-   */
-  newName?: string
-}
-
-export const V86fsRenameRequest: MessageType<V86fsRenameRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsRenameRequest',
-    fields: [
-      { no: 1, name: 'old_parent_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'old_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'new_parent_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'new_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsSymlinkRequest creates a symbolic link.
- *
- * @generated from message unixfs.v86fs.V86fsSymlinkRequest
- */
-export interface V86fsSymlinkRequest {
-  /**
-   * parent_id is the parent directory inode ID.
-   *
-   * @generated from field: uint64 parent_id = 1;
-   */
-  parentId?: bigint
-  /**
-   * name is the symlink name.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-  /**
-   * target is the symlink target path.
-   *
-   * @generated from field: string target = 3;
-   */
-  target?: string
-}
-
-export const V86fsSymlinkRequest: MessageType<V86fsSymlinkRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsSymlinkRequest',
-    fields: [
-      { no: 1, name: 'parent_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'target', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsReadlinkRequest reads a symbolic link target.
- *
- * @generated from message unixfs.v86fs.V86fsReadlinkRequest
- */
-export interface V86fsReadlinkRequest {
-  /**
-   * inode_id is the symlink inode.
-   *
-   * @generated from field: uint64 inode_id = 1;
-   */
-  inodeId?: bigint
-}
-
-export const V86fsReadlinkRequest: MessageType<V86fsReadlinkRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsReadlinkRequest',
-    fields: [
-      { no: 1, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsStatfsRequest queries filesystem statistics.
- *
- * @generated from message unixfs.v86fs.V86fsStatfsRequest
- */
-export interface V86fsStatfsRequest {}
-
-export const V86fsStatfsRequest: MessageType<V86fsStatfsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<V86fsStatfsRequest>(
-    'unixfs.v86fs.V86fsStatfsRequest',
-    true,
-  )
-
-/**
- * V86fsMountReply is the response to a mount request.
- *
- * @generated from message unixfs.v86fs.V86fsMountReply
- */
-export interface V86fsMountReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * root_inode_id is the inode ID of the mount root.
-   *
-   * @generated from field: uint64 root_inode_id = 2;
-   */
-  rootInodeId?: bigint
-  /**
-   * mode is the file mode of the root inode (includes type bits).
-   *
-   * @generated from field: uint32 mode = 3;
-   */
-  mode?: number
-}
-
-export const V86fsMountReply: MessageType<V86fsMountReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsMountReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'root_inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'mode', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsLookupReply is the response to a lookup request.
- *
- * @generated from message unixfs.v86fs.V86fsLookupReply
- */
-export interface V86fsLookupReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * inode_id is the inode ID of the found entry.
-   *
-   * @generated from field: uint64 inode_id = 2;
-   */
-  inodeId?: bigint
-  /**
-   * mode is the file mode (includes type bits).
-   *
-   * @generated from field: uint32 mode = 3;
-   */
-  mode?: number
-  /**
-   * size is the file size in bytes.
-   *
-   * @generated from field: uint64 size = 4;
-   */
-  size?: bigint
-}
-
-export const V86fsLookupReply: MessageType<V86fsLookupReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsLookupReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'mode', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsGetattrReply is the response to a getattr request.
- *
- * @generated from message unixfs.v86fs.V86fsGetattrReply
- */
-export interface V86fsGetattrReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * mode is the file mode (includes type bits).
-   *
-   * @generated from field: uint32 mode = 2;
-   */
-  mode?: number
-  /**
-   * size is the file size in bytes.
-   *
-   * @generated from field: uint64 size = 3;
-   */
-  size?: bigint
-  /**
-   * mtime_sec is the modification time (seconds since epoch).
-   *
-   * @generated from field: int64 mtime_sec = 4;
-   */
-  mtimeSec?: bigint
-  /**
-   * mtime_nsec is the modification time nanosecond component.
-   *
-   * @generated from field: uint32 mtime_nsec = 5;
-   */
-  mtimeNsec?: number
-}
-
-export const V86fsGetattrReply: MessageType<V86fsGetattrReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsGetattrReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'mode', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'mtime_sec', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 5, name: 'mtime_nsec', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsDirEntry is a directory entry in a readdir reply.
- *
- * @generated from message unixfs.v86fs.V86fsDirEntry
- */
-export interface V86fsDirEntry {
-  /**
-   * inode_id is the inode ID of the entry.
-   *
-   * @generated from field: uint64 inode_id = 1;
-   */
-  inodeId?: bigint
-  /**
-   * dt_type is the dirent type (DT_DIR=4, DT_REG=8, DT_LNK=10).
-   *
-   * @generated from field: uint32 dt_type = 2;
-   */
-  dtType?: number
-  /**
-   * name is the entry name.
-   *
-   * @generated from field: string name = 3;
-   */
-  name?: string
-}
-
-export const V86fsDirEntry: MessageType<V86fsDirEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsDirEntry',
-    fields: [
-      { no: 1, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'dt_type', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsReaddirReply is the response to a readdir request.
- *
- * @generated from message unixfs.v86fs.V86fsReaddirReply
- */
-export interface V86fsReaddirReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * entries contains the directory listing.
-   *
-   * @generated from field: repeated unixfs.v86fs.V86fsDirEntry entries = 2;
-   */
-  entries?: V86fsDirEntry[]
-}
-
-export const V86fsReaddirReply: MessageType<V86fsReaddirReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsReaddirReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 2,
-        name: 'entries',
-        kind: 'message',
-        T: V86fsDirEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsOpenReply is the response to an open request.
- *
- * @generated from message unixfs.v86fs.V86fsOpenReply
- */
-export interface V86fsOpenReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * handle_id is the opened file handle ID.
-   *
-   * @generated from field: uint64 handle_id = 2;
-   */
-  handleId?: bigint
-}
-
-export const V86fsOpenReply: MessageType<V86fsOpenReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsOpenReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'handle_id', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsCloseReply is the response to a close request.
- *
- * @generated from message unixfs.v86fs.V86fsCloseReply
- */
-export interface V86fsCloseReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-}
-
-export const V86fsCloseReply: MessageType<V86fsCloseReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsCloseReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsReadReply is the response to a read request.
- *
- * @generated from message unixfs.v86fs.V86fsReadReply
- */
-export interface V86fsReadReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * data contains the bytes read.
-   *
-   * @generated from field: bytes data = 2;
-   */
-  data?: Uint8Array
-}
-
-export const V86fsReadReply: MessageType<V86fsReadReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsReadReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsCreateReply is the response to a create request.
- *
- * @generated from message unixfs.v86fs.V86fsCreateReply
- */
-export interface V86fsCreateReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * inode_id is the new file inode ID.
-   *
-   * @generated from field: uint64 inode_id = 2;
-   */
-  inodeId?: bigint
-  /**
-   * mode is the actual file mode set.
-   *
-   * @generated from field: uint32 mode = 3;
-   */
-  mode?: number
-}
-
-export const V86fsCreateReply: MessageType<V86fsCreateReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsCreateReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'mode', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsWriteReply is the response to a write request.
- *
- * @generated from message unixfs.v86fs.V86fsWriteReply
- */
-export interface V86fsWriteReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * bytes_written is the number of bytes written.
-   *
-   * @generated from field: uint32 bytes_written = 2;
-   */
-  bytesWritten?: number
-}
-
-export const V86fsWriteReply: MessageType<V86fsWriteReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsWriteReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'bytes_written', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsMkdirReply is the response to a mkdir request.
- *
- * @generated from message unixfs.v86fs.V86fsMkdirReply
- */
-export interface V86fsMkdirReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * inode_id is the new directory inode ID.
-   *
-   * @generated from field: uint64 inode_id = 2;
-   */
-  inodeId?: bigint
-  /**
-   * mode is the actual directory mode set.
-   *
-   * @generated from field: uint32 mode = 3;
-   */
-  mode?: number
-}
-
-export const V86fsMkdirReply: MessageType<V86fsMkdirReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsMkdirReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'mode', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsSetattrReply is the response to a setattr request.
- *
- * @generated from message unixfs.v86fs.V86fsSetattrReply
- */
-export interface V86fsSetattrReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-}
-
-export const V86fsSetattrReply: MessageType<V86fsSetattrReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsSetattrReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsFsyncReply is the response to an fsync request.
- *
- * @generated from message unixfs.v86fs.V86fsFsyncReply
- */
-export interface V86fsFsyncReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-}
-
-export const V86fsFsyncReply: MessageType<V86fsFsyncReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsFsyncReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsUnlinkReply is the response to an unlink request.
- *
- * @generated from message unixfs.v86fs.V86fsUnlinkReply
- */
-export interface V86fsUnlinkReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-}
-
-export const V86fsUnlinkReply: MessageType<V86fsUnlinkReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsUnlinkReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsRenameReply is the response to a rename request.
- *
- * @generated from message unixfs.v86fs.V86fsRenameReply
- */
-export interface V86fsRenameReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-}
-
-export const V86fsRenameReply: MessageType<V86fsRenameReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsRenameReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsSymlinkReply is the response to a symlink request.
- *
- * @generated from message unixfs.v86fs.V86fsSymlinkReply
- */
-export interface V86fsSymlinkReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * inode_id is the new symlink inode ID.
-   *
-   * @generated from field: uint64 inode_id = 2;
-   */
-  inodeId?: bigint
-  /**
-   * mode is the symlink mode.
-   *
-   * @generated from field: uint32 mode = 3;
-   */
-  mode?: number
-}
-
-export const V86fsSymlinkReply: MessageType<V86fsSymlinkReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsSymlinkReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'mode', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsReadlinkReply is the response to a readlink request.
- *
- * @generated from message unixfs.v86fs.V86fsReadlinkReply
- */
-export interface V86fsReadlinkReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * target is the symlink target path.
-   *
-   * @generated from field: string target = 2;
-   */
-  target?: string
-}
-
-export const V86fsReadlinkReply: MessageType<V86fsReadlinkReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsReadlinkReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'target', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsStatfsReply is the response to a statfs request.
- *
- * @generated from message unixfs.v86fs.V86fsStatfsReply
- */
-export interface V86fsStatfsReply {
-  /**
-   * status is 0 for success, or an errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-  /**
-   * blocks is the total data blocks in the filesystem.
-   *
-   * @generated from field: uint64 blocks = 2;
-   */
-  blocks?: bigint
-  /**
-   * bfree is the free blocks.
-   *
-   * @generated from field: uint64 bfree = 3;
-   */
-  bfree?: bigint
-  /**
-   * bavail is the free blocks available to unprivileged users.
-   *
-   * @generated from field: uint64 bavail = 4;
-   */
-  bavail?: bigint
-  /**
-   * files is the total file nodes.
-   *
-   * @generated from field: uint64 files = 5;
-   */
-  files?: bigint
-  /**
-   * ffree is the free file nodes.
-   *
-   * @generated from field: uint64 ffree = 6;
-   */
-  ffree?: bigint
-  /**
-   * bsize is the filesystem block size.
-   *
-   * @generated from field: uint32 bsize = 7;
-   */
-  bsize?: number
-}
-
-export const V86fsStatfsReply: MessageType<V86fsStatfsReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsStatfsReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'blocks', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'bfree', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'bavail', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'files', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 6, name: 'ffree', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 7, name: 'bsize', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsInvalidate invalidates cached data for an inode.
- * Server to client notification (no reply expected).
- *
- * @generated from message unixfs.v86fs.V86fsInvalidate
- */
-export interface V86fsInvalidate {
-  /**
-   * inode_id is the inode to invalidate.
-   *
-   * @generated from field: uint64 inode_id = 1;
-   */
-  inodeId?: bigint
-  /**
-   * offset is the start of the range to invalidate (0 = full inode).
-   *
-   * @generated from field: uint64 offset = 2;
-   */
-  offset?: bigint
-  /**
-   * size is the length of the range to invalidate (0 = full inode).
-   *
-   * @generated from field: uint64 size = 3;
-   */
-  size?: bigint
-}
-
-export const V86fsInvalidate: MessageType<V86fsInvalidate> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsInvalidate',
-    fields: [
-      { no: 1, name: 'inode_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'offset', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsInvalidateDir invalidates a directory listing cache.
- * Server to client notification (no reply expected).
- *
- * @generated from message unixfs.v86fs.V86fsInvalidateDir
- */
-export interface V86fsInvalidateDir {
-  /**
-   * dir_id is the directory inode to invalidate.
-   *
-   * @generated from field: uint64 dir_id = 1;
-   */
-  dirId?: bigint
-}
-
-export const V86fsInvalidateDir: MessageType<V86fsInvalidateDir> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsInvalidateDir',
-    fields: [
-      { no: 1, name: 'dir_id', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsMountNotify tells the guest to mount a filesystem at a path.
- * Server to client notification (no reply expected).
- *
- * @generated from message unixfs.v86fs.V86fsMountNotify
- */
-export interface V86fsMountNotify {
-  /**
-   * name is the mount name (resolved by mount-name resolver).
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-  /**
-   * mount_path is the guest path to mount at.
-   *
-   * @generated from field: string mount_path = 2;
-   */
-  mountPath?: string
-}
-
-export const V86fsMountNotify: MessageType<V86fsMountNotify> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsMountNotify',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'mount_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsUmountNotify tells the guest to unmount a filesystem.
- * Server to client notification (no reply expected).
- *
- * @generated from message unixfs.v86fs.V86fsUmountNotify
- */
-export interface V86fsUmountNotify {
-  /**
-   * mount_path is the guest path to unmount.
-   *
-   * @generated from field: string mount_path = 1;
-   */
-  mountPath?: string
-}
-
-export const V86fsUmountNotify: MessageType<V86fsUmountNotify> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsUmountNotify',
-    fields: [
-      { no: 1, name: 'mount_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * V86fsErrorReply is a generic error response for any request.
- *
- * @generated from message unixfs.v86fs.V86fsErrorReply
- */
-export interface V86fsErrorReply {
-  /**
-   * status is the errno value.
-   *
-   * @generated from field: uint32 status = 1;
-   */
-  status?: number
-}
-
-export const V86fsErrorReply: MessageType<V86fsErrorReply> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsErrorReply',
-    fields: [
-      { no: 1, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * V86fsMessage wraps all v86fs protocol messages in a single oneof.
@@ -1250,581 +14,1118 @@ export const V86fsErrorReply: MessageType<V86fsErrorReply> =
 export interface V86fsMessage {
   /**
    * tag correlates requests with responses.
-   *
-   * @generated from field: uint32 tag = 1;
    */
   tag?: number
-
   /**
    * body is the message payload.
    *
    * @generated from oneof unixfs.v86fs.V86fsMessage.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Requests (client to server).
-         *
-         * @generated from field: unixfs.v86fs.V86fsMountRequest mount_request = 2;
-         */
-        value: V86fsMountRequest
-        case: 'mountRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsLookupRequest lookup_request = 3;
-         */
-        value: V86fsLookupRequest
-        case: 'lookupRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsGetattrRequest getattr_request = 4;
-         */
-        value: V86fsGetattrRequest
-        case: 'getattrRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsReaddirRequest readdir_request = 5;
-         */
-        value: V86fsReaddirRequest
-        case: 'readdirRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsOpenRequest open_request = 6;
-         */
-        value: V86fsOpenRequest
-        case: 'openRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsCloseRequest close_request = 7;
-         */
-        value: V86fsCloseRequest
-        case: 'closeRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsReadRequest read_request = 8;
-         */
-        value: V86fsReadRequest
-        case: 'readRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsCreateRequest create_request = 9;
-         */
-        value: V86fsCreateRequest
-        case: 'createRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsWriteRequest write_request = 10;
-         */
-        value: V86fsWriteRequest
-        case: 'writeRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsMkdirRequest mkdir_request = 11;
-         */
-        value: V86fsMkdirRequest
-        case: 'mkdirRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsSetattrRequest setattr_request = 12;
-         */
-        value: V86fsSetattrRequest
-        case: 'setattrRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsFsyncRequest fsync_request = 13;
-         */
-        value: V86fsFsyncRequest
-        case: 'fsyncRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsUnlinkRequest unlink_request = 14;
-         */
-        value: V86fsUnlinkRequest
-        case: 'unlinkRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsRenameRequest rename_request = 15;
-         */
-        value: V86fsRenameRequest
-        case: 'renameRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsSymlinkRequest symlink_request = 16;
-         */
-        value: V86fsSymlinkRequest
-        case: 'symlinkRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsReadlinkRequest readlink_request = 17;
-         */
-        value: V86fsReadlinkRequest
-        case: 'readlinkRequest'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsStatfsRequest statfs_request = 18;
-         */
-        value: V86fsStatfsRequest
-        case: 'statfsRequest'
-      }
-    | {
-        /**
-         * Replies (server to client).
-         *
-         * @generated from field: unixfs.v86fs.V86fsMountReply mount_reply = 32;
-         */
-        value: V86fsMountReply
-        case: 'mountReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsLookupReply lookup_reply = 33;
-         */
-        value: V86fsLookupReply
-        case: 'lookupReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsGetattrReply getattr_reply = 34;
-         */
-        value: V86fsGetattrReply
-        case: 'getattrReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsReaddirReply readdir_reply = 35;
-         */
-        value: V86fsReaddirReply
-        case: 'readdirReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsOpenReply open_reply = 36;
-         */
-        value: V86fsOpenReply
-        case: 'openReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsCloseReply close_reply = 37;
-         */
-        value: V86fsCloseReply
-        case: 'closeReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsReadReply read_reply = 38;
-         */
-        value: V86fsReadReply
-        case: 'readReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsCreateReply create_reply = 39;
-         */
-        value: V86fsCreateReply
-        case: 'createReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsWriteReply write_reply = 40;
-         */
-        value: V86fsWriteReply
-        case: 'writeReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsMkdirReply mkdir_reply = 41;
-         */
-        value: V86fsMkdirReply
-        case: 'mkdirReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsSetattrReply setattr_reply = 42;
-         */
-        value: V86fsSetattrReply
-        case: 'setattrReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsFsyncReply fsync_reply = 43;
-         */
-        value: V86fsFsyncReply
-        case: 'fsyncReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsUnlinkReply unlink_reply = 44;
-         */
-        value: V86fsUnlinkReply
-        case: 'unlinkReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsRenameReply rename_reply = 45;
-         */
-        value: V86fsRenameReply
-        case: 'renameReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsSymlinkReply symlink_reply = 46;
-         */
-        value: V86fsSymlinkReply
-        case: 'symlinkReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsReadlinkReply readlink_reply = 47;
-         */
-        value: V86fsReadlinkReply
-        case: 'readlinkReply'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsStatfsReply statfs_reply = 48;
-         */
-        value: V86fsStatfsReply
-        case: 'statfsReply'
-      }
-    | {
-        /**
-         * Notifications (server to client, no tag/reply).
-         *
-         * @generated from field: unixfs.v86fs.V86fsInvalidate invalidate = 64;
-         */
-        value: V86fsInvalidate
-        case: 'invalidate'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsInvalidateDir invalidate_dir = 65;
-         */
-        value: V86fsInvalidateDir
-        case: 'invalidateDir'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsMountNotify mount_notify = 66;
-         */
-        value: V86fsMountNotify
-        case: 'mountNotify'
-      }
-    | {
-        /**
-         * @generated from field: unixfs.v86fs.V86fsUmountNotify umount_notify = 67;
-         */
-        value: V86fsUmountNotify
-        case: 'umountNotify'
-      }
-    | {
-        /**
-         * Error reply (server to client, matches any request tag).
-         *
-         * @generated from field: unixfs.v86fs.V86fsErrorReply error_reply = 80;
-         */
-        value: V86fsErrorReply
-        case: 'errorReply'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: V86fsMountRequest; case: 'mountRequest' }
+    | { value: V86fsLookupRequest; case: 'lookupRequest' }
+    | { value: V86fsGetattrRequest; case: 'getattrRequest' }
+    | { value: V86fsReaddirRequest; case: 'readdirRequest' }
+    | { value: V86fsOpenRequest; case: 'openRequest' }
+    | { value: V86fsCloseRequest; case: 'closeRequest' }
+    | { value: V86fsReadRequest; case: 'readRequest' }
+    | { value: V86fsCreateRequest; case: 'createRequest' }
+    | { value: V86fsWriteRequest; case: 'writeRequest' }
+    | { value: V86fsMkdirRequest; case: 'mkdirRequest' }
+    | { value: V86fsSetattrRequest; case: 'setattrRequest' }
+    | { value: V86fsFsyncRequest; case: 'fsyncRequest' }
+    | { value: V86fsUnlinkRequest; case: 'unlinkRequest' }
+    | { value: V86fsRenameRequest; case: 'renameRequest' }
+    | { value: V86fsSymlinkRequest; case: 'symlinkRequest' }
+    | { value: V86fsReadlinkRequest; case: 'readlinkRequest' }
+    | { value: V86fsStatfsRequest; case: 'statfsRequest' }
+    | { value: V86fsMountReply; case: 'mountReply' }
+    | { value: V86fsLookupReply; case: 'lookupReply' }
+    | { value: V86fsGetattrReply; case: 'getattrReply' }
+    | { value: V86fsReaddirReply; case: 'readdirReply' }
+    | { value: V86fsOpenReply; case: 'openReply' }
+    | { value: V86fsCloseReply; case: 'closeReply' }
+    | { value: V86fsReadReply; case: 'readReply' }
+    | { value: V86fsCreateReply; case: 'createReply' }
+    | { value: V86fsWriteReply; case: 'writeReply' }
+    | { value: V86fsMkdirReply; case: 'mkdirReply' }
+    | { value: V86fsSetattrReply; case: 'setattrReply' }
+    | { value: V86fsFsyncReply; case: 'fsyncReply' }
+    | { value: V86fsUnlinkReply; case: 'unlinkReply' }
+    | { value: V86fsRenameReply; case: 'renameReply' }
+    | { value: V86fsSymlinkReply; case: 'symlinkReply' }
+    | { value: V86fsReadlinkReply; case: 'readlinkReply' }
+    | { value: V86fsStatfsReply; case: 'statfsReply' }
+    | { value: V86fsInvalidate; case: 'invalidate' }
+    | { value: V86fsInvalidateDir; case: 'invalidateDir' }
+    | { value: V86fsMountNotify; case: 'mountNotify' }
+    | { value: V86fsUmountNotify; case: 'umountNotify' }
+    | { value: V86fsErrorReply; case: 'errorReply' }
 }
 
 export const V86fsMessage: MessageType<V86fsMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.v86fs.V86fsMessage',
-    fields: [
-      { no: 1, name: 'tag', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 2,
-        name: 'mount_request',
-        kind: 'message',
-        T: V86fsMountRequest,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'lookup_request',
-        kind: 'message',
-        T: V86fsLookupRequest,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'getattr_request',
-        kind: 'message',
-        T: V86fsGetattrRequest,
-        oneof: 'body',
-      },
-      {
-        no: 5,
-        name: 'readdir_request',
-        kind: 'message',
-        T: V86fsReaddirRequest,
-        oneof: 'body',
-      },
-      {
-        no: 6,
-        name: 'open_request',
-        kind: 'message',
-        T: V86fsOpenRequest,
-        oneof: 'body',
-      },
-      {
-        no: 7,
-        name: 'close_request',
-        kind: 'message',
-        T: V86fsCloseRequest,
-        oneof: 'body',
-      },
-      {
-        no: 8,
-        name: 'read_request',
-        kind: 'message',
-        T: V86fsReadRequest,
-        oneof: 'body',
-      },
-      {
-        no: 9,
-        name: 'create_request',
-        kind: 'message',
-        T: V86fsCreateRequest,
-        oneof: 'body',
-      },
-      {
-        no: 10,
-        name: 'write_request',
-        kind: 'message',
-        T: V86fsWriteRequest,
-        oneof: 'body',
-      },
-      {
-        no: 11,
-        name: 'mkdir_request',
-        kind: 'message',
-        T: V86fsMkdirRequest,
-        oneof: 'body',
-      },
-      {
-        no: 12,
-        name: 'setattr_request',
-        kind: 'message',
-        T: V86fsSetattrRequest,
-        oneof: 'body',
-      },
-      {
-        no: 13,
-        name: 'fsync_request',
-        kind: 'message',
-        T: V86fsFsyncRequest,
-        oneof: 'body',
-      },
-      {
-        no: 14,
-        name: 'unlink_request',
-        kind: 'message',
-        T: V86fsUnlinkRequest,
-        oneof: 'body',
-      },
-      {
-        no: 15,
-        name: 'rename_request',
-        kind: 'message',
-        T: V86fsRenameRequest,
-        oneof: 'body',
-      },
-      {
-        no: 16,
-        name: 'symlink_request',
-        kind: 'message',
-        T: V86fsSymlinkRequest,
-        oneof: 'body',
-      },
-      {
-        no: 17,
-        name: 'readlink_request',
-        kind: 'message',
-        T: V86fsReadlinkRequest,
-        oneof: 'body',
-      },
-      {
-        no: 18,
-        name: 'statfs_request',
-        kind: 'message',
-        T: V86fsStatfsRequest,
-        oneof: 'body',
-      },
-      {
-        no: 32,
-        name: 'mount_reply',
-        kind: 'message',
-        T: V86fsMountReply,
-        oneof: 'body',
-      },
-      {
-        no: 33,
-        name: 'lookup_reply',
-        kind: 'message',
-        T: V86fsLookupReply,
-        oneof: 'body',
-      },
-      {
-        no: 34,
-        name: 'getattr_reply',
-        kind: 'message',
-        T: V86fsGetattrReply,
-        oneof: 'body',
-      },
-      {
-        no: 35,
-        name: 'readdir_reply',
-        kind: 'message',
-        T: V86fsReaddirReply,
-        oneof: 'body',
-      },
-      {
-        no: 36,
-        name: 'open_reply',
-        kind: 'message',
-        T: V86fsOpenReply,
-        oneof: 'body',
-      },
-      {
-        no: 37,
-        name: 'close_reply',
-        kind: 'message',
-        T: V86fsCloseReply,
-        oneof: 'body',
-      },
-      {
-        no: 38,
-        name: 'read_reply',
-        kind: 'message',
-        T: V86fsReadReply,
-        oneof: 'body',
-      },
-      {
-        no: 39,
-        name: 'create_reply',
-        kind: 'message',
-        T: V86fsCreateReply,
-        oneof: 'body',
-      },
-      {
-        no: 40,
-        name: 'write_reply',
-        kind: 'message',
-        T: V86fsWriteReply,
-        oneof: 'body',
-      },
-      {
-        no: 41,
-        name: 'mkdir_reply',
-        kind: 'message',
-        T: V86fsMkdirReply,
-        oneof: 'body',
-      },
-      {
-        no: 42,
-        name: 'setattr_reply',
-        kind: 'message',
-        T: V86fsSetattrReply,
-        oneof: 'body',
-      },
-      {
-        no: 43,
-        name: 'fsync_reply',
-        kind: 'message',
-        T: V86fsFsyncReply,
-        oneof: 'body',
-      },
-      {
-        no: 44,
-        name: 'unlink_reply',
-        kind: 'message',
-        T: V86fsUnlinkReply,
-        oneof: 'body',
-      },
-      {
-        no: 45,
-        name: 'rename_reply',
-        kind: 'message',
-        T: V86fsRenameReply,
-        oneof: 'body',
-      },
-      {
-        no: 46,
-        name: 'symlink_reply',
-        kind: 'message',
-        T: V86fsSymlinkReply,
-        oneof: 'body',
-      },
-      {
-        no: 47,
-        name: 'readlink_reply',
-        kind: 'message',
-        T: V86fsReadlinkReply,
-        oneof: 'body',
-      },
-      {
-        no: 48,
-        name: 'statfs_reply',
-        kind: 'message',
-        T: V86fsStatfsReply,
-        oneof: 'body',
-      },
-      {
-        no: 64,
-        name: 'invalidate',
-        kind: 'message',
-        T: V86fsInvalidate,
-        oneof: 'body',
-      },
-      {
-        no: 65,
-        name: 'invalidate_dir',
-        kind: 'message',
-        T: V86fsInvalidateDir,
-        oneof: 'body',
-      },
-      {
-        no: 66,
-        name: 'mount_notify',
-        kind: 'message',
-        T: V86fsMountNotify,
-        oneof: 'body',
-      },
-      {
-        no: 67,
-        name: 'umount_notify',
-        kind: 'message',
-        T: V86fsUmountNotify,
-        oneof: 'body',
-      },
-      {
-        no: 80,
-        name: 'error_reply',
-        kind: 'message',
-        T: V86fsErrorReply,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<V86fsMessage>(
+    'unixfs.v86fs.V86fsMessage',
+    () => [
+      [1, 'tag', 13],
+      [2, 'mount_request', 11, 0, V86fsMountRequest.codec, 'body'],
+      [3, 'lookup_request', 11, 0, V86fsLookupRequest.codec, 'body'],
+      [4, 'getattr_request', 11, 0, V86fsGetattrRequest.codec, 'body'],
+      [5, 'readdir_request', 11, 0, V86fsReaddirRequest.codec, 'body'],
+      [6, 'open_request', 11, 0, V86fsOpenRequest.codec, 'body'],
+      [7, 'close_request', 11, 0, V86fsCloseRequest.codec, 'body'],
+      [8, 'read_request', 11, 0, V86fsReadRequest.codec, 'body'],
+      [9, 'create_request', 11, 0, V86fsCreateRequest.codec, 'body'],
+      [10, 'write_request', 11, 0, V86fsWriteRequest.codec, 'body'],
+      [11, 'mkdir_request', 11, 0, V86fsMkdirRequest.codec, 'body'],
+      [12, 'setattr_request', 11, 0, V86fsSetattrRequest.codec, 'body'],
+      [13, 'fsync_request', 11, 0, V86fsFsyncRequest.codec, 'body'],
+      [14, 'unlink_request', 11, 0, V86fsUnlinkRequest.codec, 'body'],
+      [15, 'rename_request', 11, 0, V86fsRenameRequest.codec, 'body'],
+      [16, 'symlink_request', 11, 0, V86fsSymlinkRequest.codec, 'body'],
+      [17, 'readlink_request', 11, 0, V86fsReadlinkRequest.codec, 'body'],
+      [18, 'statfs_request', 11, 0, V86fsStatfsRequest.codec, 'body'],
+      [32, 'mount_reply', 11, 0, V86fsMountReply.codec, 'body'],
+      [33, 'lookup_reply', 11, 0, V86fsLookupReply.codec, 'body'],
+      [34, 'getattr_reply', 11, 0, V86fsGetattrReply.codec, 'body'],
+      [35, 'readdir_reply', 11, 0, V86fsReaddirReply.codec, 'body'],
+      [36, 'open_reply', 11, 0, V86fsOpenReply.codec, 'body'],
+      [37, 'close_reply', 11, 0, V86fsCloseReply.codec, 'body'],
+      [38, 'read_reply', 11, 0, V86fsReadReply.codec, 'body'],
+      [39, 'create_reply', 11, 0, V86fsCreateReply.codec, 'body'],
+      [40, 'write_reply', 11, 0, V86fsWriteReply.codec, 'body'],
+      [41, 'mkdir_reply', 11, 0, V86fsMkdirReply.codec, 'body'],
+      [42, 'setattr_reply', 11, 0, V86fsSetattrReply.codec, 'body'],
+      [43, 'fsync_reply', 11, 0, V86fsFsyncReply.codec, 'body'],
+      [44, 'unlink_reply', 11, 0, V86fsUnlinkReply.codec, 'body'],
+      [45, 'rename_reply', 11, 0, V86fsRenameReply.codec, 'body'],
+      [46, 'symlink_reply', 11, 0, V86fsSymlinkReply.codec, 'body'],
+      [47, 'readlink_reply', 11, 0, V86fsReadlinkReply.codec, 'body'],
+      [48, 'statfs_reply', 11, 0, V86fsStatfsReply.codec, 'body'],
+      [64, 'invalidate', 11, 0, V86fsInvalidate.codec, 'body'],
+      [65, 'invalidate_dir', 11, 0, V86fsInvalidateDir.codec, 'body'],
+      [66, 'mount_notify', 11, 0, V86fsMountNotify.codec, 'body'],
+      [67, 'umount_notify', 11, 0, V86fsUmountNotify.codec, 'body'],
+      [80, 'error_reply', 11, 0, V86fsErrorReply.codec, 'body'],
+    ],
+  )
+
+/**
+ * V86fsMountRequest mounts a named filesystem root.
+ *
+ * @generated from message unixfs.v86fs.V86fsMountRequest
+ */
+export interface V86fsMountRequest {
+  /**
+   * name identifies which filesystem to mount (empty = root).
+   */
+  name?: string
+}
+
+export const V86fsMountRequest: MessageType<V86fsMountRequest> =
+  /* @__PURE__ */ createMessageType<V86fsMountRequest>(
+    'unixfs.v86fs.V86fsMountRequest',
+    () => [[1, 'name', 9]],
+  )
+
+/**
+ * V86fsMountReply is the response to a mount request.
+ *
+ * @generated from message unixfs.v86fs.V86fsMountReply
+ */
+export interface V86fsMountReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * root_inode_id is the inode ID of the mount root.
+   */
+  rootInodeId?: bigint
+  /**
+   * mode is the file mode of the root inode (includes type bits).
+   */
+  mode?: number
+}
+
+export const V86fsMountReply: MessageType<V86fsMountReply> =
+  /* @__PURE__ */ createMessageType<V86fsMountReply>(
+    'unixfs.v86fs.V86fsMountReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'root_inode_id', 4],
+      [3, 'mode', 13],
+    ],
+  )
+
+/**
+ * V86fsLookupRequest looks up a child entry in a directory.
+ *
+ * @generated from message unixfs.v86fs.V86fsLookupRequest
+ */
+export interface V86fsLookupRequest {
+  /**
+   * parent_id is the inode ID of the parent directory.
+   */
+  parentId?: bigint
+  /**
+   * name is the child entry name to look up.
+   */
+  name?: string
+}
+
+export const V86fsLookupRequest: MessageType<V86fsLookupRequest> =
+  /* @__PURE__ */ createMessageType<V86fsLookupRequest>(
+    'unixfs.v86fs.V86fsLookupRequest',
+    () => [
+      [1, 'parent_id', 4],
+      [2, 'name', 9],
+    ],
+  )
+
+/**
+ * V86fsLookupReply is the response to a lookup request.
+ *
+ * @generated from message unixfs.v86fs.V86fsLookupReply
+ */
+export interface V86fsLookupReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * inode_id is the inode ID of the found entry.
+   */
+  inodeId?: bigint
+  /**
+   * mode is the file mode (includes type bits).
+   */
+  mode?: number
+  /**
+   * size is the file size in bytes.
+   */
+  size?: bigint
+}
+
+export const V86fsLookupReply: MessageType<V86fsLookupReply> =
+  /* @__PURE__ */ createMessageType<V86fsLookupReply>(
+    'unixfs.v86fs.V86fsLookupReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'inode_id', 4],
+      [3, 'mode', 13],
+      [4, 'size', 4],
+    ],
+  )
+
+/**
+ * V86fsGetattrRequest gets attributes of an inode.
+ *
+ * @generated from message unixfs.v86fs.V86fsGetattrRequest
+ */
+export interface V86fsGetattrRequest {
+  /**
+   * inode_id is the inode to query.
+   */
+  inodeId?: bigint
+}
+
+export const V86fsGetattrRequest: MessageType<V86fsGetattrRequest> =
+  /* @__PURE__ */ createMessageType<V86fsGetattrRequest>(
+    'unixfs.v86fs.V86fsGetattrRequest',
+    () => [[1, 'inode_id', 4]],
+  )
+
+/**
+ * V86fsGetattrReply is the response to a getattr request.
+ *
+ * @generated from message unixfs.v86fs.V86fsGetattrReply
+ */
+export interface V86fsGetattrReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * mode is the file mode (includes type bits).
+   */
+  mode?: number
+  /**
+   * size is the file size in bytes.
+   */
+  size?: bigint
+  /**
+   * mtime_sec is the modification time (seconds since epoch).
+   */
+  mtimeSec?: bigint
+  /**
+   * mtime_nsec is the modification time nanosecond component.
+   */
+  mtimeNsec?: number
+}
+
+export const V86fsGetattrReply: MessageType<V86fsGetattrReply> =
+  /* @__PURE__ */ createMessageType<V86fsGetattrReply>(
+    'unixfs.v86fs.V86fsGetattrReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'mode', 13],
+      [3, 'size', 4],
+      [4, 'mtime_sec', 3],
+      [5, 'mtime_nsec', 13],
+    ],
+  )
+
+/**
+ * V86fsDirEntry is a directory entry in a readdir reply.
+ *
+ * @generated from message unixfs.v86fs.V86fsDirEntry
+ */
+export interface V86fsDirEntry {
+  /**
+   * inode_id is the inode ID of the entry.
+   */
+  inodeId?: bigint
+  /**
+   * dt_type is the dirent type (DT_DIR=4, DT_REG=8, DT_LNK=10).
+   */
+  dtType?: number
+  /**
+   * name is the entry name.
+   */
+  name?: string
+}
+
+export const V86fsDirEntry: MessageType<V86fsDirEntry> =
+  /* @__PURE__ */ createMessageType<V86fsDirEntry>(
+    'unixfs.v86fs.V86fsDirEntry',
+    () => [
+      [1, 'inode_id', 4],
+      [2, 'dt_type', 13],
+      [3, 'name', 9],
+    ],
+  )
+
+/**
+ * V86fsReaddirRequest reads directory entries.
+ *
+ * @generated from message unixfs.v86fs.V86fsReaddirRequest
+ */
+export interface V86fsReaddirRequest {
+  /**
+   * dir_id is the inode ID of the directory.
+   */
+  dirId?: bigint
+}
+
+export const V86fsReaddirRequest: MessageType<V86fsReaddirRequest> =
+  /* @__PURE__ */ createMessageType<V86fsReaddirRequest>(
+    'unixfs.v86fs.V86fsReaddirRequest',
+    () => [[1, 'dir_id', 4]],
+  )
+
+/**
+ * V86fsReaddirReply is the response to a readdir request.
+ *
+ * @generated from message unixfs.v86fs.V86fsReaddirReply
+ */
+export interface V86fsReaddirReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * entries contains the directory listing.
+   */
+  entries?: V86fsDirEntry[]
+}
+
+export const V86fsReaddirReply: MessageType<V86fsReaddirReply> =
+  /* @__PURE__ */ createMessageType<V86fsReaddirReply>(
+    'unixfs.v86fs.V86fsReaddirReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'entries', 11, 1, V86fsDirEntry.codec],
+    ],
+  )
+
+/**
+ * V86fsOpenRequest opens a file handle.
+ *
+ * @generated from message unixfs.v86fs.V86fsOpenRequest
+ */
+export interface V86fsOpenRequest {
+  /**
+   * inode_id is the inode to open.
+   */
+  inodeId?: bigint
+  /**
+   * flags are the open flags.
+   */
+  flags?: number
+}
+
+export const V86fsOpenRequest: MessageType<V86fsOpenRequest> =
+  /* @__PURE__ */ createMessageType<V86fsOpenRequest>(
+    'unixfs.v86fs.V86fsOpenRequest',
+    () => [
+      [1, 'inode_id', 4],
+      [2, 'flags', 13],
+    ],
+  )
+
+/**
+ * V86fsOpenReply is the response to an open request.
+ *
+ * @generated from message unixfs.v86fs.V86fsOpenReply
+ */
+export interface V86fsOpenReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * handle_id is the opened file handle ID.
+   */
+  handleId?: bigint
+}
+
+export const V86fsOpenReply: MessageType<V86fsOpenReply> =
+  /* @__PURE__ */ createMessageType<V86fsOpenReply>(
+    'unixfs.v86fs.V86fsOpenReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'handle_id', 4],
+    ],
+  )
+
+/**
+ * V86fsCloseRequest closes a file handle.
+ *
+ * @generated from message unixfs.v86fs.V86fsCloseRequest
+ */
+export interface V86fsCloseRequest {
+  /**
+   * handle_id is the file handle to close.
+   */
+  handleId?: bigint
+}
+
+export const V86fsCloseRequest: MessageType<V86fsCloseRequest> =
+  /* @__PURE__ */ createMessageType<V86fsCloseRequest>(
+    'unixfs.v86fs.V86fsCloseRequest',
+    () => [[1, 'handle_id', 4]],
+  )
+
+/**
+ * V86fsCloseReply is the response to a close request.
+ *
+ * @generated from message unixfs.v86fs.V86fsCloseReply
+ */
+export interface V86fsCloseReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+}
+
+export const V86fsCloseReply: MessageType<V86fsCloseReply> =
+  /* @__PURE__ */ createMessageType<V86fsCloseReply>(
+    'unixfs.v86fs.V86fsCloseReply',
+    () => [[1, 'status', 13]],
+  )
+
+/**
+ * V86fsReadRequest reads data from a file.
+ *
+ * @generated from message unixfs.v86fs.V86fsReadRequest
+ */
+export interface V86fsReadRequest {
+  /**
+   * handle_id is the open file handle.
+   */
+  handleId?: bigint
+  /**
+   * offset is the byte offset to read from.
+   */
+  offset?: bigint
+  /**
+   * size is the number of bytes to read.
+   */
+  size?: number
+}
+
+export const V86fsReadRequest: MessageType<V86fsReadRequest> =
+  /* @__PURE__ */ createMessageType<V86fsReadRequest>(
+    'unixfs.v86fs.V86fsReadRequest',
+    () => [
+      [1, 'handle_id', 4],
+      [2, 'offset', 4],
+      [3, 'size', 13],
+    ],
+  )
+
+/**
+ * V86fsReadReply is the response to a read request.
+ *
+ * @generated from message unixfs.v86fs.V86fsReadReply
+ */
+export interface V86fsReadReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * data contains the bytes read.
+   */
+  data?: Uint8Array
+}
+
+export const V86fsReadReply: MessageType<V86fsReadReply> =
+  /* @__PURE__ */ createMessageType<V86fsReadReply>(
+    'unixfs.v86fs.V86fsReadReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'data', 12],
+    ],
+  )
+
+/**
+ * V86fsCreateRequest creates a new file in a directory.
+ *
+ * @generated from message unixfs.v86fs.V86fsCreateRequest
+ */
+export interface V86fsCreateRequest {
+  /**
+   * parent_id is the parent directory inode ID.
+   */
+  parentId?: bigint
+  /**
+   * name is the new file name.
+   */
+  name?: string
+  /**
+   * mode is the file mode to set.
+   */
+  mode?: number
+}
+
+export const V86fsCreateRequest: MessageType<V86fsCreateRequest> =
+  /* @__PURE__ */ createMessageType<V86fsCreateRequest>(
+    'unixfs.v86fs.V86fsCreateRequest',
+    () => [
+      [1, 'parent_id', 4],
+      [2, 'name', 9],
+      [3, 'mode', 13],
+    ],
+  )
+
+/**
+ * V86fsCreateReply is the response to a create request.
+ *
+ * @generated from message unixfs.v86fs.V86fsCreateReply
+ */
+export interface V86fsCreateReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * inode_id is the new file inode ID.
+   */
+  inodeId?: bigint
+  /**
+   * mode is the actual file mode set.
+   */
+  mode?: number
+}
+
+export const V86fsCreateReply: MessageType<V86fsCreateReply> =
+  /* @__PURE__ */ createMessageType<V86fsCreateReply>(
+    'unixfs.v86fs.V86fsCreateReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'inode_id', 4],
+      [3, 'mode', 13],
+    ],
+  )
+
+/**
+ * V86fsWriteRequest writes data to a file.
+ *
+ * @generated from message unixfs.v86fs.V86fsWriteRequest
+ */
+export interface V86fsWriteRequest {
+  /**
+   * inode_id is the file inode to write to.
+   */
+  inodeId?: bigint
+  /**
+   * offset is the byte offset to write at.
+   */
+  offset?: bigint
+  /**
+   * data is the bytes to write.
+   */
+  data?: Uint8Array
+}
+
+export const V86fsWriteRequest: MessageType<V86fsWriteRequest> =
+  /* @__PURE__ */ createMessageType<V86fsWriteRequest>(
+    'unixfs.v86fs.V86fsWriteRequest',
+    () => [
+      [1, 'inode_id', 4],
+      [2, 'offset', 4],
+      [3, 'data', 12],
+    ],
+  )
+
+/**
+ * V86fsWriteReply is the response to a write request.
+ *
+ * @generated from message unixfs.v86fs.V86fsWriteReply
+ */
+export interface V86fsWriteReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * bytes_written is the number of bytes written.
+   */
+  bytesWritten?: number
+}
+
+export const V86fsWriteReply: MessageType<V86fsWriteReply> =
+  /* @__PURE__ */ createMessageType<V86fsWriteReply>(
+    'unixfs.v86fs.V86fsWriteReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'bytes_written', 13],
+    ],
+  )
+
+/**
+ * V86fsMkdirRequest creates a directory.
+ *
+ * @generated from message unixfs.v86fs.V86fsMkdirRequest
+ */
+export interface V86fsMkdirRequest {
+  /**
+   * parent_id is the parent directory inode ID.
+   */
+  parentId?: bigint
+  /**
+   * name is the directory name.
+   */
+  name?: string
+  /**
+   * mode is the directory mode.
+   */
+  mode?: number
+}
+
+export const V86fsMkdirRequest: MessageType<V86fsMkdirRequest> =
+  /* @__PURE__ */ createMessageType<V86fsMkdirRequest>(
+    'unixfs.v86fs.V86fsMkdirRequest',
+    () => [
+      [1, 'parent_id', 4],
+      [2, 'name', 9],
+      [3, 'mode', 13],
+    ],
+  )
+
+/**
+ * V86fsMkdirReply is the response to a mkdir request.
+ *
+ * @generated from message unixfs.v86fs.V86fsMkdirReply
+ */
+export interface V86fsMkdirReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * inode_id is the new directory inode ID.
+   */
+  inodeId?: bigint
+  /**
+   * mode is the actual directory mode set.
+   */
+  mode?: number
+}
+
+export const V86fsMkdirReply: MessageType<V86fsMkdirReply> =
+  /* @__PURE__ */ createMessageType<V86fsMkdirReply>(
+    'unixfs.v86fs.V86fsMkdirReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'inode_id', 4],
+      [3, 'mode', 13],
+    ],
+  )
+
+/**
+ * V86fsSetattrRequest sets attributes on an inode.
+ *
+ * @generated from message unixfs.v86fs.V86fsSetattrRequest
+ */
+export interface V86fsSetattrRequest {
+  /**
+   * inode_id is the inode to modify.
+   */
+  inodeId?: bigint
+  /**
+   * valid is the bitmask of fields to set (ATTR_MODE=1, ATTR_SIZE=8).
+   */
+  valid?: number
+  /**
+   * mode is the new file mode (if ATTR_MODE set).
+   */
+  mode?: number
+  /**
+   * size is the new file size (if ATTR_SIZE set).
+   */
+  size?: bigint
+}
+
+export const V86fsSetattrRequest: MessageType<V86fsSetattrRequest> =
+  /* @__PURE__ */ createMessageType<V86fsSetattrRequest>(
+    'unixfs.v86fs.V86fsSetattrRequest',
+    () => [
+      [1, 'inode_id', 4],
+      [2, 'valid', 13],
+      [3, 'mode', 13],
+      [4, 'size', 4],
+    ],
+  )
+
+/**
+ * V86fsSetattrReply is the response to a setattr request.
+ *
+ * @generated from message unixfs.v86fs.V86fsSetattrReply
+ */
+export interface V86fsSetattrReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+}
+
+export const V86fsSetattrReply: MessageType<V86fsSetattrReply> =
+  /* @__PURE__ */ createMessageType<V86fsSetattrReply>(
+    'unixfs.v86fs.V86fsSetattrReply',
+    () => [[1, 'status', 13]],
+  )
+
+/**
+ * V86fsFsyncRequest flushes a file to storage.
+ *
+ * @generated from message unixfs.v86fs.V86fsFsyncRequest
+ */
+export interface V86fsFsyncRequest {
+  /**
+   * inode_id is the inode to sync.
+   */
+  inodeId?: bigint
+}
+
+export const V86fsFsyncRequest: MessageType<V86fsFsyncRequest> =
+  /* @__PURE__ */ createMessageType<V86fsFsyncRequest>(
+    'unixfs.v86fs.V86fsFsyncRequest',
+    () => [[1, 'inode_id', 4]],
+  )
+
+/**
+ * V86fsFsyncReply is the response to an fsync request.
+ *
+ * @generated from message unixfs.v86fs.V86fsFsyncReply
+ */
+export interface V86fsFsyncReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+}
+
+export const V86fsFsyncReply: MessageType<V86fsFsyncReply> =
+  /* @__PURE__ */ createMessageType<V86fsFsyncReply>(
+    'unixfs.v86fs.V86fsFsyncReply',
+    () => [[1, 'status', 13]],
+  )
+
+/**
+ * V86fsUnlinkRequest removes a directory entry.
+ *
+ * @generated from message unixfs.v86fs.V86fsUnlinkRequest
+ */
+export interface V86fsUnlinkRequest {
+  /**
+   * parent_id is the parent directory inode ID.
+   */
+  parentId?: bigint
+  /**
+   * name is the entry to remove.
+   */
+  name?: string
+}
+
+export const V86fsUnlinkRequest: MessageType<V86fsUnlinkRequest> =
+  /* @__PURE__ */ createMessageType<V86fsUnlinkRequest>(
+    'unixfs.v86fs.V86fsUnlinkRequest',
+    () => [
+      [1, 'parent_id', 4],
+      [2, 'name', 9],
+    ],
+  )
+
+/**
+ * V86fsUnlinkReply is the response to an unlink request.
+ *
+ * @generated from message unixfs.v86fs.V86fsUnlinkReply
+ */
+export interface V86fsUnlinkReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+}
+
+export const V86fsUnlinkReply: MessageType<V86fsUnlinkReply> =
+  /* @__PURE__ */ createMessageType<V86fsUnlinkReply>(
+    'unixfs.v86fs.V86fsUnlinkReply',
+    () => [[1, 'status', 13]],
+  )
+
+/**
+ * V86fsRenameRequest renames/moves a directory entry.
+ *
+ * @generated from message unixfs.v86fs.V86fsRenameRequest
+ */
+export interface V86fsRenameRequest {
+  /**
+   * old_parent_id is the source directory inode ID.
+   */
+  oldParentId?: bigint
+  /**
+   * old_name is the source entry name.
+   */
+  oldName?: string
+  /**
+   * new_parent_id is the destination directory inode ID.
+   */
+  newParentId?: bigint
+  /**
+   * new_name is the destination entry name.
+   */
+  newName?: string
+}
+
+export const V86fsRenameRequest: MessageType<V86fsRenameRequest> =
+  /* @__PURE__ */ createMessageType<V86fsRenameRequest>(
+    'unixfs.v86fs.V86fsRenameRequest',
+    () => [
+      [1, 'old_parent_id', 4],
+      [2, 'old_name', 9],
+      [3, 'new_parent_id', 4],
+      [4, 'new_name', 9],
+    ],
+  )
+
+/**
+ * V86fsRenameReply is the response to a rename request.
+ *
+ * @generated from message unixfs.v86fs.V86fsRenameReply
+ */
+export interface V86fsRenameReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+}
+
+export const V86fsRenameReply: MessageType<V86fsRenameReply> =
+  /* @__PURE__ */ createMessageType<V86fsRenameReply>(
+    'unixfs.v86fs.V86fsRenameReply',
+    () => [[1, 'status', 13]],
+  )
+
+/**
+ * V86fsSymlinkRequest creates a symbolic link.
+ *
+ * @generated from message unixfs.v86fs.V86fsSymlinkRequest
+ */
+export interface V86fsSymlinkRequest {
+  /**
+   * parent_id is the parent directory inode ID.
+   */
+  parentId?: bigint
+  /**
+   * name is the symlink name.
+   */
+  name?: string
+  /**
+   * target is the symlink target path.
+   */
+  target?: string
+}
+
+export const V86fsSymlinkRequest: MessageType<V86fsSymlinkRequest> =
+  /* @__PURE__ */ createMessageType<V86fsSymlinkRequest>(
+    'unixfs.v86fs.V86fsSymlinkRequest',
+    () => [
+      [1, 'parent_id', 4],
+      [2, 'name', 9],
+      [3, 'target', 9],
+    ],
+  )
+
+/**
+ * V86fsSymlinkReply is the response to a symlink request.
+ *
+ * @generated from message unixfs.v86fs.V86fsSymlinkReply
+ */
+export interface V86fsSymlinkReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * inode_id is the new symlink inode ID.
+   */
+  inodeId?: bigint
+  /**
+   * mode is the symlink mode.
+   */
+  mode?: number
+}
+
+export const V86fsSymlinkReply: MessageType<V86fsSymlinkReply> =
+  /* @__PURE__ */ createMessageType<V86fsSymlinkReply>(
+    'unixfs.v86fs.V86fsSymlinkReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'inode_id', 4],
+      [3, 'mode', 13],
+    ],
+  )
+
+/**
+ * V86fsReadlinkRequest reads a symbolic link target.
+ *
+ * @generated from message unixfs.v86fs.V86fsReadlinkRequest
+ */
+export interface V86fsReadlinkRequest {
+  /**
+   * inode_id is the symlink inode.
+   */
+  inodeId?: bigint
+}
+
+export const V86fsReadlinkRequest: MessageType<V86fsReadlinkRequest> =
+  /* @__PURE__ */ createMessageType<V86fsReadlinkRequest>(
+    'unixfs.v86fs.V86fsReadlinkRequest',
+    () => [[1, 'inode_id', 4]],
+  )
+
+/**
+ * V86fsReadlinkReply is the response to a readlink request.
+ *
+ * @generated from message unixfs.v86fs.V86fsReadlinkReply
+ */
+export interface V86fsReadlinkReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * target is the symlink target path.
+   */
+  target?: string
+}
+
+export const V86fsReadlinkReply: MessageType<V86fsReadlinkReply> =
+  /* @__PURE__ */ createMessageType<V86fsReadlinkReply>(
+    'unixfs.v86fs.V86fsReadlinkReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'target', 9],
+    ],
+  )
+
+/**
+ * V86fsStatfsRequest queries filesystem statistics.
+ *
+ * @generated from message unixfs.v86fs.V86fsStatfsRequest
+ */
+export interface V86fsStatfsRequest {}
+
+export const V86fsStatfsRequest: MessageType<V86fsStatfsRequest> =
+  /* @__PURE__ */ createMessageType<V86fsStatfsRequest>(
+    'unixfs.v86fs.V86fsStatfsRequest',
+    () => [],
+  )
+
+/**
+ * V86fsStatfsReply is the response to a statfs request.
+ *
+ * @generated from message unixfs.v86fs.V86fsStatfsReply
+ */
+export interface V86fsStatfsReply {
+  /**
+   * status is 0 for success, or an errno value.
+   */
+  status?: number
+  /**
+   * blocks is the total data blocks in the filesystem.
+   */
+  blocks?: bigint
+  /**
+   * bfree is the free blocks.
+   */
+  bfree?: bigint
+  /**
+   * bavail is the free blocks available to unprivileged users.
+   */
+  bavail?: bigint
+  /**
+   * files is the total file nodes.
+   */
+  files?: bigint
+  /**
+   * ffree is the free file nodes.
+   */
+  ffree?: bigint
+  /**
+   * bsize is the filesystem block size.
+   */
+  bsize?: number
+}
+
+export const V86fsStatfsReply: MessageType<V86fsStatfsReply> =
+  /* @__PURE__ */ createMessageType<V86fsStatfsReply>(
+    'unixfs.v86fs.V86fsStatfsReply',
+    () => [
+      [1, 'status', 13],
+      [2, 'blocks', 4],
+      [3, 'bfree', 4],
+      [4, 'bavail', 4],
+      [5, 'files', 4],
+      [6, 'ffree', 4],
+      [7, 'bsize', 13],
+    ],
+  )
+
+/**
+ * V86fsInvalidate invalidates cached data for an inode.
+ * Server to client notification (no reply expected).
+ *
+ * @generated from message unixfs.v86fs.V86fsInvalidate
+ */
+export interface V86fsInvalidate {
+  /**
+   * inode_id is the inode to invalidate.
+   */
+  inodeId?: bigint
+  /**
+   * offset is the start of the range to invalidate (0 = full inode).
+   */
+  offset?: bigint
+  /**
+   * size is the length of the range to invalidate (0 = full inode).
+   */
+  size?: bigint
+}
+
+export const V86fsInvalidate: MessageType<V86fsInvalidate> =
+  /* @__PURE__ */ createMessageType<V86fsInvalidate>(
+    'unixfs.v86fs.V86fsInvalidate',
+    () => [
+      [1, 'inode_id', 4],
+      [2, 'offset', 4],
+      [3, 'size', 4],
+    ],
+  )
+
+/**
+ * V86fsInvalidateDir invalidates a directory listing cache.
+ * Server to client notification (no reply expected).
+ *
+ * @generated from message unixfs.v86fs.V86fsInvalidateDir
+ */
+export interface V86fsInvalidateDir {
+  /**
+   * dir_id is the directory inode to invalidate.
+   */
+  dirId?: bigint
+}
+
+export const V86fsInvalidateDir: MessageType<V86fsInvalidateDir> =
+  /* @__PURE__ */ createMessageType<V86fsInvalidateDir>(
+    'unixfs.v86fs.V86fsInvalidateDir',
+    () => [[1, 'dir_id', 4]],
+  )
+
+/**
+ * V86fsMountNotify tells the guest to mount a filesystem at a path.
+ * Server to client notification (no reply expected).
+ *
+ * @generated from message unixfs.v86fs.V86fsMountNotify
+ */
+export interface V86fsMountNotify {
+  /**
+   * name is the mount name (resolved by mount-name resolver).
+   */
+  name?: string
+  /**
+   * mount_path is the guest path to mount at.
+   */
+  mountPath?: string
+}
+
+export const V86fsMountNotify: MessageType<V86fsMountNotify> =
+  /* @__PURE__ */ createMessageType<V86fsMountNotify>(
+    'unixfs.v86fs.V86fsMountNotify',
+    () => [
+      [1, 'name', 9],
+      [2, 'mount_path', 9],
+    ],
+  )
+
+/**
+ * V86fsUmountNotify tells the guest to unmount a filesystem.
+ * Server to client notification (no reply expected).
+ *
+ * @generated from message unixfs.v86fs.V86fsUmountNotify
+ */
+export interface V86fsUmountNotify {
+  /**
+   * mount_path is the guest path to unmount.
+   */
+  mountPath?: string
+}
+
+export const V86fsUmountNotify: MessageType<V86fsUmountNotify> =
+  /* @__PURE__ */ createMessageType<V86fsUmountNotify>(
+    'unixfs.v86fs.V86fsUmountNotify',
+    () => [[1, 'mount_path', 9]],
+  )
+
+/**
+ * V86fsErrorReply is a generic error response for any request.
+ *
+ * @generated from message unixfs.v86fs.V86fsErrorReply
+ */
+export interface V86fsErrorReply {
+  /**
+   * status is the errno value.
+   */
+  status?: number
+}
+
+export const V86fsErrorReply: MessageType<V86fsErrorReply> =
+  /* @__PURE__ */ createMessageType<V86fsErrorReply>(
+    'unixfs.v86fs.V86fsErrorReply',
+    () => [[1, 'status', 13]],
+  )

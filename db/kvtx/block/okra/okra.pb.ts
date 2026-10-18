@@ -5,8 +5,6 @@
 import { BlockRef } from '../../../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Blob } from '../../../block/blob/blob.pb.js'
 
 /**
@@ -17,125 +15,41 @@ import { Blob } from '../../../block/blob/blob.pb.js'
 export interface Root {
   /**
    * Size contains the total number of keys in the store.
-   *
-   * @generated from field: uint64 size = 1;
    */
   size?: bigint
   /**
    * Height contains the highest populated Okra level.
-   *
-   * @generated from field: uint32 height = 2;
    */
   height?: number
   /**
    * RootHash contains the K-byte Okra hash for the highest-level root node.
-   *
-   * @generated from field: bytes root_hash = 3;
    */
   rootHash?: Uint8Array
   /**
    * RootPageRef points to the packed page containing the root node.
-   *
-   * @generated from field: block.BlockRef root_page_ref = 4;
    */
   rootPageRef?: BlockRef
   /**
    * HashSize records the Okra K constant used by this tree.
-   *
-   * @generated from field: uint32 hash_size = 5;
    */
   hashSize?: number
   /**
    * FanoutDegree records the Okra Q promotion constant used by this tree.
-   *
-   * @generated from field: uint32 fanout_degree = 6;
    */
   fanoutDegree?: number
 }
 
-export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType({
-  typeName: 'kvtx.block.okra.Root',
-  fields: [
-    { no: 1, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 2, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 3, name: 'root_hash', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 4, name: 'root_page_ref', kind: 'message', T: () => BlockRef },
-    { no: 5, name: 'hash_size', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 6, name: 'fanout_degree', kind: 'scalar', T: ScalarType.UINT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * Entry is one Okra node inside a packed page.
- *
- * @generated from message kvtx.block.okra.Entry
- */
-export interface Entry {
-  /**
-   * Anchor is true for the null anchor node at the start of each level.
-   *
-   * @generated from field: bool anchor = 1;
-   */
-  anchor?: boolean
-  /**
-   * Key is the node key. Empty when Anchor is true.
-   *
-   * @generated from field: bytes key = 2;
-   */
-  key?: Uint8Array
-  /**
-   * Hash contains the K-byte Okra node hash.
-   *
-   * @generated from field: bytes hash = 3;
-   */
-  hash?: Uint8Array
-  /**
-   * Size contains the number of leaf keys below this node.
-   *
-   * @generated from field: uint64 size = 4;
-   */
-  size?: bigint
-  /**
-   * ChildRef points to the child page for internal nodes.
-   *
-   * @generated from field: block.BlockRef child_ref = 5;
-   */
-  childRef?: BlockRef
-  /**
-   * ValueRef points to the value block for leaf nodes.
-   *
-   * @generated from field: block.BlockRef value_ref = 6;
-   */
-  valueRef?: BlockRef
-  /**
-   * ValueIsBlob indicates that ValueRef points to a blob.Blob block.
-   *
-   * @generated from field: bool value_is_blob = 7;
-   */
-  valueIsBlob?: boolean
-  /**
-   * ValueBlob embeds a small value in the page instead of a separate block.
-   * Present only in stores tagged KV_IMPL_TYPE_OKRA_INLINE. ValueRef is empty
-   * and ValueIsBlob is true when this field is present.
-   *
-   * @generated from field: blob.Blob value_blob = 8;
-   */
-  valueBlob?: Blob
-}
-
-export const Entry: MessageType<Entry> = /* @__PURE__ */ createMessageType({
-  typeName: 'kvtx.block.okra.Entry',
-  fields: [
-    { no: 1, name: 'anchor', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 2, name: 'key', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 3, name: 'hash', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 4, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 5, name: 'child_ref', kind: 'message', T: () => BlockRef },
-    { no: 6, name: 'value_ref', kind: 'message', T: () => BlockRef },
-    { no: 7, name: 'value_is_blob', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 8, name: 'value_blob', kind: 'message', T: () => Blob },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType<Root>(
+  'kvtx.block.okra.Root',
+  () => [
+    [1, 'size', 4],
+    [2, 'height', 13],
+    [3, 'root_hash', 12],
+    [4, 'root_page_ref', 11, 0, BlockRef.codec],
+    [5, 'hash_size', 13],
+    [6, 'fanout_degree', 13],
+  ],
+)
 
 /**
  * Page is a packed Okra level page.
@@ -145,57 +59,97 @@ export const Entry: MessageType<Entry> = /* @__PURE__ */ createMessageType({
 export interface Page {
   /**
    * Level is the Okra level of every entry in the page.
-   *
-   * @generated from field: uint32 level = 1;
    */
   level?: number
   /**
    * LowerBound is the first non-anchor key covered by this page.
-   *
-   * @generated from field: bytes lower_bound = 2;
    */
   lowerBound?: Uint8Array
   /**
    * UpperBound is the exclusive upper key bound. Empty means unbounded.
-   *
-   * @generated from field: bytes upper_bound = 3;
    */
   upperBound?: Uint8Array
   /**
    * StartsAtAnchor is true when this page begins at the level anchor.
-   *
-   * @generated from field: bool starts_at_anchor = 4;
    */
   startsAtAnchor?: boolean
   /**
    * Size contains the number of leaf keys covered by the page.
-   *
-   * @generated from field: uint64 size = 5;
    */
   size?: bigint
   /**
    * PageHash is a deterministic hash of the page metadata and entry hashes.
-   *
-   * @generated from field: bytes page_hash = 6;
    */
   pageHash?: Uint8Array
   /**
    * Entries contains sorted Okra nodes packed into this page.
-   *
-   * @generated from field: repeated kvtx.block.okra.Entry entries = 7;
    */
   entries?: Entry[]
 }
 
-export const Page: MessageType<Page> = /* @__PURE__ */ createMessageType({
-  typeName: 'kvtx.block.okra.Page',
-  fields: [
-    { no: 1, name: 'level', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 2, name: 'lower_bound', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 3, name: 'upper_bound', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 4, name: 'starts_at_anchor', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 6, name: 'page_hash', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 7, name: 'entries', kind: 'message', T: Entry, repeated: true },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Page: MessageType<Page> = /* @__PURE__ */ createMessageType<Page>(
+  'kvtx.block.okra.Page',
+  () => [
+    [1, 'level', 13],
+    [2, 'lower_bound', 12],
+    [3, 'upper_bound', 12],
+    [4, 'starts_at_anchor', 8],
+    [5, 'size', 4],
+    [6, 'page_hash', 12],
+    [7, 'entries', 11, 1, Entry.codec],
+  ],
+)
+
+/**
+ * Entry is one Okra node inside a packed page.
+ *
+ * @generated from message kvtx.block.okra.Entry
+ */
+export interface Entry {
+  /**
+   * Anchor is true for the null anchor node at the start of each level.
+   */
+  anchor?: boolean
+  /**
+   * Key is the node key. Empty when Anchor is true.
+   */
+  key?: Uint8Array
+  /**
+   * Hash contains the K-byte Okra node hash.
+   */
+  hash?: Uint8Array
+  /**
+   * Size contains the number of leaf keys below this node.
+   */
+  size?: bigint
+  /**
+   * ChildRef points to the child page for internal nodes.
+   */
+  childRef?: BlockRef
+  /**
+   * ValueRef points to the value block for leaf nodes.
+   */
+  valueRef?: BlockRef
+  /**
+   * ValueIsBlob indicates that ValueRef points to a blob.Blob block.
+   */
+  valueIsBlob?: boolean
+  /**
+   * ValueBlob embeds a small value in the page instead of a separate block.
+   * Present only in stores tagged KV_IMPL_TYPE_OKRA_INLINE. ValueRef is empty
+   * and ValueIsBlob is true when this field is present.
+   */
+  valueBlob?: Blob
+}
+
+export const Entry: MessageType<Entry> =
+  /* @__PURE__ */ createMessageType<Entry>('kvtx.block.okra.Entry', () => [
+    [1, 'anchor', 8],
+    [2, 'key', 12],
+    [3, 'hash', 12],
+    [4, 'size', 4],
+    [5, 'child_ref', 11, 0, BlockRef.codec],
+    [6, 'value_ref', 11, 0, BlockRef.codec],
+    [7, 'value_is_blob', 8],
+    [8, 'value_blob', 11, 0, Blob.codec],
+  ])

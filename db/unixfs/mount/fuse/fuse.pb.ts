@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the FUSE mount controller.
@@ -16,34 +14,24 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * MountPath is the destination mount path.
-   *
-   * @generated from field: string mount_path = 1;
    */
   mountPath?: string
   /**
    * Verbose enables verbose logging.
    * Volume attribute: verbose=true
-   *
-   * @generated from field: bool verbose = 2;
    */
   verbose?: boolean
   /**
    * AllowOther enables other users than the mounter to access the mount.
    * Volume attribute: allow_other=true
-   *
-   * @generated from field: bool allow_other = 3;
    */
   allowOther?: boolean
   /**
    * AllowDev enables device objects to exist on the FS.
-   *
-   * @generated from field: bool allow_dev = 4;
    */
   allowDev?: boolean
   /**
    * AllowSuid allows set-user-identifier or set-group-identifier bits to take effect.
-   *
-   * @generated from field: bool allow_suid = 5;
    */
   allowSuid?: boolean
   /**
@@ -51,28 +39,22 @@ export interface Config {
    * The kernel rejects writes, keeps file pages across opens, and permits
    * memory-mapping files.
    * Volume attribute: read_only=true
-   *
-   * @generated from field: bool read_only = 6;
    */
   readOnly?: boolean
   /**
    * MaxReadahead limits kernel readahead for sequential reads in bytes.
    * Zero keeps the kernel default.
-   *
-   * @generated from field: uint32 max_readahead = 7;
    */
   maxReadahead?: number
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'unixfs.mount.fuse.Config',
-  fields: [
-    { no: 1, name: 'mount_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 3, name: 'allow_other', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'allow_dev', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'allow_suid', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 6, name: 'read_only', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 7, name: 'max_readahead', kind: 'scalar', T: ScalarType.UINT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('unixfs.mount.fuse.Config', () => [
+    [1, 'mount_path', 9],
+    [2, 'verbose', 8],
+    [3, 'allow_other', 8],
+    [4, 'allow_dev', 8],
+    [5, 'allow_suid', 8],
+    [6, 'read_only', 8],
+    [7, 'max_readahead', 13],
+  ])

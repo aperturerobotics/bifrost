@@ -5,8 +5,6 @@
 import { Config as Config$1 } from '../client.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures mounting a bifrost srpc RPC client to a bus.
@@ -17,15 +15,11 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * Client contains srpc.client configuration for the RPC client.
-   *
-   * @generated from field: stream.srpc.client.Config client = 1;
    */
   client?: Config$1
   /**
    * ProtocolId is the protocol ID to use to contact the remote RPC service.
    * Must be set.
-   *
-   * @generated from field: string protocol_id = 2;
    */
   protocolId?: string
   /**
@@ -35,23 +29,16 @@ export interface Config {
    *
    * If empty slice or empty string: matches all LookupRpcClient calls ignoring service ID.
    * Optional.
-   *
-   * @generated from field: repeated string service_id_prefixes = 3;
    */
   serviceIdPrefixes?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'stream.srpc.client.controller.Config',
-  fields: [
-    { no: 1, name: 'client', kind: 'message', T: () => Config$1 },
-    { no: 2, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'service_id_prefixes',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'stream.srpc.client.controller.Config',
+    () => [
+      [1, 'client', 11, 0, Config$1.codec],
+      [2, 'protocol_id', 9],
+      [3, 'service_id_prefixes', 9, 1],
+    ],
+  )

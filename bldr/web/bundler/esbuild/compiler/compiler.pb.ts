@@ -3,13 +3,11 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
-import { EsbuildBundleEntrypoint, EsbuildOutputMeta } from '../esbuild.pb.js'
+import { WebPkgRefConfig } from '../../bundler.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { WebPkgRefConfig } from '../../bundler.pb.js'
 import { WebPkgRef } from '../../../pkg/pkg.pb.js'
+import { EsbuildBundleEntrypoint, EsbuildOutputMeta } from '../esbuild.pb.js'
 
 /**
  * InputFileKind is the kind of file this is.
@@ -19,87 +17,28 @@ import { WebPkgRef } from '../../../pkg/pkg.pb.js'
 export enum InputFileKind {
   /**
    * InputFileKind_UNKNOWN is the default kind.
-   *
-   * @generated from enum value: InputFileKind_UNKNOWN = 0;
    */
   InputFileKind_UNKNOWN = 0,
 
   /**
    * InputFileKind_ESBUILD is an input consumed by esbuild.
-   *
-   * @generated from enum value: InputFileKind_ESBUILD = 1;
    */
   InputFileKind_ESBUILD = 1,
 
   /**
    * InputFileKind_WEB_PKG is a third party bundled npm package.
-   *
-   * @generated from enum value: InputFileKind_WEB_PKG = 2;
    */
   InputFileKind_WEB_PKG = 2,
 }
 
 export const InputFileKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.bundler.esbuild.compiler.InputFileKind',
-  InputFileKind,
+  [
+    [0, 'InputFileKind_UNKNOWN'],
+    [1, 'InputFileKind_ESBUILD'],
+    [2, 'InputFileKind_WEB_PKG'],
+  ],
 )
-
-/**
- * EsbuildBundleMeta is information about an esbuild bundle.
- *
- * @generated from message bldr.web.bundler.esbuild.compiler.EsbuildBundleMeta
- */
-export interface EsbuildBundleMeta {
-  /**
-   * Id is the identifier of the bundle.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Entrypoints is the list of entrypoints to pass to esbuild.
-   *
-   * @generated from field: repeated bldr.web.bundler.esbuild.EsbuildBundleEntrypoint entrypoints = 2;
-   */
-  entrypoints?: EsbuildBundleEntrypoint[]
-  /**
-   * PublicPath is the public URL path prefix for chunk imports and assets.
-   * If empty, chunks import each other by relative path, so the bundle loads
-   * under any root that serves it, including a path pinned to a manifest root.
-   *
-   * @generated from field: string public_path = 3;
-   */
-  publicPath?: string
-  /**
-   * EsbuildFlags are additional command-line arguments to pass to esbuild for this bundle.
-   *
-   * @generated from field: repeated string esbuild_flags = 4;
-   */
-  esbuildFlags?: string[]
-}
-
-export const EsbuildBundleMeta: MessageType<EsbuildBundleMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.esbuild.compiler.EsbuildBundleMeta',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'entrypoints',
-        kind: 'message',
-        T: () => EsbuildBundleEntrypoint,
-        repeated: true,
-      },
-      { no: 3, name: 'public_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'esbuild_flags',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Config configures the esbuild plugin compiler controller.
@@ -109,8 +48,6 @@ export const EsbuildBundleMeta: MessageType<EsbuildBundleMeta> =
 export interface Config {
   /**
    * Bundles is the list of esbuild bundles to compile.
-   *
-   * @generated from field: repeated bldr.web.bundler.esbuild.compiler.EsbuildBundleMeta bundles = 1;
    */
   bundles?: EsbuildBundleMeta[]
   /**
@@ -128,22 +65,16 @@ export interface Config {
    * They will also be available at /b/pkg: e.g. /b/pkg/@my/npm-package/foo/bar/index.js
    *
    * Note: only files & entrypoints imported by at least one js file will be included.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 2;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
    * EsbuildFlags is a string containing additional flags to pass to esbuild.
    * Flags passed by bldr:esbuild directives can override these values.
    * E.x.: --target es2020
-   *
-   * @generated from field: repeated string esbuild_flags = 3;
    */
   esbuildFlags?: string[]
   /**
    * BuildTypes contains a mapping of BuildType to Config override.
-   *
-   * @generated from field: map<string, bldr.web.bundler.esbuild.compiler.Config> build_types = 4;
    */
   buildTypes?: { [key: string]: Config }
   /**
@@ -151,52 +82,21 @@ export interface Config {
    * Keys are platform IDs (e.g., "desktop", "js", "none", "desktop/linux/amd64").
    * Both base platform IDs and full platform IDs are checked: a build for
    * "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
-   *
-   * @generated from field: map<string, bldr.web.bundler.esbuild.compiler.Config> platform_types = 5;
    */
   platformTypes?: { [key: string]: Config }
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.web.bundler.esbuild.compiler.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'bundles',
-      kind: 'message',
-      T: EsbuildBundleMeta,
-      repeated: true,
-    },
-    {
-      no: 2,
-      name: 'web_pkgs',
-      kind: 'message',
-      T: () => WebPkgRefConfig,
-      repeated: true,
-    },
-    {
-      no: 3,
-      name: 'esbuild_flags',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 4,
-      name: 'build_types',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => Config },
-    },
-    {
-      no: 5,
-      name: 'platform_types',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => Config },
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.web.bundler.esbuild.compiler.Config',
+    () => [
+      [1, 'bundles', 11, 1, EsbuildBundleMeta.codec],
+      [2, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [3, 'esbuild_flags', 9, 1],
+      [4, 'build_types', 11, 584, Config.codec],
+      [5, 'platform_types', 11, 584, Config.codec],
+    ],
+  )
 
 /**
  * PreBuildHookResult is the output of a pre-build hook.
@@ -207,19 +107,15 @@ export interface PreBuildHookResult {
   /**
    * Config is the configuration for the plugin build step.
    * Merged with the existing configuration.
-   *
-   * @generated from field: bldr.web.bundler.esbuild.compiler.Config config = 1;
    */
   config?: Config
 }
 
 export const PreBuildHookResult: MessageType<PreBuildHookResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.esbuild.compiler.PreBuildHookResult',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PreBuildHookResult>(
+    'bldr.web.bundler.esbuild.compiler.PreBuildHookResult',
+    () => [[1, 'config', 11, 0, Config.codec]],
+  )
 
 /**
  * InputFileMeta is metadata attached to an input manifest file.
@@ -229,19 +125,15 @@ export const PreBuildHookResult: MessageType<PreBuildHookResult> =
 export interface InputFileMeta {
   /**
    * Kind is the input file kind.
-   *
-   * @generated from field: bldr.web.bundler.esbuild.compiler.InputFileKind kind = 1;
    */
   kind?: InputFileKind
 }
 
 export const InputFileMeta: MessageType<InputFileMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.esbuild.compiler.InputFileMeta',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: InputFileKind_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InputFileMeta>(
+    'bldr.web.bundler.esbuild.compiler.InputFileMeta',
+    () => [[1, 'kind', 14, 0, InputFileKind_Enum]],
+  )
 
 /**
  * InputManifestMeta is metadata attached to the input manifest.
@@ -251,74 +143,71 @@ export const InputFileMeta: MessageType<InputFileMeta> =
 export interface InputManifestMeta {
   /**
    * WebPkgRefs contains the list of web pkg references.
-   *
-   * @generated from field: repeated web.pkg.WebPkgRef web_pkg_refs = 1;
    */
   webPkgRefs?: WebPkgRef[]
   /**
    * WebPkgs is the list of web pkgs that we separate from the bundle.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 2;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
    * EsbuildFlags are the base command-line arguments to pass to all esbuild bundles.
-   *
-   * @generated from field: repeated string esbuild_flags = 3;
    */
   esbuildFlags?: string[]
   /**
    * EsbuildBundles is the list of esbuild bundles with entrypoint configs.
-   *
-   * @generated from field: repeated bldr.web.bundler.esbuild.compiler.EsbuildBundleMeta esbuild_bundles = 4;
    */
   esbuildBundles?: EsbuildBundleMeta[]
   /**
    * EsbuildOutputs contains a list of files written by esbuild.
-   *
-   * @generated from field: repeated bldr.web.bundler.esbuild.EsbuildOutputMeta esbuild_outputs = 5;
    */
   esbuildOutputs?: EsbuildOutputMeta[]
 }
 
 export const InputManifestMeta: MessageType<InputManifestMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.esbuild.compiler.InputManifestMeta',
-    fields: [
-      {
-        no: 1,
-        name: 'web_pkg_refs',
-        kind: 'message',
-        T: () => WebPkgRef,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'web_pkgs',
-        kind: 'message',
-        T: () => WebPkgRefConfig,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'esbuild_flags',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'esbuild_bundles',
-        kind: 'message',
-        T: EsbuildBundleMeta,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'esbuild_outputs',
-        kind: 'message',
-        T: () => EsbuildOutputMeta,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InputManifestMeta>(
+    'bldr.web.bundler.esbuild.compiler.InputManifestMeta',
+    () => [
+      [1, 'web_pkg_refs', 11, 1, WebPkgRef.codec],
+      [2, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [3, 'esbuild_flags', 9, 1],
+      [4, 'esbuild_bundles', 11, 1, EsbuildBundleMeta.codec],
+      [5, 'esbuild_outputs', 11, 1, EsbuildOutputMeta.codec],
+    ],
+  )
+
+/**
+ * EsbuildBundleMeta is information about an esbuild bundle.
+ *
+ * @generated from message bldr.web.bundler.esbuild.compiler.EsbuildBundleMeta
+ */
+export interface EsbuildBundleMeta {
+  /**
+   * Id is the identifier of the bundle.
+   */
+  id?: string
+  /**
+   * Entrypoints is the list of entrypoints to pass to esbuild.
+   */
+  entrypoints?: EsbuildBundleEntrypoint[]
+  /**
+   * PublicPath is the public URL path prefix for chunk imports and assets.
+   * If empty, chunks import each other by relative path, so the bundle loads
+   * under any root that serves it, including a path pinned to a manifest root.
+   */
+  publicPath?: string
+  /**
+   * EsbuildFlags are additional command-line arguments to pass to esbuild for this bundle.
+   */
+  esbuildFlags?: string[]
+}
+
+export const EsbuildBundleMeta: MessageType<EsbuildBundleMeta> =
+  /* @__PURE__ */ createMessageType<EsbuildBundleMeta>(
+    'bldr.web.bundler.esbuild.compiler.EsbuildBundleMeta',
+    () => [
+      [1, 'id', 9],
+      [2, 'entrypoints', 11, 1, EsbuildBundleEntrypoint.codec],
+      [3, 'public_path', 9],
+      [4, 'esbuild_flags', 9, 1],
+    ],
+  )

@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import type { SessionType } from '../../../core/session/session.pb.js'
 import {
   EntityCredential,
@@ -33,24 +28,22 @@ import {
 export enum PasskeyPrfWrapAlgorithm {
   /**
    * PASSKEY_PRF_WRAP_ALGORITHM_UNSPECIFIED is invalid.
-   *
-   * @generated from enum value: PASSKEY_PRF_WRAP_ALGORITHM_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * PASSKEY_PRF_WRAP_ALGORITHM_AES_256_GCM_V1 uses the WebAuthn PRF output as
    * an AES-256-GCM key with a 96-bit nonce.
-   *
-   * @generated from enum value: PASSKEY_PRF_WRAP_ALGORITHM_AES_256_GCM_V1 = 1;
    */
   AES_256_GCM_V1 = 1,
 }
 
 export const PasskeyPrfWrapAlgorithm_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.PasskeyPrfWrapAlgorithm',
-  PasskeyPrfWrapAlgorithm,
-  'PASSKEY_PRF_WRAP_ALGORITHM_',
+  [
+    [0, 'PASSKEY_PRF_WRAP_ALGORITHM_UNSPECIFIED'],
+    [1, 'PASSKEY_PRF_WRAP_ALGORITHM_AES_256_GCM_V1'],
+  ],
 )
 
 /**
@@ -62,71 +55,63 @@ export const PasskeyPrfWrapAlgorithm_Enum = /* @__PURE__ */ createEnumType(
 export enum BillingStatus {
   /**
    * BillingStatus_UNKNOWN is unknown.
-   *
-   * @generated from enum value: BillingStatus_UNKNOWN = 0;
    */
   BillingStatus_UNKNOWN = 0,
 
   /**
    * BillingStatus_NONE is no subscription.
-   *
-   * @generated from enum value: BillingStatus_NONE = 1;
    */
   BillingStatus_NONE = 1,
 
   /**
    * BillingStatus_ACTIVE is active subscription.
-   *
-   * @generated from enum value: BillingStatus_ACTIVE = 2;
    */
   BillingStatus_ACTIVE = 2,
 
   /**
    * BillingStatus_PAST_DUE is payment failed.
-   *
-   * @generated from enum value: BillingStatus_PAST_DUE = 3;
    */
   BillingStatus_PAST_DUE = 3,
 
   /**
    * BillingStatus_PAST_DUE_READONLY is past due and read-only.
-   *
-   * @generated from enum value: BillingStatus_PAST_DUE_READONLY = 4;
    */
   BillingStatus_PAST_DUE_READONLY = 4,
 
   /**
    * BillingStatus_CANCELED is canceled subscription.
-   *
-   * @generated from enum value: BillingStatus_CANCELED = 5;
    */
   BillingStatus_CANCELED = 5,
 
   /**
    * BillingStatus_DELETED is deleted account.
-   *
-   * @generated from enum value: BillingStatus_DELETED = 6;
    */
   BillingStatus_DELETED = 6,
 
   /**
    * BillingStatus_TRIALING is a trial subscription.
-   *
-   * @generated from enum value: BillingStatus_TRIALING = 7;
    */
   BillingStatus_TRIALING = 7,
 
   /**
    * BillingStatus_LAPSED is a lapsed subscription (grace period expired, data preserved).
-   *
-   * @generated from enum value: BillingStatus_LAPSED = 8;
    */
   BillingStatus_LAPSED = 8,
 }
 
 export const BillingStatus_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.BillingStatus',
-  BillingStatus,
+  [
+    [0, 'BillingStatus_UNKNOWN'],
+    [1, 'BillingStatus_NONE'],
+    [2, 'BillingStatus_ACTIVE'],
+    [3, 'BillingStatus_PAST_DUE'],
+    [4, 'BillingStatus_PAST_DUE_READONLY'],
+    [5, 'BillingStatus_CANCELED'],
+    [6, 'BillingStatus_DELETED'],
+    [7, 'BillingStatus_TRIALING'],
+    [8, 'BillingStatus_LAPSED'],
+  ],
 )
 
 /**
@@ -137,77 +122,69 @@ export const BillingStatus_Enum = /* @__PURE__ */ createEnumType(
 export enum AccountLifecycleState {
   /**
    * AccountLifecycleState_UNKNOWN is unknown.
-   *
-   * @generated from enum value: AccountLifecycleState_UNKNOWN = 0;
    */
   AccountLifecycleState_UNKNOWN = 0,
 
   /**
    * AccountLifecycleState_ACTIVE is a normal accessible account.
-   *
-   * @generated from enum value: AccountLifecycleState_ACTIVE = 1;
    */
   AccountLifecycleState_ACTIVE = 1,
 
   /**
    * AccountLifecycleState_ACTIVE_WITH_CANCEL_AT_PERIOD_END keeps full access
    * until the current billing period ends.
-   *
-   * @generated from enum value: AccountLifecycleState_ACTIVE_WITH_CANCEL_AT_PERIOD_END = 2;
    */
   AccountLifecycleState_ACTIVE_WITH_CANCEL_AT_PERIOD_END = 2,
 
   /**
    * AccountLifecycleState_CANCELED_GRACE_READONLY is the standard 30-day
    * read-only/export grace window after end-of-period cancellation.
-   *
-   * @generated from enum value: AccountLifecycleState_CANCELED_GRACE_READONLY = 3;
    */
   AccountLifecycleState_CANCELED_GRACE_READONLY = 3,
 
   /**
    * AccountLifecycleState_PENDING_DELETE_READONLY is the delete-now 24-hour
    * countdown window with read-only/export access and undo.
-   *
-   * @generated from enum value: AccountLifecycleState_PENDING_DELETE_READONLY = 4;
    */
   AccountLifecycleState_PENDING_DELETE_READONLY = 4,
 
   /**
    * AccountLifecycleState_LAPSED_READONLY is the read-only state after undo or
    * other preserved-data lapses before terminal logical deletion.
-   *
-   * @generated from enum value: AccountLifecycleState_LAPSED_READONLY = 5;
    */
   AccountLifecycleState_LAPSED_READONLY = 5,
 
   /**
    * AccountLifecycleState_DELETED_PENDING_PURGE is logically deleted from the
    * product while physical purge is still pending.
-   *
-   * @generated from enum value: AccountLifecycleState_DELETED_PENDING_PURGE = 6;
    */
   AccountLifecycleState_DELETED_PENDING_PURGE = 6,
 
   /**
    * AccountLifecycleState_DELETED is physically purged.
-   *
-   * @generated from enum value: AccountLifecycleState_DELETED = 7;
    */
   AccountLifecycleState_DELETED = 7,
 
   /**
    * AccountLifecycleState_DISPUTED_HARD_SUSPEND is a hard-suspended account
    * following a cardholder chargeback.
-   *
-   * @generated from enum value: AccountLifecycleState_DISPUTED_HARD_SUSPEND = 8;
    */
   AccountLifecycleState_DISPUTED_HARD_SUSPEND = 8,
 }
 
 export const AccountLifecycleState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.AccountLifecycleState',
-  AccountLifecycleState,
+  [
+    [0, 'AccountLifecycleState_UNKNOWN'],
+    [1, 'AccountLifecycleState_ACTIVE'],
+    [2, 'AccountLifecycleState_ACTIVE_WITH_CANCEL_AT_PERIOD_END'],
+    [3, 'AccountLifecycleState_CANCELED_GRACE_READONLY'],
+    [4, 'AccountLifecycleState_PENDING_DELETE_READONLY'],
+    [5, 'AccountLifecycleState_LAPSED_READONLY'],
+    [6, 'AccountLifecycleState_DELETED_PENDING_PURGE'],
+    [7, 'AccountLifecycleState_DELETED'],
+    [8, 'AccountLifecycleState_DISPUTED_HARD_SUSPEND'],
+  ],
 )
 
 /**
@@ -218,29 +195,27 @@ export const AccountLifecycleState_Enum = /* @__PURE__ */ createEnumType(
 export enum BillingInterval {
   /**
    * BillingInterval_UNKNOWN is unknown.
-   *
-   * @generated from enum value: BillingInterval_UNKNOWN = 0;
    */
   BillingInterval_UNKNOWN = 0,
 
   /**
    * BillingInterval_MONTH is monthly billing.
-   *
-   * @generated from enum value: BillingInterval_MONTH = 1;
    */
   BillingInterval_MONTH = 1,
 
   /**
    * BillingInterval_YEAR is annual billing.
-   *
-   * @generated from enum value: BillingInterval_YEAR = 2;
    */
   BillingInterval_YEAR = 2,
 }
 
 export const BillingInterval_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.BillingInterval',
-  BillingInterval,
+  [
+    [0, 'BillingInterval_UNKNOWN'],
+    [1, 'BillingInterval_MONTH'],
+    [2, 'BillingInterval_YEAR'],
+  ],
 )
 
 /**
@@ -249,35 +224,22 @@ export const BillingInterval_Enum = /* @__PURE__ */ createEnumType(
  * @generated from enum s4wave.provider.spacewave.CheckoutStatus
  */
 export enum CheckoutStatus {
-  /**
-   * @generated from enum value: CheckoutStatus_UNKNOWN = 0;
-   */
   CheckoutStatus_UNKNOWN = 0,
-
-  /**
-   * @generated from enum value: CheckoutStatus_PENDING = 1;
-   */
   CheckoutStatus_PENDING = 1,
-
-  /**
-   * @generated from enum value: CheckoutStatus_COMPLETED = 2;
-   */
   CheckoutStatus_COMPLETED = 2,
-
-  /**
-   * @generated from enum value: CheckoutStatus_EXPIRED = 3;
-   */
   CheckoutStatus_EXPIRED = 3,
-
-  /**
-   * @generated from enum value: CheckoutStatus_CANCELED = 4;
-   */
   CheckoutStatus_CANCELED = 4,
 }
 
 export const CheckoutStatus_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.CheckoutStatus',
-  CheckoutStatus,
+  [
+    [0, 'CheckoutStatus_UNKNOWN'],
+    [1, 'CheckoutStatus_PENDING'],
+    [2, 'CheckoutStatus_COMPLETED'],
+    [3, 'CheckoutStatus_EXPIRED'],
+    [4, 'CheckoutStatus_CANCELED'],
+  ],
 )
 
 /**
@@ -288,47 +250,42 @@ export const CheckoutStatus_Enum = /* @__PURE__ */ createEnumType(
 export enum SelfEnrollmentGateState {
   /**
    * SelfEnrollmentGateState_UNKNOWN indicates no gate state was provided.
-   *
-   * @generated from enum value: SELF_ENROLLMENT_GATE_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * SelfEnrollmentGateState_CHECKING indicates the backend is evaluating
    * connected spaces.
-   *
-   * @generated from enum value: SELF_ENROLLMENT_GATE_STATE_CHECKING = 1;
    */
   CHECKING = 1,
 
   /**
    * SelfEnrollmentGateState_AUTO_CONNECTING indicates the backend is
    * automatically connecting this session to readable spaces.
-   *
-   * @generated from enum value: SELF_ENROLLMENT_GATE_STATE_AUTO_CONNECTING = 2;
    */
   AUTO_CONNECTING = 2,
 
   /**
    * SelfEnrollmentGateState_ACTION_REQUIRED indicates the user must unlock or
    * skip session connection for one or more spaces.
-   *
-   * @generated from enum value: SELF_ENROLLMENT_GATE_STATE_ACTION_REQUIRED = 3;
    */
   ACTION_REQUIRED = 3,
 
   /**
    * SelfEnrollmentGateState_READY indicates no self-enrollment gate is needed.
-   *
-   * @generated from enum value: SELF_ENROLLMENT_GATE_STATE_READY = 4;
    */
   READY = 4,
 }
 
 export const SelfEnrollmentGateState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.SelfEnrollmentGateState',
-  SelfEnrollmentGateState,
-  'SELF_ENROLLMENT_GATE_STATE_',
+  [
+    [0, 'SELF_ENROLLMENT_GATE_STATE_UNKNOWN'],
+    [1, 'SELF_ENROLLMENT_GATE_STATE_CHECKING'],
+    [2, 'SELF_ENROLLMENT_GATE_STATE_AUTO_CONNECTING'],
+    [3, 'SELF_ENROLLMENT_GATE_STATE_ACTION_REQUIRED'],
+    [4, 'SELF_ENROLLMENT_GATE_STATE_READY'],
+  ],
 )
 
 /**
@@ -339,31 +296,28 @@ export const SelfEnrollmentGateState_Enum = /* @__PURE__ */ createEnumType(
 export enum TargetedInvitePurpose {
   /**
    * TARGETED_INVITE_PURPOSE_UNSPECIFIED means no purpose was supplied.
-   *
-   * @generated from enum value: TARGETED_INVITE_PURPOSE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * TARGETED_INVITE_PURPOSE_SPACE grants membership in a Space.
-   *
-   * @generated from enum value: TARGETED_INVITE_PURPOSE_SPACE = 1;
    */
   SPACE = 1,
 
   /**
    * TARGETED_INVITE_PURPOSE_ORGANIZATION grants membership in an
    * organization.
-   *
-   * @generated from enum value: TARGETED_INVITE_PURPOSE_ORGANIZATION = 2;
    */
   ORGANIZATION = 2,
 }
 
 export const TargetedInvitePurpose_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.TargetedInvitePurpose',
-  TargetedInvitePurpose,
-  'TARGETED_INVITE_PURPOSE_',
+  [
+    [0, 'TARGETED_INVITE_PURPOSE_UNSPECIFIED'],
+    [1, 'TARGETED_INVITE_PURPOSE_SPACE'],
+    [2, 'TARGETED_INVITE_PURPOSE_ORGANIZATION'],
+  ],
 )
 
 /**
@@ -374,31 +328,29 @@ export const TargetedInvitePurpose_Enum = /* @__PURE__ */ createEnumType(
 export enum PublicOriginState {
   /**
    * PublicOriginState_NONE is no linked origin; packs stay on Spacewave's CDN.
-   *
-   * @generated from enum value: PublicOriginState_NONE = 0;
    */
   PublicOriginState_NONE = 0,
 
   /**
    * PublicOriginState_COPYING is a linked origin receiving the existing packs.
    * Pushes still land on Spacewave's CDN until the copy completes.
-   *
-   * @generated from enum value: PublicOriginState_COPYING = 1;
    */
   PublicOriginState_COPYING = 1,
 
   /**
    * PublicOriginState_ACTIVE is a linked origin that stores every pack and the
    * root pointer.
-   *
-   * @generated from enum value: PublicOriginState_ACTIVE = 2;
    */
   PublicOriginState_ACTIVE = 2,
 }
 
 export const PublicOriginState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.PublicOriginState',
-  PublicOriginState,
+  [
+    [0, 'PublicOriginState_NONE'],
+    [1, 'PublicOriginState_COPYING'],
+    [2, 'PublicOriginState_ACTIVE'],
+  ],
 )
 
 /**
@@ -410,30 +362,28 @@ export const PublicOriginState_Enum = /* @__PURE__ */ createEnumType(
 export enum SpaceLinkCompletionMode {
   /**
    * SpaceLinkCompletionMode_UNKNOWN means completion mode was not specified.
-   *
-   * @generated from enum value: SpaceLinkCompletionMode_UNKNOWN = 0;
    */
   SpaceLinkCompletionMode_UNKNOWN = 0,
 
   /**
    * SpaceLinkCompletionMode_BROWSER_CALLBACK returns completion through the
    * verified callback URL.
-   *
-   * @generated from enum value: SpaceLinkCompletionMode_BROWSER_CALLBACK = 1;
    */
   SpaceLinkCompletionMode_BROWSER_CALLBACK = 1,
 
   /**
    * SpaceLinkCompletionMode_CLI returns completion for CLI-mediated import.
-   *
-   * @generated from enum value: SpaceLinkCompletionMode_CLI = 2;
    */
   SpaceLinkCompletionMode_CLI = 2,
 }
 
 export const SpaceLinkCompletionMode_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.SpaceLinkCompletionMode',
-  SpaceLinkCompletionMode,
+  [
+    [0, 'SpaceLinkCompletionMode_UNKNOWN'],
+    [1, 'SpaceLinkCompletionMode_BROWSER_CALLBACK'],
+    [2, 'SpaceLinkCompletionMode_CLI'],
+  ],
 )
 
 /**
@@ -445,43 +395,39 @@ export const SpaceLinkCompletionMode_Enum = /* @__PURE__ */ createEnumType(
 export enum SpaceLinkCallbackStatus {
   /**
    * SpaceLinkCallbackStatus_UNKNOWN means the result is not specified.
-   *
-   * @generated from enum value: SpaceLinkCallbackStatus_UNKNOWN = 0;
    */
   SpaceLinkCallbackStatus_UNKNOWN = 0,
 
   /**
    * SpaceLinkCallbackStatus_OK means approval completed successfully.
-   *
-   * @generated from enum value: SpaceLinkCallbackStatus_OK = 1;
    */
   SpaceLinkCallbackStatus_OK = 1,
 
   /**
    * SpaceLinkCallbackStatus_DENIED means the user denied approval.
-   *
-   * @generated from enum value: SpaceLinkCallbackStatus_DENIED = 2;
    */
   SpaceLinkCallbackStatus_DENIED = 2,
 
   /**
    * SpaceLinkCallbackStatus_EXPIRED means the ticket expired before approval.
-   *
-   * @generated from enum value: SpaceLinkCallbackStatus_EXPIRED = 3;
    */
   SpaceLinkCallbackStatus_EXPIRED = 3,
 
   /**
    * SpaceLinkCallbackStatus_ERROR means approval failed for another reason.
-   *
-   * @generated from enum value: SpaceLinkCallbackStatus_ERROR = 4;
    */
   SpaceLinkCallbackStatus_ERROR = 4,
 }
 
 export const SpaceLinkCallbackStatus_Enum = /* @__PURE__ */ createEnumType(
   's4wave.provider.spacewave.SpaceLinkCallbackStatus',
-  SpaceLinkCallbackStatus,
+  [
+    [0, 'SpaceLinkCallbackStatus_UNKNOWN'],
+    [1, 'SpaceLinkCallbackStatus_OK'],
+    [2, 'SpaceLinkCallbackStatus_DENIED'],
+    [3, 'SpaceLinkCallbackStatus_EXPIRED'],
+    [4, 'SpaceLinkCallbackStatus_ERROR'],
+  ],
 )
 
 /**
@@ -492,19 +438,15 @@ export const SpaceLinkCallbackStatus_Enum = /* @__PURE__ */ createEnumType(
 export interface PasswordCredential {
   /**
    * Password is the account password used for key derivation.
-   *
-   * @generated from field: string password = 1;
    */
   password?: string
 }
 
 export const PasswordCredential: MessageType<PasswordCredential> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasswordCredential',
-    fields: [
-      { no: 1, name: 'password', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasswordCredential>(
+    's4wave.provider.spacewave.PasswordCredential',
+    () => [[1, 'password', 9]],
+  )
 
 /**
  * PemCredential provides an entity private key directly.
@@ -514,19 +456,15 @@ export const PasswordCredential: MessageType<PasswordCredential> =
 export interface PemCredential {
   /**
    * PemData is the entity private key in PEM format.
-   *
-   * @generated from field: bytes pem_data = 1;
    */
   pemData?: Uint8Array
 }
 
 export const PemCredential: MessageType<PemCredential> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PemCredential',
-    fields: [
-      { no: 1, name: 'pem_data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PemCredential>(
+    's4wave.provider.spacewave.PemCredential',
+    () => [[1, 'pem_data', 12]],
+  )
 
 /**
  * PasskeyCredential provides a WebAuthn assertion.
@@ -536,19 +474,15 @@ export const PemCredential: MessageType<PemCredential> =
 export interface PasskeyCredential {
   /**
    * AttestationJson is the AuthenticationResponseJSON from @simplewebauthn/browser.
-   *
-   * @generated from field: string attestation_json = 1;
    */
   attestationJson?: string
 }
 
 export const PasskeyCredential: MessageType<PasskeyCredential> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyCredential',
-    fields: [
-      { no: 1, name: 'attestation_json', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyCredential>(
+    's4wave.provider.spacewave.PasskeyCredential',
+    () => [[1, 'attestation_json', 9]],
+  )
 
 /**
  * CreateAccountRequest creates an account on the spacewave provider.
@@ -558,79 +492,35 @@ export const PasskeyCredential: MessageType<PasskeyCredential> =
 export interface CreateAccountRequest {
   /**
    * EntityId is the account username (entity_id / DNS label).
-   *
-   * @generated from field: string entity_id = 1;
    */
   entityId?: string
   /**
    * TurnstileToken is the Cloudflare Turnstile verification token.
-   *
-   * @generated from field: string turnstile_token = 2;
    */
   turnstileToken?: string
-
   /**
    * Credential is the authentication credential for key derivation.
    *
    * @generated from oneof s4wave.provider.spacewave.CreateAccountRequest.credential
    */
   credential?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * @generated from field: s4wave.provider.spacewave.PasswordCredential password = 3;
-         */
-        value: PasswordCredential
-        case: 'password'
-      }
-    | {
-        /**
-         * @generated from field: s4wave.provider.spacewave.PemCredential pem = 4;
-         */
-        value: PemCredential
-        case: 'pem'
-      }
-    | {
-        /**
-         * @generated from field: s4wave.provider.spacewave.PasskeyCredential passkey = 5;
-         */
-        value: PasskeyCredential
-        case: 'passkey'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: PasswordCredential; case: 'password' }
+    | { value: PemCredential; case: 'pem' }
+    | { value: PasskeyCredential; case: 'passkey' }
 }
 
 export const CreateAccountRequest: MessageType<CreateAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateAccountRequest',
-    fields: [
-      { no: 1, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'turnstile_token', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'password',
-        kind: 'message',
-        T: PasswordCredential,
-        oneof: 'credential',
-      },
-      {
-        no: 4,
-        name: 'pem',
-        kind: 'message',
-        T: PemCredential,
-        oneof: 'credential',
-      },
-      {
-        no: 5,
-        name: 'passkey',
-        kind: 'message',
-        T: PasskeyCredential,
-        oneof: 'credential',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateAccountRequest>(
+    's4wave.provider.spacewave.CreateAccountRequest',
+    () => [
+      [1, 'entity_id', 9],
+      [2, 'turnstile_token', 9],
+      [3, 'password', 11, 0, PasswordCredential.codec, 'credential'],
+      [4, 'pem', 11, 0, PemCredential.codec, 'credential'],
+      [5, 'passkey', 11, 0, PasskeyCredential.codec, 'credential'],
+    ],
+  )
 
 /**
  * CreateAccountResponse returns the details of the created spacewave provider account.
@@ -640,24 +530,15 @@ export const CreateAccountRequest: MessageType<CreateAccountRequest> =
 export interface CreateAccountResponse {
   /**
    * SessionListEntry is the created session entry.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
 }
 
 export const CreateAccountResponse: MessageType<CreateAccountResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateAccountResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateAccountResponse>(
+    's4wave.provider.spacewave.CreateAccountResponse',
+    () => [[1, 'session_list_entry', 11, 0, SessionListEntry.codec]],
+  )
 
 /**
  * LoginAccountRequest attempts to log in to an existing account without creating one.
@@ -667,79 +548,35 @@ export const CreateAccountResponse: MessageType<CreateAccountResponse> =
 export interface LoginAccountRequest {
   /**
    * EntityId is the account username (entity_id / DNS label).
-   *
-   * @generated from field: string entity_id = 1;
    */
   entityId?: string
   /**
    * TurnstileToken is the Cloudflare Turnstile verification token.
-   *
-   * @generated from field: string turnstile_token = 2;
    */
   turnstileToken?: string
-
   /**
    * Credential is the authentication credential for key derivation.
    *
    * @generated from oneof s4wave.provider.spacewave.LoginAccountRequest.credential
    */
   credential?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * @generated from field: s4wave.provider.spacewave.PasswordCredential password = 3;
-         */
-        value: PasswordCredential
-        case: 'password'
-      }
-    | {
-        /**
-         * @generated from field: s4wave.provider.spacewave.PemCredential pem = 4;
-         */
-        value: PemCredential
-        case: 'pem'
-      }
-    | {
-        /**
-         * @generated from field: s4wave.provider.spacewave.PasskeyCredential passkey = 5;
-         */
-        value: PasskeyCredential
-        case: 'passkey'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: PasswordCredential; case: 'password' }
+    | { value: PemCredential; case: 'pem' }
+    | { value: PasskeyCredential; case: 'passkey' }
 }
 
 export const LoginAccountRequest: MessageType<LoginAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LoginAccountRequest',
-    fields: [
-      { no: 1, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'turnstile_token', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'password',
-        kind: 'message',
-        T: PasswordCredential,
-        oneof: 'credential',
-      },
-      {
-        no: 4,
-        name: 'pem',
-        kind: 'message',
-        T: PemCredential,
-        oneof: 'credential',
-      },
-      {
-        no: 5,
-        name: 'passkey',
-        kind: 'message',
-        T: PasskeyCredential,
-        oneof: 'credential',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LoginAccountRequest>(
+    's4wave.provider.spacewave.LoginAccountRequest',
+    () => [
+      [1, 'entity_id', 9],
+      [2, 'turnstile_token', 9],
+      [3, 'password', 11, 0, PasswordCredential.codec, 'credential'],
+      [4, 'pem', 11, 0, PemCredential.codec, 'credential'],
+      [5, 'passkey', 11, 0, PasskeyCredential.codec, 'credential'],
+    ],
+  )
 
 /**
  * LoginAccountResponse is the response for LoginAccount.
@@ -753,67 +590,21 @@ export interface LoginAccountResponse {
    * @generated from oneof s4wave.provider.spacewave.LoginAccountResponse.result
    */
   result?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Session is the session entry on successful login.
-         *
-         * @generated from field: session.SessionListEntry session = 1;
-         */
-        value: SessionListEntry
-        case: 'session'
-      }
-    | {
-        /**
-         * IsNewAccount is true if no account exists for this entity_id.
-         *
-         * @generated from field: bool is_new_account = 2;
-         */
-        value: boolean
-        case: 'isNewAccount'
-      }
-    | {
-        /**
-         * ErrorCode is set when login failed with a known error.
-         * Values: "wrong_password", "key_not_recognized", "passkey_not_recognized".
-         *
-         * @generated from field: string error_code = 3;
-         */
-        value: string
-        case: 'errorCode'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: SessionListEntry; case: 'session' }
+    | { value: boolean; case: 'isNewAccount' }
+    | { value: string; case: 'errorCode' }
 }
 
 export const LoginAccountResponse: MessageType<LoginAccountResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LoginAccountResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session',
-        kind: 'message',
-        T: () => SessionListEntry,
-        oneof: 'result',
-      },
-      {
-        no: 2,
-        name: 'is_new_account',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'result',
-      },
-      {
-        no: 3,
-        name: 'error_code',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'result',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LoginAccountResponse>(
+    's4wave.provider.spacewave.LoginAccountResponse',
+    () => [
+      [1, 'session', 11, 0, SessionListEntry.codec, 'result'],
+      [2, 'is_new_account', 8, 0, 0, 'result'],
+      [3, 'error_code', 9, 0, 0, 'result'],
+    ],
+  )
 
 /**
  * LoginOrCreateAccountRequest logs in or creates an account on the spacewave provider.
@@ -823,26 +614,22 @@ export const LoginAccountResponse: MessageType<LoginAccountResponse> =
 export interface LoginOrCreateAccountRequest {
   /**
    * Username is the account username.
-   *
-   * @generated from field: string username = 1;
    */
   username?: string
   /**
    * Password is the account password used for key derivation.
-   *
-   * @generated from field: string password = 2;
    */
   password?: string
 }
 
 export const LoginOrCreateAccountRequest: MessageType<LoginOrCreateAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LoginOrCreateAccountRequest',
-    fields: [
-      { no: 1, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'password', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LoginOrCreateAccountRequest>(
+    's4wave.provider.spacewave.LoginOrCreateAccountRequest',
+    () => [
+      [1, 'username', 9],
+      [2, 'password', 9],
+    ],
+  )
 
 /**
  * LoginOrCreateAccountResponse is the response for LoginOrCreateAccount.
@@ -852,31 +639,22 @@ export const LoginOrCreateAccountRequest: MessageType<LoginOrCreateAccountReques
 export interface LoginOrCreateAccountResponse {
   /**
    * SessionListEntry is the created session entry.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
   /**
    * IsNewAccount is true if a new account was created, false if logging into an existing account.
-   *
-   * @generated from field: bool is_new_account = 2;
    */
   isNewAccount?: boolean
 }
 
 export const LoginOrCreateAccountResponse: MessageType<LoginOrCreateAccountResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LoginOrCreateAccountResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-      { no: 2, name: 'is_new_account', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LoginOrCreateAccountResponse>(
+    's4wave.provider.spacewave.LoginOrCreateAccountResponse',
+    () => [
+      [1, 'session_list_entry', 11, 0, SessionListEntry.codec],
+      [2, 'is_new_account', 8],
+    ],
+  )
 
 /**
  * LoginWithEntityKeyRequest creates a session using a pre-resolved entity private key.
@@ -886,19 +664,15 @@ export const LoginOrCreateAccountResponse: MessageType<LoginOrCreateAccountRespo
 export interface LoginWithEntityKeyRequest {
   /**
    * PemPrivateKey is the entity private key in PEM format.
-   *
-   * @generated from field: bytes pem_private_key = 1;
    */
   pemPrivateKey?: Uint8Array
 }
 
 export const LoginWithEntityKeyRequest: MessageType<LoginWithEntityKeyRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LoginWithEntityKeyRequest',
-    fields: [
-      { no: 1, name: 'pem_private_key', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LoginWithEntityKeyRequest>(
+    's4wave.provider.spacewave.LoginWithEntityKeyRequest',
+    () => [[1, 'pem_private_key', 12]],
+  )
 
 /**
  * LoginWithEntityKeyResponse is the response for LoginWithEntityKey.
@@ -908,24 +682,15 @@ export const LoginWithEntityKeyRequest: MessageType<LoginWithEntityKeyRequest> =
 export interface LoginWithEntityKeyResponse {
   /**
    * SessionListEntry is the created session entry.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
 }
 
 export const LoginWithEntityKeyResponse: MessageType<LoginWithEntityKeyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LoginWithEntityKeyResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LoginWithEntityKeyResponse>(
+    's4wave.provider.spacewave.LoginWithEntityKeyResponse',
+    () => [[1, 'session_list_entry', 11, 0, SessionListEntry.codec]],
+  )
 
 /**
  * MountLinkedDeviceSessionRequest mounts a SpaceLink-approved DEVICE session.
@@ -935,52 +700,37 @@ export const LoginWithEntityKeyResponse: MessageType<LoginWithEntityKeyResponse>
 export interface MountLinkedDeviceSessionRequest {
   /**
    * AccountId is the Spacewave Cloud account ID returned by approval.
-   *
-   * @generated from field: string account_id = 1;
    */
   accountId?: string
   /**
    * SessionId is the stable local provider resource ID for this Device session.
-   *
-   * @generated from field: string session_id = 2;
    */
   sessionId?: string
   /**
    * Label is the operator-visible Device label.
-   *
-   * @generated from field: string label = 3;
    */
   label?: string
   /**
    * SessionPemPrivateKey is the approved Device session private key in PEM form.
-   *
-   * @generated from field: bytes session_pem_private_key = 4;
    */
   sessionPemPrivateKey?: Uint8Array
   /**
    * SessionPeerId is the expected peer ID derived from SessionPemPrivateKey.
-   *
-   * @generated from field: string session_peer_id = 5;
    */
   sessionPeerId?: string
 }
 
 export const MountLinkedDeviceSessionRequest: MessageType<MountLinkedDeviceSessionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.MountLinkedDeviceSessionRequest',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'session_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'session_pem_private_key',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-      { no: 5, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MountLinkedDeviceSessionRequest>(
+    's4wave.provider.spacewave.MountLinkedDeviceSessionRequest',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'session_id', 9],
+      [3, 'label', 9],
+      [4, 'session_pem_private_key', 12],
+      [5, 'session_peer_id', 9],
+    ],
+  )
 
 /**
  * MountLinkedDeviceSessionResponse returns the mounted Device session entry.
@@ -990,24 +740,15 @@ export const MountLinkedDeviceSessionRequest: MessageType<MountLinkedDeviceSessi
 export interface MountLinkedDeviceSessionResponse {
   /**
    * SessionListEntry is the created or existing Device session entry.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
 }
 
 export const MountLinkedDeviceSessionResponse: MessageType<MountLinkedDeviceSessionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.MountLinkedDeviceSessionResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MountLinkedDeviceSessionResponse>(
+    's4wave.provider.spacewave.MountLinkedDeviceSessionResponse',
+    () => [[1, 'session_list_entry', 11, 0, SessionListEntry.codec]],
+  )
 
 /**
  * GenerateAuthKeypairsRequest requests new auth key material.
@@ -1017,9 +758,9 @@ export const MountLinkedDeviceSessionResponse: MessageType<MountLinkedDeviceSess
 export interface GenerateAuthKeypairsRequest {}
 
 export const GenerateAuthKeypairsRequest: MessageType<GenerateAuthKeypairsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GenerateAuthKeypairsRequest>(
+  /* @__PURE__ */ createMessageType<GenerateAuthKeypairsRequest>(
     's4wave.provider.spacewave.GenerateAuthKeypairsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1030,38 +771,27 @@ export const GenerateAuthKeypairsRequest: MessageType<GenerateAuthKeypairsReques
 export interface GeneratedEntityKeypair {
   /**
    * PemPrivateKey is the entity private key in PEM format.
-   *
-   * @generated from field: string pem_private_key = 1;
    */
   pemPrivateKey?: string
   /**
    * PeerId is the bifrost peer ID for the entity keypair.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * CustodiedPemBase64 is the base64-encoded entity PEM for cloud custody.
-   *
-   * @generated from field: string custodied_pem_base64 = 3;
    */
   custodiedPemBase64?: string
 }
 
 export const GeneratedEntityKeypair: MessageType<GeneratedEntityKeypair> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GeneratedEntityKeypair',
-    fields: [
-      { no: 1, name: 'pem_private_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'custodied_pem_base64',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GeneratedEntityKeypair>(
+    's4wave.provider.spacewave.GeneratedEntityKeypair',
+    () => [
+      [1, 'pem_private_key', 9],
+      [2, 'peer_id', 9],
+      [3, 'custodied_pem_base64', 9],
+    ],
+  )
 
 /**
  * GeneratedSessionKeypair is generated session key material.
@@ -1071,19 +801,15 @@ export const GeneratedEntityKeypair: MessageType<GeneratedEntityKeypair> =
 export interface GeneratedSessionKeypair {
   /**
    * PeerId is the bifrost peer ID for the session keypair.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const GeneratedSessionKeypair: MessageType<GeneratedSessionKeypair> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GeneratedSessionKeypair',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GeneratedSessionKeypair>(
+    's4wave.provider.spacewave.GeneratedSessionKeypair',
+    () => [[1, 'peer_id', 9]],
+  )
 
 /**
  * GenerateAuthKeypairsResponse returns generated auth key material.
@@ -1093,26 +819,22 @@ export const GeneratedSessionKeypair: MessageType<GeneratedSessionKeypair> =
 export interface GenerateAuthKeypairsResponse {
   /**
    * Entity is the generated account entity keypair.
-   *
-   * @generated from field: s4wave.provider.spacewave.GeneratedEntityKeypair entity = 1;
    */
   entity?: GeneratedEntityKeypair
   /**
    * Session is the generated session keypair.
-   *
-   * @generated from field: s4wave.provider.spacewave.GeneratedSessionKeypair session = 2;
    */
   session?: GeneratedSessionKeypair
 }
 
 export const GenerateAuthKeypairsResponse: MessageType<GenerateAuthKeypairsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GenerateAuthKeypairsResponse',
-    fields: [
-      { no: 1, name: 'entity', kind: 'message', T: GeneratedEntityKeypair },
-      { no: 2, name: 'session', kind: 'message', T: GeneratedSessionKeypair },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GenerateAuthKeypairsResponse>(
+    's4wave.provider.spacewave.GenerateAuthKeypairsResponse',
+    () => [
+      [1, 'entity', 11, 0, GeneratedEntityKeypair.codec],
+      [2, 'session', 11, 0, GeneratedSessionKeypair.codec],
+    ],
+  )
 
 /**
  * WrapPemWithPinRequest requests Layer 1 PIN wrapping for an entity PEM.
@@ -1122,26 +844,22 @@ export const GenerateAuthKeypairsResponse: MessageType<GenerateAuthKeypairsRespo
 export interface WrapPemWithPinRequest {
   /**
    * PemPrivateKey is the entity private key in PEM format.
-   *
-   * @generated from field: string pem_private_key = 1;
    */
   pemPrivateKey?: string
   /**
    * Pin is the user PIN used for age scrypt wrapping.
-   *
-   * @generated from field: string pin = 2;
    */
   pin?: string
 }
 
 export const WrapPemWithPinRequest: MessageType<WrapPemWithPinRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WrapPemWithPinRequest',
-    fields: [
-      { no: 1, name: 'pem_private_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'pin', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WrapPemWithPinRequest>(
+    's4wave.provider.spacewave.WrapPemWithPinRequest',
+    () => [
+      [1, 'pem_private_key', 9],
+      [2, 'pin', 9],
+    ],
+  )
 
 /**
  * WrapPemWithPinResponse returns a PIN-wrapped PEM blob.
@@ -1151,24 +869,15 @@ export const WrapPemWithPinRequest: MessageType<WrapPemWithPinRequest> =
 export interface WrapPemWithPinResponse {
   /**
    * WrappedPemBase64 is the base64-encoded age-encrypted PEM.
-   *
-   * @generated from field: string wrapped_pem_base64 = 1;
    */
   wrappedPemBase64?: string
 }
 
 export const WrapPemWithPinResponse: MessageType<WrapPemWithPinResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WrapPemWithPinResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'wrapped_pem_base64',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WrapPemWithPinResponse>(
+    's4wave.provider.spacewave.WrapPemWithPinResponse',
+    () => [[1, 'wrapped_pem_base64', 9]],
+  )
 
 /**
  * UnwrapPemWithPinRequest requests Layer 1 PIN unwrapping for an entity PEM.
@@ -1178,31 +887,22 @@ export const WrapPemWithPinResponse: MessageType<WrapPemWithPinResponse> =
 export interface UnwrapPemWithPinRequest {
   /**
    * WrappedPemBase64 is the base64-encoded age-encrypted PEM.
-   *
-   * @generated from field: string wrapped_pem_base64 = 1;
    */
   wrappedPemBase64?: string
   /**
    * Pin is the user PIN used for age scrypt unwrapping.
-   *
-   * @generated from field: string pin = 2;
    */
   pin?: string
 }
 
 export const UnwrapPemWithPinRequest: MessageType<UnwrapPemWithPinRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.UnwrapPemWithPinRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'wrapped_pem_base64',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'pin', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnwrapPemWithPinRequest>(
+    's4wave.provider.spacewave.UnwrapPemWithPinRequest',
+    () => [
+      [1, 'wrapped_pem_base64', 9],
+      [2, 'pin', 9],
+    ],
+  )
 
 /**
  * UnwrapPemWithPinResponse returns a decrypted PEM.
@@ -1212,19 +912,15 @@ export const UnwrapPemWithPinRequest: MessageType<UnwrapPemWithPinRequest> =
 export interface UnwrapPemWithPinResponse {
   /**
    * PemPrivateKey is the entity private key in PEM format.
-   *
-   * @generated from field: bytes pem_private_key = 1;
    */
   pemPrivateKey?: Uint8Array
 }
 
 export const UnwrapPemWithPinResponse: MessageType<UnwrapPemWithPinResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.UnwrapPemWithPinResponse',
-    fields: [
-      { no: 1, name: 'pem_private_key', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnwrapPemWithPinResponse>(
+    's4wave.provider.spacewave.UnwrapPemWithPinResponse',
+    () => [[1, 'pem_private_key', 12]],
+  )
 
 /**
  * GeneratePasskeyPrfSaltRequest requests a passkey PRF salt.
@@ -1234,9 +930,9 @@ export const UnwrapPemWithPinResponse: MessageType<UnwrapPemWithPinResponse> =
 export interface GeneratePasskeyPrfSaltRequest {}
 
 export const GeneratePasskeyPrfSaltRequest: MessageType<GeneratePasskeyPrfSaltRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GeneratePasskeyPrfSaltRequest>(
+  /* @__PURE__ */ createMessageType<GeneratePasskeyPrfSaltRequest>(
     's4wave.provider.spacewave.GeneratePasskeyPrfSaltRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1247,19 +943,15 @@ export const GeneratePasskeyPrfSaltRequest: MessageType<GeneratePasskeyPrfSaltRe
 export interface GeneratePasskeyPrfSaltResponse {
   /**
    * PrfSalt is the base64url-encoded 32-byte PRF salt.
-   *
-   * @generated from field: string prf_salt = 1;
    */
   prfSalt?: string
 }
 
 export const GeneratePasskeyPrfSaltResponse: MessageType<GeneratePasskeyPrfSaltResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GeneratePasskeyPrfSaltResponse',
-    fields: [
-      { no: 1, name: 'prf_salt', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GeneratePasskeyPrfSaltResponse>(
+    's4wave.provider.spacewave.GeneratePasskeyPrfSaltResponse',
+    () => [[1, 'prf_salt', 9]],
+  )
 
 /**
  * WrapWithPasskeyPrfRequest requests passkey PRF wrapping for an auth blob.
@@ -1269,33 +961,27 @@ export const GeneratePasskeyPrfSaltResponse: MessageType<GeneratePasskeyPrfSaltR
 export interface WrapWithPasskeyPrfRequest {
   /**
    * Plaintext is the PEM or PIN-wrapped PEM bytes to wrap.
-   *
-   * @generated from field: bytes plaintext = 1;
    */
   plaintext?: Uint8Array
   /**
    * PrfOutput is the 32-byte WebAuthn PRF output.
-   *
-   * @generated from field: bytes prf_output = 2;
    */
   prfOutput?: Uint8Array
   /**
    * PinWrapped indicates whether Plaintext is still PIN wrapped.
-   *
-   * @generated from field: bool pin_wrapped = 3;
    */
   pinWrapped?: boolean
 }
 
 export const WrapWithPasskeyPrfRequest: MessageType<WrapWithPasskeyPrfRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WrapWithPasskeyPrfRequest',
-    fields: [
-      { no: 1, name: 'plaintext', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'prf_output', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WrapWithPasskeyPrfRequest>(
+    's4wave.provider.spacewave.WrapWithPasskeyPrfRequest',
+    () => [
+      [1, 'plaintext', 12],
+      [2, 'prf_output', 12],
+      [3, 'pin_wrapped', 8],
+    ],
+  )
 
 /**
  * WrapWithPasskeyPrfResponse returns a PRF-wrapped auth blob.
@@ -1305,36 +991,22 @@ export const WrapWithPasskeyPrfRequest: MessageType<WrapWithPasskeyPrfRequest> =
 export interface WrapWithPasskeyPrfResponse {
   /**
    * EncryptedBlobBase64 is the base64-encoded AES-GCM ciphertext.
-   *
-   * @generated from field: string encrypted_blob_base64 = 1;
    */
   encryptedBlobBase64?: string
   /**
    * AuthParamsBase64 is the base64-encoded PasskeyPrfAuthParams proto bytes.
-   *
-   * @generated from field: string auth_params_base64 = 2;
    */
   authParamsBase64?: string
 }
 
 export const WrapWithPasskeyPrfResponse: MessageType<WrapWithPasskeyPrfResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WrapWithPasskeyPrfResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'encrypted_blob_base64',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'auth_params_base64',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WrapWithPasskeyPrfResponse>(
+    's4wave.provider.spacewave.WrapWithPasskeyPrfResponse',
+    () => [
+      [1, 'encrypted_blob_base64', 9],
+      [2, 'auth_params_base64', 9],
+    ],
+  )
 
 /**
  * UnwrapWithPasskeyPrfRequest requests passkey PRF unwrapping for an auth blob.
@@ -1344,43 +1016,27 @@ export const WrapWithPasskeyPrfResponse: MessageType<WrapWithPasskeyPrfResponse>
 export interface UnwrapWithPasskeyPrfRequest {
   /**
    * EncryptedBlobBase64 is the base64-encoded AES-GCM ciphertext.
-   *
-   * @generated from field: string encrypted_blob_base64 = 1;
    */
   encryptedBlobBase64?: string
   /**
    * AuthParamsBase64 is the base64-encoded PasskeyPrfAuthParams proto bytes.
-   *
-   * @generated from field: string auth_params_base64 = 2;
    */
   authParamsBase64?: string
   /**
    * PrfOutput is the 32-byte WebAuthn PRF output.
-   *
-   * @generated from field: bytes prf_output = 3;
    */
   prfOutput?: Uint8Array
 }
 
 export const UnwrapWithPasskeyPrfRequest: MessageType<UnwrapWithPasskeyPrfRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.UnwrapWithPasskeyPrfRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'encrypted_blob_base64',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'auth_params_base64',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'prf_output', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnwrapWithPasskeyPrfRequest>(
+    's4wave.provider.spacewave.UnwrapWithPasskeyPrfRequest',
+    () => [
+      [1, 'encrypted_blob_base64', 9],
+      [2, 'auth_params_base64', 9],
+      [3, 'prf_output', 12],
+    ],
+  )
 
 /**
  * UnwrapWithPasskeyPrfResponse returns a PRF-unwrapped auth blob.
@@ -1390,26 +1046,22 @@ export const UnwrapWithPasskeyPrfRequest: MessageType<UnwrapWithPasskeyPrfReques
 export interface UnwrapWithPasskeyPrfResponse {
   /**
    * Plaintext is the PEM or PIN-wrapped PEM bytes.
-   *
-   * @generated from field: bytes plaintext = 1;
    */
   plaintext?: Uint8Array
   /**
    * PinWrapped indicates whether Plaintext is still PIN wrapped.
-   *
-   * @generated from field: bool pin_wrapped = 2;
    */
   pinWrapped?: boolean
 }
 
 export const UnwrapWithPasskeyPrfResponse: MessageType<UnwrapWithPasskeyPrfResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.UnwrapWithPasskeyPrfResponse',
-    fields: [
-      { no: 1, name: 'plaintext', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnwrapWithPasskeyPrfResponse>(
+    's4wave.provider.spacewave.UnwrapWithPasskeyPrfResponse',
+    () => [
+      [1, 'plaintext', 12],
+      [2, 'pin_wrapped', 8],
+    ],
+  )
 
 /**
  * PasskeyAuthOptionsRequest fetches WebAuthn authentication options.
@@ -1419,19 +1071,15 @@ export const UnwrapWithPasskeyPrfResponse: MessageType<UnwrapWithPasskeyPrfRespo
 export interface PasskeyAuthOptionsRequest {
   /**
    * Username optionally scopes auth options to one account's passkeys.
-   *
-   * @generated from field: string username = 1;
    */
   username?: string
 }
 
 export const PasskeyAuthOptionsRequest: MessageType<PasskeyAuthOptionsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyAuthOptionsRequest',
-    fields: [
-      { no: 1, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyAuthOptionsRequest>(
+    's4wave.provider.spacewave.PasskeyAuthOptionsRequest',
+    () => [[1, 'username', 9]],
+  )
 
 /**
  * PasskeyAuthOptionsResponse contains the WebAuthn options JSON.
@@ -1441,19 +1089,15 @@ export const PasskeyAuthOptionsRequest: MessageType<PasskeyAuthOptionsRequest> =
 export interface PasskeyAuthOptionsResponse {
   /**
    * OptionsJson is the PublicKeyCredentialRequestOptions as a JSON string.
-   *
-   * @generated from field: string options_json = 1;
    */
   optionsJson?: string
 }
 
 export const PasskeyAuthOptionsResponse: MessageType<PasskeyAuthOptionsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyAuthOptionsResponse',
-    fields: [
-      { no: 1, name: 'options_json', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyAuthOptionsResponse>(
+    's4wave.provider.spacewave.PasskeyAuthOptionsResponse',
+    () => [[1, 'options_json', 9]],
+  )
 
 /**
  * PasskeyAuthVerifyRequest verifies a WebAuthn authentication credential.
@@ -1463,19 +1107,15 @@ export const PasskeyAuthOptionsResponse: MessageType<PasskeyAuthOptionsResponse>
 export interface PasskeyAuthVerifyRequest {
   /**
    * CredentialJson is the AuthenticationResponseJSON from @simplewebauthn/browser.
-   *
-   * @generated from field: string credential_json = 1;
    */
   credentialJson?: string
 }
 
 export const PasskeyAuthVerifyRequest: MessageType<PasskeyAuthVerifyRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyAuthVerifyRequest',
-    fields: [
-      { no: 1, name: 'credential_json', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyAuthVerifyRequest>(
+    's4wave.provider.spacewave.PasskeyAuthVerifyRequest',
+    () => [[1, 'credential_json', 9]],
+  )
 
 /**
  * PasskeyAuthVerifyResponse contains the verified credential details.
@@ -1485,61 +1125,47 @@ export const PasskeyAuthVerifyRequest: MessageType<PasskeyAuthVerifyRequest> =
 export interface PasskeyAuthVerifyResponse {
   /**
    * AccountId is the account identifier.
-   *
-   * @generated from field: string account_id = 1;
    */
   accountId?: string
   /**
    * EntityId is the entity identifier (username).
-   *
-   * @generated from field: string entity_id = 2;
    */
   entityId?: string
   /**
    * EncryptedBlob is the base64-encoded encrypted entity key blob.
-   *
-   * @generated from field: string encrypted_blob = 3;
    */
   encryptedBlob?: string
   /**
    * PrfCapable indicates whether this credential supports PRF.
-   *
-   * @generated from field: bool prf_capable = 4;
    */
   prfCapable?: boolean
   /**
    * PrfSalt is the base64-encoded 32-byte salt for PRF evaluation.
-   *
-   * @generated from field: string prf_salt = 5;
    */
   prfSalt?: string
   /**
    * AuthParams is the base64-encoded serialized CustodiedKeyParams.
-   *
-   * @generated from field: string auth_params = 6;
    */
   authParams?: string
   /**
    * PinWrapped indicates if the blob still has Layer 1 PIN wrapping.
-   *
-   * @generated from field: bool pin_wrapped = 7;
    */
   pinWrapped?: boolean
 }
 
 export const PasskeyAuthVerifyResponse: MessageType<PasskeyAuthVerifyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyAuthVerifyResponse',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'encrypted_blob', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'prf_capable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'prf_salt', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'auth_params', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyAuthVerifyResponse>(
+    's4wave.provider.spacewave.PasskeyAuthVerifyResponse',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'entity_id', 9],
+      [3, 'encrypted_blob', 9],
+      [4, 'prf_capable', 8],
+      [5, 'prf_salt', 9],
+      [6, 'auth_params', 9],
+      [7, 'pin_wrapped', 8],
+    ],
+  )
 
 /**
  * PasskeyPrfAuthParams is the canonical generated auth-params blob for a
@@ -1550,38 +1176,27 @@ export const PasskeyAuthVerifyResponse: MessageType<PasskeyAuthVerifyResponse> =
 export interface PasskeyPrfAuthParams {
   /**
    * Algorithm identifies the PRF wrapping algorithm.
-   *
-   * @generated from field: s4wave.provider.spacewave.PasskeyPrfWrapAlgorithm algorithm = 1;
    */
   algorithm?: PasskeyPrfWrapAlgorithm
   /**
    * Nonce is the AES-GCM nonce.
-   *
-   * @generated from field: bytes nonce = 2;
    */
   nonce?: Uint8Array
   /**
    * PinWrapped indicates whether the PRF plaintext is still PIN wrapped.
-   *
-   * @generated from field: bool pin_wrapped = 3;
    */
   pinWrapped?: boolean
 }
 
 export const PasskeyPrfAuthParams: MessageType<PasskeyPrfAuthParams> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyPrfAuthParams',
-    fields: [
-      {
-        no: 1,
-        name: 'algorithm',
-        kind: 'enum',
-        T: PasskeyPrfWrapAlgorithm_Enum,
-      },
-      { no: 2, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyPrfAuthParams>(
+    's4wave.provider.spacewave.PasskeyPrfAuthParams',
+    () => [
+      [1, 'algorithm', 14, 0, PasskeyPrfWrapAlgorithm_Enum],
+      [2, 'nonce', 12],
+      [3, 'pin_wrapped', 8],
+    ],
+  )
 
 /**
  * PasskeyCheckUsernameRequest acknowledges the username-first passkey step.
@@ -1591,19 +1206,15 @@ export const PasskeyPrfAuthParams: MessageType<PasskeyPrfAuthParams> =
 export interface PasskeyCheckUsernameRequest {
   /**
    * Username is the Spacewave username for the next passkey step.
-   *
-   * @generated from field: string username = 1;
    */
   username?: string
 }
 
 export const PasskeyCheckUsernameRequest: MessageType<PasskeyCheckUsernameRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyCheckUsernameRequest',
-    fields: [
-      { no: 1, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyCheckUsernameRequest>(
+    's4wave.provider.spacewave.PasskeyCheckUsernameRequest',
+    () => [[1, 'username', 9]],
+  )
 
 /**
  * PasskeyCheckUsernameResponse acknowledges the opaque first passkey step.
@@ -1613,19 +1224,15 @@ export const PasskeyCheckUsernameRequest: MessageType<PasskeyCheckUsernameReques
 export interface PasskeyCheckUsernameResponse {
   /**
    * Ok reports that the opaque first passkey step was accepted.
-   *
-   * @generated from field: bool ok = 1;
    */
   ok?: boolean
 }
 
 export const PasskeyCheckUsernameResponse: MessageType<PasskeyCheckUsernameResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyCheckUsernameResponse',
-    fields: [
-      { no: 1, name: 'ok', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyCheckUsernameResponse>(
+    's4wave.provider.spacewave.PasskeyCheckUsernameResponse',
+    () => [[1, 'ok', 8]],
+  )
 
 /**
  * PasskeyRegisterChallengeRequest fetches unauthenticated WebAuthn registration options.
@@ -1635,19 +1242,15 @@ export const PasskeyCheckUsernameResponse: MessageType<PasskeyCheckUsernameRespo
 export interface PasskeyRegisterChallengeRequest {
   /**
    * Username is the pending Spacewave username for display in the browser ceremony.
-   *
-   * @generated from field: string username = 1;
    */
   username?: string
 }
 
 export const PasskeyRegisterChallengeRequest: MessageType<PasskeyRegisterChallengeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyRegisterChallengeRequest',
-    fields: [
-      { no: 1, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyRegisterChallengeRequest>(
+    's4wave.provider.spacewave.PasskeyRegisterChallengeRequest',
+    () => [[1, 'username', 9]],
+  )
 
 /**
  * PasskeyRegisterChallengeResponse contains registration options JSON.
@@ -1657,19 +1260,15 @@ export const PasskeyRegisterChallengeRequest: MessageType<PasskeyRegisterChallen
 export interface PasskeyRegisterChallengeResponse {
   /**
    * OptionsJson is the PublicKeyCredentialCreationOptions JSON string.
-   *
-   * @generated from field: string options_json = 1;
    */
   optionsJson?: string
 }
 
 export const PasskeyRegisterChallengeResponse: MessageType<PasskeyRegisterChallengeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyRegisterChallengeResponse',
-    fields: [
-      { no: 1, name: 'options_json', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyRegisterChallengeResponse>(
+    's4wave.provider.spacewave.PasskeyRegisterChallengeResponse',
+    () => [[1, 'options_json', 9]],
+  )
 
 /**
  * StartDesktopPasskeyRequest starts the native desktop passkey flow.
@@ -1679,9 +1278,9 @@ export const PasskeyRegisterChallengeResponse: MessageType<PasskeyRegisterChalle
 export interface StartDesktopPasskeyRequest {}
 
 export const StartDesktopPasskeyRequest: MessageType<StartDesktopPasskeyRequest> =
-  /* @__PURE__ */ createEmptyMessageType<StartDesktopPasskeyRequest>(
+  /* @__PURE__ */ createMessageType<StartDesktopPasskeyRequest>(
     's4wave.provider.spacewave.StartDesktopPasskeyRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1692,61 +1291,47 @@ export const StartDesktopPasskeyRequest: MessageType<StartDesktopPasskeyRequest>
 export interface DesktopPasskeyLinkedResult {
   /**
    * Nonce is the auth-session nonce associated with this desktop passkey flow.
-   *
-   * @generated from field: string nonce = 1;
    */
   nonce?: string
   /**
    * EncryptedBlob is the base64-encoded entity key blob for local completion.
-   *
-   * @generated from field: string encrypted_blob = 2;
    */
   encryptedBlob?: string
   /**
    * PrfCapable indicates whether the passkey requires PRF-based unwrap.
-   *
-   * @generated from field: bool prf_capable = 3;
    */
   prfCapable?: boolean
   /**
    * PrfSalt is the base64-encoded PRF salt from the linked credential.
-   *
-   * @generated from field: string prf_salt = 4;
    */
   prfSalt?: string
   /**
    * AuthParams is the base64-encoded passkey auth-params blob.
-   *
-   * @generated from field: string auth_params = 5;
    */
   authParams?: string
   /**
    * PinWrapped indicates whether the resulting blob still needs PIN unwrap.
-   *
-   * @generated from field: bool pin_wrapped = 6;
    */
   pinWrapped?: boolean
   /**
    * PrfOutput is the base64-encoded PRF output captured in the browser.
-   *
-   * @generated from field: string prf_output = 7;
    */
   prfOutput?: string
 }
 
 export const DesktopPasskeyLinkedResult: MessageType<DesktopPasskeyLinkedResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.DesktopPasskeyLinkedResult',
-    fields: [
-      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'encrypted_blob', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'prf_capable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'prf_salt', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'auth_params', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'prf_output', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopPasskeyLinkedResult>(
+    's4wave.provider.spacewave.DesktopPasskeyLinkedResult',
+    () => [
+      [1, 'nonce', 9],
+      [2, 'encrypted_blob', 9],
+      [3, 'prf_capable', 8],
+      [4, 'prf_salt', 9],
+      [5, 'auth_params', 9],
+      [6, 'pin_wrapped', 8],
+      [7, 'prf_output', 9],
+    ],
+  )
 
 /**
  * DesktopPasskeyNewAccountResult is returned when desktop passkey needs native signup.
@@ -1756,54 +1341,42 @@ export const DesktopPasskeyLinkedResult: MessageType<DesktopPasskeyLinkedResult>
 export interface DesktopPasskeyNewAccountResult {
   /**
    * Nonce is the auth-session nonce associated with this desktop passkey flow.
-   *
-   * @generated from field: string nonce = 1;
    */
   nonce?: string
   /**
    * Username is the browser-collected username for the pending account.
-   *
-   * @generated from field: string username = 2;
    */
   username?: string
   /**
    * CredentialJson is the browser registration credential JSON.
-   *
-   * @generated from field: string credential_json = 3;
    */
   credentialJson?: string
   /**
    * PrfCapable indicates whether the passkey supports PRF-based wrapping.
-   *
-   * @generated from field: bool prf_capable = 4;
    */
   prfCapable?: boolean
   /**
    * PrfSalt is the base64url PRF salt chosen during registration.
-   *
-   * @generated from field: string prf_salt = 5;
    */
   prfSalt?: string
   /**
    * PrfOutput is the base64-encoded PRF output captured in the browser.
-   *
-   * @generated from field: string prf_output = 6;
    */
   prfOutput?: string
 }
 
 export const DesktopPasskeyNewAccountResult: MessageType<DesktopPasskeyNewAccountResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.DesktopPasskeyNewAccountResult',
-    fields: [
-      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'credential_json', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'prf_capable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'prf_salt', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'prf_output', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopPasskeyNewAccountResult>(
+    's4wave.provider.spacewave.DesktopPasskeyNewAccountResult',
+    () => [
+      [1, 'nonce', 9],
+      [2, 'username', 9],
+      [3, 'credential_json', 9],
+      [4, 'prf_capable', 8],
+      [5, 'prf_salt', 9],
+      [6, 'prf_output', 9],
+    ],
+  )
 
 /**
  * StartDesktopPasskeyResponse is the desktop passkey result routed back to native alpha.
@@ -1817,50 +1390,19 @@ export interface StartDesktopPasskeyResponse {
    * @generated from oneof s4wave.provider.spacewave.StartDesktopPasskeyResponse.result
    */
   result?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Linked is set when desktop passkey authenticated an existing account.
-         *
-         * @generated from field: s4wave.provider.spacewave.DesktopPasskeyLinkedResult linked = 1;
-         */
-        value: DesktopPasskeyLinkedResult
-        case: 'linked'
-      }
-    | {
-        /**
-         * NewAccount is set when desktop passkey completed registration artifacts.
-         *
-         * @generated from field: s4wave.provider.spacewave.DesktopPasskeyNewAccountResult new_account = 2;
-         */
-        value: DesktopPasskeyNewAccountResult
-        case: 'newAccount'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: DesktopPasskeyLinkedResult; case: 'linked' }
+    | { value: DesktopPasskeyNewAccountResult; case: 'newAccount' }
 }
 
 export const StartDesktopPasskeyResponse: MessageType<StartDesktopPasskeyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.StartDesktopPasskeyResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'linked',
-        kind: 'message',
-        T: DesktopPasskeyLinkedResult,
-        oneof: 'result',
-      },
-      {
-        no: 2,
-        name: 'new_account',
-        kind: 'message',
-        T: DesktopPasskeyNewAccountResult,
-        oneof: 'result',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartDesktopPasskeyResponse>(
+    's4wave.provider.spacewave.StartDesktopPasskeyResponse',
+    () => [
+      [1, 'linked', 11, 0, DesktopPasskeyLinkedResult.codec, 'result'],
+      [2, 'new_account', 11, 0, DesktopPasskeyNewAccountResult.codec, 'result'],
+    ],
+  )
 
 /**
  * ConfirmDesktopPasskeyRequest completes native desktop passkey account creation.
@@ -1870,87 +1412,62 @@ export const StartDesktopPasskeyResponse: MessageType<StartDesktopPasskeyRespons
 export interface ConfirmDesktopPasskeyRequest {
   /**
    * Nonce is the desktop auth-session nonce to confirm.
-   *
-   * @generated from field: string nonce = 1;
    */
   nonce?: string
   /**
    * Username is the Spacewave username to create.
-   *
-   * @generated from field: string username = 2;
    */
   username?: string
   /**
    * CredentialJson is the browser registration credential JSON.
-   *
-   * @generated from field: string credential_json = 3;
    */
   credentialJson?: string
   /**
    * WrappedEntityKey is the base64-encoded wrapped entity key blob.
-   *
-   * @generated from field: string wrapped_entity_key = 4;
    */
   wrappedEntityKey?: string
   /**
    * EntityPeerId is the entity peer ID derived from the keypair.
-   *
-   * @generated from field: string entity_peer_id = 5;
    */
   entityPeerId?: string
   /**
    * SessionPeerId is the session peer ID derived from the keypair.
-   *
-   * @generated from field: string session_peer_id = 6;
    */
   sessionPeerId?: string
   /**
    * PinWrapped reports whether the client applied PIN wrapping.
-   *
-   * @generated from field: bool pin_wrapped = 7;
    */
   pinWrapped?: boolean
   /**
    * PrfCapable reports whether the client applied PRF wrapping.
-   *
-   * @generated from field: bool prf_capable = 8;
    */
   prfCapable?: boolean
   /**
    * PrfSalt is the base64url PRF salt chosen during registration.
-   *
-   * @generated from field: string prf_salt = 9;
    */
   prfSalt?: string
   /**
    * AuthParams is the base64-encoded passkey auth-params blob for PRF wrapping.
-   *
-   * @generated from field: string auth_params = 10;
    */
   authParams?: string
 }
 
 export const ConfirmDesktopPasskeyRequest: MessageType<ConfirmDesktopPasskeyRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ConfirmDesktopPasskeyRequest',
-    fields: [
-      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'credential_json', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'wrapped_entity_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 5, name: 'entity_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'prf_capable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 9, name: 'prf_salt', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'auth_params', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfirmDesktopPasskeyRequest>(
+    's4wave.provider.spacewave.ConfirmDesktopPasskeyRequest',
+    () => [
+      [1, 'nonce', 9],
+      [2, 'username', 9],
+      [3, 'credential_json', 9],
+      [4, 'wrapped_entity_key', 9],
+      [5, 'entity_peer_id', 9],
+      [6, 'session_peer_id', 9],
+      [7, 'pin_wrapped', 8],
+      [8, 'prf_capable', 8],
+      [9, 'prf_salt', 9],
+      [10, 'auth_params', 9],
+    ],
+  )
 
 /**
  * ConfirmDesktopPasskeyResponse reports the confirmed desktop passkey account.
@@ -1960,26 +1477,22 @@ export const ConfirmDesktopPasskeyRequest: MessageType<ConfirmDesktopPasskeyRequ
 export interface ConfirmDesktopPasskeyResponse {
   /**
    * AccountId is the created account identifier.
-   *
-   * @generated from field: string account_id = 1;
    */
   accountId?: string
   /**
    * SessionPeerId is the registered session peer ID.
-   *
-   * @generated from field: string session_peer_id = 2;
    */
   sessionPeerId?: string
 }
 
 export const ConfirmDesktopPasskeyResponse: MessageType<ConfirmDesktopPasskeyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ConfirmDesktopPasskeyResponse',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfirmDesktopPasskeyResponse>(
+    's4wave.provider.spacewave.ConfirmDesktopPasskeyResponse',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'session_peer_id', 9],
+    ],
+  )
 
 /**
  * PasskeyConfirmSignupRequest confirms browser-owned passkey signup for the web flow.
@@ -1989,80 +1502,57 @@ export const ConfirmDesktopPasskeyResponse: MessageType<ConfirmDesktopPasskeyRes
 export interface PasskeyConfirmSignupRequest {
   /**
    * CredentialJson is the RegistrationResponseJSON from @simplewebauthn/browser.
-   *
-   * @generated from field: string credential_json = 1;
    */
   credentialJson?: string
   /**
    * Username is the Spacewave username to create.
-   *
-   * @generated from field: string username = 2;
    */
   username?: string
   /**
    * WrappedEntityKey is the base64-encoded wrapped entity key blob.
-   *
-   * @generated from field: string wrapped_entity_key = 3;
    */
   wrappedEntityKey?: string
   /**
    * EntityPeerId is the entity peer ID derived from the keypair.
-   *
-   * @generated from field: string entity_peer_id = 4;
    */
   entityPeerId?: string
   /**
    * SessionPeerId is the session peer ID derived from the keypair.
-   *
-   * @generated from field: string session_peer_id = 5;
    */
   sessionPeerId?: string
   /**
    * PinWrapped reports whether the client applied PIN wrapping.
-   *
-   * @generated from field: bool pin_wrapped = 6;
    */
   pinWrapped?: boolean
   /**
    * PrfCapable reports whether the client applied PRF wrapping.
-   *
-   * @generated from field: bool prf_capable = 7;
    */
   prfCapable?: boolean
   /**
    * PrfSalt is the base64url PRF salt chosen during registration.
-   *
-   * @generated from field: string prf_salt = 8;
    */
   prfSalt?: string
   /**
    * AuthParams is the base64-encoded passkey auth-params blob for PRF wrapping.
-   *
-   * @generated from field: string auth_params = 9;
    */
   authParams?: string
 }
 
 export const PasskeyConfirmSignupRequest: MessageType<PasskeyConfirmSignupRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyConfirmSignupRequest',
-    fields: [
-      { no: 1, name: 'credential_json', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'wrapped_entity_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'entity_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'prf_capable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'prf_salt', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'auth_params', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyConfirmSignupRequest>(
+    's4wave.provider.spacewave.PasskeyConfirmSignupRequest',
+    () => [
+      [1, 'credential_json', 9],
+      [2, 'username', 9],
+      [3, 'wrapped_entity_key', 9],
+      [4, 'entity_peer_id', 9],
+      [5, 'session_peer_id', 9],
+      [6, 'pin_wrapped', 8],
+      [7, 'prf_capable', 8],
+      [8, 'prf_salt', 9],
+      [9, 'auth_params', 9],
+    ],
+  )
 
 /**
  * PasskeyConfirmSignupResponse reports the created web passkey account.
@@ -2072,26 +1562,22 @@ export const PasskeyConfirmSignupRequest: MessageType<PasskeyConfirmSignupReques
 export interface PasskeyConfirmSignupResponse {
   /**
    * AccountId is the created account identifier.
-   *
-   * @generated from field: string account_id = 1;
    */
   accountId?: string
   /**
    * SessionPeerId is the registered session peer ID.
-   *
-   * @generated from field: string session_peer_id = 2;
    */
   sessionPeerId?: string
 }
 
 export const PasskeyConfirmSignupResponse: MessageType<PasskeyConfirmSignupResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PasskeyConfirmSignupResponse',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PasskeyConfirmSignupResponse>(
+    's4wave.provider.spacewave.PasskeyConfirmSignupResponse',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'session_peer_id', 9],
+    ],
+  )
 
 /**
  * RelayDesktopPasskeyRequest relays a browser ceremony result back to native alpha.
@@ -2101,62 +1587,28 @@ export const PasskeyConfirmSignupResponse: MessageType<PasskeyConfirmSignupRespo
 export interface RelayDesktopPasskeyRequest {
   /**
    * Nonce is the auth-session nonce associated with this desktop passkey flow.
-   *
-   * @generated from field: string nonce = 1;
    */
   nonce?: string
-
   /**
    * Result is the linked-login or new-account browser result.
    *
    * @generated from oneof s4wave.provider.spacewave.RelayDesktopPasskeyRequest.result
    */
   result?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Linked is set when the browser authenticated an existing account.
-         *
-         * @generated from field: s4wave.provider.spacewave.DesktopPasskeyLinkedResult linked = 2;
-         */
-        value: DesktopPasskeyLinkedResult
-        case: 'linked'
-      }
-    | {
-        /**
-         * NewAccount is set when the browser collected registration artifacts for native completion.
-         *
-         * @generated from field: s4wave.provider.spacewave.DesktopPasskeyNewAccountResult new_account = 3;
-         */
-        value: DesktopPasskeyNewAccountResult
-        case: 'newAccount'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: DesktopPasskeyLinkedResult; case: 'linked' }
+    | { value: DesktopPasskeyNewAccountResult; case: 'newAccount' }
 }
 
 export const RelayDesktopPasskeyRequest: MessageType<RelayDesktopPasskeyRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RelayDesktopPasskeyRequest',
-    fields: [
-      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'linked',
-        kind: 'message',
-        T: DesktopPasskeyLinkedResult,
-        oneof: 'result',
-      },
-      {
-        no: 3,
-        name: 'new_account',
-        kind: 'message',
-        T: DesktopPasskeyNewAccountResult,
-        oneof: 'result',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RelayDesktopPasskeyRequest>(
+    's4wave.provider.spacewave.RelayDesktopPasskeyRequest',
+    () => [
+      [1, 'nonce', 9],
+      [2, 'linked', 11, 0, DesktopPasskeyLinkedResult.codec, 'result'],
+      [3, 'new_account', 11, 0, DesktopPasskeyNewAccountResult.codec, 'result'],
+    ],
+  )
 
 /**
  * RelayDesktopPasskeyResponse reports relay success.
@@ -2166,9 +1618,9 @@ export const RelayDesktopPasskeyRequest: MessageType<RelayDesktopPasskeyRequest>
 export interface RelayDesktopPasskeyResponse {}
 
 export const RelayDesktopPasskeyResponse: MessageType<RelayDesktopPasskeyResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RelayDesktopPasskeyResponse>(
+  /* @__PURE__ */ createMessageType<RelayDesktopPasskeyResponse>(
     's4wave.provider.spacewave.RelayDesktopPasskeyResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2180,33 +1632,27 @@ export const RelayDesktopPasskeyResponse: MessageType<RelayDesktopPasskeyRespons
 export interface SSOCodeExchangeRequest {
   /**
    * Provider is the SSO provider name ("google" or "github").
-   *
-   * @generated from field: string provider = 1;
    */
   provider?: string
   /**
    * Code is the OAuth authorization code from the popup callback.
-   *
-   * @generated from field: string code = 2;
    */
   code?: string
   /**
    * RedirectUri is the OAuth redirect URI used by the client.
-   *
-   * @generated from field: string redirect_uri = 3;
    */
   redirectUri?: string
 }
 
 export const SSOCodeExchangeRequest: MessageType<SSOCodeExchangeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SSOCodeExchangeRequest',
-    fields: [
-      { no: 1, name: 'provider', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'redirect_uri', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SSOCodeExchangeRequest>(
+    's4wave.provider.spacewave.SSOCodeExchangeRequest',
+    () => [
+      [1, 'provider', 9],
+      [2, 'code', 9],
+      [3, 'redirect_uri', 9],
+    ],
+  )
 
 /**
  * PrepareBrowserSSORequest starts browser SSO binding preparation.
@@ -2216,9 +1662,9 @@ export const SSOCodeExchangeRequest: MessageType<SSOCodeExchangeRequest> =
 export interface PrepareBrowserSSORequest {}
 
 export const PrepareBrowserSSORequest: MessageType<PrepareBrowserSSORequest> =
-  /* @__PURE__ */ createEmptyMessageType<PrepareBrowserSSORequest>(
+  /* @__PURE__ */ createMessageType<PrepareBrowserSSORequest>(
     's4wave.provider.spacewave.PrepareBrowserSSORequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2229,45 +1675,32 @@ export const PrepareBrowserSSORequest: MessageType<PrepareBrowserSSORequest> =
 export interface PrepareBrowserSSOResponse {
   /**
    * Verifier is the high-entropy secret required at result exchange.
-   *
-   * @generated from field: bytes verifier = 1;
    */
   verifier?: Uint8Array
   /**
    * VerifierHash is the SHA-256 commitment carried in signed OAuth state.
-   *
-   * @generated from field: bytes verifier_hash = 2;
    */
   verifierHash?: Uint8Array
   /**
    * DevicePublicKey is the ephemeral X25519 public key committed by OAuth state.
-   *
-   * @generated from field: bytes device_public_key = 3;
    */
   devicePublicKey?: Uint8Array
   /**
    * DevicePrivateKey is the ephemeral X25519 private key retained by the tab.
-   *
-   * @generated from field: bytes device_private_key = 4;
    */
   devicePrivateKey?: Uint8Array
 }
 
 export const PrepareBrowserSSOResponse: MessageType<PrepareBrowserSSOResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PrepareBrowserSSOResponse',
-    fields: [
-      { no: 1, name: 'verifier', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'verifier_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'device_public_key', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 4,
-        name: 'device_private_key',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PrepareBrowserSSOResponse>(
+    's4wave.provider.spacewave.PrepareBrowserSSOResponse',
+    () => [
+      [1, 'verifier', 12],
+      [2, 'verifier_hash', 12],
+      [3, 'device_public_key', 12],
+      [4, 'device_private_key', 12],
+    ],
+  )
 
 /**
  * SSONonceExchangeRequest exchanges an auth-session nonce for the stored SSO
@@ -2278,38 +1711,27 @@ export const PrepareBrowserSSOResponse: MessageType<PrepareBrowserSSOResponse> =
 export interface SSONonceExchangeRequest {
   /**
    * Nonce is the auth-session nonce to exchange.
-   *
-   * @generated from field: string nonce = 1;
    */
   nonce?: string
   /**
    * Verifier is the browser-flow secret committed by signed OAuth state.
-   *
-   * @generated from field: bytes verifier = 2;
    */
   verifier?: Uint8Array
   /**
    * DevicePrivateKey decrypts the device-bound entity key result locally.
-   *
-   * @generated from field: bytes device_private_key = 3;
    */
   devicePrivateKey?: Uint8Array
 }
 
 export const SSONonceExchangeRequest: MessageType<SSONonceExchangeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SSONonceExchangeRequest',
-    fields: [
-      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'verifier', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 3,
-        name: 'device_private_key',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SSONonceExchangeRequest>(
+    's4wave.provider.spacewave.SSONonceExchangeRequest',
+    () => [
+      [1, 'nonce', 9],
+      [2, 'verifier', 12],
+      [3, 'device_private_key', 12],
+    ],
+  )
 
 /**
  * SSOCodeExchangeResponse is the response after exchanging an OAuth code.
@@ -2319,75 +1741,57 @@ export const SSONonceExchangeRequest: MessageType<SSONonceExchangeRequest> =
 export interface SSOCodeExchangeResponse {
   /**
    * Linked indicates whether an existing account was found for this OAuth identity.
-   *
-   * @generated from field: bool linked = 1;
    */
   linked?: boolean
   /**
    * AccountId is set when linked=true.
-   *
-   * @generated from field: string account_id = 2;
    */
   accountId?: string
   /**
    * EntityId is set when linked=true.
-   *
-   * @generated from field: string entity_id = 3;
    */
   entityId?: string
   /**
    * EncryptedBlob is the base64-encoded unwrapped key blob (linked=true).
-   *
-   * @generated from field: string encrypted_blob = 4;
    */
   encryptedBlob?: string
   /**
    * PinWrapped indicates if the blob still has Layer 1 PIN wrapping.
-   *
-   * @generated from field: bool pin_wrapped = 5;
    */
   pinWrapped?: boolean
   /**
    * AuthParams is base64-encoded CustodiedKeyParams (linked=true).
-   *
-   * @generated from field: string auth_params = 6;
    */
   authParams?: string
   /**
    * SsoProvider is set when linked=false.
-   *
-   * @generated from field: string sso_provider = 7;
    */
   ssoProvider?: string
   /**
    * Email is the OAuth provider email. Always set when known.
-   *
-   * @generated from field: string email = 8;
    */
   email?: string
   /**
    * Username is the Spacewave account username. Set when linked=true.
-   *
-   * @generated from field: string username = 9;
    */
   username?: string
 }
 
 export const SSOCodeExchangeResponse: MessageType<SSOCodeExchangeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SSOCodeExchangeResponse',
-    fields: [
-      { no: 1, name: 'linked', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'encrypted_blob', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'auth_params', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'sso_provider', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SSOCodeExchangeResponse>(
+    's4wave.provider.spacewave.SSOCodeExchangeResponse',
+    () => [
+      [1, 'linked', 8],
+      [2, 'account_id', 9],
+      [3, 'entity_id', 9],
+      [4, 'encrypted_blob', 9],
+      [5, 'pin_wrapped', 8],
+      [6, 'auth_params', 9],
+      [7, 'sso_provider', 9],
+      [8, 'email', 9],
+      [9, 'username', 9],
+    ],
+  )
 
 /**
  * GetCloudProviderConfigRequest fetches pre-auth provider config.
@@ -2397,9 +1801,9 @@ export const SSOCodeExchangeResponse: MessageType<SSOCodeExchangeResponse> =
 export interface GetCloudProviderConfigRequest {}
 
 export const GetCloudProviderConfigRequest: MessageType<GetCloudProviderConfigRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetCloudProviderConfigRequest>(
+  /* @__PURE__ */ createMessageType<GetCloudProviderConfigRequest>(
     's4wave.provider.spacewave.GetCloudProviderConfigRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2410,34 +1814,28 @@ export const GetCloudProviderConfigRequest: MessageType<GetCloudProviderConfigRe
 export interface StartBrowserHandoffRequest {
   /**
    * ClientType is the requesting native client type.
-   *
-   * @generated from field: string client_type = 1;
    */
   clientType?: string
   /**
    * Username pre-fills the browser auth flow when set.
-   *
-   * @generated from field: string username = 2;
    */
   username?: string
   /**
    * AuthIntent hints whether the browser should emphasize login or signup.
    * Known values are "login" and "signup".
-   *
-   * @generated from field: string auth_intent = 3;
    */
   authIntent?: string
 }
 
 export const StartBrowserHandoffRequest: MessageType<StartBrowserHandoffRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.StartBrowserHandoffRequest',
-    fields: [
-      { no: 1, name: 'client_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'auth_intent', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartBrowserHandoffRequest>(
+    's4wave.provider.spacewave.StartBrowserHandoffRequest',
+    () => [
+      [1, 'client_type', 9],
+      [2, 'username', 9],
+      [3, 'auth_intent', 9],
+    ],
+  )
 
 /**
  * StartBrowserHandoffResponse returns the mounted session from browser auth.
@@ -2447,24 +1845,15 @@ export const StartBrowserHandoffRequest: MessageType<StartBrowserHandoffRequest>
 export interface StartBrowserHandoffResponse {
   /**
    * SessionListEntry is the mounted session entry.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
 }
 
 export const StartBrowserHandoffResponse: MessageType<StartBrowserHandoffResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.StartBrowserHandoffResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartBrowserHandoffResponse>(
+    's4wave.provider.spacewave.StartBrowserHandoffResponse',
+    () => [[1, 'session_list_entry', 11, 0, SessionListEntry.codec]],
+  )
 
 /**
  * StartDesktopSSORequest starts the native desktop SSO flow.
@@ -2474,19 +1863,15 @@ export const StartBrowserHandoffResponse: MessageType<StartBrowserHandoffRespons
 export interface StartDesktopSSORequest {
   /**
    * SsoProvider is the requested SSO provider ("google" or "github").
-   *
-   * @generated from field: string sso_provider = 1;
    */
   ssoProvider?: string
 }
 
 export const StartDesktopSSORequest: MessageType<StartDesktopSSORequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.StartDesktopSSORequest',
-    fields: [
-      { no: 1, name: 'sso_provider', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartDesktopSSORequest>(
+    's4wave.provider.spacewave.StartDesktopSSORequest',
+    () => [[1, 'sso_provider', 9]],
+  )
 
 /**
  * DesktopSSOLinkedResult is returned when desktop SSO finds an existing account.
@@ -2496,54 +1881,42 @@ export const StartDesktopSSORequest: MessageType<StartDesktopSSORequest> =
 export interface DesktopSSOLinkedResult {
   /**
    * Nonce is the auth-session nonce associated with this desktop SSO flow.
-   *
-   * @generated from field: string nonce = 1;
    */
   nonce?: string
   /**
    * AccountId is the linked account identifier.
-   *
-   * @generated from field: string account_id = 2;
    */
   accountId?: string
   /**
    * EntityId is the linked entity identifier.
-   *
-   * @generated from field: string entity_id = 3;
    */
   entityId?: string
   /**
    * PemPrivateKey is the linked entity private key in PEM format.
-   *
-   * @generated from field: bytes pem_private_key = 4;
    */
   pemPrivateKey?: Uint8Array
   /**
    * PinWrapped reports whether pem_private_key contains a PIN-wrapped key blob.
-   *
-   * @generated from field: bool pin_wrapped = 5;
    */
   pinWrapped?: boolean
   /**
    * Username is the Spacewave account username for the linked account.
-   *
-   * @generated from field: string username = 6;
    */
   username?: string
 }
 
 export const DesktopSSOLinkedResult: MessageType<DesktopSSOLinkedResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.DesktopSSOLinkedResult',
-    fields: [
-      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'pem_private_key', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 5, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopSSOLinkedResult>(
+    's4wave.provider.spacewave.DesktopSSOLinkedResult',
+    () => [
+      [1, 'nonce', 9],
+      [2, 'account_id', 9],
+      [3, 'entity_id', 9],
+      [4, 'pem_private_key', 12],
+      [5, 'pin_wrapped', 8],
+      [6, 'username', 9],
+    ],
+  )
 
 /**
  * DesktopSSONewAccountResult is returned when desktop SSO needs native signup.
@@ -2553,33 +1926,27 @@ export const DesktopSSOLinkedResult: MessageType<DesktopSSOLinkedResult> =
 export interface DesktopSSONewAccountResult {
   /**
    * Nonce is the auth-session nonce associated with this desktop SSO flow.
-   *
-   * @generated from field: string nonce = 1;
    */
   nonce?: string
   /**
    * SsoProvider is the requested SSO provider ("google" or "github").
-   *
-   * @generated from field: string sso_provider = 2;
    */
   ssoProvider?: string
   /**
    * Email is the email returned by the OAuth provider.
-   *
-   * @generated from field: string email = 3;
    */
   email?: string
 }
 
 export const DesktopSSONewAccountResult: MessageType<DesktopSSONewAccountResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.DesktopSSONewAccountResult',
-    fields: [
-      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'sso_provider', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopSSONewAccountResult>(
+    's4wave.provider.spacewave.DesktopSSONewAccountResult',
+    () => [
+      [1, 'nonce', 9],
+      [2, 'sso_provider', 9],
+      [3, 'email', 9],
+    ],
+  )
 
 /**
  * StartDesktopSSOResponse is the desktop SSO result routed back to native alpha.
@@ -2593,50 +1960,19 @@ export interface StartDesktopSSOResponse {
    * @generated from oneof s4wave.provider.spacewave.StartDesktopSSOResponse.result
    */
   result?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Linked is set when desktop SSO found an existing account.
-         *
-         * @generated from field: s4wave.provider.spacewave.DesktopSSOLinkedResult linked = 1;
-         */
-        value: DesktopSSOLinkedResult
-        case: 'linked'
-      }
-    | {
-        /**
-         * NewAccount is set when desktop SSO needs native account creation.
-         *
-         * @generated from field: s4wave.provider.spacewave.DesktopSSONewAccountResult new_account = 2;
-         */
-        value: DesktopSSONewAccountResult
-        case: 'newAccount'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: DesktopSSOLinkedResult; case: 'linked' }
+    | { value: DesktopSSONewAccountResult; case: 'newAccount' }
 }
 
 export const StartDesktopSSOResponse: MessageType<StartDesktopSSOResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.StartDesktopSSOResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'linked',
-        kind: 'message',
-        T: DesktopSSOLinkedResult,
-        oneof: 'result',
-      },
-      {
-        no: 2,
-        name: 'new_account',
-        kind: 'message',
-        T: DesktopSSONewAccountResult,
-        oneof: 'result',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartDesktopSSOResponse>(
+    's4wave.provider.spacewave.StartDesktopSSOResponse',
+    () => [
+      [1, 'linked', 11, 0, DesktopSSOLinkedResult.codec, 'result'],
+      [2, 'new_account', 11, 0, DesktopSSONewAccountResult.codec, 'result'],
+    ],
+  )
 
 /**
  * StartDesktopSSOLinkRequest starts the native desktop SessionDetails
@@ -2647,19 +1983,15 @@ export const StartDesktopSSOResponse: MessageType<StartDesktopSSOResponse> =
 export interface StartDesktopSSOLinkRequest {
   /**
    * SsoProvider is the requested SSO provider ("google" or "github").
-   *
-   * @generated from field: string sso_provider = 1;
    */
   ssoProvider?: string
 }
 
 export const StartDesktopSSOLinkRequest: MessageType<StartDesktopSSOLinkRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.StartDesktopSSOLinkRequest',
-    fields: [
-      { no: 1, name: 'sso_provider', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartDesktopSSOLinkRequest>(
+    's4wave.provider.spacewave.StartDesktopSSOLinkRequest',
+    () => [[1, 'sso_provider', 9]],
+  )
 
 /**
  * StartDesktopSSOLinkResponse returns the OAuth result for account linking.
@@ -2672,26 +2004,22 @@ export const StartDesktopSSOLinkRequest: MessageType<StartDesktopSSOLinkRequest>
 export interface StartDesktopSSOLinkResponse {
   /**
    * SsoProvider is the SSO provider the user authorized with.
-   *
-   * @generated from field: string sso_provider = 1;
    */
   ssoProvider?: string
   /**
    * Code is the OAuth authorization code returned by the provider.
-   *
-   * @generated from field: string code = 2;
    */
   code?: string
 }
 
 export const StartDesktopSSOLinkResponse: MessageType<StartDesktopSSOLinkResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.StartDesktopSSOLinkResponse',
-    fields: [
-      { no: 1, name: 'sso_provider', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartDesktopSSOLinkResponse>(
+    's4wave.provider.spacewave.StartDesktopSSOLinkResponse',
+    () => [
+      [1, 'sso_provider', 9],
+      [2, 'code', 9],
+    ],
+  )
 
 /**
  * StartDesktopPasskeyReauthRequest starts the native desktop passkey reauth
@@ -2702,19 +2030,15 @@ export const StartDesktopSSOLinkResponse: MessageType<StartDesktopSSOLinkRespons
 export interface StartDesktopPasskeyReauthRequest {
   /**
    * PeerId is the entity peer ID the browser ceremony must authenticate.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const StartDesktopPasskeyReauthRequest: MessageType<StartDesktopPasskeyReauthRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.StartDesktopPasskeyReauthRequest',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartDesktopPasskeyReauthRequest>(
+    's4wave.provider.spacewave.StartDesktopPasskeyReauthRequest',
+    () => [[1, 'peer_id', 9]],
+  )
 
 /**
  * StartDesktopPasskeyReauthResponse reports one step of the desktop passkey
@@ -2727,62 +2051,48 @@ export const StartDesktopPasskeyReauthRequest: MessageType<StartDesktopPasskeyRe
 export interface StartDesktopPasskeyReauthResponse {
   /**
    * EncryptedBlob is the base64-encoded entity key blob for unlock.
-   *
-   * @generated from field: string encrypted_blob = 1;
    */
   encryptedBlob?: string
   /**
    * PrfCapable indicates whether the credential supports PRF-based unwrap.
-   *
-   * @generated from field: bool prf_capable = 2;
    */
   prfCapable?: boolean
   /**
    * PrfSalt is the base64-encoded PRF salt used by the linked credential.
-   *
-   * @generated from field: string prf_salt = 3;
    */
   prfSalt?: string
   /**
    * AuthParams is the base64-encoded authentication parameters for unwrap.
-   *
-   * @generated from field: string auth_params = 4;
    */
   authParams?: string
   /**
    * PinWrapped indicates whether the entity key still has PIN wrapping.
-   *
-   * @generated from field: bool pin_wrapped = 5;
    */
   pinWrapped?: boolean
   /**
    * PrfOutput is the base64-encoded PRF output captured in the browser.
-   *
-   * @generated from field: string prf_output = 6;
    */
   prfOutput?: string
   /**
    * OpenUrl is the account-hosted ceremony URL, set only on the first message
    * so a caller can show it when the browser does not open.
-   *
-   * @generated from field: string open_url = 7;
    */
   openUrl?: string
 }
 
 export const StartDesktopPasskeyReauthResponse: MessageType<StartDesktopPasskeyReauthResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.StartDesktopPasskeyReauthResponse',
-    fields: [
-      { no: 1, name: 'encrypted_blob', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'prf_capable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'prf_salt', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'auth_params', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'prf_output', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'open_url', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartDesktopPasskeyReauthResponse>(
+    's4wave.provider.spacewave.StartDesktopPasskeyReauthResponse',
+    () => [
+      [1, 'encrypted_blob', 9],
+      [2, 'prf_capable', 8],
+      [3, 'prf_salt', 9],
+      [4, 'auth_params', 9],
+      [5, 'pin_wrapped', 8],
+      [6, 'prf_output', 9],
+      [7, 'open_url', 9],
+    ],
+  )
 
 /**
  * ConfirmDesktopSSORequest completes native desktop SSO account creation.
@@ -2792,59 +2102,42 @@ export const StartDesktopPasskeyReauthResponse: MessageType<StartDesktopPasskeyR
 export interface ConfirmDesktopSSORequest {
   /**
    * Nonce is the desktop auth-session nonce to confirm.
-   *
-   * @generated from field: string nonce = 1;
    */
   nonce?: string
   /**
    * Username is the Spacewave username to create.
-   *
-   * @generated from field: string username = 2;
    */
   username?: string
   /**
    * WrappedEntityKey is the base64-encoded wrapped entity PEM.
-   *
-   * @generated from field: string wrapped_entity_key = 3;
    */
   wrappedEntityKey?: string
   /**
    * EntityPeerId is the entity peer ID derived from the keypair.
-   *
-   * @generated from field: string entity_peer_id = 4;
    */
   entityPeerId?: string
   /**
    * SessionPeerId is the session peer ID derived from the keypair.
-   *
-   * @generated from field: string session_peer_id = 5;
    */
   sessionPeerId?: string
   /**
    * PinWrapped reports whether the client applied PIN wrapping.
-   *
-   * @generated from field: bool pin_wrapped = 6;
    */
   pinWrapped?: boolean
 }
 
 export const ConfirmDesktopSSORequest: MessageType<ConfirmDesktopSSORequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ConfirmDesktopSSORequest',
-    fields: [
-      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'wrapped_entity_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'entity_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'pin_wrapped', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfirmDesktopSSORequest>(
+    's4wave.provider.spacewave.ConfirmDesktopSSORequest',
+    () => [
+      [1, 'nonce', 9],
+      [2, 'username', 9],
+      [3, 'wrapped_entity_key', 9],
+      [4, 'entity_peer_id', 9],
+      [5, 'session_peer_id', 9],
+      [6, 'pin_wrapped', 8],
+    ],
+  )
 
 /**
  * ConfirmDesktopSSOResponse reports the confirmed desktop SSO account.
@@ -2854,26 +2147,22 @@ export const ConfirmDesktopSSORequest: MessageType<ConfirmDesktopSSORequest> =
 export interface ConfirmDesktopSSOResponse {
   /**
    * AccountId is the created account identifier.
-   *
-   * @generated from field: string account_id = 1;
    */
   accountId?: string
   /**
    * SessionPeerId is the registered session peer ID.
-   *
-   * @generated from field: string session_peer_id = 2;
    */
   sessionPeerId?: string
 }
 
 export const ConfirmDesktopSSOResponse: MessageType<ConfirmDesktopSSOResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ConfirmDesktopSSOResponse',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfirmDesktopSSOResponse>(
+    's4wave.provider.spacewave.ConfirmDesktopSSOResponse',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'session_peer_id', 9],
+    ],
+  )
 
 /**
  * CloudProviderConfig returns pre-auth provider config for the client.
@@ -2884,75 +2173,54 @@ export interface CloudProviderConfig {
   /**
    * SsoBaseUrl is the base URL for SSO entry redirects.
    * Client redirects to {sso_base_url}/{provider}?origin={origin}.
-   *
-   * @generated from field: string sso_base_url = 1;
    */
   ssoBaseUrl?: string
   /**
    * ExchangeUrl is the URL for exchanging SSO nonces.
    * Client POSTs {nonce} to this URL to get the OAuth result.
-   *
-   * @generated from field: string exchange_url = 2;
    */
   exchangeUrl?: string
   /**
    * ConfirmUrl is the URL for confirming SSO account creation.
    * Client POSTs account creation data to this URL.
-   *
-   * @generated from field: string confirm_url = 3;
    */
   confirmUrl?: string
   /**
    * TurnstileSiteKey is the Cloudflare Turnstile site key to render.
-   *
-   * @generated from field: string turnstile_site_key = 4;
    */
   turnstileSiteKey?: string
   /**
    * AccountBaseUrl is the browser-facing account site base URL.
-   *
-   * @generated from field: string account_base_url = 5;
    */
   accountBaseUrl?: string
   /**
    * PublicBaseUrl is the browser-facing Spacewave app base URL.
-   *
-   * @generated from field: string public_base_url = 6;
    */
   publicBaseUrl?: string
   /**
    * GoogleSsoEnabled reports whether Google SSO is configured server-side.
-   *
-   * @generated from field: bool google_sso_enabled = 7;
    */
   googleSsoEnabled?: boolean
   /**
    * GithubSsoEnabled reports whether GitHub SSO is configured server-side.
-   *
-   * @generated from field: bool github_sso_enabled = 8;
    */
   githubSsoEnabled?: boolean
 }
 
 export const CloudProviderConfig: MessageType<CloudProviderConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CloudProviderConfig',
-    fields: [
-      { no: 1, name: 'sso_base_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'exchange_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'confirm_url', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'turnstile_site_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 5, name: 'account_base_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'public_base_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'google_sso_enabled', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'github_sso_enabled', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CloudProviderConfig>(
+    's4wave.provider.spacewave.CloudProviderConfig',
+    () => [
+      [1, 'sso_base_url', 9],
+      [2, 'exchange_url', 9],
+      [3, 'confirm_url', 9],
+      [4, 'turnstile_site_key', 9],
+      [5, 'account_base_url', 9],
+      [6, 'public_base_url', 9],
+      [7, 'google_sso_enabled', 8],
+      [8, 'github_sso_enabled', 8],
+    ],
+  )
 
 /**
  * RequestRecoveryEmailRequest requests a recovery email for an account.
@@ -2962,26 +2230,22 @@ export const CloudProviderConfig: MessageType<CloudProviderConfig> =
 export interface RequestRecoveryEmailRequest {
   /**
    * Email is the verified account email address.
-   *
-   * @generated from field: string email = 1;
    */
   email?: string
   /**
    * TurnstileToken is the Cloudflare Turnstile verification token.
-   *
-   * @generated from field: string turnstile_token = 2;
    */
   turnstileToken?: string
 }
 
 export const RequestRecoveryEmailRequest: MessageType<RequestRecoveryEmailRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RequestRecoveryEmailRequest',
-    fields: [
-      { no: 1, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'turnstile_token', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RequestRecoveryEmailRequest>(
+    's4wave.provider.spacewave.RequestRecoveryEmailRequest',
+    () => [
+      [1, 'email', 9],
+      [2, 'turnstile_token', 9],
+    ],
+  )
 
 /**
  * RequestRecoveryEmailResponse reports whether a recovery email was queued.
@@ -2991,19 +2255,15 @@ export const RequestRecoveryEmailRequest: MessageType<RequestRecoveryEmailReques
 export interface RequestRecoveryEmailResponse {
   /**
    * Sent indicates the recovery request was accepted.
-   *
-   * @generated from field: bool sent = 1;
    */
   sent?: boolean
 }
 
 export const RequestRecoveryEmailResponse: MessageType<RequestRecoveryEmailResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RequestRecoveryEmailResponse',
-    fields: [
-      { no: 1, name: 'sent', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RequestRecoveryEmailResponse>(
+    's4wave.provider.spacewave.RequestRecoveryEmailResponse',
+    () => [[1, 'sent', 8]],
+  )
 
 /**
  * RecoverVerifyRequest verifies a recovery token from an email link.
@@ -3013,19 +2273,15 @@ export const RequestRecoveryEmailResponse: MessageType<RequestRecoveryEmailRespo
 export interface RecoverVerifyRequest {
   /**
    * Token is the recovery token from the email link.
-   *
-   * @generated from field: string token = 1;
    */
   token?: string
 }
 
 export const RecoverVerifyRequest: MessageType<RecoverVerifyRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RecoverVerifyRequest',
-    fields: [
-      { no: 1, name: 'token', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RecoverVerifyRequest>(
+    's4wave.provider.spacewave.RecoverVerifyRequest',
+    () => [[1, 'token', 9]],
+  )
 
 /**
  * RecoverVerifyResponse contains the account info for a valid recovery token.
@@ -3035,26 +2291,22 @@ export const RecoverVerifyRequest: MessageType<RecoverVerifyRequest> =
 export interface RecoverVerifyResponse {
   /**
    * AccountId is the account identifier.
-   *
-   * @generated from field: string account_id = 1;
    */
   accountId?: string
   /**
    * EntityId is the entity identifier (username).
-   *
-   * @generated from field: string entity_id = 2;
    */
   entityId?: string
 }
 
 export const RecoverVerifyResponse: MessageType<RecoverVerifyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RecoverVerifyResponse',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RecoverVerifyResponse>(
+    's4wave.provider.spacewave.RecoverVerifyResponse',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'entity_id', 9],
+    ],
+  )
 
 /**
  * RecoverExecuteRequest completes account recovery.
@@ -3064,49 +2316,39 @@ export const RecoverVerifyResponse: MessageType<RecoverVerifyResponse> =
 export interface RecoverExecuteRequest {
   /**
    * Token is the recovery token.
-   *
-   * @generated from field: string token = 1;
    */
   token?: string
   /**
    * Username is the account username for KDF.
-   *
-   * @generated from field: string username = 2;
    */
   username?: string
   /**
    * NewPassword is the new password for key derivation.
-   *
-   * @generated from field: string new_password = 3;
    */
   newPassword?: string
   /**
    * RemovePeerId is the base58 peer ID of the old keypair to remove.
    * If empty, only adds the new keypair without removing any.
-   *
-   * @generated from field: string remove_peer_id = 4;
    */
   removePeerId?: string
   /**
    * AccountId is the account ID from the verify step, included in
    * the recovery signing payload to prevent cross-account replay.
-   *
-   * @generated from field: string account_id = 5;
    */
   accountId?: string
 }
 
 export const RecoverExecuteRequest: MessageType<RecoverExecuteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RecoverExecuteRequest',
-    fields: [
-      { no: 1, name: 'token', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'new_password', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'remove_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RecoverExecuteRequest>(
+    's4wave.provider.spacewave.RecoverExecuteRequest',
+    () => [
+      [1, 'token', 9],
+      [2, 'username', 9],
+      [3, 'new_password', 9],
+      [4, 'remove_peer_id', 9],
+      [5, 'account_id', 9],
+    ],
+  )
 
 /**
  * RecoverExecuteResponse is the response for RecoverExecute.
@@ -3116,19 +2358,15 @@ export const RecoverExecuteRequest: MessageType<RecoverExecuteRequest> =
 export interface RecoverExecuteResponse {
   /**
    * PeerId is the base58 peer ID of the new keypair.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const RecoverExecuteResponse: MessageType<RecoverExecuteResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RecoverExecuteResponse',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RecoverExecuteResponse>(
+    's4wave.provider.spacewave.RecoverExecuteResponse',
+    () => [[1, 'peer_id', 9]],
+  )
 
 /**
  * ReauthenticateSessionRequest re-authenticates a session whose key became stale.
@@ -3139,72 +2377,38 @@ export const RecoverExecuteResponse: MessageType<RecoverExecuteResponse> =
 export interface ReauthenticateSessionRequest {
   /**
    * SessionIndex is the local session index to reauthenticate.
-   *
-   * @generated from field: uint32 session_index = 1;
    */
   sessionIndex?: number
   /**
    * EntityId is the account username for password-based KDF.
-   *
-   * @generated from field: string entity_id = 4;
    */
   entityId?: string
   /**
    * TurnstileToken is the Cloudflare Turnstile verification token.
-   *
-   * @generated from field: string turnstile_token = 5;
    */
   turnstileToken?: string
-
   /**
    * Credential is the entity credential for account ownership verification.
    *
    * @generated from oneof s4wave.provider.spacewave.ReauthenticateSessionRequest.credential
    */
   credential?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * @generated from field: s4wave.provider.spacewave.PasswordCredential password = 2;
-         */
-        value: PasswordCredential
-        case: 'password'
-      }
-    | {
-        /**
-         * @generated from field: s4wave.provider.spacewave.PemCredential pem = 3;
-         */
-        value: PemCredential
-        case: 'pem'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: PasswordCredential; case: 'password' }
+    | { value: PemCredential; case: 'pem' }
 }
 
 export const ReauthenticateSessionRequest: MessageType<ReauthenticateSessionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ReauthenticateSessionRequest',
-    fields: [
-      { no: 1, name: 'session_index', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 2,
-        name: 'password',
-        kind: 'message',
-        T: PasswordCredential,
-        oneof: 'credential',
-      },
-      {
-        no: 3,
-        name: 'pem',
-        kind: 'message',
-        T: PemCredential,
-        oneof: 'credential',
-      },
-      { no: 4, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'turnstile_token', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReauthenticateSessionRequest>(
+    's4wave.provider.spacewave.ReauthenticateSessionRequest',
+    () => [
+      [1, 'session_index', 13],
+      [2, 'password', 11, 0, PasswordCredential.codec, 'credential'],
+      [3, 'pem', 11, 0, PemCredential.codec, 'credential'],
+      [4, 'entity_id', 9],
+      [5, 'turnstile_token', 9],
+    ],
+  )
 
 /**
  * ReauthenticateSessionResponse is the response for ReauthenticateSession.
@@ -3214,24 +2418,15 @@ export const ReauthenticateSessionRequest: MessageType<ReauthenticateSessionRequ
 export interface ReauthenticateSessionResponse {
   /**
    * AccountStatus is the updated account status after reauthentication.
-   *
-   * @generated from field: provider.ProviderAccountStatus account_status = 1;
    */
   accountStatus?: ProviderAccountStatus
 }
 
 export const ReauthenticateSessionResponse: MessageType<ReauthenticateSessionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ReauthenticateSessionResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'account_status',
-        kind: 'enum',
-        T: ProviderAccountStatus_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReauthenticateSessionResponse>(
+    's4wave.provider.spacewave.ReauthenticateSessionResponse',
+    () => [[1, 'account_status', 14, 0, ProviderAccountStatus_Enum]],
+  )
 
 /**
  * ResetSessionRequest resets a PIN-locked session.
@@ -3241,26 +2436,22 @@ export const ReauthenticateSessionResponse: MessageType<ReauthenticateSessionRes
 export interface ResetSessionRequest {
   /**
    * SessionIdx is the index of the session to reset.
-   *
-   * @generated from field: uint32 session_idx = 1;
    */
   sessionIdx?: number
   /**
    * Credential is the entity signing credential for account ownership verification.
-   *
-   * @generated from field: session.EntityCredential credential = 2;
    */
   credential?: EntityCredential
 }
 
 export const ResetSessionRequest: MessageType<ResetSessionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ResetSessionRequest',
-    fields: [
-      { no: 1, name: 'session_idx', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'credential', kind: 'message', T: () => EntityCredential },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResetSessionRequest>(
+    's4wave.provider.spacewave.ResetSessionRequest',
+    () => [
+      [1, 'session_idx', 13],
+      [2, 'credential', 11, 0, EntityCredential.codec],
+    ],
+  )
 
 /**
  * ResetSessionResponse is the response for ResetSession.
@@ -3270,9 +2461,9 @@ export const ResetSessionRequest: MessageType<ResetSessionRequest> =
 export interface ResetSessionResponse {}
 
 export const ResetSessionResponse: MessageType<ResetSessionResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ResetSessionResponse>(
+  /* @__PURE__ */ createMessageType<ResetSessionResponse>(
     's4wave.provider.spacewave.ResetSessionResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -3283,9 +2474,9 @@ export const ResetSessionResponse: MessageType<ResetSessionResponse> =
 export interface CreateLinkedLocalSessionRequest {}
 
 export const CreateLinkedLocalSessionRequest: MessageType<CreateLinkedLocalSessionRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CreateLinkedLocalSessionRequest>(
+  /* @__PURE__ */ createMessageType<CreateLinkedLocalSessionRequest>(
     's4wave.provider.spacewave.CreateLinkedLocalSessionRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3296,24 +2487,15 @@ export const CreateLinkedLocalSessionRequest: MessageType<CreateLinkedLocalSessi
 export interface CreateLinkedLocalSessionResponse {
   /**
    * SessionListEntry is the created local session entry.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
 }
 
 export const CreateLinkedLocalSessionResponse: MessageType<CreateLinkedLocalSessionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateLinkedLocalSessionResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateLinkedLocalSessionResponse>(
+    's4wave.provider.spacewave.CreateLinkedLocalSessionResponse',
+    () => [[1, 'session_list_entry', 11, 0, SessionListEntry.codec]],
+  )
 
 /**
  * GetLinkedLocalSessionRequest is the request for GetLinkedLocalSession.
@@ -3323,9 +2505,9 @@ export const CreateLinkedLocalSessionResponse: MessageType<CreateLinkedLocalSess
 export interface GetLinkedLocalSessionRequest {}
 
 export const GetLinkedLocalSessionRequest: MessageType<GetLinkedLocalSessionRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetLinkedLocalSessionRequest>(
+  /* @__PURE__ */ createMessageType<GetLinkedLocalSessionRequest>(
     's4wave.provider.spacewave.GetLinkedLocalSessionRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3336,26 +2518,22 @@ export const GetLinkedLocalSessionRequest: MessageType<GetLinkedLocalSessionRequ
 export interface GetLinkedLocalSessionResponse {
   /**
    * Found indicates whether a linked local session exists.
-   *
-   * @generated from field: bool found = 1;
    */
   found?: boolean
   /**
    * SessionIndex is the session index of the linked local session.
-   *
-   * @generated from field: uint32 session_index = 2;
    */
   sessionIndex?: number
 }
 
 export const GetLinkedLocalSessionResponse: MessageType<GetLinkedLocalSessionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetLinkedLocalSessionResponse',
-    fields: [
-      { no: 1, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'session_index', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetLinkedLocalSessionResponse>(
+    's4wave.provider.spacewave.GetLinkedLocalSessionResponse',
+    () => [
+      [1, 'found', 8],
+      [2, 'session_index', 13],
+    ],
+  )
 
 /**
  * GetLinkedCloudSessionRequest is the request for GetLinkedCloudSession.
@@ -3365,9 +2543,9 @@ export const GetLinkedLocalSessionResponse: MessageType<GetLinkedLocalSessionRes
 export interface GetLinkedCloudSessionRequest {}
 
 export const GetLinkedCloudSessionRequest: MessageType<GetLinkedCloudSessionRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetLinkedCloudSessionRequest>(
+  /* @__PURE__ */ createMessageType<GetLinkedCloudSessionRequest>(
     's4wave.provider.spacewave.GetLinkedCloudSessionRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3378,40 +2556,29 @@ export const GetLinkedCloudSessionRequest: MessageType<GetLinkedCloudSessionRequ
 export interface GetLinkedCloudSessionResponse {
   /**
    * Found indicates whether a linked cloud session exists.
-   *
-   * @generated from field: bool found = 1;
    */
   found?: boolean
   /**
    * SessionIndex is the session index of the linked cloud session.
-   *
-   * @generated from field: uint32 session_index = 2;
    */
   sessionIndex?: number
   /**
    * LocalSessionEmpty indicates the local session has no SharedObjects or
    * BlockStores. When true, the upgrade flow can skip migration and delete
    * the local account directly.
-   *
-   * @generated from field: bool local_session_empty = 3;
    */
   localSessionEmpty?: boolean
 }
 
 export const GetLinkedCloudSessionResponse: MessageType<GetLinkedCloudSessionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetLinkedCloudSessionResponse',
-    fields: [
-      { no: 1, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'session_index', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 3,
-        name: 'local_session_empty',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetLinkedCloudSessionResponse>(
+    's4wave.provider.spacewave.GetLinkedCloudSessionResponse',
+    () => [
+      [1, 'found', 8],
+      [2, 'session_index', 13],
+      [3, 'local_session_empty', 8],
+    ],
+  )
 
 /**
  * EnrollForHandoffRequest registers the receiving client's independent Session key.
@@ -3421,33 +2588,27 @@ export const GetLinkedCloudSessionResponse: MessageType<GetLinkedCloudSessionRes
 export interface EnrollForHandoffRequest {
   /**
    * DevicePublicKey is the Ed25519 public key from the HandoffRequest.
-   *
-   * @generated from field: bytes device_public_key = 1;
    */
   devicePublicKey?: Uint8Array
   /**
    * SessionNonce is the ULID that keys the AuthSessionDO.
-   *
-   * @generated from field: string session_nonce = 2;
    */
   sessionNonce?: string
   /**
    * DeviceName is the label for the receiving Session.
-   *
-   * @generated from field: string device_name = 3;
    */
   deviceName?: string
 }
 
 export const EnrollForHandoffRequest: MessageType<EnrollForHandoffRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.EnrollForHandoffRequest',
-    fields: [
-      { no: 1, name: 'device_public_key', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'session_nonce', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'device_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnrollForHandoffRequest>(
+    's4wave.provider.spacewave.EnrollForHandoffRequest',
+    () => [
+      [1, 'device_public_key', 12],
+      [2, 'session_nonce', 9],
+      [3, 'device_name', 9],
+    ],
+  )
 
 /**
  * EnrollForHandoffResponse identifies the receiving Session's account attachment.
@@ -3457,33 +2618,27 @@ export const EnrollForHandoffRequest: MessageType<EnrollForHandoffRequest> =
 export interface EnrollForHandoffResponse {
   /**
    * AccountId is the cloud account ULID.
-   *
-   * @generated from field: string account_id = 2;
    */
   accountId?: string
   /**
    * EntityId is the cloud username.
-   *
-   * @generated from field: string entity_id = 3;
    */
   entityId?: string
   /**
    * SessionPeerId is the newly authorized receiving key.
-   *
-   * @generated from field: string session_peer_id = 4;
    */
   sessionPeerId?: string
 }
 
 export const EnrollForHandoffResponse: MessageType<EnrollForHandoffResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.EnrollForHandoffResponse',
-    fields: [
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnrollForHandoffResponse>(
+    's4wave.provider.spacewave.EnrollForHandoffResponse',
+    () => [
+      [2, 'account_id', 9],
+      [3, 'entity_id', 9],
+      [4, 'session_peer_id', 9],
+    ],
+  )
 
 /**
  * BillingAccountInfo contains billing account state.
@@ -3493,109 +2648,67 @@ export const EnrollForHandoffResponse: MessageType<EnrollForHandoffResponse> =
 export interface BillingAccountInfo {
   /**
    * Id is the billing account ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Status is the current billing status.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingStatus status = 2;
    */
   status?: BillingStatus
   /**
    * BillingInterval is month or year.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingInterval billing_interval = 3;
    */
   billingInterval?: BillingInterval
   /**
    * PastDueSince is when past_due started (ms).
-   *
-   * @generated from field: int64 past_due_since = 4;
    */
   pastDueSince?: bigint
   /**
    * CancelAt is when subscription ends (ms).
-   *
-   * @generated from field: int64 cancel_at = 5;
    */
   cancelAt?: bigint
   /**
    * CurrentPeriodEnd is the period end (ms).
-   *
-   * @generated from field: int64 current_period_end = 6;
    */
   currentPeriodEnd?: bigint
   /**
    * LifecycleState is the canonical product lifecycle state.
-   *
-   * @generated from field: s4wave.provider.spacewave.AccountLifecycleState lifecycle_state = 7;
    */
   lifecycleState?: AccountLifecycleState
   /**
    * DeleteAt is the next scheduled deletion/grace deadline (ms), if any.
-   *
-   * @generated from field: int64 delete_at = 8;
    */
   deleteAt?: bigint
   /**
    * LifecycleUpdatedAt is when the lifecycle state last changed (ms).
-   *
-   * @generated from field: int64 lifecycle_updated_at = 9;
    */
   lifecycleUpdatedAt?: bigint
   /**
    * DeletedAt is when the account became logically deleted (ms), if any.
-   *
-   * @generated from field: int64 deleted_at = 10;
    */
   deletedAt?: bigint
   /**
    * DisplayName is the user-set label for the billing account.
-   *
-   * @generated from field: string display_name = 11;
    */
   displayName?: string
 }
 
 export const BillingAccountInfo: MessageType<BillingAccountInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.BillingAccountInfo',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'status', kind: 'enum', T: BillingStatus_Enum },
-      {
-        no: 3,
-        name: 'billing_interval',
-        kind: 'enum',
-        T: BillingInterval_Enum,
-      },
-      { no: 4, name: 'past_due_since', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 5, name: 'cancel_at', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 6,
-        name: 'current_period_end',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      {
-        no: 7,
-        name: 'lifecycle_state',
-        kind: 'enum',
-        T: AccountLifecycleState_Enum,
-      },
-      { no: 8, name: 'delete_at', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 9,
-        name: 'lifecycle_updated_at',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      { no: 10, name: 'deleted_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 11, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BillingAccountInfo>(
+    's4wave.provider.spacewave.BillingAccountInfo',
+    () => [
+      [1, 'id', 9],
+      [2, 'status', 14, 0, BillingStatus_Enum],
+      [3, 'billing_interval', 14, 0, BillingInterval_Enum],
+      [4, 'past_due_since', 3],
+      [5, 'cancel_at', 3],
+      [6, 'current_period_end', 3],
+      [7, 'lifecycle_state', 14, 0, AccountLifecycleState_Enum],
+      [8, 'delete_at', 3],
+      [9, 'lifecycle_updated_at', 3],
+      [10, 'deleted_at', 3],
+      [11, 'display_name', 9],
+    ],
+  )
 
 /**
  * BillingUsageInfo contains the payer's usage, period and accepted prices.
@@ -3605,146 +2718,80 @@ export const BillingAccountInfo: MessageType<BillingAccountInfo> =
 export interface BillingUsageInfo {
   /**
    * StorageBytes is the resident storage in bytes.
-   *
-   * @generated from field: double storage_bytes = 1;
    */
   storageBytes?: number
   /**
    * StorageBaselineBytes is the resident storage the monthly price includes.
-   *
-   * @generated from field: double storage_baseline_bytes = 2;
    */
   storageBaselineBytes?: number
   /**
    * WriteOps is the number of pack writes this period, not billed.
-   *
-   * @generated from field: int64 write_ops = 3;
    */
   writeOps?: bigint
   /**
    * ReadOps is the number of read grants this period, not billed.
-   *
-   * @generated from field: int64 read_ops = 5;
    */
   readOps?: bigint
   /**
    * UsageMeteredThroughAt is the Spacewave usage ledger freshness timestamp
    * in Unix epoch milliseconds.
-   *
-   * @generated from field: int64 usage_metered_through_at = 13;
    */
   usageMeteredThroughAt?: bigint
   /**
    * OverageLimitCents is the customer's recurring extra-spending maximum.
-   *
-   * @generated from field: uint32 overage_limit_cents = 14;
    */
   overageLimitCents?: number
   /**
    * AccruedOverageMicrodollars is the storage overage charged so far this
    * period.
-   *
-   * @generated from field: int64 accrued_overage_microdollars = 15;
    */
   accruedOverageMicrodollars?: bigint
   /**
    * CurrentPeriodStart is the subscription-period start in Unix milliseconds.
-   *
-   * @generated from field: int64 current_period_start = 16;
    */
   currentPeriodStart?: bigint
   /**
    * CurrentPeriodEnd is the subscription-period end in Unix milliseconds.
-   *
-   * @generated from field: int64 current_period_end = 17;
    */
   currentPeriodEnd?: bigint
   /**
    * OfferVersion identifies the applied offer.
-   *
-   * @generated from field: string offer_version = 19;
    */
   offerVersion?: string
   /**
    * MonthlyPriceCents is the accepted recurring base price before tax.
-   *
-   * @generated from field: uint32 monthly_price_cents = 20;
    */
   monthlyPriceCents?: number
   /**
    * PolicyVersion identifies the policy applying to the current offer.
-   *
-   * @generated from field: string policy_version = 23;
    */
   policyVersion?: string
   /**
    * StorageMicrodollarsPerGibMonth is the accepted price of one GiB-month of
    * resident storage above the included storage.
-   *
-   * @generated from field: uint32 storage_microdollars_per_gib_month = 24;
    */
   storageMicrodollarsPerGibMonth?: number
 }
 
 export const BillingUsageInfo: MessageType<BillingUsageInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.BillingUsageInfo',
-    fields: [
-      { no: 1, name: 'storage_bytes', kind: 'scalar', T: ScalarType.DOUBLE },
-      {
-        no: 2,
-        name: 'storage_baseline_bytes',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      { no: 3, name: 'write_ops', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 5, name: 'read_ops', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 13,
-        name: 'usage_metered_through_at',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      {
-        no: 14,
-        name: 'overage_limit_cents',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 15,
-        name: 'accrued_overage_microdollars',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      {
-        no: 16,
-        name: 'current_period_start',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      {
-        no: 17,
-        name: 'current_period_end',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      { no: 19, name: 'offer_version', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 20,
-        name: 'monthly_price_cents',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 23, name: 'policy_version', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 24,
-        name: 'storage_microdollars_per_gib_month',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BillingUsageInfo>(
+    's4wave.provider.spacewave.BillingUsageInfo',
+    () => [
+      [1, 'storage_bytes', 1],
+      [2, 'storage_baseline_bytes', 1],
+      [3, 'write_ops', 3],
+      [5, 'read_ops', 3],
+      [13, 'usage_metered_through_at', 3],
+      [14, 'overage_limit_cents', 13],
+      [15, 'accrued_overage_microdollars', 3],
+      [16, 'current_period_start', 3],
+      [17, 'current_period_end', 3],
+      [19, 'offer_version', 9],
+      [20, 'monthly_price_cents', 13],
+      [23, 'policy_version', 9],
+      [24, 'storage_microdollars_per_gib_month', 13],
+    ],
+  )
 
 /**
  * BillingConsent captures the customer's affirmative offer and spending choice.
@@ -3754,52 +2801,37 @@ export const BillingUsageInfo: MessageType<BillingUsageInfo> =
 export interface BillingConsent {
   /**
    * OfferVersion is the exact offer displayed before acceptance.
-   *
-   * @generated from field: string offer_version = 1;
    */
   offerVersion?: string
   /**
    * PolicyVersion is the displayed service-policy revision.
-   *
-   * @generated from field: string policy_version = 2;
    */
   policyVersion?: string
   /**
    * RenewalAccepted authorizes the monthly subscription to renew until canceled.
-   *
-   * @generated from field: bool renewal_accepted = 3;
    */
   renewalAccepted?: boolean
   /**
    * OverageLimitCents selects one of the offer's spending limits per period.
-   *
-   * @generated from field: uint32 overage_limit_cents = 4;
    */
   overageLimitCents?: number
   /**
    * OverageAccepted expressly authorizes the displayed storage rate.
-   *
-   * @generated from field: bool overage_accepted = 5;
    */
   overageAccepted?: boolean
 }
 
 export const BillingConsent: MessageType<BillingConsent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.BillingConsent',
-    fields: [
-      { no: 1, name: 'offer_version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'policy_version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'renewal_accepted', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 4,
-        name: 'overage_limit_cents',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 5, name: 'overage_accepted', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BillingConsent>(
+    's4wave.provider.spacewave.BillingConsent',
+    () => [
+      [1, 'offer_version', 9],
+      [2, 'policy_version', 9],
+      [3, 'renewal_accepted', 8],
+      [4, 'overage_limit_cents', 13],
+      [5, 'overage_accepted', 8],
+    ],
+  )
 
 /**
  * @generated from message s4wave.provider.spacewave.CreateCheckoutSessionRequest
@@ -3807,58 +2839,38 @@ export const BillingConsent: MessageType<BillingConsent> =
 export interface CreateCheckoutSessionRequest {
   /**
    * SuccessUrl is the URL to redirect to after successful checkout.
-   *
-   * @generated from field: string success_url = 1;
    */
   successUrl?: string
   /**
    * CancelUrl is the URL to redirect to if checkout is canceled.
-   *
-   * @generated from field: string cancel_url = 2;
    */
   cancelUrl?: string
   /**
    * BillingInterval must select monthly billing.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingInterval billing_interval = 3;
    */
   billingInterval?: BillingInterval
   /**
    * BillingAccountId selects a specific billing account to check out. Empty
    * falls back to the caller's single managed BA (legacy default).
-   *
-   * @generated from field: string billing_account_id = 5;
    */
   billingAccountId?: string
   /**
    * Consent records the terms affirmatively accepted before checkout.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingConsent consent = 6;
    */
   consent?: BillingConsent
 }
 
 export const CreateCheckoutSessionRequest: MessageType<CreateCheckoutSessionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateCheckoutSessionRequest',
-    fields: [
-      { no: 1, name: 'success_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'cancel_url', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'billing_interval',
-        kind: 'enum',
-        T: BillingInterval_Enum,
-      },
-      {
-        no: 5,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 6, name: 'consent', kind: 'message', T: BillingConsent },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateCheckoutSessionRequest>(
+    's4wave.provider.spacewave.CreateCheckoutSessionRequest',
+    () => [
+      [1, 'success_url', 9],
+      [2, 'cancel_url', 9],
+      [3, 'billing_interval', 14, 0, BillingInterval_Enum],
+      [5, 'billing_account_id', 9],
+      [6, 'consent', 11, 0, BillingConsent.codec],
+    ],
+  )
 
 /**
  * CreateCheckoutSessionResponse is the response for CreateCheckoutSession.
@@ -3869,33 +2881,27 @@ export const CreateCheckoutSessionRequest: MessageType<CreateCheckoutSessionRequ
 export interface CreateCheckoutSessionResponse {
   /**
    * CheckoutUrl is the Stripe Checkout URL for redirect.
-   *
-   * @generated from field: string checkout_url = 1;
    */
   checkoutUrl?: string
   /**
    * WsTicket is a short-lived JWT for connecting to the checkout status WebSocket.
-   *
-   * @generated from field: string ws_ticket = 2;
    */
   wsTicket?: string
   /**
    * Status is the checkout attempt status (pending, completed, expired).
-   *
-   * @generated from field: s4wave.provider.spacewave.CheckoutStatus status = 3;
    */
   status?: CheckoutStatus
 }
 
 export const CreateCheckoutSessionResponse: MessageType<CreateCheckoutSessionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateCheckoutSessionResponse',
-    fields: [
-      { no: 1, name: 'checkout_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'ws_ticket', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'status', kind: 'enum', T: CheckoutStatus_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateCheckoutSessionResponse>(
+    's4wave.provider.spacewave.CreateCheckoutSessionResponse',
+    () => [
+      [1, 'checkout_url', 9],
+      [2, 'ws_ticket', 9],
+      [3, 'status', 14, 0, CheckoutStatus_Enum],
+    ],
+  )
 
 /**
  * CancelCheckoutSessionRequest cancels a pending checkout.
@@ -3905,9 +2911,9 @@ export const CreateCheckoutSessionResponse: MessageType<CreateCheckoutSessionRes
 export interface CancelCheckoutSessionRequest {}
 
 export const CancelCheckoutSessionRequest: MessageType<CancelCheckoutSessionRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CancelCheckoutSessionRequest>(
+  /* @__PURE__ */ createMessageType<CancelCheckoutSessionRequest>(
     's4wave.provider.spacewave.CancelCheckoutSessionRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3920,19 +2926,15 @@ export interface CancelCheckoutSessionResponse {
    * Status is 'canceled' if the checkout was canceled, or 'completed' if the
    * subscription activated during the race window before the cancel reached
    * Stripe.
-   *
-   * @generated from field: s4wave.provider.spacewave.CheckoutStatus status = 1;
    */
   status?: CheckoutStatus
 }
 
 export const CancelCheckoutSessionResponse: MessageType<CancelCheckoutSessionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CancelCheckoutSessionResponse',
-    fields: [
-      { no: 1, name: 'status', kind: 'enum', T: CheckoutStatus_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CancelCheckoutSessionResponse>(
+    's4wave.provider.spacewave.CancelCheckoutSessionResponse',
+    () => [[1, 'status', 14, 0, CheckoutStatus_Enum]],
+  )
 
 /**
  * GetSubscriptionStatusRequest requests the current subscription status.
@@ -3942,9 +2944,9 @@ export const CancelCheckoutSessionResponse: MessageType<CancelCheckoutSessionRes
 export interface GetSubscriptionStatusRequest {}
 
 export const GetSubscriptionStatusRequest: MessageType<GetSubscriptionStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetSubscriptionStatusRequest>(
+  /* @__PURE__ */ createMessageType<GetSubscriptionStatusRequest>(
     's4wave.provider.spacewave.GetSubscriptionStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3955,31 +2957,22 @@ export const GetSubscriptionStatusRequest: MessageType<GetSubscriptionStatusRequ
 export interface GetSubscriptionStatusResponse {
   /**
    * SubscriptionStatus is the current subscription status.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingStatus subscription_status = 1;
    */
   subscriptionStatus?: BillingStatus
   /**
    * CancelAt is the cancellation timestamp in milliseconds, if applicable.
-   *
-   * @generated from field: int64 cancel_at = 2;
    */
   cancelAt?: bigint
 }
 
 export const GetSubscriptionStatusResponse: MessageType<GetSubscriptionStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetSubscriptionStatusResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'subscription_status',
-        kind: 'enum',
-        T: BillingStatus_Enum,
-      },
-      { no: 2, name: 'cancel_at', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSubscriptionStatusResponse>(
+    's4wave.provider.spacewave.GetSubscriptionStatusResponse',
+    () => [
+      [1, 'subscription_status', 14, 0, BillingStatus_Enum],
+      [2, 'cancel_at', 3],
+    ],
+  )
 
 /**
  * WatchSubscriptionStatusRequest is the request for WatchSubscriptionStatus.
@@ -3989,9 +2982,9 @@ export const GetSubscriptionStatusResponse: MessageType<GetSubscriptionStatusRes
 export interface WatchSubscriptionStatusRequest {}
 
 export const WatchSubscriptionStatusRequest: MessageType<WatchSubscriptionStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSubscriptionStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchSubscriptionStatusRequest>(
     's4wave.provider.spacewave.WatchSubscriptionStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -4003,24 +2996,15 @@ export const WatchSubscriptionStatusRequest: MessageType<WatchSubscriptionStatus
 export interface WatchSubscriptionStatusResponse {
   /**
    * BillingAccount is the billing account state.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingAccountInfo billing_account = 1;
    */
   billingAccount?: BillingAccountInfo
 }
 
 export const WatchSubscriptionStatusResponse: MessageType<WatchSubscriptionStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WatchSubscriptionStatusResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account',
-        kind: 'message',
-        T: BillingAccountInfo,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchSubscriptionStatusResponse>(
+    's4wave.provider.spacewave.WatchSubscriptionStatusResponse',
+    () => [[1, 'billing_account', 11, 0, BillingAccountInfo.codec]],
+  )
 
 /**
  * WatchBillingStateRequest is the request for WatchBillingState.
@@ -4030,24 +3014,15 @@ export const WatchSubscriptionStatusResponse: MessageType<WatchSubscriptionStatu
 export interface WatchBillingStateRequest {
   /**
    * BillingAccountId overrides the personal billing account when set.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
 }
 
 export const WatchBillingStateRequest: MessageType<WatchBillingStateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WatchBillingStateRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchBillingStateRequest>(
+    's4wave.provider.spacewave.WatchBillingStateRequest',
+    () => [[1, 'billing_account_id', 9]],
+  )
 
 /**
  * WatchBillingStateResponse is the combined watched billing snapshot.
@@ -4057,31 +3032,22 @@ export const WatchBillingStateRequest: MessageType<WatchBillingStateRequest> =
 export interface WatchBillingStateResponse {
   /**
    * BillingAccount is the billing account state.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingAccountInfo billing_account = 1;
    */
   billingAccount?: BillingAccountInfo
   /**
    * Usage is the current period usage.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingUsageInfo usage = 2;
    */
   usage?: BillingUsageInfo
 }
 
 export const WatchBillingStateResponse: MessageType<WatchBillingStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WatchBillingStateResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account',
-        kind: 'message',
-        T: BillingAccountInfo,
-      },
-      { no: 2, name: 'usage', kind: 'message', T: BillingUsageInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchBillingStateResponse>(
+    's4wave.provider.spacewave.WatchBillingStateResponse',
+    () => [
+      [1, 'billing_account', 11, 0, BillingAccountInfo.codec],
+      [2, 'usage', 11, 0, BillingUsageInfo.codec],
+    ],
+  )
 
 /**
  * WatchCheckoutStatusRequest is the request for WatchCheckoutStatus.
@@ -4091,9 +3057,9 @@ export const WatchBillingStateResponse: MessageType<WatchBillingStateResponse> =
 export interface WatchCheckoutStatusRequest {}
 
 export const WatchCheckoutStatusRequest: MessageType<WatchCheckoutStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchCheckoutStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchCheckoutStatusRequest>(
     's4wave.provider.spacewave.WatchCheckoutStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -4105,19 +3071,15 @@ export const WatchCheckoutStatusRequest: MessageType<WatchCheckoutStatusRequest>
 export interface WatchCheckoutStatusResponse {
   /**
    * Status is the current checkout attempt status.
-   *
-   * @generated from field: s4wave.provider.spacewave.CheckoutStatus status = 1;
    */
   status?: CheckoutStatus
 }
 
 export const WatchCheckoutStatusResponse: MessageType<WatchCheckoutStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WatchCheckoutStatusResponse',
-    fields: [
-      { no: 1, name: 'status', kind: 'enum', T: CheckoutStatus_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchCheckoutStatusResponse>(
+    's4wave.provider.spacewave.WatchCheckoutStatusResponse',
+    () => [[1, 'status', 14, 0, CheckoutStatus_Enum]],
+  )
 
 /**
  * WatchOnboardingStatusRequest is the request for WatchOnboardingStatus.
@@ -4127,9 +3089,9 @@ export const WatchCheckoutStatusResponse: MessageType<WatchCheckoutStatusRespons
 export interface WatchOnboardingStatusRequest {}
 
 export const WatchOnboardingStatusRequest: MessageType<WatchOnboardingStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchOnboardingStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchOnboardingStatusRequest>(
     's4wave.provider.spacewave.WatchOnboardingStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -4141,247 +3103,128 @@ export const WatchOnboardingStatusRequest: MessageType<WatchOnboardingStatusRequ
 export interface WatchOnboardingStatusResponse {
   /**
    * HasSubscription indicates an active subscription exists.
-   *
-   * @generated from field: bool has_subscription = 1;
    */
   hasSubscription?: boolean
   /**
    * SubscriptionStatus is the current subscription status.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingStatus subscription_status = 2;
    */
   subscriptionStatus?: BillingStatus
   /**
    * HasLinkedLocal indicates a linked local session exists (cloud context).
-   *
-   * @generated from field: bool has_linked_local = 3;
    */
   hasLinkedLocal?: boolean
   /**
    * LinkedLocalSessionIndex is the local session index.
-   *
-   * @generated from field: uint32 linked_local_session_index = 4;
    */
   linkedLocalSessionIndex?: number
   /**
    * LinkedLocalHasContent indicates the linked local session has SharedObjects.
-   *
-   * @generated from field: bool linked_local_has_content = 5;
    */
   linkedLocalHasContent?: boolean
   /**
    * HasLinkedCloud indicates a linked cloud session exists (local context).
-   *
-   * @generated from field: bool has_linked_cloud = 6;
    */
   hasLinkedCloud?: boolean
   /**
    * LinkedCloudSessionIndex is the cloud session index.
-   *
-   * @generated from field: uint32 linked_cloud_session_index = 7;
    */
   linkedCloudSessionIndex?: number
   /**
    * CheckoutInProgress indicates a checkout is pending.
-   *
-   * @generated from field: bool checkout_in_progress = 8;
    */
   checkoutInProgress?: boolean
   /**
    * CancelAt is the Unix timestamp (ms) when the subscription will cancel, or 0.
-   *
-   * @generated from field: int64 cancel_at = 9;
    */
   cancelAt?: bigint
   /**
    * EmailVerified is true if the account has at least one verified email.
-   *
-   * @generated from field: bool email_verified = 10;
    */
   emailVerified?: boolean
   /**
    * LifecycleState is the canonical product lifecycle state.
-   *
-   * @generated from field: s4wave.provider.spacewave.AccountLifecycleState lifecycle_state = 11;
    */
   lifecycleState?: AccountLifecycleState
   /**
    * DeleteAt is the next scheduled deletion/grace deadline (ms), if any.
-   *
-   * @generated from field: int64 delete_at = 12;
    */
   deleteAt?: bigint
   /**
    * LifecycleUpdatedAt is when the lifecycle state last changed (ms).
-   *
-   * @generated from field: int64 lifecycle_updated_at = 13;
    */
   lifecycleUpdatedAt?: bigint
   /**
    * DeletedAt is when the account became logically deleted (ms), if any.
-   *
-   * @generated from field: int64 deleted_at = 14;
    */
   deletedAt?: bigint
   /**
    * AccountStatus is the current provider account status for this session.
-   *
-   * @generated from field: provider.ProviderAccountStatus account_status = 15;
    */
   accountStatus?: ProviderAccountStatus
   /**
    * ManagedBaCount is the total number of billing accounts the caller manages.
-   *
-   * @generated from field: uint32 managed_ba_count = 16;
    */
   managedBaCount?: number
   /**
    * ManagedActiveBaCount is the subset of managed BAs whose subscription status
    * is active or trialing.
-   *
-   * @generated from field: uint32 managed_active_ba_count = 17;
    */
   managedActiveBaCount?: number
   /**
    * ManagedNoSubscriptionBaCount is the subset of managed BAs whose
    * subscription status is none.
-   *
-   * @generated from field: uint32 managed_no_subscription_ba_count = 18;
    */
   managedNoSubscriptionBaCount?: number
   /**
    * BillingSummaryLoaded indicates subscription status and managed BA counts
    * are definitive enough for onboarding route decisions.
-   *
-   * @generated from field: bool billing_summary_loaded = 19;
    */
   billingSummaryLoaded?: boolean
   /**
    * SelfEnrollmentGateState describes whether the root route should keep
    * loading, show an action screen, or proceed to the dashboard.
-   *
-   * @generated from field: s4wave.provider.spacewave.SelfEnrollmentGateState self_enrollment_gate_state = 20;
    */
   selfEnrollmentGateState?: SelfEnrollmentGateState
   /**
    * SessionSelfEnrollmentGenerationKey identifies the current pending
    * self-enrollment set for skip and interstitial routing.
-   *
-   * @generated from field: string session_self_enrollment_generation_key = 21;
    */
   sessionSelfEnrollmentGenerationKey?: string
   /**
    * SessionSelfEnrollmentCount is the number of shared objects pending
    * self-enrollment for the current session peer.
-   *
-   * @generated from field: uint32 session_self_enrollment_count = 22;
    */
   sessionSelfEnrollmentCount?: number
 }
 
 export const WatchOnboardingStatusResponse: MessageType<WatchOnboardingStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WatchOnboardingStatusResponse',
-    fields: [
-      { no: 1, name: 'has_subscription', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 2,
-        name: 'subscription_status',
-        kind: 'enum',
-        T: BillingStatus_Enum,
-      },
-      { no: 3, name: 'has_linked_local', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 4,
-        name: 'linked_local_session_index',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 5,
-        name: 'linked_local_has_content',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 6, name: 'has_linked_cloud', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 7,
-        name: 'linked_cloud_session_index',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 8,
-        name: 'checkout_in_progress',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 9, name: 'cancel_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 10, name: 'email_verified', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 11,
-        name: 'lifecycle_state',
-        kind: 'enum',
-        T: AccountLifecycleState_Enum,
-      },
-      { no: 12, name: 'delete_at', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 13,
-        name: 'lifecycle_updated_at',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      { no: 14, name: 'deleted_at', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 15,
-        name: 'account_status',
-        kind: 'enum',
-        T: ProviderAccountStatus_Enum,
-      },
-      {
-        no: 16,
-        name: 'managed_ba_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 17,
-        name: 'managed_active_ba_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 18,
-        name: 'managed_no_subscription_ba_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 19,
-        name: 'billing_summary_loaded',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      {
-        no: 20,
-        name: 'self_enrollment_gate_state',
-        kind: 'enum',
-        T: SelfEnrollmentGateState_Enum,
-      },
-      {
-        no: 21,
-        name: 'session_self_enrollment_generation_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 22,
-        name: 'session_self_enrollment_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchOnboardingStatusResponse>(
+    's4wave.provider.spacewave.WatchOnboardingStatusResponse',
+    () => [
+      [1, 'has_subscription', 8],
+      [2, 'subscription_status', 14, 0, BillingStatus_Enum],
+      [3, 'has_linked_local', 8],
+      [4, 'linked_local_session_index', 13],
+      [5, 'linked_local_has_content', 8],
+      [6, 'has_linked_cloud', 8],
+      [7, 'linked_cloud_session_index', 13],
+      [8, 'checkout_in_progress', 8],
+      [9, 'cancel_at', 3],
+      [10, 'email_verified', 8],
+      [11, 'lifecycle_state', 14, 0, AccountLifecycleState_Enum],
+      [12, 'delete_at', 3],
+      [13, 'lifecycle_updated_at', 3],
+      [14, 'deleted_at', 3],
+      [15, 'account_status', 14, 0, ProviderAccountStatus_Enum],
+      [16, 'managed_ba_count', 13],
+      [17, 'managed_active_ba_count', 13],
+      [18, 'managed_no_subscription_ba_count', 13],
+      [19, 'billing_summary_loaded', 8],
+      [20, 'self_enrollment_gate_state', 14, 0, SelfEnrollmentGateState_Enum],
+      [21, 'session_self_enrollment_generation_key', 9],
+      [22, 'session_self_enrollment_count', 13],
+    ],
+  )
 
 /**
  * UnlinkLocalSessionRequest is the request for UnlinkLocalSession.
@@ -4391,9 +3234,9 @@ export const WatchOnboardingStatusResponse: MessageType<WatchOnboardingStatusRes
 export interface UnlinkLocalSessionRequest {}
 
 export const UnlinkLocalSessionRequest: MessageType<UnlinkLocalSessionRequest> =
-  /* @__PURE__ */ createEmptyMessageType<UnlinkLocalSessionRequest>(
+  /* @__PURE__ */ createMessageType<UnlinkLocalSessionRequest>(
     's4wave.provider.spacewave.UnlinkLocalSessionRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -4404,9 +3247,9 @@ export const UnlinkLocalSessionRequest: MessageType<UnlinkLocalSessionRequest> =
 export interface UnlinkLocalSessionResponse {}
 
 export const UnlinkLocalSessionResponse: MessageType<UnlinkLocalSessionResponse> =
-  /* @__PURE__ */ createEmptyMessageType<UnlinkLocalSessionResponse>(
+  /* @__PURE__ */ createMessageType<UnlinkLocalSessionResponse>(
     's4wave.provider.spacewave.UnlinkLocalSessionResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -4417,58 +3260,37 @@ export const UnlinkLocalSessionResponse: MessageType<UnlinkLocalSessionResponse>
 export interface OrganizationInfo {
   /**
    * Id is the organization ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * DisplayName is the user-visible org name.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
   /**
    * Role is the requesting user's role in this org.
-   *
-   * @generated from field: string role = 3;
    */
   role?: string
   /**
    * BillingAccountId is the billing account ULID for the org.
-   *
-   * @generated from field: string billing_account_id = 4;
    */
   billingAccountId?: string
   /**
    * SpaceIds is the list of shared object IDs owned by this org.
-   *
-   * @generated from field: repeated string space_ids = 5;
    */
   spaceIds?: string[]
 }
 
 export const OrganizationInfo: MessageType<OrganizationInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.OrganizationInfo',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'role', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 5,
-        name: 'space_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OrganizationInfo>(
+    's4wave.provider.spacewave.OrganizationInfo',
+    () => [
+      [1, 'id', 9],
+      [2, 'display_name', 9],
+      [3, 'role', 9],
+      [4, 'billing_account_id', 9],
+      [5, 'space_ids', 9, 1],
+    ],
+  )
 
 /**
  * WatchOrganizationsRequest is the request for WatchOrganizations.
@@ -4478,9 +3300,9 @@ export const OrganizationInfo: MessageType<OrganizationInfo> =
 export interface WatchOrganizationsRequest {}
 
 export const WatchOrganizationsRequest: MessageType<WatchOrganizationsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchOrganizationsRequest>(
+  /* @__PURE__ */ createMessageType<WatchOrganizationsRequest>(
     's4wave.provider.spacewave.WatchOrganizationsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -4491,25 +3313,15 @@ export const WatchOrganizationsRequest: MessageType<WatchOrganizationsRequest> =
 export interface WatchOrganizationsResponse {
   /**
    * Organizations is the current list of orgs the user belongs to.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.OrganizationInfo organizations = 1;
    */
   organizations?: OrganizationInfo[]
 }
 
 export const WatchOrganizationsResponse: MessageType<WatchOrganizationsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WatchOrganizationsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'organizations',
-        kind: 'message',
-        T: OrganizationInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchOrganizationsResponse>(
+    's4wave.provider.spacewave.WatchOrganizationsResponse',
+    () => [[1, 'organizations', 11, 1, OrganizationInfo.codec]],
+  )
 
 /**
  * ListOrganizationsRequest is the request for ListOrganizations.
@@ -4519,9 +3331,9 @@ export const WatchOrganizationsResponse: MessageType<WatchOrganizationsResponse>
 export interface ListOrganizationsRequest {}
 
 export const ListOrganizationsRequest: MessageType<ListOrganizationsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ListOrganizationsRequest>(
+  /* @__PURE__ */ createMessageType<ListOrganizationsRequest>(
     's4wave.provider.spacewave.ListOrganizationsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -4532,25 +3344,15 @@ export const ListOrganizationsRequest: MessageType<ListOrganizationsRequest> =
 export interface ListOrganizationsResponse {
   /**
    * Organizations is the list of orgs the user belongs to.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.OrganizationInfo organizations = 1;
    */
   organizations?: OrganizationInfo[]
 }
 
 export const ListOrganizationsResponse: MessageType<ListOrganizationsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ListOrganizationsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'organizations',
-        kind: 'message',
-        T: OrganizationInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListOrganizationsResponse>(
+    's4wave.provider.spacewave.ListOrganizationsResponse',
+    () => [[1, 'organizations', 11, 1, OrganizationInfo.codec]],
+  )
 
 /**
  * GetSpaceMetadataRequest is the request for GetSpaceMetadata.
@@ -4560,19 +3362,15 @@ export const ListOrganizationsResponse: MessageType<ListOrganizationsResponse> =
 export interface GetSpaceMetadataRequest {
   /**
    * SharedObjectId is the shared object ULID.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
 }
 
 export const GetSpaceMetadataRequest: MessageType<GetSpaceMetadataRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetSpaceMetadataRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSpaceMetadataRequest>(
+    's4wave.provider.spacewave.GetSpaceMetadataRequest',
+    () => [[1, 'shared_object_id', 9]],
+  )
 
 /**
  * GetSpaceMetadataResponse is the response for GetSpaceMetadata.
@@ -4582,40 +3380,32 @@ export const GetSpaceMetadataRequest: MessageType<GetSpaceMetadataRequest> =
 export interface GetSpaceMetadataResponse {
   /**
    * OwnerType is the owner principal type ("account" or "organization").
-   *
-   * @generated from field: string owner_type = 1;
    */
   ownerType?: string
   /**
    * DisplayName is the space display name.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
   /**
    * ObjectType is the shared object type.
-   *
-   * @generated from field: string object_type = 3;
    */
   objectType?: string
   /**
    * OwnerId is the owner principal id (account id or organization id).
-   *
-   * @generated from field: string owner_id = 4;
    */
   ownerId?: string
 }
 
 export const GetSpaceMetadataResponse: MessageType<GetSpaceMetadataResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetSpaceMetadataResponse',
-    fields: [
-      { no: 1, name: 'owner_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'object_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'owner_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSpaceMetadataResponse>(
+    's4wave.provider.spacewave.GetSpaceMetadataResponse',
+    () => [
+      [1, 'owner_type', 9],
+      [2, 'display_name', 9],
+      [3, 'object_type', 9],
+      [4, 'owner_id', 9],
+    ],
+  )
 
 /**
  * CreateOrganizationRequest is the request for CreateOrganization.
@@ -4625,19 +3415,15 @@ export const GetSpaceMetadataResponse: MessageType<GetSpaceMetadataResponse> =
 export interface CreateOrganizationRequest {
   /**
    * DisplayName is the user-visible org name.
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
 }
 
 export const CreateOrganizationRequest: MessageType<CreateOrganizationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateOrganizationRequest',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateOrganizationRequest>(
+    's4wave.provider.spacewave.CreateOrganizationRequest',
+    () => [[1, 'display_name', 9]],
+  )
 
 /**
  * CreateOrganizationResponse is the response for CreateOrganization.
@@ -4647,19 +3433,15 @@ export const CreateOrganizationRequest: MessageType<CreateOrganizationRequest> =
 export interface CreateOrganizationResponse {
   /**
    * Organization is the created org info.
-   *
-   * @generated from field: s4wave.provider.spacewave.OrganizationInfo organization = 1;
    */
   organization?: OrganizationInfo
 }
 
 export const CreateOrganizationResponse: MessageType<CreateOrganizationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateOrganizationResponse',
-    fields: [
-      { no: 1, name: 'organization', kind: 'message', T: OrganizationInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateOrganizationResponse>(
+    's4wave.provider.spacewave.CreateOrganizationResponse',
+    () => [[1, 'organization', 11, 0, OrganizationInfo.codec]],
+  )
 
 /**
  * OrgInviteInfo contains info about an org invite.
@@ -4669,54 +3451,42 @@ export const CreateOrganizationResponse: MessageType<CreateOrganizationResponse>
 export interface OrgInviteInfo {
   /**
    * Id is the invite ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Type is the invite type (code, email, link).
-   *
-   * @generated from field: string type = 2;
    */
   type?: string
   /**
    * Token is the invite code/link token.
-   *
-   * @generated from field: string token = 3;
    */
   token?: string
   /**
    * Uses is the current use count.
-   *
-   * @generated from field: int32 uses = 4;
    */
   uses?: number
   /**
    * MaxUses is the max allowed uses (0=unlimited).
-   *
-   * @generated from field: int32 max_uses = 5;
    */
   maxUses?: number
   /**
    * ExpiresAt is the expiry timestamp (0=never).
-   *
-   * @generated from field: int64 expires_at = 6;
    */
   expiresAt?: bigint
 }
 
 export const OrgInviteInfo: MessageType<OrgInviteInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.OrgInviteInfo',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'token', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'uses', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 5, name: 'max_uses', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 6, name: 'expires_at', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OrgInviteInfo>(
+    's4wave.provider.spacewave.OrgInviteInfo',
+    () => [
+      [1, 'id', 9],
+      [2, 'type', 9],
+      [3, 'token', 9],
+      [4, 'uses', 5],
+      [5, 'max_uses', 5],
+      [6, 'expires_at', 3],
+    ],
+  )
 
 /**
  * ResolveUsernameRequest is the request for ResolveUsername.
@@ -4726,40 +3496,32 @@ export const OrgInviteInfo: MessageType<OrgInviteInfo> =
 export interface ResolveUsernameRequest {
   /**
    * Username is the exact Spacewave username being addressed.
-   *
-   * @generated from field: string username = 1;
    */
   username?: string
   /**
    * Purpose is the resolution purpose.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitePurpose purpose = 2;
    */
   purpose?: TargetedInvitePurpose
   /**
    * SpaceId is set when purpose is TARGETED_INVITE_PURPOSE_SPACE.
-   *
-   * @generated from field: string space_id = 3;
    */
   spaceId?: string
   /**
    * OrgId is set when purpose is TARGETED_INVITE_PURPOSE_ORGANIZATION.
-   *
-   * @generated from field: string org_id = 4;
    */
   orgId?: string
 }
 
 export const ResolveUsernameRequest: MessageType<ResolveUsernameRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ResolveUsernameRequest',
-    fields: [
-      { no: 1, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'purpose', kind: 'enum', T: TargetedInvitePurpose_Enum },
-      { no: 3, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResolveUsernameRequest>(
+    's4wave.provider.spacewave.ResolveUsernameRequest',
+    () => [
+      [1, 'username', 9],
+      [2, 'purpose', 14, 0, TargetedInvitePurpose_Enum],
+      [3, 'space_id', 9],
+      [4, 'org_id', 9],
+    ],
+  )
 
 /**
  * ResolveUsernameResponse is the response for ResolveUsername.
@@ -4769,68 +3531,52 @@ export const ResolveUsernameRequest: MessageType<ResolveUsernameRequest> =
 export interface ResolveUsernameResponse {
   /**
    * Found is true only when AccountId is populated.
-   *
-   * @generated from field: bool found = 1;
    */
   found?: boolean
   /**
    * AccountId is the resolved target account id when the actor may see it.
-   *
-   * @generated from field: string account_id = 2;
    */
   accountId?: string
   /**
    * EntityId is the canonical username when AccountId is populated.
-   *
-   * @generated from field: string entity_id = 3;
    */
   entityId?: string
   /**
    * DomainId is the target provider domain when AccountId is populated.
-   *
-   * @generated from field: string domain_id = 4;
    */
   domainId?: string
   /**
    * Relationship is self, org_member, space_member, or none.
-   *
-   * @generated from field: string relationship = 5;
    */
   relationship?: string
   /**
    * CanInvite reports whether the target privacy policy permits addressing.
-   *
-   * @generated from field: bool can_invite = 6;
    */
   canInvite?: boolean
   /**
    * EntityUuid is the stable target entity generation when Found is true.
-   *
-   * @generated from field: string entity_uuid = 7;
    */
   entityUuid?: string
   /**
    * AccountEpoch is the target account epoch when Found is true.
-   *
-   * @generated from field: int64 account_epoch = 8;
    */
   accountEpoch?: bigint
 }
 
 export const ResolveUsernameResponse: MessageType<ResolveUsernameResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ResolveUsernameResponse',
-    fields: [
-      { no: 1, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'domain_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'relationship', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'can_invite', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'entity_uuid', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'account_epoch', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResolveUsernameResponse>(
+    's4wave.provider.spacewave.ResolveUsernameResponse',
+    () => [
+      [1, 'found', 8],
+      [2, 'account_id', 9],
+      [3, 'entity_id', 9],
+      [4, 'domain_id', 9],
+      [5, 'relationship', 9],
+      [6, 'can_invite', 8],
+      [7, 'entity_uuid', 9],
+      [8, 'account_epoch', 3],
+    ],
+  )
 
 /**
  * TargetedInvitationEnvelope is the signed invite body carried through the
@@ -4841,149 +3587,92 @@ export const ResolveUsernameResponse: MessageType<ResolveUsernameResponse> =
 export interface TargetedInvitationEnvelope {
   /**
    * SchemaVersion identifies the envelope wire contract.
-   *
-   * @generated from field: uint32 schema_version = 1;
    */
   schemaVersion?: number
   /**
    * Purpose is the invite purpose bound into the signature.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitePurpose purpose = 2;
    */
   purpose?: TargetedInvitePurpose
   /**
    * ContextId is the Space or organization id bound into the signature.
-   *
-   * @generated from field: string context_id = 3;
    */
   contextId?: string
   /**
    * ActorAccountId is the inviter account id.
-   *
-   * @generated from field: string actor_account_id = 4;
    */
   actorAccountId?: string
   /**
    * ActorEntityUuid is the inviter entity UUID or generation anchor.
-   *
-   * @generated from field: string actor_entity_uuid = 5;
    */
   actorEntityUuid?: string
   /**
    * ActorAccountEpoch is the inviter account epoch at create time.
-   *
-   * @generated from field: int64 actor_account_epoch = 16;
    */
   actorAccountEpoch?: bigint
   /**
    * SignerPeerId is the session peer that signed this envelope.
-   *
-   * @generated from field: string signer_peer_id = 6;
    */
   signerPeerId?: string
   /**
    * TargetAccountId is the resolved recipient account id.
-   *
-   * @generated from field: string target_account_id = 7;
    */
   targetAccountId?: string
   /**
    * TargetEntityId is the resolved recipient username.
-   *
-   * @generated from field: string target_entity_id = 8;
    */
   targetEntityId?: string
   /**
    * TargetEntityUuid is the resolved recipient entity UUID.
-   *
-   * @generated from field: string target_entity_uuid = 9;
    */
   targetEntityUuid?: string
   /**
    * TargetAccountEpoch is the resolved recipient account epoch.
-   *
-   * @generated from field: int64 target_account_epoch = 10;
    */
   targetAccountEpoch?: bigint
   /**
    * Role is the purpose-specific role requested by the inviter.
-   *
-   * @generated from field: string role = 11;
    */
   role?: string
   /**
    * ExpiresAt is the Unix timestamp (ms) when the invite expires.
-   *
-   * @generated from field: int64 expires_at = 12;
    */
   expiresAt?: bigint
   /**
    * Nonce is fresh caller-provided entropy for replay protection.
-   *
-   * @generated from field: bytes nonce = 13;
    */
   nonce?: Uint8Array
   /**
    * Payload is the purpose-specific signed payload.
-   *
-   * @generated from field: bytes payload = 14;
    */
   payload?: Uint8Array
   /**
    * Signature is the signature over this envelope's canonical body.
-   *
-   * @generated from field: bytes signature = 15;
    */
   signature?: Uint8Array
 }
 
 export const TargetedInvitationEnvelope: MessageType<TargetedInvitationEnvelope> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.TargetedInvitationEnvelope',
-    fields: [
-      { no: 1, name: 'schema_version', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'purpose', kind: 'enum', T: TargetedInvitePurpose_Enum },
-      { no: 3, name: 'context_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'actor_account_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'actor_entity_uuid',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 16,
-        name: 'actor_account_epoch',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      { no: 6, name: 'signer_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 7,
-        name: 'target_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 8, name: 'target_entity_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 9,
-        name: 'target_entity_uuid',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 10,
-        name: 'target_account_epoch',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      { no: 11, name: 'role', kind: 'scalar', T: ScalarType.STRING },
-      { no: 12, name: 'expires_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 13, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 14, name: 'payload', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 15, name: 'signature', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TargetedInvitationEnvelope>(
+    's4wave.provider.spacewave.TargetedInvitationEnvelope',
+    () => [
+      [1, 'schema_version', 13],
+      [2, 'purpose', 14, 0, TargetedInvitePurpose_Enum],
+      [3, 'context_id', 9],
+      [4, 'actor_account_id', 9],
+      [5, 'actor_entity_uuid', 9],
+      [6, 'signer_peer_id', 9],
+      [7, 'target_account_id', 9],
+      [8, 'target_entity_id', 9],
+      [9, 'target_entity_uuid', 9],
+      [10, 'target_account_epoch', 3],
+      [11, 'role', 9],
+      [12, 'expires_at', 3],
+      [13, 'nonce', 12],
+      [14, 'payload', 12],
+      [15, 'signature', 12],
+      [16, 'actor_account_epoch', 3],
+    ],
+  )
 
 /**
  * TargetedInvitationInfo is a recipient inbox row.
@@ -4993,137 +3682,87 @@ export const TargetedInvitationEnvelope: MessageType<TargetedInvitationEnvelope>
 export interface TargetedInvitationInfo {
   /**
    * Id is the invitation ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * ActorAccountId is the inviter account id.
-   *
-   * @generated from field: string actor_account_id = 2;
    */
   actorAccountId?: string
   /**
    * TargetAccountId is the recipient account id.
-   *
-   * @generated from field: string target_account_id = 3;
    */
   targetAccountId?: string
   /**
    * TargetEntityId is the recipient username captured at create time.
-   *
-   * @generated from field: string target_entity_id = 4;
    */
   targetEntityId?: string
   /**
    * TargetEntityUuid is the recipient entity UUID captured at create time.
-   *
-   * @generated from field: string target_entity_uuid = 5;
    */
   targetEntityUuid?: string
   /**
    * TargetAccountEpoch is the recipient account epoch captured at create time.
-   *
-   * @generated from field: int64 target_account_epoch = 6;
    */
   targetAccountEpoch?: bigint
   /**
    * Purpose is the invite purpose.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitePurpose purpose = 7;
    */
   purpose?: TargetedInvitePurpose
   /**
    * ContextId is the Space or organization id.
-   *
-   * @generated from field: string context_id = 8;
    */
   contextId?: string
   /**
    * Role is the requested role.
-   *
-   * @generated from field: string role = 9;
    */
   role?: string
   /**
    * Status is pending, revoked, accepted, declined, expired, or failed.
-   *
-   * @generated from field: string status = 10;
    */
   status?: string
   /**
    * EnvelopeHash is the lowercase hex SHA-256 hash of Envelope bytes.
-   *
-   * @generated from field: string envelope_hash = 11;
    */
   envelopeHash?: string
   /**
    * Envelope is the signed envelope bytes for recipient-side verification.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationEnvelope envelope = 12;
    */
   envelope?: TargetedInvitationEnvelope
   /**
    * CreatedAt is the row creation timestamp (ms).
-   *
-   * @generated from field: int64 created_at = 13;
    */
   createdAt?: bigint
   /**
    * UpdatedAt is the row update timestamp (ms).
-   *
-   * @generated from field: int64 updated_at = 14;
    */
   updatedAt?: bigint
   /**
    * ExpiresAt is the Unix timestamp (ms) when the invite expires.
-   *
-   * @generated from field: int64 expires_at = 15;
    */
   expiresAt?: bigint
 }
 
 export const TargetedInvitationInfo: MessageType<TargetedInvitationInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.TargetedInvitationInfo',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'actor_account_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'target_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'target_entity_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'target_entity_uuid',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 6,
-        name: 'target_account_epoch',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      { no: 7, name: 'purpose', kind: 'enum', T: TargetedInvitePurpose_Enum },
-      { no: 8, name: 'context_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'role', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'status', kind: 'scalar', T: ScalarType.STRING },
-      { no: 11, name: 'envelope_hash', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 12,
-        name: 'envelope',
-        kind: 'message',
-        T: TargetedInvitationEnvelope,
-      },
-      { no: 13, name: 'created_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 14, name: 'updated_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 15, name: 'expires_at', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TargetedInvitationInfo>(
+    's4wave.provider.spacewave.TargetedInvitationInfo',
+    () => [
+      [1, 'id', 9],
+      [2, 'actor_account_id', 9],
+      [3, 'target_account_id', 9],
+      [4, 'target_entity_id', 9],
+      [5, 'target_entity_uuid', 9],
+      [6, 'target_account_epoch', 3],
+      [7, 'purpose', 14, 0, TargetedInvitePurpose_Enum],
+      [8, 'context_id', 9],
+      [9, 'role', 9],
+      [10, 'status', 9],
+      [11, 'envelope_hash', 9],
+      [12, 'envelope', 11, 0, TargetedInvitationEnvelope.codec],
+      [13, 'created_at', 3],
+      [14, 'updated_at', 3],
+      [15, 'expires_at', 3],
+    ],
+  )
 
 /**
  * CreateTargetedInvitationRequest is the request for CreateTargetedInvitation.
@@ -5133,71 +3772,47 @@ export const TargetedInvitationInfo: MessageType<TargetedInvitationInfo> =
 export interface CreateTargetedInvitationRequest {
   /**
    * TargetAccountId is the resolved target account id.
-   *
-   * @generated from field: string target_account_id = 1;
    */
   targetAccountId?: string
   /**
    * Purpose is the invite purpose.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitePurpose purpose = 2;
    */
   purpose?: TargetedInvitePurpose
   /**
    * SpaceId is set when purpose is TARGETED_INVITE_PURPOSE_SPACE.
-   *
-   * @generated from field: string space_id = 3;
    */
   spaceId?: string
   /**
    * OrgId is set when purpose is TARGETED_INVITE_PURPOSE_ORGANIZATION.
-   *
-   * @generated from field: string org_id = 4;
    */
   orgId?: string
   /**
    * Role is the requested role.
-   *
-   * @generated from field: string role = 5;
    */
   role?: string
   /**
    * ExpiresAt is the Unix timestamp (ms) when the invite expires.
-   *
-   * @generated from field: int64 expires_at = 6;
    */
   expiresAt?: bigint
   /**
    * Envelope is the signed targeted invitation envelope.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationEnvelope envelope = 7;
    */
   envelope?: TargetedInvitationEnvelope
 }
 
 export const CreateTargetedInvitationRequest: MessageType<CreateTargetedInvitationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateTargetedInvitationRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'target_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'purpose', kind: 'enum', T: TargetedInvitePurpose_Enum },
-      { no: 3, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'role', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'expires_at', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 7,
-        name: 'envelope',
-        kind: 'message',
-        T: TargetedInvitationEnvelope,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateTargetedInvitationRequest>(
+    's4wave.provider.spacewave.CreateTargetedInvitationRequest',
+    () => [
+      [1, 'target_account_id', 9],
+      [2, 'purpose', 14, 0, TargetedInvitePurpose_Enum],
+      [3, 'space_id', 9],
+      [4, 'org_id', 9],
+      [5, 'role', 9],
+      [6, 'expires_at', 3],
+      [7, 'envelope', 11, 0, TargetedInvitationEnvelope.codec],
+    ],
+  )
 
 /**
  * CreateTargetedInvitationResponse is the response for
@@ -5208,19 +3823,15 @@ export const CreateTargetedInvitationRequest: MessageType<CreateTargetedInvitati
 export interface CreateTargetedInvitationResponse {
   /**
    * Invitation is the pending invitation row.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationInfo invitation = 1;
    */
   invitation?: TargetedInvitationInfo
 }
 
 export const CreateTargetedInvitationResponse: MessageType<CreateTargetedInvitationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateTargetedInvitationResponse',
-    fields: [
-      { no: 1, name: 'invitation', kind: 'message', T: TargetedInvitationInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateTargetedInvitationResponse>(
+    's4wave.provider.spacewave.CreateTargetedInvitationResponse',
+    () => [[1, 'invitation', 11, 0, TargetedInvitationInfo.codec]],
+  )
 
 /**
  * CreateSpaceTargetedInvitationByUsernameRequest creates a Space targeted
@@ -5231,41 +3842,32 @@ export const CreateTargetedInvitationResponse: MessageType<CreateTargetedInvitat
 export interface CreateSpaceTargetedInvitationByUsernameRequest {
   /**
    * Username is the exact Spacewave username being addressed.
-   *
-   * @generated from field: string username = 1;
    */
   username?: string
   /**
    * SpaceId is the Space shared object id.
-   *
-   * @generated from field: string space_id = 2;
    */
   spaceId?: string
   /**
    * Role is the Space participant role string ("reader", "writer", etc.).
-   *
-   * @generated from field: string role = 3;
    */
   role?: string
   /**
    * ExpiresAt is the Unix timestamp (ms) when the invite expires.
-   *
-   * @generated from field: int64 expires_at = 4;
    */
   expiresAt?: bigint
 }
 
 export const CreateSpaceTargetedInvitationByUsernameRequest: MessageType<CreateSpaceTargetedInvitationByUsernameRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName:
-      's4wave.provider.spacewave.CreateSpaceTargetedInvitationByUsernameRequest',
-    fields: [
-      { no: 1, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'role', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'expires_at', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateSpaceTargetedInvitationByUsernameRequest>(
+    's4wave.provider.spacewave.CreateSpaceTargetedInvitationByUsernameRequest',
+    () => [
+      [1, 'username', 9],
+      [2, 'space_id', 9],
+      [3, 'role', 9],
+      [4, 'expires_at', 3],
+    ],
+  )
 
 /**
  * CreateSpaceTargetedInvitationByUsernameResponse returns the pending targeted
@@ -5276,20 +3878,15 @@ export const CreateSpaceTargetedInvitationByUsernameRequest: MessageType<CreateS
 export interface CreateSpaceTargetedInvitationByUsernameResponse {
   /**
    * Invitation is the pending invitation row.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationInfo invitation = 1;
    */
   invitation?: TargetedInvitationInfo
 }
 
 export const CreateSpaceTargetedInvitationByUsernameResponse: MessageType<CreateSpaceTargetedInvitationByUsernameResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName:
-      's4wave.provider.spacewave.CreateSpaceTargetedInvitationByUsernameResponse',
-    fields: [
-      { no: 1, name: 'invitation', kind: 'message', T: TargetedInvitationInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateSpaceTargetedInvitationByUsernameResponse>(
+    's4wave.provider.spacewave.CreateSpaceTargetedInvitationByUsernameResponse',
+    () => [[1, 'invitation', 11, 0, TargetedInvitationInfo.codec]],
+  )
 
 /**
  * AcceptSpaceTargetedInvitationRequest accepts a pending Space targeted
@@ -5300,19 +3897,15 @@ export const CreateSpaceTargetedInvitationByUsernameResponse: MessageType<Create
 export interface AcceptSpaceTargetedInvitationRequest {
   /**
    * Id is the targeted invitation ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
 }
 
 export const AcceptSpaceTargetedInvitationRequest: MessageType<AcceptSpaceTargetedInvitationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.AcceptSpaceTargetedInvitationRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptSpaceTargetedInvitationRequest>(
+    's4wave.provider.spacewave.AcceptSpaceTargetedInvitationRequest',
+    () => [[1, 'id', 9]],
+  )
 
 /**
  * AcceptSpaceTargetedInvitationResponse returns the accepted invitation and
@@ -5323,34 +3916,28 @@ export const AcceptSpaceTargetedInvitationRequest: MessageType<AcceptSpaceTarget
 export interface AcceptSpaceTargetedInvitationResponse {
   /**
    * Invitation is the updated invitation row.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationInfo invitation = 1;
    */
   invitation?: TargetedInvitationInfo
   /**
    * SharedObjectId is the invited Space ID.
-   *
-   * @generated from field: string shared_object_id = 2;
    */
   sharedObjectId?: string
   /**
    * JoinResult is accepted, pending_owner_approval, rejected, or
    * owner_must_be_online.
-   *
-   * @generated from field: string join_result = 3;
    */
   joinResult?: string
 }
 
 export const AcceptSpaceTargetedInvitationResponse: MessageType<AcceptSpaceTargetedInvitationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.AcceptSpaceTargetedInvitationResponse',
-    fields: [
-      { no: 1, name: 'invitation', kind: 'message', T: TargetedInvitationInfo },
-      { no: 2, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'join_result', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptSpaceTargetedInvitationResponse>(
+    's4wave.provider.spacewave.AcceptSpaceTargetedInvitationResponse',
+    () => [
+      [1, 'invitation', 11, 0, TargetedInvitationInfo.codec],
+      [2, 'shared_object_id', 9],
+      [3, 'join_result', 9],
+    ],
+  )
 
 /**
  * CreateOrganizationTargetedInvitationByUsernameRequest creates an
@@ -5361,41 +3948,32 @@ export const AcceptSpaceTargetedInvitationResponse: MessageType<AcceptSpaceTarge
 export interface CreateOrganizationTargetedInvitationByUsernameRequest {
   /**
    * Username is the exact Spacewave username being addressed.
-   *
-   * @generated from field: string username = 1;
    */
   username?: string
   /**
    * OrgId is the organization id.
-   *
-   * @generated from field: string org_id = 2;
    */
   orgId?: string
   /**
    * Role is the organization role string. The seed supports "org:member".
-   *
-   * @generated from field: string role = 3;
    */
   role?: string
   /**
    * ExpiresAt is the Unix timestamp (ms) when the invite expires.
-   *
-   * @generated from field: int64 expires_at = 4;
    */
   expiresAt?: bigint
 }
 
 export const CreateOrganizationTargetedInvitationByUsernameRequest: MessageType<CreateOrganizationTargetedInvitationByUsernameRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName:
-      's4wave.provider.spacewave.CreateOrganizationTargetedInvitationByUsernameRequest',
-    fields: [
-      { no: 1, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'role', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'expires_at', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateOrganizationTargetedInvitationByUsernameRequest>(
+    's4wave.provider.spacewave.CreateOrganizationTargetedInvitationByUsernameRequest',
+    () => [
+      [1, 'username', 9],
+      [2, 'org_id', 9],
+      [3, 'role', 9],
+      [4, 'expires_at', 3],
+    ],
+  )
 
 /**
  * CreateOrganizationTargetedInvitationByUsernameResponse returns the pending
@@ -5406,20 +3984,15 @@ export const CreateOrganizationTargetedInvitationByUsernameRequest: MessageType<
 export interface CreateOrganizationTargetedInvitationByUsernameResponse {
   /**
    * Invitation is the pending invitation row.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationInfo invitation = 1;
    */
   invitation?: TargetedInvitationInfo
 }
 
 export const CreateOrganizationTargetedInvitationByUsernameResponse: MessageType<CreateOrganizationTargetedInvitationByUsernameResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName:
-      's4wave.provider.spacewave.CreateOrganizationTargetedInvitationByUsernameResponse',
-    fields: [
-      { no: 1, name: 'invitation', kind: 'message', T: TargetedInvitationInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateOrganizationTargetedInvitationByUsernameResponse>(
+    's4wave.provider.spacewave.CreateOrganizationTargetedInvitationByUsernameResponse',
+    () => [[1, 'invitation', 11, 0, TargetedInvitationInfo.codec]],
+  )
 
 /**
  * AcceptOrganizationTargetedInvitationRequest accepts a pending organization
@@ -5430,20 +4003,15 @@ export const CreateOrganizationTargetedInvitationByUsernameResponse: MessageType
 export interface AcceptOrganizationTargetedInvitationRequest {
   /**
    * Id is the targeted invitation ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
 }
 
 export const AcceptOrganizationTargetedInvitationRequest: MessageType<AcceptOrganizationTargetedInvitationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName:
-      's4wave.provider.spacewave.AcceptOrganizationTargetedInvitationRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptOrganizationTargetedInvitationRequest>(
+    's4wave.provider.spacewave.AcceptOrganizationTargetedInvitationRequest',
+    () => [[1, 'id', 9]],
+  )
 
 /**
  * AcceptOrganizationTargetedInvitationResponse returns the fulfilled
@@ -5454,27 +4022,22 @@ export const AcceptOrganizationTargetedInvitationRequest: MessageType<AcceptOrga
 export interface AcceptOrganizationTargetedInvitationResponse {
   /**
    * Invitation is the fulfilled invitation row.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationInfo invitation = 1;
    */
   invitation?: TargetedInvitationInfo
   /**
    * Organization is the joined organization.
-   *
-   * @generated from field: s4wave.provider.spacewave.OrganizationInfo organization = 2;
    */
   organization?: OrganizationInfo
 }
 
 export const AcceptOrganizationTargetedInvitationResponse: MessageType<AcceptOrganizationTargetedInvitationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName:
-      's4wave.provider.spacewave.AcceptOrganizationTargetedInvitationResponse',
-    fields: [
-      { no: 1, name: 'invitation', kind: 'message', T: TargetedInvitationInfo },
-      { no: 2, name: 'organization', kind: 'message', T: OrganizationInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptOrganizationTargetedInvitationResponse>(
+    's4wave.provider.spacewave.AcceptOrganizationTargetedInvitationResponse',
+    () => [
+      [1, 'invitation', 11, 0, TargetedInvitationInfo.codec],
+      [2, 'organization', 11, 0, OrganizationInfo.codec],
+    ],
+  )
 
 /**
  * ListTargetedInvitationsRequest is the request for ListTargetedInvitations.
@@ -5484,9 +4047,9 @@ export const AcceptOrganizationTargetedInvitationResponse: MessageType<AcceptOrg
 export interface ListTargetedInvitationsRequest {}
 
 export const ListTargetedInvitationsRequest: MessageType<ListTargetedInvitationsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ListTargetedInvitationsRequest>(
+  /* @__PURE__ */ createMessageType<ListTargetedInvitationsRequest>(
     's4wave.provider.spacewave.ListTargetedInvitationsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -5498,25 +4061,15 @@ export const ListTargetedInvitationsRequest: MessageType<ListTargetedInvitations
 export interface ListTargetedInvitationsResponse {
   /**
    * Invitations are invitations visible to the caller.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.TargetedInvitationInfo invitations = 1;
    */
   invitations?: TargetedInvitationInfo[]
 }
 
 export const ListTargetedInvitationsResponse: MessageType<ListTargetedInvitationsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ListTargetedInvitationsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'invitations',
-        kind: 'message',
-        T: TargetedInvitationInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListTargetedInvitationsResponse>(
+    's4wave.provider.spacewave.ListTargetedInvitationsResponse',
+    () => [[1, 'invitations', 11, 1, TargetedInvitationInfo.codec]],
+  )
 
 /**
  * GetTargetedInvitationRequest is the request for GetTargetedInvitation.
@@ -5526,19 +4079,15 @@ export const ListTargetedInvitationsResponse: MessageType<ListTargetedInvitation
 export interface GetTargetedInvitationRequest {
   /**
    * Id is the invitation ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
 }
 
 export const GetTargetedInvitationRequest: MessageType<GetTargetedInvitationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetTargetedInvitationRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetTargetedInvitationRequest>(
+    's4wave.provider.spacewave.GetTargetedInvitationRequest',
+    () => [[1, 'id', 9]],
+  )
 
 /**
  * GetTargetedInvitationResponse is the response for GetTargetedInvitation.
@@ -5548,19 +4097,15 @@ export const GetTargetedInvitationRequest: MessageType<GetTargetedInvitationRequ
 export interface GetTargetedInvitationResponse {
   /**
    * Invitation is the requested invitation.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationInfo invitation = 1;
    */
   invitation?: TargetedInvitationInfo
 }
 
 export const GetTargetedInvitationResponse: MessageType<GetTargetedInvitationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetTargetedInvitationResponse',
-    fields: [
-      { no: 1, name: 'invitation', kind: 'message', T: TargetedInvitationInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetTargetedInvitationResponse>(
+    's4wave.provider.spacewave.GetTargetedInvitationResponse',
+    () => [[1, 'invitation', 11, 0, TargetedInvitationInfo.codec]],
+  )
 
 /**
  * RevokeTargetedInvitationRequest is the request for RevokeTargetedInvitation.
@@ -5570,19 +4115,15 @@ export const GetTargetedInvitationResponse: MessageType<GetTargetedInvitationRes
 export interface RevokeTargetedInvitationRequest {
   /**
    * Id is the invitation ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
 }
 
 export const RevokeTargetedInvitationRequest: MessageType<RevokeTargetedInvitationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RevokeTargetedInvitationRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RevokeTargetedInvitationRequest>(
+    's4wave.provider.spacewave.RevokeTargetedInvitationRequest',
+    () => [[1, 'id', 9]],
+  )
 
 /**
  * RevokeTargetedInvitationResponse is the response for
@@ -5593,19 +4134,15 @@ export const RevokeTargetedInvitationRequest: MessageType<RevokeTargetedInvitati
 export interface RevokeTargetedInvitationResponse {
   /**
    * Invitation is the revoked invitation.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationInfo invitation = 1;
    */
   invitation?: TargetedInvitationInfo
 }
 
 export const RevokeTargetedInvitationResponse: MessageType<RevokeTargetedInvitationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RevokeTargetedInvitationResponse',
-    fields: [
-      { no: 1, name: 'invitation', kind: 'message', T: TargetedInvitationInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RevokeTargetedInvitationResponse>(
+    's4wave.provider.spacewave.RevokeTargetedInvitationResponse',
+    () => [[1, 'invitation', 11, 0, TargetedInvitationInfo.codec]],
+  )
 
 /**
  * ProcessTargetedInvitationRequest is the request for ProcessTargetedInvitation.
@@ -5615,26 +4152,22 @@ export const RevokeTargetedInvitationResponse: MessageType<RevokeTargetedInvitat
 export interface ProcessTargetedInvitationRequest {
   /**
    * Id is the invitation ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Action is accept, decline, block, or report.
-   *
-   * @generated from field: string action = 2;
    */
   action?: string
 }
 
 export const ProcessTargetedInvitationRequest: MessageType<ProcessTargetedInvitationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ProcessTargetedInvitationRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'action', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ProcessTargetedInvitationRequest>(
+    's4wave.provider.spacewave.ProcessTargetedInvitationRequest',
+    () => [
+      [1, 'id', 9],
+      [2, 'action', 9],
+    ],
+  )
 
 /**
  * ProcessTargetedInvitationResponse is the response for
@@ -5645,19 +4178,15 @@ export const ProcessTargetedInvitationRequest: MessageType<ProcessTargetedInvita
 export interface ProcessTargetedInvitationResponse {
   /**
    * Invitation is the updated invitation.
-   *
-   * @generated from field: s4wave.provider.spacewave.TargetedInvitationInfo invitation = 1;
    */
   invitation?: TargetedInvitationInfo
 }
 
 export const ProcessTargetedInvitationResponse: MessageType<ProcessTargetedInvitationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ProcessTargetedInvitationResponse',
-    fields: [
-      { no: 1, name: 'invitation', kind: 'message', T: TargetedInvitationInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ProcessTargetedInvitationResponse>(
+    's4wave.provider.spacewave.ProcessTargetedInvitationResponse',
+    () => [[1, 'invitation', 11, 0, TargetedInvitationInfo.codec]],
+  )
 
 /**
  * CreateOrgInviteRequest is the request for CreateOrgInvite.
@@ -5667,47 +4196,37 @@ export const ProcessTargetedInvitationResponse: MessageType<ProcessTargetedInvit
 export interface CreateOrgInviteRequest {
   /**
    * OrgId is the organization ULID.
-   *
-   * @generated from field: string org_id = 1;
    */
   orgId?: string
   /**
    * Type is the invite type (code, email, link).
-   *
-   * @generated from field: string type = 2;
    */
   type?: string
   /**
    * MaxUses is the max allowed uses (0=unlimited).
-   *
-   * @generated from field: int32 max_uses = 3;
    */
   maxUses?: number
   /**
    * ExpiresAt is the expiry timestamp (0=never).
-   *
-   * @generated from field: int64 expires_at = 4;
    */
   expiresAt?: bigint
   /**
    * Email is the target email (for type=email).
-   *
-   * @generated from field: string email = 5;
    */
   email?: string
 }
 
 export const CreateOrgInviteRequest: MessageType<CreateOrgInviteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateOrgInviteRequest',
-    fields: [
-      { no: 1, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'max_uses', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 4, name: 'expires_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 5, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateOrgInviteRequest>(
+    's4wave.provider.spacewave.CreateOrgInviteRequest',
+    () => [
+      [1, 'org_id', 9],
+      [2, 'type', 9],
+      [3, 'max_uses', 5],
+      [4, 'expires_at', 3],
+      [5, 'email', 9],
+    ],
+  )
 
 /**
  * CreateOrgInviteResponse is the response for CreateOrgInvite.
@@ -5717,19 +4236,15 @@ export const CreateOrgInviteRequest: MessageType<CreateOrgInviteRequest> =
 export interface CreateOrgInviteResponse {
   /**
    * Invite is the created invite info.
-   *
-   * @generated from field: s4wave.provider.spacewave.OrgInviteInfo invite = 1;
    */
   invite?: OrgInviteInfo
 }
 
 export const CreateOrgInviteResponse: MessageType<CreateOrgInviteResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateOrgInviteResponse',
-    fields: [
-      { no: 1, name: 'invite', kind: 'message', T: OrgInviteInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateOrgInviteResponse>(
+    's4wave.provider.spacewave.CreateOrgInviteResponse',
+    () => [[1, 'invite', 11, 0, OrgInviteInfo.codec]],
+  )
 
 /**
  * JoinOrganizationRequest is the request for JoinOrganization.
@@ -5739,19 +4254,15 @@ export const CreateOrgInviteResponse: MessageType<CreateOrgInviteResponse> =
 export interface JoinOrganizationRequest {
   /**
    * Token is the invite code or link token.
-   *
-   * @generated from field: string token = 1;
    */
   token?: string
 }
 
 export const JoinOrganizationRequest: MessageType<JoinOrganizationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.JoinOrganizationRequest',
-    fields: [
-      { no: 1, name: 'token', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<JoinOrganizationRequest>(
+    's4wave.provider.spacewave.JoinOrganizationRequest',
+    () => [[1, 'token', 9]],
+  )
 
 /**
  * JoinOrganizationResponse is the response for JoinOrganization.
@@ -5761,19 +4272,15 @@ export const JoinOrganizationRequest: MessageType<JoinOrganizationRequest> =
 export interface JoinOrganizationResponse {
   /**
    * Organization is the joined org info.
-   *
-   * @generated from field: s4wave.provider.spacewave.OrganizationInfo organization = 1;
    */
   organization?: OrganizationInfo
 }
 
 export const JoinOrganizationResponse: MessageType<JoinOrganizationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.JoinOrganizationResponse',
-    fields: [
-      { no: 1, name: 'organization', kind: 'message', T: OrganizationInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<JoinOrganizationResponse>(
+    's4wave.provider.spacewave.JoinOrganizationResponse',
+    () => [[1, 'organization', 11, 0, OrganizationInfo.codec]],
+  )
 
 /**
  * UpdateOrganizationRequest is the request for UpdateOrganization.
@@ -5783,26 +4290,22 @@ export const JoinOrganizationResponse: MessageType<JoinOrganizationResponse> =
 export interface UpdateOrganizationRequest {
   /**
    * OrgId is the organization ULID.
-   *
-   * @generated from field: string org_id = 1;
    */
   orgId?: string
   /**
    * DisplayName is the new display name for the org.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
 }
 
 export const UpdateOrganizationRequest: MessageType<UpdateOrganizationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.UpdateOrganizationRequest',
-    fields: [
-      { no: 1, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateOrganizationRequest>(
+    's4wave.provider.spacewave.UpdateOrganizationRequest',
+    () => [
+      [1, 'org_id', 9],
+      [2, 'display_name', 9],
+    ],
+  )
 
 /**
  * UpdateOrganizationResponse is the response for UpdateOrganization.
@@ -5812,9 +4315,9 @@ export const UpdateOrganizationRequest: MessageType<UpdateOrganizationRequest> =
 export interface UpdateOrganizationResponse {}
 
 export const UpdateOrganizationResponse: MessageType<UpdateOrganizationResponse> =
-  /* @__PURE__ */ createEmptyMessageType<UpdateOrganizationResponse>(
+  /* @__PURE__ */ createMessageType<UpdateOrganizationResponse>(
     's4wave.provider.spacewave.UpdateOrganizationResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -5825,19 +4328,15 @@ export const UpdateOrganizationResponse: MessageType<UpdateOrganizationResponse>
 export interface DeleteOrganizationRequest {
   /**
    * OrgId is the organization ULID.
-   *
-   * @generated from field: string org_id = 1;
    */
   orgId?: string
 }
 
 export const DeleteOrganizationRequest: MessageType<DeleteOrganizationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.DeleteOrganizationRequest',
-    fields: [
-      { no: 1, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteOrganizationRequest>(
+    's4wave.provider.spacewave.DeleteOrganizationRequest',
+    () => [[1, 'org_id', 9]],
+  )
 
 /**
  * DeleteOrganizationResponse is the response for DeleteOrganization.
@@ -5847,9 +4346,9 @@ export const DeleteOrganizationRequest: MessageType<DeleteOrganizationRequest> =
 export interface DeleteOrganizationResponse {}
 
 export const DeleteOrganizationResponse: MessageType<DeleteOrganizationResponse> =
-  /* @__PURE__ */ createEmptyMessageType<DeleteOrganizationResponse>(
+  /* @__PURE__ */ createMessageType<DeleteOrganizationResponse>(
     's4wave.provider.spacewave.DeleteOrganizationResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -5860,19 +4359,15 @@ export const DeleteOrganizationResponse: MessageType<DeleteOrganizationResponse>
 export interface GetOrganizationRequest {
   /**
    * OrgId is the organization ULID.
-   *
-   * @generated from field: string org_id = 1;
    */
   orgId?: string
 }
 
 export const GetOrganizationRequest: MessageType<GetOrganizationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetOrganizationRequest',
-    fields: [
-      { no: 1, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetOrganizationRequest>(
+    's4wave.provider.spacewave.GetOrganizationRequest',
+    () => [[1, 'org_id', 9]],
+  )
 
 /**
  * WatchOrganizationStateRequest is the request for WatchOrganizationState.
@@ -5882,19 +4377,15 @@ export const GetOrganizationRequest: MessageType<GetOrganizationRequest> =
 export interface WatchOrganizationStateRequest {
   /**
    * OrgId is the organization ULID.
-   *
-   * @generated from field: string org_id = 1;
    */
   orgId?: string
 }
 
 export const WatchOrganizationStateRequest: MessageType<WatchOrganizationStateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WatchOrganizationStateRequest',
-    fields: [
-      { no: 1, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchOrganizationStateRequest>(
+    's4wave.provider.spacewave.WatchOrganizationStateRequest',
+    () => [[1, 'org_id', 9]],
+  )
 
 /**
  * OrgMemberInfo contains info about an org member.
@@ -5904,47 +4395,37 @@ export const WatchOrganizationStateRequest: MessageType<WatchOrganizationStateRe
 export interface OrgMemberInfo {
   /**
    * Id is the role binding ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * SubjectId is the member's account ID.
-   *
-   * @generated from field: string subject_id = 2;
    */
   subjectId?: string
   /**
    * RoleId is the member's role (e.g. org:owner, org:member).
-   *
-   * @generated from field: string role_id = 3;
    */
   roleId?: string
   /**
    * CreatedAt is the binding creation timestamp (ms).
-   *
-   * @generated from field: int64 created_at = 4;
    */
   createdAt?: bigint
   /**
    * EntityId is the provider-attested account username / entity identifier.
-   *
-   * @generated from field: string entity_id = 5;
    */
   entityId?: string
 }
 
 export const OrgMemberInfo: MessageType<OrgMemberInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.OrgMemberInfo',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'subject_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'role_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'created_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 5, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OrgMemberInfo>(
+    's4wave.provider.spacewave.OrgMemberInfo',
+    () => [
+      [1, 'id', 9],
+      [2, 'subject_id', 9],
+      [3, 'role_id', 9],
+      [4, 'created_at', 3],
+      [5, 'entity_id', 9],
+    ],
+  )
 
 /**
  * OrgSpaceInfo contains info about a space owned by an organization.
@@ -5954,33 +4435,27 @@ export const OrgMemberInfo: MessageType<OrgMemberInfo> =
 export interface OrgSpaceInfo {
   /**
    * Id is the shared object ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * DisplayName is the space display name.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
   /**
    * ObjectType is the shared object type (e.g. "space").
-   *
-   * @generated from field: string object_type = 3;
    */
   objectType?: string
 }
 
 export const OrgSpaceInfo: MessageType<OrgSpaceInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.OrgSpaceInfo',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'object_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OrgSpaceInfo>(
+    's4wave.provider.spacewave.OrgSpaceInfo',
+    () => [
+      [1, 'id', 9],
+      [2, 'display_name', 9],
+      [3, 'object_type', 9],
+    ],
+  )
 
 /**
  * SharedObjectMutationPermission contains the viewer's repair and
@@ -5991,33 +4466,27 @@ export const OrgSpaceInfo: MessageType<OrgSpaceInfo> =
 export interface SharedObjectMutationPermission {
   /**
    * CanRepair reports whether the current viewer may run repair.
-   *
-   * @generated from field: bool can_repair = 1;
    */
   canRepair?: boolean
   /**
    * CanReinitialize reports whether the current viewer may run reinitialize.
-   *
-   * @generated from field: bool can_reinitialize = 2;
    */
   canReinitialize?: boolean
   /**
    * DisabledReason explains why the mutation actions are disabled.
-   *
-   * @generated from field: string disabled_reason = 3;
    */
   disabledReason?: string
 }
 
 export const SharedObjectMutationPermission: MessageType<SharedObjectMutationPermission> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SharedObjectMutationPermission',
-    fields: [
-      { no: 1, name: 'can_repair', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'can_reinitialize', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'disabled_reason', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SharedObjectMutationPermission>(
+    's4wave.provider.spacewave.SharedObjectMutationPermission',
+    () => [
+      [1, 'can_repair', 8],
+      [2, 'can_reinitialize', 8],
+      [3, 'disabled_reason', 9],
+    ],
+  )
 
 /**
  * OrganizationRootStateInfo contains the org-root shared object identity and
@@ -6028,38 +4497,27 @@ export const SharedObjectMutationPermission: MessageType<SharedObjectMutationPer
 export interface OrganizationRootStateInfo {
   /**
    * SharedObjectId is the canonical shared object id for the org root.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * Health is the current org-root health snapshot.
-   *
-   * @generated from field: sobject.SharedObjectHealth health = 2;
    */
   health?: SharedObjectHealth
   /**
    * MutationPermission is the viewer's org-root remediation authority.
-   *
-   * @generated from field: s4wave.provider.spacewave.SharedObjectMutationPermission mutation_permission = 3;
    */
   mutationPermission?: SharedObjectMutationPermission
 }
 
 export const OrganizationRootStateInfo: MessageType<OrganizationRootStateInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.OrganizationRootStateInfo',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'health', kind: 'message', T: () => SharedObjectHealth },
-      {
-        no: 3,
-        name: 'mutation_permission',
-        kind: 'message',
-        T: SharedObjectMutationPermission,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OrganizationRootStateInfo>(
+    's4wave.provider.spacewave.OrganizationRootStateInfo',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'health', 11, 0, SharedObjectHealth.codec],
+      [3, 'mutation_permission', 11, 0, SharedObjectMutationPermission.codec],
+    ],
+  )
 
 /**
  * GetOrganizationResponse is the response for GetOrganization.
@@ -6069,57 +4527,32 @@ export const OrganizationRootStateInfo: MessageType<OrganizationRootStateInfo> =
 export interface GetOrganizationResponse {
   /**
    * Organization is the org info.
-   *
-   * @generated from field: s4wave.provider.spacewave.OrganizationInfo organization = 1;
    */
   organization?: OrganizationInfo
   /**
    * Members is the list of org members.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.OrgMemberInfo members = 2;
    */
   members?: OrgMemberInfo[]
   /**
    * Spaces is the list of spaces owned by this organization.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.OrgSpaceInfo spaces = 3;
    */
   spaces?: OrgSpaceInfo[]
   /**
    * RootState is the canonical org-root shared object identity and health.
-   *
-   * @generated from field: s4wave.provider.spacewave.OrganizationRootStateInfo root_state = 4;
    */
   rootState?: OrganizationRootStateInfo
 }
 
 export const GetOrganizationResponse: MessageType<GetOrganizationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetOrganizationResponse',
-    fields: [
-      { no: 1, name: 'organization', kind: 'message', T: OrganizationInfo },
-      {
-        no: 2,
-        name: 'members',
-        kind: 'message',
-        T: OrgMemberInfo,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'spaces',
-        kind: 'message',
-        T: OrgSpaceInfo,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'root_state',
-        kind: 'message',
-        T: OrganizationRootStateInfo,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetOrganizationResponse>(
+    's4wave.provider.spacewave.GetOrganizationResponse',
+    () => [
+      [1, 'organization', 11, 0, OrganizationInfo.codec],
+      [2, 'members', 11, 1, OrgMemberInfo.codec],
+      [3, 'spaces', 11, 1, OrgSpaceInfo.codec],
+      [4, 'root_state', 11, 0, OrganizationRootStateInfo.codec],
+    ],
+  )
 
 /**
  * WatchOrganizationStateResponse is the combined watched organization snapshot.
@@ -6129,70 +4562,37 @@ export const GetOrganizationResponse: MessageType<GetOrganizationResponse> =
 export interface WatchOrganizationStateResponse {
   /**
    * Organization is the org info.
-   *
-   * @generated from field: s4wave.provider.spacewave.OrganizationInfo organization = 1;
    */
   organization?: OrganizationInfo
   /**
    * Members is the list of org members.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.OrgMemberInfo members = 2;
    */
   members?: OrgMemberInfo[]
   /**
    * Spaces is the list of spaces owned by this organization.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.OrgSpaceInfo spaces = 3;
    */
   spaces?: OrgSpaceInfo[]
   /**
    * Invites is the list of org invites visible to the viewer.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.OrgInviteInfo invites = 4;
    */
   invites?: OrgInviteInfo[]
   /**
    * RootState is the canonical org-root shared object identity and health.
-   *
-   * @generated from field: s4wave.provider.spacewave.OrganizationRootStateInfo root_state = 5;
    */
   rootState?: OrganizationRootStateInfo
 }
 
 export const WatchOrganizationStateResponse: MessageType<WatchOrganizationStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WatchOrganizationStateResponse',
-    fields: [
-      { no: 1, name: 'organization', kind: 'message', T: OrganizationInfo },
-      {
-        no: 2,
-        name: 'members',
-        kind: 'message',
-        T: OrgMemberInfo,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'spaces',
-        kind: 'message',
-        T: OrgSpaceInfo,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'invites',
-        kind: 'message',
-        T: OrgInviteInfo,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'root_state',
-        kind: 'message',
-        T: OrganizationRootStateInfo,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchOrganizationStateResponse>(
+    's4wave.provider.spacewave.WatchOrganizationStateResponse',
+    () => [
+      [1, 'organization', 11, 0, OrganizationInfo.codec],
+      [2, 'members', 11, 1, OrgMemberInfo.codec],
+      [3, 'spaces', 11, 1, OrgSpaceInfo.codec],
+      [4, 'invites', 11, 1, OrgInviteInfo.codec],
+      [5, 'root_state', 11, 0, OrganizationRootStateInfo.codec],
+    ],
+  )
 
 /**
  * RepairSharedObjectRequest is the request for RepairSharedObject.
@@ -6202,19 +4602,15 @@ export const WatchOrganizationStateResponse: MessageType<WatchOrganizationStateR
 export interface RepairSharedObjectRequest {
   /**
    * SharedObjectId is the shared object to repair.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
 }
 
 export const RepairSharedObjectRequest: MessageType<RepairSharedObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RepairSharedObjectRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RepairSharedObjectRequest>(
+    's4wave.provider.spacewave.RepairSharedObjectRequest',
+    () => [[1, 'shared_object_id', 9]],
+  )
 
 /**
  * RepairSharedObjectResponse is the response for RepairSharedObject.
@@ -6225,24 +4621,15 @@ export interface RepairSharedObjectResponse {
   /**
    * CredentialRequired is set when repair needs an unlocked entity key and
    * nothing was repaired.
-   *
-   * @generated from field: bool credential_required = 1;
    */
   credentialRequired?: boolean
 }
 
 export const RepairSharedObjectResponse: MessageType<RepairSharedObjectResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RepairSharedObjectResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'credential_required',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RepairSharedObjectResponse>(
+    's4wave.provider.spacewave.RepairSharedObjectResponse',
+    () => [[1, 'credential_required', 8]],
+  )
 
 /**
  * PublicOriginLink is an owner-paid S3-compatible bucket and the HTTPS base
@@ -6255,61 +4642,44 @@ export interface PublicOriginLink {
   /**
    * Endpoint is the bucket's S3 API endpoint, such as
    * https://s3.us-west-004.backblazeb2.com.
-   *
-   * @generated from field: string endpoint = 1;
    */
   endpoint?: string
   /**
    * Region is the S3 signing region.
-   *
-   * @generated from field: string region = 2;
    */
   region?: string
   /**
    * Bucket is the bucket name.
-   *
-   * @generated from field: string bucket = 3;
    */
   bucket?: string
   /**
    * AccessKeyId identifies a key that can read, write and delete in the bucket.
-   *
-   * @generated from field: string access_key_id = 4;
    */
   accessKeyId?: string
   /**
    * SecretAccessKey is the key's secret. The cloud stores it sealed and never
    * returns it.
-   *
-   * @generated from field: string secret_access_key = 5;
    */
   secretAccessKey?: string
   /**
    * PublicBaseUrl is the https URL whose path /<key> serves the bucket's key,
    * normally the owner's CDN hostname.
-   *
-   * @generated from field: string public_base_url = 6;
    */
   publicBaseUrl?: string
 }
 
 export const PublicOriginLink: MessageType<PublicOriginLink> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PublicOriginLink',
-    fields: [
-      { no: 1, name: 'endpoint', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'region', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'bucket', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'access_key_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'secret_access_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 6, name: 'public_base_url', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PublicOriginLink>(
+    's4wave.provider.spacewave.PublicOriginLink',
+    () => [
+      [1, 'endpoint', 9],
+      [2, 'region', 9],
+      [3, 'bucket', 9],
+      [4, 'access_key_id', 9],
+      [5, 'secret_access_key', 9],
+      [6, 'public_base_url', 9],
+    ],
+  )
 
 /**
  * PublicOriginStatus describes a public Space's linked origin. It is the
@@ -6320,70 +4690,54 @@ export const PublicOriginLink: MessageType<PublicOriginLink> =
 export interface PublicOriginStatus {
   /**
    * State is where the Space's packs live.
-   *
-   * @generated from field: s4wave.provider.spacewave.PublicOriginState state = 1;
    */
   state?: PublicOriginState
   /**
    * Endpoint is the linked bucket's S3 API endpoint.
-   *
-   * @generated from field: string endpoint = 2;
    */
   endpoint?: string
   /**
    * Bucket is the linked bucket name.
-   *
-   * @generated from field: string bucket = 3;
    */
   bucket?: string
   /**
    * PublicBaseUrl is the URL that serves the linked bucket.
-   *
-   * @generated from field: string public_base_url = 4;
    */
   publicBaseUrl?: string
   /**
    * PacksCopied counts the existing packs copied to the origin so far.
-   *
-   * @generated from field: uint32 packs_copied = 5;
    */
   packsCopied?: number
   /**
    * PacksTotal counts the live packs the copy must reach.
-   *
-   * @generated from field: uint32 packs_total = 6;
    */
   packsTotal?: number
   /**
    * HostedCopies reports whether Spacewave's CDN still holds the Space's
    * objects from before the cutover.
-   *
-   * @generated from field: bool hosted_copies = 7;
    */
   hostedCopies?: boolean
   /**
    * CopyError is the last copy failure, empty while the copy is healthy. The
    * copy retries on its own.
-   *
-   * @generated from field: string copy_error = 8;
    */
   copyError?: string
 }
 
 export const PublicOriginStatus: MessageType<PublicOriginStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PublicOriginStatus',
-    fields: [
-      { no: 1, name: 'state', kind: 'enum', T: PublicOriginState_Enum },
-      { no: 2, name: 'endpoint', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'bucket', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'public_base_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'packs_copied', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 6, name: 'packs_total', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'hosted_copies', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'copy_error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PublicOriginStatus>(
+    's4wave.provider.spacewave.PublicOriginStatus',
+    () => [
+      [1, 'state', 14, 0, PublicOriginState_Enum],
+      [2, 'endpoint', 9],
+      [3, 'bucket', 9],
+      [4, 'public_base_url', 9],
+      [5, 'packs_copied', 13],
+      [6, 'packs_total', 13],
+      [7, 'hosted_copies', 8],
+      [8, 'copy_error', 9],
+    ],
+  )
 
 /**
  * LinkSpacePublicOriginRequest is the request for LinkSpacePublicOrigin.
@@ -6393,26 +4747,22 @@ export const PublicOriginStatus: MessageType<PublicOriginStatus> =
 export interface LinkSpacePublicOriginRequest {
   /**
    * SpaceId is the public Space to link.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * Link is the origin to link.
-   *
-   * @generated from field: s4wave.provider.spacewave.PublicOriginLink link = 2;
    */
   link?: PublicOriginLink
 }
 
 export const LinkSpacePublicOriginRequest: MessageType<LinkSpacePublicOriginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LinkSpacePublicOriginRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'link', kind: 'message', T: PublicOriginLink },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LinkSpacePublicOriginRequest>(
+    's4wave.provider.spacewave.LinkSpacePublicOriginRequest',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'link', 11, 0, PublicOriginLink.codec],
+    ],
+  )
 
 /**
  * LinkSpacePublicOriginResponse is the response for LinkSpacePublicOrigin.
@@ -6422,19 +4772,15 @@ export const LinkSpacePublicOriginRequest: MessageType<LinkSpacePublicOriginRequ
 export interface LinkSpacePublicOriginResponse {
   /**
    * Status is the Space's origin after linking.
-   *
-   * @generated from field: s4wave.provider.spacewave.PublicOriginStatus status = 1;
    */
   status?: PublicOriginStatus
 }
 
 export const LinkSpacePublicOriginResponse: MessageType<LinkSpacePublicOriginResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LinkSpacePublicOriginResponse',
-    fields: [
-      { no: 1, name: 'status', kind: 'message', T: PublicOriginStatus },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LinkSpacePublicOriginResponse>(
+    's4wave.provider.spacewave.LinkSpacePublicOriginResponse',
+    () => [[1, 'status', 11, 0, PublicOriginStatus.codec]],
+  )
 
 /**
  * GetSpacePublicOriginRequest is the request for GetSpacePublicOrigin.
@@ -6444,19 +4790,15 @@ export const LinkSpacePublicOriginResponse: MessageType<LinkSpacePublicOriginRes
 export interface GetSpacePublicOriginRequest {
   /**
    * SpaceId is the public Space to describe.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
 }
 
 export const GetSpacePublicOriginRequest: MessageType<GetSpacePublicOriginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetSpacePublicOriginRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSpacePublicOriginRequest>(
+    's4wave.provider.spacewave.GetSpacePublicOriginRequest',
+    () => [[1, 'space_id', 9]],
+  )
 
 /**
  * GetSpacePublicOriginResponse is the response for GetSpacePublicOrigin.
@@ -6466,19 +4808,15 @@ export const GetSpacePublicOriginRequest: MessageType<GetSpacePublicOriginReques
 export interface GetSpacePublicOriginResponse {
   /**
    * Status is the Space's origin.
-   *
-   * @generated from field: s4wave.provider.spacewave.PublicOriginStatus status = 1;
    */
   status?: PublicOriginStatus
 }
 
 export const GetSpacePublicOriginResponse: MessageType<GetSpacePublicOriginResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetSpacePublicOriginResponse',
-    fields: [
-      { no: 1, name: 'status', kind: 'message', T: PublicOriginStatus },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSpacePublicOriginResponse>(
+    's4wave.provider.spacewave.GetSpacePublicOriginResponse',
+    () => [[1, 'status', 11, 0, PublicOriginStatus.codec]],
+  )
 
 /**
  * ReleaseSpaceHostedCopiesRequest is the request for ReleaseSpaceHostedCopies.
@@ -6488,19 +4826,15 @@ export const GetSpacePublicOriginResponse: MessageType<GetSpacePublicOriginRespo
 export interface ReleaseSpaceHostedCopiesRequest {
   /**
    * SpaceId is the public Space whose hosted copies to delete.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
 }
 
 export const ReleaseSpaceHostedCopiesRequest: MessageType<ReleaseSpaceHostedCopiesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ReleaseSpaceHostedCopiesRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReleaseSpaceHostedCopiesRequest>(
+    's4wave.provider.spacewave.ReleaseSpaceHostedCopiesRequest',
+    () => [[1, 'space_id', 9]],
+  )
 
 /**
  * ReleaseSpaceHostedCopiesResponse is the response for ReleaseSpaceHostedCopies.
@@ -6510,19 +4844,15 @@ export const ReleaseSpaceHostedCopiesRequest: MessageType<ReleaseSpaceHostedCopi
 export interface ReleaseSpaceHostedCopiesResponse {
   /**
    * Status is the Space's origin after the release.
-   *
-   * @generated from field: s4wave.provider.spacewave.PublicOriginStatus status = 1;
    */
   status?: PublicOriginStatus
 }
 
 export const ReleaseSpaceHostedCopiesResponse: MessageType<ReleaseSpaceHostedCopiesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ReleaseSpaceHostedCopiesResponse',
-    fields: [
-      { no: 1, name: 'status', kind: 'message', T: PublicOriginStatus },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReleaseSpaceHostedCopiesResponse>(
+    's4wave.provider.spacewave.ReleaseSpaceHostedCopiesResponse',
+    () => [[1, 'status', 11, 0, PublicOriginStatus.codec]],
+  )
 
 /**
  * SetSpacePublicReadRequest is the request for SetSpacePublicRead.
@@ -6532,19 +4862,15 @@ export const ReleaseSpaceHostedCopiesResponse: MessageType<ReleaseSpaceHostedCop
 export interface SetSpacePublicReadRequest {
   /**
    * SpaceId is the Space to make publicly readable.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
 }
 
 export const SetSpacePublicReadRequest: MessageType<SetSpacePublicReadRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SetSpacePublicReadRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpacePublicReadRequest>(
+    's4wave.provider.spacewave.SetSpacePublicReadRequest',
+    () => [[1, 'space_id', 9]],
+  )
 
 /**
  * SetSpacePublicReadResponse is the response for SetSpacePublicRead.
@@ -6554,9 +4880,9 @@ export const SetSpacePublicReadRequest: MessageType<SetSpacePublicReadRequest> =
 export interface SetSpacePublicReadResponse {}
 
 export const SetSpacePublicReadResponse: MessageType<SetSpacePublicReadResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetSpacePublicReadResponse>(
+  /* @__PURE__ */ createMessageType<SetSpacePublicReadResponse>(
     's4wave.provider.spacewave.SetSpacePublicReadResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -6567,19 +4893,15 @@ export const SetSpacePublicReadResponse: MessageType<SetSpacePublicReadResponse>
 export interface ReinitializeSharedObjectRequest {
   /**
    * SharedObjectId is the shared object to reinitialize in place.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
 }
 
 export const ReinitializeSharedObjectRequest: MessageType<ReinitializeSharedObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ReinitializeSharedObjectRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReinitializeSharedObjectRequest>(
+    's4wave.provider.spacewave.ReinitializeSharedObjectRequest',
+    () => [[1, 'shared_object_id', 9]],
+  )
 
 /**
  * ReinitializeSharedObjectResponse is the response for ReinitializeSharedObject.
@@ -6589,9 +4911,9 @@ export const ReinitializeSharedObjectRequest: MessageType<ReinitializeSharedObje
 export interface ReinitializeSharedObjectResponse {}
 
 export const ReinitializeSharedObjectResponse: MessageType<ReinitializeSharedObjectResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ReinitializeSharedObjectResponse>(
+  /* @__PURE__ */ createMessageType<ReinitializeSharedObjectResponse>(
     's4wave.provider.spacewave.ReinitializeSharedObjectResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -6602,19 +4924,15 @@ export const ReinitializeSharedObjectResponse: MessageType<ReinitializeSharedObj
 export interface ListOrgInvitesRequest {
   /**
    * OrgId is the organization ULID.
-   *
-   * @generated from field: string org_id = 1;
    */
   orgId?: string
 }
 
 export const ListOrgInvitesRequest: MessageType<ListOrgInvitesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ListOrgInvitesRequest',
-    fields: [
-      { no: 1, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListOrgInvitesRequest>(
+    's4wave.provider.spacewave.ListOrgInvitesRequest',
+    () => [[1, 'org_id', 9]],
+  )
 
 /**
  * ListOrgInvitesResponse is the response for ListOrgInvites.
@@ -6624,25 +4942,15 @@ export const ListOrgInvitesRequest: MessageType<ListOrgInvitesRequest> =
 export interface ListOrgInvitesResponse {
   /**
    * Invites is the list of org invites.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.OrgInviteInfo invites = 1;
    */
   invites?: OrgInviteInfo[]
 }
 
 export const ListOrgInvitesResponse: MessageType<ListOrgInvitesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ListOrgInvitesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'invites',
-        kind: 'message',
-        T: OrgInviteInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListOrgInvitesResponse>(
+    's4wave.provider.spacewave.ListOrgInvitesResponse',
+    () => [[1, 'invites', 11, 1, OrgInviteInfo.codec]],
+  )
 
 /**
  * RevokeOrgInviteRequest is the request for RevokeOrgInvite.
@@ -6652,26 +4960,22 @@ export const ListOrgInvitesResponse: MessageType<ListOrgInvitesResponse> =
 export interface RevokeOrgInviteRequest {
   /**
    * OrgId is the organization ULID.
-   *
-   * @generated from field: string org_id = 1;
    */
   orgId?: string
   /**
    * InviteId is the invite ULID to revoke.
-   *
-   * @generated from field: string invite_id = 2;
    */
   inviteId?: string
 }
 
 export const RevokeOrgInviteRequest: MessageType<RevokeOrgInviteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RevokeOrgInviteRequest',
-    fields: [
-      { no: 1, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'invite_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RevokeOrgInviteRequest>(
+    's4wave.provider.spacewave.RevokeOrgInviteRequest',
+    () => [
+      [1, 'org_id', 9],
+      [2, 'invite_id', 9],
+    ],
+  )
 
 /**
  * RevokeOrgInviteResponse is the response for RevokeOrgInvite.
@@ -6681,9 +4985,9 @@ export const RevokeOrgInviteRequest: MessageType<RevokeOrgInviteRequest> =
 export interface RevokeOrgInviteResponse {}
 
 export const RevokeOrgInviteResponse: MessageType<RevokeOrgInviteResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RevokeOrgInviteResponse>(
+  /* @__PURE__ */ createMessageType<RevokeOrgInviteResponse>(
     's4wave.provider.spacewave.RevokeOrgInviteResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -6694,19 +4998,15 @@ export const RevokeOrgInviteResponse: MessageType<RevokeOrgInviteResponse> =
 export interface LeaveOrganizationRequest {
   /**
    * OrgId is the organization ULID.
-   *
-   * @generated from field: string org_id = 1;
    */
   orgId?: string
 }
 
 export const LeaveOrganizationRequest: MessageType<LeaveOrganizationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LeaveOrganizationRequest',
-    fields: [
-      { no: 1, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LeaveOrganizationRequest>(
+    's4wave.provider.spacewave.LeaveOrganizationRequest',
+    () => [[1, 'org_id', 9]],
+  )
 
 /**
  * LeaveOrganizationResponse is the response for LeaveOrganization.
@@ -6716,9 +5016,9 @@ export const LeaveOrganizationRequest: MessageType<LeaveOrganizationRequest> =
 export interface LeaveOrganizationResponse {}
 
 export const LeaveOrganizationResponse: MessageType<LeaveOrganizationResponse> =
-  /* @__PURE__ */ createEmptyMessageType<LeaveOrganizationResponse>(
+  /* @__PURE__ */ createMessageType<LeaveOrganizationResponse>(
     's4wave.provider.spacewave.LeaveOrganizationResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -6729,26 +5029,22 @@ export const LeaveOrganizationResponse: MessageType<LeaveOrganizationResponse> =
 export interface RemoveOrgMemberRequest {
   /**
    * OrgId is the organization ULID.
-   *
-   * @generated from field: string org_id = 1;
    */
   orgId?: string
   /**
    * MemberId is the account ID of the member to remove.
-   *
-   * @generated from field: string member_id = 2;
    */
   memberId?: string
 }
 
 export const RemoveOrgMemberRequest: MessageType<RemoveOrgMemberRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RemoveOrgMemberRequest',
-    fields: [
-      { no: 1, name: 'org_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'member_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveOrgMemberRequest>(
+    's4wave.provider.spacewave.RemoveOrgMemberRequest',
+    () => [
+      [1, 'org_id', 9],
+      [2, 'member_id', 9],
+    ],
+  )
 
 /**
  * RemoveOrgMemberResponse is the response for RemoveOrgMember.
@@ -6758,9 +5054,9 @@ export const RemoveOrgMemberRequest: MessageType<RemoveOrgMemberRequest> =
 export interface RemoveOrgMemberResponse {}
 
 export const RemoveOrgMemberResponse: MessageType<RemoveOrgMemberResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RemoveOrgMemberResponse>(
+  /* @__PURE__ */ createMessageType<RemoveOrgMemberResponse>(
     's4wave.provider.spacewave.RemoveOrgMemberResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -6771,33 +5067,27 @@ export const RemoveOrgMemberResponse: MessageType<RemoveOrgMemberResponse> =
 export interface TransferResourceRequest {
   /**
    * ResourceId is the SO or BS ULID.
-   *
-   * @generated from field: string resource_id = 1;
    */
   resourceId?: string
   /**
    * NewOwnerType is the destination principal type ("account" | "organization").
-   *
-   * @generated from field: string new_owner_type = 2;
    */
   newOwnerType?: string
   /**
    * NewOwnerId is the destination principal id (account ULID or org ULID).
-   *
-   * @generated from field: string new_owner_id = 3;
    */
   newOwnerId?: string
 }
 
 export const TransferResourceRequest: MessageType<TransferResourceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.TransferResourceRequest',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'new_owner_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'new_owner_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TransferResourceRequest>(
+    's4wave.provider.spacewave.TransferResourceRequest',
+    () => [
+      [1, 'resource_id', 9],
+      [2, 'new_owner_type', 9],
+      [3, 'new_owner_id', 9],
+    ],
+  )
 
 /**
  * TransferResourceResponse is the response for TransferResource.
@@ -6807,9 +5097,9 @@ export const TransferResourceRequest: MessageType<TransferResourceRequest> =
 export interface TransferResourceResponse {}
 
 export const TransferResourceResponse: MessageType<TransferResourceResponse> =
-  /* @__PURE__ */ createEmptyMessageType<TransferResourceResponse>(
+  /* @__PURE__ */ createMessageType<TransferResourceResponse>(
     's4wave.provider.spacewave.TransferResourceResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -6823,44 +5113,28 @@ export const TransferResourceResponse: MessageType<TransferResourceResponse> =
 export interface AssignBillingAccountRequest {
   /**
    * BillingAccountId is the billing account to assign.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
   /**
    * TargetOwnerType is the principal type receiving the assignment
    * ("account" | "organization").
-   *
-   * @generated from field: string target_owner_type = 2;
    */
   targetOwnerType?: string
   /**
    * TargetOwnerId is the principal id (account ULID or org ULID).
-   *
-   * @generated from field: string target_owner_id = 3;
    */
   targetOwnerId?: string
 }
 
 export const AssignBillingAccountRequest: MessageType<AssignBillingAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.AssignBillingAccountRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'target_owner_type',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'target_owner_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AssignBillingAccountRequest>(
+    's4wave.provider.spacewave.AssignBillingAccountRequest',
+    () => [
+      [1, 'billing_account_id', 9],
+      [2, 'target_owner_type', 9],
+      [3, 'target_owner_id', 9],
+    ],
+  )
 
 /**
  * AssignBillingAccountResponse is the response for AssignBillingAccount.
@@ -6870,9 +5144,9 @@ export const AssignBillingAccountRequest: MessageType<AssignBillingAccountReques
 export interface AssignBillingAccountResponse {}
 
 export const AssignBillingAccountResponse: MessageType<AssignBillingAccountResponse> =
-  /* @__PURE__ */ createEmptyMessageType<AssignBillingAccountResponse>(
+  /* @__PURE__ */ createMessageType<AssignBillingAccountResponse>(
     's4wave.provider.spacewave.AssignBillingAccountResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -6885,31 +5159,22 @@ export const AssignBillingAccountResponse: MessageType<AssignBillingAccountRespo
 export interface DetachBillingAccountRequest {
   /**
    * TargetOwnerType is the principal type to detach ("account" | "organization").
-   *
-   * @generated from field: string target_owner_type = 1;
    */
   targetOwnerType?: string
   /**
    * TargetOwnerId is the principal id (account ULID or org ULID).
-   *
-   * @generated from field: string target_owner_id = 2;
    */
   targetOwnerId?: string
 }
 
 export const DetachBillingAccountRequest: MessageType<DetachBillingAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.DetachBillingAccountRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'target_owner_type',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'target_owner_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DetachBillingAccountRequest>(
+    's4wave.provider.spacewave.DetachBillingAccountRequest',
+    () => [
+      [1, 'target_owner_type', 9],
+      [2, 'target_owner_id', 9],
+    ],
+  )
 
 /**
  * DetachBillingAccountResponse is the response for DetachBillingAccount.
@@ -6919,9 +5184,66 @@ export const DetachBillingAccountRequest: MessageType<DetachBillingAccountReques
 export interface DetachBillingAccountResponse {}
 
 export const DetachBillingAccountResponse: MessageType<DetachBillingAccountResponse> =
-  /* @__PURE__ */ createEmptyMessageType<DetachBillingAccountResponse>(
+  /* @__PURE__ */ createMessageType<DetachBillingAccountResponse>(
     's4wave.provider.spacewave.DetachBillingAccountResponse',
-    true,
+    () => [],
+  )
+
+/**
+ * ManagedBillingAccount describes one billing account the caller manages
+ * (created_by_account_id = caller).
+ *
+ * @generated from message s4wave.provider.spacewave.ManagedBillingAccount
+ */
+export interface ManagedBillingAccount {
+  /**
+   * Id is the billing account ULID.
+   */
+  id?: string
+  /**
+   * StripeCustomerId is the Stripe customer id, when present.
+   */
+  stripeCustomerId?: string
+  /**
+   * SubscriptionStatus is the normalized billing status.
+   */
+  subscriptionStatus?: BillingStatus
+  /**
+   * LifecycleState is the billing account lifecycle state.
+   */
+  lifecycleState?: AccountLifecycleState
+  /**
+   * CreatedAt is the billing account creation time in unix ms.
+   */
+  createdAt?: bigint
+  /**
+   * UpdatedAt is the billing account last-updated time in unix ms.
+   */
+  updatedAt?: bigint
+  /**
+   * Assignees is the list of principals currently pointing at this BA
+   * (accounts.billing_account_id or organizations.billing_account_id).
+   */
+  assignees?: PrincipalAssignment[]
+  /**
+   * DisplayName is the user-editable label for this billing account.
+   */
+  displayName?: string
+}
+
+export const ManagedBillingAccount: MessageType<ManagedBillingAccount> =
+  /* @__PURE__ */ createMessageType<ManagedBillingAccount>(
+    's4wave.provider.spacewave.ManagedBillingAccount',
+    () => [
+      [1, 'id', 9],
+      [2, 'stripe_customer_id', 9],
+      [3, 'subscription_status', 14, 0, BillingStatus_Enum],
+      [4, 'lifecycle_state', 14, 0, AccountLifecycleState_Enum],
+      [5, 'created_at', 3],
+      [6, 'updated_at', 3],
+      [7, 'assignees', 11, 1, PrincipalAssignment.codec],
+      [8, 'display_name', 9],
+    ],
   )
 
 /**
@@ -6933,128 +5255,28 @@ export const DetachBillingAccountResponse: MessageType<DetachBillingAccountRespo
 export interface PrincipalAssignment {
   /**
    * OwnerType is the principal type ("account" | "organization").
-   *
-   * @generated from field: string owner_type = 1;
    */
   ownerType?: string
   /**
    * OwnerId is the principal id (account ULID or org ULID).
-   *
-   * @generated from field: string owner_id = 2;
    */
   ownerId?: string
   /**
    * DisplayName is the principal's display name. For accounts this may be
    * empty; the caller typically renders their own account as "Personal".
-   *
-   * @generated from field: string display_name = 3;
    */
   displayName?: string
 }
 
 export const PrincipalAssignment: MessageType<PrincipalAssignment> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PrincipalAssignment',
-    fields: [
-      { no: 1, name: 'owner_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'owner_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ManagedBillingAccount describes one billing account the caller manages
- * (created_by_account_id = caller).
- *
- * @generated from message s4wave.provider.spacewave.ManagedBillingAccount
- */
-export interface ManagedBillingAccount {
-  /**
-   * Id is the billing account ULID.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * StripeCustomerId is the Stripe customer id, when present.
-   *
-   * @generated from field: string stripe_customer_id = 2;
-   */
-  stripeCustomerId?: string
-  /**
-   * SubscriptionStatus is the normalized billing status.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingStatus subscription_status = 3;
-   */
-  subscriptionStatus?: BillingStatus
-  /**
-   * LifecycleState is the billing account lifecycle state.
-   *
-   * @generated from field: s4wave.provider.spacewave.AccountLifecycleState lifecycle_state = 4;
-   */
-  lifecycleState?: AccountLifecycleState
-  /**
-   * CreatedAt is the billing account creation time in unix ms.
-   *
-   * @generated from field: int64 created_at = 5;
-   */
-  createdAt?: bigint
-  /**
-   * UpdatedAt is the billing account last-updated time in unix ms.
-   *
-   * @generated from field: int64 updated_at = 6;
-   */
-  updatedAt?: bigint
-  /**
-   * Assignees is the list of principals currently pointing at this BA
-   * (accounts.billing_account_id or organizations.billing_account_id).
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.PrincipalAssignment assignees = 7;
-   */
-  assignees?: PrincipalAssignment[]
-  /**
-   * DisplayName is the user-editable label for this billing account.
-   *
-   * @generated from field: string display_name = 8;
-   */
-  displayName?: string
-}
-
-export const ManagedBillingAccount: MessageType<ManagedBillingAccount> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ManagedBillingAccount',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'stripe_customer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 3,
-        name: 'subscription_status',
-        kind: 'enum',
-        T: BillingStatus_Enum,
-      },
-      {
-        no: 4,
-        name: 'lifecycle_state',
-        kind: 'enum',
-        T: AccountLifecycleState_Enum,
-      },
-      { no: 5, name: 'created_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 6, name: 'updated_at', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 7,
-        name: 'assignees',
-        kind: 'message',
-        T: PrincipalAssignment,
-        repeated: true,
-      },
-      { no: 8, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PrincipalAssignment>(
+    's4wave.provider.spacewave.PrincipalAssignment',
+    () => [
+      [1, 'owner_type', 9],
+      [2, 'owner_id', 9],
+      [3, 'display_name', 9],
+    ],
+  )
 
 /**
  * CreateBillingAccountRequest is the request for CreateBillingAccount.
@@ -7066,19 +5288,15 @@ export interface CreateBillingAccountRequest {
   /**
    * DisplayName is the initial label for the billing account. Optional; the
    * server falls back to a generic default when empty.
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
 }
 
 export const CreateBillingAccountRequest: MessageType<CreateBillingAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateBillingAccountRequest',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateBillingAccountRequest>(
+    's4wave.provider.spacewave.CreateBillingAccountRequest',
+    () => [[1, 'display_name', 9]],
+  )
 
 /**
  * RenameBillingAccountRequest is the request for RenameBillingAccount.
@@ -7088,31 +5306,22 @@ export const CreateBillingAccountRequest: MessageType<CreateBillingAccountReques
 export interface RenameBillingAccountRequest {
   /**
    * BillingAccountId is the billing account to rename.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
   /**
    * DisplayName is the new display name.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
 }
 
 export const RenameBillingAccountRequest: MessageType<RenameBillingAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RenameBillingAccountRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RenameBillingAccountRequest>(
+    's4wave.provider.spacewave.RenameBillingAccountRequest',
+    () => [
+      [1, 'billing_account_id', 9],
+      [2, 'display_name', 9],
+    ],
+  )
 
 /**
  * RenameBillingAccountResponse is the response for RenameBillingAccount.
@@ -7122,9 +5331,9 @@ export const RenameBillingAccountRequest: MessageType<RenameBillingAccountReques
 export interface RenameBillingAccountResponse {}
 
 export const RenameBillingAccountResponse: MessageType<RenameBillingAccountResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RenameBillingAccountResponse>(
+  /* @__PURE__ */ createMessageType<RenameBillingAccountResponse>(
     's4wave.provider.spacewave.RenameBillingAccountResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -7137,24 +5346,15 @@ export const RenameBillingAccountResponse: MessageType<RenameBillingAccountRespo
 export interface DeleteBillingAccountRequest {
   /**
    * BillingAccountId is the billing account to delete.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
 }
 
 export const DeleteBillingAccountRequest: MessageType<DeleteBillingAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.DeleteBillingAccountRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteBillingAccountRequest>(
+    's4wave.provider.spacewave.DeleteBillingAccountRequest',
+    () => [[1, 'billing_account_id', 9]],
+  )
 
 /**
  * DeleteBillingAccountResponse is the response for DeleteBillingAccount.
@@ -7164,9 +5364,9 @@ export const DeleteBillingAccountRequest: MessageType<DeleteBillingAccountReques
 export interface DeleteBillingAccountResponse {}
 
 export const DeleteBillingAccountResponse: MessageType<DeleteBillingAccountResponse> =
-  /* @__PURE__ */ createEmptyMessageType<DeleteBillingAccountResponse>(
+  /* @__PURE__ */ createMessageType<DeleteBillingAccountResponse>(
     's4wave.provider.spacewave.DeleteBillingAccountResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -7177,24 +5377,15 @@ export const DeleteBillingAccountResponse: MessageType<DeleteBillingAccountRespo
 export interface CreateBillingAccountResponse {
   /**
    * BillingAccountId is the new BA's ULID.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
 }
 
 export const CreateBillingAccountResponse: MessageType<CreateBillingAccountResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateBillingAccountResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateBillingAccountResponse>(
+    's4wave.provider.spacewave.CreateBillingAccountResponse',
+    () => [[1, 'billing_account_id', 9]],
+  )
 
 /**
  * RedeemInviteRequest is the request for RedeemInvite.
@@ -7205,19 +5396,15 @@ export const CreateBillingAccountResponse: MessageType<CreateBillingAccountRespo
 export interface RedeemInviteRequest {
   /**
    * Code is the invite code from the invite link.
-   *
-   * @generated from field: string code = 1;
    */
   code?: string
 }
 
 export const RedeemInviteRequest: MessageType<RedeemInviteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RedeemInviteRequest',
-    fields: [
-      { no: 1, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RedeemInviteRequest>(
+    's4wave.provider.spacewave.RedeemInviteRequest',
+    () => [[1, 'code', 9]],
+  )
 
 /**
  * RedeemInviteResponse is the response for RedeemInvite. Redeeming the same
@@ -7228,33 +5415,23 @@ export const RedeemInviteRequest: MessageType<RedeemInviteRequest> =
 export interface RedeemInviteResponse {
   /**
    * Roles are the platform roles the invite granted.
-   *
-   * @generated from field: repeated string roles = 1;
    */
   roles?: string[]
   /**
    * Sponsored is true when the invite made a sponsored billing account the
    * account's payer.
-   *
-   * @generated from field: bool sponsored = 2;
    */
   sponsored?: boolean
 }
 
 export const RedeemInviteResponse: MessageType<RedeemInviteResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RedeemInviteResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'roles',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'sponsored', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RedeemInviteResponse>(
+    's4wave.provider.spacewave.RedeemInviteResponse',
+    () => [
+      [1, 'roles', 9, 1],
+      [2, 'sponsored', 8],
+    ],
+  )
 
 /**
  * ListManagedBillingAccountsRequest is the request for ListManagedBillingAccounts.
@@ -7264,9 +5441,9 @@ export const RedeemInviteResponse: MessageType<RedeemInviteResponse> =
 export interface ListManagedBillingAccountsRequest {}
 
 export const ListManagedBillingAccountsRequest: MessageType<ListManagedBillingAccountsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ListManagedBillingAccountsRequest>(
+  /* @__PURE__ */ createMessageType<ListManagedBillingAccountsRequest>(
     's4wave.provider.spacewave.ListManagedBillingAccountsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -7277,25 +5454,15 @@ export const ListManagedBillingAccountsRequest: MessageType<ListManagedBillingAc
 export interface ListManagedBillingAccountsResponse {
   /**
    * Accounts is the list of BAs the caller manages, ordered by created_at asc.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.ManagedBillingAccount accounts = 1;
    */
   accounts?: ManagedBillingAccount[]
 }
 
 export const ListManagedBillingAccountsResponse: MessageType<ListManagedBillingAccountsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ListManagedBillingAccountsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'accounts',
-        kind: 'message',
-        T: ManagedBillingAccount,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListManagedBillingAccountsResponse>(
+    's4wave.provider.spacewave.ListManagedBillingAccountsResponse',
+    () => [[1, 'accounts', 11, 1, ManagedBillingAccount.codec]],
+  )
 
 /**
  * GetBillingAccountRequest is the request for GetBillingAccount.
@@ -7305,24 +5472,15 @@ export const ListManagedBillingAccountsResponse: MessageType<ListManagedBillingA
 export interface GetBillingAccountRequest {
   /**
    * BillingAccountId overrides the personal billing account when set.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
 }
 
 export const GetBillingAccountRequest: MessageType<GetBillingAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetBillingAccountRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBillingAccountRequest>(
+    's4wave.provider.spacewave.GetBillingAccountRequest',
+    () => [[1, 'billing_account_id', 9]],
+  )
 
 /**
  * GetBillingAccountResponse is the response for GetBillingAccount.
@@ -7332,19 +5490,15 @@ export const GetBillingAccountRequest: MessageType<GetBillingAccountRequest> =
 export interface GetBillingAccountResponse {
   /**
    * Account is the billing account state.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingAccountInfo account = 1;
    */
   account?: BillingAccountInfo
 }
 
 export const GetBillingAccountResponse: MessageType<GetBillingAccountResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetBillingAccountResponse',
-    fields: [
-      { no: 1, name: 'account', kind: 'message', T: BillingAccountInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBillingAccountResponse>(
+    's4wave.provider.spacewave.GetBillingAccountResponse',
+    () => [[1, 'account', 11, 0, BillingAccountInfo.codec]],
+  )
 
 /**
  * GetBillingUsageRequest is the request for GetBillingUsage.
@@ -7354,24 +5508,15 @@ export const GetBillingAccountResponse: MessageType<GetBillingAccountResponse> =
 export interface GetBillingUsageRequest {
   /**
    * BillingAccountId overrides the personal billing account when set.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
 }
 
 export const GetBillingUsageRequest: MessageType<GetBillingUsageRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetBillingUsageRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBillingUsageRequest>(
+    's4wave.provider.spacewave.GetBillingUsageRequest',
+    () => [[1, 'billing_account_id', 9]],
+  )
 
 /**
  * GetBillingUsageResponse is the response for GetBillingUsage.
@@ -7381,19 +5526,15 @@ export const GetBillingUsageRequest: MessageType<GetBillingUsageRequest> =
 export interface GetBillingUsageResponse {
   /**
    * Usage is the current period usage.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingUsageInfo usage = 1;
    */
   usage?: BillingUsageInfo
 }
 
 export const GetBillingUsageResponse: MessageType<GetBillingUsageResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetBillingUsageResponse',
-    fields: [
-      { no: 1, name: 'usage', kind: 'message', T: BillingUsageInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBillingUsageResponse>(
+    's4wave.provider.spacewave.GetBillingUsageResponse',
+    () => [[1, 'usage', 11, 0, BillingUsageInfo.codec]],
+  )
 
 /**
  * RefreshBillingStateRequest is the request for RefreshBillingState.
@@ -7403,24 +5544,15 @@ export const GetBillingUsageResponse: MessageType<GetBillingUsageResponse> =
 export interface RefreshBillingStateRequest {
   /**
    * BillingAccountId overrides the personal billing account when set.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
 }
 
 export const RefreshBillingStateRequest: MessageType<RefreshBillingStateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RefreshBillingStateRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RefreshBillingStateRequest>(
+    's4wave.provider.spacewave.RefreshBillingStateRequest',
+    () => [[1, 'billing_account_id', 9]],
+  )
 
 /**
  * RefreshBillingStateResponse is the response for RefreshBillingState.
@@ -7430,9 +5562,9 @@ export const RefreshBillingStateRequest: MessageType<RefreshBillingStateRequest>
 export interface RefreshBillingStateResponse {}
 
 export const RefreshBillingStateResponse: MessageType<RefreshBillingStateResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RefreshBillingStateResponse>(
+  /* @__PURE__ */ createMessageType<RefreshBillingStateResponse>(
     's4wave.provider.spacewave.RefreshBillingStateResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -7443,24 +5575,15 @@ export const RefreshBillingStateResponse: MessageType<RefreshBillingStateRespons
 export interface CancelSubscriptionRequest {
   /**
    * BillingAccountId overrides the personal billing account when set.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
 }
 
 export const CancelSubscriptionRequest: MessageType<CancelSubscriptionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CancelSubscriptionRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CancelSubscriptionRequest>(
+    's4wave.provider.spacewave.CancelSubscriptionRequest',
+    () => [[1, 'billing_account_id', 9]],
+  )
 
 /**
  * CancelSubscriptionResponse is the response for CancelSubscription.
@@ -7470,9 +5593,9 @@ export const CancelSubscriptionRequest: MessageType<CancelSubscriptionRequest> =
 export interface CancelSubscriptionResponse {}
 
 export const CancelSubscriptionResponse: MessageType<CancelSubscriptionResponse> =
-  /* @__PURE__ */ createEmptyMessageType<CancelSubscriptionResponse>(
+  /* @__PURE__ */ createMessageType<CancelSubscriptionResponse>(
     's4wave.provider.spacewave.CancelSubscriptionResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -7483,24 +5606,15 @@ export const CancelSubscriptionResponse: MessageType<CancelSubscriptionResponse>
 export interface ReactivateSubscriptionRequest {
   /**
    * BillingAccountId overrides the personal billing account when set.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
 }
 
 export const ReactivateSubscriptionRequest: MessageType<ReactivateSubscriptionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ReactivateSubscriptionRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReactivateSubscriptionRequest>(
+    's4wave.provider.spacewave.ReactivateSubscriptionRequest',
+    () => [[1, 'billing_account_id', 9]],
+  )
 
 /**
  * ReactivateSubscriptionResponse is the response for ReactivateSubscription.
@@ -7511,19 +5625,15 @@ export interface ReactivateSubscriptionResponse {
   /**
    * NeedsCheckout is true when the subscription is lapsed and requires a new
    * checkout session instead of a simple reactivation.
-   *
-   * @generated from field: bool needs_checkout = 1;
    */
   needsCheckout?: boolean
 }
 
 export const ReactivateSubscriptionResponse: MessageType<ReactivateSubscriptionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ReactivateSubscriptionResponse',
-    fields: [
-      { no: 1, name: 'needs_checkout', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReactivateSubscriptionResponse>(
+    's4wave.provider.spacewave.ReactivateSubscriptionResponse',
+    () => [[1, 'needs_checkout', 8]],
+  )
 
 /**
  * SetBillingSpendingLimitRequest updates the recurring operation budget.
@@ -7533,31 +5643,22 @@ export const ReactivateSubscriptionResponse: MessageType<ReactivateSubscriptionR
 export interface SetBillingSpendingLimitRequest {
   /**
    * BillingAccountId identifies the payer whose budget changes.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
   /**
    * Consent records explicit authorization for an increase.
-   *
-   * @generated from field: s4wave.provider.spacewave.BillingConsent consent = 2;
    */
   consent?: BillingConsent
 }
 
 export const SetBillingSpendingLimitRequest: MessageType<SetBillingSpendingLimitRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SetBillingSpendingLimitRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'consent', kind: 'message', T: BillingConsent },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetBillingSpendingLimitRequest>(
+    's4wave.provider.spacewave.SetBillingSpendingLimitRequest',
+    () => [
+      [1, 'billing_account_id', 9],
+      [2, 'consent', 11, 0, BillingConsent.codec],
+    ],
+  )
 
 /**
  * SetBillingSpendingLimitResponse acknowledges the persisted spending choice.
@@ -7567,9 +5668,9 @@ export const SetBillingSpendingLimitRequest: MessageType<SetBillingSpendingLimit
 export interface SetBillingSpendingLimitResponse {}
 
 export const SetBillingSpendingLimitResponse: MessageType<SetBillingSpendingLimitResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetBillingSpendingLimitResponse>(
+  /* @__PURE__ */ createMessageType<SetBillingSpendingLimitResponse>(
     's4wave.provider.spacewave.SetBillingSpendingLimitResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -7580,24 +5681,15 @@ export const SetBillingSpendingLimitResponse: MessageType<SetBillingSpendingLimi
 export interface CreateBillingPortalRequest {
   /**
    * BillingAccountId overrides the personal billing account when set.
-   *
-   * @generated from field: string billing_account_id = 1;
    */
   billingAccountId?: string
 }
 
 export const CreateBillingPortalRequest: MessageType<CreateBillingPortalRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateBillingPortalRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateBillingPortalRequest>(
+    's4wave.provider.spacewave.CreateBillingPortalRequest',
+    () => [[1, 'billing_account_id', 9]],
+  )
 
 /**
  * CreateBillingPortalResponse is the response for CreateBillingPortal.
@@ -7607,19 +5699,15 @@ export const CreateBillingPortalRequest: MessageType<CreateBillingPortalRequest>
 export interface CreateBillingPortalResponse {
   /**
    * Url is the Stripe billing portal URL.
-   *
-   * @generated from field: string url = 1;
    */
   url?: string
 }
 
 export const CreateBillingPortalResponse: MessageType<CreateBillingPortalResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.CreateBillingPortalResponse',
-    fields: [
-      { no: 1, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateBillingPortalResponse>(
+    's4wave.provider.spacewave.CreateBillingPortalResponse',
+    () => [[1, 'url', 9]],
+  )
 
 /**
  * RequestDeleteNowEmailRequest is the request for RequestDeleteNowEmail.
@@ -7629,9 +5717,9 @@ export const CreateBillingPortalResponse: MessageType<CreateBillingPortalRespons
 export interface RequestDeleteNowEmailRequest {}
 
 export const RequestDeleteNowEmailRequest: MessageType<RequestDeleteNowEmailRequest> =
-  /* @__PURE__ */ createEmptyMessageType<RequestDeleteNowEmailRequest>(
+  /* @__PURE__ */ createMessageType<RequestDeleteNowEmailRequest>(
     's4wave.provider.spacewave.RequestDeleteNowEmailRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -7642,33 +5730,27 @@ export const RequestDeleteNowEmailRequest: MessageType<RequestDeleteNowEmailRequ
 export interface RequestDeleteNowEmailResponse {
   /**
    * Sent is true if the confirmation email was queued.
-   *
-   * @generated from field: bool sent = 1;
    */
   sent?: boolean
   /**
    * RetryAfter is the resend cooldown in seconds. Zero means sent immediately.
-   *
-   * @generated from field: uint32 retry_after = 2;
    */
   retryAfter?: number
   /**
    * Email is the verified address that received the confirmation email.
-   *
-   * @generated from field: string email = 3;
    */
   email?: string
 }
 
 export const RequestDeleteNowEmailResponse: MessageType<RequestDeleteNowEmailResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RequestDeleteNowEmailResponse',
-    fields: [
-      { no: 1, name: 'sent', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'retry_after', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RequestDeleteNowEmailResponse>(
+    's4wave.provider.spacewave.RequestDeleteNowEmailResponse',
+    () => [
+      [1, 'sent', 8],
+      [2, 'retry_after', 13],
+      [3, 'email', 9],
+    ],
+  )
 
 /**
  * ConfirmDeleteNowCodeRequest is the request for ConfirmDeleteNowCode.
@@ -7678,19 +5760,15 @@ export const RequestDeleteNowEmailResponse: MessageType<RequestDeleteNowEmailRes
 export interface ConfirmDeleteNowCodeRequest {
   /**
    * Code is the 6-digit delete-now confirmation code.
-   *
-   * @generated from field: string code = 1;
    */
   code?: string
 }
 
 export const ConfirmDeleteNowCodeRequest: MessageType<ConfirmDeleteNowCodeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ConfirmDeleteNowCodeRequest',
-    fields: [
-      { no: 1, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfirmDeleteNowCodeRequest>(
+    's4wave.provider.spacewave.ConfirmDeleteNowCodeRequest',
+    () => [[1, 'code', 9]],
+  )
 
 /**
  * ConfirmDeleteNowCodeResponse is the response for ConfirmDeleteNowCode.
@@ -7700,73 +5778,52 @@ export const ConfirmDeleteNowCodeRequest: MessageType<ConfirmDeleteNowCodeReques
 export interface ConfirmDeleteNowCodeResponse {
   /**
    * DeleteAt is when the 24-hour delete-now countdown ends.
-   *
-   * @generated from field: uint64 delete_at = 1;
    */
   deleteAt?: bigint
   /**
    * InvoiceTotal is Stripe's final invoice total in cents.
-   *
-   * @generated from field: int64 invoice_total = 2;
    */
   invoiceTotal?: bigint
   /**
    * InvoiceAmountDue is the final invoice amount due in cents.
-   *
-   * @generated from field: int64 invoice_amount_due = 3;
    */
   invoiceAmountDue?: bigint
   /**
    * InvoiceCurrency is the final invoice currency code.
-   *
-   * @generated from field: string invoice_currency = 4;
    */
   invoiceCurrency?: string
   /**
    * InvoiceStatus is the final invoice status.
-   *
-   * @generated from field: string invoice_status = 5;
    */
   invoiceStatus?: string
   /**
    * ChargeAttempted reports whether Stripe attempted an immediate charge.
-   *
-   * @generated from field: bool charge_attempted = 6;
    */
   chargeAttempted?: boolean
   /**
    * RefundAmount is the immediate refund amount in cents.
-   *
-   * @generated from field: int64 refund_amount = 7;
    */
   refundAmount?: bigint
   /**
    * RefundCurrency is the refund currency code.
-   *
-   * @generated from field: string refund_currency = 8;
    */
   refundCurrency?: string
 }
 
 export const ConfirmDeleteNowCodeResponse: MessageType<ConfirmDeleteNowCodeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ConfirmDeleteNowCodeResponse',
-    fields: [
-      { no: 1, name: 'delete_at', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'invoice_total', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 3,
-        name: 'invoice_amount_due',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      { no: 4, name: 'invoice_currency', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'invoice_status', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'charge_attempted', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'refund_amount', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 8, name: 'refund_currency', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfirmDeleteNowCodeResponse>(
+    's4wave.provider.spacewave.ConfirmDeleteNowCodeResponse',
+    () => [
+      [1, 'delete_at', 4],
+      [2, 'invoice_total', 3],
+      [3, 'invoice_amount_due', 3],
+      [4, 'invoice_currency', 9],
+      [5, 'invoice_status', 9],
+      [6, 'charge_attempted', 8],
+      [7, 'refund_amount', 3],
+      [8, 'refund_currency', 9],
+    ],
+  )
 
 /**
  * UndoDeleteNowRequest is the request for UndoDeleteNow.
@@ -7776,9 +5833,9 @@ export const ConfirmDeleteNowCodeResponse: MessageType<ConfirmDeleteNowCodeRespo
 export interface UndoDeleteNowRequest {}
 
 export const UndoDeleteNowRequest: MessageType<UndoDeleteNowRequest> =
-  /* @__PURE__ */ createEmptyMessageType<UndoDeleteNowRequest>(
+  /* @__PURE__ */ createMessageType<UndoDeleteNowRequest>(
     's4wave.provider.spacewave.UndoDeleteNowRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -7789,9 +5846,9 @@ export const UndoDeleteNowRequest: MessageType<UndoDeleteNowRequest> =
 export interface UndoDeleteNowResponse {}
 
 export const UndoDeleteNowResponse: MessageType<UndoDeleteNowResponse> =
-  /* @__PURE__ */ createEmptyMessageType<UndoDeleteNowResponse>(
+  /* @__PURE__ */ createMessageType<UndoDeleteNowResponse>(
     's4wave.provider.spacewave.UndoDeleteNowResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -7802,40 +5859,32 @@ export const UndoDeleteNowResponse: MessageType<UndoDeleteNowResponse> =
 export interface EmailInfo {
   /**
    * Email is the email address.
-   *
-   * @generated from field: string email = 1;
    */
   email?: string
   /**
    * Verified is true if the email has been verified.
-   *
-   * @generated from field: bool verified = 2;
    */
   verified?: boolean
   /**
    * Source is the origin of the email (manual, stripe, sso, test).
-   *
-   * @generated from field: string source = 3;
    */
   source?: string
   /**
    * Primary is true if this is the primary email.
-   *
-   * @generated from field: bool primary = 4;
    */
   primary?: boolean
 }
 
 export const EmailInfo: MessageType<EmailInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.EmailInfo',
-    fields: [
-      { no: 1, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'verified', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'source', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'primary', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EmailInfo>(
+    's4wave.provider.spacewave.EmailInfo',
+    () => [
+      [1, 'email', 9],
+      [2, 'verified', 8],
+      [3, 'source', 9],
+      [4, 'primary', 8],
+    ],
+  )
 
 /**
  * ListEmailsRequest is the request for ListEmails.
@@ -7845,9 +5894,9 @@ export const EmailInfo: MessageType<EmailInfo> =
 export interface ListEmailsRequest {}
 
 export const ListEmailsRequest: MessageType<ListEmailsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ListEmailsRequest>(
+  /* @__PURE__ */ createMessageType<ListEmailsRequest>(
     's4wave.provider.spacewave.ListEmailsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -7858,19 +5907,15 @@ export const ListEmailsRequest: MessageType<ListEmailsRequest> =
 export interface ListEmailsResponse {
   /**
    * Emails is the list of account email entries.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.EmailInfo emails = 1;
    */
   emails?: EmailInfo[]
 }
 
 export const ListEmailsResponse: MessageType<ListEmailsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ListEmailsResponse',
-    fields: [
-      { no: 1, name: 'emails', kind: 'message', T: EmailInfo, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListEmailsResponse>(
+    's4wave.provider.spacewave.ListEmailsResponse',
+    () => [[1, 'emails', 11, 1, EmailInfo.codec]],
+  )
 
 /**
  * WatchEmailsRequest is the request for WatchEmails.
@@ -7880,9 +5925,9 @@ export const ListEmailsResponse: MessageType<ListEmailsResponse> =
 export interface WatchEmailsRequest {}
 
 export const WatchEmailsRequest: MessageType<WatchEmailsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchEmailsRequest>(
+  /* @__PURE__ */ createMessageType<WatchEmailsRequest>(
     's4wave.provider.spacewave.WatchEmailsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -7893,19 +5938,15 @@ export const WatchEmailsRequest: MessageType<WatchEmailsRequest> =
 export interface WatchEmailsResponse {
   /**
    * Emails is the list of account email entries.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.EmailInfo emails = 1;
    */
   emails?: EmailInfo[]
 }
 
 export const WatchEmailsResponse: MessageType<WatchEmailsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.WatchEmailsResponse',
-    fields: [
-      { no: 1, name: 'emails', kind: 'message', T: EmailInfo, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchEmailsResponse>(
+    's4wave.provider.spacewave.WatchEmailsResponse',
+    () => [[1, 'emails', 11, 1, EmailInfo.codec]],
+  )
 
 /**
  * SendVerificationEmailRequest is the request for SendVerificationEmail.
@@ -7915,19 +5956,15 @@ export const WatchEmailsResponse: MessageType<WatchEmailsResponse> =
 export interface SendVerificationEmailRequest {
   /**
    * Email is the email address to send verification to.
-   *
-   * @generated from field: string email = 1;
    */
   email?: string
 }
 
 export const SendVerificationEmailRequest: MessageType<SendVerificationEmailRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SendVerificationEmailRequest',
-    fields: [
-      { no: 1, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SendVerificationEmailRequest>(
+    's4wave.provider.spacewave.SendVerificationEmailRequest',
+    () => [[1, 'email', 9]],
+  )
 
 /**
  * SendVerificationEmailResponse is the response for SendVerificationEmail.
@@ -7937,26 +5974,22 @@ export const SendVerificationEmailRequest: MessageType<SendVerificationEmailRequ
 export interface SendVerificationEmailResponse {
   /**
    * Sent is true if the verification email was sent.
-   *
-   * @generated from field: bool sent = 1;
    */
   sent?: boolean
   /**
    * RetryAfter is the number of seconds to wait before resending. Zero if sent immediately.
-   *
-   * @generated from field: uint32 retry_after = 2;
    */
   retryAfter?: number
 }
 
 export const SendVerificationEmailResponse: MessageType<SendVerificationEmailResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SendVerificationEmailResponse',
-    fields: [
-      { no: 1, name: 'sent', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'retry_after', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SendVerificationEmailResponse>(
+    's4wave.provider.spacewave.SendVerificationEmailResponse',
+    () => [
+      [1, 'sent', 8],
+      [2, 'retry_after', 13],
+    ],
+  )
 
 /**
  * VerifyEmailCodeRequest is the request for VerifyEmailCode.
@@ -7966,26 +5999,22 @@ export const SendVerificationEmailResponse: MessageType<SendVerificationEmailRes
 export interface VerifyEmailCodeRequest {
   /**
    * Email is the email address being verified.
-   *
-   * @generated from field: string email = 1;
    */
   email?: string
   /**
    * Code is the 6-digit verification code.
-   *
-   * @generated from field: string code = 2;
    */
   code?: string
 }
 
 export const VerifyEmailCodeRequest: MessageType<VerifyEmailCodeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.VerifyEmailCodeRequest',
-    fields: [
-      { no: 1, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<VerifyEmailCodeRequest>(
+    's4wave.provider.spacewave.VerifyEmailCodeRequest',
+    () => [
+      [1, 'email', 9],
+      [2, 'code', 9],
+    ],
+  )
 
 /**
  * VerifyEmailCodeResponse is the response for VerifyEmailCode.
@@ -7995,19 +6024,15 @@ export const VerifyEmailCodeRequest: MessageType<VerifyEmailCodeRequest> =
 export interface VerifyEmailCodeResponse {
   /**
    * Verified is true if the code was valid and the email is now verified.
-   *
-   * @generated from field: bool verified = 1;
    */
   verified?: boolean
 }
 
 export const VerifyEmailCodeResponse: MessageType<VerifyEmailCodeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.VerifyEmailCodeResponse',
-    fields: [
-      { no: 1, name: 'verified', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<VerifyEmailCodeResponse>(
+    's4wave.provider.spacewave.VerifyEmailCodeResponse',
+    () => [[1, 'verified', 8]],
+  )
 
 /**
  * AddEmailRequest is the request for AddEmail.
@@ -8017,19 +6042,15 @@ export const VerifyEmailCodeResponse: MessageType<VerifyEmailCodeResponse> =
 export interface AddEmailRequest {
   /**
    * Email is the email address to add.
-   *
-   * @generated from field: string email = 1;
    */
   email?: string
 }
 
 export const AddEmailRequest: MessageType<AddEmailRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.AddEmailRequest',
-    fields: [
-      { no: 1, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddEmailRequest>(
+    's4wave.provider.spacewave.AddEmailRequest',
+    () => [[1, 'email', 9]],
+  )
 
 /**
  * AddEmailResponse is the response for AddEmail.
@@ -8039,26 +6060,22 @@ export const AddEmailRequest: MessageType<AddEmailRequest> =
 export interface AddEmailResponse {
   /**
    * Sent is true if a verification email was sent.
-   *
-   * @generated from field: bool sent = 1;
    */
   sent?: boolean
   /**
    * RetryAfter is the number of seconds to wait before resending. Zero if sent immediately.
-   *
-   * @generated from field: uint32 retry_after = 2;
    */
   retryAfter?: number
 }
 
 export const AddEmailResponse: MessageType<AddEmailResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.AddEmailResponse',
-    fields: [
-      { no: 1, name: 'sent', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'retry_after', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddEmailResponse>(
+    's4wave.provider.spacewave.AddEmailResponse',
+    () => [
+      [1, 'sent', 8],
+      [2, 'retry_after', 13],
+    ],
+  )
 
 /**
  * RemoveEmailRequest is the request for RemoveEmail.
@@ -8068,19 +6085,15 @@ export const AddEmailResponse: MessageType<AddEmailResponse> =
 export interface RemoveEmailRequest {
   /**
    * Email is the email address to remove.
-   *
-   * @generated from field: string email = 1;
    */
   email?: string
 }
 
 export const RemoveEmailRequest: MessageType<RemoveEmailRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RemoveEmailRequest',
-    fields: [
-      { no: 1, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveEmailRequest>(
+    's4wave.provider.spacewave.RemoveEmailRequest',
+    () => [[1, 'email', 9]],
+  )
 
 /**
  * RemoveEmailResponse is the response for RemoveEmail.
@@ -8090,9 +6103,9 @@ export const RemoveEmailRequest: MessageType<RemoveEmailRequest> =
 export interface RemoveEmailResponse {}
 
 export const RemoveEmailResponse: MessageType<RemoveEmailResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RemoveEmailResponse>(
+  /* @__PURE__ */ createMessageType<RemoveEmailResponse>(
     's4wave.provider.spacewave.RemoveEmailResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -8103,19 +6116,15 @@ export const RemoveEmailResponse: MessageType<RemoveEmailResponse> =
 export interface SetPrimaryEmailRequest {
   /**
    * Email is the verified email address to promote to primary.
-   *
-   * @generated from field: string email = 1;
    */
   email?: string
 }
 
 export const SetPrimaryEmailRequest: MessageType<SetPrimaryEmailRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SetPrimaryEmailRequest',
-    fields: [
-      { no: 1, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetPrimaryEmailRequest>(
+    's4wave.provider.spacewave.SetPrimaryEmailRequest',
+    () => [[1, 'email', 9]],
+  )
 
 /**
  * SetPrimaryEmailResponse is the response for SetPrimaryEmail.
@@ -8125,19 +6134,15 @@ export const SetPrimaryEmailRequest: MessageType<SetPrimaryEmailRequest> =
 export interface SetPrimaryEmailResponse {
   /**
    * Primary is the email that is now primary after the call.
-   *
-   * @generated from field: string primary = 1;
    */
   primary?: string
 }
 
 export const SetPrimaryEmailResponse: MessageType<SetPrimaryEmailResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SetPrimaryEmailResponse',
-    fields: [
-      { no: 1, name: 'primary', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetPrimaryEmailResponse>(
+    's4wave.provider.spacewave.SetPrimaryEmailResponse',
+    () => [[1, 'primary', 9]],
+  )
 
 /**
  * EnrollSpaceMemberRequest is the request for EnrollSpaceMember.
@@ -8147,33 +6152,27 @@ export const SetPrimaryEmailResponse: MessageType<SetPrimaryEmailResponse> =
 export interface EnrollSpaceMemberRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * AccountId is the target member's account ID.
-   *
-   * @generated from field: string account_id = 2;
    */
   accountId?: string
   /**
    * Role is the participant role to assign (e.g. WRITER).
-   *
-   * @generated from field: sobject.SOParticipantRole role = 3;
    */
   role?: SOParticipantRole
 }
 
 export const EnrollSpaceMemberRequest: MessageType<EnrollSpaceMemberRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.EnrollSpaceMemberRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'role', kind: 'enum', T: SOParticipantRole_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnrollSpaceMemberRequest>(
+    's4wave.provider.spacewave.EnrollSpaceMemberRequest',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'account_id', 9],
+      [3, 'role', 14, 0, SOParticipantRole_Enum],
+    ],
+  )
 
 /**
  * EnrollSpaceMemberResult describes the enrollment outcome for a single peer.
@@ -8183,45 +6182,32 @@ export const EnrollSpaceMemberRequest: MessageType<EnrollSpaceMemberRequest> =
 export interface EnrollSpaceMemberResult {
   /**
    * PeerId is the session peer ID (base58).
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * Enrolled is true if the peer was successfully enrolled.
-   *
-   * @generated from field: bool enrolled = 2;
    */
   enrolled?: boolean
   /**
    * AlreadyParticipant is true if the peer was already a participant (no-op).
-   *
-   * @generated from field: bool already_participant = 3;
    */
   alreadyParticipant?: boolean
   /**
    * Error is set if enrollment failed for this peer.
-   *
-   * @generated from field: string error = 4;
    */
   error?: string
 }
 
 export const EnrollSpaceMemberResult: MessageType<EnrollSpaceMemberResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.EnrollSpaceMemberResult',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'enrolled', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'already_participant',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 4, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnrollSpaceMemberResult>(
+    's4wave.provider.spacewave.EnrollSpaceMemberResult',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'enrolled', 8],
+      [3, 'already_participant', 8],
+      [4, 'error', 9],
+    ],
+  )
 
 /**
  * EnrollSpaceMemberResponse is the response for EnrollSpaceMember.
@@ -8231,25 +6217,15 @@ export const EnrollSpaceMemberResult: MessageType<EnrollSpaceMemberResult> =
 export interface EnrollSpaceMemberResponse {
   /**
    * Results is one entry per session peer for the target account.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.EnrollSpaceMemberResult results = 1;
    */
   results?: EnrollSpaceMemberResult[]
 }
 
 export const EnrollSpaceMemberResponse: MessageType<EnrollSpaceMemberResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.EnrollSpaceMemberResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'results',
-        kind: 'message',
-        T: EnrollSpaceMemberResult,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnrollSpaceMemberResponse>(
+    's4wave.provider.spacewave.EnrollSpaceMemberResponse',
+    () => [[1, 'results', 11, 1, EnrollSpaceMemberResult.codec]],
+  )
 
 /**
  * RemoveSpaceMemberRequest is the request for RemoveSpaceMember.
@@ -8259,26 +6235,22 @@ export const EnrollSpaceMemberResponse: MessageType<EnrollSpaceMemberResponse> =
 export interface RemoveSpaceMemberRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * AccountId is the target member's account ID.
-   *
-   * @generated from field: string account_id = 2;
    */
   accountId?: string
 }
 
 export const RemoveSpaceMemberRequest: MessageType<RemoveSpaceMemberRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RemoveSpaceMemberRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveSpaceMemberRequest>(
+    's4wave.provider.spacewave.RemoveSpaceMemberRequest',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'account_id', 9],
+    ],
+  )
 
 /**
  * RemoveSpaceMemberResult describes the removal outcome for a single peer.
@@ -8288,40 +6260,32 @@ export const RemoveSpaceMemberRequest: MessageType<RemoveSpaceMemberRequest> =
 export interface RemoveSpaceMemberResult {
   /**
    * PeerId is the session peer ID (base58).
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * Removed is true if the peer was successfully removed.
-   *
-   * @generated from field: bool removed = 2;
    */
   removed?: boolean
   /**
    * NotParticipant is true if the peer was not a participant (no-op).
-   *
-   * @generated from field: bool not_participant = 3;
    */
   notParticipant?: boolean
   /**
    * Error is set if removal failed for this peer.
-   *
-   * @generated from field: string error = 4;
    */
   error?: string
 }
 
 export const RemoveSpaceMemberResult: MessageType<RemoveSpaceMemberResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RemoveSpaceMemberResult',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'removed', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'not_participant', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveSpaceMemberResult>(
+    's4wave.provider.spacewave.RemoveSpaceMemberResult',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'removed', 8],
+      [3, 'not_participant', 8],
+      [4, 'error', 9],
+    ],
+  )
 
 /**
  * RemoveSpaceMemberResponse is the response for RemoveSpaceMember.
@@ -8331,33 +6295,23 @@ export const RemoveSpaceMemberResult: MessageType<RemoveSpaceMemberResult> =
 export interface RemoveSpaceMemberResponse {
   /**
    * Results is one entry per session peer for the target account.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.RemoveSpaceMemberResult results = 1;
    */
   results?: RemoveSpaceMemberResult[]
   /**
    * AwaitingGroup is true when the viewer agreed to the removal under group
    * control, and it applies once the group decides it. Results is then empty.
-   *
-   * @generated from field: bool awaiting_group = 2;
    */
   awaitingGroup?: boolean
 }
 
 export const RemoveSpaceMemberResponse: MessageType<RemoveSpaceMemberResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.RemoveSpaceMemberResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'results',
-        kind: 'message',
-        T: RemoveSpaceMemberResult,
-        repeated: true,
-      },
-      { no: 2, name: 'awaiting_group', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveSpaceMemberResponse>(
+    's4wave.provider.spacewave.RemoveSpaceMemberResponse',
+    () => [
+      [1, 'results', 11, 1, RemoveSpaceMemberResult.codec],
+      [2, 'awaiting_group', 8],
+    ],
+  )
 
 /**
  * LookupInviteCodeRequest is the request for LookupInviteCode.
@@ -8367,19 +6321,15 @@ export const RemoveSpaceMemberResponse: MessageType<RemoveSpaceMemberResponse> =
 export interface LookupInviteCodeRequest {
   /**
    * Code is the short invite code to look up.
-   *
-   * @generated from field: string code = 1;
    */
   code?: string
 }
 
 export const LookupInviteCodeRequest: MessageType<LookupInviteCodeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LookupInviteCodeRequest',
-    fields: [
-      { no: 1, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupInviteCodeRequest>(
+    's4wave.provider.spacewave.LookupInviteCodeRequest',
+    () => [[1, 'code', 9]],
+  )
 
 /**
  * LookupInviteCodeResponse is the response for LookupInviteCode.
@@ -8389,31 +6339,22 @@ export const LookupInviteCodeRequest: MessageType<LookupInviteCodeRequest> =
 export interface LookupInviteCodeResponse {
   /**
    * InviteId is the invite identifier.
-   *
-   * @generated from field: string invite_id = 1;
    */
   inviteId?: string
   /**
    * InviteMessage is the full SOInviteMessage for the code.
-   *
-   * @generated from field: sobject.SOInviteMessage invite_message = 2;
    */
   inviteMessage?: SOInviteMessage
 }
 
 export const LookupInviteCodeResponse: MessageType<LookupInviteCodeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.LookupInviteCodeResponse',
-    fields: [
-      { no: 1, name: 'invite_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'invite_message',
-        kind: 'message',
-        T: () => SOInviteMessage,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupInviteCodeResponse>(
+    's4wave.provider.spacewave.LookupInviteCodeResponse',
+    () => [
+      [1, 'invite_id', 9],
+      [2, 'invite_message', 11, 0, SOInviteMessage.codec],
+    ],
+  )
 
 /**
  * GetMailboxEntriesRequest is the request for GetMailboxEntries.
@@ -8423,83 +6364,15 @@ export const LookupInviteCodeResponse: MessageType<LookupInviteCodeResponse> =
 export interface GetMailboxEntriesRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
 }
 
 export const GetMailboxEntriesRequest: MessageType<GetMailboxEntriesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetMailboxEntriesRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * MailboxEntryInfo is a pending mailbox entry.
- *
- * @generated from message s4wave.provider.spacewave.MailboxEntryInfo
- */
-export interface MailboxEntryInfo {
-  /**
-   * Id is the entry ID.
-   *
-   * @generated from field: int64 id = 1;
-   */
-  id?: bigint
-  /**
-   * InviteId is the invite this entry corresponds to.
-   *
-   * @generated from field: string invite_id = 2;
-   */
-  inviteId?: string
-  /**
-   * PeerId is the peer who submitted the join response.
-   *
-   * @generated from field: string peer_id = 3;
-   */
-  peerId?: string
-  /**
-   * Status is the current status (pending, accepted, rejected).
-   *
-   * @generated from field: string status = 4;
-   */
-  status?: string
-  /**
-   * CreatedAt is the creation timestamp in milliseconds.
-   *
-   * @generated from field: int64 created_at = 5;
-   */
-  createdAt?: bigint
-  /**
-   * AccountId is the invitee cloud account that submitted the entry.
-   *
-   * @generated from field: string account_id = 6;
-   */
-  accountId?: string
-  /**
-   * EntityId is the provider-attested username / entity identifier.
-   *
-   * @generated from field: string entity_id = 7;
-   */
-  entityId?: string
-}
-
-export const MailboxEntryInfo: MessageType<MailboxEntryInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.MailboxEntryInfo',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 2, name: 'invite_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'status', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'created_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 6, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetMailboxEntriesRequest>(
+    's4wave.provider.spacewave.GetMailboxEntriesRequest',
+    () => [[1, 'space_id', 9]],
+  )
 
 /**
  * GetMailboxEntriesResponse is the response for GetMailboxEntries.
@@ -8509,25 +6382,65 @@ export const MailboxEntryInfo: MessageType<MailboxEntryInfo> =
 export interface GetMailboxEntriesResponse {
   /**
    * Entries is the list of pending mailbox entries.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.MailboxEntryInfo entries = 1;
    */
   entries?: MailboxEntryInfo[]
 }
 
 export const GetMailboxEntriesResponse: MessageType<GetMailboxEntriesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.GetMailboxEntriesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'message',
-        T: MailboxEntryInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetMailboxEntriesResponse>(
+    's4wave.provider.spacewave.GetMailboxEntriesResponse',
+    () => [[1, 'entries', 11, 1, MailboxEntryInfo.codec]],
+  )
+
+/**
+ * MailboxEntryInfo is a pending mailbox entry.
+ *
+ * @generated from message s4wave.provider.spacewave.MailboxEntryInfo
+ */
+export interface MailboxEntryInfo {
+  /**
+   * Id is the entry ID.
+   */
+  id?: bigint
+  /**
+   * InviteId is the invite this entry corresponds to.
+   */
+  inviteId?: string
+  /**
+   * PeerId is the peer who submitted the join response.
+   */
+  peerId?: string
+  /**
+   * Status is the current status (pending, accepted, rejected).
+   */
+  status?: string
+  /**
+   * CreatedAt is the creation timestamp in milliseconds.
+   */
+  createdAt?: bigint
+  /**
+   * AccountId is the invitee cloud account that submitted the entry.
+   */
+  accountId?: string
+  /**
+   * EntityId is the provider-attested username / entity identifier.
+   */
+  entityId?: string
+}
+
+export const MailboxEntryInfo: MessageType<MailboxEntryInfo> =
+  /* @__PURE__ */ createMessageType<MailboxEntryInfo>(
+    's4wave.provider.spacewave.MailboxEntryInfo',
+    () => [
+      [1, 'id', 3],
+      [2, 'invite_id', 9],
+      [3, 'peer_id', 9],
+      [4, 'status', 9],
+      [5, 'created_at', 3],
+      [6, 'account_id', 9],
+      [7, 'entity_id', 9],
+    ],
+  )
 
 /**
  * ProcessMailboxEntryRequest is the request for ProcessMailboxEntry.
@@ -8537,33 +6450,27 @@ export const GetMailboxEntriesResponse: MessageType<GetMailboxEntriesResponse> =
 export interface ProcessMailboxEntryRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * EntryId is the mailbox entry ID.
-   *
-   * @generated from field: int64 entry_id = 2;
    */
   entryId?: bigint
   /**
    * Accept indicates whether to accept (true) or reject (false) the entry.
-   *
-   * @generated from field: bool accept = 3;
    */
   accept?: boolean
 }
 
 export const ProcessMailboxEntryRequest: MessageType<ProcessMailboxEntryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ProcessMailboxEntryRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'entry_id', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 3, name: 'accept', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ProcessMailboxEntryRequest>(
+    's4wave.provider.spacewave.ProcessMailboxEntryRequest',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'entry_id', 3],
+      [3, 'accept', 8],
+    ],
+  )
 
 /**
  * ProcessMailboxEntryResponse is the response for ProcessMailboxEntry.
@@ -8573,9 +6480,9 @@ export const ProcessMailboxEntryRequest: MessageType<ProcessMailboxEntryRequest>
 export interface ProcessMailboxEntryResponse {}
 
 export const ProcessMailboxEntryResponse: MessageType<ProcessMailboxEntryResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ProcessMailboxEntryResponse>(
+  /* @__PURE__ */ createMessageType<ProcessMailboxEntryResponse>(
     's4wave.provider.spacewave.ProcessMailboxEntryResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -8586,92 +6493,62 @@ export const ProcessMailboxEntryResponse: MessageType<ProcessMailboxEntryRespons
 export interface SpaceLinkAuthRequest {
   /**
    * Version is the SpaceLink wire version.
-   *
-   * @generated from field: uint32 version = 1;
    */
   version?: number
   /**
    * SessionType is the type of session the external actor is requesting.
-   *
-   * @generated from field: session.SessionType session_type = 2;
    */
   sessionType?: SessionType
   /**
    * AgentPeerId is the raw bifrost peer ID bytes for the external actor.
-   *
-   * @generated from field: bytes agent_peer_id = 3;
    */
   agentPeerId?: Uint8Array
   /**
    * Label is the external actor display label.
-   *
-   * @generated from field: string label = 4;
    */
   label?: string
   /**
    * CallbackUrl is the post-consent redirect target.
-   *
-   * @generated from field: string callback_url = 5;
    */
   callbackUrl?: string
   /**
    * RequestedRole is the participant role requested for the target Space.
-   *
-   * @generated from field: sobject.SOParticipantRole requested_role = 6;
    */
   requestedRole?: SOParticipantRole
   /**
    * Nonce is the replay-defense nonce.
-   *
-   * @generated from field: bytes nonce = 7;
    */
   nonce?: Uint8Array
   /**
    * ExpiresAt is the hard expiry time as Unix seconds.
-   *
-   * @generated from field: int64 expires_at = 8;
    */
   expiresAt?: bigint
   /**
    * TargetHint is an optional suggested target Space resource ID.
-   *
-   * @generated from field: bytes target_hint = 9;
    */
   targetHint?: Uint8Array
   /**
    * CompletionMode is how the external actor expects approval completion.
-   *
-   * @generated from field: s4wave.provider.spacewave.SpaceLinkCompletionMode completion_mode = 10;
    */
   completionMode?: SpaceLinkCompletionMode
 }
 
 export const SpaceLinkAuthRequest: MessageType<SpaceLinkAuthRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SpaceLinkAuthRequest',
-    fields: [
-      { no: 1, name: 'version', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'session_type', kind: 'enum', T: SessionType_Enum },
-      { no: 3, name: 'agent_peer_id', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'callback_url', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'requested_role',
-        kind: 'enum',
-        T: SOParticipantRole_Enum,
-      },
-      { no: 7, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 8, name: 'expires_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 9, name: 'target_hint', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 10,
-        name: 'completion_mode',
-        kind: 'enum',
-        T: SpaceLinkCompletionMode_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceLinkAuthRequest>(
+    's4wave.provider.spacewave.SpaceLinkAuthRequest',
+    () => [
+      [1, 'version', 13],
+      [2, 'session_type', 14, 0, SessionType_Enum],
+      [3, 'agent_peer_id', 12],
+      [4, 'label', 9],
+      [5, 'callback_url', 9],
+      [6, 'requested_role', 14, 0, SOParticipantRole_Enum],
+      [7, 'nonce', 12],
+      [8, 'expires_at', 3],
+      [9, 'target_hint', 12],
+      [10, 'completion_mode', 14, 0, SpaceLinkCompletionMode_Enum],
+    ],
+  )
 
 /**
  * SpaceLinkAuthTicket is the signed SpaceLink ticket envelope.
@@ -8681,26 +6558,22 @@ export const SpaceLinkAuthRequest: MessageType<SpaceLinkAuthRequest> =
 export interface SpaceLinkAuthTicket {
   /**
    * Payload is the exact serialized SpaceLinkAuthRequest bytes.
-   *
-   * @generated from field: bytes payload = 1;
    */
   payload?: Uint8Array
   /**
    * AgentSignature verifies over Payload directly without reserialization.
-   *
-   * @generated from field: bytes agent_signature = 2;
    */
   agentSignature?: Uint8Array
 }
 
 export const SpaceLinkAuthTicket: MessageType<SpaceLinkAuthTicket> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SpaceLinkAuthTicket',
-    fields: [
-      { no: 1, name: 'payload', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'agent_signature', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceLinkAuthTicket>(
+    's4wave.provider.spacewave.SpaceLinkAuthTicket',
+    () => [
+      [1, 'payload', 12],
+      [2, 'agent_signature', 12],
+    ],
+  )
 
 /**
  * PreviewSpaceLinkRequest is the request for PreviewSpaceLink.
@@ -8710,19 +6583,15 @@ export const SpaceLinkAuthTicket: MessageType<SpaceLinkAuthTicket> =
 export interface PreviewSpaceLinkRequest {
   /**
    * Ticket is the SpaceLinkAuthTicket proto bytes.
-   *
-   * @generated from field: bytes ticket = 1;
    */
   ticket?: Uint8Array
 }
 
 export const PreviewSpaceLinkRequest: MessageType<PreviewSpaceLinkRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PreviewSpaceLinkRequest',
-    fields: [
-      { no: 1, name: 'ticket', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PreviewSpaceLinkRequest>(
+    's4wave.provider.spacewave.PreviewSpaceLinkRequest',
+    () => [[1, 'ticket', 12]],
+  )
 
 /**
  * PreviewSpaceLinkResponse is the response for PreviewSpaceLink.
@@ -8732,85 +6601,57 @@ export const PreviewSpaceLinkRequest: MessageType<PreviewSpaceLinkRequest> =
 export interface PreviewSpaceLinkResponse {
   /**
    * Label is the verified external actor display label.
-   *
-   * @generated from field: string label = 1;
    */
   label?: string
   /**
    * SessionType is the verified external actor session type.
-   *
-   * @generated from field: session.SessionType session_type = 2;
    */
   sessionType?: SessionType
   /**
    * AgentPeerId is the verified raw bifrost peer ID bytes.
-   *
-   * @generated from field: bytes agent_peer_id = 3;
    */
   agentPeerId?: Uint8Array
   /**
    * RequestedRole is the verified requested participant role.
-   *
-   * @generated from field: sobject.SOParticipantRole requested_role = 4;
    */
   requestedRole?: SOParticipantRole
   /**
    * TargetHint is the verified optional target Space hint.
-   *
-   * @generated from field: bytes target_hint = 5;
    */
   targetHint?: Uint8Array
   /**
    * Nonce is the verified replay-defense nonce.
-   *
-   * @generated from field: bytes nonce = 6;
    */
   nonce?: Uint8Array
   /**
    * ExpiresAt is the verified expiry time as Unix seconds.
-   *
-   * @generated from field: int64 expires_at = 7;
    */
   expiresAt?: bigint
   /**
    * CallbackUrl is the verified callback target.
-   *
-   * @generated from field: string callback_url = 8;
    */
   callbackUrl?: string
   /**
    * CompletionMode is the verified completion mode.
-   *
-   * @generated from field: s4wave.provider.spacewave.SpaceLinkCompletionMode completion_mode = 9;
    */
   completionMode?: SpaceLinkCompletionMode
 }
 
 export const PreviewSpaceLinkResponse: MessageType<PreviewSpaceLinkResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.PreviewSpaceLinkResponse',
-    fields: [
-      { no: 1, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'session_type', kind: 'enum', T: SessionType_Enum },
-      { no: 3, name: 'agent_peer_id', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 4,
-        name: 'requested_role',
-        kind: 'enum',
-        T: SOParticipantRole_Enum,
-      },
-      { no: 5, name: 'target_hint', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 6, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 7, name: 'expires_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 8, name: 'callback_url', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 9,
-        name: 'completion_mode',
-        kind: 'enum',
-        T: SpaceLinkCompletionMode_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PreviewSpaceLinkResponse>(
+    's4wave.provider.spacewave.PreviewSpaceLinkResponse',
+    () => [
+      [1, 'label', 9],
+      [2, 'session_type', 14, 0, SessionType_Enum],
+      [3, 'agent_peer_id', 12],
+      [4, 'requested_role', 14, 0, SOParticipantRole_Enum],
+      [5, 'target_hint', 12],
+      [6, 'nonce', 12],
+      [7, 'expires_at', 3],
+      [8, 'callback_url', 9],
+      [9, 'completion_mode', 14, 0, SpaceLinkCompletionMode_Enum],
+    ],
+  )
 
 /**
  * ApproveSpaceLinkRequest is the request for ApproveSpaceLink.
@@ -8820,26 +6661,72 @@ export const PreviewSpaceLinkResponse: MessageType<PreviewSpaceLinkResponse> =
 export interface ApproveSpaceLinkRequest {
   /**
    * Ticket is the SpaceLinkAuthTicket proto bytes.
-   *
-   * @generated from field: bytes ticket = 1;
    */
   ticket?: Uint8Array
   /**
    * ResourceId is the target Space shared object ID.
-   *
-   * @generated from field: bytes resource_id = 2;
    */
   resourceId?: Uint8Array
 }
 
 export const ApproveSpaceLinkRequest: MessageType<ApproveSpaceLinkRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ApproveSpaceLinkRequest',
-    fields: [
-      { no: 1, name: 'ticket', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'resource_id', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApproveSpaceLinkRequest>(
+    's4wave.provider.spacewave.ApproveSpaceLinkRequest',
+    () => [
+      [1, 'ticket', 12],
+      [2, 'resource_id', 12],
+    ],
+  )
+
+/**
+ * ApproveSpaceLinkResponse is the response for ApproveSpaceLink.
+ *
+ * @generated from message s4wave.provider.spacewave.ApproveSpaceLinkResponse
+ */
+export interface ApproveSpaceLinkResponse {
+  /**
+   * AccountId is the linked external actor cloud account ID.
+   */
+  accountId?: string
+  /**
+   * ResourceId is the target Space shared object ID.
+   */
+  resourceId?: Uint8Array
+  /**
+   * SessionPeerId is the linked external actor session peer ID.
+   */
+  sessionPeerId?: Uint8Array
+  /**
+   * Nonce is echoed from the verified ticket for the callback.
+   */
+  nonce?: Uint8Array
+  /**
+   * CallbackUrl is the re-verified callback target.
+   */
+  callbackUrl?: string
+  /**
+   * CompletionMode is the re-verified completion mode.
+   */
+  completionMode?: SpaceLinkCompletionMode
+  /**
+   * Completion is the generic callback/completion payload.
+   */
+  completion?: SpaceLinkCallback
+}
+
+export const ApproveSpaceLinkResponse: MessageType<ApproveSpaceLinkResponse> =
+  /* @__PURE__ */ createMessageType<ApproveSpaceLinkResponse>(
+    's4wave.provider.spacewave.ApproveSpaceLinkResponse',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'resource_id', 12],
+      [3, 'session_peer_id', 12],
+      [4, 'nonce', 12],
+      [5, 'callback_url', 9],
+      [6, 'completion_mode', 14, 0, SpaceLinkCompletionMode_Enum],
+      [7, 'completion', 11, 0, SpaceLinkCallback.codec],
+    ],
+  )
 
 /**
  * SpaceLinkCallback is the generic approval result payload. Browser callback
@@ -8851,123 +6738,42 @@ export const ApproveSpaceLinkRequest: MessageType<ApproveSpaceLinkRequest> =
 export interface SpaceLinkCallback {
   /**
    * Status is the approval result.
-   *
-   * @generated from field: s4wave.provider.spacewave.SpaceLinkCallbackStatus status = 1;
    */
   status?: SpaceLinkCallbackStatus
   /**
    * Nonce is echoed from the verified ticket.
-   *
-   * @generated from field: bytes nonce = 2;
    */
   nonce?: Uint8Array
   /**
    * AccountId is the linked external actor cloud account ID for successful
    * approval.
-   *
-   * @generated from field: string account_id = 3;
    */
   accountId?: string
   /**
    * ResourceId is the target Space shared object ID for successful approval.
-   *
-   * @generated from field: bytes resource_id = 4;
    */
   resourceId?: Uint8Array
   /**
    * SessionPeerId is the linked external actor session peer ID for successful
    * approval.
-   *
-   * @generated from field: bytes session_peer_id = 5;
    */
   sessionPeerId?: Uint8Array
   /**
    * ErrorMessage describes deny, expiry, or approval failure details when
    * status is not OK.
-   *
-   * @generated from field: string error_message = 6;
    */
   errorMessage?: string
 }
 
 export const SpaceLinkCallback: MessageType<SpaceLinkCallback> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.SpaceLinkCallback',
-    fields: [
-      { no: 1, name: 'status', kind: 'enum', T: SpaceLinkCallbackStatus_Enum },
-      { no: 2, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'resource_id', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 5, name: 'session_peer_id', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 6, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ApproveSpaceLinkResponse is the response for ApproveSpaceLink.
- *
- * @generated from message s4wave.provider.spacewave.ApproveSpaceLinkResponse
- */
-export interface ApproveSpaceLinkResponse {
-  /**
-   * AccountId is the linked external actor cloud account ID.
-   *
-   * @generated from field: string account_id = 1;
-   */
-  accountId?: string
-  /**
-   * ResourceId is the target Space shared object ID.
-   *
-   * @generated from field: bytes resource_id = 2;
-   */
-  resourceId?: Uint8Array
-  /**
-   * SessionPeerId is the linked external actor session peer ID.
-   *
-   * @generated from field: bytes session_peer_id = 3;
-   */
-  sessionPeerId?: Uint8Array
-  /**
-   * Nonce is echoed from the verified ticket for the callback.
-   *
-   * @generated from field: bytes nonce = 4;
-   */
-  nonce?: Uint8Array
-  /**
-   * CallbackUrl is the re-verified callback target.
-   *
-   * @generated from field: string callback_url = 5;
-   */
-  callbackUrl?: string
-  /**
-   * CompletionMode is the re-verified completion mode.
-   *
-   * @generated from field: s4wave.provider.spacewave.SpaceLinkCompletionMode completion_mode = 6;
-   */
-  completionMode?: SpaceLinkCompletionMode
-  /**
-   * Completion is the generic callback/completion payload.
-   *
-   * @generated from field: s4wave.provider.spacewave.SpaceLinkCallback completion = 7;
-   */
-  completion?: SpaceLinkCallback
-}
-
-export const ApproveSpaceLinkResponse: MessageType<ApproveSpaceLinkResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.spacewave.ApproveSpaceLinkResponse',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'resource_id', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'session_peer_id', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 5, name: 'callback_url', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'completion_mode',
-        kind: 'enum',
-        T: SpaceLinkCompletionMode_Enum,
-      },
-      { no: 7, name: 'completion', kind: 'message', T: SpaceLinkCallback },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceLinkCallback>(
+    's4wave.provider.spacewave.SpaceLinkCallback',
+    () => [
+      [1, 'status', 14, 0, SpaceLinkCallbackStatus_Enum],
+      [2, 'nonce', 12],
+      [3, 'account_id', 9],
+      [4, 'resource_id', 12],
+      [5, 'session_peer_id', 12],
+      [6, 'error_message', 9],
+    ],
+  )

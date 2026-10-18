@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * FileStatusCode maps directly to go-git's StatusCode.
@@ -19,65 +14,57 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum FileStatusCode {
   /**
    * FILE_STATUS_CODE_UNMODIFIED indicates the file is unmodified.
-   *
-   * @generated from enum value: FILE_STATUS_CODE_UNMODIFIED = 0;
    */
   UNMODIFIED = 0,
 
   /**
    * FILE_STATUS_CODE_UNTRACKED indicates the file is untracked.
-   *
-   * @generated from enum value: FILE_STATUS_CODE_UNTRACKED = 1;
    */
   UNTRACKED = 1,
 
   /**
    * FILE_STATUS_CODE_MODIFIED indicates the file is modified.
-   *
-   * @generated from enum value: FILE_STATUS_CODE_MODIFIED = 2;
    */
   MODIFIED = 2,
 
   /**
    * FILE_STATUS_CODE_ADDED indicates the file is added.
-   *
-   * @generated from enum value: FILE_STATUS_CODE_ADDED = 3;
    */
   ADDED = 3,
 
   /**
    * FILE_STATUS_CODE_DELETED indicates the file is deleted.
-   *
-   * @generated from enum value: FILE_STATUS_CODE_DELETED = 4;
    */
   DELETED = 4,
 
   /**
    * FILE_STATUS_CODE_RENAMED indicates the file is renamed.
-   *
-   * @generated from enum value: FILE_STATUS_CODE_RENAMED = 5;
    */
   RENAMED = 5,
 
   /**
    * FILE_STATUS_CODE_COPIED indicates the file is copied.
-   *
-   * @generated from enum value: FILE_STATUS_CODE_COPIED = 6;
    */
   COPIED = 6,
 
   /**
    * FILE_STATUS_CODE_UPDATED_BUT_UNMERGED indicates the file is updated but unmerged.
-   *
-   * @generated from enum value: FILE_STATUS_CODE_UPDATED_BUT_UNMERGED = 7;
    */
   UPDATED_BUT_UNMERGED = 7,
 }
 
 export const FileStatusCode_Enum = /* @__PURE__ */ createEnumType(
   's4wave.git.FileStatusCode',
-  FileStatusCode,
-  'FILE_STATUS_CODE_',
+  [
+    [0, 'FILE_STATUS_CODE_UNMODIFIED'],
+    [1, 'FILE_STATUS_CODE_UNTRACKED'],
+    [2, 'FILE_STATUS_CODE_MODIFIED'],
+    [3, 'FILE_STATUS_CODE_ADDED'],
+    [4, 'FILE_STATUS_CODE_DELETED'],
+    [5, 'FILE_STATUS_CODE_RENAMED'],
+    [6, 'FILE_STATUS_CODE_COPIED'],
+    [7, 'FILE_STATUS_CODE_UPDATED_BUT_UNMERGED'],
+  ],
 )
 
 /**
@@ -88,9 +75,9 @@ export const FileStatusCode_Enum = /* @__PURE__ */ createEnumType(
 export interface GetWorktreeInfoRequest {}
 
 export const GetWorktreeInfoRequest: MessageType<GetWorktreeInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetWorktreeInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetWorktreeInfoRequest>(
     's4wave.git.GetWorktreeInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -101,53 +88,38 @@ export const GetWorktreeInfoRequest: MessageType<GetWorktreeInfoRequest> =
 export interface GetWorktreeInfoResponse {
   /**
    * RepoObjectKey is the object key of the linked git/repo.
-   *
-   * @generated from field: string repo_object_key = 1;
    */
   repoObjectKey?: string
   /**
    * WorkdirObjectKey is the object key of the linked workdir.
    * Empty if no workdir is linked.
-   *
-   * @generated from field: string workdir_object_key = 2;
    */
   workdirObjectKey?: string
   /**
    * CheckedOutRef is the ref the worktree has checked out.
-   *
-   * @generated from field: string checked_out_ref = 3;
    */
   checkedOutRef?: string
   /**
    * HeadCommitHash is the commit hash of the checked-out ref.
-   *
-   * @generated from field: string head_commit_hash = 4;
    */
   headCommitHash?: string
   /**
    * HasWorkdir is true if a workdir is linked.
-   *
-   * @generated from field: bool has_workdir = 5;
    */
   hasWorkdir?: boolean
 }
 
 export const GetWorktreeInfoResponse: MessageType<GetWorktreeInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetWorktreeInfoResponse',
-    fields: [
-      { no: 1, name: 'repo_object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'workdir_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'checked_out_ref', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'head_commit_hash', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'has_workdir', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetWorktreeInfoResponse>(
+    's4wave.git.GetWorktreeInfoResponse',
+    () => [
+      [1, 'repo_object_key', 9],
+      [2, 'workdir_object_key', 9],
+      [3, 'checked_out_ref', 9],
+      [4, 'head_commit_hash', 9],
+      [5, 'has_workdir', 8],
+    ],
+  )
 
 /**
  * GetRepoResourceRequest is the request for GetRepoResource.
@@ -157,9 +129,9 @@ export const GetWorktreeInfoResponse: MessageType<GetWorktreeInfoResponse> =
 export interface GetRepoResourceRequest {}
 
 export const GetRepoResourceRequest: MessageType<GetRepoResourceRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetRepoResourceRequest>(
+  /* @__PURE__ */ createMessageType<GetRepoResourceRequest>(
     's4wave.git.GetRepoResourceRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -170,19 +142,15 @@ export const GetRepoResourceRequest: MessageType<GetRepoResourceRequest> =
 export interface GetRepoResourceResponse {
   /**
    * ResourceId is the sub-resource for the GitRepoResource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const GetRepoResourceResponse: MessageType<GetRepoResourceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetRepoResourceResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetRepoResourceResponse>(
+    's4wave.git.GetRepoResourceResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * GetWorkdirResourceRequest is the request for GetWorkdirResource.
@@ -192,9 +160,9 @@ export const GetRepoResourceResponse: MessageType<GetRepoResourceResponse> =
 export interface GetWorkdirResourceRequest {}
 
 export const GetWorkdirResourceRequest: MessageType<GetWorkdirResourceRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetWorkdirResourceRequest>(
+  /* @__PURE__ */ createMessageType<GetWorkdirResourceRequest>(
     's4wave.git.GetWorkdirResourceRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -205,19 +173,15 @@ export const GetWorkdirResourceRequest: MessageType<GetWorkdirResourceRequest> =
 export interface GetWorkdirResourceResponse {
   /**
    * ResourceId is the FSHandle sub-resource for the workdir.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const GetWorkdirResourceResponse: MessageType<GetWorkdirResourceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetWorkdirResourceResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetWorkdirResourceResponse>(
+    's4wave.git.GetWorkdirResourceResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * StatusEntry contains the status of a file in the worktree.
@@ -227,33 +191,27 @@ export const GetWorkdirResourceResponse: MessageType<GetWorkdirResourceResponse>
 export interface StatusEntry {
   /**
    * FilePath is the relative path of the file.
-   *
-   * @generated from field: string file_path = 1;
    */
   filePath?: string
   /**
    * StagingStatus is the status in the staging area (index).
-   *
-   * @generated from field: s4wave.git.FileStatusCode staging_status = 2;
    */
   stagingStatus?: FileStatusCode
   /**
    * WorktreeStatus is the status in the working directory.
-   *
-   * @generated from field: s4wave.git.FileStatusCode worktree_status = 3;
    */
   worktreeStatus?: FileStatusCode
 }
 
 export const StatusEntry: MessageType<StatusEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.StatusEntry',
-    fields: [
-      { no: 1, name: 'file_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'staging_status', kind: 'enum', T: FileStatusCode_Enum },
-      { no: 3, name: 'worktree_status', kind: 'enum', T: FileStatusCode_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StatusEntry>(
+    's4wave.git.StatusEntry',
+    () => [
+      [1, 'file_path', 9],
+      [2, 'staging_status', 14, 0, FileStatusCode_Enum],
+      [3, 'worktree_status', 14, 0, FileStatusCode_Enum],
+    ],
+  )
 
 /**
  * WatchStatusRequest is the request for WatchStatus.
@@ -263,9 +221,9 @@ export const StatusEntry: MessageType<StatusEntry> =
 export interface WatchStatusRequest {}
 
 export const WatchStatusRequest: MessageType<WatchStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchStatusRequest>(
     's4wave.git.WatchStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -276,25 +234,15 @@ export const WatchStatusRequest: MessageType<WatchStatusRequest> =
 export interface WatchStatusResponse {
   /**
    * Entries is the list of files with non-clean status.
-   *
-   * @generated from field: repeated s4wave.git.StatusEntry entries = 1;
    */
   entries?: StatusEntry[]
 }
 
 export const WatchStatusResponse: MessageType<WatchStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.WatchStatusResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'message',
-        T: StatusEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchStatusResponse>(
+    's4wave.git.WatchStatusResponse',
+    () => [[1, 'entries', 11, 1, StatusEntry.codec]],
+  )
 
 /**
  * StageFilesRequest is the request for StageFiles.
@@ -304,25 +252,15 @@ export const WatchStatusResponse: MessageType<WatchStatusResponse> =
 export interface StageFilesRequest {
   /**
    * Paths is the list of file paths to stage.
-   *
-   * @generated from field: repeated string paths = 1;
    */
   paths?: string[]
 }
 
 export const StageFilesRequest: MessageType<StageFilesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.StageFilesRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StageFilesRequest>(
+    's4wave.git.StageFilesRequest',
+    () => [[1, 'paths', 9, 1]],
+  )
 
 /**
  * StageFilesResponse is the response for StageFiles.
@@ -332,9 +270,9 @@ export const StageFilesRequest: MessageType<StageFilesRequest> =
 export interface StageFilesResponse {}
 
 export const StageFilesResponse: MessageType<StageFilesResponse> =
-  /* @__PURE__ */ createEmptyMessageType<StageFilesResponse>(
+  /* @__PURE__ */ createMessageType<StageFilesResponse>(
     's4wave.git.StageFilesResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -345,25 +283,15 @@ export const StageFilesResponse: MessageType<StageFilesResponse> =
 export interface UnstageFilesRequest {
   /**
    * Paths is the list of file paths to unstage.
-   *
-   * @generated from field: repeated string paths = 1;
    */
   paths?: string[]
 }
 
 export const UnstageFilesRequest: MessageType<UnstageFilesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.UnstageFilesRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnstageFilesRequest>(
+    's4wave.git.UnstageFilesRequest',
+    () => [[1, 'paths', 9, 1]],
+  )
 
 /**
  * UnstageFilesResponse is the response for UnstageFiles.
@@ -373,9 +301,9 @@ export const UnstageFilesRequest: MessageType<UnstageFilesRequest> =
 export interface UnstageFilesResponse {}
 
 export const UnstageFilesResponse: MessageType<UnstageFilesResponse> =
-  /* @__PURE__ */ createEmptyMessageType<UnstageFilesResponse>(
+  /* @__PURE__ */ createMessageType<UnstageFilesResponse>(
     's4wave.git.UnstageFilesResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -387,53 +315,37 @@ export interface CommitFilesRequest {
   /**
    * Paths is the list of staged file paths that must be included in the commit.
    * Empty accepts all currently staged paths.
-   *
-   * @generated from field: repeated string paths = 1;
    */
   paths?: string[]
   /**
    * Message is the commit message.
-   *
-   * @generated from field: string message = 2;
    */
   message?: string
   /**
    * AuthorName is the commit author name.
-   *
-   * @generated from field: string author_name = 3;
    */
   authorName?: string
   /**
    * AuthorEmail is the commit author email.
-   *
-   * @generated from field: string author_email = 4;
    */
   authorEmail?: string
   /**
    * AuthorTimestamp is the author timestamp as Unix seconds.
-   *
-   * @generated from field: int64 author_timestamp = 5;
    */
   authorTimestamp?: bigint
 }
 
 export const CommitFilesRequest: MessageType<CommitFilesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.CommitFilesRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'author_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'author_email', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'author_timestamp', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CommitFilesRequest>(
+    's4wave.git.CommitFilesRequest',
+    () => [
+      [1, 'paths', 9, 1],
+      [2, 'message', 9],
+      [3, 'author_name', 9],
+      [4, 'author_email', 9],
+      [5, 'author_timestamp', 3],
+    ],
+  )
 
 /**
  * CommitFilesResponse is the response for CommitFiles.
@@ -443,43 +355,29 @@ export const CommitFilesRequest: MessageType<CommitFilesRequest> =
 export interface CommitFilesResponse {
   /**
    * CommitHash is the hash of the newly created commit.
-   *
-   * @generated from field: string commit_hash = 1;
    */
   commitHash?: string
   /**
    * BaseCommitHash is the HEAD commit before the commit operation.
-   *
-   * @generated from field: string base_commit_hash = 2;
    */
   baseCommitHash?: string
   /**
    * BranchRef is the current branch/ref updated by the commit.
-   *
-   * @generated from field: string branch_ref = 3;
    */
   branchRef?: string
   /**
    * AffectedPaths are the staged paths accepted by the commit operation.
-   *
-   * @generated from field: repeated string affected_paths = 4;
    */
   affectedPaths?: string[]
 }
 
 export const CommitFilesResponse: MessageType<CommitFilesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.CommitFilesResponse',
-    fields: [
-      { no: 1, name: 'commit_hash', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'base_commit_hash', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'branch_ref', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'affected_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CommitFilesResponse>(
+    's4wave.git.CommitFilesResponse',
+    () => [
+      [1, 'commit_hash', 9],
+      [2, 'base_commit_hash', 9],
+      [3, 'branch_ref', 9],
+      [4, 'affected_paths', 9, 1],
+    ],
+  )

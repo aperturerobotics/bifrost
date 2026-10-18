@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Config configures the controller to wait for Inputs & execute.
@@ -18,7 +18,7 @@ import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
 export interface Config {}
 
 export const Config: MessageType<Config> =
-  /* @__PURE__ */ createEmptyMessageType<Config>(
+  /* @__PURE__ */ createMessageType<Config>(
     'forge.lib.util.wait.Config',
-    true,
+    () => [],
   )

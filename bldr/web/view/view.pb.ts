@@ -5,12 +5,7 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import { Binding } from '../../frontend/frontend.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * RenderMode is the list of available WebView rendering modes.
@@ -21,16 +16,12 @@ export enum RenderMode {
   /**
    * RenderMode_NONE selects no renderer (no contents).
    * When setting this mode, everything is "reset" in the view.
-   *
-   * @generated from enum value: RenderMode_NONE = 0;
    */
   RenderMode_NONE = 0,
 
   /**
    * RenderMode_REACT_COMPONENT renders a React component from a JS module.
    * Renders the default export of the JS module.
-   *
-   * @generated from enum value: RenderMode_REACT_COMPONENT = 1;
    */
   RenderMode_REACT_COMPONENT = 1,
 
@@ -39,8 +30,6 @@ export enum RenderMode {
    * (parent: HTMLDivElement) => (() => void)
    * Callback returns a function to call to shutdown the script.
    * Renders the default export of the JS module.
-   *
-   * @generated from enum value: RenderMode_FUNCTION = 2;
    */
   RenderMode_FUNCTION = 2,
 
@@ -50,15 +39,18 @@ export enum RenderMode {
    *
    * Allows tests and local components to render within a WebView context
    * without Go explicitly setting the render mode.
-   *
-   * @generated from enum value: RenderMode_REACT_CHILDREN = 3;
    */
   RenderMode_REACT_CHILDREN = 3,
 }
 
 export const RenderMode_Enum = /* @__PURE__ */ createEnumType(
   'web.view.RenderMode',
-  RenderMode,
+  [
+    [0, 'RenderMode_NONE'],
+    [1, 'RenderMode_REACT_COMPONENT'],
+    [2, 'RenderMode_FUNCTION'],
+    [3, 'RenderMode_REACT_CHILDREN'],
+  ],
 )
 
 /**
@@ -69,65 +61,47 @@ export const RenderMode_Enum = /* @__PURE__ */ createEnumType(
 export interface SetRenderModeRequest {
   /**
    * RenderMode is the new render mode.
-   *
-   * @generated from field: web.view.RenderMode render_mode = 1;
    */
   renderMode?: RenderMode
   /**
    * ScriptPath is a path to a script to load to render.
    * RenderMode_REACT_COMPONENT: expects default export to be a Component.
    * RenderMode_FUNCTION: expects default export to be a ReactNode.
-   *
-   * @generated from field: string script_path = 2;
    */
   scriptPath?: string
   /**
    * Props is a protobuf message passed as properties to the renderer/component.
-   *
-   * @generated from field: bytes props = 3;
    */
   props?: Uint8Array
   /**
    * Refresh clears the existing contents of the view fully before loading the new script.
-   *
-   * @generated from field: bool refresh = 4;
    */
   refresh?: boolean
   /**
    * FrontendBinding selects a live project entrypoint instead of ScriptPath.
    * The WebDocument resolves the current session before importing the module.
-   *
-   * @generated from field: bldr.frontend.Binding frontend_binding = 5;
    */
   frontendBinding?: Binding
   /**
    * WebPkgPaths binds shared package IDs to their asset URL prefixes before
    * importing the renderer. The web plugin resolves empty prefixes from the
    * package provider; the document retains each binding for its lifetime.
-   *
-   * @generated from field: map<string, string> web_pkg_paths = 6;
    */
   webPkgPaths?: { [key: string]: string }
 }
 
 export const SetRenderModeRequest: MessageType<SetRenderModeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.view.SetRenderModeRequest',
-    fields: [
-      { no: 1, name: 'render_mode', kind: 'enum', T: RenderMode_Enum },
-      { no: 2, name: 'script_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'props', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'refresh', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'frontend_binding', kind: 'message', T: () => Binding },
-      {
-        no: 6,
-        name: 'web_pkg_paths',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetRenderModeRequest>(
+    'web.view.SetRenderModeRequest',
+    () => [
+      [1, 'render_mode', 14, 0, RenderMode_Enum],
+      [2, 'script_path', 9],
+      [3, 'props', 12],
+      [4, 'refresh', 8],
+      [5, 'frontend_binding', 11, 0, Binding.codec],
+      [6, 'web_pkg_paths', 9, 584],
+    ],
+  )
 
 /**
  * SetRenderModeResponse is the response to the SetRenderMode request.
@@ -137,9 +111,39 @@ export const SetRenderModeRequest: MessageType<SetRenderModeRequest> =
 export interface SetRenderModeResponse {}
 
 export const SetRenderModeResponse: MessageType<SetRenderModeResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetRenderModeResponse>(
+  /* @__PURE__ */ createMessageType<SetRenderModeResponse>(
     'web.view.SetRenderModeResponse',
-    true,
+    () => [],
+  )
+
+/**
+ * SetHtmlLinksRequest is the request to set a list of HtmlLink
+ *
+ * @generated from message web.view.SetHtmlLinksRequest
+ */
+export interface SetHtmlLinksRequest {
+  /**
+   * Clear clears the list of links before setting html_links.
+   */
+  clear?: boolean
+  /**
+   * Remove is the set of HTML link keys to remove.
+   */
+  remove?: string[]
+  /**
+   * SetLinks is the set of HTML links to add.
+   */
+  setLinks?: { [key: string]: HtmlLink }
+}
+
+export const SetHtmlLinksRequest: MessageType<SetHtmlLinksRequest> =
+  /* @__PURE__ */ createMessageType<SetHtmlLinksRequest>(
+    'web.view.SetHtmlLinksRequest',
+    () => [
+      [1, 'clear', 8],
+      [2, 'remove', 9, 1],
+      [3, 'set_links', 11, 584, HtmlLink.codec],
+    ],
   )
 
 /**
@@ -150,75 +154,20 @@ export const SetRenderModeResponse: MessageType<SetRenderModeResponse> =
 export interface HtmlLink {
   /**
    * Href is the URL to load.
-   *
-   * @generated from field: string href = 1;
    */
   href?: string
   /**
    * Rel is the type of link this is.
    * Usually "stylesheet"
-   *
-   * @generated from field: string rel = 2;
    */
   rel?: string
 }
 
 export const HtmlLink: MessageType<HtmlLink> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.view.HtmlLink',
-    fields: [
-      { no: 1, name: 'href', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'rel', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SetHtmlLinksRequest is the request to set a list of HtmlLink
- *
- * @generated from message web.view.SetHtmlLinksRequest
- */
-export interface SetHtmlLinksRequest {
-  /**
-   * Clear clears the list of links before setting html_links.
-   *
-   * @generated from field: bool clear = 1;
-   */
-  clear?: boolean
-  /**
-   * Remove is the set of HTML link keys to remove.
-   *
-   * @generated from field: repeated string remove = 2;
-   */
-  remove?: string[]
-  /**
-   * SetLinks is the set of HTML links to add.
-   *
-   * @generated from field: map<string, web.view.HtmlLink> set_links = 3;
-   */
-  setLinks?: { [key: string]: HtmlLink }
-}
-
-export const SetHtmlLinksRequest: MessageType<SetHtmlLinksRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.view.SetHtmlLinksRequest',
-    fields: [
-      { no: 1, name: 'clear', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 2,
-        name: 'remove',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'set_links',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: HtmlLink },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HtmlLink>('web.view.HtmlLink', () => [
+    [1, 'href', 9],
+    [2, 'rel', 9],
+  ])
 
 /**
  * SetHtmlLinksResponse is the response to the SetHtmlLinks request.
@@ -228,9 +177,9 @@ export const SetHtmlLinksRequest: MessageType<SetHtmlLinksRequest> =
 export interface SetHtmlLinksResponse {}
 
 export const SetHtmlLinksResponse: MessageType<SetHtmlLinksResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetHtmlLinksResponse>(
+  /* @__PURE__ */ createMessageType<SetHtmlLinksResponse>(
     'web.view.SetHtmlLinksResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -241,9 +190,9 @@ export const SetHtmlLinksResponse: MessageType<SetHtmlLinksResponse> =
 export interface ResetWebViewRequest {}
 
 export const ResetWebViewRequest: MessageType<ResetWebViewRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ResetWebViewRequest>(
+  /* @__PURE__ */ createMessageType<ResetWebViewRequest>(
     'web.view.ResetWebViewRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -254,9 +203,9 @@ export const ResetWebViewRequest: MessageType<ResetWebViewRequest> =
 export interface ResetWebViewResponse {}
 
 export const ResetWebViewResponse: MessageType<ResetWebViewResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ResetWebViewResponse>(
+  /* @__PURE__ */ createMessageType<ResetWebViewResponse>(
     'web.view.ResetWebViewResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -267,9 +216,9 @@ export const ResetWebViewResponse: MessageType<ResetWebViewResponse> =
 export interface RemoveWebViewRequest {}
 
 export const RemoveWebViewRequest: MessageType<RemoveWebViewRequest> =
-  /* @__PURE__ */ createEmptyMessageType<RemoveWebViewRequest>(
+  /* @__PURE__ */ createMessageType<RemoveWebViewRequest>(
     'web.view.RemoveWebViewRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -280,16 +229,12 @@ export const RemoveWebViewRequest: MessageType<RemoveWebViewRequest> =
 export interface RemoveWebViewResponse {
   /**
    * Removed indicates the web view was removed.
-   *
-   * @generated from field: bool removed = 1;
    */
   removed?: boolean
 }
 
 export const RemoveWebViewResponse: MessageType<RemoveWebViewResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.view.RemoveWebViewResponse',
-    fields: [
-      { no: 1, name: 'removed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveWebViewResponse>(
+    'web.view.RemoveWebViewResponse',
+    () => [[1, 'removed', 8]],
+  )

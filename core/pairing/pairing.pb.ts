@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { SessionRef } from '../session/session.pb.js'
 import {
   SharedObjectListEntry,
@@ -23,43 +21,39 @@ import {
 export enum AccountOutcome {
   /**
    * AccountOutcome_UNSPECIFIED requires the receiving client to choose an outcome.
-   *
-   * @generated from enum value: AccountOutcome_UNSPECIFIED = 0;
    */
   AccountOutcome_UNSPECIFIED = 0,
 
   /**
    * AccountOutcome_SIGN_IN_OFFERED adds the code creator's account on the receiving client.
-   *
-   * @generated from enum value: AccountOutcome_SIGN_IN_OFFERED = 1;
    */
   AccountOutcome_SIGN_IN_OFFERED = 1,
 
   /**
    * AccountOutcome_SIGN_IN_RECEIVING adds the receiving client's account on the code creator.
-   *
-   * @generated from enum value: AccountOutcome_SIGN_IN_RECEIVING = 2;
    */
   AccountOutcome_SIGN_IN_RECEIVING = 2,
 
   /**
    * AccountOutcome_MERGE_INTO_OFFERED moves the receiving account into the offered account.
-   *
-   * @generated from enum value: AccountOutcome_MERGE_INTO_OFFERED = 3;
    */
   AccountOutcome_MERGE_INTO_OFFERED = 3,
 
   /**
    * AccountOutcome_MERGE_INTO_RECEIVING moves the offered account into the receiving account.
-   *
-   * @generated from enum value: AccountOutcome_MERGE_INTO_RECEIVING = 4;
    */
   AccountOutcome_MERGE_INTO_RECEIVING = 4,
 }
 
 export const AccountOutcome_Enum = /* @__PURE__ */ createEnumType(
   'pairing.AccountOutcome',
-  AccountOutcome,
+  [
+    [0, 'AccountOutcome_UNSPECIFIED'],
+    [1, 'AccountOutcome_SIGN_IN_OFFERED'],
+    [2, 'AccountOutcome_SIGN_IN_RECEIVING'],
+    [3, 'AccountOutcome_MERGE_INTO_OFFERED'],
+    [4, 'AccountOutcome_MERGE_INTO_RECEIVING'],
+  ],
 )
 
 /**
@@ -72,38 +66,24 @@ export const AccountOutcome_Enum = /* @__PURE__ */ createEnumType(
 export interface Approval {
   /**
    * Confirmed indicates the user verified the SAS emoji match.
-   *
-   * @generated from field: bool confirmed = 1;
    */
   confirmed?: boolean
   /**
    * Rejected indicates the user rejected the SAS emoji match.
-   *
-   * @generated from field: bool rejected = 2;
    */
   rejected?: boolean
   /**
    * OperationContext binds approval to the selected account and both receiving keys.
-   *
-   * @generated from field: string operation_context = 3;
    */
   operationContext?: string
 }
 
 export const Approval: MessageType<Approval> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pairing.Approval',
-    fields: [
-      { no: 1, name: 'confirmed', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'rejected', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'operation_context',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Approval>('pairing.Approval', () => [
+    [1, 'confirmed', 8],
+    [2, 'rejected', 8],
+    [3, 'operation_context', 9],
+  ])
 
 /**
  * AccountOffer identifies the account offered over an authenticated pairing stream.
@@ -113,124 +93,75 @@ export const Approval: MessageType<Approval> =
 export interface AccountOffer {
   /**
    * AccountId is the logical ProviderAccount selected for enrollment.
-   *
-   * @generated from field: string account_id = 1;
    */
   accountId?: string
   /**
    * SettingsId is the canonical account settings SharedObject.
-   *
-   * @generated from field: string settings_id = 2;
    */
   settingsId?: string
   /**
    * OperationId binds enrollment proofs to this pairing attempt.
-   *
-   * @generated from field: string operation_id = 3;
    */
   operationId?: string
   /**
    * StoragePeerId is the source account's storage participant identity.
-   *
-   * @generated from field: string storage_peer_id = 4;
    */
   storagePeerId?: string
   /**
    * DisplayName identifies the offered account in the approval screen.
-   *
-   * @generated from field: string display_name = 5;
    */
   displayName?: string
   /**
    * ProviderId selects a configured provider on the receiving client.
-   *
-   * @generated from field: string provider_id = 6;
    */
   providerId?: string
   /**
    * ProviderEndpoint binds cloud enrollment to the configured provider service.
-   *
-   * @generated from field: string provider_endpoint = 7;
    */
   providerEndpoint?: string
   /**
    * RevokedSessionPeerIds require a new receiving Session identity when repairing access.
-   *
-   * @generated from field: repeated string revoked_session_peer_ids = 8;
    */
   revokedSessionPeerIds?: string[]
   /**
    * ActiveSessionPeerIds identifies current cloud authorizations for Session reuse.
-   *
-   * @generated from field: repeated string active_session_peer_ids = 9;
    */
   activeSessionPeerIds?: string[]
   /**
    * SelectionContext binds this enrollment to both accounts and the selected outcome.
-   *
-   * @generated from field: string selection_context = 10;
    */
   selectionContext?: string
   /**
    * MachineName names the client sending this offer. A client with no account
    * sends an offer carrying only this field.
-   *
-   * @generated from field: string machine_name = 11;
    */
   machineName?: string
   /**
    * SpaceCount and SessionCount describe the current migration preview.
-   *
-   * @generated from field: uint32 space_count = 12;
    */
   spaceCount?: number
-  /**
-   * @generated from field: uint32 session_count = 13;
-   */
   sessionCount?: number
 }
 
 export const AccountOffer: MessageType<AccountOffer> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pairing.AccountOffer',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'settings_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'operation_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'storage_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 7,
-        name: 'provider_endpoint',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 8,
-        name: 'revoked_session_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 9,
-        name: 'active_session_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 10,
-        name: 'selection_context',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 11, name: 'machine_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 12, name: 'space_count', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 13, name: 'session_count', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccountOffer>(
+    'pairing.AccountOffer',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'settings_id', 9],
+      [3, 'operation_id', 9],
+      [4, 'storage_peer_id', 9],
+      [5, 'display_name', 9],
+      [6, 'provider_id', 9],
+      [7, 'provider_endpoint', 9],
+      [8, 'revoked_session_peer_ids', 9, 1],
+      [9, 'active_session_peer_ids', 9, 1],
+      [10, 'selection_context', 9],
+      [11, 'machine_name', 9],
+      [12, 'space_count', 13],
+      [13, 'session_count', 13],
+    ],
+  )
 
 /**
  * AccountChoice carries the two account identities and the selected relationship.
@@ -240,33 +171,27 @@ export const AccountOffer: MessageType<AccountOffer> =
 export interface AccountChoice {
   /**
    * OfferedAccount is the account selected by the code creator.
-   *
-   * @generated from field: pairing.AccountOffer offered_account = 1;
    */
   offeredAccount?: AccountOffer
   /**
    * ReceivingAccount is absent when pairing from Home without a selected account.
-   *
-   * @generated from field: pairing.AccountOffer receiving_account = 2;
    */
   receivingAccount?: AccountOffer
   /**
    * Outcome is fixed before either client approves the operation.
-   *
-   * @generated from field: pairing.AccountOutcome outcome = 3;
    */
   outcome?: AccountOutcome
 }
 
 export const AccountChoice: MessageType<AccountChoice> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pairing.AccountChoice',
-    fields: [
-      { no: 1, name: 'offered_account', kind: 'message', T: AccountOffer },
-      { no: 2, name: 'receiving_account', kind: 'message', T: AccountOffer },
-      { no: 3, name: 'outcome', kind: 'enum', T: AccountOutcome_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccountChoice>(
+    'pairing.AccountChoice',
+    () => [
+      [1, 'offered_account', 11, 0, AccountOffer.codec],
+      [2, 'receiving_account', 11, 0, AccountOffer.codec],
+      [3, 'outcome', 14, 0, AccountOutcome_Enum],
+    ],
+  )
 
 /**
  * Identity proves possession of the receiving Session and storage keys.
@@ -276,43 +201,24 @@ export const AccountChoice: MessageType<AccountChoice> =
 export interface Identity {
   /**
    * SessionRef is the independently generated receiving Session.
-   *
-   * @generated from field: session.SessionRef session_ref = 1;
    */
   sessionRef?: SessionRef
   /**
    * SessionProof binds the receiving Session key to the offered operation.
-   *
-   * @generated from field: sobject.SOJoinResponse session_proof = 2;
    */
   sessionProof?: SOJoinResponse
   /**
    * StorageProof binds the replica volume key to the same operation.
-   *
-   * @generated from field: sobject.SOJoinResponse storage_proof = 3;
    */
   storageProof?: SOJoinResponse
 }
 
 export const Identity: MessageType<Identity> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pairing.Identity',
-    fields: [
-      { no: 1, name: 'session_ref', kind: 'message', T: () => SessionRef },
-      {
-        no: 2,
-        name: 'session_proof',
-        kind: 'message',
-        T: () => SOJoinResponse,
-      },
-      {
-        no: 3,
-        name: 'storage_proof',
-        kind: 'message',
-        T: () => SOJoinResponse,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Identity>('pairing.Identity', () => [
+    [1, 'session_ref', 11, 0, SessionRef.codec],
+    [2, 'session_proof', 11, 0, SOJoinResponse.codec],
+    [3, 'storage_proof', 11, 0, SOJoinResponse.codec],
+  ])
 
 /**
  * SharedObject carries one authorized bootstrap checkpoint.
@@ -322,40 +228,28 @@ export const Identity: MessageType<Identity> =
 export interface SharedObject {
   /**
    * Entry describes the object's identity and body type.
-   *
-   * @generated from field: sobject.SharedObjectListEntry entry = 1;
    */
   entry?: SharedObjectListEntry
   /**
    * State is accepted only through the SharedObject host's enrollment contract.
-   *
-   * @generated from field: sobject.SOState state = 2;
    */
   state?: SOState
   /**
    * ConfigLineage is the sender's retained configuration changes leading to
    * the config of State, oldest first.
-   *
-   * @generated from field: repeated sobject.SOConfigChange config_lineage = 3;
    */
   configLineage?: SOConfigChange[]
 }
 
 export const SharedObject: MessageType<SharedObject> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pairing.SharedObject',
-    fields: [
-      { no: 1, name: 'entry', kind: 'message', T: () => SharedObjectListEntry },
-      { no: 2, name: 'state', kind: 'message', T: () => SOState },
-      {
-        no: 3,
-        name: 'config_lineage',
-        kind: 'message',
-        T: () => SOConfigChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SharedObject>(
+    'pairing.SharedObject',
+    () => [
+      [1, 'entry', 11, 0, SharedObjectListEntry.codec],
+      [2, 'state', 11, 0, SOState.codec],
+      [3, 'config_lineage', 11, 1, SOConfigChange.codec],
+    ],
+  )
 
 /**
  * Frame carries the ordered account enrollment exchange.
@@ -367,86 +261,21 @@ export interface Frame {
    * @generated from oneof pairing.Frame.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Account offers an existing account before user approval.
-         *
-         * @generated from field: pairing.AccountOffer account = 1;
-         */
-        value: AccountOffer
-        case: 'account'
-      }
-    | {
-        /**
-         * Identity supplies the receiving client identities before approval.
-         *
-         * @generated from field: pairing.Identity identity = 2;
-         */
-        value: Identity
-        case: 'identity'
-      }
-    | {
-        /**
-         * Object transfers an authorized object after bilateral approval.
-         *
-         * @generated from field: pairing.SharedObject object = 3;
-         */
-        value: SharedObject
-        case: 'object'
-      }
-    | {
-        /**
-         * Complete ends object transfer or acknowledges durable enrollment.
-         *
-         * @generated from field: bool complete = 4;
-         */
-        value: boolean
-        case: 'complete'
-      }
-    | {
-        /**
-         * Error terminates enrollment with a reason visible to both clients.
-         *
-         * @generated from field: string error = 5;
-         */
-        value: string
-        case: 'error'
-      }
-    | {
-        /**
-         * Choice selects the relationship after both account identities are known.
-         *
-         * @generated from field: pairing.AccountChoice choice = 6;
-         */
-        value: AccountChoice
-        case: 'choice'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: AccountOffer; case: 'account' }
+    | { value: Identity; case: 'identity' }
+    | { value: SharedObject; case: 'object' }
+    | { value: boolean; case: 'complete' }
+    | { value: string; case: 'error' }
+    | { value: AccountChoice; case: 'choice' }
 }
 
-export const Frame: MessageType<Frame> = /* @__PURE__ */ createMessageType({
-  typeName: 'pairing.Frame',
-  fields: [
-    { no: 1, name: 'account', kind: 'message', T: AccountOffer, oneof: 'body' },
-    { no: 2, name: 'identity', kind: 'message', T: Identity, oneof: 'body' },
-    { no: 3, name: 'object', kind: 'message', T: SharedObject, oneof: 'body' },
-    {
-      no: 4,
-      name: 'complete',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-      oneof: 'body',
-    },
-    {
-      no: 5,
-      name: 'error',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      oneof: 'body',
-    },
-    { no: 6, name: 'choice', kind: 'message', T: AccountChoice, oneof: 'body' },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Frame: MessageType<Frame> =
+  /* @__PURE__ */ createMessageType<Frame>('pairing.Frame', () => [
+    [1, 'account', 11, 0, AccountOffer.codec, 'body'],
+    [2, 'identity', 11, 0, Identity.codec, 'body'],
+    [3, 'object', 11, 0, SharedObject.codec, 'body'],
+    [4, 'complete', 8, 0, 0, 'body'],
+    [5, 'error', 9, 0, 0, 'body'],
+    [6, 'choice', 11, 0, AccountChoice.codec, 'body'],
+  ])

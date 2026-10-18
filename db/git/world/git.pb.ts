@@ -2,7 +2,10 @@
 // @generated from file github.com/s4wave/spacewave/db/git/world/git.proto (package git.world, syntax proto3)
 /* eslint-disable */
 
-import { UnixfsRef } from '../../unixfs/world/unixfs.pb.js'
+import { ObjectRef } from '../../bucket/bucket.pb.js'
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import {
   CheckoutOpts,
   CloneOpts,
@@ -10,77 +13,7 @@ import {
   Index,
   Reference,
 } from '../block/git.pb.js'
-import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ObjectRef } from '../../bucket/bucket.pb.js'
-
-/**
- * GitCreateWorktreeOp creates a Git worktree attached to a Repo.
- * Note: cannot be run as a Object-specific op.
- *
- * @generated from message git.world.GitCreateWorktreeOp
- */
-export interface GitCreateWorktreeOp {
-  /**
-   * ObjectKey is the object key to create as a Worktree.
-   *
-   * @generated from field: string object_key = 1;
-   */
-  objectKey?: string
-  /**
-   * RepoObjectKey is the key of the repository object.
-   *
-   * @generated from field: string repo_object_key = 2;
-   */
-  repoObjectKey?: string
-  /**
-   * WorkdirRef is a unixfs reference to the workdir.
-   *
-   * @generated from field: unixfs.world.UnixfsRef workdir_ref = 3;
-   */
-  workdirRef?: UnixfsRef
-  /**
-   * CreateWorkdir indicates to create the workdir if it doesn't exist.
-   *
-   * @generated from field: bool create_workdir = 4;
-   */
-  createWorkdir?: boolean
-  /**
-   * CheckoutOpts are options to use when checking out the data.
-   *
-   * @generated from field: git.block.CheckoutOpts checkout_opts = 5;
-   */
-  checkoutOpts?: CheckoutOpts
-  /**
-   * DisableCheckout disables checking out the data to the workdir.
-   *
-   * @generated from field: bool disable_checkout = 6;
-   */
-  disableCheckout?: boolean
-  /**
-   * Timestamp is the modification time for the workdir ops.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 7;
-   */
-  timestamp?: Date
-}
-
-export const GitCreateWorktreeOp: MessageType<GitCreateWorktreeOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.world.GitCreateWorktreeOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'repo_object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'workdir_ref', kind: 'message', T: () => UnixfsRef },
-      { no: 4, name: 'create_workdir', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'checkout_opts', kind: 'message', T: () => CheckoutOpts },
-      { no: 6, name: 'disable_checkout', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import { UnixfsRef } from '../../unixfs/world/unixfs.pb.js'
 
 /**
  * GitInitOp is an operation to create a repo with a root ref or empty.
@@ -91,21 +24,15 @@ export const GitCreateWorktreeOp: MessageType<GitCreateWorktreeOp> =
 export interface GitInitOp {
   /**
    * ObjectKey is the object key to create as a Repo.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RepoRef contains the object ref to the Repo.
    * If empty, will create a new blank Repo.
-   *
-   * @generated from field: bucket.ObjectRef repo_ref = 2;
    */
   repoRef?: ObjectRef
   /**
    * DisableCheckout disables creating a worktree.
-   *
-   * @generated from field: bool disable_checkout = 3;
    */
   disableCheckout?: boolean
   /**
@@ -113,79 +40,23 @@ export interface GitInitOp {
    * If unset, uses object_key + "/worktree"
    * If disable_checkout is set, worktree is not created.
    * Applying as an object op implies disable_checkout.
-   *
-   * @generated from field: git.world.GitCreateWorktreeOp create_worktree = 4;
    */
   createWorktree?: GitCreateWorktreeOp
   /**
    * Timestamp is the modification time for the workdir ops.
    * Used when creating a default worktree.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 5;
    */
   timestamp?: Date
 }
 
 export const GitInitOp: MessageType<GitInitOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.world.GitInitOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'repo_ref', kind: 'message', T: () => ObjectRef },
-      { no: 3, name: 'disable_checkout', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 4,
-        name: 'create_worktree',
-        kind: 'message',
-        T: GitCreateWorktreeOp,
-      },
-      { no: 5, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * HeadRefStore contains the HEAD reference for a worktree and submodules.
- *
- * @generated from message git.world.HeadRefStore
- */
-export interface HeadRefStore {
-  /**
-   * SubmoduleName is the name of the submodule if this is a submodule.
-   *
-   * @generated from field: string submodule_name = 1;
-   */
-  submoduleName?: string
-  /**
-   * HeadRef is the reference to the HEAD checked out in the worktree.
-   * If unset, uses the store HEAD ref.
-   *
-   * @generated from field: git.block.Reference head_ref = 2;
-   */
-  headRef?: Reference
-  /**
-   * Submodules contains the references for the submodules.
-   * sorted by name
-   *
-   * @generated from field: repeated git.world.HeadRefStore submodules = 3;
-   */
-  submodules?: HeadRefStore[]
-}
-
-export const HeadRefStore: MessageType<HeadRefStore> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.world.HeadRefStore',
-    fields: [
-      { no: 1, name: 'submodule_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'head_ref', kind: 'message', T: () => Reference },
-      {
-        no: 3,
-        name: 'submodules',
-        kind: 'message',
-        T: () => HeadRefStore,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GitInitOp>('git.world.GitInitOp', () => [
+    [1, 'object_key', 9],
+    [2, 'repo_ref', 11, 0, ObjectRef.codec],
+    [3, 'disable_checkout', 8],
+    [4, 'create_worktree', 11, 0, GitCreateWorktreeOp.codec],
+    [5, 'timestamp', 11, 0, Timestamp.codec],
+  ])
 
 /**
  * Worktree refers to a location where a repo is checked out.
@@ -196,26 +67,102 @@ export const HeadRefStore: MessageType<HeadRefStore> =
 export interface Worktree {
   /**
    * GitIndex is the git index for the worktree.
-   *
-   * @generated from field: git.block.Index git_index = 1;
    */
   gitIndex?: Index
   /**
    * HeadRefStore contains the HEAD reference for a worktree and submodules.
-   *
-   * @generated from field: git.world.HeadRefStore head_ref_store = 2;
    */
   headRefStore?: HeadRefStore
 }
 
 export const Worktree: MessageType<Worktree> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.world.Worktree',
-    fields: [
-      { no: 1, name: 'git_index', kind: 'message', T: () => Index },
-      { no: 2, name: 'head_ref_store', kind: 'message', T: HeadRefStore },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Worktree>('git.world.Worktree', () => [
+    [1, 'git_index', 11, 0, Index.codec],
+    [2, 'head_ref_store', 11, 0, HeadRefStore.codec],
+  ])
+
+/**
+ * HeadRefStore contains the HEAD reference for a worktree and submodules.
+ *
+ * @generated from message git.world.HeadRefStore
+ */
+export interface HeadRefStore {
+  /**
+   * SubmoduleName is the name of the submodule if this is a submodule.
+   */
+  submoduleName?: string
+  /**
+   * HeadRef is the reference to the HEAD checked out in the worktree.
+   * If unset, uses the store HEAD ref.
+   */
+  headRef?: Reference
+  /**
+   * Submodules contains the references for the submodules.
+   * sorted by name
+   */
+  submodules?: HeadRefStore[]
+}
+
+export const HeadRefStore: MessageType<HeadRefStore> =
+  /* @__PURE__ */ createMessageType<HeadRefStore>(
+    'git.world.HeadRefStore',
+    () => [
+      [1, 'submodule_name', 9],
+      [2, 'head_ref', 11, 0, Reference.codec],
+      [3, 'submodules', 11, 1, HeadRefStore.codec],
+    ],
+  )
+
+/**
+ * GitCreateWorktreeOp creates a Git worktree attached to a Repo.
+ * Note: cannot be run as a Object-specific op.
+ *
+ * @generated from message git.world.GitCreateWorktreeOp
+ */
+export interface GitCreateWorktreeOp {
+  /**
+   * ObjectKey is the object key to create as a Worktree.
+   */
+  objectKey?: string
+  /**
+   * RepoObjectKey is the key of the repository object.
+   */
+  repoObjectKey?: string
+  /**
+   * WorkdirRef is a unixfs reference to the workdir.
+   */
+  workdirRef?: UnixfsRef
+  /**
+   * CreateWorkdir indicates to create the workdir if it doesn't exist.
+   */
+  createWorkdir?: boolean
+  /**
+   * CheckoutOpts are options to use when checking out the data.
+   */
+  checkoutOpts?: CheckoutOpts
+  /**
+   * DisableCheckout disables checking out the data to the workdir.
+   */
+  disableCheckout?: boolean
+  /**
+   * Timestamp is the modification time for the workdir ops.
+   */
+  timestamp?: Date
+}
+
+export const GitCreateWorktreeOp: MessageType<GitCreateWorktreeOp> =
+  /* @__PURE__ */ createMessageType<GitCreateWorktreeOp>(
+    'git.world.GitCreateWorktreeOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'repo_object_key', 9],
+      [3, 'workdir_ref', 11, 0, UnixfsRef.codec],
+      [4, 'create_workdir', 8],
+      [5, 'checkout_opts', 11, 0, CheckoutOpts.codec],
+      [6, 'disable_checkout', 8],
+      [7, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * GitFetchOp is an operation to fetch updates into an existing repo.
@@ -225,26 +172,19 @@ export const Worktree: MessageType<Worktree> =
 export interface GitFetchOp {
   /**
    * ObjectKey is the object key of the existing Repo to fetch into.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * FetchOpts contains the fetch options.
-   *
-   * @generated from field: git.block.FetchOpts fetch_opts = 2;
    */
   fetchOpts?: FetchOpts
 }
 
 export const GitFetchOp: MessageType<GitFetchOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.world.GitFetchOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'fetch_opts', kind: 'message', T: () => FetchOpts },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GitFetchOp>('git.world.GitFetchOp', () => [
+    [1, 'object_key', 9],
+    [2, 'fetch_opts', 11, 0, FetchOpts.codec],
+  ])
 
 /**
  * GitCloneOp is an operation to clone a git repo into the world.
@@ -255,55 +195,37 @@ export const GitFetchOp: MessageType<GitFetchOp> =
 export interface GitCloneOp {
   /**
    * ObjectKey is the object key to create as a Repo.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * CloneOpts contains the clone options (URL, ref, etc).
-   *
-   * @generated from field: git.block.CloneOpts clone_opts = 2;
    */
   cloneOpts?: CloneOpts
   /**
    * DisableCheckout disables creating a worktree after clone.
-   *
-   * @generated from field: bool disable_checkout = 3;
    */
   disableCheckout?: boolean
   /**
    * CreateWorktree configures creating the worktree.
    * If unset, uses object_key + "/worktree"
    * If disable_checkout is set, worktree is not created.
-   *
-   * @generated from field: git.world.GitCreateWorktreeOp create_worktree = 4;
    */
   createWorktree?: GitCreateWorktreeOp
   /**
    * Timestamp is the modification time for the workdir ops.
    * Passed to GitInitOp when creating the repo.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 5;
    */
   timestamp?: Date
 }
 
 export const GitCloneOp: MessageType<GitCloneOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.world.GitCloneOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'clone_opts', kind: 'message', T: () => CloneOpts },
-      { no: 3, name: 'disable_checkout', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 4,
-        name: 'create_worktree',
-        kind: 'message',
-        T: GitCreateWorktreeOp,
-      },
-      { no: 5, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GitCloneOp>('git.world.GitCloneOp', () => [
+    [1, 'object_key', 9],
+    [2, 'clone_opts', 11, 0, CloneOpts.codec],
+    [3, 'disable_checkout', 8],
+    [4, 'create_worktree', 11, 0, GitCreateWorktreeOp.codec],
+    [5, 'timestamp', 11, 0, Timestamp.codec],
+  ])
 
 /**
  * GitWorktreeCheckoutOp checks out a git revision in a worktree.
@@ -314,40 +236,32 @@ export const GitCloneOp: MessageType<GitCloneOp> =
 export interface GitWorktreeCheckoutOp {
   /**
    * ObjectKey is the object key of the Worktree.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RepoObjectKey is the key of the repository object.
-   *
-   * @generated from field: string repo_object_key = 2;
    */
   repoObjectKey?: string
   /**
    * CheckoutOpts are options to use when checking out the data.
-   *
-   * @generated from field: git.block.CheckoutOpts checkout_opts = 3;
    */
   checkoutOpts?: CheckoutOpts
   /**
    * Timestamp is the modification time for the workdir ops.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
 }
 
 export const GitWorktreeCheckoutOp: MessageType<GitWorktreeCheckoutOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.world.GitWorktreeCheckoutOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'repo_object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'checkout_opts', kind: 'message', T: () => CheckoutOpts },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GitWorktreeCheckoutOp>(
+    'git.world.GitWorktreeCheckoutOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'repo_object_key', 9],
+      [3, 'checkout_opts', 11, 0, CheckoutOpts.codec],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * GitStageOp stages files in a worktree's git index.
@@ -357,46 +271,29 @@ export const GitWorktreeCheckoutOp: MessageType<GitWorktreeCheckoutOp> =
 export interface GitStageOp {
   /**
    * ObjectKey is the object key of the Worktree.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RepoObjectKey is the key of the repository object.
-   *
-   * @generated from field: string repo_object_key = 2;
    */
   repoObjectKey?: string
   /**
    * Paths is the list of file paths to stage.
-   *
-   * @generated from field: repeated string paths = 3;
    */
   paths?: string[]
   /**
    * Timestamp is the modification time for the workdir ops.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
 }
 
 export const GitStageOp: MessageType<GitStageOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.world.GitStageOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'repo_object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GitStageOp>('git.world.GitStageOp', () => [
+    [1, 'object_key', 9],
+    [2, 'repo_object_key', 9],
+    [3, 'paths', 9, 1],
+    [4, 'timestamp', 11, 0, Timestamp.codec],
+  ])
 
 /**
  * GitUnstageOp unstages files from a worktree's git index.
@@ -406,43 +303,29 @@ export const GitStageOp: MessageType<GitStageOp> =
 export interface GitUnstageOp {
   /**
    * ObjectKey is the object key of the Worktree.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RepoObjectKey is the key of the repository object.
-   *
-   * @generated from field: string repo_object_key = 2;
    */
   repoObjectKey?: string
   /**
    * Paths is the list of file paths to unstage.
-   *
-   * @generated from field: repeated string paths = 3;
    */
   paths?: string[]
   /**
    * Timestamp is the modification time for the workdir ops.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
 }
 
 export const GitUnstageOp: MessageType<GitUnstageOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'git.world.GitUnstageOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'repo_object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GitUnstageOp>(
+    'git.world.GitUnstageOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'repo_object_key', 9],
+      [3, 'paths', 9, 1],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

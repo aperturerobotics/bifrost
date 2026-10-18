@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the controller that drives one Flowgraph run.
@@ -15,22 +13,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * EngineId is the World engine holding the run.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
    * ObjectKey is the run object to drive. The controller waits for it to exist.
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.flowgraph.run.Config',
-  fields: [
-    { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    's4wave.flowgraph.run.Config',
+    () => [
+      [1, 'engine_id', 9],
+      [2, 'object_key', 9],
+    ],
+  )

@@ -5,8 +5,6 @@
 import { NotebookSource } from './notebook.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
 /**
@@ -18,50 +16,31 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export interface Blog {
   /**
    * Name is the display name of the blog.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Description is a short description of the blog.
-   *
-   * @generated from field: string description = 2;
    */
   description?: string
   /**
    * Sources is the ordered list of content sources (shared with Notebook).
-   *
-   * @generated from field: repeated notes.NotebookSource sources = 3;
    */
   sources?: NotebookSource[]
   /**
    * AuthorRegistryPath is the path to the authors.yaml file within the source.
-   *
-   * @generated from field: string author_registry_path = 4;
    */
   authorRegistryPath?: string
 }
 
-export const Blog: MessageType<Blog> = /* @__PURE__ */ createMessageType({
-  typeName: 'notes.Blog',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'sources',
-      kind: 'message',
-      T: () => NotebookSource,
-      repeated: true,
-    },
-    {
-      no: 4,
-      name: 'author_registry_path',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Blog: MessageType<Blog> = /* @__PURE__ */ createMessageType<Blog>(
+  'notes.Blog',
+  () => [
+    [1, 'name', 9],
+    [2, 'description', 9],
+    [3, 'sources', 11, 1, NotebookSource.codec],
+    [4, 'author_registry_path', 9],
+  ],
+)
 
 /**
  * CreateBlogOp creates a Blog with a UnixFS source and initial post.
@@ -71,49 +50,31 @@ export const Blog: MessageType<Blog> = /* @__PURE__ */ createMessageType({
 export interface CreateBlogOp {
   /**
    * ObjectKey is the world object key for the blog.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the display name for the blog.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Description is a short description of the blog.
-   *
-   * @generated from field: string description = 3;
    */
   description?: string
   /**
    * AuthorRegistryPath is the path to the authors.yaml file.
-   *
-   * @generated from field: string author_registry_path = 4;
    */
   authorRegistryPath?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 5;
    */
   timestamp?: Date
 }
 
 export const CreateBlogOp: MessageType<CreateBlogOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.CreateBlogOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'author_registry_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 5, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateBlogOp>('notes.CreateBlogOp', () => [
+    [1, 'object_key', 9],
+    [2, 'name', 9],
+    [3, 'description', 9],
+    [4, 'author_registry_path', 9],
+    [5, 'timestamp', 11, 0, Timestamp.codec],
+  ])

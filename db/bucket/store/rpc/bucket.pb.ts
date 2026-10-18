@@ -5,8 +5,6 @@
 import { BucketInfo, Config } from '../../bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * ApplyBucketConfigRequest requests running volumes ingest a bucket config.
@@ -16,19 +14,15 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 export interface ApplyBucketConfigRequest {
   /**
    * Config is the bucket config.
-   *
-   * @generated from field: bucket.Config config = 1;
    */
   config?: Config
 }
 
 export const ApplyBucketConfigRequest: MessageType<ApplyBucketConfigRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.store.rpc.ApplyBucketConfigRequest',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: () => Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyBucketConfigRequest>(
+    'bucket.store.rpc.ApplyBucketConfigRequest',
+    () => [[1, 'config', 11, 0, Config.codec]],
+  )
 
 /**
  * ApplyBucketConfigResponse returns results of the request.
@@ -38,33 +32,27 @@ export const ApplyBucketConfigRequest: MessageType<ApplyBucketConfigRequest> =
 export interface ApplyBucketConfigResponse {
   /**
    * Updated indicates the configuration was updated.
-   *
-   * @generated from field: bool updated = 1;
    */
   updated?: boolean
   /**
    * Prev is the previous configuration, if any.
-   *
-   * @generated from field: bucket.Config prev = 2;
    */
   prev?: Config
   /**
    * Curr is the current configuration, if any.
-   *
-   * @generated from field: bucket.Config curr = 3;
    */
   curr?: Config
 }
 
 export const ApplyBucketConfigResponse: MessageType<ApplyBucketConfigResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.store.rpc.ApplyBucketConfigResponse',
-    fields: [
-      { no: 1, name: 'updated', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'prev', kind: 'message', T: () => Config },
-      { no: 3, name: 'curr', kind: 'message', T: () => Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyBucketConfigResponse>(
+    'bucket.store.rpc.ApplyBucketConfigResponse',
+    () => [
+      [1, 'updated', 8],
+      [2, 'prev', 11, 0, Config.codec],
+      [3, 'curr', 11, 0, Config.codec],
+    ],
+  )
 
 /**
  * GetBucketConfigRequest requests to look up a bucket config in a volume.
@@ -74,19 +62,15 @@ export const ApplyBucketConfigResponse: MessageType<ApplyBucketConfigResponse> =
 export interface GetBucketConfigRequest {
   /**
    * BucketId is the identifier of the bucket to look up.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
 }
 
 export const GetBucketConfigRequest: MessageType<GetBucketConfigRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.store.rpc.GetBucketConfigRequest',
-    fields: [
-      { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBucketConfigRequest>(
+    'bucket.store.rpc.GetBucketConfigRequest',
+    () => [[1, 'bucket_id', 9]],
+  )
 
 /**
  * GetBucketConfigResponse responds to the request for a bucket config.
@@ -96,19 +80,15 @@ export const GetBucketConfigRequest: MessageType<GetBucketConfigRequest> =
 export interface GetBucketConfigResponse {
   /**
    * Config is the bucket config, if found.
-   *
-   * @generated from field: bucket.Config config = 1;
    */
   config?: Config
 }
 
 export const GetBucketConfigResponse: MessageType<GetBucketConfigResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.store.rpc.GetBucketConfigResponse',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: () => Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBucketConfigResponse>(
+    'bucket.store.rpc.GetBucketConfigResponse',
+    () => [[1, 'config', 11, 0, Config.codec]],
+  )
 
 /**
  * GetBucketInfoRequest requests to bucket information from a volume.
@@ -118,19 +98,15 @@ export const GetBucketConfigResponse: MessageType<GetBucketConfigResponse> =
 export interface GetBucketInfoRequest {
   /**
    * BucketId is the identifier of the bucket to look up.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
 }
 
 export const GetBucketInfoRequest: MessageType<GetBucketInfoRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.store.rpc.GetBucketInfoRequest',
-    fields: [
-      { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBucketInfoRequest>(
+    'bucket.store.rpc.GetBucketInfoRequest',
+    () => [[1, 'bucket_id', 9]],
+  )
 
 /**
  * GetBucketInfoResponse responds to the request for bucket info.
@@ -141,19 +117,15 @@ export interface GetBucketInfoResponse {
   /**
    * BucketInfo is the bucket information, if found.
    * Otherwise returns empty.
-   *
-   * @generated from field: bucket.BucketInfo bucket_info = 1;
    */
   bucketInfo?: BucketInfo
 }
 
 export const GetBucketInfoResponse: MessageType<GetBucketInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.store.rpc.GetBucketInfoResponse',
-    fields: [
-      { no: 1, name: 'bucket_info', kind: 'message', T: () => BucketInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBucketInfoResponse>(
+    'bucket.store.rpc.GetBucketInfoResponse',
+    () => [[1, 'bucket_info', 11, 0, BucketInfo.codec]],
+  )
 
 /**
  * ListBucketInfoRequest requests to bucket information from a volume.
@@ -163,19 +135,15 @@ export const GetBucketInfoResponse: MessageType<GetBucketInfoResponse> =
 export interface ListBucketInfoRequest {
   /**
    * BucketIdRe is an optional regex to filter the list by.
-   *
-   * @generated from field: string bucket_id_re = 1;
    */
   bucketIdRe?: string
 }
 
 export const ListBucketInfoRequest: MessageType<ListBucketInfoRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.store.rpc.ListBucketInfoRequest',
-    fields: [
-      { no: 1, name: 'bucket_id_re', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListBucketInfoRequest>(
+    'bucket.store.rpc.ListBucketInfoRequest',
+    () => [[1, 'bucket_id_re', 9]],
+  )
 
 /**
  * ListBucketInfoResponse is the response to the request for bucket infos.
@@ -185,22 +153,12 @@ export const ListBucketInfoRequest: MessageType<ListBucketInfoRequest> =
 export interface ListBucketInfoResponse {
   /**
    * BucketInfo is the bucket information list.
-   *
-   * @generated from field: repeated bucket.BucketInfo bucket_info = 1;
    */
   bucketInfo?: BucketInfo[]
 }
 
 export const ListBucketInfoResponse: MessageType<ListBucketInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.store.rpc.ListBucketInfoResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'bucket_info',
-        kind: 'message',
-        T: () => BucketInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListBucketInfoResponse>(
+    'bucket.store.rpc.ListBucketInfoResponse',
+    () => [[1, 'bucket_info', 11, 1, BucketInfo.codec]],
+  )

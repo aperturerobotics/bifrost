@@ -6,8 +6,6 @@ import { ProjectConfig } from '../project.pb.js'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
 import { BuildPolicy } from '../../manifest/build/policy.pb.js'
 import {
@@ -23,92 +21,65 @@ import {
 export interface Config {
   /**
    * SourcePath is the path to the source code working dir.
-   *
-   * @generated from field: string source_path = 1;
    */
   sourcePath?: string
   /**
    * WorkingPath is the path to use for codegen and working state.
    * Usually source_path/.bldr
    * We expect the bldr dist sources to be under working_path/bldr
-   *
-   * @generated from field: string working_path = 2;
    */
   workingPath?: string
   /**
    * ProjectConfig contains the project configuration.
-   *
-   * @generated from field: bldr.project.ProjectConfig project_config = 3;
    */
   projectConfig?: ProjectConfig
   /**
    * BuildBackoff is the backoff config for building manifests.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff build_backoff = 4;
    */
   buildBackoff?: Backoff
   /**
    * Watch enables watching for changes.
-   *
-   * @generated from field: bool watch = 5;
    */
   watch?: boolean
   /**
    * Start enables loading the plugins in the "start" portion of the config.
-   *
-   * @generated from field: bool start = 6;
    */
   start?: boolean
   /**
    * FetchManifestRemote is the remote to use for the FetchManifest request.
    * When FetchManifest is applied, we will compile the plugin manifest to the remote.
    * If unset, we don't service FetchManifest directives.
-   *
-   * @generated from field: string fetch_manifest_remote = 7;
    */
   fetchManifestRemote?: string
   /**
    * FrontendDevelopment attaches watched web development builds to the active
    * project frontend service. Explicit build commands leave this disabled.
-   *
-   * @generated from field: bool frontend_development = 8;
    */
   frontendDevelopment?: boolean
   /**
    * FrontendRoutePrefix overrides the browser namespace for an attached compiler.
    * An attached compiler does not watch its source root; the attaching owner
    * reports each edit through FrontendService.Change.
-   *
-   * @generated from field: string frontend_route_prefix = 9;
    */
   frontendRoutePrefix?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.project.controller.Config',
-  fields: [
-    { no: 1, name: 'source_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'working_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'project_config', kind: 'message', T: () => ProjectConfig },
-    { no: 4, name: 'build_backoff', kind: 'message', T: () => Backoff },
-    { no: 5, name: 'watch', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 6, name: 'start', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 7,
-      name: 'fetch_manifest_remote',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 8, name: 'frontend_development', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 9,
-      name: 'frontend_route_prefix',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.project.controller.Config',
+    () => [
+      [1, 'source_path', 9],
+      [2, 'working_path', 9],
+      [3, 'project_config', 11, 0, ProjectConfig.codec],
+      [4, 'build_backoff', 11, 0, Backoff.codec],
+      [5, 'watch', 8],
+      [6, 'start', 8],
+      [7, 'fetch_manifest_remote', 9],
+      [8, 'frontend_development', 8],
+      [9, 'frontend_route_prefix', 9],
+    ],
+  )
 
 /**
  * ManifestBuilderConfig is a configuration for a ManifestBuilder.
@@ -118,26 +89,18 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
 export interface ManifestBuilderConfig {
   /**
    * ManifestId is the manifest identifier to build.
-   *
-   * @generated from field: string manifest_id = 1;
    */
   manifestId?: string
   /**
    * BuildType is the type of build this is.
-   *
-   * @generated from field: string build_type = 2;
    */
   buildType?: string
   /**
    * PlatformId is the platform ID to build.
-   *
-   * @generated from field: string platform_id = 3;
    */
   platformId?: string
   /**
    * RemoteId is the identifier of the remote to attach to.
-   *
-   * @generated from field: string remote_id = 4;
    */
   remoteId?: string
   /**
@@ -147,8 +110,6 @@ export interface ManifestBuilderConfig {
    * Embed selection is driven by the per-slot BuilderConfigOverride sourced
    * from BuildConfig.manifest_overrides, which carries explicit
    * (manifest_id, platform_id) tuples.
-   *
-   * @generated from field: repeated string target_platform_ids = 5;
    */
   targetPlatformIds?: string[]
   /**
@@ -157,43 +118,28 @@ export interface ManifestBuilderConfig {
    * the manifest's declared builder id always wins. This is REPLACE
    * semantics: the static manifest builder config is not merged with the
    * override. Sourced from BuildConfig.manifest_overrides.
-   *
-   * @generated from field: configset.proto.ControllerConfig builder_config_override = 6;
    */
   builderConfigOverride?: ControllerConfig
   /**
    * BuildPolicy is the effective build-scoped policy for this manifest builder
    * slot after build-target config and CLI overrides are merged.
-   *
-   * @generated from field: bldr.manifest.build.BuildPolicy build_policy = 7;
    */
   buildPolicy?: BuildPolicy
 }
 
 export const ManifestBuilderConfig: MessageType<ManifestBuilderConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.project.controller.ManifestBuilderConfig',
-    fields: [
-      { no: 1, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'build_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'remote_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'target_platform_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'builder_config_override',
-        kind: 'message',
-        T: () => ControllerConfig,
-      },
-      { no: 7, name: 'build_policy', kind: 'message', T: () => BuildPolicy },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ManifestBuilderConfig>(
+    'bldr.project.controller.ManifestBuilderConfig',
+    () => [
+      [1, 'manifest_id', 9],
+      [2, 'build_type', 9],
+      [3, 'platform_id', 9],
+      [4, 'remote_id', 9],
+      [5, 'target_platform_ids', 9, 1],
+      [6, 'builder_config_override', 11, 0, ControllerConfig.codec],
+      [7, 'build_policy', 11, 0, BuildPolicy.codec],
+    ],
+  )
 
 /**
  * ManifestBuilderResult is the result of a ManifestBuilder build.
@@ -203,33 +149,19 @@ export const ManifestBuilderConfig: MessageType<ManifestBuilderConfig> =
 export interface ManifestBuilderResult {
   /**
    * BuilderConfig was the config passed to the builder.
-   *
-   * @generated from field: bldr.manifest.builder.BuilderConfig builder_config = 1;
    */
   builderConfig?: BuilderConfig
   /**
    * BuilderResult is the result of running the builder.
-   *
-   * @generated from field: bldr.manifest.builder.BuilderResult builder_result = 2;
    */
   builderResult?: BuilderResult
 }
 
 export const ManifestBuilderResult: MessageType<ManifestBuilderResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.project.controller.ManifestBuilderResult',
-    fields: [
-      {
-        no: 1,
-        name: 'builder_config',
-        kind: 'message',
-        T: () => BuilderConfig,
-      },
-      {
-        no: 2,
-        name: 'builder_result',
-        kind: 'message',
-        T: () => BuilderResult,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ManifestBuilderResult>(
+    'bldr.project.controller.ManifestBuilderResult',
+    () => [
+      [1, 'builder_config', 11, 0, BuilderConfig.codec],
+      [2, 'builder_result', 11, 0, BuilderResult.codec],
+    ],
+  )

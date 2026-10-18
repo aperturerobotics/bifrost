@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ClientConfig configures a redis client.
@@ -15,16 +13,12 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface ClientConfig {
   /**
    * Url is the redis:// url to connect to.
-   *
-   * @generated from field: string url = 1;
    */
   url?: string
 }
 
 export const ClientConfig: MessageType<ClientConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'store.kvtx.redis.ClientConfig',
-    fields: [
-      { no: 1, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClientConfig>(
+    'store.kvtx.redis.ClientConfig',
+    () => [[1, 'url', 9]],
+  )

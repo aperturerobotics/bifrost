@@ -4,8 +4,24 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+
+/**
+ * Config configures block transformation.
+ *
+ * @generated from message block.transform.Config
+ */
+export interface Config {
+  /**
+   * Steps contains the transformation steps.
+   * Index 0 is applied first when encoding and vise-versa.
+   */
+  steps?: StepConfig[]
+}
+
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('block.transform.Config', () => [
+    [1, 'steps', 11, 1, StepConfig.codec],
+  ])
 
 /**
  * StepConfig configures a transformation step.
@@ -17,46 +33,20 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface StepConfig {
   /**
    * Id contains the configuration ID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Config contains configuration data.
    * May be formatted with proto or json.
-   *
-   * @generated from field: bytes config = 2;
    */
   config?: Uint8Array
 }
 
 export const StepConfig: MessageType<StepConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.transform.StepConfig',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'config', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Config configures block transformation.
- *
- * @generated from message block.transform.Config
- */
-export interface Config {
-  /**
-   * Steps contains the transformation steps.
-   * Index 0 is applied first when encoding and vise-versa.
-   *
-   * @generated from field: repeated block.transform.StepConfig steps = 1;
-   */
-  steps?: StepConfig[]
-}
-
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.transform.Config',
-  fields: [
-    { no: 1, name: 'steps', kind: 'message', T: StepConfig, repeated: true },
-  ] satisfies readonly PartialFieldInfo[],
-})
+  /* @__PURE__ */ createMessageType<StepConfig>(
+    'block.transform.StepConfig',
+    () => [
+      [1, 'id', 9],
+      [2, 'config', 12],
+    ],
+  )

@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Parameters are stored with the user record.
@@ -19,43 +14,35 @@ export interface Parameters {
   /**
    * Salt is the salt used for key derivation.
    * 16 bytes, derived deterministically from the username via blake3.
-   *
-   * @generated from field: bytes salt = 1;
    */
   salt?: Uint8Array
   /**
    * ScryptN is the scrypt N parameter (cost factor as a power of 2).
    * Default: 20 (2^20 = 1048576).
-   *
-   * @generated from field: uint32 scrypt_n = 2;
    */
   scryptN?: number
   /**
    * ScryptR is the scrypt r parameter (block size).
    * Default: 8.
-   *
-   * @generated from field: uint32 scrypt_r = 3;
    */
   scryptR?: number
   /**
    * ScryptP is the scrypt p parameter (parallelization).
    * Default: 1.
-   *
-   * @generated from field: uint32 scrypt_p = 4;
    */
   scryptP?: number
 }
 
 export const Parameters: MessageType<Parameters> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'auth.method.password.Parameters',
-    fields: [
-      { no: 1, name: 'salt', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'scrypt_n', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'scrypt_r', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'scrypt_p', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Parameters>(
+    'auth.method.password.Parameters',
+    () => [
+      [1, 'salt', 12],
+      [2, 'scrypt_n', 13],
+      [3, 'scrypt_r', 13],
+      [4, 'scrypt_p', 13],
+    ],
+  )
 
 /**
  * Config is configuration for the auth method.
@@ -65,7 +52,7 @@ export const Parameters: MessageType<Parameters> =
 export interface Config {}
 
 export const Config: MessageType<Config> =
-  /* @__PURE__ */ createEmptyMessageType<Config>(
+  /* @__PURE__ */ createMessageType<Config>(
     'auth.method.password.Config',
-    true,
+    () => [],
   )

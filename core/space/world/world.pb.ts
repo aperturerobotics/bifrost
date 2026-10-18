@@ -4,73 +4,7 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { KeybindingOverrideSet } from '../../../sdk/command/command.pb.js'
-
-/**
- * WorldContentsObject is an entry in the WorldContents.
- *
- * @generated from message space.world.WorldContentsObject
- */
-export interface WorldContentsObject {
-  /**
-   * ObjectKey is the key of the object in the world.
-   *
-   * @generated from field: string object_key = 1;
-   */
-  objectKey?: string
-  /**
-   * ParentObjectKey is the key of the parent of the object.
-   * Can be empty.
-   *
-   * @generated from field: string parent_object_key = 2;
-   */
-  parentObjectKey?: string
-  /**
-   * ObjectType is the type of the object.
-   *
-   * @generated from field: string object_type = 3;
-   */
-  objectType?: string
-}
-
-export const WorldContentsObject: MessageType<WorldContentsObject> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.WorldContentsObject',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'parent_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'object_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WorldContentsObjectType is an entry in the WorldContents.
- *
- * @generated from message space.world.WorldContentsObjectType
- */
-export interface WorldContentsObjectType {
-  /**
-   * ObjectType is the type id.
-   *
-   * @generated from field: string object_type = 1;
-   */
-  objectType?: string
-}
-
-export const WorldContentsObjectType: MessageType<WorldContentsObjectType> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.WorldContentsObjectType',
-    fields: [
-      { no: 1, name: 'object_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * WorldContents contains a list of world objects and types.
@@ -80,67 +14,71 @@ export const WorldContentsObjectType: MessageType<WorldContentsObjectType> =
 export interface WorldContents {
   /**
    * Objects contains the list of world objects.
-   *
-   * @generated from field: repeated space.world.WorldContentsObject objects = 1;
    */
   objects?: WorldContentsObject[]
   /**
    * ObjectTypes contains the list of world object types.
-   *
-   * @generated from field: repeated space.world.WorldContentsObjectType object_types = 2;
    */
   objectTypes?: WorldContentsObjectType[]
 }
 
 export const WorldContents: MessageType<WorldContents> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.WorldContents',
-    fields: [
-      {
-        no: 1,
-        name: 'objects',
-        kind: 'message',
-        T: WorldContentsObject,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'object_types',
-        kind: 'message',
-        T: WorldContentsObjectType,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WorldContents>(
+    'space.world.WorldContents',
+    () => [
+      [1, 'objects', 11, 1, WorldContentsObject.codec],
+      [2, 'object_types', 11, 1, WorldContentsObjectType.codec],
+    ],
+  )
 
 /**
- * SpacePluginInstallation retains explicit installation choices across reopen.
+ * WorldContentsObject is an entry in the WorldContents.
  *
- * @generated from message space.world.SpacePluginInstallation
+ * @generated from message space.world.WorldContentsObject
  */
-export interface SpacePluginInstallation {
+export interface WorldContentsObject {
   /**
-   * ManifestKeys lists immutable artifacts, newest installation first.
-   * Earlier choices recover a working plugin when the requested version fails.
-   *
-   * @generated from field: repeated string manifest_keys = 1;
+   * ObjectKey is the key of the object in the world.
    */
-  manifestKeys?: string[]
+  objectKey?: string
+  /**
+   * ParentObjectKey is the key of the parent of the object.
+   * Can be empty.
+   */
+  parentObjectKey?: string
+  /**
+   * ObjectType is the type of the object.
+   */
+  objectType?: string
 }
 
-export const SpacePluginInstallation: MessageType<SpacePluginInstallation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.SpacePluginInstallation',
-    fields: [
-      {
-        no: 1,
-        name: 'manifest_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const WorldContentsObject: MessageType<WorldContentsObject> =
+  /* @__PURE__ */ createMessageType<WorldContentsObject>(
+    'space.world.WorldContentsObject',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'parent_object_key', 9],
+      [3, 'object_type', 9],
+    ],
+  )
+
+/**
+ * WorldContentsObjectType is an entry in the WorldContents.
+ *
+ * @generated from message space.world.WorldContentsObjectType
+ */
+export interface WorldContentsObjectType {
+  /**
+   * ObjectType is the type id.
+   */
+  objectType?: string
+}
+
+export const WorldContentsObjectType: MessageType<WorldContentsObjectType> =
+  /* @__PURE__ */ createMessageType<WorldContentsObjectType>(
+    'space.world.WorldContentsObjectType',
+    () => [[1, 'object_type', 9]],
+  )
 
 /**
  * SpaceSettings is an object containing the settings for a Space.
@@ -152,65 +90,57 @@ export const SpacePluginInstallation: MessageType<SpacePluginInstallation> =
 export interface SpaceSettings {
   /**
    * IndexPath is the default URL path to display at /.
-   *
-   * @generated from field: string index_path = 1;
    */
   indexPath?: string
   /**
    * PluginIds lists manifest IDs of plugins this Space uses.
    * Shared with all Space participants.
-   *
-   * @generated from field: repeated string plugin_ids = 2;
    */
   pluginIds?: string[]
   /**
    * KeybindingOverrides stores Space-scope keybinding overrides.
-   *
-   * @generated from field: s4wave.command.KeybindingOverrideSet keybinding_overrides = 3;
    */
   keybindingOverrides?: KeybindingOverrideSet
   /**
    * PluginInstallations pins plugins to immutable World artifacts.
    * Plugins without an installation follow their configured application catalog.
-   *
-   * @generated from field: map<string, space.world.SpacePluginInstallation> plugin_installations = 4;
    */
   pluginInstallations?: { [key: string]: SpacePluginInstallation }
   /**
    * ChangelogEnabled keeps a changelog of World changes for this Space.
    * Writing the settings applies it to the World in the same transaction.
    * Enabling starts history after that write; disabling drops it.
-   *
-   * @generated from field: bool changelog_enabled = 5;
    */
   changelogEnabled?: boolean
 }
 
 export const SpaceSettings: MessageType<SpaceSettings> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.SpaceSettings',
-    fields: [
-      { no: 1, name: 'index_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'plugin_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'keybinding_overrides',
-        kind: 'message',
-        T: () => KeybindingOverrideSet,
-      },
-      {
-        no: 4,
-        name: 'plugin_installations',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: SpacePluginInstallation },
-      },
-      { no: 5, name: 'changelog_enabled', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceSettings>(
+    'space.world.SpaceSettings',
+    () => [
+      [1, 'index_path', 9],
+      [2, 'plugin_ids', 9, 1],
+      [3, 'keybinding_overrides', 11, 0, KeybindingOverrideSet.codec],
+      [4, 'plugin_installations', 11, 584, SpacePluginInstallation.codec],
+      [5, 'changelog_enabled', 8],
+    ],
+  )
+
+/**
+ * SpacePluginInstallation retains explicit installation choices across reopen.
+ *
+ * @generated from message space.world.SpacePluginInstallation
+ */
+export interface SpacePluginInstallation {
+  /**
+   * ManifestKeys lists immutable artifacts, newest installation first.
+   * Earlier choices recover a working plugin when the requested version fails.
+   */
+  manifestKeys?: string[]
+}
+
+export const SpacePluginInstallation: MessageType<SpacePluginInstallation> =
+  /* @__PURE__ */ createMessageType<SpacePluginInstallation>(
+    'space.world.SpacePluginInstallation',
+    () => [[1, 'manifest_keys', 9, 1]],
+  )

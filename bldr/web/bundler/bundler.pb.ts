@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * WebEntrypoint is an entrypoint passed to a web bundler.
@@ -15,26 +13,22 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface WebEntrypoint {
   /**
    * InputPath is the input file path.
-   *
-   * @generated from field: string input_path = 1;
    */
   inputPath?: string
   /**
    * OutputPath is the output file path, if any.
-   *
-   * @generated from field: string output_path = 2;
    */
   outputPath?: string
 }
 
 export const WebEntrypoint: MessageType<WebEntrypoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.WebEntrypoint',
-    fields: [
-      { no: 1, name: 'input_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'output_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebEntrypoint>(
+    'bldr.web.bundler.WebEntrypoint',
+    () => [
+      [1, 'input_path', 9],
+      [2, 'output_path', 9],
+    ],
+  )
 
 /**
  * WebBundlerOutput contains a single web bundler output.
@@ -49,8 +43,6 @@ export interface WebBundlerOutput {
    * EntrypointHref is the url path to the script entrypoint.
    *
    * e.x: /p/plugin-id/script.js
-   *
-   * @generated from field: string entrypoint_href = 1;
    */
   entrypointHref?: string
   /**
@@ -58,20 +50,67 @@ export interface WebBundlerOutput {
    *
    * May be empty.
    * e.x: /p/plugin-id/script.css
-   *
-   * @generated from field: string css_href = 2;
    */
   cssHref?: string
 }
 
 export const WebBundlerOutput: MessageType<WebBundlerOutput> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.WebBundlerOutput',
-    fields: [
-      { no: 1, name: 'entrypoint_href', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'css_href', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebBundlerOutput>(
+    'bldr.web.bundler.WebBundlerOutput',
+    () => [
+      [1, 'entrypoint_href', 9],
+      [2, 'css_href', 9],
+    ],
+  )
+
+/**
+ * WebPkgRefConfig configures a web pkg reference.
+ *
+ * @generated from message bldr.web.bundler.WebPkgRefConfig
+ */
+export interface WebPkgRefConfig {
+  /**
+   * Id is the identifier of the web pkg.
+   * example: @aptre/flex-layout
+   */
+  id?: string
+  /**
+   * Exclude indicates we should reference this web pkg but exclude it from this bundle.
+   * This is useful if another plugin already provides this web pkg.
+   */
+  exclude?: boolean
+  /**
+   * Imports is the list of imports to include in the web pkg bundle.
+   * NOTE: this will be merged with any imports the code accesses.
+   * NOTE: this is therefore optional.
+   */
+  imports?: string[]
+  /**
+   * Entrypoints defines the subpath entry points to build for this web package.
+   *
+   * For project-local packages (resolved via tsconfig paths, not node_modules):
+   *   - If set, each entry declares a subpath export (e.g. ".", "./object").
+   *     "." maps to the package root index file.
+   *   - If empty, defaults to a single "." entrypoint (package root index).
+   *
+   * For node_modules packages:
+   *   - If set, overrides the auto-detected exports from package.json.
+   *   - If empty, entry points are read from the package.json "exports" field.
+   *     Falls back to "main" or "." if no exports field is present.
+   */
+  entrypoints?: WebPkgEntrypoint[]
+}
+
+export const WebPkgRefConfig: MessageType<WebPkgRefConfig> =
+  /* @__PURE__ */ createMessageType<WebPkgRefConfig>(
+    'bldr.web.bundler.WebPkgRefConfig',
+    () => [
+      [1, 'id', 9],
+      [2, 'exclude', 8],
+      [3, 'imports', 9, 1],
+      [4, 'entrypoints', 11, 1, WebPkgEntrypoint.codec],
+    ],
+  )
 
 /**
  * WebPkgEntrypoint configures a single entry point for a web package build.
@@ -88,85 +127,12 @@ export interface WebPkgEntrypoint {
    *   "./hooks"     - another subpath
    *
    * Follows Node.js subpath exports conventions.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
 }
 
 export const WebPkgEntrypoint: MessageType<WebPkgEntrypoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.WebPkgEntrypoint',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WebPkgRefConfig configures a web pkg reference.
- *
- * @generated from message bldr.web.bundler.WebPkgRefConfig
- */
-export interface WebPkgRefConfig {
-  /**
-   * Id is the identifier of the web pkg.
-   * example: @aptre/flex-layout
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Exclude indicates we should reference this web pkg but exclude it from this bundle.
-   * This is useful if another plugin already provides this web pkg.
-   *
-   * @generated from field: bool exclude = 2;
-   */
-  exclude?: boolean
-  /**
-   * Imports is the list of imports to include in the web pkg bundle.
-   * NOTE: this will be merged with any imports the code accesses.
-   * NOTE: this is therefore optional.
-   *
-   * @generated from field: repeated string imports = 3;
-   */
-  imports?: string[]
-  /**
-   * Entrypoints defines the subpath entry points to build for this web package.
-   *
-   * For project-local packages (resolved via tsconfig paths, not node_modules):
-   *   - If set, each entry declares a subpath export (e.g. ".", "./object").
-   *     "." maps to the package root index file.
-   *   - If empty, defaults to a single "." entrypoint (package root index).
-   *
-   * For node_modules packages:
-   *   - If set, overrides the auto-detected exports from package.json.
-   *   - If empty, entry points are read from the package.json "exports" field.
-   *     Falls back to "main" or "." if no exports field is present.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgEntrypoint entrypoints = 4;
-   */
-  entrypoints?: WebPkgEntrypoint[]
-}
-
-export const WebPkgRefConfig: MessageType<WebPkgRefConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.WebPkgRefConfig',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'exclude', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'imports',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'entrypoints',
-        kind: 'message',
-        T: WebPkgEntrypoint,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebPkgEntrypoint>(
+    'bldr.web.bundler.WebPkgEntrypoint',
+    () => [[1, 'path', 9]],
+  )

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures a controller to fetch manifests via a world engine.
@@ -17,63 +15,38 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * EngineId is the world engine id to attach to.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
    * ObjectKeys is the list of object keys to search from for manifests.
    * Searches for <manifest> linked manifests.
-   *
-   * @generated from field: repeated string object_keys = 2;
    */
   objectKeys?: string[]
   /**
    * FetchManifestIdRe is the regex of manifest IDs to fetch with this controller.
    * If empty, will lookup for any FetchManifest directive.
-   *
-   * @generated from field: string fetch_manifest_id_re = 3;
    */
   fetchManifestIdRe?: string
   /**
    * DisableWatch disables watching the world for changes for FetchManifest.
-   *
-   * @generated from field: bool disable_watch = 4;
    */
   disableWatch?: boolean
   /**
    * ReleaseAuthorityPluginId selects the embedded launcher supplying release pins.
    * When set, every selected root requires that launcher's release authorization.
    * Local development and binary-embedded Worlds leave this empty.
-   *
-   * @generated from field: string release_authority_plugin_id = 5;
    */
   releaseAuthorityPluginId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'manifest.fetch.world.Config',
-  fields: [
-    { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'object_keys',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 3,
-      name: 'fetch_manifest_id_re',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 4, name: 'disable_watch', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 5,
-      name: 'release_authority_plugin_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'manifest.fetch.world.Config',
+    () => [
+      [1, 'engine_id', 9],
+      [2, 'object_keys', 9, 1],
+      [3, 'fetch_manifest_id_re', 9],
+      [4, 'disable_watch', 8],
+      [5, 'release_authority_plugin_id', 9],
+    ],
+  )

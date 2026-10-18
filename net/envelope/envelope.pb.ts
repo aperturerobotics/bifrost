@@ -4,96 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * EnvelopeGrant is an encrypted bundle of shares.
- * The grant ciphertext contains a marshaled EnvelopeGrantInner.
- * Encrypted to one or more keypairs in the Envelope keypairs list.
- *
- * @generated from message envelope.EnvelopeGrant
- */
-export interface EnvelopeGrant {
-  /**
-   * KeypairIndexes lists which keypairs can decrypt this grant.
-   * Each value is an index into the Envelope.keypairs list.
-   *
-   * @generated from field: repeated uint32 keypair_indexes = 1;
-   */
-  keypairIndexes?: number[]
-  /**
-   * Ciphertexts contains the encrypted EnvelopeGrantInner.
-   * One ciphertext per keypair index, in the same order.
-   * Each encrypted with peer.EncryptToPubKey to the corresponding keypair.
-   *
-   * @generated from field: repeated bytes ciphertexts = 2;
-   */
-  ciphertexts?: Uint8Array[]
-}
-
-export const EnvelopeGrant: MessageType<EnvelopeGrant> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'envelope.EnvelopeGrant',
-    fields: [
-      {
-        no: 1,
-        name: 'keypair_indexes',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'ciphertexts',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * EnvelopeKeypair is a public key entry in the envelope.
- *
- * @generated from message envelope.EnvelopeKeypair
- */
-export interface EnvelopeKeypair {
-  /**
-   * PubKey is the marshaled public key in PEM format (via bifrost/keypem).
-   *
-   * @generated from field: bytes pub_key = 1;
-   */
-  pubKey?: Uint8Array
-  /**
-   * AuthMethodId is an optional identifier for the auth method.
-   * Application-specific hint for how to derive the private key.
-   *
-   * @generated from field: string auth_method_id = 2;
-   */
-  authMethodId?: string
-  /**
-   * AuthMethodParams is optional parameters for the auth method.
-   *
-   * @generated from field: bytes auth_method_params = 3;
-   */
-  authMethodParams?: Uint8Array
-}
-
-export const EnvelopeKeypair: MessageType<EnvelopeKeypair> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'envelope.EnvelopeKeypair',
-    fields: [
-      { no: 1, name: 'pub_key', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'auth_method_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'auth_method_params',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Envelope contains an encrypted message unlockable via secret sharing.
@@ -108,107 +18,79 @@ export interface Envelope {
   /**
    * EnvelopeId is the unique identifier of the envelope.
    * If empty when building, generated from hash of secret + context.
-   *
-   * @generated from field: string envelope_id = 1;
    */
   envelopeId?: string
   /**
    * ContextHash is the BLAKE3 hash of the context string.
    * Used to verify the envelope matches the expected application context.
-   *
-   * @generated from field: bytes context_hash = 2;
    */
   contextHash?: Uint8Array
   /**
    * Threshold is the CIRCL threshold parameter.
    * Recovery requires threshold+1 shares.
    * If zero, any single share suffices (no secret splitting).
-   *
-   * @generated from field: uint32 threshold = 3;
    */
   threshold?: number
   /**
    * Ciphertext is the encrypted payload.
    * Encrypted with XChaCha20-Poly1305 using a key derived from the scalar.
-   *
-   * @generated from field: bytes ciphertext = 4;
    */
   ciphertext?: Uint8Array
   /**
    * Grants is the list of encrypted share bundles.
-   *
-   * @generated from field: repeated envelope.EnvelopeGrant grants = 5;
    */
   grants?: EnvelopeGrant[]
   /**
    * Keypairs is the list of public keys used to encrypt grants.
-   *
-   * @generated from field: repeated envelope.EnvelopeKeypair keypairs = 6;
    */
   keypairs?: EnvelopeKeypair[]
   /**
    * Contents is an optional plaintext description of what the envelope contains.
    * Application-specific; not used in the unlock process.
-   *
-   * @generated from field: bytes contents = 7;
    */
   contents?: Uint8Array
 }
 
 export const Envelope: MessageType<Envelope> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'envelope.Envelope',
-    fields: [
-      { no: 1, name: 'envelope_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'context_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'threshold', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'ciphertext', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 5,
-        name: 'grants',
-        kind: 'message',
-        T: EnvelopeGrant,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'keypairs',
-        kind: 'message',
-        T: EnvelopeKeypair,
-        repeated: true,
-      },
-      { no: 7, name: 'contents', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Envelope>('envelope.Envelope', () => [
+    [1, 'envelope_id', 9],
+    [2, 'context_hash', 12],
+    [3, 'threshold', 13],
+    [4, 'ciphertext', 12],
+    [5, 'grants', 11, 1, EnvelopeGrant.codec],
+    [6, 'keypairs', 11, 1, EnvelopeKeypair.codec],
+    [7, 'contents', 12],
+  ])
 
 /**
- * EnvelopeShare is a single Shamir share (Ristretto255 scalar pair).
+ * EnvelopeGrant is an encrypted bundle of shares.
+ * The grant ciphertext contains a marshaled EnvelopeGrantInner.
+ * Encrypted to one or more keypairs in the Envelope keypairs list.
  *
- * @generated from message envelope.EnvelopeShare
+ * @generated from message envelope.EnvelopeGrant
  */
-export interface EnvelopeShare {
+export interface EnvelopeGrant {
   /**
-   * Id is the share identifier (marshaled Ristretto255 scalar, 32 bytes).
-   *
-   * @generated from field: bytes id = 1;
+   * KeypairIndexes lists which keypairs can decrypt this grant.
+   * Each value is an index into the Envelope.keypairs list.
    */
-  id?: Uint8Array
+  keypairIndexes?: number[]
   /**
-   * Value is the share value (marshaled Ristretto255 scalar, 32 bytes).
-   *
-   * @generated from field: bytes value = 2;
+   * Ciphertexts contains the encrypted EnvelopeGrantInner.
+   * One ciphertext per keypair index, in the same order.
+   * Each encrypted with peer.EncryptToPubKey to the corresponding keypair.
    */
-  value?: Uint8Array
+  ciphertexts?: Uint8Array[]
 }
 
-export const EnvelopeShare: MessageType<EnvelopeShare> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'envelope.EnvelopeShare',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'value', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const EnvelopeGrant: MessageType<EnvelopeGrant> =
+  /* @__PURE__ */ createMessageType<EnvelopeGrant>(
+    'envelope.EnvelopeGrant',
+    () => [
+      [1, 'keypair_indexes', 13, 3],
+      [2, 'ciphertexts', 12, 1],
+    ],
+  )
 
 /**
  * EnvelopeGrantInner is the decrypted contents of a grant.
@@ -218,25 +100,108 @@ export const EnvelopeShare: MessageType<EnvelopeShare> =
 export interface EnvelopeGrantInner {
   /**
    * Shares is the list of Shamir shares in this grant.
-   *
-   * @generated from field: repeated envelope.EnvelopeShare shares = 1;
    */
   shares?: EnvelopeShare[]
 }
 
 export const EnvelopeGrantInner: MessageType<EnvelopeGrantInner> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'envelope.EnvelopeGrantInner',
-    fields: [
-      {
-        no: 1,
-        name: 'shares',
-        kind: 'message',
-        T: EnvelopeShare,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnvelopeGrantInner>(
+    'envelope.EnvelopeGrantInner',
+    () => [[1, 'shares', 11, 1, EnvelopeShare.codec]],
+  )
+
+/**
+ * EnvelopeShare is a single Shamir share (Ristretto255 scalar pair).
+ *
+ * @generated from message envelope.EnvelopeShare
+ */
+export interface EnvelopeShare {
+  /**
+   * Id is the share identifier (marshaled Ristretto255 scalar, 32 bytes).
+   */
+  id?: Uint8Array
+  /**
+   * Value is the share value (marshaled Ristretto255 scalar, 32 bytes).
+   */
+  value?: Uint8Array
+}
+
+export const EnvelopeShare: MessageType<EnvelopeShare> =
+  /* @__PURE__ */ createMessageType<EnvelopeShare>(
+    'envelope.EnvelopeShare',
+    () => [
+      [1, 'id', 12],
+      [2, 'value', 12],
+    ],
+  )
+
+/**
+ * EnvelopeKeypair is a public key entry in the envelope.
+ *
+ * @generated from message envelope.EnvelopeKeypair
+ */
+export interface EnvelopeKeypair {
+  /**
+   * PubKey is the marshaled public key in PEM format (via bifrost/keypem).
+   */
+  pubKey?: Uint8Array
+  /**
+   * AuthMethodId is an optional identifier for the auth method.
+   * Application-specific hint for how to derive the private key.
+   */
+  authMethodId?: string
+  /**
+   * AuthMethodParams is optional parameters for the auth method.
+   */
+  authMethodParams?: Uint8Array
+}
+
+export const EnvelopeKeypair: MessageType<EnvelopeKeypair> =
+  /* @__PURE__ */ createMessageType<EnvelopeKeypair>(
+    'envelope.EnvelopeKeypair',
+    () => [
+      [1, 'pub_key', 12],
+      [2, 'auth_method_id', 9],
+      [3, 'auth_method_params', 12],
+    ],
+  )
+
+/**
+ * EnvelopeConfig is the configuration for building an envelope.
+ *
+ * @generated from message envelope.EnvelopeConfig
+ */
+export interface EnvelopeConfig {
+  /**
+   * EnvelopeId is the unique identifier. If empty, auto-generated.
+   */
+  envelopeId?: string
+  /**
+   * Threshold is the CIRCL threshold parameter (need threshold+1 shares).
+   * If zero, any single share suffices.
+   */
+  threshold?: number
+  /**
+   * TotalShares is the total number of shares to create.
+   * If zero, defaults to sum of shares across all grant configs.
+   */
+  totalShares?: number
+  /**
+   * GrantConfigs defines how shares are distributed across grants.
+   */
+  grantConfigs?: EnvelopeGrantConfig[]
+}
+
+export const EnvelopeConfig: MessageType<EnvelopeConfig> =
+  /* @__PURE__ */ createMessageType<EnvelopeConfig>(
+    'envelope.EnvelopeConfig',
+    () => [
+      [1, 'envelope_id', 9],
+      [2, 'threshold', 13],
+      [3, 'total_shares', 13],
+      [4, 'grant_configs', 11, 1, EnvelopeGrantConfig.codec],
+    ],
+  )
 
 /**
  * EnvelopeGrantConfig configures a single grant in the envelope.
@@ -247,84 +212,23 @@ export interface EnvelopeGrantConfig {
   /**
    * ShareCount is the number of shares to include in this grant.
    * If zero, defaults to 1.
-   *
-   * @generated from field: uint32 share_count = 1;
    */
   shareCount?: number
   /**
    * KeypairIndexes lists which keypairs can decrypt this grant.
    * Indexes into the keypairs list provided to BuildEnvelope.
-   *
-   * @generated from field: repeated uint32 keypair_indexes = 2;
    */
   keypairIndexes?: number[]
 }
 
 export const EnvelopeGrantConfig: MessageType<EnvelopeGrantConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'envelope.EnvelopeGrantConfig',
-    fields: [
-      { no: 1, name: 'share_count', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 2,
-        name: 'keypair_indexes',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * EnvelopeConfig is the configuration for building an envelope.
- *
- * @generated from message envelope.EnvelopeConfig
- */
-export interface EnvelopeConfig {
-  /**
-   * EnvelopeId is the unique identifier. If empty, auto-generated.
-   *
-   * @generated from field: string envelope_id = 1;
-   */
-  envelopeId?: string
-  /**
-   * Threshold is the CIRCL threshold parameter (need threshold+1 shares).
-   * If zero, any single share suffices.
-   *
-   * @generated from field: uint32 threshold = 2;
-   */
-  threshold?: number
-  /**
-   * TotalShares is the total number of shares to create.
-   * If zero, defaults to sum of shares across all grant configs.
-   *
-   * @generated from field: uint32 total_shares = 3;
-   */
-  totalShares?: number
-  /**
-   * GrantConfigs defines how shares are distributed across grants.
-   *
-   * @generated from field: repeated envelope.EnvelopeGrantConfig grant_configs = 4;
-   */
-  grantConfigs?: EnvelopeGrantConfig[]
-}
-
-export const EnvelopeConfig: MessageType<EnvelopeConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'envelope.EnvelopeConfig',
-    fields: [
-      { no: 1, name: 'envelope_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'threshold', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'total_shares', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 4,
-        name: 'grant_configs',
-        kind: 'message',
-        T: EnvelopeGrantConfig,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnvelopeGrantConfig>(
+    'envelope.EnvelopeGrantConfig',
+    () => [
+      [1, 'share_count', 13],
+      [2, 'keypair_indexes', 13, 3],
+    ],
+  )
 
 /**
  * EnvelopeUnlockResult is the result of attempting to unlock an envelope.
@@ -334,43 +238,29 @@ export const EnvelopeConfig: MessageType<EnvelopeConfig> =
 export interface EnvelopeUnlockResult {
   /**
    * Success indicates whether the envelope was fully unlocked.
-   *
-   * @generated from field: bool success = 1;
    */
   success?: boolean
   /**
    * SharesAvailable is the number of shares recovered from grants.
-   *
-   * @generated from field: uint32 shares_available = 2;
    */
   sharesAvailable?: number
   /**
    * SharesNeeded is the number of shares needed (threshold+1).
-   *
-   * @generated from field: uint32 shares_needed = 3;
    */
   sharesNeeded?: number
   /**
    * UnlockedGrantIndexes lists which grants were successfully decrypted.
-   *
-   * @generated from field: repeated uint32 unlocked_grant_indexes = 4;
    */
   unlockedGrantIndexes?: number[]
 }
 
 export const EnvelopeUnlockResult: MessageType<EnvelopeUnlockResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'envelope.EnvelopeUnlockResult',
-    fields: [
-      { no: 1, name: 'success', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'shares_available', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'shares_needed', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 4,
-        name: 'unlocked_grant_indexes',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnvelopeUnlockResult>(
+    'envelope.EnvelopeUnlockResult',
+    () => [
+      [1, 'success', 8],
+      [2, 'shares_available', 13],
+      [3, 'shares_needed', 13],
+      [4, 'unlocked_grant_indexes', 13, 3],
+    ],
+  )

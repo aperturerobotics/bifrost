@@ -9,13 +9,8 @@ import {
   SOParticipantRole_Enum,
 } from '../../core/sobject/sobject.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Signature } from '../../net/peer/peer.pb.js'
 
 /**
@@ -26,58 +21,39 @@ import { Signature } from '../../net/peer/peer.pb.js'
 export interface Secret {
   /**
    * DisplayName is the user-visible secret label.
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
   /**
    * Kind identifies the secret use, such as provider_credential or ssh_private_key.
-   *
-   * @generated from field: string kind = 2;
    */
   kind?: string
   /**
    * NestedSharedObjectId is the SharedObject id that stores the payload.
-   *
-   * @generated from field: string nested_shared_object_id = 3;
    */
   nestedSharedObjectId?: string
   /**
    * Ref points at the nested SharedObject security domain.
-   *
-   * @generated from field: sobject.SharedObjectRef ref = 4;
    */
   ref?: SharedObjectRef
   /**
    * CreatedAt is when the Secret object was created.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 6;
    */
   createdAt?: Date
   /**
    * UpdatedAt is when the Secret metadata was last updated.
-   *
-   * @generated from field: google.protobuf.Timestamp updated_at = 7;
    */
   updatedAt?: Date
 }
 
-export const Secret: MessageType<Secret> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.secret.Secret',
-  fields: [
-    { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'kind', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'nested_shared_object_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 4, name: 'ref', kind: 'message', T: () => SharedObjectRef },
-    { no: 6, name: 'created_at', kind: 'message', T: () => Timestamp },
-    { no: 7, name: 'updated_at', kind: 'message', T: () => Timestamp },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Secret: MessageType<Secret> =
+  /* @__PURE__ */ createMessageType<Secret>('s4wave.secret.Secret', () => [
+    [1, 'display_name', 9],
+    [2, 'kind', 9],
+    [3, 'nested_shared_object_id', 9],
+    [4, 'ref', 11, 0, SharedObjectRef.codec],
+    [6, 'created_at', 11, 0, Timestamp.codec],
+    [7, 'updated_at', 11, 0, Timestamp.codec],
+  ])
 
 /**
  * SecretPayload is stored only inside the nested SharedObject body.
@@ -87,40 +63,32 @@ export const Secret: MessageType<Secret> = /* @__PURE__ */ createMessageType({
 export interface SecretPayload {
   /**
    * Value is the raw secret payload.
-   *
-   * @generated from field: bytes value = 1;
    */
   value?: Uint8Array
   /**
    * ContentType is the media type of Value.
-   *
-   * @generated from field: string content_type = 2;
    */
   contentType?: string
   /**
    * Version increments when the payload is replaced.
-   *
-   * @generated from field: uint64 version = 3;
    */
   version?: bigint
   /**
    * UpdatedAt is when Value was last replaced.
-   *
-   * @generated from field: google.protobuf.Timestamp updated_at = 4;
    */
   updatedAt?: Date
 }
 
 export const SecretPayload: MessageType<SecretPayload> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.secret.SecretPayload',
-    fields: [
-      { no: 1, name: 'value', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'content_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'version', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'updated_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SecretPayload>(
+    's4wave.secret.SecretPayload',
+    () => [
+      [1, 'value', 12],
+      [2, 'content_type', 9],
+      [3, 'version', 4],
+      [4, 'updated_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * SecretGrantStatus describes the current peer's nested SharedObject grant.
@@ -130,47 +98,37 @@ export const SecretPayload: MessageType<SecretPayload> =
 export interface SecretGrantStatus {
   /**
    * PeerId is the mounted peer id for the nested SharedObject.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * Participant indicates the peer is present in SOParticipantConfig.
-   *
-   * @generated from field: bool participant = 2;
    */
   participant?: boolean
   /**
    * Readable indicates the peer can decrypt the nested SharedObject state.
-   *
-   * @generated from field: bool readable = 3;
    */
   readable?: boolean
   /**
    * Role is the peer's SharedObject participant role.
-   *
-   * @generated from field: sobject.SOParticipantRole role = 4;
    */
   role?: SOParticipantRole
   /**
    * GrantCount is the number of active root grants in the nested SharedObject.
-   *
-   * @generated from field: uint32 grant_count = 5;
    */
   grantCount?: number
 }
 
 export const SecretGrantStatus: MessageType<SecretGrantStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.secret.SecretGrantStatus',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'participant', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'readable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'role', kind: 'enum', T: SOParticipantRole_Enum },
-      { no: 5, name: 'grant_count', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SecretGrantStatus>(
+    's4wave.secret.SecretGrantStatus',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'participant', 8],
+      [3, 'readable', 8],
+      [4, 'role', 14, 0, SOParticipantRole_Enum],
+      [5, 'grant_count', 13],
+    ],
+  )
 
 /**
  * SecretState is the browser-safe Secret resource state.
@@ -180,33 +138,27 @@ export const SecretGrantStatus: MessageType<SecretGrantStatus> =
 export interface SecretState {
   /**
    * Secret is the redacted parent World object metadata.
-   *
-   * @generated from field: s4wave.secret.Secret secret = 1;
    */
   secret?: Secret
   /**
    * GrantStatus describes this peer's nested SharedObject access.
-   *
-   * @generated from field: s4wave.secret.SecretGrantStatus grant_status = 2;
    */
   grantStatus?: SecretGrantStatus
   /**
    * Health is the nested SharedObject lifecycle status.
-   *
-   * @generated from field: sobject.SharedObjectHealth health = 3;
    */
   health?: SharedObjectHealth
 }
 
 export const SecretState: MessageType<SecretState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.secret.SecretState',
-    fields: [
-      { no: 1, name: 'secret', kind: 'message', T: Secret },
-      { no: 2, name: 'grant_status', kind: 'message', T: SecretGrantStatus },
-      { no: 3, name: 'health', kind: 'message', T: () => SharedObjectHealth },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SecretState>(
+    's4wave.secret.SecretState',
+    () => [
+      [1, 'secret', 11, 0, Secret.codec],
+      [2, 'grant_status', 11, 0, SecretGrantStatus.codec],
+      [3, 'health', 11, 0, SharedObjectHealth.codec],
+    ],
+  )
 
 /**
  * WatchStateRequest is the request for WatchState.
@@ -216,9 +168,9 @@ export const SecretState: MessageType<SecretState> =
 export interface WatchStateRequest {}
 
 export const WatchStateRequest: MessageType<WatchStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchStateRequest>(
     's4wave.secret.WatchStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -229,19 +181,15 @@ export const WatchStateRequest: MessageType<WatchStateRequest> =
 export interface WatchStateResponse {
   /**
    * State is the current Secret metadata and grant status.
-   *
-   * @generated from field: s4wave.secret.SecretState state = 1;
    */
   state?: SecretState
 }
 
 export const WatchStateResponse: MessageType<WatchStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.secret.WatchStateResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: SecretState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchStateResponse>(
+    's4wave.secret.WatchStateResponse',
+    () => [[1, 'state', 11, 0, SecretState.codec]],
+  )
 
 /**
  * BeginReadPayloadRequest starts a peer-authenticated payload read.
@@ -251,26 +199,22 @@ export const WatchStateResponse: MessageType<WatchStateResponse> =
 export interface BeginReadPayloadRequest {
   /**
    * ReaderPeerId is the peer expected to sign the returned challenge.
-   *
-   * @generated from field: string reader_peer_id = 1;
    */
   readerPeerId?: string
   /**
    * ExpectedKind rejects the read if the Secret kind has drifted.
-   *
-   * @generated from field: string expected_kind = 2;
    */
   expectedKind?: string
 }
 
 export const BeginReadPayloadRequest: MessageType<BeginReadPayloadRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.secret.BeginReadPayloadRequest',
-    fields: [
-      { no: 1, name: 'reader_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'expected_kind', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BeginReadPayloadRequest>(
+    's4wave.secret.BeginReadPayloadRequest',
+    () => [
+      [1, 'reader_peer_id', 9],
+      [2, 'expected_kind', 9],
+    ],
+  )
 
 /**
  * BeginReadPayloadResponse returns the challenge bytes the reader signs.
@@ -280,40 +224,32 @@ export const BeginReadPayloadRequest: MessageType<BeginReadPayloadRequest> =
 export interface BeginReadPayloadResponse {
   /**
    * ChallengeId identifies the pending challenge.
-   *
-   * @generated from field: string challenge_id = 1;
    */
   challengeId?: string
   /**
    * Challenge is the canonical bytes to sign.
-   *
-   * @generated from field: bytes challenge = 2;
    */
   challenge?: Uint8Array
   /**
    * ExpiresAt is when the challenge becomes invalid.
-   *
-   * @generated from field: google.protobuf.Timestamp expires_at = 3;
    */
   expiresAt?: Date
   /**
    * Secret is the redacted parent Secret metadata.
-   *
-   * @generated from field: s4wave.secret.Secret secret = 4;
    */
   secret?: Secret
 }
 
 export const BeginReadPayloadResponse: MessageType<BeginReadPayloadResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.secret.BeginReadPayloadResponse',
-    fields: [
-      { no: 1, name: 'challenge_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'challenge', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'expires_at', kind: 'message', T: () => Timestamp },
-      { no: 4, name: 'secret', kind: 'message', T: Secret },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BeginReadPayloadResponse>(
+    's4wave.secret.BeginReadPayloadResponse',
+    () => [
+      [1, 'challenge_id', 9],
+      [2, 'challenge', 12],
+      [3, 'expires_at', 11, 0, Timestamp.codec],
+      [4, 'secret', 11, 0, Secret.codec],
+    ],
+  )
 
 /**
  * ReadPayloadChallenge is the canonical challenge signed by the reader.
@@ -323,73 +259,52 @@ export const BeginReadPayloadResponse: MessageType<BeginReadPayloadResponse> =
 export interface ReadPayloadChallenge {
   /**
    * ChallengeId identifies the pending challenge.
-   *
-   * @generated from field: string challenge_id = 1;
    */
   challengeId?: string
   /**
    * ReaderPeerId is the peer expected to sign Challenge.
-   *
-   * @generated from field: string reader_peer_id = 2;
    */
   readerPeerId?: string
   /**
    * ObjectKey is the parent Secret object key.
-   *
-   * @generated from field: string object_key = 3;
    */
   objectKey?: string
   /**
    * SecretKind is the kind observed when the challenge was issued.
-   *
-   * @generated from field: string secret_kind = 4;
    */
   secretKind?: string
   /**
    * ExpectedKind is the requested kind, if any.
-   *
-   * @generated from field: string expected_kind = 5;
    */
   expectedKind?: string
   /**
    * NestedSharedObjectId is the nested SharedObject id storing the payload.
-   *
-   * @generated from field: string nested_shared_object_id = 6;
    */
   nestedSharedObjectId?: string
   /**
    * Nonce prevents challenge reuse across requests.
-   *
-   * @generated from field: bytes nonce = 7;
    */
   nonce?: Uint8Array
   /**
    * ExpiresAt is when the challenge becomes invalid.
-   *
-   * @generated from field: google.protobuf.Timestamp expires_at = 8;
    */
   expiresAt?: Date
 }
 
 export const ReadPayloadChallenge: MessageType<ReadPayloadChallenge> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.secret.ReadPayloadChallenge',
-    fields: [
-      { no: 1, name: 'challenge_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'reader_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'secret_kind', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'expected_kind', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'nested_shared_object_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 7, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 8, name: 'expires_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReadPayloadChallenge>(
+    's4wave.secret.ReadPayloadChallenge',
+    () => [
+      [1, 'challenge_id', 9],
+      [2, 'reader_peer_id', 9],
+      [3, 'object_key', 9],
+      [4, 'secret_kind', 9],
+      [5, 'expected_kind', 9],
+      [6, 'nested_shared_object_id', 9],
+      [7, 'nonce', 12],
+      [8, 'expires_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * ReadPayloadRequest completes a signed payload read.
@@ -399,26 +314,22 @@ export const ReadPayloadChallenge: MessageType<ReadPayloadChallenge> =
 export interface ReadPayloadRequest {
   /**
    * ChallengeId is the pending challenge identifier.
-   *
-   * @generated from field: string challenge_id = 1;
    */
   challengeId?: string
   /**
    * Signature signs the challenge bytes using the reader peer key.
-   *
-   * @generated from field: peer.Signature signature = 2;
    */
   signature?: Signature
 }
 
 export const ReadPayloadRequest: MessageType<ReadPayloadRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.secret.ReadPayloadRequest',
-    fields: [
-      { no: 1, name: 'challenge_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'signature', kind: 'message', T: () => Signature },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReadPayloadRequest>(
+    's4wave.secret.ReadPayloadRequest',
+    () => [
+      [1, 'challenge_id', 9],
+      [2, 'signature', 11, 0, Signature.codec],
+    ],
+  )
 
 /**
  * ReadPayloadResponse contains the Secret payload bytes.
@@ -428,16 +339,12 @@ export const ReadPayloadRequest: MessageType<ReadPayloadRequest> =
 export interface ReadPayloadResponse {
   /**
    * Payload is the nested SharedObject payload.
-   *
-   * @generated from field: s4wave.secret.SecretPayload payload = 1;
    */
   payload?: SecretPayload
 }
 
 export const ReadPayloadResponse: MessageType<ReadPayloadResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.secret.ReadPayloadResponse',
-    fields: [
-      { no: 1, name: 'payload', kind: 'message', T: SecretPayload },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReadPayloadResponse>(
+    's4wave.secret.ReadPayloadResponse',
+    () => [[1, 'payload', 11, 0, SecretPayload.codec]],
+  )

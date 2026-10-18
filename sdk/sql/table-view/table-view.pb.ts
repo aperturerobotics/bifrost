@@ -2,43 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/sdk/sql/table-view/table-view.proto (package s4wave.sql.table_view, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ColumnSchema, RowBatch, SqlValue } from '../../../db/sql/sql.pb.js'
-
-/**
- * SortOrder describes one ORDER BY term.
- *
- * @generated from message s4wave.sql.table_view.SortOrder
- */
-export interface SortOrder {
-  /**
-   * ColumnName is the column to sort.
-   *
-   * @generated from field: string column_name = 1;
-   */
-  columnName?: string
-  /**
-   * Descending sorts the column descending when true.
-   *
-   * @generated from field: bool descending = 2;
-   */
-  descending?: boolean
-}
-
-export const SortOrder: MessageType<SortOrder> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.table_view.SortOrder',
-    fields: [
-      { no: 1, name: 'column_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'descending', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * TableView is a standalone saved table projection and filter.
@@ -48,103 +14,82 @@ export const SortOrder: MessageType<SortOrder> =
 export interface TableView {
   /**
    * TargetSchemaObjectKey is the sql/schema object this view reads from.
-   *
-   * @generated from field: string target_schema_object_key = 1;
    */
   targetSchemaObjectKey?: string
   /**
    * TargetTableName is the table name inside the target schema.
-   *
-   * @generated from field: string target_table_name = 2;
    */
   targetTableName?: string
   /**
    * WhereExpression is an optional SQL WHERE expression.
-   *
-   * @generated from field: string where_expression = 3;
    */
   whereExpression?: string
   /**
    * ProjectedColumns limits returned columns. Empty selects all columns.
-   *
-   * @generated from field: repeated string projected_columns = 4;
    */
   projectedColumns?: string[]
   /**
    * SortOrder orders returned rows.
-   *
-   * @generated from field: repeated s4wave.sql.table_view.SortOrder sort_order = 5;
    */
   sortOrder?: SortOrder[]
   /**
    * RowLimit limits returned rows. Zero uses the default limit.
-   *
-   * @generated from field: uint32 row_limit = 6;
    */
   rowLimit?: number
   /**
    * WhereParameters are positional bind arguments used by WhereExpression.
-   *
-   * @generated from field: repeated sql.SqlValue where_parameters = 7;
    */
   whereParameters?: SqlValue[]
   /**
    * DisplayName is an optional user-facing label.
-   *
-   * @generated from field: string display_name = 8;
    */
   displayName?: string
   /**
    * Description is optional user-facing metadata.
-   *
-   * @generated from field: string description = 9;
    */
   description?: string
 }
 
 export const TableView: MessageType<TableView> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.table_view.TableView',
-    fields: [
-      {
-        no: 1,
-        name: 'target_schema_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'target_table_name',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'where_expression', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'projected_columns',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'sort_order',
-        kind: 'message',
-        T: SortOrder,
-        repeated: true,
-      },
-      { no: 6, name: 'row_limit', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 7,
-        name: 'where_parameters',
-        kind: 'message',
-        T: () => SqlValue,
-        repeated: true,
-      },
-      { no: 8, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TableView>(
+    's4wave.sql.table_view.TableView',
+    () => [
+      [1, 'target_schema_object_key', 9],
+      [2, 'target_table_name', 9],
+      [3, 'where_expression', 9],
+      [4, 'projected_columns', 9, 1],
+      [5, 'sort_order', 11, 1, SortOrder.codec],
+      [6, 'row_limit', 13],
+      [7, 'where_parameters', 11, 1, SqlValue.codec],
+      [8, 'display_name', 9],
+      [9, 'description', 9],
+    ],
+  )
+
+/**
+ * SortOrder describes one ORDER BY term.
+ *
+ * @generated from message s4wave.sql.table_view.SortOrder
+ */
+export interface SortOrder {
+  /**
+   * ColumnName is the column to sort.
+   */
+  columnName?: string
+  /**
+   * Descending sorts the column descending when true.
+   */
+  descending?: boolean
+}
+
+export const SortOrder: MessageType<SortOrder> =
+  /* @__PURE__ */ createMessageType<SortOrder>(
+    's4wave.sql.table_view.SortOrder',
+    () => [
+      [1, 'column_name', 9],
+      [2, 'descending', 8],
+    ],
+  )
 
 /**
  * GetTableViewRequest is a request for table view metadata.
@@ -154,9 +99,9 @@ export const TableView: MessageType<TableView> =
 export interface GetTableViewRequest {}
 
 export const GetTableViewRequest: MessageType<GetTableViewRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetTableViewRequest>(
+  /* @__PURE__ */ createMessageType<GetTableViewRequest>(
     's4wave.sql.table_view.GetTableViewRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -167,19 +112,15 @@ export const GetTableViewRequest: MessageType<GetTableViewRequest> =
 export interface GetTableViewResponse {
   /**
    * TableView is the persisted table view block.
-   *
-   * @generated from field: s4wave.sql.table_view.TableView table_view = 1;
    */
   tableView?: TableView
 }
 
 export const GetTableViewResponse: MessageType<GetTableViewResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.table_view.GetTableViewResponse',
-    fields: [
-      { no: 1, name: 'table_view', kind: 'message', T: TableView },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetTableViewResponse>(
+    's4wave.sql.table_view.GetTableViewResponse',
+    () => [[1, 'table_view', 11, 0, TableView.codec]],
+  )
 
 /**
  * GetDriverCapabilityRequest is a request for driver operation support.
@@ -189,9 +130,27 @@ export const GetTableViewResponse: MessageType<GetTableViewResponse> =
 export interface GetDriverCapabilityRequest {}
 
 export const GetDriverCapabilityRequest: MessageType<GetDriverCapabilityRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetDriverCapabilityRequest>(
+  /* @__PURE__ */ createMessageType<GetDriverCapabilityRequest>(
     's4wave.sql.table_view.GetDriverCapabilityRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * GetDriverCapabilityResponse contains update support reported by the target driver.
+ *
+ * @generated from message s4wave.sql.table_view.GetDriverCapabilityResponse
+ */
+export interface GetDriverCapabilityResponse {
+  /**
+   * Capability describes SQL operations available through the target driver.
+   */
+  capability?: DriverCapability
+}
+
+export const GetDriverCapabilityResponse: MessageType<GetDriverCapabilityResponse> =
+  /* @__PURE__ */ createMessageType<GetDriverCapabilityResponse>(
+    's4wave.sql.table_view.GetDriverCapabilityResponse',
+    () => [[1, 'capability', 11, 0, DriverCapability.codec]],
   )
 
 /**
@@ -202,53 +161,22 @@ export const GetDriverCapabilityRequest: MessageType<GetDriverCapabilityRequest>
 export interface DriverCapability {
   /**
    * UpdateRow is true when typed row updates can be attempted.
-   *
-   * @generated from field: bool update_row = 1;
    */
   updateRow?: boolean
   /**
    * UpdateRowUnsupportedReason explains why UpdateRow is unavailable.
-   *
-   * @generated from field: string update_row_unsupported_reason = 2;
    */
   updateRowUnsupportedReason?: string
 }
 
 export const DriverCapability: MessageType<DriverCapability> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.table_view.DriverCapability',
-    fields: [
-      { no: 1, name: 'update_row', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 2,
-        name: 'update_row_unsupported_reason',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * GetDriverCapabilityResponse contains update support reported by the target driver.
- *
- * @generated from message s4wave.sql.table_view.GetDriverCapabilityResponse
- */
-export interface GetDriverCapabilityResponse {
-  /**
-   * Capability describes SQL operations available through the target driver.
-   *
-   * @generated from field: s4wave.sql.table_view.DriverCapability capability = 1;
-   */
-  capability?: DriverCapability
-}
-
-export const GetDriverCapabilityResponse: MessageType<GetDriverCapabilityResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.table_view.GetDriverCapabilityResponse',
-    fields: [
-      { no: 1, name: 'capability', kind: 'message', T: DriverCapability },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DriverCapability>(
+    's4wave.sql.table_view.DriverCapability',
+    () => [
+      [1, 'update_row', 8],
+      [2, 'update_row_unsupported_reason', 9],
+    ],
+  )
 
 /**
  * FetchRowsRequest executes the saved table view.
@@ -258,9 +186,9 @@ export const GetDriverCapabilityResponse: MessageType<GetDriverCapabilityRespons
 export interface FetchRowsRequest {}
 
 export const FetchRowsRequest: MessageType<FetchRowsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<FetchRowsRequest>(
+  /* @__PURE__ */ createMessageType<FetchRowsRequest>(
     's4wave.sql.table_view.FetchRowsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -271,52 +199,32 @@ export const FetchRowsRequest: MessageType<FetchRowsRequest> =
 export interface FetchRowsResponse {
   /**
    * Columns describes the returned columns.
-   *
-   * @generated from field: repeated sql.ColumnSchema columns = 1;
    */
   columns?: ColumnSchema[]
   /**
    * RowBatches stores returned rows in column order.
-   *
-   * @generated from field: repeated sql.RowBatch row_batches = 2;
    */
   rowBatches?: RowBatch[]
   /**
    * RowCount is the number of returned rows.
-   *
-   * @generated from field: uint64 row_count = 3;
    */
   rowCount?: bigint
   /**
    * Truncated indicates rows were omitted by the view row limit.
-   *
-   * @generated from field: bool truncated = 4;
    */
   truncated?: boolean
 }
 
 export const FetchRowsResponse: MessageType<FetchRowsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.table_view.FetchRowsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'columns',
-        kind: 'message',
-        T: () => ColumnSchema,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'row_batches',
-        kind: 'message',
-        T: () => RowBatch,
-        repeated: true,
-      },
-      { no: 3, name: 'row_count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'truncated', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchRowsResponse>(
+    's4wave.sql.table_view.FetchRowsResponse',
+    () => [
+      [1, 'columns', 11, 1, ColumnSchema.codec],
+      [2, 'row_batches', 11, 1, RowBatch.codec],
+      [3, 'row_count', 4],
+      [4, 'truncated', 8],
+    ],
+  )
 
 /**
  * UpdateRowRequest updates table rows selected by typed match values.
@@ -326,64 +234,32 @@ export const FetchRowsResponse: MessageType<FetchRowsResponse> =
 export interface UpdateRowRequest {
   /**
    * MatchColumns names columns used in the WHERE clause.
-   *
-   * @generated from field: repeated string match_columns = 1;
    */
   matchColumns?: string[]
   /**
    * MatchValues are compared with MatchColumns in order.
-   *
-   * @generated from field: repeated sql.SqlValue match_values = 2;
    */
   matchValues?: SqlValue[]
   /**
    * SetColumns names columns updated by the SET clause.
-   *
-   * @generated from field: repeated string set_columns = 3;
    */
   setColumns?: string[]
   /**
    * SetValues are assigned to SetColumns in order.
-   *
-   * @generated from field: repeated sql.SqlValue set_values = 4;
    */
   setValues?: SqlValue[]
 }
 
 export const UpdateRowRequest: MessageType<UpdateRowRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.table_view.UpdateRowRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'match_columns',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'match_values',
-        kind: 'message',
-        T: () => SqlValue,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'set_columns',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'set_values',
-        kind: 'message',
-        T: () => SqlValue,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateRowRequest>(
+    's4wave.sql.table_view.UpdateRowRequest',
+    () => [
+      [1, 'match_columns', 9, 1],
+      [2, 'match_values', 11, 1, SqlValue.codec],
+      [3, 'set_columns', 9, 1],
+      [4, 'set_values', 11, 1, SqlValue.codec],
+    ],
+  )
 
 /**
  * UpdateRowResponse is returned after a typed row update.
@@ -393,16 +269,12 @@ export const UpdateRowRequest: MessageType<UpdateRowRequest> =
 export interface UpdateRowResponse {
   /**
    * RowsAffected is the number of rows updated by the driver.
-   *
-   * @generated from field: uint64 rows_affected = 1;
    */
   rowsAffected?: bigint
 }
 
 export const UpdateRowResponse: MessageType<UpdateRowResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.table_view.UpdateRowResponse',
-    fields: [
-      { no: 1, name: 'rows_affected', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateRowResponse>(
+    's4wave.sql.table_view.UpdateRowResponse',
+    () => [[1, 'rows_affected', 4]],
+  )

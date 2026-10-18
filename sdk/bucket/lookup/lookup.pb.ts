@@ -4,12 +4,7 @@
 
 import { Config } from '../../../db/block/transform/transform.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ObjectRef } from '../../../db/bucket/bucket.pb.js'
 import { BlockRef, PutOpts } from '../../../db/block/block.pb.js'
 
@@ -21,35 +16,29 @@ import { BlockRef, PutOpts } from '../../../db/block/block.pb.js'
 export interface MountBucketLookupRequest {
   /**
    * BucketId is the bucket to access.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
   /**
    * VolumeId is the volume for read-write access.
    * If empty, the cursor will be read-only.
-   *
-   * @generated from field: string volume_id = 2;
    */
   volumeId?: string
   /**
    * TransformConf is the transform configuration.
    * Optional, may be empty.
-   *
-   * @generated from field: block.transform.Config transform_conf = 3;
    */
   transformConf?: Config
 }
 
 export const MountBucketLookupRequest: MessageType<MountBucketLookupRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.MountBucketLookupRequest',
-    fields: [
-      { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'transform_conf', kind: 'message', T: () => Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MountBucketLookupRequest>(
+    's4wave.bucket_lookup.MountBucketLookupRequest',
+    () => [
+      [1, 'bucket_id', 9],
+      [2, 'volume_id', 9],
+      [3, 'transform_conf', 11, 0, Config.codec],
+    ],
+  )
 
 /**
  * MountBucketLookupResponse is the response type for mounting a bucket lookup cursor.
@@ -59,34 +48,28 @@ export const MountBucketLookupRequest: MessageType<MountBucketLookupRequest> =
 export interface MountBucketLookupResponse {
   /**
    * ResourceId is the ID of the BucketLookupCursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * BucketId is the bucket ID.
-   *
-   * @generated from field: string bucket_id = 2;
    */
   bucketId?: string
   /**
    * VolumeId is the volume ID.
    * Empty if read-only.
-   *
-   * @generated from field: string volume_id = 3;
    */
   volumeId?: string
 }
 
 export const MountBucketLookupResponse: MessageType<MountBucketLookupResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.MountBucketLookupResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MountBucketLookupResponse>(
+    's4wave.bucket_lookup.MountBucketLookupResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'bucket_id', 9],
+      [3, 'volume_id', 9],
+    ],
+  )
 
 /**
  * GetRefRequest is the request type for GetRef.
@@ -96,9 +79,9 @@ export const MountBucketLookupResponse: MessageType<MountBucketLookupResponse> =
 export interface GetRefRequest {}
 
 export const GetRefRequest: MessageType<GetRefRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetRefRequest>(
+  /* @__PURE__ */ createMessageType<GetRefRequest>(
     's4wave.bucket_lookup.GetRefRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -109,32 +92,23 @@ export const GetRefRequest: MessageType<GetRefRequest> =
 export interface GetRefResponse {
   /**
    * Ref is the current object reference.
-   *
-   * @generated from field: bucket.ObjectRef ref = 1;
    */
   ref?: ObjectRef
   /**
    * BucketIdOverride identifies the bucket used for implicit child references.
    * Empty preserves each reference's authored bucket.
-   *
-   * @generated from field: string bucket_id_override = 2;
    */
   bucketIdOverride?: string
 }
 
 export const GetRefResponse: MessageType<GetRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.GetRefResponse',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => ObjectRef },
-      {
-        no: 2,
-        name: 'bucket_id_override',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetRefResponse>(
+    's4wave.bucket_lookup.GetRefResponse',
+    () => [
+      [1, 'ref', 11, 0, ObjectRef.codec],
+      [2, 'bucket_id_override', 9],
+    ],
+  )
 
 /**
  * FollowRefRequest is the request type for FollowRef.
@@ -144,19 +118,15 @@ export const GetRefResponse: MessageType<GetRefResponse> =
 export interface FollowRefRequest {
   /**
    * Ref is the object reference to follow.
-   *
-   * @generated from field: bucket.ObjectRef ref = 1;
    */
   ref?: ObjectRef
 }
 
 export const FollowRefRequest: MessageType<FollowRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.FollowRefRequest',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FollowRefRequest>(
+    's4wave.bucket_lookup.FollowRefRequest',
+    () => [[1, 'ref', 11, 0, ObjectRef.codec]],
+  )
 
 /**
  * FollowRefResponse is the response type for FollowRef.
@@ -166,19 +136,15 @@ export const FollowRefRequest: MessageType<FollowRefRequest> =
 export interface FollowRefResponse {
   /**
    * ResourceId is the ID of the new BucketLookupCursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const FollowRefResponse: MessageType<FollowRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.FollowRefResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FollowRefResponse>(
+    's4wave.bucket_lookup.FollowRefResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * GetBlockRequest is the request type for GetBlock.
@@ -188,19 +154,15 @@ export const FollowRefResponse: MessageType<FollowRefResponse> =
 export interface GetBlockRequest {
   /**
    * Ref is the block reference to get.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
 }
 
 export const GetBlockRequest: MessageType<GetBlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.GetBlockRequest',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockRequest>(
+    's4wave.bucket_lookup.GetBlockRequest',
+    () => [[1, 'ref', 11, 0, BlockRef.codec]],
+  )
 
 /**
  * GetBlockResponse is the response type for GetBlock.
@@ -210,26 +172,22 @@ export const GetBlockRequest: MessageType<GetBlockRequest> =
 export interface GetBlockResponse {
   /**
    * Data is the block data.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * Found indicates if the block was found.
-   *
-   * @generated from field: bool found = 2;
    */
   found?: boolean
 }
 
 export const GetBlockResponse: MessageType<GetBlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.GetBlockResponse',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockResponse>(
+    's4wave.bucket_lookup.GetBlockResponse',
+    () => [
+      [1, 'data', 12],
+      [2, 'found', 8],
+    ],
+  )
 
 /**
  * PutBlockRequest is the request type for PutBlock.
@@ -239,26 +197,22 @@ export const GetBlockResponse: MessageType<GetBlockResponse> =
 export interface PutBlockRequest {
   /**
    * Data is the block data to store.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * Opts are the put options.
-   *
-   * @generated from field: block.PutOpts opts = 2;
    */
   opts?: PutOpts
 }
 
 export const PutBlockRequest: MessageType<PutBlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.PutBlockRequest',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'opts', kind: 'message', T: () => PutOpts },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutBlockRequest>(
+    's4wave.bucket_lookup.PutBlockRequest',
+    () => [
+      [1, 'data', 12],
+      [2, 'opts', 11, 0, PutOpts.codec],
+    ],
+  )
 
 /**
  * PutBlockResponse is the response type for PutBlock.
@@ -268,26 +222,22 @@ export const PutBlockRequest: MessageType<PutBlockRequest> =
 export interface PutBlockResponse {
   /**
    * Ref is the block reference.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
   /**
    * Existed indicates if the block already existed.
-   *
-   * @generated from field: bool existed = 2;
    */
   existed?: boolean
 }
 
 export const PutBlockResponse: MessageType<PutBlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.PutBlockResponse',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'existed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutBlockResponse>(
+    's4wave.bucket_lookup.PutBlockResponse',
+    () => [
+      [1, 'ref', 11, 0, BlockRef.codec],
+      [2, 'existed', 8],
+    ],
+  )
 
 /**
  * PutBlockBatchEntry is one block write operation in a batch.
@@ -297,46 +247,32 @@ export const PutBlockResponse: MessageType<PutBlockResponse> =
 export interface PutBlockBatchEntry {
   /**
    * Ref is the expected content-addressed block reference.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
   /**
    * Data is the encoded block payload.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * Refs are outgoing block references recorded with this write.
-   *
-   * @generated from field: repeated block.BlockRef refs = 3;
    */
   refs?: BlockRef[]
   /**
    * Tombstone marks the block ref as deleted.
-   *
-   * @generated from field: bool tombstone = 4;
    */
   tombstone?: boolean
 }
 
 export const PutBlockBatchEntry: MessageType<PutBlockBatchEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.PutBlockBatchEntry',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 3,
-        name: 'refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      { no: 4, name: 'tombstone', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutBlockBatchEntry>(
+    's4wave.bucket_lookup.PutBlockBatchEntry',
+    () => [
+      [1, 'ref', 11, 0, BlockRef.codec],
+      [2, 'data', 12],
+      [3, 'refs', 11, 1, BlockRef.codec],
+      [4, 'tombstone', 8],
+    ],
+  )
 
 /**
  * PutBlockBatchRequest is the request type for PutBlockBatch.
@@ -346,25 +282,15 @@ export const PutBlockBatchEntry: MessageType<PutBlockBatchEntry> =
 export interface PutBlockBatchRequest {
   /**
    * Entries are the block write operations.
-   *
-   * @generated from field: repeated s4wave.bucket_lookup.PutBlockBatchEntry entries = 1;
    */
   entries?: PutBlockBatchEntry[]
 }
 
 export const PutBlockBatchRequest: MessageType<PutBlockBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.PutBlockBatchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'message',
-        T: PutBlockBatchEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutBlockBatchRequest>(
+    's4wave.bucket_lookup.PutBlockBatchRequest',
+    () => [[1, 'entries', 11, 1, PutBlockBatchEntry.codec]],
+  )
 
 /**
  * PutBlockBatchResponse is the response type for PutBlockBatch.
@@ -374,9 +300,9 @@ export const PutBlockBatchRequest: MessageType<PutBlockBatchRequest> =
 export interface PutBlockBatchResponse {}
 
 export const PutBlockBatchResponse: MessageType<PutBlockBatchResponse> =
-  /* @__PURE__ */ createEmptyMessageType<PutBlockBatchResponse>(
+  /* @__PURE__ */ createMessageType<PutBlockBatchResponse>(
     's4wave.bucket_lookup.PutBlockBatchResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -387,25 +313,15 @@ export const PutBlockBatchResponse: MessageType<PutBlockBatchResponse> =
 export interface GetBlockExistsBatchRequest {
   /**
    * Refs are the block references to check.
-   *
-   * @generated from field: repeated block.BlockRef refs = 1;
    */
   refs?: BlockRef[]
 }
 
 export const GetBlockExistsBatchRequest: MessageType<GetBlockExistsBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.GetBlockExistsBatchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockExistsBatchRequest>(
+    's4wave.bucket_lookup.GetBlockExistsBatchRequest',
+    () => [[1, 'refs', 11, 1, BlockRef.codec]],
+  )
 
 /**
  * GetBlockExistsBatchResponse is the response type for GetBlockExistsBatch.
@@ -415,25 +331,15 @@ export const GetBlockExistsBatchRequest: MessageType<GetBlockExistsBatchRequest>
 export interface GetBlockExistsBatchResponse {
   /**
    * Found reports whether each requested ref exists.
-   *
-   * @generated from field: repeated bool found = 1;
    */
   found?: boolean[]
 }
 
 export const GetBlockExistsBatchResponse: MessageType<GetBlockExistsBatchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.GetBlockExistsBatchResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'found',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockExistsBatchResponse>(
+    's4wave.bucket_lookup.GetBlockExistsBatchResponse',
+    () => [[1, 'found', 8, 3]],
+  )
 
 /**
  * BuildTransactionRequest is the request type for BuildTransaction.
@@ -443,19 +349,15 @@ export const GetBlockExistsBatchResponse: MessageType<GetBlockExistsBatchRespons
 export interface BuildTransactionRequest {
   /**
    * PutOpts are the default put options for the transaction.
-   *
-   * @generated from field: block.PutOpts put_opts = 1;
    */
   putOpts?: PutOpts
 }
 
 export const BuildTransactionRequest: MessageType<BuildTransactionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.BuildTransactionRequest',
-    fields: [
-      { no: 1, name: 'put_opts', kind: 'message', T: () => PutOpts },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildTransactionRequest>(
+    's4wave.bucket_lookup.BuildTransactionRequest',
+    () => [[1, 'put_opts', 11, 0, PutOpts.codec]],
+  )
 
 /**
  * BuildTransactionResponse is the response type for BuildTransaction.
@@ -465,36 +367,22 @@ export const BuildTransactionRequest: MessageType<BuildTransactionRequest> =
 export interface BuildTransactionResponse {
   /**
    * TransactionResourceId is the ID of the BlockTransaction resource.
-   *
-   * @generated from field: uint32 transaction_resource_id = 1;
    */
   transactionResourceId?: number
   /**
    * CursorResourceId is the ID of the root BlockCursor resource.
-   *
-   * @generated from field: uint32 cursor_resource_id = 2;
    */
   cursorResourceId?: number
 }
 
 export const BuildTransactionResponse: MessageType<BuildTransactionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.BuildTransactionResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'transaction_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 2,
-        name: 'cursor_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildTransactionResponse>(
+    's4wave.bucket_lookup.BuildTransactionResponse',
+    () => [
+      [1, 'transaction_resource_id', 13],
+      [2, 'cursor_resource_id', 13],
+    ],
+  )
 
 /**
  * BuildTransactionAtRefRequest is the request type for BuildTransactionAtRef.
@@ -504,26 +392,22 @@ export const BuildTransactionResponse: MessageType<BuildTransactionResponse> =
 export interface BuildTransactionAtRefRequest {
   /**
    * PutOpts are the default put options for the transaction.
-   *
-   * @generated from field: block.PutOpts put_opts = 1;
    */
   putOpts?: PutOpts
   /**
    * Ref is the block reference to build the transaction at.
-   *
-   * @generated from field: block.BlockRef ref = 2;
    */
   ref?: BlockRef
 }
 
 export const BuildTransactionAtRefRequest: MessageType<BuildTransactionAtRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.BuildTransactionAtRefRequest',
-    fields: [
-      { no: 1, name: 'put_opts', kind: 'message', T: () => PutOpts },
-      { no: 2, name: 'ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildTransactionAtRefRequest>(
+    's4wave.bucket_lookup.BuildTransactionAtRefRequest',
+    () => [
+      [1, 'put_opts', 11, 0, PutOpts.codec],
+      [2, 'ref', 11, 0, BlockRef.codec],
+    ],
+  )
 
 /**
  * BuildTransactionAtRefResponse is the response type for BuildTransactionAtRef.
@@ -533,36 +417,22 @@ export const BuildTransactionAtRefRequest: MessageType<BuildTransactionAtRefRequ
 export interface BuildTransactionAtRefResponse {
   /**
    * TransactionResourceId is the ID of the BlockTransaction resource.
-   *
-   * @generated from field: uint32 transaction_resource_id = 1;
    */
   transactionResourceId?: number
   /**
    * CursorResourceId is the ID of the root BlockCursor resource.
-   *
-   * @generated from field: uint32 cursor_resource_id = 2;
    */
   cursorResourceId?: number
 }
 
 export const BuildTransactionAtRefResponse: MessageType<BuildTransactionAtRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.BuildTransactionAtRefResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'transaction_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 2,
-        name: 'cursor_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildTransactionAtRefResponse>(
+    's4wave.bucket_lookup.BuildTransactionAtRefResponse',
+    () => [
+      [1, 'transaction_resource_id', 13],
+      [2, 'cursor_resource_id', 13],
+    ],
+  )
 
 /**
  * CloneRequest is the request type for Clone.
@@ -572,9 +442,9 @@ export const BuildTransactionAtRefResponse: MessageType<BuildTransactionAtRefRes
 export interface CloneRequest {}
 
 export const CloneRequest: MessageType<CloneRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CloneRequest>(
+  /* @__PURE__ */ createMessageType<CloneRequest>(
     's4wave.bucket_lookup.CloneRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -585,19 +455,15 @@ export const CloneRequest: MessageType<CloneRequest> =
 export interface CloneResponse {
   /**
    * ResourceId is the ID of the cloned BucketLookupCursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const CloneResponse: MessageType<CloneResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.CloneResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CloneResponse>(
+    's4wave.bucket_lookup.CloneResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * ReleaseRequest is the request type for Release.
@@ -607,9 +473,9 @@ export const CloneResponse: MessageType<CloneResponse> =
 export interface ReleaseRequest {}
 
 export const ReleaseRequest: MessageType<ReleaseRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ReleaseRequest>(
+  /* @__PURE__ */ createMessageType<ReleaseRequest>(
     's4wave.bucket_lookup.ReleaseRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -620,9 +486,9 @@ export const ReleaseRequest: MessageType<ReleaseRequest> =
 export interface ReleaseResponse {}
 
 export const ReleaseResponse: MessageType<ReleaseResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ReleaseResponse>(
+  /* @__PURE__ */ createMessageType<ReleaseResponse>(
     's4wave.bucket_lookup.ReleaseResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -633,35 +499,29 @@ export const ReleaseResponse: MessageType<ReleaseResponse> =
 export interface UnmarshalRequest {
   /**
    * Ref is the object reference to unmarshal.
-   *
-   * @generated from field: bucket.ObjectRef ref = 1;
    */
   ref?: ObjectRef
   /**
    * Data is the raw block data to unmarshal.
    * If empty, will fetch the block first.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * BlockType is the optional block type identifier for server-side decode.
    * Empty preserves the legacy raw-byte fetch behavior.
-   *
-   * @generated from field: string block_type = 3;
    */
   blockType?: string
 }
 
 export const UnmarshalRequest: MessageType<UnmarshalRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.UnmarshalRequest',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => ObjectRef },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'block_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnmarshalRequest>(
+    's4wave.bucket_lookup.UnmarshalRequest',
+    () => [
+      [1, 'ref', 11, 0, ObjectRef.codec],
+      [2, 'data', 12],
+      [3, 'block_type', 9],
+    ],
+  )
 
 /**
  * UnmarshalResponse is the response type for Unmarshal.
@@ -671,23 +531,19 @@ export const UnmarshalRequest: MessageType<UnmarshalRequest> =
 export interface UnmarshalResponse {
   /**
    * Data is the unmarshaled block data.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * Found indicates if the block was found.
-   *
-   * @generated from field: bool found = 2;
    */
   found?: boolean
 }
 
 export const UnmarshalResponse: MessageType<UnmarshalResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.bucket_lookup.UnmarshalResponse',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnmarshalResponse>(
+    's4wave.bucket_lookup.UnmarshalResponse',
+    () => [
+      [1, 'data', 12],
+      [2, 'found', 8],
+    ],
+  )

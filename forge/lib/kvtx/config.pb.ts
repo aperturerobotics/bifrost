@@ -3,11 +3,9 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
-import { Value } from '../../value/value.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { Value } from '../../value/value.pb.js'
 
 /**
  * OpType is the list of operation codes for kvtx.
@@ -17,22 +15,16 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum OpType {
   /**
    * OpType_NONE indicates this Op just sets values for nested ops.
-   *
-   * @generated from enum value: OpType_NONE = 0;
    */
   OpType_NONE = 0,
 
   /**
    * OpType_GET retrieves a BlockRef from the store and copies to output.
-   *
-   * @generated from enum value: OpType_GET = 1;
    */
   OpType_GET = 1,
 
   /**
    * OpType_GET_EXISTS checks if the key exists and writes a msgpack boolean block to output.
-   *
-   * @generated from enum value: OpType_GET_EXISTS = 2;
    */
   OpType_GET_EXISTS = 2,
 
@@ -40,8 +32,6 @@ export enum OpType {
    * OpType_CHECK performs a GET operation and checks the value against the input.
    * The input must be a non-empty Cursor.
    * Compares the block reference stored with the given block ref.
-   *
-   * @generated from enum value: OpType_CHECK = 3;
    */
   OpType_CHECK = 3,
 
@@ -49,148 +39,53 @@ export enum OpType {
    * OpType_CHECK_BLOB performs a GET operation and checks the raw value against the input.
    * The input must be a non-empty Blob.
    * Compares the blob contents with the input blob contents.
-   *
-   * @generated from enum value: OpType_CHECK_BLOB = 4;
    */
   OpType_CHECK_BLOB = 4,
 
   /**
    * OpType_CHECK_EXISTS checks if the given key exists.
-   *
-   * @generated from enum value: OpType_CHECK_EXISTS = 5;
    */
   OpType_CHECK_EXISTS = 5,
 
   /**
    * OpType_CHECK_NOT_EXISTS ensures the given key does not exist.
-   *
-   * @generated from enum value: OpType_CHECK_NOT_EXISTS = 6;
    */
   OpType_CHECK_NOT_EXISTS = 6,
 
   /**
    * OpType_SET sets a BlockRef to the block referenced by the Value.
    * Note: does not handle Blob values, sets as a reference only.
-   *
-   * @generated from enum value: OpType_SET = 7;
    */
   OpType_SET = 7,
 
   /**
    * OpType_SET_BLOB treats the input BlockRef as a Blob and stores it.
    * The GET operation will return the Blob contents.
-   *
-   * @generated from enum value: OpType_SET_BLOB = 8;
    */
   OpType_SET_BLOB = 8,
 
   /**
    * OpType_DELETE deletes a key from the store.
    * The old value is written to the output, if set.
-   *
-   * @generated from enum value: OpType_DELETE = 9;
    */
   OpType_DELETE = 9,
 }
 
 export const OpType_Enum = /* @__PURE__ */ createEnumType(
   'forge.lib.kvtx.OpType',
-  OpType,
+  [
+    [0, 'OpType_NONE'],
+    [1, 'OpType_GET'],
+    [2, 'OpType_GET_EXISTS'],
+    [3, 'OpType_CHECK'],
+    [4, 'OpType_CHECK_BLOB'],
+    [5, 'OpType_CHECK_EXISTS'],
+    [6, 'OpType_CHECK_NOT_EXISTS'],
+    [7, 'OpType_SET'],
+    [8, 'OpType_SET_BLOB'],
+    [9, 'OpType_DELETE'],
+  ],
 )
-
-/**
- * Op is an operation definition.
- *
- * @generated from message forge.lib.kvtx.Op
- */
-export interface Op {
-  /**
-   * OpType is the operation type to apply.
-   *
-   * @generated from field: forge.lib.kvtx.OpType op_type = 1;
-   */
-  opType?: OpType
-  /**
-   * KeyInput is the name of the Input to use for the Key.
-   * The raw block data will be used as the key.
-   *
-   * @generated from field: string key_input = 2;
-   */
-  keyInput?: string
-  /**
-   * Key is the in-line configured key to use.
-   * Converted to []byte without nil terminator.
-   * If set, overrides input_key.
-   *
-   * @generated from field: string key = 3;
-   */
-  key?: string
-  /**
-   * ValueInput is the name of the Input to use for the Value argument.
-   *
-   * - CHECK: contains the value to check against the GET value.
-   * - SET: contains the value to store.
-   *
-   * If SET, stores the block reference into the tree.
-   * If SET_BLOB, stores the block reference into the tree, marking it as a Blob
-   * If CHECK, compares the given block reference with the stored.
-   * Note: overridden by inline value if set and not empty.
-   * Note: overridden by value_string if set and not empty.
-   *
-   * @generated from field: string value_input = 6;
-   */
-  valueInput?: string
-  /**
-   * Value is the in-line value argument.
-   *
-   * See input field for additional notes.
-   *
-   * @generated from field: forge.value.Value value = 7;
-   */
-  value?: Value
-  /**
-   * ValueString is an in-line string specification of the value.
-   * Note: overridden by inline value if set and not empty.
-   *
-   * @generated from field: string value_string = 8;
-   */
-  valueString?: string
-  /**
-   * Output is the name of the output to use for the Value.
-   *
-   * - GET: contains the value retrieved from the store.
-   * - CHECK: same as GET, contains the retrieved value.
-   * - SET: contains the value added to the store.
-   * - DELETE: contains the value just before deleting.
-   *
-   * Note: contains the single most recently set value only.
-   * Note: stores the block reference as the output Value.
-   *
-   * @generated from field: string output = 9;
-   */
-  output?: string
-  /**
-   * Ops is the list of sub-operations to apply.
-   * The sub-operations inherit the parent config.
-   *
-   * @generated from field: repeated forge.lib.kvtx.Op ops = 10;
-   */
-  ops?: Op[]
-}
-
-export const Op: MessageType<Op> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.lib.kvtx.Op',
-  fields: [
-    { no: 1, name: 'op_type', kind: 'enum', T: OpType_Enum },
-    { no: 2, name: 'key_input', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 6, name: 'value_input', kind: 'scalar', T: ScalarType.STRING },
-    { no: 7, name: 'value', kind: 'message', T: () => Value },
-    { no: 8, name: 'value_string', kind: 'scalar', T: ScalarType.STRING },
-    { no: 9, name: 'output', kind: 'scalar', T: ScalarType.STRING },
-    { no: 10, name: 'ops', kind: 'message', T: () => Op, repeated: true },
-  ] satisfies readonly PartialFieldInfo[],
-})
 
 /**
  * Config is the configuration for the Forge KVTX exec controller.
@@ -210,33 +105,25 @@ export const Op: MessageType<Op> = /* @__PURE__ */ createMessageType({
 export interface Config {
   /**
    * Ops is the list of operations to apply.
-   *
-   * @generated from field: repeated forge.lib.kvtx.Op ops = 1;
    */
   ops?: Op[]
   /**
    * ConfigInput is the name of an Input to load additional ops from.
    * The referenced block should contain a ConfigInput object.
-   *
-   * @generated from field: string config_input = 2;
    */
   configInput?: string
   /**
    * IgnoreErrors warns on errors and continues w/o failing.
-   *
-   * @generated from field: bool ignore_errors = 3;
    */
   ignoreErrors?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.lib.kvtx.Config',
-  fields: [
-    { no: 1, name: 'ops', kind: 'message', T: Op, repeated: true },
-    { no: 2, name: 'config_input', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'ignore_errors', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('forge.lib.kvtx.Config', () => [
+    [1, 'ops', 11, 1, Op.codec],
+    [2, 'config_input', 9],
+    [3, 'ignore_errors', 8],
+  ])
 
 /**
  * ConfigInput is a block containing additional ops from an Input.
@@ -246,16 +133,90 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
 export interface ConfigInput {
   /**
    * Ops is the list of operations to apply.
-   *
-   * @generated from field: repeated forge.lib.kvtx.Op ops = 1;
    */
   ops?: Op[]
 }
 
 export const ConfigInput: MessageType<ConfigInput> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.lib.kvtx.ConfigInput',
-    fields: [
-      { no: 1, name: 'ops', kind: 'message', T: Op, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfigInput>(
+    'forge.lib.kvtx.ConfigInput',
+    () => [[1, 'ops', 11, 1, Op.codec]],
+  )
+
+/**
+ * Op is an operation definition.
+ *
+ * @generated from message forge.lib.kvtx.Op
+ */
+export interface Op {
+  /**
+   * OpType is the operation type to apply.
+   */
+  opType?: OpType
+  /**
+   * KeyInput is the name of the Input to use for the Key.
+   * The raw block data will be used as the key.
+   */
+  keyInput?: string
+  /**
+   * Key is the in-line configured key to use.
+   * Converted to []byte without nil terminator.
+   * If set, overrides input_key.
+   */
+  key?: string
+  /**
+   * ValueInput is the name of the Input to use for the Value argument.
+   *
+   * - CHECK: contains the value to check against the GET value.
+   * - SET: contains the value to store.
+   *
+   * If SET, stores the block reference into the tree.
+   * If SET_BLOB, stores the block reference into the tree, marking it as a Blob
+   * If CHECK, compares the given block reference with the stored.
+   * Note: overridden by inline value if set and not empty.
+   * Note: overridden by value_string if set and not empty.
+   */
+  valueInput?: string
+  /**
+   * Value is the in-line value argument.
+   *
+   * See input field for additional notes.
+   */
+  value?: Value
+  /**
+   * ValueString is an in-line string specification of the value.
+   * Note: overridden by inline value if set and not empty.
+   */
+  valueString?: string
+  /**
+   * Output is the name of the output to use for the Value.
+   *
+   * - GET: contains the value retrieved from the store.
+   * - CHECK: same as GET, contains the retrieved value.
+   * - SET: contains the value added to the store.
+   * - DELETE: contains the value just before deleting.
+   *
+   * Note: contains the single most recently set value only.
+   * Note: stores the block reference as the output Value.
+   */
+  output?: string
+  /**
+   * Ops is the list of sub-operations to apply.
+   * The sub-operations inherit the parent config.
+   */
+  ops?: Op[]
+}
+
+export const Op: MessageType<Op> = /* @__PURE__ */ createMessageType<Op>(
+  'forge.lib.kvtx.Op',
+  () => [
+    [1, 'op_type', 14, 0, OpType_Enum],
+    [2, 'key_input', 9],
+    [3, 'key', 9],
+    [6, 'value_input', 9],
+    [7, 'value', 11, 0, Value.codec],
+    [8, 'value_string', 9],
+    [9, 'output', 9],
+    [10, 'ops', 11, 1, Op.codec],
+  ],
+)

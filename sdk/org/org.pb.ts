@@ -4,13 +4,8 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * OrgInviteType is the type of organization invite.
@@ -20,161 +15,34 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum OrgInviteType {
   /**
    * ORG_INVITE_TYPE_UNKNOWN is unknown.
-   *
-   * @generated from enum value: ORG_INVITE_TYPE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * ORG_INVITE_TYPE_CODE is a short alphanumeric code invite.
-   *
-   * @generated from enum value: ORG_INVITE_TYPE_CODE = 1;
    */
   CODE = 1,
 
   /**
    * ORG_INVITE_TYPE_LINK is a URL link invite.
-   *
-   * @generated from enum value: ORG_INVITE_TYPE_LINK = 2;
    */
   LINK = 2,
 
   /**
    * ORG_INVITE_TYPE_EMAIL is an email invite (cloud relay).
-   *
-   * @generated from enum value: ORG_INVITE_TYPE_EMAIL = 3;
    */
   EMAIL = 3,
 }
 
 export const OrgInviteType_Enum = /* @__PURE__ */ createEnumType(
   's4wave.org.OrgInviteType',
-  OrgInviteType,
-  'ORG_INVITE_TYPE_',
+  [
+    [0, 'ORG_INVITE_TYPE_UNKNOWN'],
+    [1, 'ORG_INVITE_TYPE_CODE'],
+    [2, 'ORG_INVITE_TYPE_LINK'],
+    [3, 'ORG_INVITE_TYPE_EMAIL'],
+  ],
 )
-
-/**
- * OrgMemberInfo contains per-member metadata within the organization.
- * Supplements SOParticipantConfig (which holds crypto access roles).
- *
- * @generated from message s4wave.org.OrgMemberInfo
- */
-export interface OrgMemberInfo {
-  /**
-   * AccountId is the member's account identifier.
-   *
-   * @generated from field: string account_id = 1;
-   */
-  accountId?: string
-  /**
-   * DisplayRole is the human-readable role label (e.g. "Owner", "Member").
-   *
-   * @generated from field: string display_role = 2;
-   */
-  displayRole?: string
-  /**
-   * JoinedAt is when the member joined the organization.
-   *
-   * @generated from field: google.protobuf.Timestamp joined_at = 3;
-   */
-  joinedAt?: Date
-}
-
-export const OrgMemberInfo: MessageType<OrgMemberInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.OrgMemberInfo',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_role', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'joined_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * OrgChildRef is a reference to a child SharedObject owned by this organization.
- *
- * @generated from message s4wave.org.OrgChildRef
- */
-export interface OrgChildRef {
-  /**
-   * SharedObjectId is the identifier of the child SharedObject.
-   *
-   * @generated from field: string shared_object_id = 1;
-   */
-  sharedObjectId?: string
-}
-
-export const OrgChildRef: MessageType<OrgChildRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.OrgChildRef',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * OrgInvite is an organization invite stored in OrgState.
- *
- * @generated from message s4wave.org.OrgInvite
- */
-export interface OrgInvite {
-  /**
-   * Id is the unique invite identifier.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Type is the invite mechanism type.
-   *
-   * @generated from field: s4wave.org.OrgInviteType type = 2;
-   */
-  type?: OrgInviteType
-  /**
-   * Token is the invite token (8-char code, 32-char hex, or email-specific).
-   *
-   * @generated from field: string token = 3;
-   */
-  token?: string
-  /**
-   * Config is optional invite configuration (e.g. target email for email invites).
-   *
-   * @generated from field: string config = 4;
-   */
-  config?: string
-  /**
-   * Uses is the current number of times this invite has been used.
-   *
-   * @generated from field: uint32 uses = 5;
-   */
-  uses?: number
-  /**
-   * MaxUses is the maximum number of uses (0 = unlimited).
-   *
-   * @generated from field: uint32 max_uses = 6;
-   */
-  maxUses?: number
-  /**
-   * ExpiresAt is the invite expiration timestamp (zero = no expiry).
-   *
-   * @generated from field: google.protobuf.Timestamp expires_at = 7;
-   */
-  expiresAt?: Date
-}
-
-export const OrgInvite: MessageType<OrgInvite> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.OrgInvite',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'type', kind: 'enum', T: OrgInviteType_Enum },
-      { no: 3, name: 'token', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'config', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'uses', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 6, name: 'max_uses', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'expires_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * OrgState is the state of an Organization SharedObject.
@@ -185,73 +53,137 @@ export const OrgInvite: MessageType<OrgInvite> =
 export interface OrgState {
   /**
    * DisplayName is the organization display name.
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
   /**
    * CreatedAt is the organization creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 2;
    */
   createdAt?: Date
   /**
    * BillingAccountId is the linked billing account ID (cloud only).
    * Empty until a subscription is created for the org.
-   *
-   * @generated from field: string billing_account_id = 3;
    */
   billingAccountId?: string
   /**
    * Members is the list of organization members with metadata.
    * SOParticipantConfig is the authority for membership, this is supplementary.
-   *
-   * @generated from field: repeated s4wave.org.OrgMemberInfo members = 4;
    */
   members?: OrgMemberInfo[]
   /**
    * ChildSharedObjects is the list of child SO references (Spaces under this org).
-   *
-   * @generated from field: repeated s4wave.org.OrgChildRef child_shared_objects = 5;
    */
   childSharedObjects?: OrgChildRef[]
   /**
    * Invites is the list of active organization invites.
-   *
-   * @generated from field: repeated s4wave.org.OrgInvite invites = 6;
    */
   invites?: OrgInvite[]
 }
 
 export const OrgState: MessageType<OrgState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.OrgState',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'created_at', kind: 'message', T: () => Timestamp },
-      {
-        no: 3,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 4,
-        name: 'members',
-        kind: 'message',
-        T: OrgMemberInfo,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'child_shared_objects',
-        kind: 'message',
-        T: OrgChildRef,
-        repeated: true,
-      },
-      { no: 6, name: 'invites', kind: 'message', T: OrgInvite, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OrgState>('s4wave.org.OrgState', () => [
+    [1, 'display_name', 9],
+    [2, 'created_at', 11, 0, Timestamp.codec],
+    [3, 'billing_account_id', 9],
+    [4, 'members', 11, 1, OrgMemberInfo.codec],
+    [5, 'child_shared_objects', 11, 1, OrgChildRef.codec],
+    [6, 'invites', 11, 1, OrgInvite.codec],
+  ])
+
+/**
+ * OrgMemberInfo contains per-member metadata within the organization.
+ * Supplements SOParticipantConfig (which holds crypto access roles).
+ *
+ * @generated from message s4wave.org.OrgMemberInfo
+ */
+export interface OrgMemberInfo {
+  /**
+   * AccountId is the member's account identifier.
+   */
+  accountId?: string
+  /**
+   * DisplayRole is the human-readable role label (e.g. "Owner", "Member").
+   */
+  displayRole?: string
+  /**
+   * JoinedAt is when the member joined the organization.
+   */
+  joinedAt?: Date
+}
+
+export const OrgMemberInfo: MessageType<OrgMemberInfo> =
+  /* @__PURE__ */ createMessageType<OrgMemberInfo>(
+    's4wave.org.OrgMemberInfo',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'display_role', 9],
+      [3, 'joined_at', 11, 0, Timestamp.codec],
+    ],
+  )
+
+/**
+ * OrgChildRef is a reference to a child SharedObject owned by this organization.
+ *
+ * @generated from message s4wave.org.OrgChildRef
+ */
+export interface OrgChildRef {
+  /**
+   * SharedObjectId is the identifier of the child SharedObject.
+   */
+  sharedObjectId?: string
+}
+
+export const OrgChildRef: MessageType<OrgChildRef> =
+  /* @__PURE__ */ createMessageType<OrgChildRef>(
+    's4wave.org.OrgChildRef',
+    () => [[1, 'shared_object_id', 9]],
+  )
+
+/**
+ * OrgInvite is an organization invite stored in OrgState.
+ *
+ * @generated from message s4wave.org.OrgInvite
+ */
+export interface OrgInvite {
+  /**
+   * Id is the unique invite identifier.
+   */
+  id?: string
+  /**
+   * Type is the invite mechanism type.
+   */
+  type?: OrgInviteType
+  /**
+   * Token is the invite token (8-char code, 32-char hex, or email-specific).
+   */
+  token?: string
+  /**
+   * Config is optional invite configuration (e.g. target email for email invites).
+   */
+  config?: string
+  /**
+   * Uses is the current number of times this invite has been used.
+   */
+  uses?: number
+  /**
+   * MaxUses is the maximum number of uses (0 = unlimited).
+   */
+  maxUses?: number
+  /**
+   * ExpiresAt is the invite expiration timestamp (zero = no expiry).
+   */
+  expiresAt?: Date
+}
+
+export const OrgInvite: MessageType<OrgInvite> =
+  /* @__PURE__ */ createMessageType<OrgInvite>('s4wave.org.OrgInvite', () => [
+    [1, 'id', 9],
+    [2, 'type', 14, 0, OrgInviteType_Enum],
+    [3, 'token', 9],
+    [4, 'config', 9],
+    [5, 'uses', 13],
+    [6, 'max_uses', 13],
+    [7, 'expires_at', 11, 0, Timestamp.codec],
+  ])
 
 /**
  * InitOrganizationOp initializes an organization world object on space quickstart.
@@ -261,263 +193,32 @@ export const OrgState: MessageType<OrgState> =
 export interface InitOrganizationOp {
   /**
    * OrgObjectKey is the key for the organization object.
-   *
-   * @generated from field: string org_object_key = 1;
    */
   orgObjectKey?: string
   /**
    * DisplayName is the organization display name.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
   /**
    * CreatorAccountId is the account ID of the organization creator.
-   *
-   * @generated from field: string creator_account_id = 3;
    */
   creatorAccountId?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
 }
 
 export const InitOrganizationOp: MessageType<InitOrganizationOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.InitOrganizationOp',
-    fields: [
-      { no: 1, name: 'org_object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'creator_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * UpdateOrgDisplayName is the body for updating the org display name.
- *
- * @generated from message s4wave.org.UpdateOrgDisplayName
- */
-export interface UpdateOrgDisplayName {
-  /**
-   * DisplayName is the new display name.
-   *
-   * @generated from field: string display_name = 1;
-   */
-  displayName?: string
-}
-
-export const UpdateOrgDisplayName: MessageType<UpdateOrgDisplayName> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.UpdateOrgDisplayName',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * AddOrgMember is the body for adding a member.
- *
- * @generated from message s4wave.org.AddOrgMember
- */
-export interface AddOrgMember {
-  /**
-   * Member is the member info to add.
-   *
-   * @generated from field: s4wave.org.OrgMemberInfo member = 1;
-   */
-  member?: OrgMemberInfo
-}
-
-export const AddOrgMember: MessageType<AddOrgMember> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.AddOrgMember',
-    fields: [
-      { no: 1, name: 'member', kind: 'message', T: OrgMemberInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RemoveOrgMember is the body for removing a member.
- *
- * @generated from message s4wave.org.RemoveOrgMember
- */
-export interface RemoveOrgMember {
-  /**
-   * AccountId is the account ID of the member to remove.
-   *
-   * @generated from field: string account_id = 1;
-   */
-  accountId?: string
-}
-
-export const RemoveOrgMember: MessageType<RemoveOrgMember> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.RemoveOrgMember',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * AddOrgChildSo is the body for adding a child SO reference.
- *
- * @generated from message s4wave.org.AddOrgChildSo
- */
-export interface AddOrgChildSo {
-  /**
-   * SharedObjectId is the child SO ID to add.
-   *
-   * @generated from field: string shared_object_id = 1;
-   */
-  sharedObjectId?: string
-}
-
-export const AddOrgChildSo: MessageType<AddOrgChildSo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.AddOrgChildSo',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RemoveOrgChildSo is the body for removing a child SO reference.
- *
- * @generated from message s4wave.org.RemoveOrgChildSo
- */
-export interface RemoveOrgChildSo {
-  /**
-   * SharedObjectId is the child SO ID to remove.
-   *
-   * @generated from field: string shared_object_id = 1;
-   */
-  sharedObjectId?: string
-}
-
-export const RemoveOrgChildSo: MessageType<RemoveOrgChildSo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.RemoveOrgChildSo',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * CreateOrgInviteOp creates a new invite in the organization.
- *
- * @generated from message s4wave.org.CreateOrgInviteOp
- */
-export interface CreateOrgInviteOp {
-  /**
-   * Type is the invite type (code, link, or email).
-   *
-   * @generated from field: s4wave.org.OrgInviteType type = 1;
-   */
-  type?: OrgInviteType
-  /**
-   * MaxUses is the maximum number of uses (0 = unlimited).
-   *
-   * @generated from field: uint32 max_uses = 2;
-   */
-  maxUses?: number
-  /**
-   * ExpiresAt is the invite expiration timestamp (zero = no expiry).
-   *
-   * @generated from field: google.protobuf.Timestamp expires_at = 3;
-   */
-  expiresAt?: Date
-  /**
-   * Config is optional configuration (e.g. target email for email invites).
-   *
-   * @generated from field: string config = 4;
-   */
-  config?: string
-  /**
-   * Timestamp is the creation timestamp for deterministic replay.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 5;
-   */
-  timestamp?: Date
-}
-
-export const CreateOrgInviteOp: MessageType<CreateOrgInviteOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.CreateOrgInviteOp',
-    fields: [
-      { no: 1, name: 'type', kind: 'enum', T: OrgInviteType_Enum },
-      { no: 2, name: 'max_uses', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'expires_at', kind: 'message', T: () => Timestamp },
-      { no: 4, name: 'config', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RevokeOrgInviteOp revokes an existing invite by ID.
- *
- * @generated from message s4wave.org.RevokeOrgInviteOp
- */
-export interface RevokeOrgInviteOp {
-  /**
-   * InviteId is the ID of the invite to revoke.
-   *
-   * @generated from field: string invite_id = 1;
-   */
-  inviteId?: string
-}
-
-export const RevokeOrgInviteOp: MessageType<RevokeOrgInviteOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.RevokeOrgInviteOp',
-    fields: [
-      { no: 1, name: 'invite_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * JoinOrgViaInviteOp joins the organization using an invite token.
- *
- * @generated from message s4wave.org.JoinOrgViaInviteOp
- */
-export interface JoinOrgViaInviteOp {
-  /**
-   * Token is the invite token to validate.
-   *
-   * @generated from field: string token = 1;
-   */
-  token?: string
-  /**
-   * AccountId is the account ID of the joiner.
-   *
-   * @generated from field: string account_id = 2;
-   */
-  accountId?: string
-  /**
-   * Timestamp is the join timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
-   */
-  timestamp?: Date
-}
-
-export const JoinOrgViaInviteOp: MessageType<JoinOrgViaInviteOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.JoinOrgViaInviteOp',
-    fields: [
-      { no: 1, name: 'token', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitOrganizationOp>(
+    's4wave.org.InitOrganizationOp',
+    () => [
+      [1, 'org_object_key', 9],
+      [2, 'display_name', 9],
+      [3, 'creator_account_id', 9],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * UpdateOrgOp applies a mutation to an existing organization object.
@@ -527,158 +228,218 @@ export const JoinOrgViaInviteOp: MessageType<JoinOrgViaInviteOp> =
 export interface UpdateOrgOp {
   /**
    * OrgObjectKey is the key for the organization object.
-   *
-   * @generated from field: string org_object_key = 1;
    */
   orgObjectKey?: string
-
   /**
    * Body is the mutation to apply.
    *
    * @generated from oneof s4wave.org.UpdateOrgOp.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * UpdateDisplayName changes the display name.
-         *
-         * @generated from field: s4wave.org.UpdateOrgDisplayName update_display_name = 2;
-         */
-        value: UpdateOrgDisplayName
-        case: 'updateDisplayName'
-      }
-    | {
-        /**
-         * AddMember adds a member to the organization.
-         *
-         * @generated from field: s4wave.org.AddOrgMember add_member = 3;
-         */
-        value: AddOrgMember
-        case: 'addMember'
-      }
-    | {
-        /**
-         * RemoveMember removes a member from the organization.
-         *
-         * @generated from field: s4wave.org.RemoveOrgMember remove_member = 4;
-         */
-        value: RemoveOrgMember
-        case: 'removeMember'
-      }
-    | {
-        /**
-         * AddChildSo adds a child SO reference.
-         *
-         * @generated from field: s4wave.org.AddOrgChildSo add_child_so = 5;
-         */
-        value: AddOrgChildSo
-        case: 'addChildSo'
-      }
-    | {
-        /**
-         * RemoveChildSo removes a child SO reference.
-         *
-         * @generated from field: s4wave.org.RemoveOrgChildSo remove_child_so = 6;
-         */
-        value: RemoveOrgChildSo
-        case: 'removeChildSo'
-      }
-    | {
-        /**
-         * CreateInvite creates a new invite.
-         *
-         * @generated from field: s4wave.org.CreateOrgInviteOp create_invite = 7;
-         */
-        value: CreateOrgInviteOp
-        case: 'createInvite'
-      }
-    | {
-        /**
-         * RevokeInvite revokes an existing invite.
-         *
-         * @generated from field: s4wave.org.RevokeOrgInviteOp revoke_invite = 8;
-         */
-        value: RevokeOrgInviteOp
-        case: 'revokeInvite'
-      }
-    | {
-        /**
-         * JoinViaInvite joins the org using an invite token.
-         *
-         * @generated from field: s4wave.org.JoinOrgViaInviteOp join_via_invite = 9;
-         */
-        value: JoinOrgViaInviteOp
-        case: 'joinViaInvite'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: UpdateOrgDisplayName; case: 'updateDisplayName' }
+    | { value: AddOrgMember; case: 'addMember' }
+    | { value: RemoveOrgMember; case: 'removeMember' }
+    | { value: AddOrgChildSo; case: 'addChildSo' }
+    | { value: RemoveOrgChildSo; case: 'removeChildSo' }
+    | { value: CreateOrgInviteOp; case: 'createInvite' }
+    | { value: RevokeOrgInviteOp; case: 'revokeInvite' }
+    | { value: JoinOrgViaInviteOp; case: 'joinViaInvite' }
 }
 
 export const UpdateOrgOp: MessageType<UpdateOrgOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.UpdateOrgOp',
-    fields: [
-      { no: 1, name: 'org_object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'update_display_name',
-        kind: 'message',
-        T: UpdateOrgDisplayName,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'add_member',
-        kind: 'message',
-        T: AddOrgMember,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'remove_member',
-        kind: 'message',
-        T: RemoveOrgMember,
-        oneof: 'body',
-      },
-      {
-        no: 5,
-        name: 'add_child_so',
-        kind: 'message',
-        T: AddOrgChildSo,
-        oneof: 'body',
-      },
-      {
-        no: 6,
-        name: 'remove_child_so',
-        kind: 'message',
-        T: RemoveOrgChildSo,
-        oneof: 'body',
-      },
-      {
-        no: 7,
-        name: 'create_invite',
-        kind: 'message',
-        T: CreateOrgInviteOp,
-        oneof: 'body',
-      },
-      {
-        no: 8,
-        name: 'revoke_invite',
-        kind: 'message',
-        T: RevokeOrgInviteOp,
-        oneof: 'body',
-      },
-      {
-        no: 9,
-        name: 'join_via_invite',
-        kind: 'message',
-        T: JoinOrgViaInviteOp,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateOrgOp>(
+    's4wave.org.UpdateOrgOp',
+    () => [
+      [1, 'org_object_key', 9],
+      [2, 'update_display_name', 11, 0, UpdateOrgDisplayName.codec, 'body'],
+      [3, 'add_member', 11, 0, AddOrgMember.codec, 'body'],
+      [4, 'remove_member', 11, 0, RemoveOrgMember.codec, 'body'],
+      [5, 'add_child_so', 11, 0, AddOrgChildSo.codec, 'body'],
+      [6, 'remove_child_so', 11, 0, RemoveOrgChildSo.codec, 'body'],
+      [7, 'create_invite', 11, 0, CreateOrgInviteOp.codec, 'body'],
+      [8, 'revoke_invite', 11, 0, RevokeOrgInviteOp.codec, 'body'],
+      [9, 'join_via_invite', 11, 0, JoinOrgViaInviteOp.codec, 'body'],
+    ],
+  )
+
+/**
+ * UpdateOrgDisplayName is the body for updating the org display name.
+ *
+ * @generated from message s4wave.org.UpdateOrgDisplayName
+ */
+export interface UpdateOrgDisplayName {
+  /**
+   * DisplayName is the new display name.
+   */
+  displayName?: string
+}
+
+export const UpdateOrgDisplayName: MessageType<UpdateOrgDisplayName> =
+  /* @__PURE__ */ createMessageType<UpdateOrgDisplayName>(
+    's4wave.org.UpdateOrgDisplayName',
+    () => [[1, 'display_name', 9]],
+  )
+
+/**
+ * AddOrgMember is the body for adding a member.
+ *
+ * @generated from message s4wave.org.AddOrgMember
+ */
+export interface AddOrgMember {
+  /**
+   * Member is the member info to add.
+   */
+  member?: OrgMemberInfo
+}
+
+export const AddOrgMember: MessageType<AddOrgMember> =
+  /* @__PURE__ */ createMessageType<AddOrgMember>(
+    's4wave.org.AddOrgMember',
+    () => [[1, 'member', 11, 0, OrgMemberInfo.codec]],
+  )
+
+/**
+ * RemoveOrgMember is the body for removing a member.
+ *
+ * @generated from message s4wave.org.RemoveOrgMember
+ */
+export interface RemoveOrgMember {
+  /**
+   * AccountId is the account ID of the member to remove.
+   */
+  accountId?: string
+}
+
+export const RemoveOrgMember: MessageType<RemoveOrgMember> =
+  /* @__PURE__ */ createMessageType<RemoveOrgMember>(
+    's4wave.org.RemoveOrgMember',
+    () => [[1, 'account_id', 9]],
+  )
+
+/**
+ * AddOrgChildSo is the body for adding a child SO reference.
+ *
+ * @generated from message s4wave.org.AddOrgChildSo
+ */
+export interface AddOrgChildSo {
+  /**
+   * SharedObjectId is the child SO ID to add.
+   */
+  sharedObjectId?: string
+}
+
+export const AddOrgChildSo: MessageType<AddOrgChildSo> =
+  /* @__PURE__ */ createMessageType<AddOrgChildSo>(
+    's4wave.org.AddOrgChildSo',
+    () => [[1, 'shared_object_id', 9]],
+  )
+
+/**
+ * RemoveOrgChildSo is the body for removing a child SO reference.
+ *
+ * @generated from message s4wave.org.RemoveOrgChildSo
+ */
+export interface RemoveOrgChildSo {
+  /**
+   * SharedObjectId is the child SO ID to remove.
+   */
+  sharedObjectId?: string
+}
+
+export const RemoveOrgChildSo: MessageType<RemoveOrgChildSo> =
+  /* @__PURE__ */ createMessageType<RemoveOrgChildSo>(
+    's4wave.org.RemoveOrgChildSo',
+    () => [[1, 'shared_object_id', 9]],
+  )
+
+/**
+ * CreateOrgInviteOp creates a new invite in the organization.
+ *
+ * @generated from message s4wave.org.CreateOrgInviteOp
+ */
+export interface CreateOrgInviteOp {
+  /**
+   * Type is the invite type (code, link, or email).
+   */
+  type?: OrgInviteType
+  /**
+   * MaxUses is the maximum number of uses (0 = unlimited).
+   */
+  maxUses?: number
+  /**
+   * ExpiresAt is the invite expiration timestamp (zero = no expiry).
+   */
+  expiresAt?: Date
+  /**
+   * Config is optional configuration (e.g. target email for email invites).
+   */
+  config?: string
+  /**
+   * Timestamp is the creation timestamp for deterministic replay.
+   */
+  timestamp?: Date
+}
+
+export const CreateOrgInviteOp: MessageType<CreateOrgInviteOp> =
+  /* @__PURE__ */ createMessageType<CreateOrgInviteOp>(
+    's4wave.org.CreateOrgInviteOp',
+    () => [
+      [1, 'type', 14, 0, OrgInviteType_Enum],
+      [2, 'max_uses', 13],
+      [3, 'expires_at', 11, 0, Timestamp.codec],
+      [4, 'config', 9],
+      [5, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
+
+/**
+ * RevokeOrgInviteOp revokes an existing invite by ID.
+ *
+ * @generated from message s4wave.org.RevokeOrgInviteOp
+ */
+export interface RevokeOrgInviteOp {
+  /**
+   * InviteId is the ID of the invite to revoke.
+   */
+  inviteId?: string
+}
+
+export const RevokeOrgInviteOp: MessageType<RevokeOrgInviteOp> =
+  /* @__PURE__ */ createMessageType<RevokeOrgInviteOp>(
+    's4wave.org.RevokeOrgInviteOp',
+    () => [[1, 'invite_id', 9]],
+  )
+
+/**
+ * JoinOrgViaInviteOp joins the organization using an invite token.
+ *
+ * @generated from message s4wave.org.JoinOrgViaInviteOp
+ */
+export interface JoinOrgViaInviteOp {
+  /**
+   * Token is the invite token to validate.
+   */
+  token?: string
+  /**
+   * AccountId is the account ID of the joiner.
+   */
+  accountId?: string
+  /**
+   * Timestamp is the join timestamp.
+   */
+  timestamp?: Date
+}
+
+export const JoinOrgViaInviteOp: MessageType<JoinOrgViaInviteOp> =
+  /* @__PURE__ */ createMessageType<JoinOrgViaInviteOp>(
+    's4wave.org.JoinOrgViaInviteOp',
+    () => [
+      [1, 'token', 9],
+      [2, 'account_id', 9],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * DeleteOrganizationOp marks an organization as deleted.
@@ -689,19 +450,15 @@ export const UpdateOrgOp: MessageType<UpdateOrgOp> =
 export interface DeleteOrganizationOp {
   /**
    * OrgObjectKey is the key for the organization object.
-   *
-   * @generated from field: string org_object_key = 1;
    */
   orgObjectKey?: string
 }
 
 export const DeleteOrganizationOp: MessageType<DeleteOrganizationOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.DeleteOrganizationOp',
-    fields: [
-      { no: 1, name: 'org_object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteOrganizationOp>(
+    's4wave.org.DeleteOrganizationOp',
+    () => [[1, 'org_object_key', 9]],
+  )
 
 /**
  * OrgSOOp wraps org operations for the lightweight SO state processor.
@@ -716,65 +473,18 @@ export interface OrgSOOp {
    * @generated from oneof s4wave.org.OrgSOOp.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * InitOrg initializes the organization state.
-         *
-         * @generated from field: s4wave.org.InitOrganizationOp init_org = 1;
-         */
-        value: InitOrganizationOp
-        case: 'initOrg'
-      }
-    | {
-        /**
-         * UpdateOrg applies a mutation to the organization state.
-         *
-         * @generated from field: s4wave.org.UpdateOrgOp update_org = 2;
-         */
-        value: UpdateOrgOp
-        case: 'updateOrg'
-      }
-    | {
-        /**
-         * DeleteOrg marks the organization as deleted.
-         *
-         * @generated from field: s4wave.org.DeleteOrganizationOp delete_org = 3;
-         */
-        value: DeleteOrganizationOp
-        case: 'deleteOrg'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: InitOrganizationOp; case: 'initOrg' }
+    | { value: UpdateOrgOp; case: 'updateOrg' }
+    | { value: DeleteOrganizationOp; case: 'deleteOrg' }
 }
 
-export const OrgSOOp: MessageType<OrgSOOp> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.org.OrgSOOp',
-  fields: [
-    {
-      no: 1,
-      name: 'init_org',
-      kind: 'message',
-      T: InitOrganizationOp,
-      oneof: 'body',
-    },
-    {
-      no: 2,
-      name: 'update_org',
-      kind: 'message',
-      T: UpdateOrgOp,
-      oneof: 'body',
-    },
-    {
-      no: 3,
-      name: 'delete_org',
-      kind: 'message',
-      T: DeleteOrganizationOp,
-      oneof: 'body',
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const OrgSOOp: MessageType<OrgSOOp> =
+  /* @__PURE__ */ createMessageType<OrgSOOp>('s4wave.org.OrgSOOp', () => [
+    [1, 'init_org', 11, 0, InitOrganizationOp.codec, 'body'],
+    [2, 'update_org', 11, 0, UpdateOrgOp.codec, 'body'],
+    [3, 'delete_org', 11, 0, DeleteOrganizationOp.codec, 'body'],
+  ])
 
 /**
  * WatchOrgStateRequest is a request to watch organization state.
@@ -784,9 +494,9 @@ export const OrgSOOp: MessageType<OrgSOOp> = /* @__PURE__ */ createMessageType({
 export interface WatchOrgStateRequest {}
 
 export const WatchOrgStateRequest: MessageType<WatchOrgStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchOrgStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchOrgStateRequest>(
     's4wave.org.WatchOrgStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -797,16 +507,12 @@ export const WatchOrgStateRequest: MessageType<WatchOrgStateRequest> =
 export interface WatchOrgStateResponse {
   /**
    * State is the current organization state.
-   *
-   * @generated from field: s4wave.org.OrgState state = 1;
    */
   state?: OrgState
 }
 
 export const WatchOrgStateResponse: MessageType<WatchOrgStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.org.WatchOrgStateResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: OrgState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchOrgStateResponse>(
+    's4wave.org.WatchOrgStateResponse',
+    () => [[1, 'state', 11, 0, OrgState.codec]],
+  )

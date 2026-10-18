@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * CommandFocusContext identifies where a command binding applies.
@@ -16,65 +14,57 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum CommandFocusContext {
   /**
    * COMMAND_FOCUS_CONTEXT_UNSPECIFIED matches the global context.
-   *
-   * @generated from enum value: COMMAND_FOCUS_CONTEXT_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * COMMAND_FOCUS_CONTEXT_GLOBAL matches the shell globally.
-   *
-   * @generated from enum value: COMMAND_FOCUS_CONTEXT_GLOBAL = 1;
    */
   GLOBAL = 1,
 
   /**
    * COMMAND_FOCUS_CONTEXT_SHELL_TAB matches the active shell tab.
-   *
-   * @generated from enum value: COMMAND_FOCUS_CONTEXT_SHELL_TAB = 2;
    */
   SHELL_TAB = 2,
 
   /**
    * COMMAND_FOCUS_CONTEXT_EDITOR matches an editor surface.
-   *
-   * @generated from enum value: COMMAND_FOCUS_CONTEXT_EDITOR = 3;
    */
   EDITOR = 3,
 
   /**
    * COMMAND_FOCUS_CONTEXT_LIST matches list and tree surfaces.
-   *
-   * @generated from enum value: COMMAND_FOCUS_CONTEXT_LIST = 4;
    */
   LIST = 4,
 
   /**
    * COMMAND_FOCUS_CONTEXT_CANVAS matches canvas surfaces.
-   *
-   * @generated from enum value: COMMAND_FOCUS_CONTEXT_CANVAS = 5;
    */
   CANVAS = 5,
 
   /**
    * COMMAND_FOCUS_CONTEXT_MODAL matches modal dialogs.
-   *
-   * @generated from enum value: COMMAND_FOCUS_CONTEXT_MODAL = 6;
    */
   MODAL = 6,
 
   /**
    * COMMAND_FOCUS_CONTEXT_TEXT_INPUT matches editable text controls.
-   *
-   * @generated from enum value: COMMAND_FOCUS_CONTEXT_TEXT_INPUT = 7;
    */
   TEXT_INPUT = 7,
 }
 
 export const CommandFocusContext_Enum = /* @__PURE__ */ createEnumType(
   's4wave.command.CommandFocusContext',
-  CommandFocusContext,
-  'COMMAND_FOCUS_CONTEXT_',
+  [
+    [0, 'COMMAND_FOCUS_CONTEXT_UNSPECIFIED'],
+    [1, 'COMMAND_FOCUS_CONTEXT_GLOBAL'],
+    [2, 'COMMAND_FOCUS_CONTEXT_SHELL_TAB'],
+    [3, 'COMMAND_FOCUS_CONTEXT_EDITOR'],
+    [4, 'COMMAND_FOCUS_CONTEXT_LIST'],
+    [5, 'COMMAND_FOCUS_CONTEXT_CANVAS'],
+    [6, 'COMMAND_FOCUS_CONTEXT_MODAL'],
+    [7, 'COMMAND_FOCUS_CONTEXT_TEXT_INPUT'],
+  ],
 )
 
 /**
@@ -85,30 +75,27 @@ export const CommandFocusContext_Enum = /* @__PURE__ */ createEnumType(
 export enum CommandSurface {
   /**
    * COMMAND_SURFACE_UNKNOWN is not a usable command surface.
-   *
-   * @generated from enum value: COMMAND_SURFACE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * COMMAND_SURFACE_WEB selects the web command surface.
-   *
-   * @generated from enum value: COMMAND_SURFACE_WEB = 1;
    */
   WEB = 1,
 
   /**
    * COMMAND_SURFACE_TUI selects the terminal command surface.
-   *
-   * @generated from enum value: COMMAND_SURFACE_TUI = 2;
    */
   TUI = 2,
 }
 
 export const CommandSurface_Enum = /* @__PURE__ */ createEnumType(
   's4wave.command.CommandSurface',
-  CommandSurface,
-  'COMMAND_SURFACE_',
+  [
+    [0, 'COMMAND_SURFACE_UNKNOWN'],
+    [1, 'COMMAND_SURFACE_WEB'],
+    [2, 'COMMAND_SURFACE_TUI'],
+  ],
 )
 
 /**
@@ -119,30 +106,27 @@ export const CommandSurface_Enum = /* @__PURE__ */ createEnumType(
 export enum KeybindingDisplayMode {
   /**
    * KEYBINDING_DISPLAY_MODE_UNSPECIFIED uses the default display mode.
-   *
-   * @generated from enum value: KEYBINDING_DISPLAY_MODE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * KEYBINDING_DISPLAY_MODE_SYMBOLS displays platform symbols.
-   *
-   * @generated from enum value: KEYBINDING_DISPLAY_MODE_SYMBOLS = 1;
    */
   SYMBOLS = 1,
 
   /**
    * KEYBINDING_DISPLAY_MODE_TEXT displays plain text modifier names.
-   *
-   * @generated from enum value: KEYBINDING_DISPLAY_MODE_TEXT = 2;
    */
   TEXT = 2,
 }
 
 export const KeybindingDisplayMode_Enum = /* @__PURE__ */ createEnumType(
   's4wave.command.KeybindingDisplayMode',
-  KeybindingDisplayMode,
-  'KEYBINDING_DISPLAY_MODE_',
+  [
+    [0, 'KEYBINDING_DISPLAY_MODE_UNSPECIFIED'],
+    [1, 'KEYBINDING_DISPLAY_MODE_SYMBOLS'],
+    [2, 'KEYBINDING_DISPLAY_MODE_TEXT'],
+  ],
 )
 
 /**
@@ -153,19 +137,14 @@ export const KeybindingDisplayMode_Enum = /* @__PURE__ */ createEnumType(
 export interface KeyCombo {
   /**
    * Combo is the canonical combo string.
-   *
-   * @generated from field: string combo = 1;
    */
   combo?: string
 }
 
 export const KeyCombo: MessageType<KeyCombo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.KeyCombo',
-    fields: [
-      { no: 1, name: 'combo', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KeyCombo>('s4wave.command.KeyCombo', () => [
+    [1, 'combo', 9],
+  ])
 
 /**
  * KeySequence stores ordered key steps.
@@ -175,25 +154,15 @@ export const KeyCombo: MessageType<KeyCombo> =
 export interface KeySequence {
   /**
    * Steps are canonical key step strings; "Leader" is the virtual leader step.
-   *
-   * @generated from field: repeated string steps = 1;
    */
   steps?: string[]
 }
 
 export const KeySequence: MessageType<KeySequence> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.KeySequence',
-    fields: [
-      {
-        no: 1,
-        name: 'steps',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KeySequence>(
+    's4wave.command.KeySequence',
+    () => [[1, 'steps', 9, 1]],
+  )
 
 /**
  * CommandBinding stores one default command input binding.
@@ -203,75 +172,41 @@ export const KeySequence: MessageType<KeySequence> =
 export interface CommandBinding {
   /**
    * Id is stable within a command's default bindings.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * When limits the binding to a focus context.
-   *
-   * @generated from field: s4wave.command.CommandFocusContext when = 4;
    */
   when?: CommandFocusContext
   /**
    * SourceLabel is an optional display label for the binding source.
-   *
-   * @generated from field: string source_label = 5;
    */
   sourceLabel?: string
   /**
    * Surface selects the explicit WEB or TUI default partition.
-   *
-   * @generated from field: s4wave.command.CommandSurface surface = 6;
    */
   surface?: CommandSurface
-
   /**
    * @generated from oneof s4wave.command.CommandBinding.binding
    */
   binding?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Combo stores a one-event key binding.
-         *
-         * @generated from field: s4wave.command.KeyCombo combo = 2;
-         */
-        value: KeyCombo
-        case: 'combo'
-      }
-    | {
-        /**
-         * Sequence stores an ordered key sequence.
-         *
-         * @generated from field: s4wave.command.KeySequence sequence = 3;
-         */
-        value: KeySequence
-        case: 'sequence'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: KeyCombo; case: 'combo' }
+    | { value: KeySequence; case: 'sequence' }
 }
 
 export const CommandBinding: MessageType<CommandBinding> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.CommandBinding',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'combo', kind: 'message', T: KeyCombo, oneof: 'binding' },
-      {
-        no: 3,
-        name: 'sequence',
-        kind: 'message',
-        T: KeySequence,
-        oneof: 'binding',
-      },
-      { no: 4, name: 'when', kind: 'enum', T: CommandFocusContext_Enum },
-      { no: 5, name: 'source_label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'surface', kind: 'enum', T: CommandSurface_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CommandBinding>(
+    's4wave.command.CommandBinding',
+    () => [
+      [1, 'id', 9],
+      [2, 'combo', 11, 0, KeyCombo.codec, 'binding'],
+      [3, 'sequence', 11, 0, KeySequence.codec, 'binding'],
+      [4, 'when', 14, 0, CommandFocusContext_Enum],
+      [5, 'source_label', 9],
+      [6, 'surface', 14, 0, CommandSurface_Enum],
+    ],
+  )
 
 /**
  * KeybindingDisplaySettings stores display preferences for one override layer.
@@ -281,19 +216,15 @@ export const CommandBinding: MessageType<CommandBinding> =
 export interface KeybindingDisplaySettings {
   /**
    * Mode selects how bindings are displayed.
-   *
-   * @generated from field: s4wave.command.KeybindingDisplayMode mode = 1;
    */
   mode?: KeybindingDisplayMode
 }
 
 export const KeybindingDisplaySettings: MessageType<KeybindingDisplaySettings> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.KeybindingDisplaySettings',
-    fields: [
-      { no: 1, name: 'mode', kind: 'enum', T: KeybindingDisplayMode_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KeybindingDisplaySettings>(
+    's4wave.command.KeybindingDisplaySettings',
+    () => [[1, 'mode', 14, 0, KeybindingDisplayMode_Enum]],
+  )
 
 /**
  * KeybindingOverrideSettings stores non-command-specific keybinding preferences.
@@ -303,38 +234,27 @@ export const KeybindingDisplaySettings: MessageType<KeybindingDisplaySettings> =
 export interface KeybindingOverrideSettings {
   /**
    * LeaderCombo is the layer's virtual Leader binding.
-   *
-   * @generated from field: string leader_combo = 1;
    */
   leaderCombo?: string
   /**
    * WhichKeyDelayMs is the delay before showing which-key discovery.
-   *
-   * @generated from field: uint32 which_key_delay_ms = 2;
    */
   whichKeyDelayMs?: number
   /**
    * Display contains binding display preferences.
-   *
-   * @generated from field: s4wave.command.KeybindingDisplaySettings display = 3;
    */
   display?: KeybindingDisplaySettings
 }
 
 export const KeybindingOverrideSettings: MessageType<KeybindingOverrideSettings> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.KeybindingOverrideSettings',
-    fields: [
-      { no: 1, name: 'leader_combo', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'which_key_delay_ms',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 3, name: 'display', kind: 'message', T: KeybindingDisplaySettings },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KeybindingOverrideSettings>(
+    's4wave.command.KeybindingOverrideSettings',
+    () => [
+      [1, 'leader_combo', 9],
+      [2, 'which_key_delay_ms', 13],
+      [3, 'display', 11, 0, KeybindingDisplaySettings.codec],
+    ],
+  )
 
 /**
  * KeybindingCommandOverride stores one command's override in a keybinding layer.
@@ -344,59 +264,37 @@ export const KeybindingOverrideSettings: MessageType<KeybindingOverrideSettings>
 export interface KeybindingCommandOverride {
   /**
    * CommandId is the command identifier this override applies to.
-   *
-   * @generated from field: string command_id = 1;
    */
   commandId?: string
   /**
    * ReplaceBindings indicates bindings replace lower-layer bindings.
-   *
-   * @generated from field: bool replace_bindings = 2;
    */
   replaceBindings?: boolean
   /**
    * Disabled indicates the command has no effective bindings in this layer.
-   *
-   * @generated from field: bool disabled = 3;
    */
   disabled?: boolean
   /**
    * ClearedBindingIds lists lower-layer binding IDs removed by this layer.
-   *
-   * @generated from field: repeated string cleared_binding_ids = 4;
    */
   clearedBindingIds?: string[]
   /**
    * Bindings are bindings added by this layer.
-   *
-   * @generated from field: repeated s4wave.command.CommandBinding bindings = 5;
    */
   bindings?: CommandBinding[]
 }
 
 export const KeybindingCommandOverride: MessageType<KeybindingCommandOverride> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.KeybindingCommandOverride',
-    fields: [
-      { no: 1, name: 'command_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'replace_bindings', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'disabled', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 4,
-        name: 'cleared_binding_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'bindings',
-        kind: 'message',
-        T: CommandBinding,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KeybindingCommandOverride>(
+    's4wave.command.KeybindingCommandOverride',
+    () => [
+      [1, 'command_id', 9],
+      [2, 'replace_bindings', 8],
+      [3, 'disabled', 8],
+      [4, 'cleared_binding_ids', 9, 1],
+      [5, 'bindings', 11, 1, CommandBinding.codec],
+    ],
+  )
 
 /**
  * KeybindingOverrideSet stores one persisted keybinding override layer.
@@ -406,62 +304,32 @@ export const KeybindingCommandOverride: MessageType<KeybindingCommandOverride> =
 export interface KeybindingOverrideSet {
   /**
    * WebOverrides is the browser partition.
-   *
-   * @generated from field: repeated s4wave.command.KeybindingCommandOverride web_overrides = 4;
    */
   webOverrides?: KeybindingCommandOverride[]
   /**
    * TuiOverrides is the terminal partition.
-   *
-   * @generated from field: repeated s4wave.command.KeybindingCommandOverride tui_overrides = 5;
    */
   tuiOverrides?: KeybindingCommandOverride[]
   /**
    * WebSettings is the version-2 browser settings partition.
-   *
-   * @generated from field: s4wave.command.KeybindingOverrideSettings web_settings = 6;
    */
   webSettings?: KeybindingOverrideSettings
   /**
    * TuiSettings is the version-2 terminal settings partition.
-   *
-   * @generated from field: s4wave.command.KeybindingOverrideSettings tui_settings = 7;
    */
   tuiSettings?: KeybindingOverrideSettings
 }
 
 export const KeybindingOverrideSet: MessageType<KeybindingOverrideSet> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.KeybindingOverrideSet',
-    fields: [
-      {
-        no: 4,
-        name: 'web_overrides',
-        kind: 'message',
-        T: KeybindingCommandOverride,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'tui_overrides',
-        kind: 'message',
-        T: KeybindingCommandOverride,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'web_settings',
-        kind: 'message',
-        T: KeybindingOverrideSettings,
-      },
-      {
-        no: 7,
-        name: 'tui_settings',
-        kind: 'message',
-        T: KeybindingOverrideSettings,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KeybindingOverrideSet>(
+    's4wave.command.KeybindingOverrideSet',
+    () => [
+      [4, 'web_overrides', 11, 1, KeybindingCommandOverride.codec],
+      [5, 'tui_overrides', 11, 1, KeybindingCommandOverride.codec],
+      [6, 'web_settings', 11, 0, KeybindingOverrideSettings.codec],
+      [7, 'tui_settings', 11, 0, KeybindingOverrideSettings.codec],
+    ],
+  )
 
 /**
  * Command is the metadata for a registered command.
@@ -472,94 +340,60 @@ export interface Command {
   /**
    * CommandId is the unique reverse-domain command identifier.
    * e.g. "spacewave.file.save", "notes.new-note"
-   *
-   * @generated from field: string command_id = 1;
    */
   commandId?: string
   /**
    * Label is the human-readable display name.
-   *
-   * @generated from field: string label = 2;
    */
   label?: string
   /**
    * MenuPath is the menu placement path.
    * Format: "File/Save", "File/Export/PDF", "View/Toggle Sidebar"
    * Empty means the command is not in any menu.
-   *
-   * @generated from field: string menu_path = 4;
    */
   menuPath?: string
   /**
    * MenuGroup controls separator placement within a menu level.
    * Commands with the same group are visually grouped together.
-   *
-   * @generated from field: uint32 menu_group = 5;
    */
   menuGroup?: number
   /**
    * MenuOrder controls ordering within a group.
-   *
-   * @generated from field: uint32 menu_order = 6;
    */
   menuOrder?: number
   /**
    * Icon is an optional icon identifier.
-   *
-   * @generated from field: string icon = 7;
    */
   icon?: string
   /**
    * Description is an optional longer description for the palette.
-   *
-   * @generated from field: string description = 8;
    */
   description?: string
   /**
    * HasSubItems indicates the command has a sub-item list in the palette.
    * When selected, the palette replaces the command list with sub-items.
-   *
-   * @generated from field: bool has_sub_items = 9;
    */
   hasSubItems?: boolean
   /**
    * DefaultBindings are the typed default input bindings for the command.
-   *
-   * @generated from field: repeated s4wave.command.CommandBinding default_bindings = 10;
    */
   defaultBindings?: CommandBinding[]
   /**
    * SearchAliases adds discovery terms without creating alternate command IDs.
-   *
-   * @generated from field: repeated string search_aliases = 11;
    */
   searchAliases?: string[]
 }
 
-export const Command: MessageType<Command> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.command.Command',
-  fields: [
-    { no: 1, name: 'command_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'menu_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'menu_group', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 6, name: 'menu_order', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 7, name: 'icon', kind: 'scalar', T: ScalarType.STRING },
-    { no: 8, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-    { no: 9, name: 'has_sub_items', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 10,
-      name: 'default_bindings',
-      kind: 'message',
-      T: CommandBinding,
-      repeated: true,
-    },
-    {
-      no: 11,
-      name: 'search_aliases',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Command: MessageType<Command> =
+  /* @__PURE__ */ createMessageType<Command>('s4wave.command.Command', () => [
+    [1, 'command_id', 9],
+    [2, 'label', 9],
+    [4, 'menu_path', 9],
+    [5, 'menu_group', 13],
+    [6, 'menu_order', 13],
+    [7, 'icon', 9],
+    [8, 'description', 9],
+    [9, 'has_sub_items', 8],
+    [10, 'default_bindings', 11, 1, CommandBinding.codec],
+    [11, 'search_aliases', 9, 1],
+  ])

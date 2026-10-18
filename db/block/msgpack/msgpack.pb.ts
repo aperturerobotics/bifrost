@@ -5,7 +5,6 @@
 import { Blob } from '../blob/blob.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * MsgpackBlob is a block containing data packed with msgpack.
@@ -20,16 +19,11 @@ export interface MsgpackBlob {
    * Blob contains the encoded data in a blob.
    *
    * If small enough, the blob will be stored in-line.
-   *
-   * @generated from field: blob.Blob blob = 1;
    */
   blob?: Blob
 }
 
 export const MsgpackBlob: MessageType<MsgpackBlob> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'msgpack.MsgpackBlob',
-    fields: [
-      { no: 1, name: 'blob', kind: 'message', T: () => Blob },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MsgpackBlob>('msgpack.MsgpackBlob', () => [
+    [1, 'blob', 11, 0, Blob.codec],
+  ])

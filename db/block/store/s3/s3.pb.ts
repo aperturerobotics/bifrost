@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
 /**
@@ -17,15 +15,11 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export enum CheckOutcome {
   /**
    * CHECK_OUTCOME_UNKNOWN is the unset outcome.
-   *
-   * @generated from enum value: CHECK_OUTCOME_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * CHECK_OUTCOME_OK means a probe object was written, read back, and deleted.
-   *
-   * @generated from enum value: CHECK_OUTCOME_OK = 1;
    */
   OK = 1,
 
@@ -33,96 +27,100 @@ export enum CheckOutcome {
    * CHECK_OUTCOME_UNREACHABLE means no response arrived from the endpoint.
    * In the browser this includes a bucket that does not allow the app's
    * origin through CORS.
-   *
-   * @generated from enum value: CHECK_OUTCOME_UNREACHABLE = 2;
    */
   UNREACHABLE = 2,
 
   /**
    * CHECK_OUTCOME_CREDENTIALS_REJECTED means the endpoint rejected the access
    * key or its signature.
-   *
-   * @generated from enum value: CHECK_OUTCOME_CREDENTIALS_REJECTED = 3;
    */
   CREDENTIALS_REJECTED = 3,
 
   /**
    * CHECK_OUTCOME_ACCESS_DENIED means the credentials are valid but lack
    * permission to write, read, list, or delete objects in the bucket.
-   *
-   * @generated from enum value: CHECK_OUTCOME_ACCESS_DENIED = 4;
    */
   ACCESS_DENIED = 4,
 
   /**
    * CHECK_OUTCOME_BUCKET_NOT_FOUND means the bucket does not exist.
-   *
-   * @generated from enum value: CHECK_OUTCOME_BUCKET_NOT_FOUND = 5;
    */
   BUCKET_NOT_FOUND = 5,
 
   /**
    * CHECK_OUTCOME_WRONG_REGION means the bucket is in another region.
-   *
-   * @generated from enum value: CHECK_OUTCOME_WRONG_REGION = 6;
    */
   WRONG_REGION = 6,
 
   /**
    * CHECK_OUTCOME_FAILED means another error stopped the check.
-   *
-   * @generated from enum value: CHECK_OUTCOME_FAILED = 7;
    */
   FAILED = 7,
 }
 
 export const CheckOutcome_Enum = /* @__PURE__ */ createEnumType(
   'block.store.s3.CheckOutcome',
-  CheckOutcome,
-  'CHECK_OUTCOME_',
+  [
+    [0, 'CHECK_OUTCOME_UNKNOWN'],
+    [1, 'CHECK_OUTCOME_OK'],
+    [2, 'CHECK_OUTCOME_UNREACHABLE'],
+    [3, 'CHECK_OUTCOME_CREDENTIALS_REJECTED'],
+    [4, 'CHECK_OUTCOME_ACCESS_DENIED'],
+    [5, 'CHECK_OUTCOME_BUCKET_NOT_FOUND'],
+    [6, 'CHECK_OUTCOME_WRONG_REGION'],
+    [7, 'CHECK_OUTCOME_FAILED'],
+  ],
 )
 
 /**
- * Credentials are credentials for a s3-compatible api.
+ * Config configures the s3 block store controller.
  *
- * @generated from message block.store.s3.Credentials
+ * @generated from message block.store.s3.Config
  */
-export interface Credentials {
+export interface Config {
   /**
-   * AccessKeyId is the authentication access key id.
-   *
-   * @generated from field: string access_key_id = 1;
+   * BlockStoreId is the block store id to use on the bus.
    */
-  accessKeyId?: string
+  blockStoreId?: string
   /**
-   * SecretAccessKey is the secret access key corresponding to the access key id.
-   *
-   * @generated from field: string secret_access_key = 2;
+   * Client configures the s3 client.
    */
-  secretAccessKey?: string
+  client?: ClientConfig
   /**
-   * Token is the token to use.
-   * Usually empty.
-   *
-   * @generated from field: string token = 3;
+   * BucketName is the s3 bucket name to use.
    */
-  token?: string
+  bucketName?: string
+  /**
+   * ObjectPrefix is the prefix to use for object names.
+   * Packfiles are {objectPrefix}packs/{id}, and their entries are
+   * {objectPrefix}entries/{id}. The storage reclaim state is
+   * {objectPrefix}reclaim/{time}.
+   */
+  objectPrefix?: string
+  /**
+   * BucketIds is a list of bucket ids to serve LookupBlockFromNetwork directives.
+   */
+  bucketIds?: string[]
+  /**
+   * SkipNotFound skips returning a value if the block was not found.
+   */
+  skipNotFound?: boolean
+  /**
+   * Verbose enables verbose logging of the block store.
+   */
+  verbose?: boolean
 }
 
-export const Credentials: MessageType<Credentials> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.s3.Credentials',
-    fields: [
-      { no: 1, name: 'access_key_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'secret_access_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'token', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('block.store.s3.Config', () => [
+    [1, 'block_store_id', 9],
+    [2, 'client', 11, 0, ClientConfig.codec],
+    [3, 'bucket_name', 9],
+    [4, 'object_prefix', 9],
+    [7, 'bucket_ids', 9, 1],
+    [8, 'skip_not_found', 8],
+    [9, 'verbose', 8],
+  ])
 
 /**
  * ClientConfig configures the s3 client.
@@ -133,143 +131,65 @@ export const Credentials: MessageType<Credentials> =
 export interface ClientConfig {
   /**
    * Endpoint is the endpoint to access the s3 api.
-   *
-   * @generated from field: string endpoint = 1;
    */
   endpoint?: string
   /**
    * Credentials contains the authentication creds.
-   *
-   * @generated from field: block.store.s3.Credentials credentials = 2;
    */
   credentials?: Credentials
   /**
    * DisableSsl disables using SSL to access the api.
    * If false, uses ssl.
-   *
-   * @generated from field: bool disable_ssl = 3;
    */
   disableSsl?: boolean
   /**
    * Region is the name of the region to use.
    * Can be empty.
-   *
-   * @generated from field: string region = 4;
    */
   region?: string
 }
 
 export const ClientConfig: MessageType<ClientConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.s3.ClientConfig',
-    fields: [
-      { no: 1, name: 'endpoint', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'credentials', kind: 'message', T: Credentials },
-      { no: 3, name: 'disable_ssl', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'region', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClientConfig>(
+    'block.store.s3.ClientConfig',
+    () => [
+      [1, 'endpoint', 9],
+      [2, 'credentials', 11, 0, Credentials.codec],
+      [3, 'disable_ssl', 8],
+      [4, 'region', 9],
+    ],
+  )
 
 /**
- * Config configures the s3 block store controller.
+ * Credentials are credentials for a s3-compatible api.
  *
- * @generated from message block.store.s3.Config
+ * @generated from message block.store.s3.Credentials
  */
-export interface Config {
+export interface Credentials {
   /**
-   * BlockStoreId is the block store id to use on the bus.
-   *
-   * @generated from field: string block_store_id = 1;
+   * AccessKeyId is the authentication access key id.
    */
-  blockStoreId?: string
+  accessKeyId?: string
   /**
-   * Client configures the s3 client.
-   *
-   * @generated from field: block.store.s3.ClientConfig client = 2;
+   * SecretAccessKey is the secret access key corresponding to the access key id.
    */
-  client?: ClientConfig
+  secretAccessKey?: string
   /**
-   * BucketName is the s3 bucket name to use.
-   *
-   * @generated from field: string bucket_name = 3;
+   * Token is the token to use.
+   * Usually empty.
    */
-  bucketName?: string
-  /**
-   * ObjectPrefix is the prefix to use for object names.
-   * Packfiles are {objectPrefix}packs/{id}, and their entries are
-   * {objectPrefix}entries/{id}. The storage reclaim state is
-   * {objectPrefix}reclaim/{time}.
-   *
-   * @generated from field: string object_prefix = 4;
-   */
-  objectPrefix?: string
-  /**
-   * BucketIds is a list of bucket ids to serve LookupBlockFromNetwork directives.
-   *
-   * @generated from field: repeated string bucket_ids = 7;
-   */
-  bucketIds?: string[]
-  /**
-   * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 8;
-   */
-  skipNotFound?: boolean
-  /**
-   * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 9;
-   */
-  verbose?: boolean
+  token?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.s3.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'client', kind: 'message', T: ClientConfig },
-    { no: 3, name: 'bucket_name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'object_prefix', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 7,
-      name: 'bucket_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 8, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 9, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * ObjectUsage is the count and total size of the objects under a prefix.
- *
- * @generated from message block.store.s3.ObjectUsage
- */
-export interface ObjectUsage {
-  /**
-   * Objects is the number of objects.
-   *
-   * @generated from field: int64 objects = 1;
-   */
-  objects?: bigint
-  /**
-   * Bytes is the total size of the objects.
-   *
-   * @generated from field: int64 bytes = 2;
-   */
-  bytes?: bigint
-}
-
-export const ObjectUsage: MessageType<ObjectUsage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.s3.ObjectUsage',
-    fields: [
-      { no: 1, name: 'objects', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 2, name: 'bytes', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const Credentials: MessageType<Credentials> =
+  /* @__PURE__ */ createMessageType<Credentials>(
+    'block.store.s3.Credentials',
+    () => [
+      [1, 'access_key_id', 9],
+      [2, 'secret_access_key', 9],
+      [3, 'token', 9],
+    ],
+  )
 
 /**
  * CheckResult is the result of a bucket connectivity check.
@@ -279,35 +199,54 @@ export const ObjectUsage: MessageType<ObjectUsage> =
 export interface CheckResult {
   /**
    * Outcome classifies the result.
-   *
-   * @generated from field: block.store.s3.CheckOutcome outcome = 1;
    */
   outcome?: CheckOutcome
   /**
    * Detail is the failing step and the server's error message.
    * Empty when Outcome is CHECK_OUTCOME_OK.
-   *
-   * @generated from field: string detail = 2;
    */
   detail?: string
   /**
    * Usage is what the bucket holds under the object prefix. Absent when the
    * check failed.
-   *
-   * @generated from field: block.store.s3.ObjectUsage usage = 3;
    */
   usage?: ObjectUsage
 }
 
 export const CheckResult: MessageType<CheckResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.s3.CheckResult',
-    fields: [
-      { no: 1, name: 'outcome', kind: 'enum', T: CheckOutcome_Enum },
-      { no: 2, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'usage', kind: 'message', T: ObjectUsage },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CheckResult>(
+    'block.store.s3.CheckResult',
+    () => [
+      [1, 'outcome', 14, 0, CheckOutcome_Enum],
+      [2, 'detail', 9],
+      [3, 'usage', 11, 0, ObjectUsage.codec],
+    ],
+  )
+
+/**
+ * ObjectUsage is the count and total size of the objects under a prefix.
+ *
+ * @generated from message block.store.s3.ObjectUsage
+ */
+export interface ObjectUsage {
+  /**
+   * Objects is the number of objects.
+   */
+  objects?: bigint
+  /**
+   * Bytes is the total size of the objects.
+   */
+  bytes?: bigint
+}
+
+export const ObjectUsage: MessageType<ObjectUsage> =
+  /* @__PURE__ */ createMessageType<ObjectUsage>(
+    'block.store.s3.ObjectUsage',
+    () => [
+      [1, 'objects', 3],
+      [2, 'bytes', 3],
+    ],
+  )
 
 /**
  * ReclaimState records the last storage reclaim pass on a bucket prefix, so
@@ -319,53 +258,38 @@ export const CheckResult: MessageType<CheckResult> =
 export interface ReclaimState {
   /**
    * PassedAt is when the pass ran.
-   *
-   * @generated from field: google.protobuf.Timestamp passed_at = 1;
    */
   passedAt?: Date
   /**
    * DeadBytes is the dead block bytes the pass left in place.
-   *
-   * @generated from field: uint64 dead_bytes = 2;
    */
   deadBytes?: bigint
   /**
    * DeadBytesPerDay is the rate blocks died between the previous pass and
    * this one.
-   *
-   * @generated from field: uint64 dead_bytes_per_day = 3;
    */
   deadBytesPerDay?: bigint
   /**
    * Packs is the number of packfiles the pass judged.
-   *
-   * @generated from field: uint64 packs = 4;
    */
   packs?: bigint
   /**
    * Blocks is the number of blocks in those packfiles.
-   *
-   * @generated from field: uint64 blocks = 5;
    */
   blocks?: bigint
 }
 
 export const ReclaimState: MessageType<ReclaimState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.s3.ReclaimState',
-    fields: [
-      { no: 1, name: 'passed_at', kind: 'message', T: () => Timestamp },
-      { no: 2, name: 'dead_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 3,
-        name: 'dead_bytes_per_day',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 4, name: 'packs', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'blocks', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReclaimState>(
+    'block.store.s3.ReclaimState',
+    () => [
+      [1, 'passed_at', 11, 0, Timestamp.codec],
+      [2, 'dead_bytes', 4],
+      [3, 'dead_bytes_per_day', 4],
+      [4, 'packs', 4],
+      [5, 'blocks', 4],
+    ],
+  )
 
 /**
  * Pricing is the price list of an S3-compatible service in dollars. Storage
@@ -377,54 +301,32 @@ export const ReclaimState: MessageType<ReclaimState> =
 export interface Pricing {
   /**
    * StorageGbMonth is the price of storing one GiB for one month.
-   *
-   * @generated from field: double storage_gb_month = 1;
    */
   storageGbMonth?: number
   /**
    * EgressGb is the price of reading one GiB out of the service.
-   *
-   * @generated from field: double egress_gb = 2;
    */
   egressGb?: number
   /**
    * ClassAPerMillion is the price of one million PUT or LIST requests.
-   *
-   * @generated from field: double class_a_per_million = 3;
    */
   classAPerMillion?: number
   /**
    * ClassBPerMillion is the price of one million GET requests.
-   *
-   * @generated from field: double class_b_per_million = 4;
    */
   classBPerMillion?: number
   /**
    * MinStorageDays is the storage duration billed for an object deleted
    * sooner.
-   *
-   * @generated from field: uint32 min_storage_days = 5;
    */
   minStorageDays?: number
 }
 
-export const Pricing: MessageType<Pricing> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.s3.Pricing',
-  fields: [
-    { no: 1, name: 'storage_gb_month', kind: 'scalar', T: ScalarType.DOUBLE },
-    { no: 2, name: 'egress_gb', kind: 'scalar', T: ScalarType.DOUBLE },
-    {
-      no: 3,
-      name: 'class_a_per_million',
-      kind: 'scalar',
-      T: ScalarType.DOUBLE,
-    },
-    {
-      no: 4,
-      name: 'class_b_per_million',
-      kind: 'scalar',
-      T: ScalarType.DOUBLE,
-    },
-    { no: 5, name: 'min_storage_days', kind: 'scalar', T: ScalarType.UINT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Pricing: MessageType<Pricing> =
+  /* @__PURE__ */ createMessageType<Pricing>('block.store.s3.Pricing', () => [
+    [1, 'storage_gb_month', 1],
+    [2, 'egress_gb', 1],
+    [3, 'class_a_per_million', 1],
+    [4, 'class_b_per_million', 1],
+    [5, 'min_storage_days', 13],
+  ])

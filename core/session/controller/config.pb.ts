@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the session storage controller.
@@ -17,36 +15,23 @@ export interface Config {
    * SessionControllerId is the id for the session controller.
    * Resolves LookupSessionController directives.
    * Can be empty.
-   *
-   * @generated from field: string session_controller_id = 1;
    */
   sessionControllerId?: string
   /**
    * VolumeId is the volume id to store data.
    * If empty, defaults to the plugin host volume.
-   *
-   * @generated from field: string volume_id = 2;
    */
   volumeId?: string
   /**
    * ObjectStoreId is the object store id to store the session list.
    * If empty, defaults to sessions/list.
-   *
-   * @generated from field: string object_store_id = 3;
    */
   objectStoreId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'session.controller.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'session_controller_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 2, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('session.controller.Config', () => [
+    [1, 'session_controller_id', 9],
+    [2, 'volume_id', 9],
+    [3, 'object_store_id', 9],
+  ])

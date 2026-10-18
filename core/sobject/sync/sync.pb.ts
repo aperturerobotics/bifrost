@@ -2,292 +2,10 @@
 // @generated from file github.com/s4wave/spacewave/core/sobject/sync/sync.proto (package sobject.sync, syntax proto3)
 /* eslint-disable */
 
+import { Signature } from '../../../net/peer/peer.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { SOConfigChange } from '../sobject.pb.js'
-import { Signature } from '../../../net/peer/peer.pb.js'
-
-/**
- * SOSyncSnapshot is a full SOState snapshot exchanged after mutual
- * authentication. The receiver merges its checkpoint, key epochs and
- * operations into the state it holds.
- *
- * @generated from message sobject.sync.SOSyncSnapshot
- */
-export interface SOSyncSnapshot {
-  /**
-   * SoState is the full SOState proto bytes (MarshalVT).
-   *
-   * @generated from field: bytes so_state = 1;
-   */
-  soState?: Uint8Array
-  /**
-   * Revision binds this snapshot to the requested, pinned advertisement.
-   *
-   * @generated from field: uint64 revision = 2;
-   */
-  revision?: bigint
-  /**
-   * BaseHash is the trusted checkpoint named by the request.
-   *
-   * @generated from field: bytes base_hash = 3;
-   */
-  baseHash?: Uint8Array
-}
-
-export const SOSyncSnapshot: MessageType<SOSyncSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncSnapshot',
-    fields: [
-      { no: 1, name: 'so_state', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'base_hash', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOSyncAck releases a pinned advertisement.
- *
- * @generated from message sobject.sync.SOSyncAck
- */
-export interface SOSyncAck {
-  /**
-   * Revision releases the sender's pinned advertisement after receipt or decline.
-   *
-   * @generated from field: uint64 revision = 1;
-   */
-  revision?: bigint
-}
-
-export const SOSyncAck: MessageType<SOSyncAck> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncAck',
-    fields: [
-      { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOSyncChallenge provides fresh entropy for one stream authentication.
- *
- * @generated from message sobject.sync.SOSyncChallenge
- */
-export interface SOSyncChallenge {
-  /**
-   * Nonce is exactly 32 random bytes, newly generated for this stream.
-   *
-   * @generated from field: bytes nonce = 1;
-   */
-  nonce?: Uint8Array
-}
-
-export const SOSyncChallenge: MessageType<SOSyncChallenge> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncChallenge',
-    fields: [
-      { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOSyncAuthorization reports the receiver's current admission decision.
- *
- * @generated from message sobject.sync.SOSyncAuthorization
- */
-export interface SOSyncAuthorization {
-  /**
-   * Accepted permits this authenticated participant to proceed to data exchange.
-   *
-   * @generated from field: bool accepted = 1;
-   */
-  accepted?: boolean
-}
-
-export const SOSyncAuthorization: MessageType<SOSyncAuthorization> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncAuthorization',
-    fields: [
-      { no: 1, name: 'accepted', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOSyncHead remains pinned until its revision is acknowledged.
- *
- * @generated from message sobject.sync.SOSyncHead
- */
-export interface SOSyncHead {
-  /**
-   * Revision increases for each advertised state on this stream.
-   *
-   * @generated from field: uint64 revision = 1;
-   */
-  revision?: bigint
-  /**
-   * ConfigHash identifies the advertised configuration head.
-   *
-   * @generated from field: bytes config_hash = 2;
-   */
-  configHash?: Uint8Array
-  /**
-   * ConfigSeqno is the configuration-chain sequence at ConfigHash.
-   *
-   * @generated from field: uint64 config_seqno = 3;
-   */
-  configSeqno?: bigint
-  /**
-   * StateHash is SHA-256 of the serialized transferable snapshot; it grants no authority.
-   *
-   * @generated from field: bytes state_hash = 4;
-   */
-  stateHash?: Uint8Array
-}
-
-export const SOSyncHead: MessageType<SOSyncHead> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncHead',
-    fields: [
-      { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'config_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'config_seqno', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'state_hash', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOSyncHistoryRequest requests one complete candidate rooted in held trust.
- *
- * @generated from message sobject.sync.SOSyncHistoryRequest
- */
-export interface SOSyncHistoryRequest {
-  /**
-   * Revision identifies the peer's pinned advertisement.
-   *
-   * @generated from field: uint64 revision = 1;
-   */
-  revision?: bigint
-  /**
-   * BaseHash identifies the receiver's exact trusted checkpoint.
-   *
-   * @generated from field: bytes base_hash = 2;
-   */
-  baseHash?: Uint8Array
-  /**
-   * FloorSeqno is the config sequence of the receiver's held checkpoint. A
-   * sender that does not hold base_hash sends its branch above it instead.
-   *
-   * @generated from field: uint64 floor_seqno = 3;
-   */
-  floorSeqno?: bigint
-}
-
-export const SOSyncHistoryRequest: MessageType<SOSyncHistoryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncHistoryRequest',
-    fields: [
-      { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'base_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'floor_seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOSyncHistoryPage advances the request's cursor without adopting any state.
- *
- * @generated from message sobject.sync.SOSyncHistoryPage
- */
-export interface SOSyncHistoryPage {
-  /**
-   * Revision identifies the pinned target advertisement.
-   *
-   * @generated from field: uint64 revision = 1;
-   */
-  revision?: bigint
-  /**
-   * Cursor is the hash immediately before this page's first entry.
-   *
-   * @generated from field: bytes cursor = 2;
-   */
-  cursor?: Uint8Array
-  /**
-   * Changes are contiguous, oldest-first signed transitions.
-   *
-   * @generated from field: repeated sobject.SOConfigChange changes = 3;
-   */
-  changes?: SOConfigChange[]
-}
-
-export const SOSyncHistoryPage: MessageType<SOSyncHistoryPage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncHistoryPage',
-    fields: [
-      { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'cursor', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 3,
-        name: 'changes',
-        kind: 'message',
-        T: () => SOConfigChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOSyncRecoveryRequired ends catch-up without changing receiver-held state.
- *
- * @generated from message sobject.sync.SOSyncRecoveryRequired
- */
-export interface SOSyncRecoveryRequired {
-  /**
-   * Revision identifies the advertisement whose history could not be supplied.
-   *
-   * @generated from field: uint64 revision = 1;
-   */
-  revision?: bigint
-}
-
-export const SOSyncRecoveryRequired: MessageType<SOSyncRecoveryRequired> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncRecoveryRequired',
-    fields: [
-      { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOSyncBranch precedes the history pages when the sender does not hold the
- * requested base, so the two config chains diverged. The pages start after
- * cursor, the sender's record at the requested floor, and the receiver merges
- * the branches.
- *
- * @generated from message sobject.sync.SOSyncBranch
- */
-export interface SOSyncBranch {
-  /**
-   * Revision identifies the pinned target advertisement.
-   *
-   * @generated from field: uint64 revision = 1;
-   */
-  revision?: bigint
-  /**
-   * Cursor is the hash immediately before the first page's first entry.
-   *
-   * @generated from field: bytes cursor = 2;
-   */
-  cursor?: Uint8Array
-}
-
-export const SOSyncBranch: MessageType<SOSyncBranch> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncBranch',
-    fields: [
-      { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'cursor', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * SOSyncMessage is the bidirectional message on the solicit stream.
@@ -301,166 +19,120 @@ export interface SOSyncMessage {
    * @generated from oneof sobject.sync.SOSyncMessage.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Snapshot is a full SOState snapshot exchanged after mutual authentication.
-         *
-         * @generated from field: sobject.sync.SOSyncSnapshot snapshot = 1;
-         */
-        value: SOSyncSnapshot
-        case: 'snapshot'
-      }
-    | {
-        /**
-         * Ack releases a pinned advertisement.
-         *
-         * @generated from field: sobject.sync.SOSyncAck ack = 3;
-         */
-        value: SOSyncAck
-        case: 'ack'
-      }
-    | {
-        /**
-         * Challenge begins authentication without disclosing object state.
-         *
-         * @generated from field: sobject.sync.SOSyncChallenge challenge = 4;
-         */
-        value: SOSyncChallenge
-        case: 'challenge'
-      }
-    | {
-        /**
-         * Proof binds the participant signing key to this transport exchange.
-         *
-         * @generated from field: peer.Signature proof = 5;
-         */
-        value: Signature
-        case: 'proof'
-      }
-    | {
-        /**
-         * Authorization reports acceptance without revealing configuration data.
-         *
-         * @generated from field: sobject.sync.SOSyncAuthorization authorization = 6;
-         */
-        value: SOSyncAuthorization
-        case: 'authorization'
-      }
-    | {
-        /**
-         * Head advertises a pinned state after authentication.
-         *
-         * @generated from field: sobject.sync.SOSyncHead head = 7;
-         */
-        value: SOSyncHead
-        case: 'head'
-      }
-    | {
-        /**
-         * HistoryRequest asks for a suffix from the receiver's held checkpoint.
-         *
-         * @generated from field: sobject.sync.SOSyncHistoryRequest history_request = 8;
-         */
-        value: SOSyncHistoryRequest
-        case: 'historyRequest'
-      }
-    | {
-        /**
-         * HistoryPage carries one bounded contiguous suffix page.
-         *
-         * @generated from field: sobject.sync.SOSyncHistoryPage history_page = 9;
-         */
-        value: SOSyncHistoryPage
-        case: 'historyPage'
-      }
-    | {
-        /**
-         * RecoveryRequired reports that trusted recovery must replace this exchange.
-         *
-         * @generated from field: sobject.sync.SOSyncRecoveryRequired recovery_required = 10;
-         */
-        value: SOSyncRecoveryRequired
-        case: 'recoveryRequired'
-      }
-    | {
-        /**
-         * Branch reports that history pages start after an earlier common head.
-         *
-         * @generated from field: sobject.sync.SOSyncBranch branch = 11;
-         */
-        value: SOSyncBranch
-        case: 'branch'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: SOSyncSnapshot; case: 'snapshot' }
+    | { value: SOSyncAck; case: 'ack' }
+    | { value: SOSyncChallenge; case: 'challenge' }
+    | { value: Signature; case: 'proof' }
+    | { value: SOSyncAuthorization; case: 'authorization' }
+    | { value: SOSyncHead; case: 'head' }
+    | { value: SOSyncHistoryRequest; case: 'historyRequest' }
+    | { value: SOSyncHistoryPage; case: 'historyPage' }
+    | { value: SOSyncRecoveryRequired; case: 'recoveryRequired' }
+    | { value: SOSyncBranch; case: 'branch' }
 }
 
 export const SOSyncMessage: MessageType<SOSyncMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncMessage',
-    fields: [
-      {
-        no: 1,
-        name: 'snapshot',
-        kind: 'message',
-        T: SOSyncSnapshot,
-        oneof: 'body',
-      },
-      { no: 3, name: 'ack', kind: 'message', T: SOSyncAck, oneof: 'body' },
-      {
-        no: 4,
-        name: 'challenge',
-        kind: 'message',
-        T: SOSyncChallenge,
-        oneof: 'body',
-      },
-      {
-        no: 5,
-        name: 'proof',
-        kind: 'message',
-        T: () => Signature,
-        oneof: 'body',
-      },
-      {
-        no: 6,
-        name: 'authorization',
-        kind: 'message',
-        T: SOSyncAuthorization,
-        oneof: 'body',
-      },
-      { no: 7, name: 'head', kind: 'message', T: SOSyncHead, oneof: 'body' },
-      {
-        no: 8,
-        name: 'history_request',
-        kind: 'message',
-        T: SOSyncHistoryRequest,
-        oneof: 'body',
-      },
-      {
-        no: 9,
-        name: 'history_page',
-        kind: 'message',
-        T: SOSyncHistoryPage,
-        oneof: 'body',
-      },
-      {
-        no: 10,
-        name: 'recovery_required',
-        kind: 'message',
-        T: SOSyncRecoveryRequired,
-        oneof: 'body',
-      },
-      {
-        no: 11,
-        name: 'branch',
-        kind: 'message',
-        T: SOSyncBranch,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOSyncMessage>(
+    'sobject.sync.SOSyncMessage',
+    () => [
+      [1, 'snapshot', 11, 0, SOSyncSnapshot.codec, 'body'],
+      [3, 'ack', 11, 0, SOSyncAck.codec, 'body'],
+      [4, 'challenge', 11, 0, SOSyncChallenge.codec, 'body'],
+      [5, 'proof', 11, 0, Signature.codec, 'body'],
+      [6, 'authorization', 11, 0, SOSyncAuthorization.codec, 'body'],
+      [7, 'head', 11, 0, SOSyncHead.codec, 'body'],
+      [8, 'history_request', 11, 0, SOSyncHistoryRequest.codec, 'body'],
+      [9, 'history_page', 11, 0, SOSyncHistoryPage.codec, 'body'],
+      [10, 'recovery_required', 11, 0, SOSyncRecoveryRequired.codec, 'body'],
+      [11, 'branch', 11, 0, SOSyncBranch.codec, 'body'],
+    ],
+  )
+
+/**
+ * SOSyncSnapshot is a full SOState snapshot exchanged after mutual
+ * authentication. The receiver merges its checkpoint, key epochs and
+ * operations into the state it holds.
+ *
+ * @generated from message sobject.sync.SOSyncSnapshot
+ */
+export interface SOSyncSnapshot {
+  /**
+   * SoState is the full SOState proto bytes (MarshalVT).
+   */
+  soState?: Uint8Array
+  /**
+   * Revision binds this snapshot to the requested, pinned advertisement.
+   */
+  revision?: bigint
+  /**
+   * BaseHash is the trusted checkpoint named by the request.
+   */
+  baseHash?: Uint8Array
+}
+
+export const SOSyncSnapshot: MessageType<SOSyncSnapshot> =
+  /* @__PURE__ */ createMessageType<SOSyncSnapshot>(
+    'sobject.sync.SOSyncSnapshot',
+    () => [
+      [1, 'so_state', 12],
+      [2, 'revision', 4],
+      [3, 'base_hash', 12],
+    ],
+  )
+
+/**
+ * SOSyncAck releases a pinned advertisement.
+ *
+ * @generated from message sobject.sync.SOSyncAck
+ */
+export interface SOSyncAck {
+  /**
+   * Revision releases the sender's pinned advertisement after receipt or decline.
+   */
+  revision?: bigint
+}
+
+export const SOSyncAck: MessageType<SOSyncAck> =
+  /* @__PURE__ */ createMessageType<SOSyncAck>('sobject.sync.SOSyncAck', () => [
+    [1, 'revision', 4],
+  ])
+
+/**
+ * SOSyncChallenge provides fresh entropy for one stream authentication.
+ *
+ * @generated from message sobject.sync.SOSyncChallenge
+ */
+export interface SOSyncChallenge {
+  /**
+   * Nonce is exactly 32 random bytes, newly generated for this stream.
+   */
+  nonce?: Uint8Array
+}
+
+export const SOSyncChallenge: MessageType<SOSyncChallenge> =
+  /* @__PURE__ */ createMessageType<SOSyncChallenge>(
+    'sobject.sync.SOSyncChallenge',
+    () => [[1, 'nonce', 12]],
+  )
+
+/**
+ * SOSyncAuthorization reports the receiver's current admission decision.
+ *
+ * @generated from message sobject.sync.SOSyncAuthorization
+ */
+export interface SOSyncAuthorization {
+  /**
+   * Accepted permits this authenticated participant to proceed to data exchange.
+   */
+  accepted?: boolean
+}
+
+export const SOSyncAuthorization: MessageType<SOSyncAuthorization> =
+  /* @__PURE__ */ createMessageType<SOSyncAuthorization>(
+    'sobject.sync.SOSyncAuthorization',
+    () => [[1, 'accepted', 8]],
+  )
 
 /**
  * SOSyncAuthTranscript is the canonical signed binding for one direction.
@@ -470,49 +142,176 @@ export const SOSyncMessage: MessageType<SOSyncMessage> =
 export interface SOSyncAuthTranscript {
   /**
    * SharedObjectId binds the proof to one object.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * SenderTransport is the authenticated transport identity producing the proof.
-   *
-   * @generated from field: bytes sender_transport = 2;
    */
   senderTransport?: Uint8Array
   /**
    * ReceiverTransport is the authenticated transport identity receiving the proof.
-   *
-   * @generated from field: bytes receiver_transport = 3;
    */
   receiverTransport?: Uint8Array
   /**
    * SenderNonce is the challenge produced by the signing endpoint.
-   *
-   * @generated from field: bytes sender_nonce = 4;
    */
   senderNonce?: Uint8Array
   /**
    * ReceiverNonce is the challenge produced by the verifying endpoint.
-   *
-   * @generated from field: bytes receiver_nonce = 5;
    */
   receiverNonce?: Uint8Array
 }
 
 export const SOSyncAuthTranscript: MessageType<SOSyncAuthTranscript> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.sync.SOSyncAuthTranscript',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'sender_transport', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 3,
-        name: 'receiver_transport',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-      { no: 4, name: 'sender_nonce', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 5, name: 'receiver_nonce', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOSyncAuthTranscript>(
+    'sobject.sync.SOSyncAuthTranscript',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'sender_transport', 12],
+      [3, 'receiver_transport', 12],
+      [4, 'sender_nonce', 12],
+      [5, 'receiver_nonce', 12],
+    ],
+  )
+
+/**
+ * SOSyncHead remains pinned until its revision is acknowledged.
+ *
+ * @generated from message sobject.sync.SOSyncHead
+ */
+export interface SOSyncHead {
+  /**
+   * Revision increases for each advertised state on this stream.
+   */
+  revision?: bigint
+  /**
+   * ConfigHash identifies the advertised configuration head.
+   */
+  configHash?: Uint8Array
+  /**
+   * ConfigSeqno is the configuration-chain sequence at ConfigHash.
+   */
+  configSeqno?: bigint
+  /**
+   * StateHash is SHA-256 of the serialized transferable snapshot; it grants no authority.
+   */
+  stateHash?: Uint8Array
+}
+
+export const SOSyncHead: MessageType<SOSyncHead> =
+  /* @__PURE__ */ createMessageType<SOSyncHead>(
+    'sobject.sync.SOSyncHead',
+    () => [
+      [1, 'revision', 4],
+      [2, 'config_hash', 12],
+      [3, 'config_seqno', 4],
+      [4, 'state_hash', 12],
+    ],
+  )
+
+/**
+ * SOSyncHistoryRequest requests one complete candidate rooted in held trust.
+ *
+ * @generated from message sobject.sync.SOSyncHistoryRequest
+ */
+export interface SOSyncHistoryRequest {
+  /**
+   * Revision identifies the peer's pinned advertisement.
+   */
+  revision?: bigint
+  /**
+   * BaseHash identifies the receiver's exact trusted checkpoint.
+   */
+  baseHash?: Uint8Array
+  /**
+   * FloorSeqno is the config sequence of the receiver's held checkpoint. A
+   * sender that does not hold base_hash sends its branch above it instead.
+   */
+  floorSeqno?: bigint
+}
+
+export const SOSyncHistoryRequest: MessageType<SOSyncHistoryRequest> =
+  /* @__PURE__ */ createMessageType<SOSyncHistoryRequest>(
+    'sobject.sync.SOSyncHistoryRequest',
+    () => [
+      [1, 'revision', 4],
+      [2, 'base_hash', 12],
+      [3, 'floor_seqno', 4],
+    ],
+  )
+
+/**
+ * SOSyncBranch precedes the history pages when the sender does not hold the
+ * requested base, so the two config chains diverged. The pages start after
+ * cursor, the sender's record at the requested floor, and the receiver merges
+ * the branches.
+ *
+ * @generated from message sobject.sync.SOSyncBranch
+ */
+export interface SOSyncBranch {
+  /**
+   * Revision identifies the pinned target advertisement.
+   */
+  revision?: bigint
+  /**
+   * Cursor is the hash immediately before the first page's first entry.
+   */
+  cursor?: Uint8Array
+}
+
+export const SOSyncBranch: MessageType<SOSyncBranch> =
+  /* @__PURE__ */ createMessageType<SOSyncBranch>(
+    'sobject.sync.SOSyncBranch',
+    () => [
+      [1, 'revision', 4],
+      [2, 'cursor', 12],
+    ],
+  )
+
+/**
+ * SOSyncHistoryPage advances the request's cursor without adopting any state.
+ *
+ * @generated from message sobject.sync.SOSyncHistoryPage
+ */
+export interface SOSyncHistoryPage {
+  /**
+   * Revision identifies the pinned target advertisement.
+   */
+  revision?: bigint
+  /**
+   * Cursor is the hash immediately before this page's first entry.
+   */
+  cursor?: Uint8Array
+  /**
+   * Changes are contiguous, oldest-first signed transitions.
+   */
+  changes?: SOConfigChange[]
+}
+
+export const SOSyncHistoryPage: MessageType<SOSyncHistoryPage> =
+  /* @__PURE__ */ createMessageType<SOSyncHistoryPage>(
+    'sobject.sync.SOSyncHistoryPage',
+    () => [
+      [1, 'revision', 4],
+      [2, 'cursor', 12],
+      [3, 'changes', 11, 1, SOConfigChange.codec],
+    ],
+  )
+
+/**
+ * SOSyncRecoveryRequired ends catch-up without changing receiver-held state.
+ *
+ * @generated from message sobject.sync.SOSyncRecoveryRequired
+ */
+export interface SOSyncRecoveryRequired {
+  /**
+   * Revision identifies the advertisement whose history could not be supplied.
+   */
+  revision?: bigint
+}
+
+export const SOSyncRecoveryRequired: MessageType<SOSyncRecoveryRequired> =
+  /* @__PURE__ */ createMessageType<SOSyncRecoveryRequired>(
+    'sobject.sync.SOSyncRecoveryRequired',
+    () => [[1, 'revision', 4]],
+  )

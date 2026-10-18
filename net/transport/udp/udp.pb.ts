@@ -6,8 +6,6 @@ import { Opts } from '../common/pconn/pconn.pb.js'
 import { DialerOpts } from '../common/dialer/dialer.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the configuration for the udp transport.
@@ -18,50 +16,32 @@ export interface Config {
   /**
    * TransportPeerID sets the peer ID to attach the transport to.
    * If unset, attaches to any running peer with a private key.
-   *
-   * @generated from field: string transport_peer_id = 1;
    */
   transportPeerId?: string
   /**
    * ListenAddr contains the address to listen on.
    * Has no effect in the browser.
-   *
-   * @generated from field: string listen_addr = 2;
    */
   listenAddr?: string
   /**
    * PacketOpts are options to set on the packet connection.
-   *
-   * @generated from field: pconn.Opts packet_opts = 4;
    */
   packetOpts?: Opts
   /**
    * Dialers maps peer IDs to dialers.
-   *
-   * @generated from field: map<string, dialer.DialerOpts> dialers = 5;
    */
   dialers?: { [key: string]: DialerOpts }
   /**
    * Verbose enables verbose logging.
-   *
-   * @generated from field: bool verbose = 6;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'udp.Config',
-  fields: [
-    { no: 1, name: 'transport_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'listen_addr', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'packet_opts', kind: 'message', T: () => Opts },
-    {
-      no: 5,
-      name: 'dialers',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => DialerOpts },
-    },
-    { no: 6, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('udp.Config', () => [
+    [1, 'transport_peer_id', 9],
+    [2, 'listen_addr', 9],
+    [4, 'packet_opts', 11, 0, Opts.codec],
+    [5, 'dialers', 11, 584, DialerOpts.codec],
+    [6, 'verbose', 8],
+  ])

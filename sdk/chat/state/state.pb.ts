@@ -4,38 +4,7 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * ChatThreadReadPosition is a person's monotonic position within one timeline.
- *
- * @generated from message spacewave.chat.ChatThreadReadPosition
- */
-export interface ChatThreadReadPosition {
-  /**
-   * NextIndex is the first unread channel message index within the timeline.
-   *
-   * @generated from field: uint64 next_index = 1;
-   */
-  nextIndex?: bigint
-  /**
-   * UpdatedAt records when this position last advanced.
-   *
-   * @generated from field: google.protobuf.Timestamp updated_at = 2;
-   */
-  updatedAt?: Date
-}
-
-export const ChatThreadReadPosition: MessageType<ChatThreadReadPosition> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatThreadReadPosition',
-    fields: [
-      { no: 1, name: 'next_index', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'updated_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * ChatReadPosition is a person's monotonic position in a channel's retained history.
@@ -45,14 +14,10 @@ export const ChatThreadReadPosition: MessageType<ChatThreadReadPosition> =
 export interface ChatReadPosition {
   /**
    * NextIndex is the first unread message index; zero means nothing has been read.
-   *
-   * @generated from field: uint64 next_index = 1;
    */
   nextIndex?: bigint
   /**
    * UpdatedAt records when this position last advanced.
-   *
-   * @generated from field: google.protobuf.Timestamp updated_at = 2;
    */
   updatedAt?: Date
   /**
@@ -60,33 +25,48 @@ export interface ChatReadPosition {
    * root message key. The empty key is the main timeline: every message outside
    * a thread. Each advances independently of NextIndex, which covers every
    * timeline.
-   *
-   * @generated from field: map<string, spacewave.chat.ChatThreadReadPosition> thread_positions = 3;
    */
   threadPositions?: { [key: string]: ChatThreadReadPosition }
   /**
    * Author is the agent or tool that holds this position for its person, empty
    * when the person holds it. A person and each of its authors hold separate
    * positions, keyed by the person ID followed by "." and the author.
-   *
-   * @generated from field: string author = 4;
    */
   author?: string
 }
 
 export const ChatReadPosition: MessageType<ChatReadPosition> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatReadPosition',
-    fields: [
-      { no: 1, name: 'next_index', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'updated_at', kind: 'message', T: () => Timestamp },
-      {
-        no: 3,
-        name: 'thread_positions',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: ChatThreadReadPosition },
-      },
-      { no: 4, name: 'author', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatReadPosition>(
+    'spacewave.chat.ChatReadPosition',
+    () => [
+      [1, 'next_index', 4],
+      [2, 'updated_at', 11, 0, Timestamp.codec],
+      [3, 'thread_positions', 11, 584, ChatThreadReadPosition.codec],
+      [4, 'author', 9],
+    ],
+  )
+
+/**
+ * ChatThreadReadPosition is a person's monotonic position within one timeline.
+ *
+ * @generated from message spacewave.chat.ChatThreadReadPosition
+ */
+export interface ChatThreadReadPosition {
+  /**
+   * NextIndex is the first unread channel message index within the timeline.
+   */
+  nextIndex?: bigint
+  /**
+   * UpdatedAt records when this position last advanced.
+   */
+  updatedAt?: Date
+}
+
+export const ChatThreadReadPosition: MessageType<ChatThreadReadPosition> =
+  /* @__PURE__ */ createMessageType<ChatThreadReadPosition>(
+    'spacewave.chat.ChatThreadReadPosition',
+    () => [
+      [1, 'next_index', 4],
+      [2, 'updated_at', 11, 0, Timestamp.codec],
+    ],
+  )

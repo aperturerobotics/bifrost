@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ExternalLinks configures how external links are handled.
@@ -16,23 +14,21 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ExternalLinks {
   /**
    * EXTERNAL_LINKS_OS_BROWSER opens external links in the OS default browser.
-   *
-   * @generated from enum value: EXTERNAL_LINKS_OS_BROWSER = 0;
    */
   OS_BROWSER = 0,
 
   /**
    * EXTERNAL_LINKS_DENY denies all external link navigation.
-   *
-   * @generated from enum value: EXTERNAL_LINKS_DENY = 1;
    */
   DENY = 1,
 }
 
 export const ExternalLinks_Enum = /* @__PURE__ */ createEnumType(
   'electron.ExternalLinks',
-  ExternalLinks,
-  'EXTERNAL_LINKS_',
+  [
+    [0, 'EXTERNAL_LINKS_OS_BROWSER'],
+    [1, 'EXTERNAL_LINKS_DENY'],
+  ],
 )
 
 /**
@@ -43,30 +39,27 @@ export const ExternalLinks_Enum = /* @__PURE__ */ createEnumType(
 export enum QuitPolicy {
   /**
    * QUIT_POLICY_UNSPECIFIED lets the caller choose the runtime default.
-   *
-   * @generated from enum value: QUIT_POLICY_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * QUIT_POLICY_RESTART keeps the host restart-friendly after user quit.
-   *
-   * @generated from enum value: QUIT_POLICY_RESTART = 1;
    */
   RESTART = 1,
 
   /**
    * QUIT_POLICY_EXIT exits cleanly without restart after user quit.
-   *
-   * @generated from enum value: QUIT_POLICY_EXIT = 2;
    */
   EXIT = 2,
 }
 
 export const QuitPolicy_Enum = /* @__PURE__ */ createEnumType(
   'electron.QuitPolicy',
-  QuitPolicy,
-  'QUIT_POLICY_',
+  [
+    [0, 'QUIT_POLICY_UNSPECIFIED'],
+    [1, 'QUIT_POLICY_RESTART'],
+    [2, 'QUIT_POLICY_EXIT'],
+  ],
 )
 
 /**
@@ -78,95 +71,28 @@ export const QuitPolicy_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopPresencePolicy {
   /**
    * DESKTOP_PRESENCE_POLICY_UNSPECIFIED preserves the runtime default.
-   *
-   * @generated from enum value: DESKTOP_PRESENCE_POLICY_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_PRESENCE_POLICY_WINDOW_LIFETIME exits when the window lifetime ends.
-   *
-   * @generated from enum value: DESKTOP_PRESENCE_POLICY_WINDOW_LIFETIME = 1;
    */
   WINDOW_LIFETIME = 1,
 
   /**
    * DESKTOP_PRESENCE_POLICY_TRAY_BACKGROUND keeps a tray-backed runtime alive.
-   *
-   * @generated from enum value: DESKTOP_PRESENCE_POLICY_TRAY_BACKGROUND = 2;
    */
   TRAY_BACKGROUND = 2,
 }
 
 export const DesktopPresencePolicy_Enum = /* @__PURE__ */ createEnumType(
   'electron.DesktopPresencePolicy',
-  DesktopPresencePolicy,
-  'DESKTOP_PRESENCE_POLICY_',
+  [
+    [0, 'DESKTOP_PRESENCE_POLICY_UNSPECIFIED'],
+    [1, 'DESKTOP_PRESENCE_POLICY_WINDOW_LIFETIME'],
+    [2, 'DESKTOP_PRESENCE_POLICY_TRAY_BACKGROUND'],
+  ],
 )
-
-/**
- * ManagedCLIRelease identifies a release-selected managed CLI binary.
- *
- * @generated from message electron.ManagedCLIRelease
- */
-export interface ManagedCLIRelease {
-  /**
-   * BinaryPath is the local release binary path Electron main may copy.
-   *
-   * @generated from field: string binary_path = 1;
-   */
-  binaryPath?: string
-  /**
-   * ProjectId is the release project id.
-   *
-   * @generated from field: string project_id = 2;
-   */
-  projectId?: string
-  /**
-   * EntrypointRole must be cli.
-   *
-   * @generated from field: string entrypoint_role = 3;
-   */
-  entrypointRole?: string
-  /**
-   * ChannelKey is the selected release channel.
-   *
-   * @generated from field: string channel_key = 4;
-   */
-  channelKey?: string
-  /**
-   * ManifestId is the selected CLI Manifest id.
-   *
-   * @generated from field: string manifest_id = 5;
-   */
-  manifestId?: string
-  /**
-   * ManifestRev is the selected CLI Manifest revision.
-   *
-   * @generated from field: uint64 manifest_rev = 6;
-   */
-  manifestRev?: bigint
-  /**
-   * PlatformId is the selected native platform id.
-   *
-   * @generated from field: string platform_id = 7;
-   */
-  platformId?: string
-}
-
-export const ManagedCLIRelease: MessageType<ManagedCLIRelease> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.ManagedCLIRelease',
-    fields: [
-      { no: 1, name: 'binary_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'entrypoint_role', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'manifest_rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 7, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * ElectronInit is passed from Go to the Electron main process on startup.
@@ -176,111 +102,122 @@ export const ManagedCLIRelease: MessageType<ManagedCLIRelease> =
 export interface ElectronInit {
   /**
    * ExternalLinks configures how external links are handled.
-   *
-   * @generated from field: electron.ExternalLinks external_links = 1;
    */
   externalLinks?: ExternalLinks
   /**
    * AppName is the application display name.
-   *
-   * @generated from field: string app_name = 2;
    */
   appName?: string
   /**
    * WindowTitle overrides the window title (defaults to app_name).
-   *
-   * @generated from field: string window_title = 3;
    */
   windowTitle?: string
   /**
    * WindowWidth is the default window width in pixels (default: 900).
-   *
-   * @generated from field: uint32 window_width = 4;
    */
   windowWidth?: number
   /**
    * WindowHeight is the default window height in pixels (default: 680).
-   *
-   * @generated from field: uint32 window_height = 5;
    */
   windowHeight?: number
   /**
    * DevTools enables DevTools on window creation (default: false).
-   *
-   * @generated from field: bool dev_tools = 6;
    */
   devTools?: boolean
   /**
    * ThemeSource sets native theme ("dark", "light", "system").
-   *
-   * @generated from field: string theme_source = 7;
    */
   themeSource?: string
   /**
    * QuitPolicy configures whether user quit should restart or exit.
-   *
-   * @generated from field: electron.QuitPolicy quit_policy = 8;
    */
   quitPolicy?: QuitPolicy
   /**
    * DesktopPresencePolicy configures last-window-close desktop presence.
-   *
-   * @generated from field: electron.DesktopPresencePolicy desktop_presence_policy = 9;
    */
   desktopPresencePolicy?: DesktopPresencePolicy
   /**
    * TrayIconPath is the path to the tray icon.
-   *
-   * @generated from field: string tray_icon_path = 10;
    */
   trayIconPath?: string
   /**
    * MacosTemplateTrayIconPath is the path to the macOS template tray icon.
-   *
-   * @generated from field: string macos_template_tray_icon_path = 11;
    */
   macosTemplateTrayIconPath?: string
   /**
    * ManagedCliRelease identifies the release-selected CLI source for desktop-managed installs.
-   *
-   * @generated from field: electron.ManagedCLIRelease managed_cli_release = 12;
    */
   managedCliRelease?: ManagedCLIRelease
 }
 
 export const ElectronInit: MessageType<ElectronInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.ElectronInit',
-    fields: [
-      { no: 1, name: 'external_links', kind: 'enum', T: ExternalLinks_Enum },
-      { no: 2, name: 'app_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'window_title', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'window_width', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'window_height', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 6, name: 'dev_tools', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'theme_source', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'quit_policy', kind: 'enum', T: QuitPolicy_Enum },
-      {
-        no: 9,
-        name: 'desktop_presence_policy',
-        kind: 'enum',
-        T: DesktopPresencePolicy_Enum,
-      },
-      { no: 10, name: 'tray_icon_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 11,
-        name: 'macos_template_tray_icon_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 12,
-        name: 'managed_cli_release',
-        kind: 'message',
-        T: ManagedCLIRelease,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ElectronInit>(
+    'electron.ElectronInit',
+    () => [
+      [1, 'external_links', 14, 0, ExternalLinks_Enum],
+      [2, 'app_name', 9],
+      [3, 'window_title', 9],
+      [4, 'window_width', 13],
+      [5, 'window_height', 13],
+      [6, 'dev_tools', 8],
+      [7, 'theme_source', 9],
+      [8, 'quit_policy', 14, 0, QuitPolicy_Enum],
+      [9, 'desktop_presence_policy', 14, 0, DesktopPresencePolicy_Enum],
+      [10, 'tray_icon_path', 9],
+      [11, 'macos_template_tray_icon_path', 9],
+      [12, 'managed_cli_release', 11, 0, ManagedCLIRelease.codec],
+    ],
+  )
+
+/**
+ * ManagedCLIRelease identifies a release-selected managed CLI binary.
+ *
+ * @generated from message electron.ManagedCLIRelease
+ */
+export interface ManagedCLIRelease {
+  /**
+   * BinaryPath is the local release binary path Electron main may copy.
+   */
+  binaryPath?: string
+  /**
+   * ProjectId is the release project id.
+   */
+  projectId?: string
+  /**
+   * EntrypointRole must be cli.
+   */
+  entrypointRole?: string
+  /**
+   * ChannelKey is the selected release channel.
+   */
+  channelKey?: string
+  /**
+   * ManifestId is the selected CLI Manifest id.
+   */
+  manifestId?: string
+  /**
+   * ManifestRev is the selected CLI Manifest revision.
+   */
+  manifestRev?: bigint
+  /**
+   * PlatformId is the selected native platform id.
+   */
+  platformId?: string
+}
+
+export const ManagedCLIRelease: MessageType<ManagedCLIRelease> =
+  /* @__PURE__ */ createMessageType<ManagedCLIRelease>(
+    'electron.ManagedCLIRelease',
+    () => [
+      [1, 'binary_path', 9],
+      [2, 'project_id', 9],
+      [3, 'entrypoint_role', 9],
+      [4, 'channel_key', 9],
+      [5, 'manifest_id', 9],
+      [6, 'manifest_rev', 4],
+      [7, 'platform_id', 9],
+    ],
+  )
 
 /**
  * Config is the configuration for the electron runtime.
@@ -290,15 +227,11 @@ export const ElectronInit: MessageType<ElectronInit> =
 export interface Config {
   /**
    * ElectronPath is the path to the electron binary.
-   *
-   * @generated from field: string electron_path = 1;
    */
   electronPath?: string
   /**
    * WorkdirPath is the path to the working directory to use.
    * If unset, defaults to the current working directory of the process.
-   *
-   * @generated from field: string workdir_path = 5;
    */
   workdirPath?: string
   /**
@@ -306,138 +239,85 @@ export interface Config {
    * Must be one of the accepted Electron path types.
    * Ex: http://, file://, path to directory, path to index.js
    * Relative paths must be relative to workdir_path.
-   *
-   * @generated from field: string renderer_path = 2;
    */
   rendererPath?: string
   /**
    * WebRuntimeId is the value to use for the runtime uuid.
    * Used for the Unix pipe paths and for the BroadcastChannel ids.
    * Should be unique against other running Electron instances.
-   *
-   * @generated from field: string web_runtime_id = 3;
    */
   webRuntimeId?: string
   /**
    * ElectronFlags are additional flags to pass to electron.
-   *
-   * @generated from field: repeated string electron_flags = 4;
    */
   electronFlags?: string[]
   /**
    * ExternalLinks configures how external links are handled.
-   *
-   * @generated from field: electron.ExternalLinks external_links = 6;
    */
   externalLinks?: ExternalLinks
   /**
    * AppName is the application display name.
-   *
-   * @generated from field: string app_name = 7;
    */
   appName?: string
   /**
    * WindowTitle overrides the window title (defaults to app_name).
-   *
-   * @generated from field: string window_title = 8;
    */
   windowTitle?: string
   /**
    * WindowWidth is the default window width in pixels.
-   *
-   * @generated from field: uint32 window_width = 9;
    */
   windowWidth?: number
   /**
    * WindowHeight is the default window height in pixels.
-   *
-   * @generated from field: uint32 window_height = 10;
    */
   windowHeight?: number
   /**
    * DevTools enables DevTools on window creation.
-   *
-   * @generated from field: bool dev_tools = 11;
    */
   devTools?: boolean
   /**
    * ThemeSource sets native theme ("dark", "light", "system").
-   *
-   * @generated from field: string theme_source = 12;
    */
   themeSource?: string
   /**
    * QuitPolicy configures whether user quit should restart or exit.
-   *
-   * @generated from field: electron.QuitPolicy quit_policy = 13;
    */
   quitPolicy?: QuitPolicy
   /**
    * DesktopPresencePolicy configures last-window-close desktop presence.
-   *
-   * @generated from field: electron.DesktopPresencePolicy desktop_presence_policy = 14;
    */
   desktopPresencePolicy?: DesktopPresencePolicy
   /**
    * TrayIconPath is the path to the tray icon.
-   *
-   * @generated from field: string tray_icon_path = 15;
    */
   trayIconPath?: string
   /**
    * MacosTemplateTrayIconPath is the path to the macOS template tray icon.
-   *
-   * @generated from field: string macos_template_tray_icon_path = 16;
    */
   macosTemplateTrayIconPath?: string
   /**
    * ManagedCliRelease identifies the release-selected CLI source for desktop-managed installs.
-   *
-   * @generated from field: electron.ManagedCLIRelease managed_cli_release = 17;
    */
   managedCliRelease?: ManagedCLIRelease
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'electron.Config',
-  fields: [
-    { no: 1, name: 'electron_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'workdir_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'renderer_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'web_runtime_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 4,
-      name: 'electron_flags',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 6, name: 'external_links', kind: 'enum', T: ExternalLinks_Enum },
-    { no: 7, name: 'app_name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 8, name: 'window_title', kind: 'scalar', T: ScalarType.STRING },
-    { no: 9, name: 'window_width', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 10, name: 'window_height', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 11, name: 'dev_tools', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 12, name: 'theme_source', kind: 'scalar', T: ScalarType.STRING },
-    { no: 13, name: 'quit_policy', kind: 'enum', T: QuitPolicy_Enum },
-    {
-      no: 14,
-      name: 'desktop_presence_policy',
-      kind: 'enum',
-      T: DesktopPresencePolicy_Enum,
-    },
-    { no: 15, name: 'tray_icon_path', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 16,
-      name: 'macos_template_tray_icon_path',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 17,
-      name: 'managed_cli_release',
-      kind: 'message',
-      T: ManagedCLIRelease,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('electron.Config', () => [
+    [1, 'electron_path', 9],
+    [2, 'renderer_path', 9],
+    [3, 'web_runtime_id', 9],
+    [4, 'electron_flags', 9, 1],
+    [5, 'workdir_path', 9],
+    [6, 'external_links', 14, 0, ExternalLinks_Enum],
+    [7, 'app_name', 9],
+    [8, 'window_title', 9],
+    [9, 'window_width', 13],
+    [10, 'window_height', 13],
+    [11, 'dev_tools', 8],
+    [12, 'theme_source', 9],
+    [13, 'quit_policy', 14, 0, QuitPolicy_Enum],
+    [14, 'desktop_presence_policy', 14, 0, DesktopPresencePolicy_Enum],
+    [15, 'tray_icon_path', 9],
+    [16, 'macos_template_tray_icon_path', 9],
+    [17, 'managed_cli_release', 11, 0, ManagedCLIRelease.codec],
+  ])

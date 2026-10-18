@@ -5,8 +5,6 @@
 import { Config as Config$1 } from '../../../../store/kvkey/kvkey.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the block store kvfile via http controller.
@@ -19,85 +17,56 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BlockStoreId is the block store id to use on the bus.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * Url is the url where the kvfile is located.
-   *
-   * @generated from field: string url = 2;
    */
   url?: string
   /**
    * Headers are additional headers to set on the request.
-   *
-   * @generated from field: map<string, string> headers = 3;
    */
   headers?: { [key: string]: string }
   /**
    * BucketIds is a list of bucket ids to serve LookupBlockFromNetwork directives.
-   *
-   * @generated from field: repeated string bucket_ids = 4;
    */
   bucketIds?: string[]
   /**
    * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 5;
    */
   skipNotFound?: boolean
   /**
    * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 6;
    */
   verbose?: boolean
   /**
    * DisableCache disables the browser cache (if possible).
-   *
-   * @generated from field: bool disable_cache = 7;
    */
   disableCache?: boolean
   /**
    * KvKeyOpts are key/value key constants.
    * Optional.
-   *
-   * @generated from field: store.kvkey.Config kv_key_opts = 8;
    */
   kvKeyOpts?: Config$1
   /**
    * MinRequestSize sets the minimum size to use for http range requests.
    * Enables buffering in memory if set.
-   *
-   * @generated from field: uint64 min_request_size = 9;
    */
   minRequestSize?: bigint
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.kvfile.http.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'headers',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'scalar', T: ScalarType.STRING },
-    },
-    {
-      no: 4,
-      name: 'bucket_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 5, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 6, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 7, name: 'disable_cache', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 8, name: 'kv_key_opts', kind: 'message', T: () => Config$1 },
-    { no: 9, name: 'min_request_size', kind: 'scalar', T: ScalarType.UINT64 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'block.store.kvfile.http.Config',
+    () => [
+      [1, 'block_store_id', 9],
+      [2, 'url', 9],
+      [3, 'headers', 9, 584],
+      [4, 'bucket_ids', 9, 1],
+      [5, 'skip_not_found', 8],
+      [6, 'verbose', 8],
+      [7, 'disable_cache', 8],
+      [8, 'kv_key_opts', 11, 0, Config$1.codec],
+      [9, 'min_request_size', 4],
+    ],
+  )

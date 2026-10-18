@@ -3,16 +3,11 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import type { HashType } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import { HashType_Enum } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import type { StoreFeature } from '../block.pb.js'
 import { BlockRef, PutOpts, StoreFeature_Enum } from '../block.pb.js'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * GetHashTypeRequest requests the preferred hash type for the store.
@@ -22,9 +17,9 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 export interface GetHashTypeRequest {}
 
 export const GetHashTypeRequest: MessageType<GetHashTypeRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetHashTypeRequest>(
+  /* @__PURE__ */ createMessageType<GetHashTypeRequest>(
     'block.rpc.GetHashTypeRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -35,19 +30,15 @@ export const GetHashTypeRequest: MessageType<GetHashTypeRequest> =
 export interface GetHashTypeResponse {
   /**
    * HashType is the store's preferred hash type.
-   *
-   * @generated from field: hash.HashType hash_type = 1;
    */
   hashType?: HashType
 }
 
 export const GetHashTypeResponse: MessageType<GetHashTypeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.GetHashTypeResponse',
-    fields: [
-      { no: 1, name: 'hash_type', kind: 'enum', T: HashType_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetHashTypeResponse>(
+    'block.rpc.GetHashTypeResponse',
+    () => [[1, 'hash_type', 14, 0, HashType_Enum]],
+  )
 
 /**
  * GetSupportedFeaturesRequest requests the native feature bitmask for the store.
@@ -57,9 +48,9 @@ export const GetHashTypeResponse: MessageType<GetHashTypeResponse> =
 export interface GetSupportedFeaturesRequest {}
 
 export const GetSupportedFeaturesRequest: MessageType<GetSupportedFeaturesRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetSupportedFeaturesRequest>(
+  /* @__PURE__ */ createMessageType<GetSupportedFeaturesRequest>(
     'block.rpc.GetSupportedFeaturesRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -70,19 +61,15 @@ export const GetSupportedFeaturesRequest: MessageType<GetSupportedFeaturesReques
 export interface GetSupportedFeaturesResponse {
   /**
    * Features is the native feature bitmask.
-   *
-   * @generated from field: block.StoreFeature features = 1;
    */
   features?: StoreFeature
 }
 
 export const GetSupportedFeaturesResponse: MessageType<GetSupportedFeaturesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.GetSupportedFeaturesResponse',
-    fields: [
-      { no: 1, name: 'features', kind: 'enum', T: StoreFeature_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSupportedFeaturesResponse>(
+    'block.rpc.GetSupportedFeaturesResponse',
+    () => [[1, 'features', 14, 0, StoreFeature_Enum]],
+  )
 
 /**
  * PutBlockRequest requests to put a block into the store.
@@ -92,26 +79,22 @@ export const GetSupportedFeaturesResponse: MessageType<GetSupportedFeaturesRespo
 export interface PutBlockRequest {
   /**
    * Data is the data to put into the store.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * PutOpts are any options when putting the block into the store.
-   *
-   * @generated from field: block.PutOpts put_opts = 2;
    */
   putOpts?: PutOpts
 }
 
 export const PutBlockRequest: MessageType<PutBlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.PutBlockRequest',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'put_opts', kind: 'message', T: () => PutOpts },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutBlockRequest>(
+    'block.rpc.PutBlockRequest',
+    () => [
+      [1, 'data', 12],
+      [2, 'put_opts', 11, 0, PutOpts.codec],
+    ],
+  )
 
 /**
  * PutBlockResponse is the response to putting a block in the store.
@@ -121,33 +104,27 @@ export const PutBlockRequest: MessageType<PutBlockRequest> =
 export interface PutBlockResponse {
   /**
    * Ref is the reference of the added block.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
   /**
    * Existed indicates the block already existed.
-   *
-   * @generated from field: bool existed = 2;
    */
   existed?: boolean
   /**
    * Error is any error adding the block to the store.
-   *
-   * @generated from field: string error = 3;
    */
   error?: string
 }
 
 export const PutBlockResponse: MessageType<PutBlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.PutBlockResponse',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'existed', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutBlockResponse>(
+    'block.rpc.PutBlockResponse',
+    () => [
+      [1, 'ref', 11, 0, BlockRef.codec],
+      [2, 'existed', 8],
+      [3, 'error', 9],
+    ],
+  )
 
 /**
  * PutBlockBatchEntry is one block write in a batch request.
@@ -157,46 +134,32 @@ export const PutBlockResponse: MessageType<PutBlockResponse> =
 export interface PutBlockBatchEntry {
   /**
    * Ref is the expected content-addressed block reference.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
   /**
    * Data is the encoded block payload.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * Refs are outgoing refs for GC bookkeeping.
-   *
-   * @generated from field: repeated block.BlockRef refs = 3;
    */
   refs?: BlockRef[]
   /**
    * Tombstone marks the block ref as deleted.
-   *
-   * @generated from field: bool tombstone = 4;
    */
   tombstone?: boolean
 }
 
 export const PutBlockBatchEntry: MessageType<PutBlockBatchEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.PutBlockBatchEntry',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 3,
-        name: 'refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      { no: 4, name: 'tombstone', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutBlockBatchEntry>(
+    'block.rpc.PutBlockBatchEntry',
+    () => [
+      [1, 'ref', 11, 0, BlockRef.codec],
+      [2, 'data', 12],
+      [3, 'refs', 11, 1, BlockRef.codec],
+      [4, 'tombstone', 8],
+    ],
+  )
 
 /**
  * PutBlockBatchRequest requests to put blocks into the store as a batch.
@@ -206,25 +169,15 @@ export const PutBlockBatchEntry: MessageType<PutBlockBatchEntry> =
 export interface PutBlockBatchRequest {
   /**
    * Entries are the batch write entries.
-   *
-   * @generated from field: repeated block.rpc.PutBlockBatchEntry entries = 1;
    */
   entries?: PutBlockBatchEntry[]
 }
 
 export const PutBlockBatchRequest: MessageType<PutBlockBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.PutBlockBatchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'message',
-        T: PutBlockBatchEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutBlockBatchRequest>(
+    'block.rpc.PutBlockBatchRequest',
+    () => [[1, 'entries', 11, 1, PutBlockBatchEntry.codec]],
+  )
 
 /**
  * PutBlockBatchResponse is the response to putting blocks as a batch.
@@ -234,33 +187,23 @@ export const PutBlockBatchRequest: MessageType<PutBlockBatchRequest> =
 export interface PutBlockBatchResponse {
   /**
    * Error is any error adding blocks to the store.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
   /**
    * Existed reports, for each request entry in order, whether the block was
    * already stored before the write. A tombstone entry reports false.
-   *
-   * @generated from field: repeated bool existed = 2;
    */
   existed?: boolean[]
 }
 
 export const PutBlockBatchResponse: MessageType<PutBlockBatchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.PutBlockBatchResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'existed',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutBlockBatchResponse>(
+    'block.rpc.PutBlockBatchResponse',
+    () => [
+      [1, 'error', 9],
+      [2, 'existed', 8, 3],
+    ],
+  )
 
 /**
  * GetBlockRequest requests to get a block from the store.
@@ -270,26 +213,22 @@ export const PutBlockBatchResponse: MessageType<PutBlockBatchResponse> =
 export interface GetBlockRequest {
   /**
    * Ref is the reference to the block to fetch.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
   /**
    * WithRefs requests the block's outgoing refs with its data.
-   *
-   * @generated from field: bool with_refs = 2;
    */
   withRefs?: boolean
 }
 
 export const GetBlockRequest: MessageType<GetBlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.GetBlockRequest',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'with_refs', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockRequest>(
+    'block.rpc.GetBlockRequest',
+    () => [
+      [1, 'ref', 11, 0, BlockRef.codec],
+      [2, 'with_refs', 8],
+    ],
+  )
 
 /**
  * GetBlockResponse is the response to looking up a block in the store.
@@ -299,54 +238,38 @@ export const GetBlockRequest: MessageType<GetBlockRequest> =
 export interface GetBlockResponse {
   /**
    * Exists indicates if the block exists or not.
-   *
-   * @generated from field: bool exists = 1;
    */
   exists?: boolean
   /**
    * Data is the data, if exists.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * Error is any error getting the block from the store.
-   *
-   * @generated from field: string error = 3;
    */
   error?: string
   /**
    * Refs are the block's outgoing refs when with_refs was requested and
    * refs_known is set. Empty with refs_known set means a leaf.
-   *
-   * @generated from field: repeated block.BlockRef refs = 4;
    */
   refs?: BlockRef[]
   /**
    * RefsKnown indicates the store recorded the block's outgoing refs.
-   *
-   * @generated from field: bool refs_known = 5;
    */
   refsKnown?: boolean
 }
 
 export const GetBlockResponse: MessageType<GetBlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.GetBlockResponse',
-    fields: [
-      { no: 1, name: 'exists', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      { no: 5, name: 'refs_known', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockResponse>(
+    'block.rpc.GetBlockResponse',
+    () => [
+      [1, 'exists', 8],
+      [2, 'data', 12],
+      [3, 'error', 9],
+      [4, 'refs', 11, 1, BlockRef.codec],
+      [5, 'refs_known', 8],
+    ],
+  )
 
 /**
  * GetBlockExistsRequest requests to check if a block exists in the store.
@@ -356,19 +279,15 @@ export const GetBlockResponse: MessageType<GetBlockResponse> =
 export interface GetBlockExistsRequest {
   /**
    * Ref is the reference to the block to check.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
 }
 
 export const GetBlockExistsRequest: MessageType<GetBlockExistsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.GetBlockExistsRequest',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockExistsRequest>(
+    'block.rpc.GetBlockExistsRequest',
+    () => [[1, 'ref', 11, 0, BlockRef.codec]],
+  )
 
 /**
  * GetBlockExistsResponse is the response to checking if a block is in the store.
@@ -378,26 +297,22 @@ export const GetBlockExistsRequest: MessageType<GetBlockExistsRequest> =
 export interface GetBlockExistsResponse {
   /**
    * Exists indicates if the block exists or not.
-   *
-   * @generated from field: bool exists = 1;
    */
   exists?: boolean
   /**
    * Error is any error checking the block in the store.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const GetBlockExistsResponse: MessageType<GetBlockExistsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.GetBlockExistsResponse',
-    fields: [
-      { no: 1, name: 'exists', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockExistsResponse>(
+    'block.rpc.GetBlockExistsResponse',
+    () => [
+      [1, 'exists', 8],
+      [2, 'error', 9],
+    ],
+  )
 
 /**
  * GetBlockExistsBatchRequest requests to check if blocks exist in the store.
@@ -407,25 +322,15 @@ export const GetBlockExistsResponse: MessageType<GetBlockExistsResponse> =
 export interface GetBlockExistsBatchRequest {
   /**
    * Refs are the references to check.
-   *
-   * @generated from field: repeated block.BlockRef refs = 1;
    */
   refs?: BlockRef[]
 }
 
 export const GetBlockExistsBatchRequest: MessageType<GetBlockExistsBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.GetBlockExistsBatchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockExistsBatchRequest>(
+    'block.rpc.GetBlockExistsBatchRequest',
+    () => [[1, 'refs', 11, 1, BlockRef.codec]],
+  )
 
 /**
  * GetBlockExistsBatchResponse is the response to checking if blocks are in the store.
@@ -435,32 +340,22 @@ export const GetBlockExistsBatchRequest: MessageType<GetBlockExistsBatchRequest>
 export interface GetBlockExistsBatchResponse {
   /**
    * Exists indicates existence for each requested ref.
-   *
-   * @generated from field: repeated bool exists = 1;
    */
   exists?: boolean[]
   /**
    * Error is any error checking blocks in the store.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const GetBlockExistsBatchResponse: MessageType<GetBlockExistsBatchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.GetBlockExistsBatchResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'exists',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        repeated: true,
-      },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockExistsBatchResponse>(
+    'block.rpc.GetBlockExistsBatchResponse',
+    () => [
+      [1, 'exists', 8, 3],
+      [2, 'error', 9],
+    ],
+  )
 
 /**
  * RmBlockRequest requests to remove a block from the store.
@@ -470,19 +365,15 @@ export const GetBlockExistsBatchResponse: MessageType<GetBlockExistsBatchRespons
 export interface RmBlockRequest {
   /**
    * Ref is the reference to the block to remove.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
 }
 
 export const RmBlockRequest: MessageType<RmBlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.RmBlockRequest',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RmBlockRequest>(
+    'block.rpc.RmBlockRequest',
+    () => [[1, 'ref', 11, 0, BlockRef.codec]],
+  )
 
 /**
  * RmBlockResponse is the response to removing a block from the store.
@@ -493,19 +384,15 @@ export interface RmBlockResponse {
   /**
    * Error is any error removing the block in the store.
    * Will be empty if the block did not exist.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
 }
 
 export const RmBlockResponse: MessageType<RmBlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.RmBlockResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RmBlockResponse>(
+    'block.rpc.RmBlockResponse',
+    () => [[1, 'error', 9]],
+  )
 
 /**
  * StatBlockRequest requests metadata about a block.
@@ -515,19 +402,15 @@ export const RmBlockResponse: MessageType<RmBlockResponse> =
 export interface StatBlockRequest {
   /**
    * Ref is the reference to the block to stat.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
 }
 
 export const StatBlockRequest: MessageType<StatBlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.StatBlockRequest',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StatBlockRequest>(
+    'block.rpc.StatBlockRequest',
+    () => [[1, 'ref', 11, 0, BlockRef.codec]],
+  )
 
 /**
  * StatBlockResponse is the response to statting a block.
@@ -537,40 +420,32 @@ export const StatBlockRequest: MessageType<StatBlockRequest> =
 export interface StatBlockResponse {
   /**
    * Ref is the block reference.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
   /**
    * Size is the block data size in bytes, or -1 if unknown.
-   *
-   * @generated from field: int64 size = 2;
    */
   size?: bigint
   /**
    * Exists indicates if the block exists.
-   *
-   * @generated from field: bool exists = 3;
    */
   exists?: boolean
   /**
    * Error is any error statting the block.
-   *
-   * @generated from field: string error = 4;
    */
   error?: string
 }
 
 export const StatBlockResponse: MessageType<StatBlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.StatBlockResponse',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'size', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 3, name: 'exists', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StatBlockResponse>(
+    'block.rpc.StatBlockResponse',
+    () => [
+      [1, 'ref', 11, 0, BlockRef.codec],
+      [2, 'size', 3],
+      [3, 'exists', 8],
+      [4, 'error', 9],
+    ],
+  )
 
 /**
  * SyncRequest requests a durability barrier on the store.
@@ -580,9 +455,9 @@ export const StatBlockResponse: MessageType<StatBlockResponse> =
 export interface SyncRequest {}
 
 export const SyncRequest: MessageType<SyncRequest> =
-  /* @__PURE__ */ createEmptyMessageType<SyncRequest>(
+  /* @__PURE__ */ createMessageType<SyncRequest>(
     'block.rpc.SyncRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -593,23 +468,19 @@ export const SyncRequest: MessageType<SyncRequest> =
 export interface SyncResponse {
   /**
    * Fenced reports whether a durability fence was applied.
-   *
-   * @generated from field: bool fenced = 1;
    */
   fenced?: boolean
   /**
    * Error is any error fencing the store.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const SyncResponse: MessageType<SyncResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.rpc.SyncResponse',
-    fields: [
-      { no: 1, name: 'fenced', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SyncResponse>(
+    'block.rpc.SyncResponse',
+    () => [
+      [1, 'fenced', 8],
+      [2, 'error', 9],
+    ],
+  )

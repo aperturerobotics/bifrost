@@ -6,8 +6,6 @@ import { Opts } from '../common/quic/quic.pb.js'
 import { DialerOpts } from '../common/dialer/dialer.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the configuration for the Websocket transport.
@@ -21,15 +19,11 @@ export interface Config {
   /**
    * TransportPeerID sets the peer ID to attach the transport to.
    * If unset, attaches to any running peer with a private key.
-   *
-   * @generated from field: string transport_peer_id = 1;
    */
   transportPeerId?: string
   /**
    * ListenAddr contains the address to listen on.
    * Has no effect in the browser.
-   *
-   * @generated from field: string listen_addr = 2;
    */
   listenAddr?: string
   /**
@@ -37,53 +31,35 @@ export interface Config {
    *
    * The WebSocket transport always disables FEC and several other UDP-centric
    * features which are unnecessary due to the "reliable" nature of WebSockets.
-   *
-   * @generated from field: transport.quic.Opts quic = 3;
    */
   quic?: Opts
   /**
    * Dialers maps peer IDs to dialers.
-   *
-   * @generated from field: map<string, dialer.DialerOpts> dialers = 4;
    */
   dialers?: { [key: string]: DialerOpts }
   /**
    * HttpPath is the http path to expose the websocket.
    * If unset, disables serving the websocket.
-   *
-   * @generated from field: string http_path = 5;
    */
   httpPath?: string
   /**
    * HttpPeerPath is the http path to expose the peer id.
    * If unset, disables serving the websocket peer id.
-   *
-   * @generated from field: string http_peer_path = 6;
    */
   httpPeerPath?: string
   /**
    * Verbose enables verbose logging.
-   *
-   * @generated from field: bool verbose = 7;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'websocket.Config',
-  fields: [
-    { no: 1, name: 'transport_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'listen_addr', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'quic', kind: 'message', T: () => Opts },
-    {
-      no: 4,
-      name: 'dialers',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => DialerOpts },
-    },
-    { no: 5, name: 'http_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 6, name: 'http_peer_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 7, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('websocket.Config', () => [
+    [1, 'transport_peer_id', 9],
+    [2, 'listen_addr', 9],
+    [3, 'quic', 11, 0, Opts.codec],
+    [4, 'dialers', 11, 584, DialerOpts.codec],
+    [5, 'http_path', 9],
+    [6, 'http_peer_path', 9],
+    [7, 'verbose', 8],
+  ])

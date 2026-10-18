@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { BlockRef } from '../../../db/block/block.pb.js'
 
 /**
@@ -19,19 +14,15 @@ import { BlockRef } from '../../../db/block/block.pb.js'
 export interface WriteRequest {
   /**
    * ClearTree indicates whether to clear the transaction tree after writing.
-   *
-   * @generated from field: bool clear_tree = 1;
    */
   clearTree?: boolean
 }
 
 export const WriteRequest: MessageType<WriteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.transaction.WriteRequest',
-    fields: [
-      { no: 1, name: 'clear_tree', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WriteRequest>(
+    's4wave.block.transaction.WriteRequest',
+    () => [[1, 'clear_tree', 8]],
+  )
 
 /**
  * WriteResponse is the response type for Write.
@@ -41,27 +32,23 @@ export const WriteRequest: MessageType<WriteRequest> =
 export interface WriteResponse {
   /**
    * RootRef is the written root reference.
-   *
-   * @generated from field: block.BlockRef root_ref = 1;
    */
   rootRef?: BlockRef
   /**
    * ResourceId is the ID of the new root BlockCursor resource.
    * Only set if clear_tree is false.
-   *
-   * @generated from field: uint32 resource_id = 2;
    */
   resourceId?: number
 }
 
 export const WriteResponse: MessageType<WriteResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.transaction.WriteResponse',
-    fields: [
-      { no: 1, name: 'root_ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WriteResponse>(
+    's4wave.block.transaction.WriteResponse',
+    () => [
+      [1, 'root_ref', 11, 0, BlockRef.codec],
+      [2, 'resource_id', 13],
+    ],
+  )
 
 /**
  * GetRootCursorRequest is the request type for GetRootCursor.
@@ -71,9 +58,9 @@ export const WriteResponse: MessageType<WriteResponse> =
 export interface GetRootCursorRequest {}
 
 export const GetRootCursorRequest: MessageType<GetRootCursorRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetRootCursorRequest>(
+  /* @__PURE__ */ createMessageType<GetRootCursorRequest>(
     's4wave.block.transaction.GetRootCursorRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -84,16 +71,12 @@ export const GetRootCursorRequest: MessageType<GetRootCursorRequest> =
 export interface GetRootCursorResponse {
   /**
    * ResourceId is the ID of the root BlockCursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const GetRootCursorResponse: MessageType<GetRootCursorResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.transaction.GetRootCursorResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetRootCursorResponse>(
+    's4wave.block.transaction.GetRootCursorResponse',
+    () => [[1, 'resource_id', 13]],
+  )

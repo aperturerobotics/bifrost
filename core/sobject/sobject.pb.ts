@@ -6,8 +6,6 @@ import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import { ProviderResourceRef } from '../provider/provider.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import { Signature } from '../../net/peer/peer.pb.js'
 import { Config } from '../../db/block/transform/transform.pb.js'
@@ -20,44 +18,39 @@ import { Config } from '../../db/block/transform/transform.pb.js'
 export enum SharedObjectHealthStatus {
   /**
    * SHARED_OBJECT_HEALTH_STATUS_UNKNOWN is the zero / invalid value.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_STATUS_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * SHARED_OBJECT_HEALTH_STATUS_LOADING indicates the object is still mounting.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_STATUS_LOADING = 1;
    */
   LOADING = 1,
 
   /**
    * SHARED_OBJECT_HEALTH_STATUS_READY indicates the object is mounted and usable.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_STATUS_READY = 2;
    */
   READY = 2,
 
   /**
    * SHARED_OBJECT_HEALTH_STATUS_DEGRADED indicates the object is usable with a known problem.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_STATUS_DEGRADED = 3;
    */
   DEGRADED = 3,
 
   /**
    * SHARED_OBJECT_HEALTH_STATUS_CLOSED indicates the mount cannot proceed without remediation.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_STATUS_CLOSED = 4;
    */
   CLOSED = 4,
 }
 
 export const SharedObjectHealthStatus_Enum = /* @__PURE__ */ createEnumType(
   'sobject.SharedObjectHealthStatus',
-  SharedObjectHealthStatus,
-  'SHARED_OBJECT_HEALTH_STATUS_',
+  [
+    [0, 'SHARED_OBJECT_HEALTH_STATUS_UNKNOWN'],
+    [1, 'SHARED_OBJECT_HEALTH_STATUS_LOADING'],
+    [2, 'SHARED_OBJECT_HEALTH_STATUS_READY'],
+    [3, 'SHARED_OBJECT_HEALTH_STATUS_DEGRADED'],
+    [4, 'SHARED_OBJECT_HEALTH_STATUS_CLOSED'],
+  ],
 )
 
 /**
@@ -68,30 +61,27 @@ export const SharedObjectHealthStatus_Enum = /* @__PURE__ */ createEnumType(
 export enum SharedObjectHealthLayer {
   /**
    * SHARED_OBJECT_HEALTH_LAYER_UNKNOWN is the zero / invalid value.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_LAYER_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT indicates the failure happened while mounting or syncing the SharedObject itself.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT = 1;
    */
   SHARED_OBJECT = 1,
 
   /**
    * SHARED_OBJECT_HEALTH_LAYER_BODY indicates the failure happened while mounting or decoding the body.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_LAYER_BODY = 2;
    */
   BODY = 2,
 }
 
 export const SharedObjectHealthLayer_Enum = /* @__PURE__ */ createEnumType(
   'sobject.SharedObjectHealthLayer',
-  SharedObjectHealthLayer,
-  'SHARED_OBJECT_HEALTH_LAYER_',
+  [
+    [0, 'SHARED_OBJECT_HEALTH_LAYER_UNKNOWN'],
+    [1, 'SHARED_OBJECT_HEALTH_LAYER_SHARED_OBJECT'],
+    [2, 'SHARED_OBJECT_HEALTH_LAYER_BODY'],
+  ],
 )
 
 /**
@@ -102,67 +92,56 @@ export const SharedObjectHealthLayer_Enum = /* @__PURE__ */ createEnumType(
 export enum SharedObjectHealthCommonReason {
   /**
    * SHARED_OBJECT_HEALTH_COMMON_REASON_UNKNOWN is the zero / invalid value.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_COMMON_REASON_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * SHARED_OBJECT_HEALTH_COMMON_REASON_NOT_FOUND indicates the SharedObject or required body data could not be found.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_COMMON_REASON_NOT_FOUND = 1;
    */
   NOT_FOUND = 1,
 
   /**
    * SHARED_OBJECT_HEALTH_COMMON_REASON_ACCESS_REVOKED indicates access to the SharedObject was removed.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_COMMON_REASON_ACCESS_REVOKED = 2;
    */
   ACCESS_REVOKED = 2,
 
   /**
    * SHARED_OBJECT_HEALTH_COMMON_REASON_INITIAL_STATE_REJECTED indicates the initial SharedObject state failed verification.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_COMMON_REASON_INITIAL_STATE_REJECTED = 3;
    */
   INITIAL_STATE_REJECTED = 3,
 
   /**
    * SHARED_OBJECT_HEALTH_COMMON_REASON_BLOCK_NOT_FOUND indicates a required block is missing.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_COMMON_REASON_BLOCK_NOT_FOUND = 4;
    */
   BLOCK_NOT_FOUND = 4,
 
   /**
    * SHARED_OBJECT_HEALTH_COMMON_REASON_TRANSFORM_CONFIG_DECODE_FAILED indicates the transform configuration could not be decoded.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_COMMON_REASON_TRANSFORM_CONFIG_DECODE_FAILED = 5;
    */
   TRANSFORM_CONFIG_DECODE_FAILED = 5,
 
   /**
    * SHARED_OBJECT_HEALTH_COMMON_REASON_BODY_CONFIG_DECODE_FAILED indicates the body configuration could not be decoded.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_COMMON_REASON_BODY_CONFIG_DECODE_FAILED = 6;
    */
   BODY_CONFIG_DECODE_FAILED = 6,
 
   /**
    * SHARED_OBJECT_HEALTH_COMMON_REASON_RESOURCE_BLOCKED indicates the provider blocked access, such as for a DMCA takedown, until a manual retry.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_COMMON_REASON_RESOURCE_BLOCKED = 7;
    */
   RESOURCE_BLOCKED = 7,
 }
 
 export const SharedObjectHealthCommonReason_Enum =
-  /* @__PURE__ */ createEnumType(
-    'sobject.SharedObjectHealthCommonReason',
-    SharedObjectHealthCommonReason,
-    'SHARED_OBJECT_HEALTH_COMMON_REASON_',
-  )
+  /* @__PURE__ */ createEnumType('sobject.SharedObjectHealthCommonReason', [
+    [0, 'SHARED_OBJECT_HEALTH_COMMON_REASON_UNKNOWN'],
+    [1, 'SHARED_OBJECT_HEALTH_COMMON_REASON_NOT_FOUND'],
+    [2, 'SHARED_OBJECT_HEALTH_COMMON_REASON_ACCESS_REVOKED'],
+    [3, 'SHARED_OBJECT_HEALTH_COMMON_REASON_INITIAL_STATE_REJECTED'],
+    [4, 'SHARED_OBJECT_HEALTH_COMMON_REASON_BLOCK_NOT_FOUND'],
+    [5, 'SHARED_OBJECT_HEALTH_COMMON_REASON_TRANSFORM_CONFIG_DECODE_FAILED'],
+    [6, 'SHARED_OBJECT_HEALTH_COMMON_REASON_BODY_CONFIG_DECODE_FAILED'],
+    [7, 'SHARED_OBJECT_HEALTH_COMMON_REASON_RESOURCE_BLOCKED'],
+  ])
 
 /**
  * SharedObjectHealthRemediationHint suggests a next step for the caller or UI.
@@ -172,53 +151,44 @@ export const SharedObjectHealthCommonReason_Enum =
 export enum SharedObjectHealthRemediationHint {
   /**
    * SHARED_OBJECT_HEALTH_REMEDIATION_HINT_UNKNOWN is the zero / invalid value.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_REMEDIATION_HINT_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * SHARED_OBJECT_HEALTH_REMEDIATION_HINT_NONE indicates no explicit action is suggested.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_REMEDIATION_HINT_NONE = 1;
    */
   NONE = 1,
 
   /**
    * SHARED_OBJECT_HEALTH_REMEDIATION_HINT_RETRY indicates retrying the operation may succeed.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_REMEDIATION_HINT_RETRY = 2;
    */
   RETRY = 2,
 
   /**
    * SHARED_OBJECT_HEALTH_REMEDIATION_HINT_REQUEST_ACCESS indicates the user should request access again.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_REMEDIATION_HINT_REQUEST_ACCESS = 3;
    */
   REQUEST_ACCESS = 3,
 
   /**
    * SHARED_OBJECT_HEALTH_REMEDIATION_HINT_CONTACT_OWNER indicates the user should contact the owner or operator.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_REMEDIATION_HINT_CONTACT_OWNER = 4;
    */
   CONTACT_OWNER = 4,
 
   /**
    * SHARED_OBJECT_HEALTH_REMEDIATION_HINT_REPAIR_SOURCE_DATA indicates the backing SharedObject or body data must be repaired.
-   *
-   * @generated from enum value: SHARED_OBJECT_HEALTH_REMEDIATION_HINT_REPAIR_SOURCE_DATA = 5;
    */
   REPAIR_SOURCE_DATA = 5,
 }
 
 export const SharedObjectHealthRemediationHint_Enum =
-  /* @__PURE__ */ createEnumType(
-    'sobject.SharedObjectHealthRemediationHint',
-    SharedObjectHealthRemediationHint,
-    'SHARED_OBJECT_HEALTH_REMEDIATION_HINT_',
-  )
+  /* @__PURE__ */ createEnumType('sobject.SharedObjectHealthRemediationHint', [
+    [0, 'SHARED_OBJECT_HEALTH_REMEDIATION_HINT_UNKNOWN'],
+    [1, 'SHARED_OBJECT_HEALTH_REMEDIATION_HINT_NONE'],
+    [2, 'SHARED_OBJECT_HEALTH_REMEDIATION_HINT_RETRY'],
+    [3, 'SHARED_OBJECT_HEALTH_REMEDIATION_HINT_REQUEST_ACCESS'],
+    [4, 'SHARED_OBJECT_HEALTH_REMEDIATION_HINT_CONTACT_OWNER'],
+    [5, 'SHARED_OBJECT_HEALTH_REMEDIATION_HINT_REPAIR_SOURCE_DATA'],
+  ])
 
 /**
  * SOParticipantRole defines the general role of a shared object participant.
@@ -229,37 +199,34 @@ export const SharedObjectHealthRemediationHint_Enum =
 export enum SOParticipantRole {
   /**
    * SOParticipantRole_UNKNOWN is the zero / invalid / unknown type.
-   *
-   * @generated from enum value: SOParticipantRole_UNKNOWN = 0;
    */
   SOParticipantRole_UNKNOWN = 0,
 
   /**
    * SOParticipantRole_READER can read the value of the shared object only.
-   *
-   * @generated from enum value: SOParticipantRole_READER = 1;
    */
   SOParticipantRole_READER = 1,
 
   /**
    * SOParticipantRole_WRITER can also write operations.
-   *
-   * @generated from enum value: SOParticipantRole_WRITER = 2;
    */
   SOParticipantRole_WRITER = 2,
 
   /**
    * SOParticipantRole_OWNER can modify config, manage participants and sign
    * checkpoints.
-   *
-   * @generated from enum value: SOParticipantRole_OWNER = 3;
    */
   SOParticipantRole_OWNER = 3,
 }
 
 export const SOParticipantRole_Enum = /* @__PURE__ */ createEnumType(
   'sobject.SOParticipantRole',
-  SOParticipantRole,
+  [
+    [0, 'SOParticipantRole_UNKNOWN'],
+    [1, 'SOParticipantRole_READER'],
+    [2, 'SOParticipantRole_WRITER'],
+    [3, 'SOParticipantRole_OWNER'],
+  ],
 )
 
 /**
@@ -270,23 +237,22 @@ export const SOParticipantRole_Enum = /* @__PURE__ */ createEnumType(
 export enum SOControl {
   /**
    * SO_CONTROL_OWNER lets any owner device sign alone.
-   *
-   * @generated from enum value: SO_CONTROL_OWNER = 0;
    */
   SO_CONTROL_OWNER = 0,
 
   /**
    * SO_CONTROL_GROUP needs a commit from voters holding more than two thirds
    * of the voting weight. No participant decides alone, including owners.
-   *
-   * @generated from enum value: SO_CONTROL_GROUP = 1;
    */
   SO_CONTROL_GROUP = 1,
 }
 
 export const SOControl_Enum = /* @__PURE__ */ createEnumType(
   'sobject.SOControl',
-  SOControl,
+  [
+    [0, 'SO_CONTROL_OWNER'],
+    [1, 'SO_CONTROL_GROUP'],
+  ],
 )
 
 /**
@@ -297,104 +263,92 @@ export const SOControl_Enum = /* @__PURE__ */ createEnumType(
 export enum SOConfigChangeType {
   /**
    * SO_CONFIG_CHANGE_TYPE_UNKNOWN is the zero value.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_UNKNOWN = 0;
    */
   SO_CONFIG_CHANGE_TYPE_UNKNOWN = 0,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_GENESIS is the initial config chain entry.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_GENESIS = 1;
    */
   SO_CONFIG_CHANGE_TYPE_GENESIS = 1,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT adds a participant to the config.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT = 2;
    */
   SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT = 2,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT removes a participant from the config.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT = 3;
    */
   SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT = 3,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_ADD_INVITE creates a new invite.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_ADD_INVITE = 4;
    */
   SO_CONFIG_CHANGE_TYPE_ADD_INVITE = 4,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_REVOKE_INVITE revokes an existing invite.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_REVOKE_INVITE = 5;
    */
   SO_CONFIG_CHANGE_TYPE_REVOKE_INVITE = 5,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_INCREMENT_INVITE_USES records an invite usage.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_INCREMENT_INVITE_USES = 6;
    */
   SO_CONFIG_CHANGE_TYPE_INCREMENT_INVITE_USES = 6,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_SELF_ENROLL_PEER lets a same-entity session add itself.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_SELF_ENROLL_PEER = 7;
    */
   SO_CONFIG_CHANGE_TYPE_SELF_ENROLL_PEER = 7,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_TRANSFER_OWNERSHIP promotes a participant to OWNER.
    * When an owner departs, it carries the leave consent the successor commits.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_TRANSFER_OWNERSHIP = 8;
    */
   SO_CONFIG_CHANGE_TYPE_TRANSFER_OWNERSHIP = 8,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_SET_ROSTER changes which writers the trimming roster
    * drops.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_SET_ROSTER = 9;
    */
   SO_CONFIG_CHANGE_TYPE_SET_ROSTER = 9,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER chooses between Merge and One order,
    * or moves One order to another sequencer.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER = 10;
    */
   SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER = 10,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_SET_CONTROL chooses owner or group control, or
    * changes voting weights.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_SET_CONTROL = 11;
    */
   SO_CONFIG_CHANGE_TYPE_SET_CONTROL = 11,
 
   /**
    * SO_CONFIG_CHANGE_TYPE_MERGE absorbs a concurrent branch of owner records
    * into the chain after its parent. See SOConfigMerge.
-   *
-   * @generated from enum value: SO_CONFIG_CHANGE_TYPE_MERGE = 12;
    */
   SO_CONFIG_CHANGE_TYPE_MERGE = 12,
 }
 
 export const SOConfigChangeType_Enum = /* @__PURE__ */ createEnumType(
   'sobject.SOConfigChangeType',
-  SOConfigChangeType,
+  [
+    [0, 'SO_CONFIG_CHANGE_TYPE_UNKNOWN'],
+    [1, 'SO_CONFIG_CHANGE_TYPE_GENESIS'],
+    [2, 'SO_CONFIG_CHANGE_TYPE_ADD_PARTICIPANT'],
+    [3, 'SO_CONFIG_CHANGE_TYPE_REMOVE_PARTICIPANT'],
+    [4, 'SO_CONFIG_CHANGE_TYPE_ADD_INVITE'],
+    [5, 'SO_CONFIG_CHANGE_TYPE_REVOKE_INVITE'],
+    [6, 'SO_CONFIG_CHANGE_TYPE_INCREMENT_INVITE_USES'],
+    [7, 'SO_CONFIG_CHANGE_TYPE_SELF_ENROLL_PEER'],
+    [8, 'SO_CONFIG_CHANGE_TYPE_TRANSFER_OWNERSHIP'],
+    [9, 'SO_CONFIG_CHANGE_TYPE_SET_ROSTER'],
+    [10, 'SO_CONFIG_CHANGE_TYPE_SET_SEQUENCER'],
+    [11, 'SO_CONFIG_CHANGE_TYPE_SET_CONTROL'],
+    [12, 'SO_CONFIG_CHANGE_TYPE_MERGE'],
+  ],
 )
 
 /**
@@ -405,43 +359,39 @@ export const SOConfigChangeType_Enum = /* @__PURE__ */ createEnumType(
 export enum SORevocationReason {
   /**
    * SO_REVOCATION_REASON_UNKNOWN is the zero value.
-   *
-   * @generated from enum value: SO_REVOCATION_REASON_UNKNOWN = 0;
    */
   SO_REVOCATION_REASON_UNKNOWN = 0,
 
   /**
    * SO_REVOCATION_REASON_SESSION_REVOKED indicates the participant's session was revoked.
-   *
-   * @generated from enum value: SO_REVOCATION_REASON_SESSION_REVOKED = 1;
    */
   SO_REVOCATION_REASON_SESSION_REVOKED = 1,
 
   /**
    * SO_REVOCATION_REASON_ORG_REMOVED indicates the participant was removed from the org.
-   *
-   * @generated from enum value: SO_REVOCATION_REASON_ORG_REMOVED = 2;
    */
   SO_REVOCATION_REASON_ORG_REMOVED = 2,
 
   /**
    * SO_REVOCATION_REASON_OWNER_REMOVED indicates the owner manually removed the participant.
-   *
-   * @generated from enum value: SO_REVOCATION_REASON_OWNER_REMOVED = 3;
    */
   SO_REVOCATION_REASON_OWNER_REMOVED = 3,
 
   /**
    * SO_REVOCATION_REASON_INVITE_REVOKED indicates the participant's invite was revoked.
-   *
-   * @generated from enum value: SO_REVOCATION_REASON_INVITE_REVOKED = 4;
    */
   SO_REVOCATION_REASON_INVITE_REVOKED = 4,
 }
 
 export const SORevocationReason_Enum = /* @__PURE__ */ createEnumType(
   'sobject.SORevocationReason',
-  SORevocationReason,
+  [
+    [0, 'SO_REVOCATION_REASON_UNKNOWN'],
+    [1, 'SO_REVOCATION_REASON_SESSION_REVOKED'],
+    [2, 'SO_REVOCATION_REASON_ORG_REMOVED'],
+    [3, 'SO_REVOCATION_REASON_OWNER_REMOVED'],
+    [4, 'SO_REVOCATION_REASON_INVITE_REVOKED'],
+  ],
 )
 
 /**
@@ -452,29 +402,27 @@ export const SORevocationReason_Enum = /* @__PURE__ */ createEnumType(
 export enum SODecisionKind {
   /**
    * SO_DECISION_KIND_UNKNOWN is the zero value, and the kind of a vote.
-   *
-   * @generated from enum value: SO_DECISION_KIND_UNKNOWN = 0;
    */
   SO_DECISION_KIND_UNKNOWN = 0,
 
   /**
    * SO_DECISION_KIND_CONFIG is a control record.
-   *
-   * @generated from enum value: SO_DECISION_KIND_CONFIG = 1;
    */
   SO_DECISION_KIND_CONFIG = 1,
 
   /**
    * SO_DECISION_KIND_CHECKPOINT is a checkpoint.
-   *
-   * @generated from enum value: SO_DECISION_KIND_CHECKPOINT = 2;
    */
   SO_DECISION_KIND_CHECKPOINT = 2,
 }
 
 export const SODecisionKind_Enum = /* @__PURE__ */ createEnumType(
   'sobject.SODecisionKind',
-  SODecisionKind,
+  [
+    [0, 'SO_DECISION_KIND_UNKNOWN'],
+    [1, 'SO_DECISION_KIND_CONFIG'],
+    [2, 'SO_DECISION_KIND_CHECKPOINT'],
+  ],
 )
 
 /**
@@ -485,8 +433,6 @@ export const SODecisionKind_Enum = /* @__PURE__ */ createEnumType(
 export enum SOControlMessageType {
   /**
    * SO_CONTROL_MESSAGE_TYPE_UNKNOWN is the zero value.
-   *
-   * @generated from enum value: SO_CONTROL_MESSAGE_TYPE_UNKNOWN = 0;
    */
   SO_CONTROL_MESSAGE_TYPE_UNKNOWN = 0,
 
@@ -494,38 +440,36 @@ export enum SOControlMessageType {
    * SO_CONTROL_MESSAGE_TYPE_AGREE records that a voter agrees to a change.
    * It carries the value; height and round are zero. A control record is
    * agreed with its sealed_checkpoint cleared, which the proposer fills in.
-   *
-   * @generated from enum value: SO_CONTROL_MESSAGE_TYPE_AGREE = 1;
    */
   SO_CONTROL_MESSAGE_TYPE_AGREE = 1,
 
   /**
    * SO_CONTROL_MESSAGE_TYPE_PROPOSAL proposes the value of one round. Only
    * the round's proposer sends it.
-   *
-   * @generated from enum value: SO_CONTROL_MESSAGE_TYPE_PROPOSAL = 2;
    */
   SO_CONTROL_MESSAGE_TYPE_PROPOSAL = 2,
 
   /**
    * SO_CONTROL_MESSAGE_TYPE_PREVOTE is the first vote of a round.
-   *
-   * @generated from enum value: SO_CONTROL_MESSAGE_TYPE_PREVOTE = 3;
    */
   SO_CONTROL_MESSAGE_TYPE_PREVOTE = 3,
 
   /**
    * SO_CONTROL_MESSAGE_TYPE_PRECOMMIT is the second vote of a round. A
    * non-nil precommit locks its signer on the value.
-   *
-   * @generated from enum value: SO_CONTROL_MESSAGE_TYPE_PRECOMMIT = 4;
    */
   SO_CONTROL_MESSAGE_TYPE_PRECOMMIT = 4,
 }
 
 export const SOControlMessageType_Enum = /* @__PURE__ */ createEnumType(
   'sobject.SOControlMessageType',
-  SOControlMessageType,
+  [
+    [0, 'SO_CONTROL_MESSAGE_TYPE_UNKNOWN'],
+    [1, 'SO_CONTROL_MESSAGE_TYPE_AGREE'],
+    [2, 'SO_CONTROL_MESSAGE_TYPE_PROPOSAL'],
+    [3, 'SO_CONTROL_MESSAGE_TYPE_PREVOTE'],
+    [4, 'SO_CONTROL_MESSAGE_TYPE_PRECOMMIT'],
+  ],
 )
 
 /**
@@ -536,32 +480,78 @@ export const SOControlMessageType_Enum = /* @__PURE__ */ createEnumType(
 export interface SharedObjectRef {
   /**
    * ProviderResourceRef is the reference to the resource on the provider.
-   *
-   * @generated from field: provider.ProviderResourceRef provider_resource_ref = 1;
    */
   providerResourceRef?: ProviderResourceRef
   /**
    * BlockStoreId is the identifier of the block store.
    * The block store must exist on the same provider + account id.
-   *
-   * @generated from field: string block_store_id = 2;
    */
   blockStoreId?: string
 }
 
 export const SharedObjectRef: MessageType<SharedObjectRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SharedObjectRef',
-    fields: [
-      {
-        no: 1,
-        name: 'provider_resource_ref',
-        kind: 'message',
-        T: () => ProviderResourceRef,
-      },
-      { no: 2, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SharedObjectRef>(
+    'sobject.SharedObjectRef',
+    () => [
+      [1, 'provider_resource_ref', 11, 0, ProviderResourceRef.codec],
+      [2, 'block_store_id', 9],
+    ],
+  )
+
+/**
+ * SharedObjectList is the list of objects in the provider account.
+ *
+ * @generated from message sobject.SharedObjectList
+ */
+export interface SharedObjectList {
+  /**
+   * SharedObjects is the list of shared objects.
+   */
+  sharedObjects?: SharedObjectListEntry[]
+}
+
+export const SharedObjectList: MessageType<SharedObjectList> =
+  /* @__PURE__ */ createMessageType<SharedObjectList>(
+    'sobject.SharedObjectList',
+    () => [[1, 'shared_objects', 11, 1, SharedObjectListEntry.codec]],
+  )
+
+/**
+ * SharedObjectListEntry is an entry in the SharedObjectList.
+ *
+ * @generated from message sobject.SharedObjectListEntry
+ */
+export interface SharedObjectListEntry {
+  /**
+   * Ref is the reference to the shared object.
+   */
+  ref?: SharedObjectRef
+  /**
+   * Meta is the metadata for the shared object.
+   */
+  meta?: SharedObjectMeta
+  /**
+   * Source indicates how the shared object was acquired.
+   * Known values: "created" (owner-created), "shared" (invite-received or org-enrolled).
+   */
+  source?: string
+  /**
+   * UpdatedAt is when the provider last changed the object's metadata, in
+   * Unix milliseconds, or zero when the provider does not track it.
+   */
+  updatedAt?: bigint
+}
+
+export const SharedObjectListEntry: MessageType<SharedObjectListEntry> =
+  /* @__PURE__ */ createMessageType<SharedObjectListEntry>(
+    'sobject.SharedObjectListEntry',
+    () => [
+      [1, 'ref', 11, 0, SharedObjectRef.codec],
+      [2, 'meta', 11, 0, SharedObjectMeta.codec],
+      [3, 'source', 9],
+      [5, 'updated_at', 3],
+    ],
+  )
 
 /**
  * SharedObjectMeta is the contents of the provider_feature_meta field for a SharedObject.
@@ -572,107 +562,148 @@ export interface SharedObjectMeta {
   /**
    * BodyType is the type of object in the body of the shared object.
    * Known types: "space"
-   *
-   * @generated from field: string body_type = 1;
    */
   bodyType?: string
   /**
    * BodyMeta is additional metadata about the shared object body.
-   *
-   * @generated from field: bytes body_meta = 2;
    */
   bodyMeta?: Uint8Array
   /**
    * AccountPrivate marks a shared object as private to one account and not
    * eligible for transfer, merge, or ownership-migration flows.
-   *
-   * @generated from field: bool account_private = 3;
    */
   accountPrivate?: boolean
 }
 
 export const SharedObjectMeta: MessageType<SharedObjectMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SharedObjectMeta',
-    fields: [
-      { no: 1, name: 'body_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'body_meta', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'account_private', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SharedObjectMeta>(
+    'sobject.SharedObjectMeta',
+    () => [
+      [1, 'body_type', 9],
+      [2, 'body_meta', 12],
+      [3, 'account_private', 8],
+    ],
+  )
 
 /**
- * SharedObjectListEntry is an entry in the SharedObjectList.
+ * SharedObjectHealth describes the current lifecycle and failure state of a SharedObject.
+ * This payload is shared across local, spacewave, and CDN providers.
  *
- * @generated from message sobject.SharedObjectListEntry
+ * @generated from message sobject.SharedObjectHealth
  */
-export interface SharedObjectListEntry {
+export interface SharedObjectHealth {
   /**
-   * Ref is the reference to the shared object.
-   *
-   * @generated from field: sobject.SharedObjectRef ref = 1;
+   * Status is the lifecycle status for the SharedObject.
    */
-  ref?: SharedObjectRef
+  status?: SharedObjectHealthStatus
   /**
-   * Meta is the metadata for the shared object.
-   *
-   * @generated from field: sobject.SharedObjectMeta meta = 2;
+   * Layer identifies whether the issue is on the SharedObject or body layer.
    */
-  meta?: SharedObjectMeta
+  layer?: SharedObjectHealthLayer
   /**
-   * Source indicates how the shared object was acquired.
-   * Known values: "created" (owner-created), "shared" (invite-received or org-enrolled).
-   *
-   * @generated from field: string source = 3;
+   * CommonReason identifies a stable cross-provider reason when known.
    */
-  source?: string
+  commonReason?: SharedObjectHealthCommonReason
   /**
-   * UpdatedAt is when the provider last changed the object's metadata, in
-   * Unix milliseconds, or zero when the provider does not track it.
-   *
-   * @generated from field: int64 updated_at = 5;
+   * RemediationHint suggests the next action to present to the user.
    */
-  updatedAt?: bigint
+  remediationHint?: SharedObjectHealthRemediationHint
+  /**
+   * Error preserves provider-specific or body-specific detail when needed.
+   */
+  error?: string
+  /**
+   * Metadata reserves an opaque slot for future provider-specific or body-specific remediation data.
+   * Empty in v1. Callers must treat the contents as opaque.
+   */
+  metadata?: Uint8Array
+  /**
+   * SyncDeniedPeerIds lists base58 participant IDs whose latest authenticated sync admission denied this object identity.
+   * Each peer was readable under local authority. This is source availability, not proof of membership removal.
+   * A successful admission from that participant clears its denial; transport failures leave it unchanged.
+   */
+  syncDeniedPeerIds?: string[]
+  /**
+   * SyncRecoveryPeerIds lists authenticated participants whose direct sync needs
+   * an upgrade or trusted history recovery. Local content remains available.
+   * Verified convergence clears the participant; admission alone does not.
+   */
+  syncRecoveryPeerIds?: string[]
+  /**
+   * RejectedEdits lists this device's operations that applied and that a later
+   * replay rejected, in replay order. An operation rejected when it is written
+   * is reported to its writer instead.
+   */
+  rejectedEdits?: SORejectedEdit[]
+  /**
+   * CheckpointMismatch is set while the latest checkpoint this device could
+   * judge holds a World different from the one this device replayed through
+   * the operations it covers.
+   */
+  checkpointMismatch?: SOCheckpointMismatch
+  /**
+   * UnorderedCount is the number of operations this device holds that the
+   * appointed sequencer has not placed yet. It is zero under Merge.
+   */
+  unorderedCount?: number
+  /**
+   * SyncPeers lists this device's sync stream with each participant it has
+   * authenticated since the object mounted, sorted by peer ID.
+   */
+  syncPeers?: SOSyncPeer[]
 }
 
-export const SharedObjectListEntry: MessageType<SharedObjectListEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SharedObjectListEntry',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: SharedObjectRef },
-      { no: 2, name: 'meta', kind: 'message', T: SharedObjectMeta },
-      { no: 3, name: 'source', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'updated_at', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SharedObjectHealth: MessageType<SharedObjectHealth> =
+  /* @__PURE__ */ createMessageType<SharedObjectHealth>(
+    'sobject.SharedObjectHealth',
+    () => [
+      [1, 'status', 14, 0, SharedObjectHealthStatus_Enum],
+      [2, 'layer', 14, 0, SharedObjectHealthLayer_Enum],
+      [3, 'common_reason', 14, 0, SharedObjectHealthCommonReason_Enum],
+      [4, 'remediation_hint', 14, 0, SharedObjectHealthRemediationHint_Enum],
+      [5, 'error', 9],
+      [6, 'metadata', 12],
+      [7, 'sync_denied_peer_ids', 9, 1],
+      [8, 'sync_recovery_peer_ids', 9, 1],
+      [9, 'rejected_edits', 11, 1, SORejectedEdit.codec],
+      [10, 'checkpoint_mismatch', 11, 0, SOCheckpointMismatch.codec],
+      [11, 'unordered_count', 13],
+      [12, 'sync_peers', 11, 1, SOSyncPeer.codec],
+    ],
+  )
 
 /**
- * SharedObjectList is the list of objects in the provider account.
+ * SOSyncPeer is this device's sync stream with one authenticated participant.
  *
- * @generated from message sobject.SharedObjectList
+ * @generated from message sobject.SOSyncPeer
  */
-export interface SharedObjectList {
+export interface SOSyncPeer {
   /**
-   * SharedObjects is the list of shared objects.
-   *
-   * @generated from field: repeated sobject.SharedObjectListEntry shared_objects = 1;
+   * PeerId is the participant's base58 peer ID.
    */
-  sharedObjects?: SharedObjectListEntry[]
+  peerId?: string
+  /**
+   * Connected is true while an authenticated stream with the participant runs.
+   */
+  connected?: boolean
+  /**
+   * Since is when Connected last changed.
+   */
+  since?: Date
+  /**
+   * Error is the failure that ended the latest stream. It is empty while
+   * connected and after a stream that ended without one.
+   */
+  error?: string
 }
 
-export const SharedObjectList: MessageType<SharedObjectList> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SharedObjectList',
-    fields: [
-      {
-        no: 1,
-        name: 'shared_objects',
-        kind: 'message',
-        T: SharedObjectListEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SOSyncPeer: MessageType<SOSyncPeer> =
+  /* @__PURE__ */ createMessageType<SOSyncPeer>('sobject.SOSyncPeer', () => [
+    [1, 'peer_id', 9],
+    [2, 'connected', 8],
+    [3, 'since', 11, 0, Timestamp.codec],
+    [4, 'error', 9],
+  ])
 
 /**
  * SORejectedEdit is an operation of this device that replay no longer applies.
@@ -682,40 +713,28 @@ export const SharedObjectList: MessageType<SharedObjectList> =
 export interface SORejectedEdit {
   /**
    * OpHash identifies the operation.
-   *
-   * @generated from field: bytes op_hash = 1;
    */
   opHash?: Uint8Array
   /**
    * Reason says in plain words why the operation did not apply.
-   *
-   * @generated from field: string reason = 2;
    */
   reason?: string
   /**
    * LostToPeerIds lists the authors of the applied operations that were
    * written concurrently and replay before it, sorted.
-   *
-   * @generated from field: repeated string lost_to_peer_ids = 3;
    */
   lostToPeerIds?: string[]
 }
 
 export const SORejectedEdit: MessageType<SORejectedEdit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SORejectedEdit',
-    fields: [
-      { no: 1, name: 'op_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'reason', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'lost_to_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SORejectedEdit>(
+    'sobject.SORejectedEdit',
+    () => [
+      [1, 'op_hash', 12],
+      [2, 'reason', 9],
+      [3, 'lost_to_peer_ids', 9, 1],
+    ],
+  )
 
 /**
  * SOCheckpointMismatch is a checkpoint whose World differs from the World this
@@ -727,337 +746,108 @@ export const SORejectedEdit: MessageType<SORejectedEdit> =
 export interface SOCheckpointMismatch {
   /**
    * Height is the height of the checkpoint.
-   *
-   * @generated from field: uint64 height = 1;
    */
   height?: bigint
 }
 
 export const SOCheckpointMismatch: MessageType<SOCheckpointMismatch> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOCheckpointMismatch',
-    fields: [
-      { no: 1, name: 'height', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOCheckpointMismatch>(
+    'sobject.SOCheckpointMismatch',
+    () => [[1, 'height', 4]],
+  )
 
 /**
- * SOSyncPeer is this device's sync stream with one authenticated participant.
+ * SharedObjectConfig configures the SharedObject.
  *
- * @generated from message sobject.SOSyncPeer
+ * @generated from message sobject.SharedObjectConfig
  */
-export interface SOSyncPeer {
+export interface SharedObjectConfig {
   /**
-   * PeerId is the participant's base58 peer ID.
-   *
-   * @generated from field: string peer_id = 1;
+   * Participants is the list of shared object participants.
+   * An empty audience with a retained signed history head represents final departure.
    */
-  peerId?: string
+  participants?: SOParticipantConfig[]
   /**
-   * Connected is true while an authenticated stream with the participant runs.
-   *
-   * @generated from field: bool connected = 2;
+   * ConfigChainHash is the hash of the latest SOConfigChange entry.
    */
-  connected?: boolean
+  configChainHash?: Uint8Array
   /**
-   * Since is when Connected last changed.
-   *
-   * @generated from field: google.protobuf.Timestamp since = 3;
+   * ConfigChainSeqno is the sequence number of the latest SOConfigChange entry.
+   * The next entry must have config_seqno == config_chain_seqno + 1.
+   * Zero means no config changes have been applied yet (genesis state).
    */
-  since?: Date
+  configChainSeqno?: bigint
   /**
-   * Error is the failure that ended the latest stream. It is empty while
-   * connected and after a stream that ended without one.
-   *
-   * @generated from field: string error = 4;
+   * RemovedAuthors pins the last operation the removing owner held from each
+   * removed author whose operations the checkpoint does not yet cover, sorted
+   * by peer ID. Replay applies a removed author's operations up to that
+   * operation and skips the rest, which may postdate the removal.
    */
-  error?: string
+  removedAuthors?: SOOperationPosition[]
+  /**
+   * RosterDroppedPeerIds are the writers left off the trimming roster, sorted.
+   * Every other writer is on the roster: the stable point waits until each
+   * has built on an operation before history below it is trimmed.
+   */
+  rosterDroppedPeerIds?: string[]
+  /**
+   * Sequencer places operations in One order. An unset sequencer or an empty
+   * peer ID is Merge.
+   */
+  sequencer?: SOSequencer
+  /**
+   * Control says who changes this config and signs checkpoints: an owner, or
+   * more than two thirds of the voting weight.
+   */
+  control?: SOControl
+  /**
+   * SealedCheckpoint is the checkpoint the group held when it decided this
+   * config. The config vouches for it by hash, so it stays valid after the
+   * voters who committed it change. Required under group control; a change
+   * back to owner control keeps it.
+   */
+  sealedCheckpoint?: SOCheckpointHead
 }
 
-export const SOSyncPeer: MessageType<SOSyncPeer> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOSyncPeer',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'connected', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'since', kind: 'message', T: () => Timestamp },
-      { no: 4, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SharedObjectConfig: MessageType<SharedObjectConfig> =
+  /* @__PURE__ */ createMessageType<SharedObjectConfig>(
+    'sobject.SharedObjectConfig',
+    () => [
+      [1, 'participants', 11, 1, SOParticipantConfig.codec],
+      [10, 'config_chain_hash', 12],
+      [11, 'config_chain_seqno', 4],
+      [12, 'removed_authors', 11, 1, SOOperationPosition.codec],
+      [13, 'roster_dropped_peer_ids', 9, 1],
+      [14, 'sequencer', 11, 0, SOSequencer.codec],
+      [15, 'control', 14, 0, SOControl_Enum],
+      [16, 'sealed_checkpoint', 11, 0, SOCheckpointHead.codec],
+    ],
+  )
 
 /**
- * SharedObjectHealth describes the current lifecycle and failure state of a SharedObject.
- * This payload is shared across local, spacewave, and CDN providers.
+ * SOCheckpointHead names one checkpoint.
  *
- * @generated from message sobject.SharedObjectHealth
+ * @generated from message sobject.SOCheckpointHead
  */
-export interface SharedObjectHealth {
+export interface SOCheckpointHead {
   /**
-   * Status is the lifecycle status for the SharedObject.
-   *
-   * @generated from field: sobject.SharedObjectHealthStatus status = 1;
-   */
-  status?: SharedObjectHealthStatus
-  /**
-   * Layer identifies whether the issue is on the SharedObject or body layer.
-   *
-   * @generated from field: sobject.SharedObjectHealthLayer layer = 2;
-   */
-  layer?: SharedObjectHealthLayer
-  /**
-   * CommonReason identifies a stable cross-provider reason when known.
-   *
-   * @generated from field: sobject.SharedObjectHealthCommonReason common_reason = 3;
-   */
-  commonReason?: SharedObjectHealthCommonReason
-  /**
-   * RemediationHint suggests the next action to present to the user.
-   *
-   * @generated from field: sobject.SharedObjectHealthRemediationHint remediation_hint = 4;
-   */
-  remediationHint?: SharedObjectHealthRemediationHint
-  /**
-   * Error preserves provider-specific or body-specific detail when needed.
-   *
-   * @generated from field: string error = 5;
-   */
-  error?: string
-  /**
-   * Metadata reserves an opaque slot for future provider-specific or body-specific remediation data.
-   * Empty in v1. Callers must treat the contents as opaque.
-   *
-   * @generated from field: bytes metadata = 6;
-   */
-  metadata?: Uint8Array
-  /**
-   * SyncDeniedPeerIds lists base58 participant IDs whose latest authenticated sync admission denied this object identity.
-   * Each peer was readable under local authority. This is source availability, not proof of membership removal.
-   * A successful admission from that participant clears its denial; transport failures leave it unchanged.
-   *
-   * @generated from field: repeated string sync_denied_peer_ids = 7;
-   */
-  syncDeniedPeerIds?: string[]
-  /**
-   * SyncRecoveryPeerIds lists authenticated participants whose direct sync needs
-   * an upgrade or trusted history recovery. Local content remains available.
-   * Verified convergence clears the participant; admission alone does not.
-   *
-   * @generated from field: repeated string sync_recovery_peer_ids = 8;
-   */
-  syncRecoveryPeerIds?: string[]
-  /**
-   * RejectedEdits lists this device's operations that applied and that a later
-   * replay rejected, in replay order. An operation rejected when it is written
-   * is reported to its writer instead.
-   *
-   * @generated from field: repeated sobject.SORejectedEdit rejected_edits = 9;
-   */
-  rejectedEdits?: SORejectedEdit[]
-  /**
-   * CheckpointMismatch is set while the latest checkpoint this device could
-   * judge holds a World different from the one this device replayed through
-   * the operations it covers.
-   *
-   * @generated from field: sobject.SOCheckpointMismatch checkpoint_mismatch = 10;
-   */
-  checkpointMismatch?: SOCheckpointMismatch
-  /**
-   * UnorderedCount is the number of operations this device holds that the
-   * appointed sequencer has not placed yet. It is zero under Merge.
-   *
-   * @generated from field: uint32 unordered_count = 11;
-   */
-  unorderedCount?: number
-  /**
-   * SyncPeers lists this device's sync stream with each participant it has
-   * authenticated since the object mounted, sorted by peer ID.
-   *
-   * @generated from field: repeated sobject.SOSyncPeer sync_peers = 12;
-   */
-  syncPeers?: SOSyncPeer[]
-}
-
-export const SharedObjectHealth: MessageType<SharedObjectHealth> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SharedObjectHealth',
-    fields: [
-      { no: 1, name: 'status', kind: 'enum', T: SharedObjectHealthStatus_Enum },
-      { no: 2, name: 'layer', kind: 'enum', T: SharedObjectHealthLayer_Enum },
-      {
-        no: 3,
-        name: 'common_reason',
-        kind: 'enum',
-        T: SharedObjectHealthCommonReason_Enum,
-      },
-      {
-        no: 4,
-        name: 'remediation_hint',
-        kind: 'enum',
-        T: SharedObjectHealthRemediationHint_Enum,
-      },
-      { no: 5, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'metadata', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 7,
-        name: 'sync_denied_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 8,
-        name: 'sync_recovery_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 9,
-        name: 'rejected_edits',
-        kind: 'message',
-        T: SORejectedEdit,
-        repeated: true,
-      },
-      {
-        no: 10,
-        name: 'checkpoint_mismatch',
-        kind: 'message',
-        T: SOCheckpointMismatch,
-      },
-      { no: 11, name: 'unordered_count', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 12,
-        name: 'sync_peers',
-        kind: 'message',
-        T: SOSyncPeer,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOParticipantConfig contains a listing of an entity associated with a shared object.
- * Each entity may only appear one time in the list.
- *
- * @generated from message sobject.SOParticipantConfig
- */
-export interface SOParticipantConfig {
-  /**
-   * PeerId is the string representation of this participant's peer id.
-   *
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-  /**
-   * Role is the general role of the participant.
-   *
-   * - READER: can read the value of the shared object only.
-   * - WRITER: can also write operations.
-   * - OWNER: can also change the config and sign checkpoints.
-   *
-   * @generated from field: sobject.SOParticipantRole role = 2;
-   */
-  role?: SOParticipantRole
-  /**
-   * EntityId is the account ID of the entity that owns this participant's session.
-   * Set when an owner adds a cloud participant. Empty for local-only participants.
-   *
-   * @generated from field: string entity_id = 3;
-   */
-  entityId?: string
-  /**
-   * Username is the provider username of entity_id, recorded by the owner
-   * who added the participant. A self-enrolled peer repeats the username
-   * already recorded for its entity. Empty when entity_id is empty.
-   *
-   * @generated from field: string username = 4;
-   */
-  username?: string
-  /**
-   * VotingWeight is this device's vote under group control. Zero does not
-   * vote. Only writers and owners vote.
-   *
-   * @generated from field: uint32 voting_weight = 5;
-   */
-  votingWeight?: number
-}
-
-export const SOParticipantConfig: MessageType<SOParticipantConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOParticipantConfig',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'role', kind: 'enum', T: SOParticipantRole_Enum },
-      { no: 3, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'voting_weight', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOOperationPosition is an operation at one position of its author's chain.
- *
- * @generated from message sobject.SOOperationPosition
- */
-export interface SOOperationPosition {
-  /**
-   * PeerId is the author.
-   *
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-  /**
-   * Nonce is the author sequence of the operation.
-   *
-   * @generated from field: uint64 nonce = 2;
-   */
-  nonce?: bigint
-  /**
-   * OpHash is the hash of the operation.
-   *
-   * @generated from field: bytes op_hash = 3;
-   */
-  opHash?: Uint8Array
-}
-
-export const SOOperationPosition: MessageType<SOOperationPosition> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOOperationPosition',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'nonce', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'op_hash', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOSequenceHead names one position of the sequence.
- *
- * @generated from message sobject.SOSequenceHead
- */
-export interface SOSequenceHead {
-  /**
-   * Height is the position, counted from 1.
-   *
-   * @generated from field: uint64 height = 1;
+   * Height is the checkpoint height.
    */
   height?: bigint
   /**
-   * Hash is the identity of the position's signed record.
-   *
-   * @generated from field: bytes hash = 2;
+   * Hash is the checkpoint identity.
    */
   hash?: Uint8Array
 }
 
-export const SOSequenceHead: MessageType<SOSequenceHead> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOSequenceHead',
-    fields: [
-      { no: 1, name: 'height', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'hash', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SOCheckpointHead: MessageType<SOCheckpointHead> =
+  /* @__PURE__ */ createMessageType<SOCheckpointHead>(
+    'sobject.SOCheckpointHead',
+    () => [
+      [1, 'height', 4],
+      [2, 'hash', 12],
+    ],
+  )
 
 /**
  * SOSequencer names the device or service that signs the sequence: one
@@ -1069,8 +859,6 @@ export interface SOSequencer {
   /**
    * PeerId is the sequencer's key. Empty is Merge: nothing places operations
    * after start.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
@@ -1078,166 +866,40 @@ export interface SOSequencer {
    * owner who appointed it held the sequence. Positions up to start are
    * authenticated by their hash links to it; the sequencer signs every later
    * one. Unset when no position came before.
-   *
-   * @generated from field: sobject.SOSequenceHead start = 2;
    */
   start?: SOSequenceHead
 }
 
 export const SOSequencer: MessageType<SOSequencer> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOSequencer',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'start', kind: 'message', T: SOSequenceHead },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOSequencer>('sobject.SOSequencer', () => [
+    [1, 'peer_id', 9],
+    [2, 'start', 11, 0, SOSequenceHead.codec],
+  ])
 
 /**
- * SOCheckpointHead names one checkpoint.
+ * SOSequenceHead names one position of the sequence.
  *
- * @generated from message sobject.SOCheckpointHead
+ * @generated from message sobject.SOSequenceHead
  */
-export interface SOCheckpointHead {
+export interface SOSequenceHead {
   /**
-   * Height is the checkpoint height.
-   *
-   * @generated from field: uint64 height = 1;
+   * Height is the position, counted from 1.
    */
   height?: bigint
   /**
-   * Hash is the checkpoint identity.
-   *
-   * @generated from field: bytes hash = 2;
+   * Hash is the identity of the position's signed record.
    */
   hash?: Uint8Array
 }
 
-export const SOCheckpointHead: MessageType<SOCheckpointHead> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOCheckpointHead',
-    fields: [
-      { no: 1, name: 'height', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'hash', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SharedObjectConfig configures the SharedObject.
- *
- * @generated from message sobject.SharedObjectConfig
- */
-export interface SharedObjectConfig {
-  /**
-   * Participants is the list of shared object participants.
-   * An empty audience with a retained signed history head represents final departure.
-   *
-   * @generated from field: repeated sobject.SOParticipantConfig participants = 1;
-   */
-  participants?: SOParticipantConfig[]
-  /**
-   * ConfigChainHash is the hash of the latest SOConfigChange entry.
-   *
-   * @generated from field: bytes config_chain_hash = 10;
-   */
-  configChainHash?: Uint8Array
-  /**
-   * ConfigChainSeqno is the sequence number of the latest SOConfigChange entry.
-   * The next entry must have config_seqno == config_chain_seqno + 1.
-   * Zero means no config changes have been applied yet (genesis state).
-   *
-   * @generated from field: uint64 config_chain_seqno = 11;
-   */
-  configChainSeqno?: bigint
-  /**
-   * RemovedAuthors pins the last operation the removing owner held from each
-   * removed author whose operations the checkpoint does not yet cover, sorted
-   * by peer ID. Replay applies a removed author's operations up to that
-   * operation and skips the rest, which may postdate the removal.
-   *
-   * @generated from field: repeated sobject.SOOperationPosition removed_authors = 12;
-   */
-  removedAuthors?: SOOperationPosition[]
-  /**
-   * RosterDroppedPeerIds are the writers left off the trimming roster, sorted.
-   * Every other writer is on the roster: the stable point waits until each
-   * has built on an operation before history below it is trimmed.
-   *
-   * @generated from field: repeated string roster_dropped_peer_ids = 13;
-   */
-  rosterDroppedPeerIds?: string[]
-  /**
-   * Sequencer places operations in One order. An unset sequencer or an empty
-   * peer ID is Merge.
-   *
-   * @generated from field: sobject.SOSequencer sequencer = 14;
-   */
-  sequencer?: SOSequencer
-  /**
-   * Control says who changes this config and signs checkpoints: an owner, or
-   * more than two thirds of the voting weight.
-   *
-   * @generated from field: sobject.SOControl control = 15;
-   */
-  control?: SOControl
-  /**
-   * SealedCheckpoint is the checkpoint the group held when it decided this
-   * config. The config vouches for it by hash, so it stays valid after the
-   * voters who committed it change. Required under group control; a change
-   * back to owner control keeps it.
-   *
-   * @generated from field: sobject.SOCheckpointHead sealed_checkpoint = 16;
-   */
-  sealedCheckpoint?: SOCheckpointHead
-}
-
-export const SharedObjectConfig: MessageType<SharedObjectConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SharedObjectConfig',
-    fields: [
-      {
-        no: 1,
-        name: 'participants',
-        kind: 'message',
-        T: SOParticipantConfig,
-        repeated: true,
-      },
-      {
-        no: 10,
-        name: 'config_chain_hash',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-      {
-        no: 11,
-        name: 'config_chain_seqno',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 12,
-        name: 'removed_authors',
-        kind: 'message',
-        T: SOOperationPosition,
-        repeated: true,
-      },
-      {
-        no: 13,
-        name: 'roster_dropped_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 14, name: 'sequencer', kind: 'message', T: SOSequencer },
-      { no: 15, name: 'control', kind: 'enum', T: SOControl_Enum },
-      {
-        no: 16,
-        name: 'sealed_checkpoint',
-        kind: 'message',
-        T: SOCheckpointHead,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SOSequenceHead: MessageType<SOSequenceHead> =
+  /* @__PURE__ */ createMessageType<SOSequenceHead>(
+    'sobject.SOSequenceHead',
+    () => [
+      [1, 'height', 4],
+      [2, 'hash', 12],
+    ],
+  )
 
 /**
  * SOSequence is one signed position of the sequence.
@@ -1247,26 +909,19 @@ export const SharedObjectConfig: MessageType<SharedObjectConfig> =
 export interface SOSequence {
   /**
    * Inner is the encoded SOSequenceInner.
-   *
-   * @generated from field: bytes inner = 1;
    */
   inner?: Uint8Array
   /**
    * Signature is the sequencer's signature of inner.
-   *
-   * @generated from field: peer.Signature signature = 2;
    */
   signature?: Signature
 }
 
 export const SOSequence: MessageType<SOSequence> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOSequence',
-    fields: [
-      { no: 1, name: 'inner', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'signature', kind: 'message', T: () => Signature },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOSequence>('sobject.SOSequence', () => [
+    [1, 'inner', 12],
+    [2, 'signature', 11, 0, Signature.codec],
+  ])
 
 /**
  * SOSequenceInner is the signed body of a position. Its identity is the hash
@@ -1277,49 +932,39 @@ export const SOSequence: MessageType<SOSequence> =
 export interface SOSequenceInner {
   /**
    * SharedObjectId binds the position to one shared object.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * Height is one more than the previous position, 1 for the first.
-   *
-   * @generated from field: uint64 height = 2;
    */
   height?: bigint
   /**
    * PrevHash is the identity of the previous position. Empty at height 1.
-   *
-   * @generated from field: bytes prev_hash = 3;
    */
   prevHash?: Uint8Array
   /**
    * Op is the operation placed at this position. Its author and nonce let a
    * member skip an operation its checkpoint covers.
-   *
-   * @generated from field: sobject.SOOperationPosition op = 4;
    */
   op?: SOOperationPosition
   /**
    * PeerId is the sequencer that signed the position, so positions two
    * sequencers sign for one operation differ.
-   *
-   * @generated from field: string peer_id = 5;
    */
   peerId?: string
 }
 
 export const SOSequenceInner: MessageType<SOSequenceInner> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOSequenceInner',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'height', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'prev_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'op', kind: 'message', T: SOOperationPosition },
-      { no: 5, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOSequenceInner>(
+    'sobject.SOSequenceInner',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'height', 4],
+      [3, 'prev_hash', 12],
+      [4, 'op', 11, 0, SOOperationPosition.codec],
+      [5, 'peer_id', 9],
+    ],
+  )
 
 /**
  * SOLeaveRequest relinquishes only the identities that sign this exact object and configuration head.
@@ -1329,39 +974,45 @@ export const SOSequenceInner: MessageType<SOSequenceInner> =
 export interface SOLeaveRequest {
   /**
    * SharedObjectId is the external shared object whose participation is relinquished.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * ConfigHash binds consent to held authority so an old request cannot undo a later rejoin.
-   *
-   * @generated from field: bytes config_hash = 2;
    */
   configHash?: Uint8Array
   /**
    * Signatures prove each departing identity; each signs this message with Signatures cleared.
-   *
-   * @generated from field: repeated peer.Signature signatures = 3;
    */
   signatures?: Signature[]
 }
 
 export const SOLeaveRequest: MessageType<SOLeaveRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOLeaveRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'config_hash', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 3,
-        name: 'signatures',
-        kind: 'message',
-        T: () => Signature,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOLeaveRequest>(
+    'sobject.SOLeaveRequest',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'config_hash', 12],
+      [3, 'signatures', 11, 1, Signature.codec],
+    ],
+  )
+
+/**
+ * SOLeaveResponse proves the owner committed removal, without returning channel data or root grants.
+ *
+ * @generated from message sobject.SOLeaveResponse
+ */
+export interface SOLeaveResponse {
+  /**
+   * Changes is the signed configuration suffix from the request head through the first completed removal.
+   */
+  changes?: SOConfigChange[]
+}
+
+export const SOLeaveResponse: MessageType<SOLeaveResponse> =
+  /* @__PURE__ */ createMessageType<SOLeaveResponse>(
+    'sobject.SOLeaveResponse',
+    () => [[1, 'changes', 11, 1, SOConfigChange.codec]],
+  )
 
 /**
  * SORevocationInfo contains metadata about why a participant was removed.
@@ -1371,74 +1022,106 @@ export const SOLeaveRequest: MessageType<SOLeaveRequest> =
 export interface SORevocationInfo {
   /**
    * Reason is the reason for the revocation.
-   *
-   * @generated from field: sobject.SORevocationReason reason = 1;
    */
   reason?: SORevocationReason
   /**
    * Timestamp is when the revocation occurred.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
   /**
    * Nonce is a unique value to prevent replay of revocation entries.
-   *
-   * @generated from field: uint64 nonce = 3;
    */
   nonce?: bigint
   /**
    * LeaveRequestHash identifies the exact signed consent acknowledged by this removal.
-   *
-   * @generated from field: bytes leave_request_hash = 4;
    */
   leaveRequestHash?: Uint8Array
 }
 
 export const SORevocationInfo: MessageType<SORevocationInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SORevocationInfo',
-    fields: [
-      { no: 1, name: 'reason', kind: 'enum', T: SORevocationReason_Enum },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 3, name: 'nonce', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 4,
-        name: 'leave_request_hash',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SORevocationInfo>(
+    'sobject.SORevocationInfo',
+    () => [
+      [1, 'reason', 14, 0, SORevocationReason_Enum],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+      [3, 'nonce', 4],
+      [4, 'leave_request_hash', 12],
+    ],
+  )
 
 /**
- * SOControlMessage is one signed message of a group decision.
+ * SOConfigChange is a control record: one signed change in the config chain.
+ * Its identity is the hash of the record with signatures cleared.
  *
- * @generated from message sobject.SOControlMessage
+ * @generated from message sobject.SOConfigChange
  */
-export interface SOControlMessage {
+export interface SOConfigChange {
   /**
-   * Inner is the encoded SOControlMessageInner.
-   *
-   * @generated from field: bytes inner = 1;
+   * ConfigSeqno is the sequence number of this config change.
    */
-  inner?: Uint8Array
+  configSeqno?: bigint
   /**
-   * Signature is the voter's signature of inner.
-   *
-   * @generated from field: peer.Signature signature = 2;
+   * Config is the new config after this change.
    */
-  signature?: Signature
+  config?: SharedObjectConfig
+  /**
+   * PreviousHash is the hash of the parent control record.
+   * Empty only on genesis.
+   */
+  previousHash?: Uint8Array
+  /**
+   * ChangeType describes the kind of mutation in this config chain entry.
+   */
+  changeType?: SOConfigChangeType
+  /**
+   * RevocationInfo contains metadata about why a participant was removed.
+   * Only populated when change_type is REMOVE_PARTICIPANT.
+   */
+  revocationInfo?: SORevocationInfo
+  /**
+   * LeaveRequest is the departing peers' consent that the promoted owner commits.
+   * Only populated on a TRANSFER_OWNERSHIP made for an owner's departure.
+   */
+  leaveRequest?: SOLeaveRequest
+  /**
+   * SharedObjectId binds the record to one shared object.
+   */
+  sharedObjectId?: string
+  /**
+   * Signatures sign the record with signatures and commit cleared, under
+   * owner control. Each signer is distinct and authorized by the parent
+   * config; genesis is signed by an owner of its own config.
+   */
+  signatures?: Signature[]
+  /**
+   * Commit holds the precommits that decided the record under group control:
+   * one round, voters of the parent config, more than two thirds of its
+   * voting weight.
+   */
+  commit?: SOControlMessage[]
+  /**
+   * Merge is the branch a MERGE record absorbs. Only populated when
+   * change_type is MERGE.
+   */
+  merge?: SOConfigMerge
 }
 
-export const SOControlMessage: MessageType<SOControlMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOControlMessage',
-    fields: [
-      { no: 1, name: 'inner', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'signature', kind: 'message', T: () => Signature },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SOConfigChange: MessageType<SOConfigChange> =
+  /* @__PURE__ */ createMessageType<SOConfigChange>(
+    'sobject.SOConfigChange',
+    () => [
+      [1, 'config_seqno', 4],
+      [2, 'config', 11, 0, SharedObjectConfig.codec],
+      [6, 'previous_hash', 12],
+      [7, 'change_type', 14, 0, SOConfigChangeType_Enum],
+      [8, 'revocation_info', 11, 0, SORevocationInfo.codec],
+      [9, 'leave_request', 11, 0, SOLeaveRequest.codec],
+      [10, 'shared_object_id', 9],
+      [11, 'signatures', 11, 1, Signature.codec],
+      [12, 'commit', 11, 1, SOControlMessage.codec],
+      [13, 'merge', 11, 0, SOConfigMerge.codec],
+    ],
+  )
 
 /**
  * SOConfigMerge is a concurrent branch of the config chain that a MERGE record
@@ -1454,172 +1137,72 @@ export const SOControlMessage: MessageType<SOControlMessage> =
 export interface SOConfigMerge {
   /**
    * Fork is the record both branches extend: the parent of branch[0].
-   *
-   * @generated from field: sobject.SOConfigChange fork = 1;
    */
   fork?: SOConfigChange
   /**
    * Branch are the absorbed records, oldest first, each the child of the one
    * before it.
-   *
-   * @generated from field: repeated sobject.SOConfigChange branch = 2;
    */
   branch?: SOConfigChange[]
 }
 
 export const SOConfigMerge: MessageType<SOConfigMerge> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOConfigMerge',
-    fields: [
-      { no: 1, name: 'fork', kind: 'message', T: () => SOConfigChange },
-      {
-        no: 2,
-        name: 'branch',
-        kind: 'message',
-        T: () => SOConfigChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOConfigMerge>(
+    'sobject.SOConfigMerge',
+    () => [
+      [1, 'fork', 11, 0, SOConfigChange.codec],
+      [2, 'branch', 11, 1, SOConfigChange.codec],
+    ],
+  )
 
 /**
- * SOConfigChange is a control record: one signed change in the config chain.
- * Its identity is the hash of the record with signatures cleared.
+ * SOParticipantConfig contains a listing of an entity associated with a shared object.
+ * Each entity may only appear one time in the list.
  *
- * @generated from message sobject.SOConfigChange
+ * @generated from message sobject.SOParticipantConfig
  */
-export interface SOConfigChange {
+export interface SOParticipantConfig {
   /**
-   * ConfigSeqno is the sequence number of this config change.
-   *
-   * @generated from field: uint64 config_seqno = 1;
+   * PeerId is the string representation of this participant's peer id.
    */
-  configSeqno?: bigint
+  peerId?: string
   /**
-   * Config is the new config after this change.
+   * Role is the general role of the participant.
    *
-   * @generated from field: sobject.SharedObjectConfig config = 2;
+   * - READER: can read the value of the shared object only.
+   * - WRITER: can also write operations.
+   * - OWNER: can also change the config and sign checkpoints.
    */
-  config?: SharedObjectConfig
+  role?: SOParticipantRole
   /**
-   * PreviousHash is the hash of the parent control record.
-   * Empty only on genesis.
-   *
-   * @generated from field: bytes previous_hash = 6;
+   * EntityId is the account ID of the entity that owns this participant's session.
+   * Set when an owner adds a cloud participant. Empty for local-only participants.
    */
-  previousHash?: Uint8Array
+  entityId?: string
   /**
-   * ChangeType describes the kind of mutation in this config chain entry.
-   *
-   * @generated from field: sobject.SOConfigChangeType change_type = 7;
+   * Username is the provider username of entity_id, recorded by the owner
+   * who added the participant. A self-enrolled peer repeats the username
+   * already recorded for its entity. Empty when entity_id is empty.
    */
-  changeType?: SOConfigChangeType
+  username?: string
   /**
-   * RevocationInfo contains metadata about why a participant was removed.
-   * Only populated when change_type is REMOVE_PARTICIPANT.
-   *
-   * @generated from field: sobject.SORevocationInfo revocation_info = 8;
+   * VotingWeight is this device's vote under group control. Zero does not
+   * vote. Only writers and owners vote.
    */
-  revocationInfo?: SORevocationInfo
-  /**
-   * LeaveRequest is the departing peers' consent that the promoted owner commits.
-   * Only populated on a TRANSFER_OWNERSHIP made for an owner's departure.
-   *
-   * @generated from field: sobject.SOLeaveRequest leave_request = 9;
-   */
-  leaveRequest?: SOLeaveRequest
-  /**
-   * SharedObjectId binds the record to one shared object.
-   *
-   * @generated from field: string shared_object_id = 10;
-   */
-  sharedObjectId?: string
-  /**
-   * Signatures sign the record with signatures and commit cleared, under
-   * owner control. Each signer is distinct and authorized by the parent
-   * config; genesis is signed by an owner of its own config.
-   *
-   * @generated from field: repeated peer.Signature signatures = 11;
-   */
-  signatures?: Signature[]
-  /**
-   * Commit holds the precommits that decided the record under group control:
-   * one round, voters of the parent config, more than two thirds of its
-   * voting weight.
-   *
-   * @generated from field: repeated sobject.SOControlMessage commit = 12;
-   */
-  commit?: SOControlMessage[]
-  /**
-   * Merge is the branch a MERGE record absorbs. Only populated when
-   * change_type is MERGE.
-   *
-   * @generated from field: sobject.SOConfigMerge merge = 13;
-   */
-  merge?: SOConfigMerge
+  votingWeight?: number
 }
 
-export const SOConfigChange: MessageType<SOConfigChange> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOConfigChange',
-    fields: [
-      { no: 1, name: 'config_seqno', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'config', kind: 'message', T: SharedObjectConfig },
-      { no: 6, name: 'previous_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 7, name: 'change_type', kind: 'enum', T: SOConfigChangeType_Enum },
-      { no: 8, name: 'revocation_info', kind: 'message', T: SORevocationInfo },
-      { no: 9, name: 'leave_request', kind: 'message', T: SOLeaveRequest },
-      {
-        no: 10,
-        name: 'shared_object_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 11,
-        name: 'signatures',
-        kind: 'message',
-        T: () => Signature,
-        repeated: true,
-      },
-      {
-        no: 12,
-        name: 'commit',
-        kind: 'message',
-        T: SOControlMessage,
-        repeated: true,
-      },
-      { no: 13, name: 'merge', kind: 'message', T: SOConfigMerge },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOLeaveResponse proves the owner committed removal, without returning channel data or root grants.
- *
- * @generated from message sobject.SOLeaveResponse
- */
-export interface SOLeaveResponse {
-  /**
-   * Changes is the signed configuration suffix from the request head through the first completed removal.
-   *
-   * @generated from field: repeated sobject.SOConfigChange changes = 1;
-   */
-  changes?: SOConfigChange[]
-}
-
-export const SOLeaveResponse: MessageType<SOLeaveResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOLeaveResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'changes',
-        kind: 'message',
-        T: SOConfigChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SOParticipantConfig: MessageType<SOParticipantConfig> =
+  /* @__PURE__ */ createMessageType<SOParticipantConfig>(
+    'sobject.SOParticipantConfig',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'role', 14, 0, SOParticipantRole_Enum],
+      [3, 'entity_id', 9],
+      [4, 'username', 9],
+      [5, 'voting_weight', 13],
+    ],
+  )
 
 /**
  * SOCheckpoint is a signed checkpoint: the World at a point of the operation
@@ -1630,47 +1213,54 @@ export const SOLeaveResponse: MessageType<SOLeaveResponse> =
 export interface SOCheckpoint {
   /**
    * Inner is the encoded SOCheckpointInner.
-   *
-   * @generated from field: bytes inner = 1;
    */
   inner?: Uint8Array
   /**
    * Signatures sign inner under owner control. One must be from an owner
    * under the held config.
-   *
-   * @generated from field: repeated peer.Signature signatures = 2;
    */
   signatures?: Signature[]
   /**
    * Commit holds the precommits that decided the checkpoint under group
    * control, by voters of the config named by inner.config_hash.
-   *
-   * @generated from field: repeated sobject.SOControlMessage commit = 3;
    */
   commit?: SOControlMessage[]
 }
 
 export const SOCheckpoint: MessageType<SOCheckpoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOCheckpoint',
-    fields: [
-      { no: 1, name: 'inner', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 2,
-        name: 'signatures',
-        kind: 'message',
-        T: () => Signature,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'commit',
-        kind: 'message',
-        T: SOControlMessage,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOCheckpoint>(
+    'sobject.SOCheckpoint',
+    () => [
+      [1, 'inner', 12],
+      [2, 'signatures', 11, 1, Signature.codec],
+      [3, 'commit', 11, 1, SOControlMessage.codec],
+    ],
+  )
+
+/**
+ * SOControlMessage is one signed message of a group decision.
+ *
+ * @generated from message sobject.SOControlMessage
+ */
+export interface SOControlMessage {
+  /**
+   * Inner is the encoded SOControlMessageInner.
+   */
+  inner?: Uint8Array
+  /**
+   * Signature is the voter's signature of inner.
+   */
+  signature?: Signature
+}
+
+export const SOControlMessage: MessageType<SOControlMessage> =
+  /* @__PURE__ */ createMessageType<SOControlMessage>(
+    'sobject.SOControlMessage',
+    () => [
+      [1, 'inner', 12],
+      [2, 'signature', 11, 0, Signature.codec],
+    ],
+  )
 
 /**
  * SOControlMessageInner is the signed body of a group decision message. A
@@ -1684,85 +1274,65 @@ export const SOCheckpoint: MessageType<SOCheckpoint> =
 export interface SOControlMessageInner {
   /**
    * SharedObjectId binds the message to one shared object.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * PeerId is the voter that signed the message.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * Kind is the kind of value the message carries. Unknown on a vote.
-   *
-   * @generated from field: sobject.SODecisionKind kind = 3;
    */
   kind?: SODecisionKind
   /**
    * Height is one more than the height of the checkpoint the decision
    * follows. Zero on AGREE, which stands while the config does.
-   *
-   * @generated from field: uint64 height = 4;
    */
   height?: bigint
   /**
    * ConfigHash is the config chain hash of the config whose voters decide.
-   *
-   * @generated from field: bytes config_hash = 5;
    */
   configHash?: Uint8Array
   /**
    * Round counts from 1. Zero on AGREE.
-   *
-   * @generated from field: uint32 round = 6;
    */
   round?: number
   /**
    * Type is the step this message takes.
-   *
-   * @generated from field: sobject.SOControlMessageType type = 7;
    */
   type?: SOControlMessageType
   /**
    * ValueHash is the identity of the value. Empty on a nil vote.
-   *
-   * @generated from field: bytes value_hash = 8;
    */
   valueHash?: Uint8Array
   /**
    * ValidRound is the earlier round whose prevotes justify a re-proposed
    * value. Zero when none. Only on PROPOSAL.
-   *
-   * @generated from field: uint32 valid_round = 9;
    */
   validRound?: number
   /**
    * Value is the encoded record: an SOConfigChange with signatures and
    * commit cleared, or an SOCheckpointInner. Only on AGREE and PROPOSAL.
-   *
-   * @generated from field: bytes value = 10;
    */
   value?: Uint8Array
 }
 
 export const SOControlMessageInner: MessageType<SOControlMessageInner> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOControlMessageInner',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'kind', kind: 'enum', T: SODecisionKind_Enum },
-      { no: 4, name: 'height', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'config_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 6, name: 'round', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'type', kind: 'enum', T: SOControlMessageType_Enum },
-      { no: 8, name: 'value_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 9, name: 'valid_round', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 10, name: 'value', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOControlMessageInner>(
+    'sobject.SOControlMessageInner',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'peer_id', 9],
+      [3, 'kind', 14, 0, SODecisionKind_Enum],
+      [4, 'height', 4],
+      [5, 'config_hash', 12],
+      [6, 'round', 13],
+      [7, 'type', 14, 0, SOControlMessageType_Enum],
+      [8, 'value_hash', 12],
+      [9, 'valid_round', 13],
+      [10, 'value', 12],
+    ],
+  )
 
 /**
  * SOCheckpointInner is the signed body of a checkpoint.
@@ -1772,90 +1342,91 @@ export const SOControlMessageInner: MessageType<SOControlMessageInner> =
 export interface SOCheckpointInner {
   /**
    * SharedObjectId binds the checkpoint to one shared object.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * Height is 0 for genesis, then one more than the previous checkpoint.
-   *
-   * @generated from field: uint64 height = 2;
    */
   height?: bigint
   /**
    * PrevCheckpointHash is the hash of the previous checkpoint's inner.
    * Empty only at genesis.
-   *
-   * @generated from field: bytes prev_checkpoint_hash = 3;
    */
   prevCheckpointHash?: Uint8Array
   /**
    * ConfigHash is the config chain hash the checkpoint was signed under.
-   *
-   * @generated from field: bytes config_hash = 4;
    */
   configHash?: Uint8Array
   /**
    * StateData is the World state after the prefix, encrypted with the key of
    * key_epoch.
-   *
-   * @generated from field: bytes state_data = 6;
    */
   stateData?: Uint8Array
   /**
    * ReplayVersion is the replay rule version the World was computed with.
-   *
-   * @generated from field: uint32 replay_version = 7;
    */
   replayVersion?: number
   /**
    * KeyEpoch is the key epoch whose key encrypted state_data.
-   *
-   * @generated from field: uint64 key_epoch = 8;
    */
   keyEpoch?: bigint
   /**
    * Authors are the last covered operation of each author, sorted by peer_id.
    * An operation at or below its author's entry is covered. Empty at genesis.
-   *
-   * @generated from field: repeated sobject.SOOperationPosition authors = 9;
    */
   authors?: SOOperationPosition[]
   /**
    * Sequence is the last position the checkpoint covers. Unset when it covers
    * none.
-   *
-   * @generated from field: sobject.SOSequenceHead sequence = 10;
    */
   sequence?: SOSequenceHead
 }
 
 export const SOCheckpointInner: MessageType<SOCheckpointInner> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOCheckpointInner',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'height', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 3,
-        name: 'prev_checkpoint_hash',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-      { no: 4, name: 'config_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 6, name: 'state_data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 7, name: 'replay_version', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 8, name: 'key_epoch', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 9,
-        name: 'authors',
-        kind: 'message',
-        T: SOOperationPosition,
-        repeated: true,
-      },
-      { no: 10, name: 'sequence', kind: 'message', T: SOSequenceHead },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOCheckpointInner>(
+    'sobject.SOCheckpointInner',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'height', 4],
+      [3, 'prev_checkpoint_hash', 12],
+      [4, 'config_hash', 12],
+      [6, 'state_data', 12],
+      [7, 'replay_version', 13],
+      [8, 'key_epoch', 4],
+      [9, 'authors', 11, 1, SOOperationPosition.codec],
+      [10, 'sequence', 11, 0, SOSequenceHead.codec],
+    ],
+  )
+
+/**
+ * SOOperationPosition is an operation at one position of its author's chain.
+ *
+ * @generated from message sobject.SOOperationPosition
+ */
+export interface SOOperationPosition {
+  /**
+   * PeerId is the author.
+   */
+  peerId?: string
+  /**
+   * Nonce is the author sequence of the operation.
+   */
+  nonce?: bigint
+  /**
+   * OpHash is the hash of the operation.
+   */
+  opHash?: Uint8Array
+}
+
+export const SOOperationPosition: MessageType<SOOperationPosition> =
+  /* @__PURE__ */ createMessageType<SOOperationPosition>(
+    'sobject.SOOperationPosition',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'nonce', 4],
+      [3, 'op_hash', 12],
+    ],
+  )
 
 /**
  * SOOperation represents an individual operation submitted by a participant.
@@ -1865,27 +1436,20 @@ export const SOCheckpointInner: MessageType<SOCheckpointInner> =
 export interface SOOperation {
   /**
    * Inner is the encoded SOOperationInner object.
-   *
-   * @generated from field: bytes inner = 1;
    */
   inner?: Uint8Array
   /**
    * Signature is the signature of inner.
    * The signature public key must match the participant's peer_id.
-   *
-   * @generated from field: peer.Signature signature = 2;
    */
   signature?: Signature
 }
 
 export const SOOperation: MessageType<SOOperation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOOperation',
-    fields: [
-      { no: 1, name: 'inner', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'signature', kind: 'message', T: () => Signature },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOOperation>('sobject.SOOperation', () => [
+    [1, 'inner', 12],
+    [2, 'signature', 11, 0, Signature.codec],
+  ])
 
 /**
  * SOOperationInner is the signed body of an operation: one step in its
@@ -1897,96 +1461,70 @@ export const SOOperation: MessageType<SOOperation> =
 export interface SOOperationInner {
   /**
    * PeerId is the identifier of the author.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * LocalId is the locally-assigned ulid for the operation.
    * Must be a valid ulid.
    * Must be lower-case.
-   *
-   * @generated from field: string local_id = 2;
    */
   localId?: string
   /**
    * Nonce is the author sequence: 1 for the author's first operation,
    * then one more than the operation named by prev_op_hash.
-   *
-   * @generated from field: uint64 nonce = 3;
    */
   nonce?: bigint
   /**
    * OpData is the operation data, encrypted with the key of key_epoch.
    * Empty for an acknowledgment, which applies nothing and records that its
    * author has built on every operation it names.
-   *
-   * @generated from field: bytes op_data = 4;
    */
   opData?: Uint8Array
   /**
    * SharedObjectId binds the operation to one shared object.
-   *
-   * @generated from field: string shared_object_id = 5;
    */
   sharedObjectId?: string
   /**
    * ProtocolVersion is the operation format version.
-   *
-   * @generated from field: uint32 protocol_version = 6;
    */
   protocolVersion?: number
   /**
    * PrevOpHash is the hash of the author's previous operation.
    * Empty only when nonce is 1.
-   *
-   * @generated from field: bytes prev_op_hash = 7;
    */
   prevOpHash?: Uint8Array
   /**
    * Parents are the other heads the author knew, sorted by op_hash. Excludes
    * the previous operation. A parent's position lets every member tell a
    * parent its checkpoint covers from one it has not received yet.
-   *
-   * @generated from field: repeated sobject.SOOperationPosition parents = 8;
    */
   parents?: SOOperationPosition[]
   /**
    * ConfigHash is the config chain hash the operation was written under.
-   *
-   * @generated from field: bytes config_hash = 9;
    */
   configHash?: Uint8Array
   /**
    * KeyEpoch is the key epoch whose key encrypted op_data.
-   *
-   * @generated from field: uint64 key_epoch = 10;
    */
   keyEpoch?: bigint
 }
 
 export const SOOperationInner: MessageType<SOOperationInner> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOOperationInner',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'local_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'nonce', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'op_data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 5, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'protocol_version', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'prev_op_hash', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 8,
-        name: 'parents',
-        kind: 'message',
-        T: SOOperationPosition,
-        repeated: true,
-      },
-      { no: 9, name: 'config_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 10, name: 'key_epoch', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOOperationInner>(
+    'sobject.SOOperationInner',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'local_id', 9],
+      [3, 'nonce', 4],
+      [4, 'op_data', 12],
+      [5, 'shared_object_id', 9],
+      [6, 'protocol_version', 13],
+      [7, 'prev_op_hash', 12],
+      [8, 'parents', 11, 1, SOOperationPosition.codec],
+      [9, 'config_hash', 12],
+      [10, 'key_epoch', 4],
+    ],
+  )
 
 /**
  * SOOperationRef is a reference to an operation that was queued.
@@ -1996,56 +1534,22 @@ export const SOOperationInner: MessageType<SOOperationInner> =
 export interface SOOperationRef {
   /**
    * PeerId is the identifier of the participant submitting the operation.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * Nonce is the nonce for the operation.
-   *
-   * @generated from field: uint64 nonce = 2;
    */
   nonce?: bigint
 }
 
 export const SOOperationRef: MessageType<SOOperationRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOOperationRef',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'nonce', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOOperationRejectionErrorDetails contains error details.
- *
- * @generated from message sobject.SOOperationRejectionErrorDetails
- */
-export interface SOOperationRejectionErrorDetails {
-  /**
-   * ErrorMsg is the error message.
-   *
-   * @generated from field: string error_msg = 1;
-   */
-  errorMsg?: string
-  /**
-   * MissingBlock is set when replay found a block the operation needs in no
-   * store. The submitter may store its blocks again and resubmit.
-   *
-   * @generated from field: bool missing_block = 2;
-   */
-  missingBlock?: boolean
-}
-
-export const SOOperationRejectionErrorDetails: MessageType<SOOperationRejectionErrorDetails> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOOperationRejectionErrorDetails',
-    fields: [
-      { no: 1, name: 'error_msg', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'missing_block', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOOperationRef>(
+    'sobject.SOOperationRef',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'nonce', 4],
+    ],
+  )
 
 /**
  * SOOperationResult is the result of applying an operation.
@@ -2055,62 +1559,61 @@ export const SOOperationRejectionErrorDetails: MessageType<SOOperationRejectionE
 export interface SOOperationResult {
   /**
    * OpRef is the operation reference.
-   *
-   * @generated from field: sobject.SOOperationRef op_ref = 1;
    */
   opRef?: SOOperationRef
-
   /**
    * Body is the body of the result.
    *
    * @generated from oneof sobject.SOOperationResult.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Success indicates the op was successful.
-         *
-         * @generated from field: bool success = 2;
-         */
-        value: boolean
-        case: 'success'
-      }
-    | {
-        /**
-         * ErrorDetails contains the rejection error details.
-         *
-         * @generated from field: sobject.SOOperationRejectionErrorDetails error_details = 3;
-         */
-        value: SOOperationRejectionErrorDetails
-        case: 'errorDetails'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: boolean; case: 'success' }
+    | { value: SOOperationRejectionErrorDetails; case: 'errorDetails' }
 }
 
 export const SOOperationResult: MessageType<SOOperationResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOOperationResult',
-    fields: [
-      { no: 1, name: 'op_ref', kind: 'message', T: SOOperationRef },
-      {
-        no: 2,
-        name: 'success',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'error_details',
-        kind: 'message',
-        T: SOOperationRejectionErrorDetails,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOOperationResult>(
+    'sobject.SOOperationResult',
+    () => [
+      [1, 'op_ref', 11, 0, SOOperationRef.codec],
+      [2, 'success', 8, 0, 0, 'body'],
+      [
+        3,
+        'error_details',
+        11,
+        0,
+        SOOperationRejectionErrorDetails.codec,
+        'body',
+      ],
+    ],
+  )
+
+/**
+ * SOOperationRejectionErrorDetails contains error details.
+ *
+ * @generated from message sobject.SOOperationRejectionErrorDetails
+ */
+export interface SOOperationRejectionErrorDetails {
+  /**
+   * ErrorMsg is the error message.
+   */
+  errorMsg?: string
+  /**
+   * MissingBlock is set when replay found a block the operation needs in no
+   * store. The submitter may store its blocks again and resubmit.
+   */
+  missingBlock?: boolean
+}
+
+export const SOOperationRejectionErrorDetails: MessageType<SOOperationRejectionErrorDetails> =
+  /* @__PURE__ */ createMessageType<SOOperationRejectionErrorDetails>(
+    'sobject.SOOperationRejectionErrorDetails',
+    () => [
+      [1, 'error_msg', 9],
+      [2, 'missing_block', 8],
+    ],
+  )
 
 /**
  * SOGrant is a grant of a transform configuration to a peer.
@@ -2121,32 +1624,24 @@ export interface SOGrant {
   /**
    * PeerId is the peer id of the target of the grant.
    * Must match a peer id of a participant on the shared object.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * InnerData is the inner SOGrantInner encrypted to the peer id.
-   *
-   * @generated from field: bytes inner_data = 2;
    */
   innerData?: Uint8Array
   /**
    * Signature is the signature of inner_data by the peer that issued the grant.
-   *
-   * @generated from field: peer.Signature signature = 3;
    */
   signature?: Signature
 }
 
-export const SOGrant: MessageType<SOGrant> = /* @__PURE__ */ createMessageType({
-  typeName: 'sobject.SOGrant',
-  fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'inner_data', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 3, name: 'signature', kind: 'message', T: () => Signature },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const SOGrant: MessageType<SOGrant> =
+  /* @__PURE__ */ createMessageType<SOGrant>('sobject.SOGrant', () => [
+    [1, 'peer_id', 9],
+    [2, 'inner_data', 12],
+    [3, 'signature', 11, 0, Signature.codec],
+  ])
 
 /**
  * SOGrantInner is the inner encrypted body of the SOGrant.
@@ -2157,19 +1652,15 @@ export interface SOGrantInner {
   /**
    * TransformConf is the transform config within the grant.
    * Usually contains a crypto key.
-   *
-   * @generated from field: block.transform.Config transform_conf = 1;
    */
   transformConf?: Config
 }
 
 export const SOGrantInner: MessageType<SOGrantInner> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOGrantInner',
-    fields: [
-      { no: 1, name: 'transform_conf', kind: 'message', T: () => Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOGrantInner>(
+    'sobject.SOGrantInner',
+    () => [[1, 'transform_conf', 11, 0, Config.codec]],
+  )
 
 /**
  * SOEntityRecoveryEnvelope stores recovery material for one entity on an SO.
@@ -2179,52 +1670,37 @@ export const SOGrantInner: MessageType<SOGrantInner> =
 export interface SOEntityRecoveryEnvelope {
   /**
    * EntityId is the stable entity identifier the envelope is for.
-   *
-   * @generated from field: string entity_id = 1;
    */
   entityId?: string
   /**
    * KeyEpoch is the current readable key epoch for this envelope.
-   *
-   * @generated from field: uint64 key_epoch = 2;
    */
   keyEpoch?: bigint
   /**
    * ConfigChainSeqno is the config-chain seqno the envelope matches.
-   *
-   * @generated from field: uint64 config_chain_seqno = 3;
    */
   configChainSeqno?: bigint
   /**
    * ConfigChainHash is the config-chain hash the envelope matches.
-   *
-   * @generated from field: bytes config_chain_hash = 4;
    */
   configChainHash?: Uint8Array
   /**
    * EnvelopeData is a bifrost/envelope payload encrypted to entity keypairs.
-   *
-   * @generated from field: bytes envelope_data = 5;
    */
   envelopeData?: Uint8Array
 }
 
 export const SOEntityRecoveryEnvelope: MessageType<SOEntityRecoveryEnvelope> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOEntityRecoveryEnvelope',
-    fields: [
-      { no: 1, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'key_epoch', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 3,
-        name: 'config_chain_seqno',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 4, name: 'config_chain_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 5, name: 'envelope_data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOEntityRecoveryEnvelope>(
+    'sobject.SOEntityRecoveryEnvelope',
+    () => [
+      [1, 'entity_id', 9],
+      [2, 'key_epoch', 4],
+      [3, 'config_chain_seqno', 4],
+      [4, 'config_chain_hash', 12],
+      [5, 'envelope_data', 12],
+    ],
+  )
 
 /**
  * SOEntityRecoveryMaterial is the decrypted recovery material for one entity.
@@ -2234,62 +1710,27 @@ export const SOEntityRecoveryEnvelope: MessageType<SOEntityRecoveryEnvelope> =
 export interface SOEntityRecoveryMaterial {
   /**
    * EntityId is the stable entity identifier this material is for.
-   *
-   * @generated from field: string entity_id = 1;
    */
   entityId?: string
   /**
    * Role is the maximum role the entity may self-rejoin with.
-   *
-   * @generated from field: sobject.SOParticipantRole role = 2;
    */
   role?: SOParticipantRole
   /**
    * GrantInner is the current grant material used to mint a peer grant.
-   *
-   * @generated from field: sobject.SOGrantInner grant_inner = 3;
    */
   grantInner?: SOGrantInner
 }
 
 export const SOEntityRecoveryMaterial: MessageType<SOEntityRecoveryMaterial> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOEntityRecoveryMaterial',
-    fields: [
-      { no: 1, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'role', kind: 'enum', T: SOParticipantRole_Enum },
-      { no: 3, name: 'grant_inner', kind: 'message', T: SOGrantInner },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOInviteParticipation names the Spaces whose participants an invite admits.
- * An empty list admits nobody by participation.
- *
- * @generated from message sobject.SOInviteParticipation
- */
-export interface SOInviteParticipation {
-  /**
-   * SharedObjectIds are the named Spaces.
-   *
-   * @generated from field: repeated string shared_object_ids = 1;
-   */
-  sharedObjectIds?: string[]
-}
-
-export const SOInviteParticipation: MessageType<SOInviteParticipation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOInviteParticipation',
-    fields: [
-      {
-        no: 1,
-        name: 'shared_object_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOEntityRecoveryMaterial>(
+    'sobject.SOEntityRecoveryMaterial',
+    () => [
+      [1, 'entity_id', 9],
+      [2, 'role', 14, 0, SOParticipantRole_Enum],
+      [3, 'grant_inner', 11, 0, SOGrantInner.codec],
+    ],
+  )
 
 /**
  * SOInvite is a pending invite on a SharedObject.
@@ -2300,154 +1741,90 @@ export const SOInviteParticipation: MessageType<SOInviteParticipation> =
 export interface SOInvite {
   /**
    * InviteId is the unique identifier for this invite.
-   *
-   * @generated from field: string invite_id = 1;
    */
   inviteId?: string
   /**
    * TokenHash is the SHA256 hash of the invite token.
    * The raw token is never stored on-chain.
-   *
-   * @generated from field: bytes token_hash = 2;
    */
   tokenHash?: Uint8Array
   /**
    * Role is the role granted to the invitee on acceptance.
-   *
-   * @generated from field: sobject.SOParticipantRole role = 3;
    */
   role?: SOParticipantRole
   /**
    * TargetPeerId is the optional peer ID of the intended invitee.
    * Empty means open invite (anyone with the token can join).
-   *
-   * @generated from field: string target_peer_id = 4;
    */
   targetPeerId?: string
   /**
    * MaxUses is the maximum number of times the invite can be used.
    * 0 means unlimited.
-   *
-   * @generated from field: uint32 max_uses = 5;
    */
   maxUses?: number
   /**
    * Uses is the current number of times the invite has been used.
-   *
-   * @generated from field: uint32 uses = 6;
    */
   uses?: number
   /**
    * ExpiresAt is the time after which the invite is invalid.
    * Unset means no expiry.
-   *
-   * @generated from field: google.protobuf.Timestamp expires_at = 7;
    */
   expiresAt?: Date
   /**
    * Revoked indicates the invite has been revoked by the owner.
-   *
-   * @generated from field: bool revoked = 8;
    */
   revoked?: boolean
   /**
    * TargetAccountId is the optional provider account id required to submit a
    * targeted invitation proof for this invite. Empty means bearer invite.
-   *
-   * @generated from field: string target_account_id = 9;
    */
   targetAccountId?: string
   /**
    * ApprovalRequired queues a redemption the invite does not otherwise admit
    * as a join request, which an owner grants or refuses.
-   *
-   * @generated from field: bool approval_required = 10;
    */
   approvalRequired?: boolean
   /**
    * ParticipantOf admits a redeemer who participates in one of the named
    * Spaces, as the redeeming host holds them. Unset applies no condition.
-   *
-   * @generated from field: sobject.SOInviteParticipation participant_of = 11;
    */
   participantOf?: SOInviteParticipation
 }
 
 export const SOInvite: MessageType<SOInvite> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOInvite',
-    fields: [
-      { no: 1, name: 'invite_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'token_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'role', kind: 'enum', T: SOParticipantRole_Enum },
-      { no: 4, name: 'target_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'max_uses', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 6, name: 'uses', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'expires_at', kind: 'message', T: () => Timestamp },
-      { no: 8, name: 'revoked', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 9,
-        name: 'target_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 10, name: 'approval_required', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 11,
-        name: 'participant_of',
-        kind: 'message',
-        T: SOInviteParticipation,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOInvite>('sobject.SOInvite', () => [
+    [1, 'invite_id', 9],
+    [2, 'token_hash', 12],
+    [3, 'role', 14, 0, SOParticipantRole_Enum],
+    [4, 'target_peer_id', 9],
+    [5, 'max_uses', 13],
+    [6, 'uses', 13],
+    [7, 'expires_at', 11, 0, Timestamp.codec],
+    [8, 'revoked', 8],
+    [9, 'target_account_id', 9],
+    [10, 'approval_required', 8],
+    [11, 'participant_of', 11, 0, SOInviteParticipation.codec],
+  ])
 
 /**
- * SOJoinResponse is a signed response from an invitee requesting to join.
+ * SOInviteParticipation names the Spaces whose participants an invite admits.
+ * An empty list admits nobody by participation.
  *
- * @generated from message sobject.SOJoinResponse
+ * @generated from message sobject.SOInviteParticipation
  */
-export interface SOJoinResponse {
+export interface SOInviteParticipation {
   /**
-   * InviteId is the invite being accepted.
-   *
-   * @generated from field: string invite_id = 1;
+   * SharedObjectIds are the named Spaces.
    */
-  inviteId?: string
-  /**
-   * ResponderPeerId is the peer ID of the responder (b58).
-   *
-   * @generated from field: string responder_peer_id = 2;
-   */
-  responderPeerId?: string
-  /**
-   * ResponderPubkey is the DER-encoded public key of the responder.
-   *
-   * @generated from field: bytes responder_pubkey = 3;
-   */
-  responderPubkey?: Uint8Array
-  /**
-   * Signature is the responder's signature over this message (without this field).
-   *
-   * @generated from field: peer.Signature signature = 4;
-   */
-  signature?: Signature
+  sharedObjectIds?: string[]
 }
 
-export const SOJoinResponse: MessageType<SOJoinResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOJoinResponse',
-    fields: [
-      { no: 1, name: 'invite_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'responder_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'responder_pubkey', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'signature', kind: 'message', T: () => Signature },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SOInviteParticipation: MessageType<SOInviteParticipation> =
+  /* @__PURE__ */ createMessageType<SOInviteParticipation>(
+    'sobject.SOInviteParticipation',
+    () => [[1, 'shared_object_ids', 9, 1]],
+  )
 
 /**
  * SOJoinRequest is a redemption waiting for an owner to grant or refuse it.
@@ -2457,26 +1834,22 @@ export const SOJoinResponse: MessageType<SOJoinResponse> =
 export interface SOJoinRequest {
   /**
    * JoinResponse is the requester's signed redemption.
-   *
-   * @generated from field: sobject.SOJoinResponse join_response = 1;
    */
   joinResponse?: SOJoinResponse
   /**
    * CreatedAt is when the host queued the request.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 2;
    */
   createdAt?: Date
 }
 
 export const SOJoinRequest: MessageType<SOJoinRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOJoinRequest',
-    fields: [
-      { no: 1, name: 'join_response', kind: 'message', T: SOJoinResponse },
-      { no: 2, name: 'created_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOJoinRequest>(
+    'sobject.SOJoinRequest',
+    () => [
+      [1, 'join_response', 11, 0, SOJoinResponse.codec],
+      [2, 'created_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * SOJoinRequestList is a host's pending join requests for one Space, at most
@@ -2487,70 +1860,15 @@ export const SOJoinRequest: MessageType<SOJoinRequest> =
 export interface SOJoinRequestList {
   /**
    * Requests are ordered by arrival.
-   *
-   * @generated from field: repeated sobject.SOJoinRequest requests = 1;
    */
   requests?: SOJoinRequest[]
 }
 
 export const SOJoinRequestList: MessageType<SOJoinRequestList> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOJoinRequestList',
-    fields: [
-      {
-        no: 1,
-        name: 'requests',
-        kind: 'message',
-        T: SOJoinRequest,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SOKeyEpoch is one encryption key of a shared object. A key rotation starts
- * the next epoch; operations and checkpoints name the epoch they used.
- *
- * @generated from message sobject.SOKeyEpoch
- */
-export interface SOKeyEpoch {
-  /**
-   * Epoch is the epoch number (0-based, increments on rotation).
-   *
-   * @generated from field: uint64 epoch = 1;
-   */
-  epoch?: bigint
-  /**
-   * Grants are the key encrypted to each reader of this epoch. Each grant is
-   * signed by an owner, a voter under group control, or its recipient.
-   *
-   * @generated from field: repeated sobject.SOGrant grants = 2;
-   */
-  grants?: SOGrant[]
-  /**
-   * ConfigChainSeqno is the config chain sequence number under which the
-   * epoch was created. A reader removed at a later sequence number still holds
-   * this epoch's key, so the next epoch must replace it.
-   *
-   * @generated from field: uint64 config_chain_seqno = 3;
-   */
-  configChainSeqno?: bigint
-}
-
-export const SOKeyEpoch: MessageType<SOKeyEpoch> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOKeyEpoch',
-    fields: [
-      { no: 1, name: 'epoch', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'grants', kind: 'message', T: SOGrant, repeated: true },
-      {
-        no: 3,
-        name: 'config_chain_seqno',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOJoinRequestList>(
+    'sobject.SOJoinRequestList',
+    () => [[1, 'requests', 11, 1, SOJoinRequest.codec]],
+  )
 
 /**
  * SOState contains the state of the shared object.
@@ -2561,77 +1879,80 @@ export const SOKeyEpoch: MessageType<SOKeyEpoch> =
 export interface SOState {
   /**
    * Config is the shared object config.
-   *
-   * @generated from field: sobject.SharedObjectConfig config = 1;
    */
   config?: SharedObjectConfig
   /**
    * Checkpoint is the latest checkpoint: the World members replay from.
-   *
-   * @generated from field: sobject.SOCheckpoint checkpoint = 2;
    */
   checkpoint?: SOCheckpoint
   /**
    * KeyEpochs are the key epochs, sorted by epoch, each with a grant to every
    * reader that holds its key.
-   *
-   * @generated from field: repeated sobject.SOKeyEpoch key_epochs = 3;
    */
   keyEpochs?: SOKeyEpoch[]
   /**
    * Ops are the operations above the checkpoint, sorted by hash.
-   *
-   * @generated from field: repeated sobject.SOOperation ops = 4;
    */
   ops?: SOOperation[]
   /**
    * Invites is the list of pending invites on this shared object.
    * Stored in plaintext so both providers and cloud can verify invite validity.
-   *
-   * @generated from field: repeated sobject.SOInvite invites = 5;
    */
   invites?: SOInvite[]
   /**
    * Sequence are the positions above the checkpoint, sorted by height, then
    * by hash.
-   *
-   * @generated from field: repeated sobject.SOSequence sequence = 6;
    */
   sequence?: SOSequence[]
   /**
    * ControlMessages are the messages of the open group decisions under the
    * current config, sorted by hash. A voter's own messages are its persisted
    * locks.
-   *
-   * @generated from field: repeated sobject.SOControlMessage control_messages = 7;
    */
   controlMessages?: SOControlMessage[]
 }
 
-export const SOState: MessageType<SOState> = /* @__PURE__ */ createMessageType({
-  typeName: 'sobject.SOState',
-  fields: [
-    { no: 1, name: 'config', kind: 'message', T: SharedObjectConfig },
-    { no: 2, name: 'checkpoint', kind: 'message', T: SOCheckpoint },
-    {
-      no: 3,
-      name: 'key_epochs',
-      kind: 'message',
-      T: SOKeyEpoch,
-      repeated: true,
-    },
-    { no: 4, name: 'ops', kind: 'message', T: SOOperation, repeated: true },
-    { no: 5, name: 'invites', kind: 'message', T: SOInvite, repeated: true },
-    { no: 6, name: 'sequence', kind: 'message', T: SOSequence, repeated: true },
-    {
-      no: 7,
-      name: 'control_messages',
-      kind: 'message',
-      T: SOControlMessage,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const SOState: MessageType<SOState> =
+  /* @__PURE__ */ createMessageType<SOState>('sobject.SOState', () => [
+    [1, 'config', 11, 0, SharedObjectConfig.codec],
+    [2, 'checkpoint', 11, 0, SOCheckpoint.codec],
+    [3, 'key_epochs', 11, 1, SOKeyEpoch.codec],
+    [4, 'ops', 11, 1, SOOperation.codec],
+    [5, 'invites', 11, 1, SOInvite.codec],
+    [6, 'sequence', 11, 1, SOSequence.codec],
+    [7, 'control_messages', 11, 1, SOControlMessage.codec],
+  ])
+
+/**
+ * SOKeyEpoch is one encryption key of a shared object. A key rotation starts
+ * the next epoch; operations and checkpoints name the epoch they used.
+ *
+ * @generated from message sobject.SOKeyEpoch
+ */
+export interface SOKeyEpoch {
+  /**
+   * Epoch is the epoch number (0-based, increments on rotation).
+   */
+  epoch?: bigint
+  /**
+   * Grants are the key encrypted to each reader of this epoch. Each grant is
+   * signed by an owner, a voter under group control, or its recipient.
+   */
+  grants?: SOGrant[]
+  /**
+   * ConfigChainSeqno is the config chain sequence number under which the
+   * epoch was created. A reader removed at a later sequence number still holds
+   * this epoch's key, so the next epoch must replace it.
+   */
+  configChainSeqno?: bigint
+}
+
+export const SOKeyEpoch: MessageType<SOKeyEpoch> =
+  /* @__PURE__ */ createMessageType<SOKeyEpoch>('sobject.SOKeyEpoch', () => [
+    [1, 'epoch', 4],
+    [2, 'grants', 11, 1, SOGrant.codec],
+    [3, 'config_chain_seqno', 4],
+  ])
 
 /**
  * SOConfigChainResponse is returned by GET /sobject/{id}/config-chain.
@@ -2641,38 +1962,22 @@ export const SOState: MessageType<SOState> = /* @__PURE__ */ createMessageType({
 export interface SOConfigChainResponse {
   /**
    * ConfigChanges is the full config change chain from genesis.
-   *
-   * @generated from field: repeated sobject.SOConfigChange config_changes = 1;
    */
   configChanges?: SOConfigChange[]
   /**
    * KeyEpochs are the key epochs with grants for each period.
-   *
-   * @generated from field: repeated sobject.SOKeyEpoch key_epochs = 2;
    */
   keyEpochs?: SOKeyEpoch[]
 }
 
 export const SOConfigChainResponse: MessageType<SOConfigChainResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOConfigChainResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'config_changes',
-        kind: 'message',
-        T: SOConfigChange,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'key_epochs',
-        kind: 'message',
-        T: SOKeyEpoch,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOConfigChainResponse>(
+    'sobject.SOConfigChainResponse',
+    () => [
+      [1, 'config_changes', 11, 1, SOConfigChange.codec],
+      [2, 'key_epochs', 11, 1, SOKeyEpoch.codec],
+    ],
+  )
 
 /**
  * SOInviteMessage is a signed invite distributed out-of-band to an invitee.
@@ -2683,96 +1988,104 @@ export const SOConfigChainResponse: MessageType<SOConfigChainResponse> =
 export interface SOInviteMessage {
   /**
    * InviteId is the unique identifier for this invite.
-   *
-   * @generated from field: string invite_id = 1;
    */
   inviteId?: string
   /**
    * SharedObjectId is the ID of the shared object being shared.
-   *
-   * @generated from field: string shared_object_id = 2;
    */
   sharedObjectId?: string
   /**
    * OwnerPeerId is the peer ID of the invite creator (b58).
-   *
-   * @generated from field: string owner_peer_id = 3;
    */
   ownerPeerId?: string
   /**
    * ProviderId is the provider to use for signaling (not a raw URL).
-   *
-   * @generated from field: string provider_id = 4;
    */
   providerId?: string
   /**
    * Token is the raw invite token. The SHA256 hash is stored on-chain.
-   *
-   * @generated from field: bytes token = 5;
    */
   token?: Uint8Array
   /**
    * Role is the role granted to the invitee on acceptance.
-   *
-   * @generated from field: sobject.SOParticipantRole role = 6;
    */
   role?: SOParticipantRole
   /**
    * TargetPeerId is the optional peer ID of the intended invitee (b58).
    * Empty means open invite.
-   *
-   * @generated from field: string target_peer_id = 7;
    */
   targetPeerId?: string
   /**
    * ExpiresAt is the time after which the invite is invalid.
    * Unset means no expiry.
-   *
-   * @generated from field: google.protobuf.Timestamp expires_at = 8;
    */
   expiresAt?: Date
   /**
    * MaxUses is the maximum number of times the invite can be used.
    * 0 means unlimited.
-   *
-   * @generated from field: uint32 max_uses = 9;
    */
   maxUses?: number
   /**
    * Signature is the owner's signature over this message (without this field).
-   *
-   * @generated from field: peer.Signature signature = 10;
    */
   signature?: Signature
   /**
    * TransportPeerId is the optional network endpoint peer ID carried in this
    * signed message, separate from OwnerPeerId, the signing identity.
    * Empty means use OwnerPeerId for existing messages.
-   *
-   * @generated from field: string transport_peer_id = 11;
    */
   transportPeerId?: string
 }
 
 export const SOInviteMessage: MessageType<SOInviteMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.SOInviteMessage',
-    fields: [
-      { no: 1, name: 'invite_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'owner_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'token', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 6, name: 'role', kind: 'enum', T: SOParticipantRole_Enum },
-      { no: 7, name: 'target_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'expires_at', kind: 'message', T: () => Timestamp },
-      { no: 9, name: 'max_uses', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 10, name: 'signature', kind: 'message', T: () => Signature },
-      {
-        no: 11,
-        name: 'transport_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOInviteMessage>(
+    'sobject.SOInviteMessage',
+    () => [
+      [1, 'invite_id', 9],
+      [2, 'shared_object_id', 9],
+      [3, 'owner_peer_id', 9],
+      [4, 'provider_id', 9],
+      [5, 'token', 12],
+      [6, 'role', 14, 0, SOParticipantRole_Enum],
+      [7, 'target_peer_id', 9],
+      [8, 'expires_at', 11, 0, Timestamp.codec],
+      [9, 'max_uses', 13],
+      [10, 'signature', 11, 0, Signature.codec],
+      [11, 'transport_peer_id', 9],
+    ],
+  )
+
+/**
+ * SOJoinResponse is a signed response from an invitee requesting to join.
+ *
+ * @generated from message sobject.SOJoinResponse
+ */
+export interface SOJoinResponse {
+  /**
+   * InviteId is the invite being accepted.
+   */
+  inviteId?: string
+  /**
+   * ResponderPeerId is the peer ID of the responder (b58).
+   */
+  responderPeerId?: string
+  /**
+   * ResponderPubkey is the DER-encoded public key of the responder.
+   */
+  responderPubkey?: Uint8Array
+  /**
+   * Signature is the responder's signature over this message (without this field).
+   */
+  signature?: Signature
+}
+
+export const SOJoinResponse: MessageType<SOJoinResponse> =
+  /* @__PURE__ */ createMessageType<SOJoinResponse>(
+    'sobject.SOJoinResponse',
+    () => [
+      [1, 'invite_id', 9],
+      [2, 'responder_peer_id', 9],
+      [3, 'responder_pubkey', 12],
+      [4, 'signature', 11, 0, Signature.codec],
+    ],
+  )

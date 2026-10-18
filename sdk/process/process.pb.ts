@@ -4,13 +4,8 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ExecutionState is the state of a persistent process.
@@ -20,43 +15,39 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ExecutionState {
   /**
    * ExecutionState_STARTING is the initial state before the process is ready.
-   *
-   * @generated from enum value: ExecutionState_STARTING = 0;
    */
   ExecutionState_STARTING = 0,
 
   /**
    * ExecutionState_RUNNING is the state when the process is running normally.
-   *
-   * @generated from enum value: ExecutionState_RUNNING = 1;
    */
   ExecutionState_RUNNING = 1,
 
   /**
    * ExecutionState_STOPPING is the state when the process is shutting down.
-   *
-   * @generated from enum value: ExecutionState_STOPPING = 2;
    */
   ExecutionState_STOPPING = 2,
 
   /**
    * ExecutionState_STOPPED is the state after the process has exited cleanly.
-   *
-   * @generated from enum value: ExecutionState_STOPPED = 3;
    */
   ExecutionState_STOPPED = 3,
 
   /**
    * ExecutionState_ERROR is the state when the process has exited with an error.
-   *
-   * @generated from enum value: ExecutionState_ERROR = 4;
    */
   ExecutionState_ERROR = 4,
 }
 
 export const ExecutionState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.process.ExecutionState',
-  ExecutionState,
+  [
+    [0, 'ExecutionState_STARTING'],
+    [1, 'ExecutionState_RUNNING'],
+    [2, 'ExecutionState_STOPPING'],
+    [3, 'ExecutionState_STOPPED'],
+    [4, 'ExecutionState_ERROR'],
+  ],
 )
 
 /**
@@ -67,9 +58,9 @@ export const ExecutionState_Enum = /* @__PURE__ */ createEnumType(
 export interface ExecuteRequest {}
 
 export const ExecuteRequest: MessageType<ExecuteRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ExecuteRequest>(
+  /* @__PURE__ */ createMessageType<ExecuteRequest>(
     's4wave.process.ExecuteRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -80,30 +71,24 @@ export const ExecuteRequest: MessageType<ExecuteRequest> =
 export interface ExecuteStatus {
   /**
    * ExecutionState is the current state of the process.
-   *
-   * @generated from field: s4wave.process.ExecutionState state = 1;
    */
   state?: ExecutionState
   /**
    * Error is the error message if state is ERROR.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
   /**
    * Timestamp is the time of this status update.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
 }
 
 export const ExecuteStatus: MessageType<ExecuteStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.process.ExecuteStatus',
-    fields: [
-      { no: 1, name: 'state', kind: 'enum', T: ExecutionState_Enum },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ExecuteStatus>(
+    's4wave.process.ExecuteStatus',
+    () => [
+      [1, 'state', 14, 0, ExecutionState_Enum],
+      [2, 'error', 9],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

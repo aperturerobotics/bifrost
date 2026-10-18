@@ -7,8 +7,6 @@ import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the manifest builder controller configuration.
@@ -19,56 +17,37 @@ export interface Config {
   /**
    * BuilderConfig contains common config for the manifest builder.
    * Overridden by the project controller.
-   *
-   * @generated from field: bldr.manifest.builder.BuilderConfig builder_config = 1;
    */
   builderConfig?: BuilderConfig
   /**
    * ControllerConfig is the config to use for the manifest builder controller.
    * The ControllerConfig must be a manifest build controller Config.
-   *
-   * @generated from field: configset.proto.ControllerConfig controller_config = 2;
    */
   controllerConfig?: ControllerConfig
   /**
    * BuildBackoff is the backoff config for building manifests.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff build_backoff = 3;
    */
   buildBackoff?: Backoff
   /**
    * Watch enables watching for changes.
-   *
-   * @generated from field: bool watch = 4;
    */
   watch?: boolean
   /**
    * StartupBuilderResult is the persisted startup build result to validate
    * before the first build attempt.
-   *
-   * @generated from field: bldr.manifest.builder.BuilderResult startup_builder_result = 6;
    */
   startupBuilderResult?: BuilderResult
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.manifest.builder.controller.Config',
-  fields: [
-    { no: 1, name: 'builder_config', kind: 'message', T: () => BuilderConfig },
-    {
-      no: 2,
-      name: 'controller_config',
-      kind: 'message',
-      T: () => ControllerConfig,
-    },
-    { no: 3, name: 'build_backoff', kind: 'message', T: () => Backoff },
-    { no: 4, name: 'watch', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 6,
-      name: 'startup_builder_result',
-      kind: 'message',
-      T: () => BuilderResult,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.manifest.builder.controller.Config',
+    () => [
+      [1, 'builder_config', 11, 0, BuilderConfig.codec],
+      [2, 'controller_config', 11, 0, ControllerConfig.codec],
+      [3, 'build_backoff', 11, 0, Backoff.codec],
+      [4, 'watch', 8],
+      [6, 'startup_builder_result', 11, 0, BuilderResult.codec],
+    ],
+  )

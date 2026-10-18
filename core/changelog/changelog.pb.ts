@@ -4,137 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * ChangeEntry is a single changelog entry.
- *
- * @generated from message changelog.ChangeEntry
- */
-export interface ChangeEntry {
-  /**
-   * description is the user-facing description.
-   *
-   * @generated from field: string description = 1;
-   */
-  description?: string
-  /**
-   * description_markdown is the display-ready markdown description.
-   *
-   * @generated from field: string description_markdown = 2;
-   */
-  descriptionMarkdown?: string
-}
-
-export const ChangeEntry: MessageType<ChangeEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'changelog.ChangeEntry',
-    fields: [
-      { no: 1, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'description_markdown',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Release is a single versioned release.
- *
- * @generated from message changelog.Release
- */
-export interface Release {
-  /**
-   * version is the semver version string (e.g. "0.1.0").
-   *
-   * @generated from field: string version = 1;
-   */
-  version?: string
-  /**
-   * date is the release date in YYYY-MM-DD format.
-   *
-   * @generated from field: string date = 2;
-   */
-  date?: string
-  /**
-   * summary is a 1-2 sentence summary of the release.
-   *
-   * @generated from field: string summary = 3;
-   */
-  summary?: string
-  /**
-   * summary_markdown is the display-ready markdown summary.
-   *
-   * @generated from field: string summary_markdown = 4;
-   */
-  summaryMarkdown?: string
-  /**
-   * features is the list of new feature entries.
-   *
-   * @generated from field: repeated changelog.ChangeEntry features = 5;
-   */
-  features?: ChangeEntry[]
-  /**
-   * fixes is the list of bug fix entries.
-   *
-   * @generated from field: repeated changelog.ChangeEntry fixes = 6;
-   */
-  fixes?: ChangeEntry[]
-  /**
-   * improvements is the list of improvement entries.
-   *
-   * @generated from field: repeated changelog.ChangeEntry improvements = 7;
-   */
-  improvements?: ChangeEntry[]
-  /**
-   * security is the list of security-related entries.
-   *
-   * @generated from field: repeated changelog.ChangeEntry security = 8;
-   */
-  security?: ChangeEntry[]
-  /**
-   * release_url is an optional public release URL.
-   *
-   * @generated from field: string release_url = 9;
-   */
-  releaseUrl?: string
-}
-
-export const Release: MessageType<Release> = /* @__PURE__ */ createMessageType({
-  typeName: 'changelog.Release',
-  fields: [
-    { no: 1, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'date', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'summary', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'summary_markdown', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 5,
-      name: 'features',
-      kind: 'message',
-      T: ChangeEntry,
-      repeated: true,
-    },
-    { no: 6, name: 'fixes', kind: 'message', T: ChangeEntry, repeated: true },
-    {
-      no: 7,
-      name: 'improvements',
-      kind: 'message',
-      T: ChangeEntry,
-      repeated: true,
-    },
-    {
-      no: 8,
-      name: 'security',
-      kind: 'message',
-      T: ChangeEntry,
-      repeated: true,
-    },
-    { no: 9, name: 'release_url', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
 
 /**
  * Changelog contains all release entries.
@@ -144,16 +13,93 @@ export const Release: MessageType<Release> = /* @__PURE__ */ createMessageType({
 export interface Changelog {
   /**
    * releases is the list of releases, newest first.
-   *
-   * @generated from field: repeated changelog.Release releases = 1;
    */
   releases?: Release[]
 }
 
 export const Changelog: MessageType<Changelog> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'changelog.Changelog',
-    fields: [
-      { no: 1, name: 'releases', kind: 'message', T: Release, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Changelog>('changelog.Changelog', () => [
+    [1, 'releases', 11, 1, Release.codec],
+  ])
+
+/**
+ * Release is a single versioned release.
+ *
+ * @generated from message changelog.Release
+ */
+export interface Release {
+  /**
+   * version is the semver version string (e.g. "0.1.0").
+   */
+  version?: string
+  /**
+   * date is the release date in YYYY-MM-DD format.
+   */
+  date?: string
+  /**
+   * summary is a 1-2 sentence summary of the release.
+   */
+  summary?: string
+  /**
+   * summary_markdown is the display-ready markdown summary.
+   */
+  summaryMarkdown?: string
+  /**
+   * features is the list of new feature entries.
+   */
+  features?: ChangeEntry[]
+  /**
+   * fixes is the list of bug fix entries.
+   */
+  fixes?: ChangeEntry[]
+  /**
+   * improvements is the list of improvement entries.
+   */
+  improvements?: ChangeEntry[]
+  /**
+   * security is the list of security-related entries.
+   */
+  security?: ChangeEntry[]
+  /**
+   * release_url is an optional public release URL.
+   */
+  releaseUrl?: string
+}
+
+export const Release: MessageType<Release> =
+  /* @__PURE__ */ createMessageType<Release>('changelog.Release', () => [
+    [1, 'version', 9],
+    [2, 'date', 9],
+    [3, 'summary', 9],
+    [4, 'summary_markdown', 9],
+    [5, 'features', 11, 1, ChangeEntry.codec],
+    [6, 'fixes', 11, 1, ChangeEntry.codec],
+    [7, 'improvements', 11, 1, ChangeEntry.codec],
+    [8, 'security', 11, 1, ChangeEntry.codec],
+    [9, 'release_url', 9],
+  ])
+
+/**
+ * ChangeEntry is a single changelog entry.
+ *
+ * @generated from message changelog.ChangeEntry
+ */
+export interface ChangeEntry {
+  /**
+   * description is the user-facing description.
+   */
+  description?: string
+  /**
+   * description_markdown is the display-ready markdown description.
+   */
+  descriptionMarkdown?: string
+}
+
+export const ChangeEntry: MessageType<ChangeEntry> =
+  /* @__PURE__ */ createMessageType<ChangeEntry>(
+    'changelog.ChangeEntry',
+    () => [
+      [1, 'description', 9],
+      [2, 'description_markdown', 9],
+    ],
+  )

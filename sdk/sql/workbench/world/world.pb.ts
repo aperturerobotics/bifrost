@@ -5,8 +5,6 @@
 import { ObjectRef } from '../../../../db/bucket/bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * SqlWorkbenchSetRootOp advances a sql/workbench world object's root.
@@ -16,30 +14,24 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface SqlWorkbenchSetRootOp {
   /**
    * ObjectKey is the sql/workbench object key to update.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RootRef is the committed workbench root reference.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
    */
   rootRef?: ObjectRef
   /**
    * InitializeOnly rejects the operation when the object already has a root.
-   *
-   * @generated from field: bool initialize_only = 3;
    */
   initializeOnly?: boolean
 }
 
 export const SqlWorkbenchSetRootOp: MessageType<SqlWorkbenchSetRootOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.workbench.world.SqlWorkbenchSetRootOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-      { no: 3, name: 'initialize_only', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlWorkbenchSetRootOp>(
+    's4wave.sql.workbench.world.SqlWorkbenchSetRootOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+      [3, 'initialize_only', 8],
+    ],
+  )

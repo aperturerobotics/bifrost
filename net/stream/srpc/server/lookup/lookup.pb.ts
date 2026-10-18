@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the lookup SRPC server controller.
@@ -16,43 +14,26 @@ export interface Config {
   /**
    * PeerIds are the list of local peer IDs to listen on.
    * If empty, allows any incoming peer id w/ the protocol id(s).
-   *
-   * @generated from field: repeated string peer_ids = 1;
    */
   peerIds?: string[]
   /**
    * ProtocolIds is the list of protocol ids to listen on.
    * If empty, no incoming streams will be accepted.
-   *
-   * @generated from field: repeated string protocol_ids = 2;
    */
   protocolIds?: string[]
   /**
    * ServerID is the server identifier passed to LookupRpcService.
    * Can be empty.
-   *
-   * @generated from field: string server_id = 3;
    */
   serverId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'stream.srpc.server.lookup.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'peer_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 2,
-      name: 'protocol_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 3, name: 'server_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'stream.srpc.server.lookup.Config',
+    () => [
+      [1, 'peer_ids', 9, 1],
+      [2, 'protocol_ids', 9, 1],
+      [3, 'server_id', 9],
+    ],
+  )

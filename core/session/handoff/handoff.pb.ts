@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * HandoffRequest is sent by the device (desktop/CLI) to initiate
@@ -19,47 +14,37 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface HandoffRequest {
   /**
    * DevicePublicKey is the receiving client's independently generated Session key.
-   *
-   * @generated from field: bytes device_public_key = 1;
    */
   devicePublicKey?: Uint8Array
   /**
    * DeviceName is the human-readable name of the device.
-   *
-   * @generated from field: string device_name = 2;
    */
   deviceName?: string
   /**
    * SessionNonce is a ULID that keys the AuthSessionDO.
-   *
-   * @generated from field: string session_nonce = 3;
    */
   sessionNonce?: string
   /**
    * ClientType is the type of client requesting auth.
-   *
-   * @generated from field: string client_type = 4;
    */
   clientType?: string
   /**
    * ProtocolVersion is 1 for independent Session enrollment.
-   *
-   * @generated from field: uint32 protocol_version = 5;
    */
   protocolVersion?: number
 }
 
 export const HandoffRequest: MessageType<HandoffRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'session.handoff.HandoffRequest',
-    fields: [
-      { no: 1, name: 'device_public_key', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'device_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'session_nonce', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'client_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'protocol_version', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandoffRequest>(
+    'session.handoff.HandoffRequest',
+    () => [
+      [1, 'device_public_key', 12],
+      [2, 'device_name', 9],
+      [3, 'session_nonce', 9],
+      [4, 'client_type', 9],
+      [5, 'protocol_version', 13],
+    ],
+  )
 
 /**
  * HandoffCompletion is sent by the browser to the AuthSessionDO
@@ -70,33 +55,27 @@ export const HandoffRequest: MessageType<HandoffRequest> =
 export interface HandoffCompletion {
   /**
    * AccountId is the cloud account ULID.
-   *
-   * @generated from field: string account_id = 2;
    */
   accountId?: string
   /**
    * EntityId is the cloud username.
-   *
-   * @generated from field: string entity_id = 3;
    */
   entityId?: string
   /**
    * SessionPeerId is the receiving key registered by the provider.
-   *
-   * @generated from field: string session_peer_id = 4;
    */
   sessionPeerId?: string
 }
 
 export const HandoffCompletion: MessageType<HandoffCompletion> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'session.handoff.HandoffCompletion',
-    fields: [
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandoffCompletion>(
+    'session.handoff.HandoffCompletion',
+    () => [
+      [2, 'account_id', 9],
+      [3, 'entity_id', 9],
+      [4, 'session_peer_id', 9],
+    ],
+  )
 
 /**
  * HandoffAck confirms receipt of the Session enrollment result.
@@ -106,7 +85,7 @@ export const HandoffCompletion: MessageType<HandoffCompletion> =
 export interface HandoffAck {}
 
 export const HandoffAck: MessageType<HandoffAck> =
-  /* @__PURE__ */ createEmptyMessageType<HandoffAck>(
+  /* @__PURE__ */ createMessageType<HandoffAck>(
     'session.handoff.HandoffAck',
-    true,
+    () => [],
   )

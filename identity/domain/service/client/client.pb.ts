@@ -6,8 +6,6 @@ import { DomainInfo } from '../../domain.pb.js'
 import { Config as Config$1 } from '@go/github.com/s4wave/spacewave/net/stream/srpc/client/client.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the identity client domain controller.
@@ -17,43 +15,31 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * DomainInfo is the identity domain information object.
-   *
-   * @generated from field: identity.domain.DomainInfo domain_info = 1;
    */
   domainInfo?: DomainInfo
   /**
    * ClientOpts are options passed to the client.
-   *
-   * @generated from field: stream.srpc.client.Config client_opts = 2;
    */
   clientOpts?: Config$1
   /**
    * PeerId is the peer id to use to sign requests.
    * Private key must be available.
-   *
-   * @generated from field: string peer_id = 3;
    */
   peerId?: string
   /**
    * ResolveSelectIdentityDomain indicates this domain should resolve any
    * SelectIdentityDomain directive with its own domain info.
-   *
-   * @generated from field: bool resolve_select_identity_domain = 4;
    */
   resolveSelectIdentityDomain?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'identity.domain.client.Config',
-  fields: [
-    { no: 1, name: 'domain_info', kind: 'message', T: () => DomainInfo },
-    { no: 2, name: 'client_opts', kind: 'message', T: () => Config$1 },
-    { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 4,
-      name: 'resolve_select_identity_domain',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'identity.domain.client.Config',
+    () => [
+      [1, 'domain_info', 11, 0, DomainInfo.codec],
+      [2, 'client_opts', 11, 0, Config$1.codec],
+      [3, 'peer_id', 9],
+      [4, 'resolve_select_identity_domain', 8],
+    ],
+  )

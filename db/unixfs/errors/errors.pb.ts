@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * UnixFSErrorType contains all potential UnixFS errors.
@@ -16,162 +14,141 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum UnixFSErrorType {
   /**
    * NONE indicates no error.
-   *
-   * @generated from enum value: NONE = 0;
    */
   NONE = 0,
 
   /**
    * OTHER corresponds to a string error not defined in the unixfs errors list.
-   *
-   * @generated from enum value: OTHER = 1;
    */
   OTHER = 1,
 
   /**
    * FS_NOT_FOUND corresponds to unixfs_errors.ErrFsNotFound.
-   *
-   * @generated from enum value: FS_NOT_FOUND = 2;
    */
   FS_NOT_FOUND = 2,
 
   /**
    * EXIST corresponds to unixfs_errors.ErrExist.
-   *
-   * @generated from enum value: EXIST = 3;
    */
   EXIST = 3,
 
   /**
    * NOT_EXIST corresponds to unixfs_errors.ErrNotExist.
-   *
-   * @generated from enum value: NOT_EXIST = 4;
    */
   NOT_EXIST = 4,
 
   /**
    * CLOSED corresponds to unixfs_errors.ErrClosed.
-   *
-   * @generated from enum value: CLOSED = 5;
    */
   CLOSED = 5,
 
   /**
    * READ_ONLY corresponds to unixfs_errors.ErrReadOnly.
-   *
-   * @generated from enum value: READ_ONLY = 6;
    */
   READ_ONLY = 6,
 
   /**
    * RELEASED corresponds to unixfs_errors.ErrReleased.
-   *
-   * @generated from enum value: RELEASED = 7;
    */
   RELEASED = 7,
 
   /**
    * NOT_DIRECTORY corresponds to unixfs_errors.ErrNotDirectory.
-   *
-   * @generated from enum value: NOT_DIRECTORY = 8;
    */
   NOT_DIRECTORY = 8,
 
   /**
    * NOT_FILE corresponds to unixfs_errors.ErrNotFile.
-   *
-   * @generated from enum value: NOT_FILE = 9;
    */
   NOT_FILE = 9,
 
   /**
    * OUT_OF_BOUNDS corresponds to unixfs_errors.ErrOutOfBounds.
-   *
-   * @generated from enum value: OUT_OF_BOUNDS = 10;
    */
   OUT_OF_BOUNDS = 10,
 
   /**
    * EMPTY_PATH corresponds to unixfs_errors.ErrEmptyPath.
-   *
-   * @generated from enum value: EMPTY_PATH = 11;
    */
   EMPTY_PATH = 11,
 
   /**
    * ABSOLUTE_PATH corresponds to unixfs_errors.ErrAbsolutePath.
-   *
-   * @generated from enum value: ABSOLUTE_PATH = 12;
    */
   ABSOLUTE_PATH = 12,
 
   /**
    * INODE_UNRESOLVABLE corresponds to unixfs_errors.ErrInodeUnresolvable.
-   *
-   * @generated from enum value: INODE_UNRESOLVABLE = 13;
    */
   INODE_UNRESOLVABLE = 13,
 
   /**
    * NOT_SYMLINK corresponds to unixfs_errors.ErrNotSymlink.
-   *
-   * @generated from enum value: NOT_SYMLINK = 14;
    */
   NOT_SYMLINK = 14,
 
   /**
    * EMPTY_TIMESTAMP corresponds to unixfs_errors.ErrEmptyTimestamp.
-   *
-   * @generated from enum value: EMPTY_TIMESTAMP = 15;
    */
   EMPTY_TIMESTAMP = 15,
 
   /**
    * MOVE_TO_SELF corresponds to unixfs_errors.ErrMoveToSelf.
-   *
-   * @generated from enum value: MOVE_TO_SELF = 16;
    */
   MOVE_TO_SELF = 16,
 
   /**
    * INVALID_WRITE corresponds to unixfs_errors.ErrInvalidWrite.
-   *
-   * @generated from enum value: INVALID_WRITE = 17;
    */
   INVALID_WRITE = 17,
 
   /**
    * EMPTY_UNIXFS_ID corresponds to unixfs_errors.ErrEmptyUnixFsId.
-   *
-   * @generated from enum value: EMPTY_UNIXFS_ID = 18;
    */
   EMPTY_UNIXFS_ID = 18,
 
   /**
    * CROSS_FS_RENAME corresponds to unixfs_errors.ErrCrossFsRename.
-   *
-   * @generated from enum value: CROSS_FS_RENAME = 21;
    */
   CROSS_FS_RENAME = 21,
 
   /**
    * CONTEXT_CANCELED corresponds to context.Canceled.
-   *
-   * @generated from enum value: CONTEXT_CANCELED = 19;
    */
   CONTEXT_CANCELED = 19,
 
   /**
    * EOF corresponds to io.EOF.
-   *
-   * @generated from enum value: EOF = 20;
    */
   EOF = 20,
 }
 
 export const UnixFSErrorType_Enum = /* @__PURE__ */ createEnumType(
   'unixfs.errors.UnixFSErrorType',
-  UnixFSErrorType,
+  [
+    [0, 'NONE'],
+    [1, 'OTHER'],
+    [2, 'FS_NOT_FOUND'],
+    [3, 'EXIST'],
+    [4, 'NOT_EXIST'],
+    [5, 'CLOSED'],
+    [6, 'READ_ONLY'],
+    [7, 'RELEASED'],
+    [8, 'NOT_DIRECTORY'],
+    [9, 'NOT_FILE'],
+    [10, 'OUT_OF_BOUNDS'],
+    [11, 'EMPTY_PATH'],
+    [12, 'ABSOLUTE_PATH'],
+    [13, 'INODE_UNRESOLVABLE'],
+    [14, 'NOT_SYMLINK'],
+    [15, 'EMPTY_TIMESTAMP'],
+    [16, 'MOVE_TO_SELF'],
+    [17, 'INVALID_WRITE'],
+    [18, 'EMPTY_UNIXFS_ID'],
+    [21, 'CROSS_FS_RENAME'],
+    [19, 'CONTEXT_CANCELED'],
+    [20, 'EOF'],
+  ],
 )
 
 /**
@@ -182,8 +159,6 @@ export const UnixFSErrorType_Enum = /* @__PURE__ */ createEnumType(
 export interface UnixFSError {
   /**
    * ErrorType is the type of error, zero if none.
-   *
-   * @generated from field: unixfs.errors.UnixFSErrorType error_type = 1;
    */
   errorType?: UnixFSErrorType
   /**
@@ -191,17 +166,15 @@ export interface UnixFSError {
    * If this is set and the error is type OTHER, return errors.New(ErrorBody).
    * If this is set and the error is another type, return errors.Wrap(the_error, ErrorBody).
    * If this is unset and error_type is OTHER, return errors.New("unknown unixfs error").
-   *
-   * @generated from field: string error_body = 2;
    */
   errorBody?: string
 }
 
 export const UnixFSError: MessageType<UnixFSError> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.errors.UnixFSError',
-    fields: [
-      { no: 1, name: 'error_type', kind: 'enum', T: UnixFSErrorType_Enum },
-      { no: 2, name: 'error_body', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnixFSError>(
+    'unixfs.errors.UnixFSError',
+    () => [
+      [1, 'error_type', 14, 0, UnixFSErrorType_Enum],
+      [2, 'error_body', 9],
+    ],
+  )

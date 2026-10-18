@@ -6,8 +6,6 @@ import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import { SharedObjectMeta } from '../../sobject/sobject.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * TransferMode defines the type of transfer operation.
@@ -17,36 +15,33 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum TransferMode {
   /**
    * TransferMode_UNKNOWN is the zero value.
-   *
-   * @generated from enum value: TransferMode_UNKNOWN = 0;
    */
   TransferMode_UNKNOWN = 0,
 
   /**
    * TransferMode_MERGE moves all spaces from source to target and deletes source.
-   *
-   * @generated from enum value: TransferMode_MERGE = 1;
    */
   TransferMode_MERGE = 1,
 
   /**
    * TransferMode_MIGRATE moves all spaces between providers (cloud/local).
-   *
-   * @generated from enum value: TransferMode_MIGRATE = 2;
    */
   TransferMode_MIGRATE = 2,
 
   /**
    * TransferMode_MIRROR copies spaces from source to target without deleting source.
-   *
-   * @generated from enum value: TransferMode_MIRROR = 3;
    */
   TransferMode_MIRROR = 3,
 }
 
 export const TransferMode_Enum = /* @__PURE__ */ createEnumType(
   'provider.transfer.TransferMode',
-  TransferMode,
+  [
+    [0, 'TransferMode_UNKNOWN'],
+    [1, 'TransferMode_MERGE'],
+    [2, 'TransferMode_MIGRATE'],
+    [3, 'TransferMode_MIRROR'],
+  ],
 )
 
 /**
@@ -57,57 +52,51 @@ export const TransferMode_Enum = /* @__PURE__ */ createEnumType(
 export enum TransferPhase {
   /**
    * TransferPhase_IDLE is the initial state before transfer starts.
-   *
-   * @generated from enum value: TransferPhase_IDLE = 0;
    */
   TransferPhase_IDLE = 0,
 
   /**
    * TransferPhase_SCANNING enumerates source shared objects.
-   *
-   * @generated from enum value: TransferPhase_SCANNING = 1;
    */
   TransferPhase_SCANNING = 1,
 
   /**
    * TransferPhase_COPYING_BLOCKS copies block data from source to target.
-   *
-   * @generated from enum value: TransferPhase_COPYING_BLOCKS = 2;
    */
   TransferPhase_COPYING_BLOCKS = 2,
 
   /**
    * TransferPhase_COPYING_SO copies shared object state from source to target.
-   *
-   * @generated from enum value: TransferPhase_COPYING_SO = 3;
    */
   TransferPhase_COPYING_SO = 3,
 
   /**
    * TransferPhase_CLEANUP removes source data after successful transfer.
-   *
-   * @generated from enum value: TransferPhase_CLEANUP = 4;
    */
   TransferPhase_CLEANUP = 4,
 
   /**
    * TransferPhase_COMPLETE indicates the transfer finished successfully.
-   *
-   * @generated from enum value: TransferPhase_COMPLETE = 5;
    */
   TransferPhase_COMPLETE = 5,
 
   /**
    * TransferPhase_FAILED indicates the transfer encountered an unrecoverable error.
-   *
-   * @generated from enum value: TransferPhase_FAILED = 6;
    */
   TransferPhase_FAILED = 6,
 }
 
 export const TransferPhase_Enum = /* @__PURE__ */ createEnumType(
   'provider.transfer.TransferPhase',
-  TransferPhase,
+  [
+    [0, 'TransferPhase_IDLE'],
+    [1, 'TransferPhase_SCANNING'],
+    [2, 'TransferPhase_COPYING_BLOCKS'],
+    [3, 'TransferPhase_COPYING_SO'],
+    [4, 'TransferPhase_CLEANUP'],
+    [5, 'TransferPhase_COMPLETE'],
+    [6, 'TransferPhase_FAILED'],
+  ],
 )
 
 /**
@@ -118,54 +107,42 @@ export const TransferPhase_Enum = /* @__PURE__ */ createEnumType(
 export interface SpaceTransferState {
   /**
    * SharedObjectId is the source shared object identifier.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * Phase is the current transfer phase for this space.
-   *
-   * @generated from field: provider.transfer.TransferPhase phase = 2;
    */
   phase?: TransferPhase
   /**
    * BlocksCopied is the number of blocks copied so far.
-   *
-   * @generated from field: uint64 blocks_copied = 3;
    */
   blocksCopied?: bigint
   /**
    * BlocksTotal is the total number of blocks to copy (0 if not yet scanned).
-   *
-   * @generated from field: uint64 blocks_total = 4;
    */
   blocksTotal?: bigint
   /**
    * ErrorMessage contains the error if phase is FAILED.
-   *
-   * @generated from field: string error_message = 5;
    */
   errorMessage?: string
   /**
    * Meta is the shared object metadata from the source.
-   *
-   * @generated from field: sobject.SharedObjectMeta meta = 6;
    */
   meta?: SharedObjectMeta
 }
 
 export const SpaceTransferState: MessageType<SpaceTransferState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.transfer.SpaceTransferState',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'phase', kind: 'enum', T: TransferPhase_Enum },
-      { no: 3, name: 'blocks_copied', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'blocks_total', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'meta', kind: 'message', T: () => SharedObjectMeta },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceTransferState>(
+    'provider.transfer.SpaceTransferState',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'phase', 14, 0, TransferPhase_Enum],
+      [3, 'blocks_copied', 4],
+      [4, 'blocks_total', 4],
+      [5, 'error_message', 9],
+      [6, 'meta', 11, 0, SharedObjectMeta.codec],
+    ],
+  )
 
 /**
  * TransferState tracks the overall transfer operation state.
@@ -175,70 +152,42 @@ export const SpaceTransferState: MessageType<SpaceTransferState> =
 export interface TransferState {
   /**
    * Mode is the transfer mode (merge, migrate, mirror).
-   *
-   * @generated from field: provider.transfer.TransferMode mode = 1;
    */
   mode?: TransferMode
   /**
    * Phase is the overall transfer phase.
-   *
-   * @generated from field: provider.transfer.TransferPhase phase = 2;
    */
   phase?: TransferPhase
   /**
    * SourceSessionIndex is the source session index.
-   *
-   * @generated from field: uint32 source_session_index = 3;
    */
   sourceSessionIndex?: number
   /**
    * TargetSessionIndex is the target session index.
-   *
-   * @generated from field: uint32 target_session_index = 4;
    */
   targetSessionIndex?: number
   /**
    * Spaces is the per-space transfer progress.
-   *
-   * @generated from field: repeated provider.transfer.SpaceTransferState spaces = 5;
    */
   spaces?: SpaceTransferState[]
   /**
    * ErrorMessage contains the error if phase is FAILED.
-   *
-   * @generated from field: string error_message = 6;
    */
   errorMessage?: string
 }
 
 export const TransferState: MessageType<TransferState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.transfer.TransferState',
-    fields: [
-      { no: 1, name: 'mode', kind: 'enum', T: TransferMode_Enum },
-      { no: 2, name: 'phase', kind: 'enum', T: TransferPhase_Enum },
-      {
-        no: 3,
-        name: 'source_session_index',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 4,
-        name: 'target_session_index',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 5,
-        name: 'spaces',
-        kind: 'message',
-        T: SpaceTransferState,
-        repeated: true,
-      },
-      { no: 6, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TransferState>(
+    'provider.transfer.TransferState',
+    () => [
+      [1, 'mode', 14, 0, TransferMode_Enum],
+      [2, 'phase', 14, 0, TransferPhase_Enum],
+      [3, 'source_session_index', 13],
+      [4, 'target_session_index', 13],
+      [5, 'spaces', 11, 1, SpaceTransferState.codec],
+      [6, 'error_message', 9],
+    ],
+  )
 
 /**
  * TransferCheckpoint persists transfer progress for resumability.
@@ -248,41 +197,24 @@ export const TransferState: MessageType<TransferState> =
 export interface TransferCheckpoint {
   /**
    * State is the current transfer state snapshot.
-   *
-   * @generated from field: provider.transfer.TransferState state = 1;
    */
   state?: TransferState
   /**
    * SpaceIds is the ordered list of space IDs to transfer.
-   *
-   * @generated from field: repeated string space_ids = 2;
    */
   spaceIds?: string[]
   /**
    * CurrentSpaceIndex is the index into space_ids currently being processed.
-   *
-   * @generated from field: uint32 current_space_index = 3;
    */
   currentSpaceIndex?: number
 }
 
 export const TransferCheckpoint: MessageType<TransferCheckpoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.transfer.TransferCheckpoint',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: TransferState },
-      {
-        no: 2,
-        name: 'space_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'current_space_index',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TransferCheckpoint>(
+    'provider.transfer.TransferCheckpoint',
+    () => [
+      [1, 'state', 11, 0, TransferState.codec],
+      [2, 'space_ids', 9, 1],
+      [3, 'current_space_index', 13],
+    ],
+  )

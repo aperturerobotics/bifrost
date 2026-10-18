@@ -4,9 +4,7 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * PubMessageInner is the signed inner portion of the message.
@@ -16,30 +14,24 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface PubMessageInner {
   /**
    * Data is the message data.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * Channel is the channel.
-   *
-   * @generated from field: string channel = 2;
    */
   channel?: string
   /**
    * Timestamp is the message timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
 }
 
 export const PubMessageInner: MessageType<PubMessageInner> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pubmessage.PubMessageInner',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'channel', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PubMessageInner>(
+    'pubmessage.PubMessageInner',
+    () => [
+      [1, 'data', 12],
+      [2, 'channel', 9],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

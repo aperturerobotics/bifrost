@@ -9,8 +9,6 @@ import {
 import { GitCreateWorktreeOp } from '@go/github.com/s4wave/spacewave/db/git/world/git.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the configuration for cloning Git repositories to a world.
@@ -27,42 +25,30 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * ObjectKey is the object key to create as a Repo.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * CloneOpts are the args for the clone operation.
-   *
-   * @generated from field: git.block.CloneOpts clone_opts = 2;
    */
   cloneOpts?: CloneOpts
   /**
    * AuthOpts applies authentication to the operations.
-   *
-   * @generated from field: git.block.AuthOpts auth_opts = 3;
    */
   authOpts?: AuthOpts
   /**
    * WorktreeOpts are options for creating the worktree.
    * If cloneOpts.DisableCheckout is set, disables this step.
-   *
-   * @generated from field: git.world.GitCreateWorktreeOp worktree_opts = 4;
    */
   worktreeOpts?: GitCreateWorktreeOp
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.lib.git.clone.Config',
-  fields: [
-    { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'clone_opts', kind: 'message', T: () => CloneOpts },
-    { no: 3, name: 'auth_opts', kind: 'message', T: () => AuthOpts },
-    {
-      no: 4,
-      name: 'worktree_opts',
-      kind: 'message',
-      T: () => GitCreateWorktreeOp,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'forge.lib.git.clone.Config',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'clone_opts', 11, 0, CloneOpts.codec],
+      [3, 'auth_opts', 11, 0, AuthOpts.codec],
+      [4, 'worktree_opts', 11, 0, GitCreateWorktreeOp.codec],
+    ],
+  )

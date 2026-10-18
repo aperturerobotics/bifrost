@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { SpaceSettings } from '../world.pb.js'
 import { KeybindingOverrideSet } from '../../../../sdk/command/command.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
@@ -20,18 +18,14 @@ export interface Config {
   /**
    * EngineId restricts the LookupWorldOp resolver to a specific engine id.
    * If unset, resolves the ops for all engines.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'space.world.ops.Config',
-  fields: [
-    { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('space.world.ops.Config', () => [
+    [1, 'engine_id', 9],
+  ])
 
 /**
  * SetSpaceSettingsOp is an operation to set the space settings.
@@ -43,52 +37,37 @@ export interface SetSpaceSettingsOp {
   /**
    * ObjectKey is the object key for the settings.
    * If empty, defaults to "settings".
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Settings contains the space settings to set.
-   *
-   * @generated from field: space.world.SpaceSettings settings = 2;
    */
   settings?: SpaceSettings
   /**
    * Overwrite indicates to overwrite any existing object.
-   *
-   * @generated from field: bool overwrite = 3;
    */
   overwrite?: boolean
   /**
    * Timestamp is the modification time.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
   /**
    * ExpectedKeybindingOverrides enables per-surface conflict detection for keybinding-only writes.
-   *
-   * @generated from field: s4wave.command.KeybindingOverrideSet expected_keybinding_overrides = 5;
    */
   expectedKeybindingOverrides?: KeybindingOverrideSet
 }
 
 export const SetSpaceSettingsOp: MessageType<SetSpaceSettingsOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.SetSpaceSettingsOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'settings', kind: 'message', T: () => SpaceSettings },
-      { no: 3, name: 'overwrite', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      {
-        no: 5,
-        name: 'expected_keybinding_overrides',
-        kind: 'message',
-        T: () => KeybindingOverrideSet,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpaceSettingsOp>(
+    'space.world.ops.SetSpaceSettingsOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'settings', 11, 0, SpaceSettings.codec],
+      [3, 'overwrite', 8],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+      [5, 'expected_keybinding_overrides', 11, 0, KeybindingOverrideSet.codec],
+    ],
+  )
 
 /**
  * SetSpaceIndexPathOp changes the default object while preserving other settings.
@@ -98,40 +77,28 @@ export const SetSpaceSettingsOp: MessageType<SetSpaceSettingsOp> =
 export interface SetSpaceIndexPathOp {
   /**
    * IndexPath is the new default object path, or empty to clear it.
-   *
-   * @generated from field: string index_path = 1;
    */
   indexPath?: string
   /**
    * Timestamp is the modification time.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
   /**
    * ExpectedIndexPath makes automatic repair conditional on the current path.
    * A different current path leaves the settings unchanged.
-   *
-   * @generated from field: optional string expected_index_path = 3;
    */
   expectedIndexPath?: string
 }
 
 export const SetSpaceIndexPathOp: MessageType<SetSpaceIndexPathOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.SetSpaceIndexPathOp',
-    fields: [
-      { no: 1, name: 'index_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      {
-        no: 3,
-        name: 'expected_index_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        opt: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpaceIndexPathOp>(
+    'space.world.ops.SetSpaceIndexPathOp',
+    () => [
+      [1, 'index_path', 9],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+      [3, 'expected_index_path', 9, 4],
+    ],
+  )
 
 /**
  * InitUnixFSOp is an operation to initialize an empty UnixFS filesystem.
@@ -142,26 +109,22 @@ export interface InitUnixFSOp {
   /**
    * ObjectKey is the object key for the UnixFS filesystem.
    * Must be set.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Timestamp is the modification time.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
 }
 
 export const InitUnixFSOp: MessageType<InitUnixFSOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.InitUnixFSOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitUnixFSOp>(
+    'space.world.ops.InitUnixFSOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * InitObjectLayoutOp is an operation to initialize an ObjectLayout with starter content.
@@ -172,26 +135,22 @@ export const InitUnixFSOp: MessageType<InitUnixFSOp> =
 export interface InitObjectLayoutOp {
   /**
    * ObjectKey is the object key for the ObjectLayout.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Timestamp is the modification time.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
 }
 
 export const InitObjectLayoutOp: MessageType<InitObjectLayoutOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.InitObjectLayoutOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitObjectLayoutOp>(
+    'space.world.ops.InitObjectLayoutOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * InitCanvasDemoOp is an operation to initialize a Canvas with demo content.
@@ -203,26 +162,22 @@ export interface InitCanvasDemoOp {
   /**
    * ObjectKey is the object key for the Canvas.
    * Must be set.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Timestamp is the modification time.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
 }
 
 export const InitCanvasDemoOp: MessageType<InitCanvasDemoOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.InitCanvasDemoOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitCanvasDemoOp>(
+    'space.world.ops.InitCanvasDemoOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * CanvasInitOp is an operation to initialize a blank canvas.
@@ -233,26 +188,22 @@ export const InitCanvasDemoOp: MessageType<InitCanvasDemoOp> =
 export interface CanvasInitOp {
   /**
    * ObjectKey is the object key for the Canvas.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Timestamp is the modification time.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
 }
 
 export const CanvasInitOp: MessageType<CanvasInitOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.CanvasInitOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CanvasInitOp>(
+    'space.world.ops.CanvasInitOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * CanvasAddNodeOp is an operation to add a node to a canvas.
@@ -262,26 +213,22 @@ export const CanvasInitOp: MessageType<CanvasInitOp> =
 export interface CanvasAddNodeOp {
   /**
    * ObjectKey is the canvas object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Node is the full node to add.
-   *
-   * @generated from field: s4wave.canvas.CanvasNode node = 2;
    */
   node?: CanvasNode
 }
 
 export const CanvasAddNodeOp: MessageType<CanvasAddNodeOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.CanvasAddNodeOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'node', kind: 'message', T: () => CanvasNode },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CanvasAddNodeOp>(
+    'space.world.ops.CanvasAddNodeOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'node', 11, 0, CanvasNode.codec],
+    ],
+  )
 
 /**
  * CanvasRemoveNodeOp is an operation to remove nodes from a canvas.
@@ -291,32 +238,22 @@ export const CanvasAddNodeOp: MessageType<CanvasAddNodeOp> =
 export interface CanvasRemoveNodeOp {
   /**
    * ObjectKey is the canvas object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * NodeIds is the list of node IDs to remove.
-   *
-   * @generated from field: repeated string node_ids = 2;
    */
   nodeIds?: string[]
 }
 
 export const CanvasRemoveNodeOp: MessageType<CanvasRemoveNodeOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.CanvasRemoveNodeOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'node_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CanvasRemoveNodeOp>(
+    'space.world.ops.CanvasRemoveNodeOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'node_ids', 9, 1],
+    ],
+  )
 
 /**
  * CanvasSetNodeOp is an operation to replace a node in a canvas.
@@ -327,26 +264,22 @@ export const CanvasRemoveNodeOp: MessageType<CanvasRemoveNodeOp> =
 export interface CanvasSetNodeOp {
   /**
    * ObjectKey is the canvas object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Node is the full replacement node.
-   *
-   * @generated from field: s4wave.canvas.CanvasNode node = 2;
    */
   node?: CanvasNode
 }
 
 export const CanvasSetNodeOp: MessageType<CanvasSetNodeOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.CanvasSetNodeOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'node', kind: 'message', T: () => CanvasNode },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CanvasSetNodeOp>(
+    'space.world.ops.CanvasSetNodeOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'node', 11, 0, CanvasNode.codec],
+    ],
+  )
 
 /**
  * CanvasAddEdgeOp is an operation to add an edge to a canvas.
@@ -356,26 +289,22 @@ export const CanvasSetNodeOp: MessageType<CanvasSetNodeOp> =
 export interface CanvasAddEdgeOp {
   /**
    * ObjectKey is the canvas object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Edge is the edge to add.
-   *
-   * @generated from field: s4wave.canvas.CanvasEdge edge = 2;
    */
   edge?: CanvasEdge
 }
 
 export const CanvasAddEdgeOp: MessageType<CanvasAddEdgeOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.CanvasAddEdgeOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'edge', kind: 'message', T: () => CanvasEdge },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CanvasAddEdgeOp>(
+    'space.world.ops.CanvasAddEdgeOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'edge', 11, 0, CanvasEdge.codec],
+    ],
+  )
 
 /**
  * CanvasRemoveEdgeOp is an operation to remove edges from a canvas.
@@ -385,29 +314,19 @@ export const CanvasAddEdgeOp: MessageType<CanvasAddEdgeOp> =
 export interface CanvasRemoveEdgeOp {
   /**
    * ObjectKey is the canvas object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * EdgeIds is the list of edge IDs to remove.
-   *
-   * @generated from field: repeated string edge_ids = 2;
    */
   edgeIds?: string[]
 }
 
 export const CanvasRemoveEdgeOp: MessageType<CanvasRemoveEdgeOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.world.ops.CanvasRemoveEdgeOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'edge_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CanvasRemoveEdgeOp>(
+    'space.world.ops.CanvasRemoveEdgeOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'edge_ids', 9, 1],
+    ],
+  )

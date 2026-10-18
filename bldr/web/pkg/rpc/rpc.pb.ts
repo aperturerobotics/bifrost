@@ -3,12 +3,8 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { WebPkgInfo } from '../pkg.pb.js'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * GetInfoRequest is a request to get the web pkg info.
@@ -18,9 +14,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface GetInfoRequest {}
 
 export const GetInfoRequest: MessageType<GetInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetInfoRequest>(
     'web.pkg.rpc.GetInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -31,16 +27,12 @@ export const GetInfoRequest: MessageType<GetInfoRequest> =
 export interface GetInfoResponse {
   /**
    * Info contains the web package information.
-   *
-   * @generated from field: web.pkg.WebPkgInfo info = 1;
    */
   info?: WebPkgInfo
 }
 
 export const GetInfoResponse: MessageType<GetInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.pkg.rpc.GetInfoResponse',
-    fields: [
-      { no: 1, name: 'info', kind: 'message', T: () => WebPkgInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetInfoResponse>(
+    'web.pkg.rpc.GetInfoResponse',
+    () => [[1, 'info', 11, 0, WebPkgInfo.codec]],
+  )

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the rpc volume server.
@@ -19,55 +17,37 @@ export interface Config {
    * ServiceId is the service id to listen on.
    * Usually a prefix with: rpc.volume.AccessVolumes
    * Cannot be empty.
-   *
-   * @generated from field: string service_id = 1;
    */
   serviceId?: string
   /**
    * VolumeIdRe is a regex string to match volume IDs.
    * Set to '.*' to match all volumes.
    * ignored if empty.
-   *
-   * @generated from field: string volume_id_re = 2;
    */
   volumeIdRe?: string
   /**
    * VolumeIdList is a list of volume IDs to match.
    * If the value is in this list, overrides volume_id_re.
    * ignored if empty.
-   *
-   * @generated from field: repeated string volume_id_list = 3;
    */
   volumeIdList?: string[]
   /**
    * ExposePrivateKey enables callers to fetch the private key for the volume.
    * Defaults to false.
-   *
-   * @generated from field: bool expose_private_key = 4;
    */
   exposePrivateKey?: boolean
   /**
    * ReleaseDelay is a delay duration to wait before releasing a unreferenced volume.
    * If empty string, defaults to 1s (1 second).
-   *
-   * @generated from field: string release_delay = 5;
    */
   releaseDelay?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'volume.rpc.server.Config',
-  fields: [
-    { no: 1, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'volume_id_re', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'volume_id_list',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 4, name: 'expose_private_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'release_delay', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('volume.rpc.server.Config', () => [
+    [1, 'service_id', 9],
+    [2, 'volume_id_re', 9],
+    [3, 'volume_id_list', 9, 1],
+    [4, 'expose_private_key', 8],
+    [5, 'release_delay', 9],
+  ])

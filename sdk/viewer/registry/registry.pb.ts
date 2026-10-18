@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ViewerSurface identifies the host surface that can render a viewer.
@@ -16,30 +14,27 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ViewerSurface {
   /**
    * VIEWER_SURFACE_UNKNOWN is not a usable viewer surface.
-   *
-   * @generated from enum value: VIEWER_SURFACE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * VIEWER_SURFACE_WEB identifies browser viewers.
-   *
-   * @generated from enum value: VIEWER_SURFACE_WEB = 1;
    */
   WEB = 1,
 
   /**
    * VIEWER_SURFACE_TUI identifies terminal viewers.
-   *
-   * @generated from enum value: VIEWER_SURFACE_TUI = 2;
    */
   TUI = 2,
 }
 
 export const ViewerSurface_Enum = /* @__PURE__ */ createEnumType(
   's4wave.viewer.registry.ViewerSurface',
-  ViewerSurface,
-  'VIEWER_SURFACE_',
+  [
+    [0, 'VIEWER_SURFACE_UNKNOWN'],
+    [1, 'VIEWER_SURFACE_WEB'],
+    [2, 'VIEWER_SURFACE_TUI'],
+  ],
 )
 
 /**
@@ -50,61 +45,47 @@ export const ViewerSurface_Enum = /* @__PURE__ */ createEnumType(
 export interface ViewerRegistration {
   /**
    * TypeId is the object type ID this viewer handles (e.g. "unixfs/fs-node").
-   *
-   * @generated from field: string type_id = 1;
    */
   typeId?: string
   /**
    * ViewerName is the human-readable name of the viewer.
-   *
-   * @generated from field: string viewer_name = 2;
    */
   viewerName?: string
   /**
    * ScriptPath is the React module path for React.lazy loading.
-   *
-   * @generated from field: string script_path = 3;
    */
   scriptPath?: string
   /**
    * Category is the UI grouping category for the component selector dropdown.
-   *
-   * @generated from field: string category = 4;
    */
   category?: string
   /**
    * DevModeOnly indicates this viewer is only shown when dev mode is enabled.
-   *
-   * @generated from field: bool dev_mode_only = 5;
    */
   devModeOnly?: boolean
   /**
    * ComponentId is the stable ID used for persisted viewer selection.
-   *
-   * @generated from field: string component_id = 6;
    */
   componentId?: string
   /**
    * Surface is the host surface that can render this viewer.
-   *
-   * @generated from field: s4wave.viewer.registry.ViewerSurface surface = 7;
    */
   surface?: ViewerSurface
 }
 
 export const ViewerRegistration: MessageType<ViewerRegistration> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.viewer.registry.ViewerRegistration',
-    fields: [
-      { no: 1, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'viewer_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'script_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'category', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'dev_mode_only', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'component_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'surface', kind: 'enum', T: ViewerSurface_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ViewerRegistration>(
+    's4wave.viewer.registry.ViewerRegistration',
+    () => [
+      [1, 'type_id', 9],
+      [2, 'viewer_name', 9],
+      [3, 'script_path', 9],
+      [4, 'category', 9],
+      [5, 'dev_mode_only', 8],
+      [6, 'component_id', 9],
+      [7, 'surface', 14, 0, ViewerSurface_Enum],
+    ],
+  )
 
 /**
  * RegisterViewerRequest is the request type for RegisterViewer.
@@ -114,19 +95,15 @@ export const ViewerRegistration: MessageType<ViewerRegistration> =
 export interface RegisterViewerRequest {
   /**
    * Registration is the viewer registration to add.
-   *
-   * @generated from field: s4wave.viewer.registry.ViewerRegistration registration = 1;
    */
   registration?: ViewerRegistration
 }
 
 export const RegisterViewerRequest: MessageType<RegisterViewerRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.viewer.registry.RegisterViewerRequest',
-    fields: [
-      { no: 1, name: 'registration', kind: 'message', T: ViewerRegistration },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterViewerRequest>(
+    's4wave.viewer.registry.RegisterViewerRequest',
+    () => [[1, 'registration', 11, 0, ViewerRegistration.codec]],
+  )
 
 /**
  * RegisterViewerResponse is the response type for RegisterViewer.
@@ -136,19 +113,15 @@ export const RegisterViewerRequest: MessageType<RegisterViewerRequest> =
 export interface RegisterViewerResponse {
   /**
    * ResourceId is the registration resource. Releasing it unregisters the viewer.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const RegisterViewerResponse: MessageType<RegisterViewerResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.viewer.registry.RegisterViewerResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterViewerResponse>(
+    's4wave.viewer.registry.RegisterViewerResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * ListViewersRequest is the request type for ListViewers.
@@ -158,26 +131,22 @@ export const RegisterViewerResponse: MessageType<RegisterViewerResponse> =
 export interface ListViewersRequest {
   /**
    * Surface selects the host surface to list.
-   *
-   * @generated from field: s4wave.viewer.registry.ViewerSurface surface = 1;
    */
   surface?: ViewerSurface
   /**
    * InstanceKey selects a logical installation; empty lists global registrations.
-   *
-   * @generated from field: string instance_key = 2;
    */
   instanceKey?: string
 }
 
 export const ListViewersRequest: MessageType<ListViewersRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.viewer.registry.ListViewersRequest',
-    fields: [
-      { no: 1, name: 'surface', kind: 'enum', T: ViewerSurface_Enum },
-      { no: 2, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListViewersRequest>(
+    's4wave.viewer.registry.ListViewersRequest',
+    () => [
+      [1, 'surface', 14, 0, ViewerSurface_Enum],
+      [2, 'instance_key', 9],
+    ],
+  )
 
 /**
  * ListViewersResponse is the response type for ListViewers.
@@ -187,25 +156,15 @@ export const ListViewersRequest: MessageType<ListViewersRequest> =
 export interface ListViewersResponse {
   /**
    * Registrations is the list of registered viewers.
-   *
-   * @generated from field: repeated s4wave.viewer.registry.ViewerRegistration registrations = 1;
    */
   registrations?: ViewerRegistration[]
 }
 
 export const ListViewersResponse: MessageType<ListViewersResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.viewer.registry.ListViewersResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'registrations',
-        kind: 'message',
-        T: ViewerRegistration,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListViewersResponse>(
+    's4wave.viewer.registry.ListViewersResponse',
+    () => [[1, 'registrations', 11, 1, ViewerRegistration.codec]],
+  )
 
 /**
  * WatchViewersRequest is the request type for WatchViewers.
@@ -215,26 +174,22 @@ export const ListViewersResponse: MessageType<ListViewersResponse> =
 export interface WatchViewersRequest {
   /**
    * Surface selects the host surface to watch.
-   *
-   * @generated from field: s4wave.viewer.registry.ViewerSurface surface = 1;
    */
   surface?: ViewerSurface
   /**
    * InstanceKey selects a logical installation; empty lists global registrations.
-   *
-   * @generated from field: string instance_key = 2;
    */
   instanceKey?: string
 }
 
 export const WatchViewersRequest: MessageType<WatchViewersRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.viewer.registry.WatchViewersRequest',
-    fields: [
-      { no: 1, name: 'surface', kind: 'enum', T: ViewerSurface_Enum },
-      { no: 2, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchViewersRequest>(
+    's4wave.viewer.registry.WatchViewersRequest',
+    () => [
+      [1, 'surface', 14, 0, ViewerSurface_Enum],
+      [2, 'instance_key', 9],
+    ],
+  )
 
 /**
  * WatchViewersResponse is the response type for WatchViewers.
@@ -244,22 +199,12 @@ export const WatchViewersRequest: MessageType<WatchViewersRequest> =
 export interface WatchViewersResponse {
   /**
    * Registrations is the current set of registered viewers.
-   *
-   * @generated from field: repeated s4wave.viewer.registry.ViewerRegistration registrations = 1;
    */
   registrations?: ViewerRegistration[]
 }
 
 export const WatchViewersResponse: MessageType<WatchViewersResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.viewer.registry.WatchViewersResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'registrations',
-        kind: 'message',
-        T: ViewerRegistration,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchViewersResponse>(
+    's4wave.viewer.registry.WatchViewersResponse',
+    () => [[1, 'registrations', 11, 1, ViewerRegistration.codec]],
+  )

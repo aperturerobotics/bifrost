@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * WatchForgeWorkerRequest subscribes to the local Device's Forge Worker declaration.
@@ -18,9 +13,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface WatchForgeWorkerRequest {}
 
 export const WatchForgeWorkerRequest: MessageType<WatchForgeWorkerRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchForgeWorkerRequest>(
+  /* @__PURE__ */ createMessageType<WatchForgeWorkerRequest>(
     'bldr.plugin.host.WatchForgeWorkerRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -31,38 +26,27 @@ export const WatchForgeWorkerRequest: MessageType<WatchForgeWorkerRequest> =
 export interface WatchForgeWorkerResponse {
   /**
    * Declaration is the binary s4wave.device.ForgeWorkerDeclaration message.
-   *
-   * @generated from field: bytes declaration = 1;
    */
   declaration?: Uint8Array
   /**
    * DeviceObjectKey identifies the enrolled Device that owns Worker capacity.
-   *
-   * @generated from field: string device_object_key = 2;
    */
   deviceObjectKey?: string
   /**
    * Revision identifies the declaration change that produced this snapshot.
-   *
-   * @generated from field: uint64 revision = 3;
    */
   revision?: bigint
 }
 
 export const WatchForgeWorkerResponse: MessageType<WatchForgeWorkerResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.host.WatchForgeWorkerResponse',
-    fields: [
-      { no: 1, name: 'declaration', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 2,
-        name: 'device_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchForgeWorkerResponse>(
+    'bldr.plugin.host.WatchForgeWorkerResponse',
+    () => [
+      [1, 'declaration', 12],
+      [2, 'device_object_key', 9],
+      [3, 'revision', 4],
+    ],
+  )
 
 /**
  * CompleteInitialCapabilityRegistrationRequest marks initial registration complete.
@@ -76,9 +60,9 @@ export const WatchForgeWorkerResponse: MessageType<WatchForgeWorkerResponse> =
 export interface CompleteInitialCapabilityRegistrationRequest {}
 
 export const CompleteInitialCapabilityRegistrationRequest: MessageType<CompleteInitialCapabilityRegistrationRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CompleteInitialCapabilityRegistrationRequest>(
+  /* @__PURE__ */ createMessageType<CompleteInitialCapabilityRegistrationRequest>(
     'bldr.plugin.host.CompleteInitialCapabilityRegistrationRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -89,9 +73,9 @@ export const CompleteInitialCapabilityRegistrationRequest: MessageType<CompleteI
 export interface CompleteInitialCapabilityRegistrationResponse {}
 
 export const CompleteInitialCapabilityRegistrationResponse: MessageType<CompleteInitialCapabilityRegistrationResponse> =
-  /* @__PURE__ */ createEmptyMessageType<CompleteInitialCapabilityRegistrationResponse>(
+  /* @__PURE__ */ createMessageType<CompleteInitialCapabilityRegistrationResponse>(
     'bldr.plugin.host.CompleteInitialCapabilityRegistrationResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -102,9 +86,9 @@ export const CompleteInitialCapabilityRegistrationResponse: MessageType<Complete
 export interface AccessAssetsFSRequest {}
 
 export const AccessAssetsFSRequest: MessageType<AccessAssetsFSRequest> =
-  /* @__PURE__ */ createEmptyMessageType<AccessAssetsFSRequest>(
+  /* @__PURE__ */ createMessageType<AccessAssetsFSRequest>(
     'bldr.plugin.host.AccessAssetsFSRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -115,19 +99,15 @@ export const AccessAssetsFSRequest: MessageType<AccessAssetsFSRequest> =
 export interface AccessAssetsFSResponse {
   /**
    * ResourceId is the resource ID for the assets filesystem.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessAssetsFSResponse: MessageType<AccessAssetsFSResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.host.AccessAssetsFSResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessAssetsFSResponse>(
+    'bldr.plugin.host.AccessAssetsFSResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * AccessDistFSRequest is the request for AccessDistFS.
@@ -137,9 +117,9 @@ export const AccessAssetsFSResponse: MessageType<AccessAssetsFSResponse> =
 export interface AccessDistFSRequest {}
 
 export const AccessDistFSRequest: MessageType<AccessDistFSRequest> =
-  /* @__PURE__ */ createEmptyMessageType<AccessDistFSRequest>(
+  /* @__PURE__ */ createMessageType<AccessDistFSRequest>(
     'bldr.plugin.host.AccessDistFSRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -150,19 +130,15 @@ export const AccessDistFSRequest: MessageType<AccessDistFSRequest> =
 export interface AccessDistFSResponse {
   /**
    * ResourceId is the resource ID for the dist filesystem.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessDistFSResponse: MessageType<AccessDistFSResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.host.AccessDistFSResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessDistFSResponse>(
+    'bldr.plugin.host.AccessDistFSResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * AccessVolumeRequest is the request for AccessVolume.
@@ -172,9 +148,9 @@ export const AccessDistFSResponse: MessageType<AccessDistFSResponse> =
 export interface AccessVolumeRequest {}
 
 export const AccessVolumeRequest: MessageType<AccessVolumeRequest> =
-  /* @__PURE__ */ createEmptyMessageType<AccessVolumeRequest>(
+  /* @__PURE__ */ createMessageType<AccessVolumeRequest>(
     'bldr.plugin.host.AccessVolumeRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -185,19 +161,15 @@ export const AccessVolumeRequest: MessageType<AccessVolumeRequest> =
 export interface AccessVolumeResponse {
   /**
    * ResourceId is the resource ID for the host volume.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessVolumeResponse: MessageType<AccessVolumeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.host.AccessVolumeResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessVolumeResponse>(
+    'bldr.plugin.host.AccessVolumeResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * AccessStateAtomRequest is the request for AccessStateAtom.
@@ -207,19 +179,15 @@ export const AccessVolumeResponse: MessageType<AccessVolumeResponse> =
 export interface AccessStateAtomRequest {
   /**
    * StoreId is the identifier for the state atom store.
-   *
-   * @generated from field: string store_id = 1;
    */
   storeId?: string
 }
 
 export const AccessStateAtomRequest: MessageType<AccessStateAtomRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.host.AccessStateAtomRequest',
-    fields: [
-      { no: 1, name: 'store_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessStateAtomRequest>(
+    'bldr.plugin.host.AccessStateAtomRequest',
+    () => [[1, 'store_id', 9]],
+  )
 
 /**
  * AccessStateAtomResponse is the response for AccessStateAtom.
@@ -229,19 +197,15 @@ export const AccessStateAtomRequest: MessageType<AccessStateAtomRequest> =
 export interface AccessStateAtomResponse {
   /**
    * ResourceId is the resource ID for the state atom store.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessStateAtomResponse: MessageType<AccessStateAtomResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.host.AccessStateAtomResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessStateAtomResponse>(
+    'bldr.plugin.host.AccessStateAtomResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * AccessDesktopTrayRequest is the request for AccessDesktopTray.
@@ -251,9 +215,9 @@ export const AccessStateAtomResponse: MessageType<AccessStateAtomResponse> =
 export interface AccessDesktopTrayRequest {}
 
 export const AccessDesktopTrayRequest: MessageType<AccessDesktopTrayRequest> =
-  /* @__PURE__ */ createEmptyMessageType<AccessDesktopTrayRequest>(
+  /* @__PURE__ */ createMessageType<AccessDesktopTrayRequest>(
     'bldr.plugin.host.AccessDesktopTrayRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -264,19 +228,15 @@ export const AccessDesktopTrayRequest: MessageType<AccessDesktopTrayRequest> =
 export interface AccessDesktopTrayResponse {
   /**
    * ResourceId is the resource ID for the desktop tray resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessDesktopTrayResponse: MessageType<AccessDesktopTrayResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.host.AccessDesktopTrayResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessDesktopTrayResponse>(
+    'bldr.plugin.host.AccessDesktopTrayResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * GetPluginInfoRequest is the request for GetPluginInfo.
@@ -286,9 +246,9 @@ export const AccessDesktopTrayResponse: MessageType<AccessDesktopTrayResponse> =
 export interface GetPluginInfoRequest {}
 
 export const GetPluginInfoRequest: MessageType<GetPluginInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetPluginInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetPluginInfoRequest>(
     'bldr.plugin.host.GetPluginInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -299,23 +259,19 @@ export const GetPluginInfoRequest: MessageType<GetPluginInfoRequest> =
 export interface GetPluginInfoResponse {
   /**
    * PluginId is the identifier of the running plugin.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * Entrypoint is the entrypoint of the running plugin.
-   *
-   * @generated from field: string entrypoint = 2;
    */
   entrypoint?: string
 }
 
 export const GetPluginInfoResponse: MessageType<GetPluginInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.host.GetPluginInfoResponse',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'entrypoint', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetPluginInfoResponse>(
+    'bldr.plugin.host.GetPluginInfoResponse',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'entrypoint', 9],
+    ],
+  )

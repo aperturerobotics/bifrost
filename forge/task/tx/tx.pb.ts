@@ -3,14 +3,9 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
-import { ValueSet } from '../../target/target.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import { ValueSet } from '../../target/target.pb.js'
 import { Result } from '../../value/value.pb.js'
 
 /**
@@ -19,25 +14,18 @@ import { Result } from '../../value/value.pb.js'
  * @generated from enum task.tx.TxType
  */
 export enum TxType {
-  /**
-   * @generated from enum value: TxType_INVALID = 0;
-   */
   TxType_INVALID = 0,
 
   /**
    * TxType_UPDATE_INPUTS updates the ValueSet inputs and target.
    * If changed outside a live Pass, transitions to PENDING.
    * If a Pass is live, requests cancellation and stays RUNNING until drain.
-   *
-   * @generated from enum value: TxType_UPDATE_INPUTS = 1;
    */
   TxType_UPDATE_INPUTS = 1,
 
   /**
    * TxType_START starts the Task when every predecessor Pass is complete.
    * Transitions PENDING to RUNNING and creates the next Pass.
-   *
-   * @generated from enum value: TxType_START = 2;
    */
   TxType_START = 2,
 
@@ -45,8 +33,6 @@ export enum TxType {
    * TxType_UPDATE_WITH_PASS_STATE updates the Task from the current Pass.
    * Canceled completion transitions to PENDING; other completion to CHECKING.
    * A nonterminal Pass leaves the Task state unchanged.
-   *
-   * @generated from enum value: TxType_UPDATE_WITH_PASS_STATE = 3;
    */
   TxType_UPDATE_WITH_PASS_STATE = 3,
 
@@ -55,24 +41,103 @@ export enum TxType {
    * If failed, can transition from any state.
    * If success, must transition from CHECKING state.
    * If success, all Execution states must be Successful.
-   *
-   * @generated from enum value: TxType_COMPLETE = 4;
    */
   TxType_COMPLETE = 4,
 
   /**
    * TxType_RETRY authorizes one successor Pass for a failed predecessor.
    * The expected pass nonce is the idempotency fence.
-   *
-   * @generated from enum value: TxType_RETRY = 5;
    */
   TxType_RETRY = 5,
 }
 
-export const TxType_Enum = /* @__PURE__ */ createEnumType(
-  'task.tx.TxType',
-  TxType,
+export const TxType_Enum = /* @__PURE__ */ createEnumType('task.tx.TxType', [
+  [0, 'TxType_INVALID'],
+  [1, 'TxType_UPDATE_INPUTS'],
+  [2, 'TxType_START'],
+  [3, 'TxType_UPDATE_WITH_PASS_STATE'],
+  [4, 'TxType_COMPLETE'],
+  [5, 'TxType_RETRY'],
+])
+
+/**
+ * Tx is the on-the-wire representation of a transaction.
+ *
+ * @generated from message task.tx.Tx
+ */
+export interface Tx {
+  /**
+   * TxType is the kind of transaction this is.
+   */
+  txType?: TxType
+  /**
+   * TaskObjectKey is the Task object ID this is associated with.
+   * The Task object must already exist.
+   */
+  taskObjectKey?: string
+  /**
+   * TxUpdateInputs updates the Task with the latest Target and Inputs.
+   * TxType_UPDATE_INPUTS
+   */
+  txUpdateInputs?: TxUpdateInputs
+  /**
+   * TxStart contains the start transaction tx.
+   * TxType_START
+   */
+  txStart?: TxStart
+  /**
+   * TxUpdatePassState contains the update pass state tx.
+   * TxType_UPDATE_WITH_PASS_STATE
+   */
+  txUpdateWithPassState?: TxUpdateWithPassState
+  /**
+   * TxComplete contains the complete tx.
+   * TxType_COMPLETE
+   */
+  txComplete?: TxComplete
+  /**
+   * TxRetry contains the explicit retry transaction.
+   * TxType_RETRY
+   */
+  txRetry?: TxRetry
+}
+
+export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType<Tx>(
+  'task.tx.Tx',
+  () => [
+    [1, 'tx_type', 14, 0, TxType_Enum],
+    [2, 'task_object_key', 9],
+    [3, 'tx_update_inputs', 11, 0, TxUpdateInputs.codec],
+    [4, 'tx_start', 11, 0, TxStart.codec],
+    [5, 'tx_update_with_pass_state', 11, 0, TxUpdateWithPassState.codec],
+    [6, 'tx_complete', 11, 0, TxComplete.codec],
+    [7, 'tx_retry', 11, 0, TxRetry.codec],
+  ],
 )
+
+/**
+ * TxRetry authorizes a successor Pass after a terminal failed Pass.
+ * The scheduler supplies the named inputs for the successor.
+ *
+ * @generated from message task.tx.TxRetry
+ */
+export interface TxRetry {
+  /**
+   * ExpectedPassNonce identifies the failed Pass being retried.
+   */
+  expectedPassNonce?: bigint
+  /**
+   * NextInputs contains the named inputs for the successor Pass.
+   * Outputs must be empty.
+   */
+  nextInputs?: ValueSet
+}
+
+export const TxRetry: MessageType<TxRetry> =
+  /* @__PURE__ */ createMessageType<TxRetry>('task.tx.TxRetry', () => [
+    [1, 'expected_pass_nonce', 4],
+    [2, 'next_inputs', 11, 0, ValueSet.codec],
+  ])
 
 /**
  * TxUpdateInputs updates the Task with the latest Target and Inputs.
@@ -86,35 +151,29 @@ export const TxType_Enum = /* @__PURE__ */ createEnumType(
 export interface TxUpdateInputs {
   /**
    * UpdateTarget indicates to update the TargetRef if necessary.
-   *
-   * @generated from field: bool update_target = 1;
    */
   updateTarget?: boolean
   /**
    * ResetInputs indicates to clear the existing inputs before setting.
-   *
-   * @generated from field: bool reset_inputs = 2;
    */
   resetInputs?: boolean
   /**
    * ValueSet is the set of inputs to set for the task.
    * Outputs must be empty.
    * Any Value with Type=UNKNOWN (0) will be deleted.
-   *
-   * @generated from field: forge.target.ValueSet value_set = 3;
    */
   valueSet?: ValueSet
 }
 
 export const TxUpdateInputs: MessageType<TxUpdateInputs> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'task.tx.TxUpdateInputs',
-    fields: [
-      { no: 1, name: 'update_target', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'reset_inputs', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'value_set', kind: 'message', T: () => ValueSet },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxUpdateInputs>(
+    'task.tx.TxUpdateInputs',
+    () => [
+      [1, 'update_target', 8],
+      [2, 'reset_inputs', 8],
+      [3, 'value_set', 11, 0, ValueSet.codec],
+    ],
+  )
 
 /**
  * TxStart starts a Task by creating a Pass.
@@ -128,18 +187,14 @@ export const TxUpdateInputs: MessageType<TxUpdateInputs> =
 export interface TxStart {
   /**
    * AssignSelf assigns the sender of the tx to the new Pass.
-   *
-   * @generated from field: bool assign_self = 1;
    */
   assignSelf?: boolean
 }
 
-export const TxStart: MessageType<TxStart> = /* @__PURE__ */ createMessageType({
-  typeName: 'task.tx.TxStart',
-  fields: [
-    { no: 1, name: 'assign_self', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const TxStart: MessageType<TxStart> =
+  /* @__PURE__ */ createMessageType<TxStart>('task.tx.TxStart', () => [
+    [1, 'assign_self', 8],
+  ])
 
 /**
  * TxUpdateWithPassState updates the Task from the current Pass.
@@ -152,9 +207,9 @@ export const TxStart: MessageType<TxStart> = /* @__PURE__ */ createMessageType({
 export interface TxUpdateWithPassState {}
 
 export const TxUpdateWithPassState: MessageType<TxUpdateWithPassState> =
-  /* @__PURE__ */ createEmptyMessageType<TxUpdateWithPassState>(
+  /* @__PURE__ */ createMessageType<TxUpdateWithPassState>(
     'task.tx.TxUpdateWithPassState',
-    true,
+    () => [],
   )
 
 /**
@@ -169,8 +224,6 @@ export const TxUpdateWithPassState: MessageType<TxUpdateWithPassState> =
 export interface TxComplete {
   /**
    * Result is information about the outcome of a completed pass.
-   *
-   * @generated from field: forge.value.Result result = 1;
    */
   result?: Result
   /**
@@ -178,126 +231,12 @@ export interface TxComplete {
    * Inputs must be empty.
    * Must match the outputs calculated from the Pass and Execution objects.
    * Must be empty if the result is not success.
-   *
-   * @generated from field: forge.target.ValueSet value_set = 2;
    */
   valueSet?: ValueSet
 }
 
 export const TxComplete: MessageType<TxComplete> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'task.tx.TxComplete',
-    fields: [
-      { no: 1, name: 'result', kind: 'message', T: () => Result },
-      { no: 2, name: 'value_set', kind: 'message', T: () => ValueSet },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TxRetry authorizes a successor Pass after a terminal failed Pass.
- * The scheduler supplies the named inputs for the successor.
- *
- * @generated from message task.tx.TxRetry
- */
-export interface TxRetry {
-  /**
-   * ExpectedPassNonce identifies the failed Pass being retried.
-   *
-   * @generated from field: uint64 expected_pass_nonce = 1;
-   */
-  expectedPassNonce?: bigint
-  /**
-   * NextInputs contains the named inputs for the successor Pass.
-   * Outputs must be empty.
-   *
-   * @generated from field: forge.target.ValueSet next_inputs = 2;
-   */
-  nextInputs?: ValueSet
-}
-
-export const TxRetry: MessageType<TxRetry> = /* @__PURE__ */ createMessageType({
-  typeName: 'task.tx.TxRetry',
-  fields: [
-    {
-      no: 1,
-      name: 'expected_pass_nonce',
-      kind: 'scalar',
-      T: ScalarType.UINT64,
-    },
-    { no: 2, name: 'next_inputs', kind: 'message', T: () => ValueSet },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * Tx is the on-the-wire representation of a transaction.
- *
- * @generated from message task.tx.Tx
- */
-export interface Tx {
-  /**
-   * TxType is the kind of transaction this is.
-   *
-   * @generated from field: task.tx.TxType tx_type = 1;
-   */
-  txType?: TxType
-  /**
-   * TaskObjectKey is the Task object ID this is associated with.
-   * The Task object must already exist.
-   *
-   * @generated from field: string task_object_key = 2;
-   */
-  taskObjectKey?: string
-  /**
-   * TxUpdateInputs updates the Task with the latest Target and Inputs.
-   * TxType_UPDATE_INPUTS
-   *
-   * @generated from field: task.tx.TxUpdateInputs tx_update_inputs = 3;
-   */
-  txUpdateInputs?: TxUpdateInputs
-  /**
-   * TxStart contains the start transaction tx.
-   * TxType_START
-   *
-   * @generated from field: task.tx.TxStart tx_start = 4;
-   */
-  txStart?: TxStart
-  /**
-   * TxUpdatePassState contains the update pass state tx.
-   * TxType_UPDATE_WITH_PASS_STATE
-   *
-   * @generated from field: task.tx.TxUpdateWithPassState tx_update_with_pass_state = 5;
-   */
-  txUpdateWithPassState?: TxUpdateWithPassState
-  /**
-   * TxComplete contains the complete tx.
-   * TxType_COMPLETE
-   *
-   * @generated from field: task.tx.TxComplete tx_complete = 6;
-   */
-  txComplete?: TxComplete
-  /**
-   * TxRetry contains the explicit retry transaction.
-   * TxType_RETRY
-   *
-   * @generated from field: task.tx.TxRetry tx_retry = 7;
-   */
-  txRetry?: TxRetry
-}
-
-export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType({
-  typeName: 'task.tx.Tx',
-  fields: [
-    { no: 1, name: 'tx_type', kind: 'enum', T: TxType_Enum },
-    { no: 2, name: 'task_object_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'tx_update_inputs', kind: 'message', T: TxUpdateInputs },
-    { no: 4, name: 'tx_start', kind: 'message', T: TxStart },
-    {
-      no: 5,
-      name: 'tx_update_with_pass_state',
-      kind: 'message',
-      T: TxUpdateWithPassState,
-    },
-    { no: 6, name: 'tx_complete', kind: 'message', T: TxComplete },
-    { no: 7, name: 'tx_retry', kind: 'message', T: TxRetry },
-  ] satisfies readonly PartialFieldInfo[],
-})
+  /* @__PURE__ */ createMessageType<TxComplete>('task.tx.TxComplete', () => [
+    [1, 'result', 11, 0, Result.codec],
+    [2, 'value_set', 11, 0, ValueSet.codec],
+  ])

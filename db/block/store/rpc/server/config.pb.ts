@@ -6,8 +6,6 @@ import type { HashType } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.
 import { HashType_Enum } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the block store rpc server.
@@ -17,46 +15,37 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BlockStoreId is the block store id to lookup on the bus.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * Write enables the write api endpoints.
-   *
-   * @generated from field: bool write = 2;
    */
   write?: boolean
   /**
    * ServiceId is the service id to serve LookupRpcService requests.
    * Cannot be empty.
-   *
-   * @generated from field: string service_id = 3;
    */
   serviceId?: string
   /**
    * ServerIdRe is the regex of server IDs to accept for LookupRpcService.
    * If empty, will accept any.
-   *
-   * @generated from field: string server_id_re = 4;
    */
   serverIdRe?: string
   /**
    * ForceHashType forces writing the given hash type to the store.
    * If unset, accepts any hash type the underlying bucket accepts.
-   *
-   * @generated from field: hash.HashType force_hash_type = 5;
    */
   forceHashType?: HashType
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.rpc.server.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'write', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 3, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'server_id_re', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'force_hash_type', kind: 'enum', T: HashType_Enum },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'block.store.rpc.server.Config',
+    () => [
+      [1, 'block_store_id', 9],
+      [2, 'write', 8],
+      [3, 'service_id', 9],
+      [4, 'server_id_re', 9],
+      [5, 'force_hash_type', 14, 0, HashType_Enum],
+    ],
+  )

@@ -6,8 +6,6 @@ import { VolumeInfo } from '@go/github.com/s4wave/spacewave/db/volume/volume.pb.
 import { PlatformSelectionPolicy } from '../../plugin/host/scheduler/config.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * DevtoolInitBrowser is the message initializing the browser from the devtool.
@@ -17,77 +15,43 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface DevtoolInitBrowser {
   /**
    * AppId is the application id for browser storage.
-   *
-   * @generated from field: string app_id = 1;
    */
   appId?: string
   /**
    * DevtoolPeerId is the peer id to use for the devtool link.
-   *
-   * @generated from field: string devtool_peer_id = 2;
    */
   devtoolPeerId?: string
   /**
    * DevtoolVolumeInfo is the information for the devtool Volume.
    * The volume is exposed with a ProxyVolume.
-   *
-   * @generated from field: volume.VolumeInfo devtool_volume_info = 3;
    */
   devtoolVolumeInfo?: VolumeInfo
   /**
    * StartPlugins is a list of plugins to LoadPlugin at startup.
-   *
-   * @generated from field: repeated string start_plugins = 4;
    */
   startPlugins?: string[]
   /**
    * ForceDedicatedWorkers overrides the default SharedWorker mode to use
    * dedicated Workers for plugins. Useful for testing with Playwright
    * which can capture console output from dedicated workers but not shared.
-   *
-   * @generated from field: bool force_dedicated_workers = 5;
    */
   forceDedicatedWorkers?: boolean
   /**
    * PlatformSelectionPolicies bind project-owned startup plugins to the
    * platform selected by the active development compiler.
-   *
-   * @generated from field: repeated plugin.host.scheduler.PlatformSelectionPolicy platform_selection_policies = 6;
    */
   platformSelectionPolicies?: PlatformSelectionPolicy[]
 }
 
 export const DevtoolInitBrowser: MessageType<DevtoolInitBrowser> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'devtool.web.DevtoolInitBrowser',
-    fields: [
-      { no: 1, name: 'app_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'devtool_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'devtool_volume_info',
-        kind: 'message',
-        T: () => VolumeInfo,
-      },
-      {
-        no: 4,
-        name: 'start_plugins',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'force_dedicated_workers',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      {
-        no: 6,
-        name: 'platform_selection_policies',
-        kind: 'message',
-        T: () => PlatformSelectionPolicy,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DevtoolInitBrowser>(
+    'devtool.web.DevtoolInitBrowser',
+    () => [
+      [1, 'app_id', 9],
+      [2, 'devtool_peer_id', 9],
+      [3, 'devtool_volume_info', 11, 0, VolumeInfo.codec],
+      [4, 'start_plugins', 9, 1],
+      [5, 'force_dedicated_workers', 8],
+      [6, 'platform_selection_policies', 11, 1, PlatformSelectionPolicy.codec],
+    ],
+  )

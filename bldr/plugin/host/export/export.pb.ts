@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Config configures the controller that resolves the host's exported plugin
@@ -19,9 +14,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {}
 
 export const Config: MessageType<Config> =
-  /* @__PURE__ */ createEmptyMessageType<Config>(
+  /* @__PURE__ */ createMessageType<Config>(
     'plugin.host.export.Config',
-    true,
+    () => [],
   )
 
 /**
@@ -32,9 +27,9 @@ export const Config: MessageType<Config> =
 export interface WatchHostsRequest {}
 
 export const WatchHostsRequest: MessageType<WatchHostsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchHostsRequest>(
+  /* @__PURE__ */ createMessageType<WatchHostsRequest>(
     'plugin.host.export.WatchHostsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -45,25 +40,15 @@ export const WatchHostsRequest: MessageType<WatchHostsRequest> =
 export interface WatchHostsResponse {
   /**
    * PlatformIds are the platform IDs of the available plugin hosts.
-   *
-   * @generated from field: repeated string platform_ids = 1;
    */
   platformIds?: string[]
 }
 
 export const WatchHostsResponse: MessageType<WatchHostsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.export.WatchHostsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'platform_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchHostsResponse>(
+    'plugin.host.export.WatchHostsResponse',
+    () => [[1, 'platform_ids', 9, 1]],
+  )
 
 /**
  * StartRequest carries the PluginHost.ExecutePlugin arguments.
@@ -73,54 +58,42 @@ export const WatchHostsResponse: MessageType<WatchHostsResponse> =
 export interface StartRequest {
   /**
    * PlatformId selects the plugin host.
-   *
-   * @generated from field: string platform_id = 1;
    */
   platformId?: string
   /**
    * PluginId is the plugin to execute.
-   *
-   * @generated from field: string plugin_id = 2;
    */
   pluginId?: string
   /**
    * InstanceKey is the logical instance key passed to the plugin.
-   *
-   * @generated from field: string instance_key = 3;
    */
   instanceKey?: string
   /**
    * ExecutionKey distinguishes concurrent executions of one instance.
-   *
-   * @generated from field: string execution_key = 4;
    */
   executionKey?: string
   /**
    * ManifestRoot identifies the exact files used by this execution.
-   *
-   * @generated from field: string manifest_root = 5;
    */
   manifestRoot?: string
   /**
    * Entrypoint is the entrypoint path within the dist files.
-   *
-   * @generated from field: string entrypoint = 6;
    */
   entrypoint?: string
 }
 
 export const StartRequest: MessageType<StartRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.export.StartRequest',
-    fields: [
-      { no: 1, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'execution_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'manifest_root', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'entrypoint', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartRequest>(
+    'plugin.host.export.StartRequest',
+    () => [
+      [1, 'platform_id', 9],
+      [2, 'plugin_id', 9],
+      [3, 'instance_key', 9],
+      [4, 'execution_key', 9],
+      [5, 'manifest_root', 9],
+      [6, 'entrypoint', 9],
+    ],
+  )
 
 /**
  * StartResponse reports a change in the running plugin's RPC readiness.
@@ -130,16 +103,12 @@ export const StartRequest: MessageType<StartRequest> =
 export interface StartResponse {
   /**
    * RpcReady is set while the running plugin accepts calls on the session.
-   *
-   * @generated from field: bool rpc_ready = 1;
    */
   rpcReady?: boolean
 }
 
 export const StartResponse: MessageType<StartResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.export.StartResponse',
-    fields: [
-      { no: 1, name: 'rpc_ready', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartResponse>(
+    'plugin.host.export.StartResponse',
+    () => [[1, 'rpc_ready', 8]],
+  )

@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import {
   SharedObjectConfig,
   SharedObjectHealth,
@@ -24,59 +19,10 @@ import {
 export interface GetSharedObjectTrimRequest {}
 
 export const GetSharedObjectTrimRequest: MessageType<GetSharedObjectTrimRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetSharedObjectTrimRequest>(
+  /* @__PURE__ */ createMessageType<GetSharedObjectTrimRequest>(
     's4wave.sobject.GetSharedObjectTrimRequest',
-    true,
+    () => [],
   )
-
-/**
- * SharedObjectTrimWriter is one writer's share in the stable point.
- *
- * @generated from message s4wave.sobject.SharedObjectTrimWriter
- */
-export interface SharedObjectTrimWriter {
-  /**
-   * PeerId identifies the writer.
-   *
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-  /**
-   * Dropped is true when the writer is off the trimming roster.
-   *
-   * @generated from field: bool dropped = 2;
-   */
-  dropped?: boolean
-  /**
-   * LatestNonce is the nonce of the writer's latest held operation, or 0.
-   *
-   * @generated from field: uint64 latest_nonce = 3;
-   */
-  latestNonce?: bigint
-  /**
-   * BuiltOnCheckpointer is true when the writer built on the checkpointer's
-   * latest operation.
-   *
-   * @generated from field: bool built_on_checkpointer = 4;
-   */
-  builtOnCheckpointer?: boolean
-}
-
-export const SharedObjectTrimWriter: MessageType<SharedObjectTrimWriter> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sobject.SharedObjectTrimWriter',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'dropped', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'latest_nonce', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 4,
-        name: 'built_on_checkpointer',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * SharedObjectTrim is this device's view of the checkpoint and the history above
@@ -87,115 +33,99 @@ export const SharedObjectTrimWriter: MessageType<SharedObjectTrimWriter> =
 export interface SharedObjectTrim {
   /**
    * ViewerPeerId identifies this device's participant.
-   *
-   * @generated from field: string viewer_peer_id = 1;
    */
   viewerPeerId?: string
   /**
    * CheckpointHeight is the height of the held checkpoint.
-   *
-   * @generated from field: uint64 checkpoint_height = 2;
    */
   checkpointHeight?: bigint
   /**
    * Operations is the number of operations held above the checkpoint.
-   *
-   * @generated from field: int64 operations = 3;
    */
   operations?: bigint
   /**
    * Placed is the number of them in the replay order.
-   *
-   * @generated from field: int64 placed = 4;
    */
   placed?: bigint
   /**
    * Stable is the length of the order prefix every roster member built on.
-   *
-   * @generated from field: int64 stable = 5;
    */
   stable?: bigint
   /**
    * SequencerPeerId is the appointed sequencer, empty under Merge.
-   *
-   * @generated from field: string sequencer_peer_id = 6;
    */
   sequencerPeerId?: string
   /**
    * CheckpointerPeerId is the peer that signs checkpoints.
-   *
-   * @generated from field: string checkpointer_peer_id = 7;
    */
   checkpointerPeerId?: string
   /**
    * NeedsAcknowledgment is true when this device should acknowledge now.
-   *
-   * @generated from field: bool needs_acknowledgment = 8;
    */
   needsAcknowledgment?: boolean
   /**
    * UnplacedHeads are the heads outside the order. Any of them stops every
    * acknowledgment.
-   *
-   * @generated from field: repeated sobject.SOOperationPosition unplaced_heads = 9;
    */
   unplacedHeads?: SOOperationPosition[]
   /**
    * Writers are the writers with their place on the trimming roster.
-   *
-   * @generated from field: repeated s4wave.sobject.SharedObjectTrimWriter writers = 10;
    */
   writers?: SharedObjectTrimWriter[]
 }
 
 export const SharedObjectTrim: MessageType<SharedObjectTrim> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sobject.SharedObjectTrim',
-    fields: [
-      { no: 1, name: 'viewer_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'checkpoint_height',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 3, name: 'operations', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 4, name: 'placed', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 5, name: 'stable', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 6,
-        name: 'sequencer_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 7,
-        name: 'checkpointer_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 8,
-        name: 'needs_acknowledgment',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      {
-        no: 9,
-        name: 'unplaced_heads',
-        kind: 'message',
-        T: () => SOOperationPosition,
-        repeated: true,
-      },
-      {
-        no: 10,
-        name: 'writers',
-        kind: 'message',
-        T: SharedObjectTrimWriter,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SharedObjectTrim>(
+    's4wave.sobject.SharedObjectTrim',
+    () => [
+      [1, 'viewer_peer_id', 9],
+      [2, 'checkpoint_height', 4],
+      [3, 'operations', 3],
+      [4, 'placed', 3],
+      [5, 'stable', 3],
+      [6, 'sequencer_peer_id', 9],
+      [7, 'checkpointer_peer_id', 9],
+      [8, 'needs_acknowledgment', 8],
+      [9, 'unplaced_heads', 11, 1, SOOperationPosition.codec],
+      [10, 'writers', 11, 1, SharedObjectTrimWriter.codec],
+    ],
+  )
+
+/**
+ * SharedObjectTrimWriter is one writer's share in the stable point.
+ *
+ * @generated from message s4wave.sobject.SharedObjectTrimWriter
+ */
+export interface SharedObjectTrimWriter {
+  /**
+   * PeerId identifies the writer.
+   */
+  peerId?: string
+  /**
+   * Dropped is true when the writer is off the trimming roster.
+   */
+  dropped?: boolean
+  /**
+   * LatestNonce is the nonce of the writer's latest held operation, or 0.
+   */
+  latestNonce?: bigint
+  /**
+   * BuiltOnCheckpointer is true when the writer built on the checkpointer's
+   * latest operation.
+   */
+  builtOnCheckpointer?: boolean
+}
+
+export const SharedObjectTrimWriter: MessageType<SharedObjectTrimWriter> =
+  /* @__PURE__ */ createMessageType<SharedObjectTrimWriter>(
+    's4wave.sobject.SharedObjectTrimWriter',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'dropped', 8],
+      [3, 'latest_nonce', 4],
+      [4, 'built_on_checkpointer', 8],
+    ],
+  )
 
 /**
  * WatchSharedObjectParticipationRequest selects the already mounted SharedObject.
@@ -205,9 +135,9 @@ export const SharedObjectTrim: MessageType<SharedObjectTrim> =
 export interface WatchSharedObjectParticipationRequest {}
 
 export const WatchSharedObjectParticipationRequest: MessageType<WatchSharedObjectParticipationRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSharedObjectParticipationRequest>(
+  /* @__PURE__ */ createMessageType<WatchSharedObjectParticipationRequest>(
     's4wave.sobject.WatchSharedObjectParticipationRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -219,51 +149,32 @@ export const WatchSharedObjectParticipationRequest: MessageType<WatchSharedObjec
 export interface SharedObjectParticipation {
   /**
    * ViewerPeerId identifies the native participant bound to this mounted SharedObject.
-   *
-   * @generated from field: string viewer_peer_id = 1;
    */
   viewerPeerId?: string
   /**
    * Config is the retained native configuration, including an accepted departure.
-   *
-   * @generated from field: sobject.SharedObjectConfig config = 2;
    */
   config?: SharedObjectConfig
   /**
    * ConfigHistoryBase is the native trust checkpoint when retained lineage is available.
-   *
-   * @generated from field: sobject.SharedObjectConfig config_history_base = 3;
    */
   configHistoryBase?: SharedObjectConfig
   /**
    * ConfigHistoryChanges is the verified oldest-first suffix from the checkpoint through Config.
-   *
-   * @generated from field: repeated sobject.SOConfigChange config_history_changes = 4;
    */
   configHistoryChanges?: SOConfigChange[]
 }
 
 export const SharedObjectParticipation: MessageType<SharedObjectParticipation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sobject.SharedObjectParticipation',
-    fields: [
-      { no: 1, name: 'viewer_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'config', kind: 'message', T: () => SharedObjectConfig },
-      {
-        no: 3,
-        name: 'config_history_base',
-        kind: 'message',
-        T: () => SharedObjectConfig,
-      },
-      {
-        no: 4,
-        name: 'config_history_changes',
-        kind: 'message',
-        T: () => SOConfigChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SharedObjectParticipation>(
+    's4wave.sobject.SharedObjectParticipation',
+    () => [
+      [1, 'viewer_peer_id', 9],
+      [2, 'config', 11, 0, SharedObjectConfig.codec],
+      [3, 'config_history_base', 11, 0, SharedObjectConfig.codec],
+      [4, 'config_history_changes', 11, 1, SOConfigChange.codec],
+    ],
+  )
 
 /**
  * WatchSharedObjectHealthRequest is the request type for WatchSharedObjectHealth.
@@ -273,9 +184,9 @@ export const SharedObjectParticipation: MessageType<SharedObjectParticipation> =
 export interface WatchSharedObjectHealthRequest {}
 
 export const WatchSharedObjectHealthRequest: MessageType<WatchSharedObjectHealthRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSharedObjectHealthRequest>(
+  /* @__PURE__ */ createMessageType<WatchSharedObjectHealthRequest>(
     's4wave.sobject.WatchSharedObjectHealthRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -286,19 +197,15 @@ export const WatchSharedObjectHealthRequest: MessageType<WatchSharedObjectHealth
 export interface WatchSharedObjectHealthResponse {
   /**
    * Health is the current SharedObject health snapshot.
-   *
-   * @generated from field: sobject.SharedObjectHealth health = 1;
    */
   health?: SharedObjectHealth
 }
 
 export const WatchSharedObjectHealthResponse: MessageType<WatchSharedObjectHealthResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sobject.WatchSharedObjectHealthResponse',
-    fields: [
-      { no: 1, name: 'health', kind: 'message', T: () => SharedObjectHealth },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchSharedObjectHealthResponse>(
+    's4wave.sobject.WatchSharedObjectHealthResponse',
+    () => [[1, 'health', 11, 0, SharedObjectHealth.codec]],
+  )
 
 /**
  * MountSharedObjectBodyRequest is the request type for MountSharedObjectBody.
@@ -308,9 +215,9 @@ export const WatchSharedObjectHealthResponse: MessageType<WatchSharedObjectHealt
 export interface MountSharedObjectBodyRequest {}
 
 export const MountSharedObjectBodyRequest: MessageType<MountSharedObjectBodyRequest> =
-  /* @__PURE__ */ createEmptyMessageType<MountSharedObjectBodyRequest>(
+  /* @__PURE__ */ createMessageType<MountSharedObjectBodyRequest>(
     's4wave.sobject.MountSharedObjectBodyRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -325,50 +232,19 @@ export interface MountSharedObjectBodyResponse {
    * @generated from oneof s4wave.sobject.MountSharedObjectBodyResponse.result
    */
   result?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * ResourceId is the ID of the mounted shared object body resource.
-         *
-         * @generated from field: uint32 resource_id = 1;
-         */
-        value: number
-        case: 'resourceId'
-      }
-    | {
-        /**
-         * Health is returned when body construction failed with typed SharedObject health.
-         *
-         * @generated from field: sobject.SharedObjectHealth health = 2;
-         */
-        value: SharedObjectHealth
-        case: 'health'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: number; case: 'resourceId' }
+    | { value: SharedObjectHealth; case: 'health' }
 }
 
 export const MountSharedObjectBodyResponse: MessageType<MountSharedObjectBodyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sobject.MountSharedObjectBodyResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-        oneof: 'result',
-      },
-      {
-        no: 2,
-        name: 'health',
-        kind: 'message',
-        T: () => SharedObjectHealth,
-        oneof: 'result',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MountSharedObjectBodyResponse>(
+    's4wave.sobject.MountSharedObjectBodyResponse',
+    () => [
+      [1, 'resource_id', 13, 0, 0, 'result'],
+      [2, 'health', 11, 0, SharedObjectHealth.codec, 'result'],
+    ],
+  )
 
 /**
  * OpenReadCheckpointRequest selects the native participant's retained history.
@@ -378,9 +254,9 @@ export const MountSharedObjectBodyResponse: MessageType<MountSharedObjectBodyRes
 export interface OpenReadCheckpointRequest {}
 
 export const OpenReadCheckpointRequest: MessageType<OpenReadCheckpointRequest> =
-  /* @__PURE__ */ createEmptyMessageType<OpenReadCheckpointRequest>(
+  /* @__PURE__ */ createMessageType<OpenReadCheckpointRequest>(
     's4wave.sobject.OpenReadCheckpointRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -391,23 +267,19 @@ export const OpenReadCheckpointRequest: MessageType<OpenReadCheckpointRequest> =
 export interface OpenReadCheckpointResponse {
   /**
    * ResourceId is zero when no checkpoint was retained.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * Config is the historical audience at the retained root, not current authority.
-   *
-   * @generated from field: sobject.SharedObjectConfig config = 2;
    */
   config?: SharedObjectConfig
 }
 
 export const OpenReadCheckpointResponse: MessageType<OpenReadCheckpointResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sobject.OpenReadCheckpointResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'config', kind: 'message', T: () => SharedObjectConfig },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenReadCheckpointResponse>(
+    's4wave.sobject.OpenReadCheckpointResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'config', 11, 0, SharedObjectConfig.codec],
+    ],
+  )

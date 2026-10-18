@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ManifestInfo contains metadata about a plugin's manifest.
@@ -15,43 +13,29 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface ManifestInfo {
   /**
    * Name is the human-readable plugin name (manifest ID).
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Description is the plugin description from manifest metadata.
-   *
-   * @generated from field: string description = 2;
    */
   description?: string
   /**
    * Version is the plugin version string (manifest revision).
-   *
-   * @generated from field: string version = 3;
    */
   version?: string
   /**
    * BuildTypes is the list of build type identifiers (e.g. "dev", "release").
-   *
-   * @generated from field: repeated string build_types = 4;
    */
   buildTypes?: string[]
 }
 
 export const ManifestInfo: MessageType<ManifestInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.list.ManifestInfo',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'build_types',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ManifestInfo>(
+    'plugin.list.ManifestInfo',
+    () => [
+      [1, 'name', 9],
+      [2, 'description', 9],
+      [3, 'version', 9],
+      [4, 'build_types', 9, 1],
+    ],
+  )

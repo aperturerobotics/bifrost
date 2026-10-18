@@ -5,9 +5,7 @@
 import { ChatReadPosition } from './state/state.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import {
   ChatEnvelope,
   ChatMessageContent,
@@ -24,95 +22,60 @@ import { SendMessageRequest } from './rpc/rpc.pb.js'
 export interface ChatChannel {
   /**
    * Name is the channel display name.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Topic is an optional channel topic description.
-   *
-   * @generated from field: string topic = 2;
    */
   topic?: string
   /**
    * CreatedAt is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 3;
    */
   createdAt?: Date
   /**
    * MessageCount is the number of messages appended to the channel.
-   *
-   * @generated from field: uint64 message_count = 4;
    */
   messageCount?: bigint
   /**
    * ReadPositions maps verified person identities to their shared read positions.
    * Keys are accepted entity IDs or local-only device IDs.
-   *
-   * @generated from field: map<string, spacewave.chat.ChatReadPosition> read_positions = 5;
    */
   readPositions?: { [key: string]: ChatReadPosition }
   /**
    * CreatorPeerId is the peer identity that created the channel.
-   *
-   * @generated from field: string creator_peer_id = 6;
    */
   creatorPeerId?: string
   /**
    * EncryptionAlgorithm is the channel encryption policy. Empty allows plaintext;
    * once enabled it cannot change. Annotations and state changes remain public.
-   *
-   * @generated from field: string encryption_algorithm = 7;
    */
   encryptionAlgorithm?: string
   /**
    * ThreadHeadKey starts the activity-ordered thread-summary list.
-   *
-   * @generated from field: string thread_head_key = 8;
    */
   threadHeadKey?: string
   /**
    * ThreadIndexedMessageCount is the history prefix represented by the thread index.
    * Presence distinguishes an initialized empty index from legacy channel state.
-   *
-   * @generated from field: optional uint64 thread_indexed_message_count = 9;
    */
   threadIndexedMessageCount?: bigint
 }
 
 export const ChatChannel: MessageType<ChatChannel> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatChannel',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'topic', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 4, name: 'message_count', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 5,
-        name: 'read_positions',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: () => ChatReadPosition },
-      },
-      { no: 6, name: 'creator_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 7,
-        name: 'encryption_algorithm',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 8, name: 'thread_head_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 9,
-        name: 'thread_indexed_message_count',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        opt: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatChannel>(
+    'spacewave.chat.ChatChannel',
+    () => [
+      [1, 'name', 9],
+      [2, 'topic', 9],
+      [3, 'created_at', 11, 0, Timestamp.codec],
+      [4, 'message_count', 4],
+      [5, 'read_positions', 11, 584, ChatReadPosition.codec],
+      [6, 'creator_peer_id', 9],
+      [7, 'encryption_algorithm', 9],
+      [8, 'thread_head_key', 9],
+      [9, 'thread_indexed_message_count', 4, 4],
+    ],
+  )
 
 /**
  * ChatMessage is a chat message world object linked to a channel.
@@ -122,87 +85,67 @@ export const ChatChannel: MessageType<ChatChannel> =
 export interface ChatMessage {
   /**
    * SenderPeerId is the peer ID of the message sender.
-   *
-   * @generated from field: string sender_peer_id = 1;
    */
   senderPeerId?: string
   /**
    * Content is the message content.
-   *
-   * @generated from field: spacewave.chat.ChatMessageContent content = 2;
    */
   content?: ChatMessageContent
   /**
    * CreatedAt is the message creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 3;
    */
   createdAt?: Date
   /**
    * ReplyToKey is the object key of the message being replied to.
-   *
-   * @generated from field: string reply_to_key = 4;
    */
   replyToKey?: string
   /**
    * Index is the zero-based message index within the channel.
-   *
-   * @generated from field: uint64 index = 5;
    */
   index?: bigint
   /**
    * PersonId is the accepted entity ID, or the signing device for local-only participants.
-   *
-   * @generated from field: string person_id = 6;
    */
   personId?: string
   /**
    * RedactedByKey is the redaction message that removed this body, empty while intact.
    * A redacted body keeps only its variant, event type, and relation routing.
-   *
-   * @generated from field: string redacted_by_key = 7;
    */
   redactedByKey?: string
   /**
    * ReplacesKey is the state message this state change replaced as current state.
    * Empty for the first event of a state identity and for non-state messages.
-   *
-   * @generated from field: string replaces_key = 8;
    */
   replacesKey?: string
   /**
    * Author names the agent or tool that sent the message for its person.
    * It attributes the message and grants nothing: the peer is still the
    * authority. Empty when the person sent it. Validated as a DNS label.
-   *
-   * @generated from field: string author = 9;
    */
   author?: string
   /**
    * Envelope is the exact wire form of a message another protocol originated,
    * empty for messages sent through the channel.
-   *
-   * @generated from field: spacewave.chat.ChatEnvelope envelope = 10;
    */
   envelope?: ChatEnvelope
 }
 
 export const ChatMessage: MessageType<ChatMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatMessage',
-    fields: [
-      { no: 1, name: 'sender_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'content', kind: 'message', T: () => ChatMessageContent },
-      { no: 3, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 4, name: 'reply_to_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'index', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 6, name: 'person_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'redacted_by_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'replaces_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'author', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatMessage>(
+    'spacewave.chat.ChatMessage',
+    () => [
+      [1, 'sender_peer_id', 9],
+      [2, 'content', 11, 0, ChatMessageContent.codec],
+      [3, 'created_at', 11, 0, Timestamp.codec],
+      [4, 'reply_to_key', 9],
+      [5, 'index', 4],
+      [6, 'person_id', 9],
+      [7, 'redacted_by_key', 9],
+      [8, 'replaces_key', 9],
+      [9, 'author', 9],
+      [10, 'envelope', 11, 0, ChatEnvelope.codec],
+    ],
+  )
 
 /**
  * ChatMessagePage stores a bounded page of channel message keys.
@@ -212,25 +155,15 @@ export const ChatMessage: MessageType<ChatMessage> =
 export interface ChatMessagePage {
   /**
    * MessageKeys are page-local message object keys in creation order.
-   *
-   * @generated from field: repeated string message_keys = 1;
    */
   messageKeys?: string[]
 }
 
 export const ChatMessagePage: MessageType<ChatMessagePage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatMessagePage',
-    fields: [
-      {
-        no: 1,
-        name: 'message_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatMessagePage>(
+    'spacewave.chat.ChatMessagePage',
+    () => [[1, 'message_keys', 9, 1]],
+  )
 
 /**
  * ChatThread stores one bounded summary in the channel's activity-ordered thread index.
@@ -240,64 +173,42 @@ export const ChatMessagePage: MessageType<ChatMessagePage> =
 export interface ChatThread {
   /**
    * RootMessageKey is the immutable root identity summarized by this snapshot.
-   *
-   * @generated from field: string root_message_key = 1;
    */
   rootMessageKey?: string
   /**
    * LatestMessageKey is the newest canonical reply captured by this snapshot.
-   *
-   * @generated from field: string latest_message_key = 2;
    */
   latestMessageKey?: string
   /**
    * LatestMessageIndex orders threads by their newest canonical reply.
-   *
-   * @generated from field: uint64 latest_message_index = 3;
    */
   latestMessageIndex?: bigint
   /**
    * ReplyCount is the number of canonical thread replies.
-   *
-   * @generated from field: uint64 reply_count = 4;
    */
   replyCount?: bigint
   /**
    * NewerThreadKey establishes the preceding entry in activity order.
-   *
-   * @generated from field: string newer_thread_key = 5;
    */
   newerThreadKey?: string
   /**
    * OlderThreadKey establishes the following entry in activity order.
-   *
-   * @generated from field: string older_thread_key = 6;
    */
   olderThreadKey?: string
 }
 
 export const ChatThread: MessageType<ChatThread> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatThread',
-    fields: [
-      { no: 1, name: 'root_message_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'latest_message_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 3,
-        name: 'latest_message_index',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 4, name: 'reply_count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'newer_thread_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'older_thread_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatThread>(
+    'spacewave.chat.ChatThread',
+    () => [
+      [1, 'root_message_key', 9],
+      [2, 'latest_message_key', 9],
+      [3, 'latest_message_index', 4],
+      [4, 'reply_count', 4],
+      [5, 'newer_thread_key', 9],
+      [6, 'older_thread_key', 9],
+    ],
+  )
 
 /**
  * InitChatDemoOp creates a "General" channel on space quickstart.
@@ -307,31 +218,22 @@ export const ChatThread: MessageType<ChatThread> =
 export interface InitChatDemoOp {
   /**
    * ChannelObjectKey is the key for the channel object.
-   *
-   * @generated from field: string channel_object_key = 1;
    */
   channelObjectKey?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
 }
 
 export const InitChatDemoOp: MessageType<InitChatDemoOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.InitChatDemoOp',
-    fields: [
-      {
-        no: 1,
-        name: 'channel_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitChatDemoOp>(
+    'spacewave.chat.InitChatDemoOp',
+    () => [
+      [1, 'channel_object_key', 9],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * CreateChatChannelOp creates a new chat channel.
@@ -341,66 +243,43 @@ export const InitChatDemoOp: MessageType<InitChatDemoOp> =
 export interface CreateChatChannelOp {
   /**
    * ObjectKey is the key to create the channel at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the channel name.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Topic is the optional channel topic.
-   *
-   * @generated from field: string topic = 3;
    */
   topic?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
   /**
    * EncryptionAlgorithm initializes the channel encryption policy. Empty allows plaintext;
    * once enabled it cannot change. Annotations and state changes remain public.
-   *
-   * @generated from field: string encryption_algorithm = 5;
    */
   encryptionAlgorithm?: string
   /**
    * InitialState is appended atomically in order with the channel creation timestamp.
-   *
-   * @generated from field: repeated spacewave.chat.ChatStateChange initial_state = 6;
    */
   initialState?: ChatStateChange[]
 }
 
 export const CreateChatChannelOp: MessageType<CreateChatChannelOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.CreateChatChannelOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'topic', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      {
-        no: 5,
-        name: 'encryption_algorithm',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 6,
-        name: 'initial_state',
-        kind: 'message',
-        T: () => ChatStateChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateChatChannelOp>(
+    'spacewave.chat.CreateChatChannelOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'topic', 9],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+      [5, 'encryption_algorithm', 9],
+      [6, 'initial_state', 11, 1, ChatStateChange.codec],
+    ],
+  )
 
 /**
  * SendChatMessageOp appends a message against the accepted World history.
@@ -410,33 +289,27 @@ export const CreateChatChannelOp: MessageType<CreateChatChannelOp> =
 export interface SendChatMessageOp {
   /**
    * ObjectKey selects the channel to append to.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Request retains the send intent and its stable transaction ID.
-   *
-   * @generated from field: spacewave.chat.rpc.SendMessageRequest request = 2;
    */
   request?: SendMessageRequest
   /**
    * Timestamp is chosen when the send is submitted.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
 }
 
 export const SendChatMessageOp: MessageType<SendChatMessageOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.SendChatMessageOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'request', kind: 'message', T: () => SendMessageRequest },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SendChatMessageOp>(
+    'spacewave.chat.SendChatMessageOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'request', 11, 0, SendMessageRequest.codec],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * AttachChatEnvelopeOp gives a message without an envelope its wire form in
@@ -447,33 +320,27 @@ export const SendChatMessageOp: MessageType<SendChatMessageOp> =
 export interface AttachChatEnvelopeOp {
   /**
    * ObjectKey selects the channel holding the message.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * MessageKey identifies the message.
-   *
-   * @generated from field: string message_key = 2;
    */
   messageKey?: string
   /**
    * Envelope is the message's wire form.
-   *
-   * @generated from field: spacewave.chat.ChatEnvelope envelope = 3;
    */
   envelope?: ChatEnvelope
 }
 
 export const AttachChatEnvelopeOp: MessageType<AttachChatEnvelopeOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.AttachChatEnvelopeOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'message_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AttachChatEnvelopeOp>(
+    'spacewave.chat.AttachChatEnvelopeOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'message_key', 9],
+      [3, 'envelope', 11, 0, ChatEnvelope.codec],
+    ],
+  )
 
 /**
  * UpdateChatReadPositionOp advances a receipt on accepted World replay.
@@ -483,52 +350,36 @@ export const AttachChatEnvelopeOp: MessageType<AttachChatEnvelopeOp> =
 export interface UpdateChatReadPositionOp {
   /**
    * ObjectKey selects the channel whose receipt advances.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * NextIndex is the first unread message index.
-   *
-   * @generated from field: uint64 next_index = 2;
    */
   nextIndex?: bigint
   /**
    * Timestamp is chosen when the receipt is submitted.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
   /**
    * ThreadRootKey limits the receipt to one timeline when present, as in
    * UpdateReadPositionRequest.
-   *
-   * @generated from field: optional string thread_root_key = 4;
    */
   threadRootKey?: string
   /**
    * Author selects the position of the agent or tool reading for the accepted
    * person, as in UpdateReadPositionRequest.
-   *
-   * @generated from field: string author = 5;
    */
   author?: string
 }
 
 export const UpdateChatReadPositionOp: MessageType<UpdateChatReadPositionOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.UpdateChatReadPositionOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'next_index', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      {
-        no: 4,
-        name: 'thread_root_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        opt: true,
-      },
-      { no: 5, name: 'author', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateChatReadPositionOp>(
+    'spacewave.chat.UpdateChatReadPositionOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'next_index', 4],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+      [4, 'thread_root_key', 9, 4],
+      [5, 'author', 9],
+    ],
+  )

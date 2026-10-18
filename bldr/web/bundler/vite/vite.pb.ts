@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Session } from '../../../frontend/frontend.pb.js'
 import { WebPkgRefConfig } from '../bundler.pb.js'
 
@@ -21,29 +16,27 @@ import { WebPkgRefConfig } from '../bundler.pb.js'
 export enum DevelopmentChangeKind {
   /**
    * DevelopmentChangeKind_CHANGE rewrote an existing file.
-   *
-   * @generated from enum value: DevelopmentChangeKind_CHANGE = 0;
    */
   DevelopmentChangeKind_CHANGE = 0,
 
   /**
    * DevelopmentChangeKind_ADD created a file.
-   *
-   * @generated from enum value: DevelopmentChangeKind_ADD = 1;
    */
   DevelopmentChangeKind_ADD = 1,
 
   /**
    * DevelopmentChangeKind_UNLINK removed a file.
-   *
-   * @generated from enum value: DevelopmentChangeKind_UNLINK = 2;
    */
   DevelopmentChangeKind_UNLINK = 2,
 }
 
 export const DevelopmentChangeKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.bundler.vite.DevelopmentChangeKind',
-  DevelopmentChangeKind,
+  [
+    [0, 'DevelopmentChangeKind_CHANGE'],
+    [1, 'DevelopmentChangeKind_ADD'],
+    [2, 'DevelopmentChangeKind_UNLINK'],
+  ],
 )
 
 /**
@@ -54,120 +47,69 @@ export const DevelopmentChangeKind_Enum = /* @__PURE__ */ createEnumType(
 export interface DevelopmentConfig {
   /**
    * RootDir is the project source root.
-   *
-   * @generated from field: string root_dir = 1;
    */
   rootDir?: string
   /**
    * DistDir is the generated Bldr source root.
-   *
-   * @generated from field: string dist_dir = 2;
    */
   distDir?: string
   /**
    * CacheDir holds dependency preparation output for this environment.
-   *
-   * @generated from field: string cache_dir = 3;
    */
   cacheDir?: string
   /**
    * ConfigPaths contains additional project-relative Vite configuration paths.
-   *
-   * @generated from field: repeated string config_paths = 4;
    */
   configPaths?: string[]
   /**
    * Entrypoints contains configured project-relative frontend source paths.
-   *
-   * @generated from field: repeated string entrypoints = 5;
    */
   entrypoints?: string[]
   /**
    * ExternalPkgs are canonical browser import-map packages and their subpaths.
-   *
-   * @generated from field: repeated string external_pkgs = 6;
    */
   externalPkgs?: string[]
   /**
    * SessionId identifies this compiler environment and its route namespace.
-   *
-   * @generated from field: string session_id = 7;
    */
   sessionId?: string
   /**
    * DisableProjectConfig disables automatic root Vite config discovery.
-   *
-   * @generated from field: bool disable_project_config = 8;
    */
   disableProjectConfig?: boolean
   /**
    * RoutePrefix is the same-origin namespace before the compiler SessionId.
    * Empty uses /b/fe/; attached compilers use a routed frontend service prefix.
-   *
-   * @generated from field: string route_prefix = 9;
    */
   routePrefix?: string
   /**
    * WebPkgIds are packages supplied by another plugin at the shared /b/pkg route.
-   *
-   * @generated from field: repeated string web_pkg_ids = 10;
    */
   webPkgIds?: string[]
   /**
    * ExternalChanges disables filesystem watching; the source owner reports
    * each edit through ChangeDevelopment instead.
-   *
-   * @generated from field: bool external_changes = 11;
    */
   externalChanges?: boolean
 }
 
 export const DevelopmentConfig: MessageType<DevelopmentConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.DevelopmentConfig',
-    fields: [
-      { no: 1, name: 'root_dir', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'dist_dir', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'cache_dir', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'config_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'entrypoints',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'external_pkgs',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 7, name: 'session_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 8,
-        name: 'disable_project_config',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 9, name: 'route_prefix', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 10,
-        name: 'web_pkg_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 11, name: 'external_changes', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DevelopmentConfig>(
+    'bldr.web.bundler.vite.DevelopmentConfig',
+    () => [
+      [1, 'root_dir', 9],
+      [2, 'dist_dir', 9],
+      [3, 'cache_dir', 9],
+      [4, 'config_paths', 9, 1],
+      [5, 'entrypoints', 9, 1],
+      [6, 'external_pkgs', 9, 1],
+      [7, 'session_id', 9],
+      [8, 'disable_project_config', 8],
+      [9, 'route_prefix', 9],
+      [10, 'web_pkg_ids', 9, 1],
+      [11, 'external_changes', 8],
+    ],
+  )
 
 /**
  * DevelopmentChange is one source file edited by the source owner.
@@ -177,26 +119,22 @@ export const DevelopmentConfig: MessageType<DevelopmentConfig> =
 export interface DevelopmentChange {
   /**
    * Path is the file path relative to the environment's RootDir.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
   /**
    * Kind classifies the edit.
-   *
-   * @generated from field: bldr.web.bundler.vite.DevelopmentChangeKind kind = 2;
    */
   kind?: DevelopmentChangeKind
 }
 
 export const DevelopmentChange: MessageType<DevelopmentChange> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.DevelopmentChange',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'kind', kind: 'enum', T: DevelopmentChangeKind_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DevelopmentChange>(
+    'bldr.web.bundler.vite.DevelopmentChange',
+    () => [
+      [1, 'path', 9],
+      [2, 'kind', 14, 0, DevelopmentChangeKind_Enum],
+    ],
+  )
 
 /**
  * ChangeDevelopmentRequest reports source edits already written to RootDir.
@@ -206,25 +144,15 @@ export const DevelopmentChange: MessageType<DevelopmentChange> =
 export interface ChangeDevelopmentRequest {
   /**
    * Changes lists each edited file once.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.DevelopmentChange changes = 1;
    */
   changes?: DevelopmentChange[]
 }
 
 export const ChangeDevelopmentRequest: MessageType<ChangeDevelopmentRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.ChangeDevelopmentRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'changes',
-        kind: 'message',
-        T: DevelopmentChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChangeDevelopmentRequest>(
+    'bldr.web.bundler.vite.ChangeDevelopmentRequest',
+    () => [[1, 'changes', 11, 1, DevelopmentChange.codec]],
+  )
 
 /**
  * ChangeDevelopmentResponse confirms the environment accepted the edits.
@@ -234,9 +162,9 @@ export const ChangeDevelopmentRequest: MessageType<ChangeDevelopmentRequest> =
 export interface ChangeDevelopmentResponse {}
 
 export const ChangeDevelopmentResponse: MessageType<ChangeDevelopmentResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ChangeDevelopmentResponse>(
+  /* @__PURE__ */ createMessageType<ChangeDevelopmentResponse>(
     'bldr.web.bundler.vite.ChangeDevelopmentResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -247,21 +175,15 @@ export const ChangeDevelopmentResponse: MessageType<ChangeDevelopmentResponse> =
 export interface DevelopmentResult {
   /**
    * Session identifies the environment exposed through Bldr.
-   *
-   * @generated from field: bldr.frontend.Session session = 1;
    */
   session?: Session
   /**
    * PrivateUrl is the loopback-only HTTP adapter, never sent to a browser.
-   *
-   * @generated from field: string private_url = 2;
    */
   privateUrl?: string
   /**
    * RefreshRuntime is the project's React refresh module for the bootstrap.
    * It is empty when the project does not use React refresh.
-   *
-   * @generated from field: string refresh_runtime = 3;
    */
   refreshRuntime?: string
   /**
@@ -269,28 +191,20 @@ export interface DevelopmentResult {
    * that serves it. A package aliased to project source is served from this
    * graph, so separately bundled views share the application's module
    * instances; every other package is served from the shared /b/pkg route.
-   *
-   * @generated from field: map<string, string> web_pkg_imports = 4;
    */
   webPkgImports?: { [key: string]: string }
 }
 
 export const DevelopmentResult: MessageType<DevelopmentResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.DevelopmentResult',
-    fields: [
-      { no: 1, name: 'session', kind: 'message', T: () => Session },
-      { no: 2, name: 'private_url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'refresh_runtime', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'web_pkg_imports',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DevelopmentResult>(
+    'bldr.web.bundler.vite.DevelopmentResult',
+    () => [
+      [1, 'session', 11, 0, Session.codec],
+      [2, 'private_url', 9],
+      [3, 'refresh_runtime', 9],
+      [4, 'web_pkg_imports', 9, 584],
+    ],
+  )
 
 /**
  * WebPkgRef is a reference to a web package.
@@ -300,68 +214,27 @@ export const DevelopmentResult: MessageType<DevelopmentResult> =
 export interface WebPkgRef {
   /**
    * PkgId is the package identifier.
-   *
-   * @generated from field: string pkg_id = 1;
    */
   pkgId?: string
   /**
    * PkgRoot is the path to the root of the package.
-   *
-   * @generated from field: string pkg_root = 2;
    */
   pkgRoot?: string
   /**
    * SubPaths is the list of sub-paths within the package.
-   *
-   * @generated from field: repeated string sub_paths = 3;
    */
   subPaths?: string[]
 }
 
 export const WebPkgRef: MessageType<WebPkgRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.WebPkgRef',
-    fields: [
-      { no: 1, name: 'pkg_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'pkg_root', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'sub_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ViteBuildRequestEntrypoint defines a single entrypoint for Vite to build.
- *
- * @generated from message bldr.web.bundler.vite.ViteBuildRequestEntrypoint
- */
-export interface ViteBuildRequestEntrypoint {
-  /**
-   * InputPath is the path to the entrypoint file relative to the code root.
-   *
-   * @generated from field: string input_path = 1;
-   */
-  inputPath?: string
-  /**
-   * Name is the name of the bundle, must be unique and set.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-}
-
-export const ViteBuildRequestEntrypoint: MessageType<ViteBuildRequestEntrypoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.ViteBuildRequestEntrypoint',
-    fields: [
-      { no: 1, name: 'input_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebPkgRef>(
+    'bldr.web.bundler.vite.WebPkgRef',
+    () => [
+      [1, 'pkg_id', 9],
+      [2, 'pkg_root', 9],
+      [3, 'sub_paths', 9, 1],
+    ],
+  )
 
 /**
  * BuildRequest is a request to build a Vite project.
@@ -371,209 +244,117 @@ export const ViteBuildRequestEntrypoint: MessageType<ViteBuildRequestEntrypoint>
 export interface BuildRequest {
   /**
    * ConfigPaths is the path to the Vite configuration file(s) to merge together.
-   *
-   * @generated from field: repeated string config_paths = 1;
    */
   configPaths?: string[]
   /**
    * Mode is the build mode (development or production).
-   *
-   * @generated from field: string mode = 2;
    */
   mode?: string
   /**
    * RootDir is the root directory of the project.
-   *
-   * @generated from field: string root_dir = 3;
    */
   rootDir?: string
   /**
    * OutDir is the output directory for the build.
-   *
-   * @generated from field: string out_dir = 4;
    */
   outDir?: string
   /**
    * CacheDir is the cache directory for the build.
-   *
-   * @generated from field: string cache_dir = 5;
    */
   cacheDir?: string
   /**
    * DistDir is the bldr dist src directory for the build.
-   *
-   * @generated from field: string dist_dir = 6;
    */
   distDir?: string
   /**
    * PublicPath is the public URL path prefix for assets.
-   *
-   * @generated from field: string public_path = 7;
    */
   publicPath?: string
   /**
    * Entrypoints contains the list of entrypoints to build.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.ViteBuildRequestEntrypoint entrypoints = 8;
    */
   entrypoints?: ViteBuildRequestEntrypoint[]
   /**
    * ExternalPkgs is the list of packages to pass to External provided by importmap.
-   *
-   * @generated from field: repeated string external_pkgs = 9;
    */
   externalPkgs?: string[]
   /**
    * WebPkgs is the list of packages to be externalized as shared web pkgs.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 10;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
    * JsMinification controls JavaScript minification for this build.
-   *
-   * @generated from field: bool js_minification = 11;
    */
   jsMinification?: boolean
   /**
    * JsSourcemaps controls JavaScript sourcemap output for this build.
-   *
-   * @generated from field: bool js_sourcemaps = 12;
    */
   jsSourcemaps?: boolean
   /**
    * Defines replaces compile-time identifiers in config-free internal builds.
-   *
-   * @generated from field: map<string, string> defines = 13;
    */
   defines?: { [key: string]: string }
   /**
    * FlatEntryNames emits entrypoint names at OutDir instead of source-relative paths.
-   *
-   * @generated from field: bool flat_entry_names = 14;
    */
   flatEntryNames?: boolean
   /**
    * SourcemapMode overrides JsSourcemaps with none, inline, or external.
-   *
-   * @generated from field: string sourcemap_mode = 15;
    */
   sourcemapMode?: string
   /**
    * ProjectRoot is the Go module root used to resolve @go imports.
-   *
-   * @generated from field: string project_root = 16;
    */
   projectRoot?: string
 }
 
 export const BuildRequest: MessageType<BuildRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.BuildRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'config_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'mode', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'root_dir', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'out_dir', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'cache_dir', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'dist_dir', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'public_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 8,
-        name: 'entrypoints',
-        kind: 'message',
-        T: ViteBuildRequestEntrypoint,
-        repeated: true,
-      },
-      {
-        no: 9,
-        name: 'external_pkgs',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 10,
-        name: 'web_pkgs',
-        kind: 'message',
-        T: () => WebPkgRefConfig,
-        repeated: true,
-      },
-      { no: 11, name: 'js_minification', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 12, name: 'js_sourcemaps', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 13,
-        name: 'defines',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-      { no: 14, name: 'flat_entry_names', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 15, name: 'sourcemap_mode', kind: 'scalar', T: ScalarType.STRING },
-      { no: 16, name: 'project_root', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildRequest>(
+    'bldr.web.bundler.vite.BuildRequest',
+    () => [
+      [1, 'config_paths', 9, 1],
+      [2, 'mode', 9],
+      [3, 'root_dir', 9],
+      [4, 'out_dir', 9],
+      [5, 'cache_dir', 9],
+      [6, 'dist_dir', 9],
+      [7, 'public_path', 9],
+      [8, 'entrypoints', 11, 1, ViteBuildRequestEntrypoint.codec],
+      [9, 'external_pkgs', 9, 1],
+      [10, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [11, 'js_minification', 8],
+      [12, 'js_sourcemaps', 8],
+      [13, 'defines', 9, 584],
+      [14, 'flat_entry_names', 8],
+      [15, 'sourcemap_mode', 9],
+      [16, 'project_root', 9],
+    ],
+  )
 
 /**
- * EntrypointOutput contains information about an entrypoint and its outputs.
+ * ViteBuildRequestEntrypoint defines a single entrypoint for Vite to build.
  *
- * @generated from message bldr.web.bundler.vite.EntrypointOutput
+ * @generated from message bldr.web.bundler.vite.ViteBuildRequestEntrypoint
  */
-export interface EntrypointOutput {
+export interface ViteBuildRequestEntrypoint {
   /**
-   * Entrypoint is the path to the entrypoint file.
-   *
-   * @generated from field: string entrypoint = 1;
+   * InputPath is the path to the entrypoint file relative to the code root.
    */
-  entrypoint?: string
+  inputPath?: string
   /**
-   * JsOutput is the path to the JavaScript output file.
-   *
-   * @generated from field: string js_output = 2;
+   * Name is the name of the bundle, must be unique and set.
    */
-  jsOutput?: string
-  /**
-   * CssOutputs is the list of CSS output files for this entrypoint.
-   *
-   * @generated from field: repeated string css_outputs = 3;
-   */
-  cssOutputs?: string[]
-  /**
-   * InputFiles is the list of input files for this entrypoint.
-   *
-   * @generated from field: repeated string input_files = 4;
-   */
-  inputFiles?: string[]
+  name?: string
 }
 
-export const EntrypointOutput: MessageType<EntrypointOutput> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.EntrypointOutput',
-    fields: [
-      { no: 1, name: 'entrypoint', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'js_output', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'css_outputs',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'input_files',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const ViteBuildRequestEntrypoint: MessageType<ViteBuildRequestEntrypoint> =
+  /* @__PURE__ */ createMessageType<ViteBuildRequestEntrypoint>(
+    'bldr.web.bundler.vite.ViteBuildRequestEntrypoint',
+    () => [
+      [1, 'input_path', 9],
+      [2, 'name', 9],
+    ],
+  )
 
 /**
  * BuildResponse is the response from a Vite build.
@@ -583,93 +364,84 @@ export const EntrypointOutput: MessageType<EntrypointOutput> =
 export interface BuildResponse {
   /**
    * Success indicates if the build was successful.
-   *
-   * @generated from field: bool success = 1;
    */
   success?: boolean
   /**
    * Error is the error message if the build failed.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
   /**
    * EntrypointOutputs contains information about each entrypoint and its outputs.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.EntrypointOutput entrypoint_outputs = 3;
    */
   entrypointOutputs?: EntrypointOutput[]
   /**
    * InputFiles is the list of all input files that were processed.
    *
    * If success=false these are the files to watch for changes before retrying.
-   *
-   * @generated from field: repeated string input_files = 4;
    */
   inputFiles?: string[]
   /**
    * GlobalCssFiles is the list of global CSS files that were generated.
-   *
-   * @generated from field: repeated string global_css_files = 5;
    */
   globalCssFiles?: string[]
   /**
    * WebPkgRefs is the list of web packages that were referenced during the build.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.WebPkgRef web_pkg_refs = 6;
    */
   webPkgRefs?: WebPkgRef[]
   /**
    * OutputFiles contains every emitted runtime file relative to OutDir.
-   *
-   * @generated from field: repeated string output_files = 7;
    */
   outputFiles?: string[]
 }
 
 export const BuildResponse: MessageType<BuildResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.BuildResponse',
-    fields: [
-      { no: 1, name: 'success', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'entrypoint_outputs',
-        kind: 'message',
-        T: EntrypointOutput,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'input_files',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'global_css_files',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'web_pkg_refs',
-        kind: 'message',
-        T: WebPkgRef,
-        repeated: true,
-      },
-      {
-        no: 7,
-        name: 'output_files',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildResponse>(
+    'bldr.web.bundler.vite.BuildResponse',
+    () => [
+      [1, 'success', 8],
+      [2, 'error', 9],
+      [3, 'entrypoint_outputs', 11, 1, EntrypointOutput.codec],
+      [4, 'input_files', 9, 1],
+      [5, 'global_css_files', 9, 1],
+      [6, 'web_pkg_refs', 11, 1, WebPkgRef.codec],
+      [7, 'output_files', 9, 1],
+    ],
+  )
+
+/**
+ * EntrypointOutput contains information about an entrypoint and its outputs.
+ *
+ * @generated from message bldr.web.bundler.vite.EntrypointOutput
+ */
+export interface EntrypointOutput {
+  /**
+   * Entrypoint is the path to the entrypoint file.
+   */
+  entrypoint?: string
+  /**
+   * JsOutput is the path to the JavaScript output file.
+   */
+  jsOutput?: string
+  /**
+   * CssOutputs is the list of CSS output files for this entrypoint.
+   */
+  cssOutputs?: string[]
+  /**
+   * InputFiles is the list of input files for this entrypoint.
+   */
+  inputFiles?: string[]
+}
+
+export const EntrypointOutput: MessageType<EntrypointOutput> =
+  /* @__PURE__ */ createMessageType<EntrypointOutput>(
+    'bldr.web.bundler.vite.EntrypointOutput',
+    () => [
+      [1, 'entrypoint', 9],
+      [2, 'js_output', 9],
+      [3, 'css_outputs', 9, 1],
+      [4, 'input_files', 9, 1],
+    ],
+  )
 
 /**
  * ViteOutputMeta is information about a vite output.
@@ -679,27 +451,23 @@ export const BuildResponse: MessageType<BuildResponse> =
 export interface ViteOutputMeta {
   /**
    * Path is the path to the file within the output dir.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
   /**
    * EntrypointPath is the entrypoint that produced this output file.
    * May be empty.
-   *
-   * @generated from field: string entrypoint_path = 2;
    */
   entrypointPath?: string
 }
 
 export const ViteOutputMeta: MessageType<ViteOutputMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.ViteOutputMeta',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'entrypoint_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ViteOutputMeta>(
+    'bldr.web.bundler.vite.ViteOutputMeta',
+    () => [
+      [1, 'path', 9],
+      [2, 'entrypoint_path', 9],
+    ],
+  )
 
 /**
  * BuildWebPkgRequest is a request to build a single web package with Vite.
@@ -709,141 +477,67 @@ export const ViteOutputMeta: MessageType<ViteOutputMeta> =
 export interface BuildWebPkgRequest {
   /**
    * PkgId is the web package identifier (e.g. "react", "@aptre/bldr").
-   *
-   * @generated from field: string pkg_id = 1;
    */
   pkgId?: string
   /**
    * PkgRoot is the absolute path to the package root directory.
-   *
-   * @generated from field: string pkg_root = 2;
    */
   pkgRoot?: string
   /**
    * Imports is the list of entry sub-paths to build (e.g. ["index.js", "jsx-runtime.js"]).
-   *
-   * @generated from field: repeated string imports = 3;
    */
   imports?: string[]
   /**
    * SiblingPkgIds is the list of sibling web package IDs to externalize.
-   *
-   * @generated from field: repeated string sibling_pkg_ids = 4;
    */
   siblingPkgIds?: string[]
   /**
    * ExternalPkgs is the list of additional packages to externalize (e.g. BldrExternal).
-   *
-   * @generated from field: repeated string external_pkgs = 5;
    */
   externalPkgs?: string[]
   /**
    * OutDir is the output directory for this package's build artifacts.
-   *
-   * @generated from field: string out_dir = 6;
    */
   outDir?: string
   /**
    * WebPkgBasePath is the base URL path for web packages (e.g. "/b/pkg").
-   *
-   * @generated from field: string web_pkg_base_path = 7;
    */
   webPkgBasePath?: string
   /**
    * IsRelease indicates whether to build in production mode.
-   *
-   * @generated from field: bool is_release = 8;
    */
   isRelease?: boolean
   /**
    * CacheDir is the cache directory for the build.
-   *
-   * @generated from field: string cache_dir = 9;
    */
   cacheDir?: string
   /**
    * JsMinification controls JavaScript minification for this build.
-   *
-   * @generated from field: bool js_minification = 10;
    */
   jsMinification?: boolean
   /**
    * JsSourcemaps controls JavaScript sourcemap output for this build.
-   *
-   * @generated from field: bool js_sourcemaps = 11;
    */
   jsSourcemaps?: boolean
 }
 
 export const BuildWebPkgRequest: MessageType<BuildWebPkgRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.BuildWebPkgRequest',
-    fields: [
-      { no: 1, name: 'pkg_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'pkg_root', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'imports',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'sibling_pkg_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'external_pkgs',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 6, name: 'out_dir', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 7,
-        name: 'web_pkg_base_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 8, name: 'is_release', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 9, name: 'cache_dir', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'js_minification', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 11, name: 'js_sourcemaps', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ImportMapEntry maps a logical import specifier to a hashed output filename.
- *
- * @generated from message bldr.web.bundler.vite.ImportMapEntry
- */
-export interface ImportMapEntry {
-  /**
-   * Specifier is the logical import specifier (e.g. "react", "react/jsx-runtime").
-   *
-   * @generated from field: string specifier = 1;
-   */
-  specifier?: string
-  /**
-   * OutputPath is the hashed output filename (e.g. "index-a1b2c3.mjs").
-   *
-   * @generated from field: string output_path = 2;
-   */
-  outputPath?: string
-}
-
-export const ImportMapEntry: MessageType<ImportMapEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.ImportMapEntry',
-    fields: [
-      { no: 1, name: 'specifier', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'output_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildWebPkgRequest>(
+    'bldr.web.bundler.vite.BuildWebPkgRequest',
+    () => [
+      [1, 'pkg_id', 9],
+      [2, 'pkg_root', 9],
+      [3, 'imports', 9, 1],
+      [4, 'sibling_pkg_ids', 9, 1],
+      [5, 'external_pkgs', 9, 1],
+      [6, 'out_dir', 9],
+      [7, 'web_pkg_base_path', 9],
+      [8, 'is_release', 8],
+      [9, 'cache_dir', 9],
+      [10, 'js_minification', 8],
+      [11, 'js_sourcemaps', 8],
+    ],
+  )
 
 /**
  * BuildWebPkgResponse is the response from building a single web package.
@@ -853,51 +547,56 @@ export const ImportMapEntry: MessageType<ImportMapEntry> =
 export interface BuildWebPkgResponse {
   /**
    * Success indicates if the build was successful.
-   *
-   * @generated from field: bool success = 1;
    */
   success?: boolean
   /**
    * Error is the error message if the build failed.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
   /**
    * SourceFiles is the list of input source files that were processed.
-   *
-   * @generated from field: repeated string source_files = 3;
    */
   sourceFiles?: string[]
   /**
    * ImportMapEntries maps logical import specifiers to hashed output filenames.
    * Keys are specifiers like "react" or "react/jsx-runtime".
    * Values are output paths like "index-a1b2c3.mjs".
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.ImportMapEntry import_map_entries = 4;
    */
   importMapEntries?: ImportMapEntry[]
 }
 
 export const BuildWebPkgResponse: MessageType<BuildWebPkgResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.BuildWebPkgResponse',
-    fields: [
-      { no: 1, name: 'success', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'source_files',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'import_map_entries',
-        kind: 'message',
-        T: ImportMapEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildWebPkgResponse>(
+    'bldr.web.bundler.vite.BuildWebPkgResponse',
+    () => [
+      [1, 'success', 8],
+      [2, 'error', 9],
+      [3, 'source_files', 9, 1],
+      [4, 'import_map_entries', 11, 1, ImportMapEntry.codec],
+    ],
+  )
+
+/**
+ * ImportMapEntry maps a logical import specifier to a hashed output filename.
+ *
+ * @generated from message bldr.web.bundler.vite.ImportMapEntry
+ */
+export interface ImportMapEntry {
+  /**
+   * Specifier is the logical import specifier (e.g. "react", "react/jsx-runtime").
+   */
+  specifier?: string
+  /**
+   * OutputPath is the hashed output filename (e.g. "index-a1b2c3.mjs").
+   */
+  outputPath?: string
+}
+
+export const ImportMapEntry: MessageType<ImportMapEntry> =
+  /* @__PURE__ */ createMessageType<ImportMapEntry>(
+    'bldr.web.bundler.vite.ImportMapEntry',
+    () => [
+      [1, 'specifier', 9],
+      [2, 'output_path', 9],
+    ],
+  )

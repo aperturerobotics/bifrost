@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the rpc block lookup controller.
@@ -17,45 +15,36 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BucketId is the bucket id to serve lookups for.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
   /**
    * ServiceId is the service id to lookup with LookupRpcClient.
    * Cannot be empty.
-   *
-   * @generated from field: string service_id = 2;
    */
   serviceId?: string
   /**
    * ClientId is the client id to use with LookupRpcClient.
    * Can be empty.
-   *
-   * @generated from field: string client_id = 3;
    */
   clientId?: string
   /**
    * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 4;
    */
   skipNotFound?: boolean
   /**
    * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 5;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.rpc.lookup.Config',
-  fields: [
-    { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'client_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'block.store.rpc.lookup.Config',
+    () => [
+      [1, 'bucket_id', 9],
+      [2, 'service_id', 9],
+      [3, 'client_id', 9],
+      [4, 'skip_not_found', 8],
+      [5, 'verbose', 8],
+    ],
+  )

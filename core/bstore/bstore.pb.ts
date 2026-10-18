@@ -6,7 +6,6 @@ import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import { ProviderResourceRef } from '../provider/provider.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * BlockStoreParticipantRole defines the general role of a shared object participant.
@@ -17,36 +16,33 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum BlockStoreParticipantRole {
   /**
    * BlockStoreParticipantRole_UNKNOWN is the zero / invalid / unknown type.
-   *
-   * @generated from enum value: BlockStoreParticipantRole_UNKNOWN = 0;
    */
   BlockStoreParticipantRole_UNKNOWN = 0,
 
   /**
    * BlockStoreParticipantRole_READER can read values from the block store only.
-   *
-   * @generated from enum value: BlockStoreParticipantRole_READER = 1;
    */
   BlockStoreParticipantRole_READER = 1,
 
   /**
    * BlockStoreParticipantRole_WRITER can read and write but not delete values.
-   *
-   * @generated from enum value: BlockStoreParticipantRole_WRITER = 2;
    */
   BlockStoreParticipantRole_WRITER = 2,
 
   /**
    * BlockStoreParticipantRole_OWNER can read and write and delete values.
-   *
-   * @generated from enum value: BlockStoreParticipantRole_OWNER = 3;
    */
   BlockStoreParticipantRole_OWNER = 3,
 }
 
 export const BlockStoreParticipantRole_Enum = /* @__PURE__ */ createEnumType(
   'bstore.BlockStoreParticipantRole',
-  BlockStoreParticipantRole,
+  [
+    [0, 'BlockStoreParticipantRole_UNKNOWN'],
+    [1, 'BlockStoreParticipantRole_READER'],
+    [2, 'BlockStoreParticipantRole_WRITER'],
+    [3, 'BlockStoreParticipantRole_OWNER'],
+  ],
 )
 
 /**
@@ -57,21 +53,12 @@ export const BlockStoreParticipantRole_Enum = /* @__PURE__ */ createEnumType(
 export interface BlockStoreRef {
   /**
    * ProviderResourceRef is the reference to the resource on the provider.
-   *
-   * @generated from field: provider.ProviderResourceRef provider_resource_ref = 1;
    */
   providerResourceRef?: ProviderResourceRef
 }
 
 export const BlockStoreRef: MessageType<BlockStoreRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bstore.BlockStoreRef',
-    fields: [
-      {
-        no: 1,
-        name: 'provider_resource_ref',
-        kind: 'message',
-        T: () => ProviderResourceRef,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BlockStoreRef>(
+    'bstore.BlockStoreRef',
+    () => [[1, 'provider_resource_ref', 11, 0, ProviderResourceRef.codec]],
+  )

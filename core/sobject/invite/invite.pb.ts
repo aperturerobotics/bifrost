@@ -9,12 +9,7 @@ import {
   SOState,
 } from '../sobject.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * AcceptInviteRequest is sent by the invitee to the owner.
@@ -24,8 +19,6 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface AcceptInviteRequest {
   /**
    * JoinResponse is the signed join response from the invitee.
-   *
-   * @generated from field: sobject.SOJoinResponse join_response = 1;
    */
   joinResponse?: SOJoinResponse
   /**
@@ -33,38 +26,24 @@ export interface AcceptInviteRequest {
    * The owner SHA256 hashes it to verify against the on-chain token_hash.
    * Only the owner sees the raw token on the authenticated stream.
    * The cloud mailbox checks the token against token_hash.
-   *
-   * @generated from field: bytes token = 2;
    */
   token?: Uint8Array
   /**
    * StorageJoinResponse proves the persistent local storage identity that will
    * read and write the joined copy.
-   *
-   * @generated from field: sobject.SOJoinResponse storage_join_response = 3;
    */
   storageJoinResponse?: SOJoinResponse
 }
 
 export const AcceptInviteRequest: MessageType<AcceptInviteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.invite.AcceptInviteRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'join_response',
-        kind: 'message',
-        T: () => SOJoinResponse,
-      },
-      { no: 2, name: 'token', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 3,
-        name: 'storage_join_response',
-        kind: 'message',
-        T: () => SOJoinResponse,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptInviteRequest>(
+    'sobject.invite.AcceptInviteRequest',
+    () => [
+      [1, 'join_response', 11, 0, SOJoinResponse.codec],
+      [2, 'token', 12],
+      [3, 'storage_join_response', 11, 0, SOJoinResponse.codec],
+    ],
+  )
 
 /**
  * AcceptInviteResponse is returned by the owner after enrollment.
@@ -74,57 +53,41 @@ export const AcceptInviteRequest: MessageType<AcceptInviteRequest> =
 export interface AcceptInviteResponse {
   /**
    * Grant is the encrypted SOGrant for the invitee.
-   *
-   * @generated from field: sobject.SOGrant grant = 1;
    */
   grant?: SOGrant
   /**
    * SharedObjectId is the ID of the shared object the invitee was enrolled in.
-   *
-   * @generated from field: string shared_object_id = 2;
    */
   sharedObjectId?: string
   /**
    * SharedObjectState is the owner's authorized state after enrollment. Its
    * key epochs hold the grants of every participant, including the invitee.
-   *
-   * @generated from field: sobject.SOState shared_object_state = 4;
    */
   sharedObjectState?: SOState
   /**
    * Pending reports that the owner queued the redemption as a join request
    * instead of admitting it. Every other field is empty.
-   *
-   * @generated from field: bool pending = 5;
    */
   pending?: boolean
   /**
    * ConfigLineage is the owner's retained configuration changes leading to the
    * config of shared_object_state, oldest first. It lets the invitee resolve
    * the config of every operation the state holds.
-   *
-   * @generated from field: repeated sobject.SOConfigChange config_lineage = 6;
    */
   configLineage?: SOConfigChange[]
 }
 
 export const AcceptInviteResponse: MessageType<AcceptInviteResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.invite.AcceptInviteResponse',
-    fields: [
-      { no: 1, name: 'grant', kind: 'message', T: () => SOGrant },
-      { no: 2, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'shared_object_state', kind: 'message', T: () => SOState },
-      { no: 5, name: 'pending', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 6,
-        name: 'config_lineage',
-        kind: 'message',
-        T: () => SOConfigChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptInviteResponse>(
+    'sobject.invite.AcceptInviteResponse',
+    () => [
+      [1, 'grant', 11, 0, SOGrant.codec],
+      [2, 'shared_object_id', 9],
+      [4, 'shared_object_state', 11, 0, SOState.codec],
+      [5, 'pending', 8],
+      [6, 'config_lineage', 11, 1, SOConfigChange.codec],
+    ],
+  )
 
 /**
  * WithdrawJoinRequestRequest is sent by a requester to the owner. The owner
@@ -135,19 +98,15 @@ export const AcceptInviteResponse: MessageType<AcceptInviteResponse> =
 export interface WithdrawJoinRequestRequest {
   /**
    * SharedObjectId is the shared object the request asks to join.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
 }
 
 export const WithdrawJoinRequestRequest: MessageType<WithdrawJoinRequestRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.invite.WithdrawJoinRequestRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WithdrawJoinRequestRequest>(
+    'sobject.invite.WithdrawJoinRequestRequest',
+    () => [[1, 'shared_object_id', 9]],
+  )
 
 /**
  * WithdrawJoinRequestResponse is returned once no request from the caller
@@ -158,7 +117,7 @@ export const WithdrawJoinRequestRequest: MessageType<WithdrawJoinRequestRequest>
 export interface WithdrawJoinRequestResponse {}
 
 export const WithdrawJoinRequestResponse: MessageType<WithdrawJoinRequestResponse> =
-  /* @__PURE__ */ createEmptyMessageType<WithdrawJoinRequestResponse>(
+  /* @__PURE__ */ createMessageType<WithdrawJoinRequestResponse>(
     'sobject.invite.WithdrawJoinRequestResponse',
-    true,
+    () => [],
   )

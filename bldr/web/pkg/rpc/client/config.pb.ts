@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the web pkg rpc client.
@@ -19,61 +17,37 @@ export interface Config {
   /**
    * ServiceIdPrefix is the service id prefix to use to lookup the rpc service.
    * If empty, defaults to web.pkg.rpc.AccessWebPkg.
-   *
-   * @generated from field: string service_id_prefix = 1;
    */
   serviceIdPrefix?: string
   /**
    * ClientId is the client identifier to use.
    * May be empty.
-   *
-   * @generated from field: string client_id = 2;
    */
   clientId?: string
   /**
    * WebPkgIdRe is a regex string to match web pkgs IDs.
    * Set to '.*' or empty to match all web pkgs ids.
-   *
-   * @generated from field: string web_pkg_id_re = 3;
    */
   webPkgIdRe?: string
   /**
    * WebPkgIdPrefixes is a list of web pkg id prefixes to match.
    * If the value is in this list, overrides web_pkg_id_re.
    * Set to '.*' or empty to match all web pkgs ids.
-   *
-   * @generated from field: repeated string web_pkg_id_prefixes = 4;
    */
   webPkgIdPrefixes?: string[]
   /**
    * WebPkgIdList is a list of web pkg IDs to resolve.
    * If the value is in this list, overrides web_pkg_id_re and web_pkg_id_prefixes.
    * Ignored if empty.
-   *
-   * @generated from field: repeated string web_pkg_id_list = 5;
    */
   webPkgIdList?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'web.pkg.rpc.client.Config',
-  fields: [
-    { no: 1, name: 'service_id_prefix', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'client_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'web_pkg_id_re', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 4,
-      name: 'web_pkg_id_prefixes',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 5,
-      name: 'web_pkg_id_list',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('web.pkg.rpc.client.Config', () => [
+    [1, 'service_id_prefix', 9],
+    [2, 'client_id', 9],
+    [3, 'web_pkg_id_re', 9],
+    [4, 'web_pkg_id_prefixes', 9, 1],
+    [5, 'web_pkg_id_list', 9, 1],
+  ])

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the peer controller config.
@@ -17,32 +15,24 @@ export interface Config {
    * PrivKey is the peer private key in either b58 or PEM format.
    * See confparse.MarshalPrivateKey.
    * If not set, the peer private key will be unavailable.
-   *
-   * @generated from field: string priv_key = 1;
    */
   privKey?: string
   /**
    * PubKey is the peer public key.
    * Ignored if priv_key is set.
-   *
-   * @generated from field: string pub_key = 2;
    */
   pubKey?: string
   /**
    * PeerId is the peer identifier.
    * Ignored if priv_key or pub_key are set.
    * The peer ID should contain the public key.
-   *
-   * @generated from field: string peer_id = 3;
    */
   peerId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'peer.controller.Config',
-  fields: [
-    { no: 1, name: 'priv_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'pub_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('peer.controller.Config', () => [
+    [1, 'priv_key', 9],
+    [2, 'pub_key', 9],
+    [3, 'peer_id', 9],
+  ])

@@ -8,8 +8,6 @@ import type { HashType } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.
 import { HashType_Enum } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the Redis block store controller.
@@ -19,28 +17,20 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BlockStoreId is the block store id to use on the bus.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * Client configures the redis client.
-   *
-   * @generated from field: store.kvtx.redis.ClientConfig client = 2;
    */
   client?: ClientConfig
   /**
    * KvKeyOpts are key/value key constants.
    * Optional.
-   *
-   * @generated from field: store.kvkey.Config kv_key_opts = 3;
    */
   kvKeyOpts?: Config$1
   /**
    * ForceHashType forces writing the given hash type to the store.
    * If unset, accepts any hash type.
-   *
-   * @generated from field: hash.HashType force_hash_type = 4;
    */
   forceHashType?: HashType
   /**
@@ -49,46 +39,30 @@ export interface Config {
    *
    * If the store may return invalid data or mismatch the requested block ref,
    * do not enable this option. It is important to hash the data for each read.
-   *
-   * @generated from field: bool disable_hash_get = 8;
    */
   disableHashGet?: boolean
   /**
    * BucketIds is a list of bucket ids to serve LookupBlockFromNetwork directives.
-   *
-   * @generated from field: repeated string bucket_ids = 5;
    */
   bucketIds?: string[]
   /**
    * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 6;
    */
   skipNotFound?: boolean
   /**
    * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 7;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.redis.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'client', kind: 'message', T: () => ClientConfig },
-    { no: 3, name: 'kv_key_opts', kind: 'message', T: () => Config$1 },
-    { no: 4, name: 'force_hash_type', kind: 'enum', T: HashType_Enum },
-    { no: 8, name: 'disable_hash_get', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 5,
-      name: 'bucket_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 6, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 7, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('block.store.redis.Config', () => [
+    [1, 'block_store_id', 9],
+    [2, 'client', 11, 0, ClientConfig.codec],
+    [3, 'kv_key_opts', 11, 0, Config$1.codec],
+    [4, 'force_hash_type', 14, 0, HashType_Enum],
+    [5, 'bucket_ids', 9, 1],
+    [6, 'skip_not_found', 8],
+    [7, 'verbose', 8],
+    [8, 'disable_hash_get', 8],
+  ])

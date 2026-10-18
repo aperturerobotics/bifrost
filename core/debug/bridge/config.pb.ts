@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the debug bridge controller.
@@ -16,15 +14,11 @@ export interface Config {
   /**
    * SocketPath overrides the unix socket path.
    * Defaults to .bldr/spacewave-debug.sock relative to the project root.
-   *
-   * @generated from field: string socket_path = 1;
    */
   socketPath?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'debug.bridge.Config',
-  fields: [
-    { no: 1, name: 'socket_path', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('debug.bridge.Config', () => [
+    [1, 'socket_path', 9],
+  ])

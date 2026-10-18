@@ -5,9 +5,7 @@
 import { LayoutModel } from '../layout.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ObjectInfo } from '../../../web/object/object.pb.js'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * ObjectLayout contains information about a layout of objects.
@@ -19,19 +17,15 @@ export interface ObjectLayout {
   /**
    * LayoutModel contains the definition of the layout model.
    * The Tab data field contains serialized ObjectLayoutTab messages.
-   *
-   * @generated from field: s4wave.layout.LayoutModel layout_model = 1;
    */
   layoutModel?: LayoutModel
 }
 
 export const ObjectLayout: MessageType<ObjectLayout> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.world.ObjectLayout',
-    fields: [
-      { no: 1, name: 'layout_model', kind: 'message', T: () => LayoutModel },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectLayout>(
+    's4wave.layout.world.ObjectLayout',
+    () => [[1, 'layout_model', 11, 0, LayoutModel.codec]],
+  )
 
 /**
  * ObjectLayoutTab contains data stored in the ObjectLayout TabDef.
@@ -43,33 +37,27 @@ export interface ObjectLayoutTab {
   /**
    * ComponentId is the identifier of the selected component to load.
    * May be empty if not selected yet.
-   *
-   * @generated from field: string component_id = 1;
    */
   componentId?: string
   /**
    * ObjectInfo is the information about the object to render info about.
-   *
-   * @generated from field: s4wave.web.object.ObjectInfo object_info = 2;
    */
   objectInfo?: ObjectInfo
   /**
    * Path is the path to navigate to within the ObjectContainer.
-   *
-   * @generated from field: string path = 3;
    */
   path?: string
 }
 
 export const ObjectLayoutTab: MessageType<ObjectLayoutTab> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.world.ObjectLayoutTab',
-    fields: [
-      { no: 1, name: 'component_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object_info', kind: 'message', T: () => ObjectInfo },
-      { no: 3, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectLayoutTab>(
+    's4wave.layout.world.ObjectLayoutTab',
+    () => [
+      [1, 'component_id', 9],
+      [2, 'object_info', 11, 0, ObjectInfo.codec],
+      [3, 'path', 9],
+    ],
+  )
 
 /**
  * CreateObjectLayoutOp creates an ObjectLayout.
@@ -81,24 +69,15 @@ export const ObjectLayoutTab: MessageType<ObjectLayoutTab> =
 export interface CreateObjectLayoutOp {
   /**
    * ObjectLayoutKey is the object key for the ObjectLayout.
-   *
-   * @generated from field: string object_layout_key = 1;
    */
   objectLayoutKey?: string
 }
 
 export const CreateObjectLayoutOp: MessageType<CreateObjectLayoutOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.world.CreateObjectLayoutOp',
-    fields: [
-      {
-        no: 1,
-        name: 'object_layout_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateObjectLayoutOp>(
+    's4wave.layout.world.CreateObjectLayoutOp',
+    () => [[1, 'object_layout_key', 9]],
+  )
 
 /**
  * UpdateObjectLayoutOp sets the model of an ObjectLayout.
@@ -109,28 +88,19 @@ export const CreateObjectLayoutOp: MessageType<CreateObjectLayoutOp> =
 export interface UpdateObjectLayoutOp {
   /**
    * ObjectLayoutKey is the object key for the ObjectLayout.
-   *
-   * @generated from field: string object_layout_key = 1;
    */
   objectLayoutKey?: string
   /**
    * LayoutModel is the updated layout model for the layout.
-   *
-   * @generated from field: s4wave.layout.LayoutModel layout_model = 2;
    */
   layoutModel?: LayoutModel
 }
 
 export const UpdateObjectLayoutOp: MessageType<UpdateObjectLayoutOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.world.UpdateObjectLayoutOp',
-    fields: [
-      {
-        no: 1,
-        name: 'object_layout_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'layout_model', kind: 'message', T: () => LayoutModel },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateObjectLayoutOp>(
+    's4wave.layout.world.UpdateObjectLayoutOp',
+    () => [
+      [1, 'object_layout_key', 9],
+      [2, 'layout_model', 11, 0, LayoutModel.codec],
+    ],
+  )

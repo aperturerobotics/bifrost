@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * BootReportState describes the browser boot lifecycle.
@@ -16,44 +14,39 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum BootReportState {
   /**
    * BOOT_REPORT_STATE_UNKNOWN leaves the lifecycle state unset.
-   *
-   * @generated from enum value: BOOT_REPORT_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_REPORT_STATE_RECORDING means startup evidence is still being collected.
-   *
-   * @generated from enum value: BOOT_REPORT_STATE_RECORDING = 1;
    */
   RECORDING = 1,
 
   /**
    * BOOT_REPORT_STATE_READY means the declared usable mark completed the boot.
-   *
-   * @generated from enum value: BOOT_REPORT_STATE_READY = 2;
    */
   READY = 2,
 
   /**
    * BOOT_REPORT_STATE_FAILED means startup ended at a stable failure code.
-   *
-   * @generated from enum value: BOOT_REPORT_STATE_FAILED = 3;
    */
   FAILED = 3,
 
   /**
    * BOOT_REPORT_STATE_ABORTED means a later launch inferred an interrupted boot.
-   *
-   * @generated from enum value: BOOT_REPORT_STATE_ABORTED = 4;
    */
   ABORTED = 4,
 }
 
 export const BootReportState_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootReportState',
-  BootReportState,
-  'BOOT_REPORT_STATE_',
+  [
+    [0, 'BOOT_REPORT_STATE_UNKNOWN'],
+    [1, 'BOOT_REPORT_STATE_RECORDING'],
+    [2, 'BOOT_REPORT_STATE_READY'],
+    [3, 'BOOT_REPORT_STATE_FAILED'],
+    [4, 'BOOT_REPORT_STATE_ABORTED'],
+  ],
 )
 
 /**
@@ -64,51 +57,45 @@ export const BootReportState_Enum = /* @__PURE__ */ createEnumType(
 export enum BootPhase {
   /**
    * BOOT_PHASE_UNKNOWN leaves the phase unset.
-   *
-   * @generated from enum value: BOOT_PHASE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_PHASE_PREPARE covers shell and release-manifest preparation.
-   *
-   * @generated from enum value: BOOT_PHASE_PREPARE = 1;
    */
   PREPARE = 1,
 
   /**
    * BOOT_PHASE_CONNECT covers entrypoint download and runtime connection.
-   *
-   * @generated from enum value: BOOT_PHASE_CONNECT = 2;
    */
   CONNECT = 2,
 
   /**
    * BOOT_PHASE_RUNTIME covers runtime and plugin-host startup.
-   *
-   * @generated from enum value: BOOT_PHASE_RUNTIME = 3;
    */
   RUNTIME = 3,
 
   /**
    * BOOT_PHASE_FRAME covers application frame and content readiness.
-   *
-   * @generated from enum value: BOOT_PHASE_FRAME = 4;
    */
   FRAME = 4,
 
   /**
    * BOOT_PHASE_DONE marks the declared usable boundary.
-   *
-   * @generated from enum value: BOOT_PHASE_DONE = 5;
    */
   DONE = 5,
 }
 
 export const BootPhase_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootPhase',
-  BootPhase,
-  'BOOT_PHASE_',
+  [
+    [0, 'BOOT_PHASE_UNKNOWN'],
+    [1, 'BOOT_PHASE_PREPARE'],
+    [2, 'BOOT_PHASE_CONNECT'],
+    [3, 'BOOT_PHASE_RUNTIME'],
+    [4, 'BOOT_PHASE_FRAME'],
+    [5, 'BOOT_PHASE_DONE'],
+  ],
 )
 
 /**
@@ -119,58 +106,51 @@ export const BootPhase_Enum = /* @__PURE__ */ createEnumType(
 export enum BootWorkClass {
   /**
    * BOOT_WORK_CLASS_UNKNOWN leaves the work category unattributed.
-   *
-   * @generated from enum value: BOOT_WORK_CLASS_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_WORK_CLASS_COMPUTE is CPU work identified by a source task or symbol.
-   *
-   * @generated from enum value: BOOT_WORK_CLASS_COMPUTE = 1;
    */
   COMPUTE = 1,
 
   /**
    * BOOT_WORK_CLASS_STORAGE_IO is storage access identified by its operation.
-   *
-   * @generated from enum value: BOOT_WORK_CLASS_STORAGE_IO = 2;
    */
   STORAGE_IO = 2,
 
   /**
    * BOOT_WORK_CLASS_NETWORK_IO is network access identified by its request class.
-   *
-   * @generated from enum value: BOOT_WORK_CLASS_NETWORK_IO = 3;
    */
   NETWORK_IO = 3,
 
   /**
    * BOOT_WORK_CLASS_LOCK_WAIT is a wait on a named lock or storage fence.
-   *
-   * @generated from enum value: BOOT_WORK_CLASS_LOCK_WAIT = 4;
    */
   LOCK_WAIT = 4,
 
   /**
    * BOOT_WORK_CLASS_DEPENDENCY_WAIT is a wait on a named dependency.
-   *
-   * @generated from enum value: BOOT_WORK_CLASS_DEPENDENCY_WAIT = 5;
    */
   DEPENDENCY_WAIT = 5,
 
   /**
    * BOOT_WORK_CLASS_SCHEDULER is a named scheduler state transition.
-   *
-   * @generated from enum value: BOOT_WORK_CLASS_SCHEDULER = 6;
    */
   SCHEDULER = 6,
 }
 
 export const BootWorkClass_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootWorkClass',
-  BootWorkClass,
-  'BOOT_WORK_CLASS_',
+  [
+    [0, 'BOOT_WORK_CLASS_UNKNOWN'],
+    [1, 'BOOT_WORK_CLASS_COMPUTE'],
+    [2, 'BOOT_WORK_CLASS_STORAGE_IO'],
+    [3, 'BOOT_WORK_CLASS_NETWORK_IO'],
+    [4, 'BOOT_WORK_CLASS_LOCK_WAIT'],
+    [5, 'BOOT_WORK_CLASS_DEPENDENCY_WAIT'],
+    [6, 'BOOT_WORK_CLASS_SCHEDULER'],
+  ],
 )
 
 /**
@@ -181,37 +161,33 @@ export const BootWorkClass_Enum = /* @__PURE__ */ createEnumType(
 export enum BootSpanResult {
   /**
    * BOOT_SPAN_RESULT_UNKNOWN leaves the result unset.
-   *
-   * @generated from enum value: BOOT_SPAN_RESULT_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_SPAN_RESULT_SUCCEEDED means the operation completed normally.
-   *
-   * @generated from enum value: BOOT_SPAN_RESULT_SUCCEEDED = 1;
    */
   SUCCEEDED = 1,
 
   /**
    * BOOT_SPAN_RESULT_FAILED means the operation ended at a stable failure code.
-   *
-   * @generated from enum value: BOOT_SPAN_RESULT_FAILED = 2;
    */
   FAILED = 2,
 
   /**
    * BOOT_SPAN_RESULT_CANCELED means the operation stopped with its boot lifetime.
-   *
-   * @generated from enum value: BOOT_SPAN_RESULT_CANCELED = 3;
    */
   CANCELED = 3,
 }
 
 export const BootSpanResult_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootSpanResult',
-  BootSpanResult,
-  'BOOT_SPAN_RESULT_',
+  [
+    [0, 'BOOT_SPAN_RESULT_UNKNOWN'],
+    [1, 'BOOT_SPAN_RESULT_SUCCEEDED'],
+    [2, 'BOOT_SPAN_RESULT_FAILED'],
+    [3, 'BOOT_SPAN_RESULT_CANCELED'],
+  ],
 )
 
 /**
@@ -222,37 +198,33 @@ export const BootSpanResult_Enum = /* @__PURE__ */ createEnumType(
 export enum BootRuntimeKind {
   /**
    * BOOT_RUNTIME_KIND_UNKNOWN leaves the runtime implementation unset.
-   *
-   * @generated from enum value: BOOT_RUNTIME_KIND_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_RUNTIME_KIND_GOSCRIPT identifies the GoScript browser runtime.
-   *
-   * @generated from enum value: BOOT_RUNTIME_KIND_GOSCRIPT = 1;
    */
   GOSCRIPT = 1,
 
   /**
    * BOOT_RUNTIME_KIND_WASM identifies the WebAssembly browser runtime.
-   *
-   * @generated from enum value: BOOT_RUNTIME_KIND_WASM = 2;
    */
   WASM = 2,
 
   /**
    * BOOT_RUNTIME_KIND_NATIVE identifies a native desktop runtime.
-   *
-   * @generated from enum value: BOOT_RUNTIME_KIND_NATIVE = 3;
    */
   NATIVE = 3,
 }
 
 export const BootRuntimeKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootRuntimeKind',
-  BootRuntimeKind,
-  'BOOT_RUNTIME_KIND_',
+  [
+    [0, 'BOOT_RUNTIME_KIND_UNKNOWN'],
+    [1, 'BOOT_RUNTIME_KIND_GOSCRIPT'],
+    [2, 'BOOT_RUNTIME_KIND_WASM'],
+    [3, 'BOOT_RUNTIME_KIND_NATIVE'],
+  ],
 )
 
 /**
@@ -263,37 +235,33 @@ export const BootRuntimeKind_Enum = /* @__PURE__ */ createEnumType(
 export enum BootWorkerMode {
   /**
    * BOOT_WORKER_MODE_UNKNOWN leaves worker custody unset.
-   *
-   * @generated from enum value: BOOT_WORKER_MODE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_WORKER_MODE_SHARED identifies a SharedWorker runtime.
-   *
-   * @generated from enum value: BOOT_WORKER_MODE_SHARED = 1;
    */
   SHARED = 1,
 
   /**
    * BOOT_WORKER_MODE_DEDICATED identifies a DedicatedWorker runtime.
-   *
-   * @generated from enum value: BOOT_WORKER_MODE_DEDICATED = 2;
    */
   DEDICATED = 2,
 
   /**
    * BOOT_WORKER_MODE_INLINE identifies a runtime in the current process.
-   *
-   * @generated from enum value: BOOT_WORKER_MODE_INLINE = 3;
    */
   INLINE = 3,
 }
 
 export const BootWorkerMode_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootWorkerMode',
-  BootWorkerMode,
-  'BOOT_WORKER_MODE_',
+  [
+    [0, 'BOOT_WORKER_MODE_UNKNOWN'],
+    [1, 'BOOT_WORKER_MODE_SHARED'],
+    [2, 'BOOT_WORKER_MODE_DEDICATED'],
+    [3, 'BOOT_WORKER_MODE_INLINE'],
+  ],
 )
 
 /**
@@ -304,44 +272,39 @@ export const BootWorkerMode_Enum = /* @__PURE__ */ createEnumType(
 export enum BootEnvironmentClass {
   /**
    * BOOT_ENVIRONMENT_CLASS_UNKNOWN leaves the environment unset.
-   *
-   * @generated from enum value: BOOT_ENVIRONMENT_CLASS_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_ENVIRONMENT_CLASS_LOCAL identifies a local development entrypoint.
-   *
-   * @generated from enum value: BOOT_ENVIRONMENT_CLASS_LOCAL = 1;
    */
   LOCAL = 1,
 
   /**
    * BOOT_ENVIRONMENT_CLASS_DEV identifies a shared development entrypoint.
-   *
-   * @generated from enum value: BOOT_ENVIRONMENT_CLASS_DEV = 2;
    */
   DEV = 2,
 
   /**
    * BOOT_ENVIRONMENT_CLASS_STAGING identifies a staging entrypoint.
-   *
-   * @generated from enum value: BOOT_ENVIRONMENT_CLASS_STAGING = 3;
    */
   STAGING = 3,
 
   /**
    * BOOT_ENVIRONMENT_CLASS_PRODUCTION identifies a production entrypoint.
-   *
-   * @generated from enum value: BOOT_ENVIRONMENT_CLASS_PRODUCTION = 4;
    */
   PRODUCTION = 4,
 }
 
 export const BootEnvironmentClass_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootEnvironmentClass',
-  BootEnvironmentClass,
-  'BOOT_ENVIRONMENT_CLASS_',
+  [
+    [0, 'BOOT_ENVIRONMENT_CLASS_UNKNOWN'],
+    [1, 'BOOT_ENVIRONMENT_CLASS_LOCAL'],
+    [2, 'BOOT_ENVIRONMENT_CLASS_DEV'],
+    [3, 'BOOT_ENVIRONMENT_CLASS_STAGING'],
+    [4, 'BOOT_ENVIRONMENT_CLASS_PRODUCTION'],
+  ],
 )
 
 /**
@@ -352,37 +315,33 @@ export const BootEnvironmentClass_Enum = /* @__PURE__ */ createEnumType(
 export enum BootCacheState {
   /**
    * BOOT_CACHE_STATE_UNKNOWN leaves cache condition unset.
-   *
-   * @generated from enum value: BOOT_CACHE_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_CACHE_STATE_COLD means no retained release cache was available.
-   *
-   * @generated from enum value: BOOT_CACHE_STATE_COLD = 1;
    */
   COLD = 1,
 
   /**
    * BOOT_CACHE_STATE_WARM means retained state existed but startup still fetched data.
-   *
-   * @generated from enum value: BOOT_CACHE_STATE_WARM = 2;
    */
   WARM = 2,
 
   /**
    * BOOT_CACHE_STATE_HOT means the required startup data was locally available.
-   *
-   * @generated from enum value: BOOT_CACHE_STATE_HOT = 3;
    */
   HOT = 3,
 }
 
 export const BootCacheState_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootCacheState',
-  BootCacheState,
-  'BOOT_CACHE_STATE_',
+  [
+    [0, 'BOOT_CACHE_STATE_UNKNOWN'],
+    [1, 'BOOT_CACHE_STATE_COLD'],
+    [2, 'BOOT_CACHE_STATE_WARM'],
+    [3, 'BOOT_CACHE_STATE_HOT'],
+  ],
 )
 
 /**
@@ -393,37 +352,33 @@ export const BootCacheState_Enum = /* @__PURE__ */ createEnumType(
 export enum BootCounterUnit {
   /**
    * BOOT_COUNTER_UNIT_UNKNOWN leaves the unit unset.
-   *
-   * @generated from enum value: BOOT_COUNTER_UNIT_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_COUNTER_UNIT_COUNT counts discrete operations or objects.
-   *
-   * @generated from enum value: BOOT_COUNTER_UNIT_COUNT = 1;
    */
   COUNT = 1,
 
   /**
    * BOOT_COUNTER_UNIT_BYTES counts logical or durable bytes.
-   *
-   * @generated from enum value: BOOT_COUNTER_UNIT_BYTES = 2;
    */
   BYTES = 2,
 
   /**
    * BOOT_COUNTER_UNIT_MICROSECONDS counts elapsed work time.
-   *
-   * @generated from enum value: BOOT_COUNTER_UNIT_MICROSECONDS = 3;
    */
   MICROSECONDS = 3,
 }
 
 export const BootCounterUnit_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootCounterUnit',
-  BootCounterUnit,
-  'BOOT_COUNTER_UNIT_',
+  [
+    [0, 'BOOT_COUNTER_UNIT_UNKNOWN'],
+    [1, 'BOOT_COUNTER_UNIT_COUNT'],
+    [2, 'BOOT_COUNTER_UNIT_BYTES'],
+    [3, 'BOOT_COUNTER_UNIT_MICROSECONDS'],
+  ],
 )
 
 /**
@@ -434,30 +389,27 @@ export const BootCounterUnit_Enum = /* @__PURE__ */ createEnumType(
 export enum BootBuildType {
   /**
    * BOOT_BUILD_TYPE_UNKNOWN leaves the build configuration unset.
-   *
-   * @generated from enum value: BOOT_BUILD_TYPE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_BUILD_TYPE_DEBUG identifies a debug build.
-   *
-   * @generated from enum value: BOOT_BUILD_TYPE_DEBUG = 1;
    */
   DEBUG = 1,
 
   /**
    * BOOT_BUILD_TYPE_RELEASE identifies a release build.
-   *
-   * @generated from enum value: BOOT_BUILD_TYPE_RELEASE = 2;
    */
   RELEASE = 2,
 }
 
 export const BootBuildType_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootBuildType',
-  BootBuildType,
-  'BOOT_BUILD_TYPE_',
+  [
+    [0, 'BOOT_BUILD_TYPE_UNKNOWN'],
+    [1, 'BOOT_BUILD_TYPE_DEBUG'],
+    [2, 'BOOT_BUILD_TYPE_RELEASE'],
+  ],
 )
 
 /**
@@ -468,51 +420,45 @@ export const BootBuildType_Enum = /* @__PURE__ */ createEnumType(
 export enum BootServiceWorkerState {
   /**
    * BOOT_SERVICE_WORKER_STATE_UNKNOWN leaves the lifecycle state unset.
-   *
-   * @generated from enum value: BOOT_SERVICE_WORKER_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_SERVICE_WORKER_STATE_UNAVAILABLE means no service worker is available.
-   *
-   * @generated from enum value: BOOT_SERVICE_WORKER_STATE_UNAVAILABLE = 1;
    */
   UNAVAILABLE = 1,
 
   /**
    * BOOT_SERVICE_WORKER_STATE_INSTALLING means the worker is installing.
-   *
-   * @generated from enum value: BOOT_SERVICE_WORKER_STATE_INSTALLING = 2;
    */
   INSTALLING = 2,
 
   /**
    * BOOT_SERVICE_WORKER_STATE_WAITING means the worker is waiting to activate.
-   *
-   * @generated from enum value: BOOT_SERVICE_WORKER_STATE_WAITING = 3;
    */
   WAITING = 3,
 
   /**
    * BOOT_SERVICE_WORKER_STATE_ACTIVE means the worker is active.
-   *
-   * @generated from enum value: BOOT_SERVICE_WORKER_STATE_ACTIVE = 4;
    */
   ACTIVE = 4,
 
   /**
    * BOOT_SERVICE_WORKER_STATE_REDUNDANT means the worker is redundant.
-   *
-   * @generated from enum value: BOOT_SERVICE_WORKER_STATE_REDUNDANT = 5;
    */
   REDUNDANT = 5,
 }
 
 export const BootServiceWorkerState_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootServiceWorkerState',
-  BootServiceWorkerState,
-  'BOOT_SERVICE_WORKER_STATE_',
+  [
+    [0, 'BOOT_SERVICE_WORKER_STATE_UNKNOWN'],
+    [1, 'BOOT_SERVICE_WORKER_STATE_UNAVAILABLE'],
+    [2, 'BOOT_SERVICE_WORKER_STATE_INSTALLING'],
+    [3, 'BOOT_SERVICE_WORKER_STATE_WAITING'],
+    [4, 'BOOT_SERVICE_WORKER_STATE_ACTIVE'],
+    [5, 'BOOT_SERVICE_WORKER_STATE_REDUNDANT'],
+  ],
 )
 
 /**
@@ -523,37 +469,33 @@ export const BootServiceWorkerState_Enum = /* @__PURE__ */ createEnumType(
 export enum BootRecoveryDecision {
   /**
    * BOOT_RECOVERY_DECISION_UNKNOWN leaves the recovery action unset.
-   *
-   * @generated from enum value: BOOT_RECOVERY_DECISION_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_RECOVERY_DECISION_NONE means recovery made no change.
-   *
-   * @generated from enum value: BOOT_RECOVERY_DECISION_NONE = 1;
    */
   NONE = 1,
 
   /**
    * BOOT_RECOVERY_DECISION_RELOAD means recovery reloaded the entrypoint.
-   *
-   * @generated from enum value: BOOT_RECOVERY_DECISION_RELOAD = 2;
    */
   RELOAD = 2,
 
   /**
    * BOOT_RECOVERY_DECISION_ABORT_STALE means recovery sealed a stale report as aborted.
-   *
-   * @generated from enum value: BOOT_RECOVERY_DECISION_ABORT_STALE = 3;
    */
   ABORT_STALE = 3,
 }
 
 export const BootRecoveryDecision_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootRecoveryDecision',
-  BootRecoveryDecision,
-  'BOOT_RECOVERY_DECISION_',
+  [
+    [0, 'BOOT_RECOVERY_DECISION_UNKNOWN'],
+    [1, 'BOOT_RECOVERY_DECISION_NONE'],
+    [2, 'BOOT_RECOVERY_DECISION_RELOAD'],
+    [3, 'BOOT_RECOVERY_DECISION_ABORT_STALE'],
+  ],
 )
 
 /**
@@ -564,44 +506,39 @@ export const BootRecoveryDecision_Enum = /* @__PURE__ */ createEnumType(
 export enum BootAttachmentKind {
   /**
    * BOOT_ATTACHMENT_KIND_UNKNOWN leaves the artifact class unset.
-   *
-   * @generated from enum value: BOOT_ATTACHMENT_KIND_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_ATTACHMENT_KIND_SOURCE_MAP identifies a JavaScript source map.
-   *
-   * @generated from enum value: BOOT_ATTACHMENT_KIND_SOURCE_MAP = 1;
    */
   SOURCE_MAP = 1,
 
   /**
    * BOOT_ATTACHMENT_KIND_RUNTIME_TRACE identifies a Go runtime trace.
-   *
-   * @generated from enum value: BOOT_ATTACHMENT_KIND_RUNTIME_TRACE = 2;
    */
   RUNTIME_TRACE = 2,
 
   /**
    * BOOT_ATTACHMENT_KIND_CPU_PROFILE identifies a CPU profile.
-   *
-   * @generated from enum value: BOOT_ATTACHMENT_KIND_CPU_PROFILE = 3;
    */
   CPU_PROFILE = 3,
 
   /**
    * BOOT_ATTACHMENT_KIND_NETWORK_PROFILE identifies a network profile.
-   *
-   * @generated from enum value: BOOT_ATTACHMENT_KIND_NETWORK_PROFILE = 4;
    */
   NETWORK_PROFILE = 4,
 }
 
 export const BootAttachmentKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootAttachmentKind',
-  BootAttachmentKind,
-  'BOOT_ATTACHMENT_KIND_',
+  [
+    [0, 'BOOT_ATTACHMENT_KIND_UNKNOWN'],
+    [1, 'BOOT_ATTACHMENT_KIND_SOURCE_MAP'],
+    [2, 'BOOT_ATTACHMENT_KIND_RUNTIME_TRACE'],
+    [3, 'BOOT_ATTACHMENT_KIND_CPU_PROFILE'],
+    [4, 'BOOT_ATTACHMENT_KIND_NETWORK_PROFILE'],
+  ],
 )
 
 /**
@@ -612,37 +549,33 @@ export const BootAttachmentKind_Enum = /* @__PURE__ */ createEnumType(
 export enum BootShareDestination {
   /**
    * BOOT_SHARE_DESTINATION_UNKNOWN means the report has never been shared.
-   *
-   * @generated from enum value: BOOT_SHARE_DESTINATION_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_SHARE_DESTINATION_CLIPBOARD identifies an explicit clipboard copy.
-   *
-   * @generated from enum value: BOOT_SHARE_DESTINATION_CLIPBOARD = 1;
    */
   CLIPBOARD = 1,
 
   /**
    * BOOT_SHARE_DESTINATION_DOWNLOAD identifies an explicit local download.
-   *
-   * @generated from enum value: BOOT_SHARE_DESTINATION_DOWNLOAD = 2;
    */
   DOWNLOAD = 2,
 
   /**
    * BOOT_SHARE_DESTINATION_SPACE identifies explicit publication to a selected Space.
-   *
-   * @generated from enum value: BOOT_SHARE_DESTINATION_SPACE = 3;
    */
   SPACE = 3,
 }
 
 export const BootShareDestination_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootShareDestination',
-  BootShareDestination,
-  'BOOT_SHARE_DESTINATION_',
+  [
+    [0, 'BOOT_SHARE_DESTINATION_UNKNOWN'],
+    [1, 'BOOT_SHARE_DESTINATION_CLIPBOARD'],
+    [2, 'BOOT_SHARE_DESTINATION_DOWNLOAD'],
+    [3, 'BOOT_SHARE_DESTINATION_SPACE'],
+  ],
 )
 
 /**
@@ -653,66 +586,168 @@ export const BootShareDestination_Enum = /* @__PURE__ */ createEnumType(
 export enum BootValidationViolationKind {
   /**
    * BOOT_VALIDATION_VIOLATION_KIND_UNKNOWN leaves the failure kind unset.
-   *
-   * @generated from enum value: BOOT_VALIDATION_VIOLATION_KIND_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * BOOT_VALIDATION_VIOLATION_KIND_REPORT_CONTRACT identifies missing report identity or lifecycle data.
-   *
-   * @generated from enum value: BOOT_VALIDATION_VIOLATION_KIND_REPORT_CONTRACT = 1;
    */
   REPORT_CONTRACT = 1,
 
   /**
    * BOOT_VALIDATION_VIOLATION_KIND_TERMINAL_CONTRACT identifies an invalid usable or terminal mark.
-   *
-   * @generated from enum value: BOOT_VALIDATION_VIOLATION_KIND_TERMINAL_CONTRACT = 2;
    */
   TERMINAL_CONTRACT = 2,
 
   /**
    * BOOT_VALIDATION_VIOLATION_KIND_MARK_ORDER identifies a reordered or duplicated mark.
-   *
-   * @generated from enum value: BOOT_VALIDATION_VIOLATION_KIND_MARK_ORDER = 3;
    */
   MARK_ORDER = 3,
 
   /**
    * BOOT_VALIDATION_VIOLATION_KIND_SPAN_CONTRACT identifies an invalid span tree or interval.
-   *
-   * @generated from enum value: BOOT_VALIDATION_VIOLATION_KIND_SPAN_CONTRACT = 4;
    */
   SPAN_CONTRACT = 4,
 
   /**
    * BOOT_VALIDATION_VIOLATION_KIND_GAP_COVERAGE identifies insufficient owner coverage of a long gap.
-   *
-   * @generated from enum value: BOOT_VALIDATION_VIOLATION_KIND_GAP_COVERAGE = 5;
    */
   GAP_COVERAGE = 5,
 
   /**
    * BOOT_VALIDATION_VIOLATION_KIND_GENERIC_LEAF identifies a long non-actionable attribution leaf.
-   *
-   * @generated from enum value: BOOT_VALIDATION_VIOLATION_KIND_GENERIC_LEAF = 6;
    */
   GENERIC_LEAF = 6,
 
   /**
    * BOOT_VALIDATION_VIOLATION_KIND_UNKNOWN_SHARE identifies total unknown long-gap time above the budget.
-   *
-   * @generated from enum value: BOOT_VALIDATION_VIOLATION_KIND_UNKNOWN_SHARE = 7;
    */
   UNKNOWN_SHARE = 7,
 }
 
 export const BootValidationViolationKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.boot.BootValidationViolationKind',
-  BootValidationViolationKind,
-  'BOOT_VALIDATION_VIOLATION_KIND_',
+  [
+    [0, 'BOOT_VALIDATION_VIOLATION_KIND_UNKNOWN'],
+    [1, 'BOOT_VALIDATION_VIOLATION_KIND_REPORT_CONTRACT'],
+    [2, 'BOOT_VALIDATION_VIOLATION_KIND_TERMINAL_CONTRACT'],
+    [3, 'BOOT_VALIDATION_VIOLATION_KIND_MARK_ORDER'],
+    [4, 'BOOT_VALIDATION_VIOLATION_KIND_SPAN_CONTRACT'],
+    [5, 'BOOT_VALIDATION_VIOLATION_KIND_GAP_COVERAGE'],
+    [6, 'BOOT_VALIDATION_VIOLATION_KIND_GENERIC_LEAF'],
+    [7, 'BOOT_VALIDATION_VIOLATION_KIND_UNKNOWN_SHARE'],
+  ],
 )
+
+/**
+ * BootReport is the durable browser-local record for one startup attempt.
+ *
+ * @generated from message bldr.web.boot.BootReport
+ */
+export interface BootReport {
+  /**
+   * SchemaVersion selects the validation and export contract.
+   */
+  schemaVersion?: number
+  /**
+   * ReportId is a random device-local identifier with no account or Space meaning.
+   */
+  reportId?: string
+  /**
+   * ParentReportId identifies the interrupted report recovered by this launch, when present.
+   */
+  parentReportId?: string
+  /**
+   * StartedUnixMicros is wall time at collector initialization in Unix microseconds.
+   */
+  startedUnixMicros?: bigint
+  /**
+   * MonotonicOriginUnixMicros relates monotonic offsets to coarse wall time.
+   */
+  monotonicOriginUnixMicros?: bigint
+  /**
+   * EntrypointId identifies the public entrypoint contract without a URL or query string.
+   */
+  entrypointId?: string
+  /**
+   * UsableMark declares the single mark that completes this entrypoint's startup.
+   */
+  usableMark?: string
+  /**
+   * State is the report lifecycle state.
+   */
+  state?: BootReportState
+  /**
+   * TerminalMark identifies the final accepted startup mark or stable failure boundary.
+   */
+  terminalMark?: string
+  /**
+   * TerminalErrorCode is a stable allowlisted code and never an arbitrary error string.
+   */
+  terminalErrorCode?: string
+  /**
+   * TerminalMonotonicMicros is the terminal offset from the collector origin.
+   */
+  terminalMonotonicMicros?: bigint
+  /**
+   * Build contains release and runtime identity available at startup.
+   */
+  build?: BootBuild
+  /**
+   * Environment contains coarse device-local runtime context.
+   */
+  environment?: BootEnvironment
+  /**
+   * Marks contains accepted startup marks through the measured terminal boundary; sealing occurs after this timeline.
+   */
+  marks?: BootMark[]
+  /**
+   * Spans contains owner intervals that attribute work between marks.
+   */
+  spans?: BootSpan[]
+  /**
+   * Accounting contains timestamped owner counters.
+   */
+  accounting?: BootAccounting
+  /**
+   * Validation contains the last deterministic validator result.
+   */
+  validation?: BootValidation
+  /**
+   * Attachments contains generation-matched optional deep-evidence metadata.
+   */
+  attachments?: BootAttachment[]
+  /**
+   * Privacy records the export allowlist version and explicit sharing facts.
+   */
+  privacy?: BootPrivacy
+}
+
+export const BootReport: MessageType<BootReport> =
+  /* @__PURE__ */ createMessageType<BootReport>(
+    'bldr.web.boot.BootReport',
+    () => [
+      [1, 'schema_version', 13],
+      [2, 'report_id', 9],
+      [3, 'parent_report_id', 9],
+      [4, 'started_unix_micros', 3],
+      [5, 'monotonic_origin_unix_micros', 3],
+      [6, 'entrypoint_id', 9],
+      [7, 'usable_mark', 9],
+      [8, 'state', 14, 0, BootReportState_Enum],
+      [9, 'terminal_mark', 9],
+      [10, 'terminal_error_code', 9],
+      [11, 'terminal_monotonic_micros', 4],
+      [12, 'build', 11, 0, BootBuild.codec],
+      [13, 'environment', 11, 0, BootEnvironment.codec],
+      [14, 'marks', 11, 1, BootMark.codec],
+      [15, 'spans', 11, 1, BootSpan.codec],
+      [16, 'accounting', 11, 0, BootAccounting.codec],
+      [17, 'validation', 11, 0, BootValidation.codec],
+      [18, 'attachments', 11, 1, BootAttachment.codec],
+      [19, 'privacy', 11, 0, BootPrivacy.codec],
+    ],
+  )
 
 /**
  * BootBuild identifies the executable browser generation.
@@ -722,59 +757,42 @@ export const BootValidationViolationKind_Enum = /* @__PURE__ */ createEnumType(
 export interface BootBuild {
   /**
    * Commit is the public source commit when available.
-   *
-   * @generated from field: string commit = 1;
    */
   commit?: string
   /**
    * ReleaseGeneration is the immutable public release generation.
-   *
-   * @generated from field: string release_generation = 2;
    */
   releaseGeneration?: string
   /**
    * ProjectId identifies the public Bldr project, not a Space or account.
-   *
-   * @generated from field: string project_id = 3;
    */
   projectId?: string
   /**
    * BuildType identifies the public build configuration.
-   *
-   * @generated from field: bldr.web.boot.BootBuildType build_type = 4;
    */
   buildType?: BootBuildType
   /**
    * RuntimeKind identifies the runtime implementation.
-   *
-   * @generated from field: bldr.web.boot.BootRuntimeKind runtime_kind = 5;
    */
   runtimeKind?: BootRuntimeKind
   /**
    * WorkerMode identifies runtime worker custody.
-   *
-   * @generated from field: bldr.web.boot.BootWorkerMode worker_mode = 6;
    */
   workerMode?: BootWorkerMode
 }
 
 export const BootBuild: MessageType<BootBuild> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootBuild',
-    fields: [
-      { no: 1, name: 'commit', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'release_generation',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'build_type', kind: 'enum', T: BootBuildType_Enum },
-      { no: 5, name: 'runtime_kind', kind: 'enum', T: BootRuntimeKind_Enum },
-      { no: 6, name: 'worker_mode', kind: 'enum', T: BootWorkerMode_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BootBuild>(
+    'bldr.web.boot.BootBuild',
+    () => [
+      [1, 'commit', 9],
+      [2, 'release_generation', 9],
+      [3, 'project_id', 9],
+      [4, 'build_type', 14, 0, BootBuildType_Enum],
+      [5, 'runtime_kind', 14, 0, BootRuntimeKind_Enum],
+      [6, 'worker_mode', 14, 0, BootWorkerMode_Enum],
+    ],
+  )
 
 /**
  * BootEnvironment contains coarse local context safe for deterministic export.
@@ -784,78 +802,119 @@ export const BootBuild: MessageType<BootBuild> =
 export interface BootEnvironment {
   /**
    * Class is the coarse deployment environment.
-   *
-   * @generated from field: bldr.web.boot.BootEnvironmentClass class = 1;
    */
   class?: BootEnvironmentClass
   /**
    * BrowserEngine is the lowercase browser engine name.
-   *
-   * @generated from field: string browser_engine = 2;
    */
   browserEngine?: string
   /**
    * BrowserMajor is the browser's major version only.
-   *
-   * @generated from field: uint32 browser_major = 3;
    */
   browserMajor?: number
   /**
    * OsFamily is the coarse operating-system family.
-   *
-   * @generated from field: string os_family = 4;
    */
   osFamily?: string
   /**
    * Architecture is the coarse runtime architecture.
-   *
-   * @generated from field: string architecture = 5;
    */
   architecture?: string
   /**
    * ServiceWorkerState is the stable browser service-worker state.
-   *
-   * @generated from field: bldr.web.boot.BootServiceWorkerState service_worker_state = 6;
    */
   serviceWorkerState?: BootServiceWorkerState
   /**
    * CacheState is the coarse boot cache condition.
-   *
-   * @generated from field: bldr.web.boot.BootCacheState cache_state = 7;
    */
   cacheState?: BootCacheState
   /**
    * RecoveryDecision is the stable boot-recovery action.
-   *
-   * @generated from field: bldr.web.boot.BootRecoveryDecision recovery_decision = 8;
    */
   recoveryDecision?: BootRecoveryDecision
 }
 
 export const BootEnvironment: MessageType<BootEnvironment> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootEnvironment',
-    fields: [
-      { no: 1, name: 'class', kind: 'enum', T: BootEnvironmentClass_Enum },
-      { no: 2, name: 'browser_engine', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'browser_major', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'os_family', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'architecture', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'service_worker_state',
-        kind: 'enum',
-        T: BootServiceWorkerState_Enum,
-      },
-      { no: 7, name: 'cache_state', kind: 'enum', T: BootCacheState_Enum },
-      {
-        no: 8,
-        name: 'recovery_decision',
-        kind: 'enum',
-        T: BootRecoveryDecision_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BootEnvironment>(
+    'bldr.web.boot.BootEnvironment',
+    () => [
+      [1, 'class', 14, 0, BootEnvironmentClass_Enum],
+      [2, 'browser_engine', 9],
+      [3, 'browser_major', 13],
+      [4, 'os_family', 9],
+      [5, 'architecture', 9],
+      [6, 'service_worker_state', 14, 0, BootServiceWorkerState_Enum],
+      [7, 'cache_state', 14, 0, BootCacheState_Enum],
+      [8, 'recovery_decision', 14, 0, BootRecoveryDecision_Enum],
+    ],
+  )
+
+/**
+ * BootMark records one ordered startup boundary.
+ *
+ * @generated from message bldr.web.boot.BootMark
+ */
+export interface BootMark {
+  /**
+   * Sequence is the collector-assigned strictly increasing sequence.
+   */
+  sequence?: bigint
+  /**
+   * Label is the stable startup vocabulary value without the performance prefix.
+   */
+  label?: string
+  /**
+   * SourceOwner identifies the component that emitted the mark.
+   */
+  sourceOwner?: string
+  /**
+   * MonotonicMicros is the offset from the collector origin.
+   */
+  monotonicMicros?: bigint
+  /**
+   * Phase partitions the interval that begins at this mark.
+   */
+  phase?: BootPhase
+  /**
+   * Detail contains sanitized fields in strictly increasing key order.
+   */
+  detail?: BootDetailField[]
+}
+
+export const BootMark: MessageType<BootMark> =
+  /* @__PURE__ */ createMessageType<BootMark>('bldr.web.boot.BootMark', () => [
+    [1, 'sequence', 4],
+    [2, 'label', 9],
+    [3, 'source_owner', 9],
+    [4, 'monotonic_micros', 4],
+    [5, 'phase', 14, 0, BootPhase_Enum],
+    [6, 'detail', 11, 1, BootDetailField.codec],
+  ])
+
+/**
+ * BootDetailField is one ordered sanitized startup-mark field.
+ *
+ * @generated from message bldr.web.boot.BootDetailField
+ */
+export interface BootDetailField {
+  /**
+   * Key is the stable field vocabulary value.
+   */
+  key?: string
+  /**
+   * Value contains the sanitized scalar field value.
+   */
+  value?: BootValue
+}
+
+export const BootDetailField: MessageType<BootDetailField> =
+  /* @__PURE__ */ createMessageType<BootDetailField>(
+    'bldr.web.boot.BootDetailField',
+    () => [
+      [1, 'key', 9],
+      [2, 'value', 11, 0, BootValue.codec],
+    ],
+  )
 
 /**
  * BootValue is one sanitized scalar startup-mark field.
@@ -869,190 +928,25 @@ export interface BootValue {
    * @generated from oneof bldr.web.boot.BootValue.value
    */
   value?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * StringValue is an allowlisted stable vocabulary or coarse identity.
-         *
-         * @generated from field: string string_value = 1;
-         */
-        value: string
-        case: 'stringValue'
-      }
-    | {
-        /**
-         * SignedValue is a signed counter value.
-         *
-         * @generated from field: int64 signed_value = 2;
-         */
-        value: bigint
-        case: 'signedValue'
-      }
-    | {
-        /**
-         * UnsignedValue is an unsigned counter value.
-         *
-         * @generated from field: uint64 unsigned_value = 3;
-         */
-        value: bigint
-        case: 'unsignedValue'
-      }
-    | {
-        /**
-         * NumberValue is a finite measurement that cannot use an integer unit.
-         *
-         * @generated from field: double number_value = 4;
-         */
-        value: number
-        case: 'numberValue'
-      }
-    | {
-        /**
-         * BoolValue is a binary startup fact.
-         *
-         * @generated from field: bool bool_value = 5;
-         */
-        value: boolean
-        case: 'boolValue'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: string; case: 'stringValue' }
+    | { value: bigint; case: 'signedValue' }
+    | { value: bigint; case: 'unsignedValue' }
+    | { value: number; case: 'numberValue' }
+    | { value: boolean; case: 'boolValue' }
 }
 
 export const BootValue: MessageType<BootValue> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootValue',
-    fields: [
-      {
-        no: 1,
-        name: 'string_value',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'value',
-      },
-      {
-        no: 2,
-        name: 'signed_value',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-        oneof: 'value',
-      },
-      {
-        no: 3,
-        name: 'unsigned_value',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        oneof: 'value',
-      },
-      {
-        no: 4,
-        name: 'number_value',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-        oneof: 'value',
-      },
-      {
-        no: 5,
-        name: 'bool_value',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'value',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BootDetailField is one ordered sanitized startup-mark field.
- *
- * @generated from message bldr.web.boot.BootDetailField
- */
-export interface BootDetailField {
-  /**
-   * Key is the stable field vocabulary value.
-   *
-   * @generated from field: string key = 1;
-   */
-  key?: string
-  /**
-   * Value contains the sanitized scalar field value.
-   *
-   * @generated from field: bldr.web.boot.BootValue value = 2;
-   */
-  value?: BootValue
-}
-
-export const BootDetailField: MessageType<BootDetailField> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootDetailField',
-    fields: [
-      { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'value', kind: 'message', T: BootValue },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BootMark records one ordered startup boundary.
- *
- * @generated from message bldr.web.boot.BootMark
- */
-export interface BootMark {
-  /**
-   * Sequence is the collector-assigned strictly increasing sequence.
-   *
-   * @generated from field: uint64 sequence = 1;
-   */
-  sequence?: bigint
-  /**
-   * Label is the stable startup vocabulary value without the performance prefix.
-   *
-   * @generated from field: string label = 2;
-   */
-  label?: string
-  /**
-   * SourceOwner identifies the component that emitted the mark.
-   *
-   * @generated from field: string source_owner = 3;
-   */
-  sourceOwner?: string
-  /**
-   * MonotonicMicros is the offset from the collector origin.
-   *
-   * @generated from field: uint64 monotonic_micros = 4;
-   */
-  monotonicMicros?: bigint
-  /**
-   * Phase partitions the interval that begins at this mark.
-   *
-   * @generated from field: bldr.web.boot.BootPhase phase = 5;
-   */
-  phase?: BootPhase
-  /**
-   * Detail contains sanitized fields in strictly increasing key order.
-   *
-   * @generated from field: repeated bldr.web.boot.BootDetailField detail = 6;
-   */
-  detail?: BootDetailField[]
-}
-
-export const BootMark: MessageType<BootMark> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootMark',
-    fields: [
-      { no: 1, name: 'sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'source_owner', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'monotonic_micros', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'phase', kind: 'enum', T: BootPhase_Enum },
-      {
-        no: 6,
-        name: 'detail',
-        kind: 'message',
-        T: BootDetailField,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BootValue>(
+    'bldr.web.boot.BootValue',
+    () => [
+      [1, 'string_value', 9, 0, 0, 'value'],
+      [2, 'signed_value', 3, 0, 0, 'value'],
+      [3, 'unsigned_value', 4, 0, 0, 'value'],
+      [4, 'number_value', 1, 0, 0, 'value'],
+      [5, 'bool_value', 8, 0, 0, 'value'],
+    ],
+  )
 
 /**
  * BootSpan attributes one monotonic owner interval.
@@ -1062,161 +956,59 @@ export const BootMark: MessageType<BootMark> =
 export interface BootSpan {
   /**
    * SpanId is unique within the report.
-   *
-   * @generated from field: string span_id = 1;
    */
   spanId?: string
   /**
    * ParentSpanId identifies the containing span and is empty for a top-level span.
-   *
-   * @generated from field: string parent_span_id = 2;
    */
   parentSpanId?: string
   /**
    * Owner identifies the component responsible for the operation.
-   *
-   * @generated from field: string owner = 3;
    */
   owner?: string
   /**
    * Operation is a stable operation name and never display copy.
-   *
-   * @generated from field: string operation = 4;
    */
   operation?: string
   /**
    * StartMonotonicMicros is the inclusive offset from the collector origin.
-   *
-   * @generated from field: uint64 start_monotonic_micros = 5;
    */
   startMonotonicMicros?: bigint
   /**
    * EndMonotonicMicros is the exclusive offset from the collector origin.
-   *
-   * @generated from field: uint64 end_monotonic_micros = 6;
    */
   endMonotonicMicros?: bigint
   /**
    * WorkClass is the stable work category.
-   *
-   * @generated from field: bldr.web.boot.BootWorkClass work_class = 7;
    */
   workClass?: BootWorkClass
   /**
    * Result describes how the operation ended.
-   *
-   * @generated from field: bldr.web.boot.BootSpanResult result = 8;
    */
   result?: BootSpanResult
   /**
    * CausalWaitTarget names a dependency, lock, or request class without an identifier.
-   *
-   * @generated from field: string causal_wait_target = 9;
    */
   causalWaitTarget?: string
   /**
    * SourceTask names a stable source task, package symbol, or trace task.
-   *
-   * @generated from field: string source_task = 10;
    */
   sourceTask?: string
 }
 
 export const BootSpan: MessageType<BootSpan> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootSpan',
-    fields: [
-      { no: 1, name: 'span_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'parent_span_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'owner', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'operation', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'start_monotonic_micros',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 6,
-        name: 'end_monotonic_micros',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 7, name: 'work_class', kind: 'enum', T: BootWorkClass_Enum },
-      { no: 8, name: 'result', kind: 'enum', T: BootSpanResult_Enum },
-      {
-        no: 9,
-        name: 'causal_wait_target',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 10, name: 'source_task', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BootCounterSample records one known or unknown owner counter at a mark boundary.
- *
- * @generated from message bldr.web.boot.BootCounterSample
- */
-export interface BootCounterSample {
-  /**
-   * ScopeId correlates simultaneous candidates without exposing a Manifest ref.
-   *
-   * @generated from field: string scope_id = 1;
-   */
-  scopeId?: string
-  /**
-   * Owner identifies the component responsible for the counter.
-   *
-   * @generated from field: string owner = 2;
-   */
-  owner?: string
-  /**
-   * Name is the stable counter vocabulary value.
-   *
-   * @generated from field: string name = 3;
-   */
-  name?: string
-  /**
-   * Value is meaningful only when Known is true.
-   *
-   * @generated from field: uint64 value = 4;
-   */
-  value?: bigint
-  /**
-   * Known distinguishes unavailable data from a measured zero.
-   *
-   * @generated from field: bool known = 5;
-   */
-  known?: boolean
-  /**
-   * Unit identifies how Value is interpreted.
-   *
-   * @generated from field: bldr.web.boot.BootCounterUnit unit = 6;
-   */
-  unit?: BootCounterUnit
-  /**
-   * MonotonicMicros binds the snapshot to the boot timeline.
-   *
-   * @generated from field: uint64 monotonic_micros = 7;
-   */
-  monotonicMicros?: bigint
-}
-
-export const BootCounterSample: MessageType<BootCounterSample> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootCounterSample',
-    fields: [
-      { no: 1, name: 'scope_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'owner', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'value', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'known', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'unit', kind: 'enum', T: BootCounterUnit_Enum },
-      { no: 7, name: 'monotonic_micros', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BootSpan>('bldr.web.boot.BootSpan', () => [
+    [1, 'span_id', 9],
+    [2, 'parent_span_id', 9],
+    [3, 'owner', 9],
+    [4, 'operation', 9],
+    [5, 'start_monotonic_micros', 4],
+    [6, 'end_monotonic_micros', 4],
+    [7, 'work_class', 14, 0, BootWorkClass_Enum],
+    [8, 'result', 14, 0, BootSpanResult_Enum],
+    [9, 'causal_wait_target', 9],
+    [10, 'source_task', 9],
+  ])
 
 /**
  * BootAccounting contains timestamped counters from startup owners.
@@ -1226,190 +1018,65 @@ export const BootCounterSample: MessageType<BootCounterSample> =
 export interface BootAccounting {
   /**
    * Samples contains counter snapshots in mark order.
-   *
-   * @generated from field: repeated bldr.web.boot.BootCounterSample samples = 1;
    */
   samples?: BootCounterSample[]
 }
 
 export const BootAccounting: MessageType<BootAccounting> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootAccounting',
-    fields: [
-      {
-        no: 1,
-        name: 'samples',
-        kind: 'message',
-        T: BootCounterSample,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BootAccounting>(
+    'bldr.web.boot.BootAccounting',
+    () => [[1, 'samples', 11, 1, BootCounterSample.codec]],
+  )
 
 /**
- * BootPhaseDuration contains one derived phase total.
+ * BootCounterSample records one known or unknown owner counter at a mark boundary.
  *
- * @generated from message bldr.web.boot.BootPhaseDuration
+ * @generated from message bldr.web.boot.BootCounterSample
  */
-export interface BootPhaseDuration {
+export interface BootCounterSample {
   /**
-   * Phase identifies the startup partition.
-   *
-   * @generated from field: bldr.web.boot.BootPhase phase = 1;
+   * ScopeId correlates simultaneous candidates without exposing a Manifest ref.
    */
-  phase?: BootPhase
+  scopeId?: string
   /**
-   * DurationMicros is the phase wall time.
-   *
-   * @generated from field: uint64 duration_micros = 2;
+   * Owner identifies the component responsible for the counter.
    */
-  durationMicros?: bigint
+  owner?: string
+  /**
+   * Name is the stable counter vocabulary value.
+   */
+  name?: string
+  /**
+   * Value is meaningful only when Known is true.
+   */
+  value?: bigint
+  /**
+   * Known distinguishes unavailable data from a measured zero.
+   */
+  known?: boolean
+  /**
+   * Unit identifies how Value is interpreted.
+   */
+  unit?: BootCounterUnit
+  /**
+   * MonotonicMicros binds the snapshot to the boot timeline.
+   */
+  monotonicMicros?: bigint
 }
 
-export const BootPhaseDuration: MessageType<BootPhaseDuration> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootPhaseDuration',
-    fields: [
-      { no: 1, name: 'phase', kind: 'enum', T: BootPhase_Enum },
-      { no: 2, name: 'duration_micros', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BootGap describes one adjacent-mark interval above the five-percent threshold.
- *
- * @generated from message bldr.web.boot.BootGap
- */
-export interface BootGap {
-  /**
-   * BeforeSequence identifies the mark before the interval.
-   *
-   * @generated from field: uint64 before_sequence = 1;
-   */
-  beforeSequence?: bigint
-  /**
-   * AfterSequence identifies the mark after the interval.
-   *
-   * @generated from field: uint64 after_sequence = 2;
-   */
-  afterSequence?: bigint
-  /**
-   * StartMonotonicMicros is the inclusive gap offset.
-   *
-   * @generated from field: uint64 start_monotonic_micros = 3;
-   */
-  startMonotonicMicros?: bigint
-  /**
-   * EndMonotonicMicros is the exclusive gap offset.
-   *
-   * @generated from field: uint64 end_monotonic_micros = 4;
-   */
-  endMonotonicMicros?: bigint
-  /**
-   * DurationMicros is the gap wall time.
-   *
-   * @generated from field: uint64 duration_micros = 5;
-   */
-  durationMicros?: bigint
-  /**
-   * CoveredDurationMicros is the union of top-level owner spans in the gap.
-   *
-   * @generated from field: uint64 covered_duration_micros = 6;
-   */
-  coveredDurationMicros?: bigint
-}
-
-export const BootGap: MessageType<BootGap> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.web.boot.BootGap',
-  fields: [
-    { no: 1, name: 'before_sequence', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 2, name: 'after_sequence', kind: 'scalar', T: ScalarType.UINT64 },
-    {
-      no: 3,
-      name: 'start_monotonic_micros',
-      kind: 'scalar',
-      T: ScalarType.UINT64,
-    },
-    {
-      no: 4,
-      name: 'end_monotonic_micros',
-      kind: 'scalar',
-      T: ScalarType.UINT64,
-    },
-    { no: 5, name: 'duration_micros', kind: 'scalar', T: ScalarType.UINT64 },
-    {
-      no: 6,
-      name: 'covered_duration_micros',
-      kind: 'scalar',
-      T: ScalarType.UINT64,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * BootValidationViolation identifies one exact invalid interval or record.
- *
- * @generated from message bldr.web.boot.BootValidationViolation
- */
-export interface BootValidationViolation {
-  /**
-   * Kind is the stable failure category.
-   *
-   * @generated from field: bldr.web.boot.BootValidationViolationKind kind = 1;
-   */
-  kind?: BootValidationViolationKind
-  /**
-   * StartMonotonicMicros is the inclusive failing offset when an interval applies.
-   *
-   * @generated from field: uint64 start_monotonic_micros = 2;
-   */
-  startMonotonicMicros?: bigint
-  /**
-   * EndMonotonicMicros is the exclusive failing offset when an interval applies.
-   *
-   * @generated from field: uint64 end_monotonic_micros = 3;
-   */
-  endMonotonicMicros?: bigint
-  /**
-   * MarkSequence identifies the related mark when one applies.
-   *
-   * @generated from field: uint64 mark_sequence = 4;
-   */
-  markSequence?: bigint
-  /**
-   * SpanId identifies the related span when one applies.
-   *
-   * @generated from field: string span_id = 5;
-   */
-  spanId?: string
-}
-
-export const BootValidationViolation: MessageType<BootValidationViolation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootValidationViolation',
-    fields: [
-      {
-        no: 1,
-        name: 'kind',
-        kind: 'enum',
-        T: BootValidationViolationKind_Enum,
-      },
-      {
-        no: 2,
-        name: 'start_monotonic_micros',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 3,
-        name: 'end_monotonic_micros',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 4, name: 'mark_sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'span_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const BootCounterSample: MessageType<BootCounterSample> =
+  /* @__PURE__ */ createMessageType<BootCounterSample>(
+    'bldr.web.boot.BootCounterSample',
+    () => [
+      [1, 'scope_id', 9],
+      [2, 'owner', 9],
+      [3, 'name', 9],
+      [4, 'value', 4],
+      [5, 'known', 8],
+      [6, 'unit', 14, 0, BootCounterUnit_Enum],
+      [7, 'monotonic_micros', 4],
+    ],
+  )
 
 /**
  * BootValidation is the deterministic derived no-gap result.
@@ -1419,94 +1086,154 @@ export const BootValidationViolation: MessageType<BootValidationViolation> =
 export interface BootValidation {
   /**
    * Pass is true only when every contract and attribution check succeeds.
-   *
-   * @generated from field: bool pass = 1;
    */
   pass?: boolean
   /**
    * TotalDurationMicros is the validated terminal duration.
-   *
-   * @generated from field: uint64 total_duration_micros = 2;
    */
   totalDurationMicros?: bigint
   /**
    * UnknownDurationMicros is the uncovered or non-actionable duration inside long gaps.
-   *
-   * @generated from field: uint64 unknown_duration_micros = 3;
    */
   unknownDurationMicros?: bigint
   /**
    * UnknownPartsPerMillion is UnknownDurationMicros divided by total duration.
-   *
-   * @generated from field: uint32 unknown_parts_per_million = 4;
    */
   unknownPartsPerMillion?: number
   /**
    * PhaseDurations contains deterministic phase totals in enum order.
-   *
-   * @generated from field: repeated bldr.web.boot.BootPhaseDuration phase_durations = 5;
    */
   phaseDurations?: BootPhaseDuration[]
   /**
    * LongestGaps contains long gaps ordered by duration then mark sequence.
-   *
-   * @generated from field: repeated bldr.web.boot.BootGap longest_gaps = 6;
    */
   longestGaps?: BootGap[]
   /**
    * Violations contains deterministic contract failures in traversal order.
-   *
-   * @generated from field: repeated bldr.web.boot.BootValidationViolation violations = 7;
    */
   violations?: BootValidationViolation[]
 }
 
 export const BootValidation: MessageType<BootValidation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootValidation',
-    fields: [
-      { no: 1, name: 'pass', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 2,
-        name: 'total_duration_micros',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 3,
-        name: 'unknown_duration_micros',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 4,
-        name: 'unknown_parts_per_million',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 5,
-        name: 'phase_durations',
-        kind: 'message',
-        T: BootPhaseDuration,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'longest_gaps',
-        kind: 'message',
-        T: BootGap,
-        repeated: true,
-      },
-      {
-        no: 7,
-        name: 'violations',
-        kind: 'message',
-        T: BootValidationViolation,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BootValidation>(
+    'bldr.web.boot.BootValidation',
+    () => [
+      [1, 'pass', 8],
+      [2, 'total_duration_micros', 4],
+      [3, 'unknown_duration_micros', 4],
+      [4, 'unknown_parts_per_million', 13],
+      [5, 'phase_durations', 11, 1, BootPhaseDuration.codec],
+      [6, 'longest_gaps', 11, 1, BootGap.codec],
+      [7, 'violations', 11, 1, BootValidationViolation.codec],
+    ],
+  )
+
+/**
+ * BootPhaseDuration contains one derived phase total.
+ *
+ * @generated from message bldr.web.boot.BootPhaseDuration
+ */
+export interface BootPhaseDuration {
+  /**
+   * Phase identifies the startup partition.
+   */
+  phase?: BootPhase
+  /**
+   * DurationMicros is the phase wall time.
+   */
+  durationMicros?: bigint
+}
+
+export const BootPhaseDuration: MessageType<BootPhaseDuration> =
+  /* @__PURE__ */ createMessageType<BootPhaseDuration>(
+    'bldr.web.boot.BootPhaseDuration',
+    () => [
+      [1, 'phase', 14, 0, BootPhase_Enum],
+      [2, 'duration_micros', 4],
+    ],
+  )
+
+/**
+ * BootGap describes one adjacent-mark interval above the five-percent threshold.
+ *
+ * @generated from message bldr.web.boot.BootGap
+ */
+export interface BootGap {
+  /**
+   * BeforeSequence identifies the mark before the interval.
+   */
+  beforeSequence?: bigint
+  /**
+   * AfterSequence identifies the mark after the interval.
+   */
+  afterSequence?: bigint
+  /**
+   * StartMonotonicMicros is the inclusive gap offset.
+   */
+  startMonotonicMicros?: bigint
+  /**
+   * EndMonotonicMicros is the exclusive gap offset.
+   */
+  endMonotonicMicros?: bigint
+  /**
+   * DurationMicros is the gap wall time.
+   */
+  durationMicros?: bigint
+  /**
+   * CoveredDurationMicros is the union of top-level owner spans in the gap.
+   */
+  coveredDurationMicros?: bigint
+}
+
+export const BootGap: MessageType<BootGap> =
+  /* @__PURE__ */ createMessageType<BootGap>('bldr.web.boot.BootGap', () => [
+    [1, 'before_sequence', 4],
+    [2, 'after_sequence', 4],
+    [3, 'start_monotonic_micros', 4],
+    [4, 'end_monotonic_micros', 4],
+    [5, 'duration_micros', 4],
+    [6, 'covered_duration_micros', 4],
+  ])
+
+/**
+ * BootValidationViolation identifies one exact invalid interval or record.
+ *
+ * @generated from message bldr.web.boot.BootValidationViolation
+ */
+export interface BootValidationViolation {
+  /**
+   * Kind is the stable failure category.
+   */
+  kind?: BootValidationViolationKind
+  /**
+   * StartMonotonicMicros is the inclusive failing offset when an interval applies.
+   */
+  startMonotonicMicros?: bigint
+  /**
+   * EndMonotonicMicros is the exclusive failing offset when an interval applies.
+   */
+  endMonotonicMicros?: bigint
+  /**
+   * MarkSequence identifies the related mark when one applies.
+   */
+  markSequence?: bigint
+  /**
+   * SpanId identifies the related span when one applies.
+   */
+  spanId?: string
+}
+
+export const BootValidationViolation: MessageType<BootValidationViolation> =
+  /* @__PURE__ */ createMessageType<BootValidationViolation>(
+    'bldr.web.boot.BootValidationViolation',
+    () => [
+      [1, 'kind', 14, 0, BootValidationViolationKind_Enum],
+      [2, 'start_monotonic_micros', 4],
+      [3, 'end_monotonic_micros', 4],
+      [4, 'mark_sequence', 4],
+      [5, 'span_id', 9],
+    ],
+  )
 
 /**
  * BootAttachment describes an optional generation-matched deep-evidence artifact.
@@ -1516,52 +1243,37 @@ export const BootValidation: MessageType<BootValidation> =
 export interface BootAttachment {
   /**
    * ArtifactId identifies the repo-owned artifact without a local path or URL.
-   *
-   * @generated from field: string artifact_id = 1;
    */
   artifactId?: string
   /**
    * Kind identifies the stable artifact class.
-   *
-   * @generated from field: bldr.web.boot.BootAttachmentKind kind = 2;
    */
   kind?: BootAttachmentKind
   /**
    * ContentHash is the public content digest.
-   *
-   * @generated from field: string content_hash = 3;
    */
   contentHash?: string
   /**
    * SizeBytes is the artifact size.
-   *
-   * @generated from field: uint64 size_bytes = 4;
    */
   sizeBytes?: bigint
   /**
    * ReleaseGeneration binds the artifact to executable bytes.
-   *
-   * @generated from field: string release_generation = 5;
    */
   releaseGeneration?: string
 }
 
 export const BootAttachment: MessageType<BootAttachment> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootAttachment',
-    fields: [
-      { no: 1, name: 'artifact_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'kind', kind: 'enum', T: BootAttachmentKind_Enum },
-      { no: 3, name: 'content_hash', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'size_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 5,
-        name: 'release_generation',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BootAttachment>(
+    'bldr.web.boot.BootAttachment',
+    () => [
+      [1, 'artifact_id', 9],
+      [2, 'kind', 14, 0, BootAttachmentKind_Enum],
+      [3, 'content_hash', 9],
+      [4, 'size_bytes', 4],
+      [5, 'release_generation', 9],
+    ],
+  )
 
 /**
  * BootPrivacy records deterministic export and explicit-sharing policy facts.
@@ -1571,245 +1283,34 @@ export const BootAttachment: MessageType<BootAttachment> =
 export interface BootPrivacy {
   /**
    * ExportPolicyVersion selects the deterministic export allowlist.
-   *
-   * @generated from field: uint32 export_policy_version = 1;
    */
   exportPolicyVersion?: number
   /**
    * RemovedFields lists stable field paths removed from an export.
-   *
-   * @generated from field: repeated string removed_fields = 2;
    */
   removedFields?: string[]
   /**
    * BucketedFields lists stable field paths coarsened by an export.
-   *
-   * @generated from field: repeated string bucketed_fields = 3;
    */
   bucketedFields?: string[]
   /**
    * SharedUnixMicros records an explicit share time and is zero when never shared.
-   *
-   * @generated from field: int64 shared_unix_micros = 4;
    */
   sharedUnixMicros?: bigint
   /**
    * ShareDestination identifies the explicit sharing operation.
-   *
-   * @generated from field: bldr.web.boot.BootShareDestination share_destination = 5;
    */
   shareDestination?: BootShareDestination
 }
 
 export const BootPrivacy: MessageType<BootPrivacy> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootPrivacy',
-    fields: [
-      {
-        no: 1,
-        name: 'export_policy_version',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 2,
-        name: 'removed_fields',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'bucketed_fields',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'shared_unix_micros',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      {
-        no: 5,
-        name: 'share_destination',
-        kind: 'enum',
-        T: BootShareDestination_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BootReport is the durable browser-local record for one startup attempt.
- *
- * @generated from message bldr.web.boot.BootReport
- */
-export interface BootReport {
-  /**
-   * SchemaVersion selects the validation and export contract.
-   *
-   * @generated from field: uint32 schema_version = 1;
-   */
-  schemaVersion?: number
-  /**
-   * ReportId is a random device-local identifier with no account or Space meaning.
-   *
-   * @generated from field: string report_id = 2;
-   */
-  reportId?: string
-  /**
-   * ParentReportId identifies the interrupted report recovered by this launch, when present.
-   *
-   * @generated from field: string parent_report_id = 3;
-   */
-  parentReportId?: string
-  /**
-   * StartedUnixMicros is wall time at collector initialization in Unix microseconds.
-   *
-   * @generated from field: int64 started_unix_micros = 4;
-   */
-  startedUnixMicros?: bigint
-  /**
-   * MonotonicOriginUnixMicros relates monotonic offsets to coarse wall time.
-   *
-   * @generated from field: int64 monotonic_origin_unix_micros = 5;
-   */
-  monotonicOriginUnixMicros?: bigint
-  /**
-   * EntrypointId identifies the public entrypoint contract without a URL or query string.
-   *
-   * @generated from field: string entrypoint_id = 6;
-   */
-  entrypointId?: string
-  /**
-   * UsableMark declares the single mark that completes this entrypoint's startup.
-   *
-   * @generated from field: string usable_mark = 7;
-   */
-  usableMark?: string
-  /**
-   * State is the report lifecycle state.
-   *
-   * @generated from field: bldr.web.boot.BootReportState state = 8;
-   */
-  state?: BootReportState
-  /**
-   * TerminalMark identifies the final accepted startup mark or stable failure boundary.
-   *
-   * @generated from field: string terminal_mark = 9;
-   */
-  terminalMark?: string
-  /**
-   * TerminalErrorCode is a stable allowlisted code and never an arbitrary error string.
-   *
-   * @generated from field: string terminal_error_code = 10;
-   */
-  terminalErrorCode?: string
-  /**
-   * TerminalMonotonicMicros is the terminal offset from the collector origin.
-   *
-   * @generated from field: uint64 terminal_monotonic_micros = 11;
-   */
-  terminalMonotonicMicros?: bigint
-  /**
-   * Build contains release and runtime identity available at startup.
-   *
-   * @generated from field: bldr.web.boot.BootBuild build = 12;
-   */
-  build?: BootBuild
-  /**
-   * Environment contains coarse device-local runtime context.
-   *
-   * @generated from field: bldr.web.boot.BootEnvironment environment = 13;
-   */
-  environment?: BootEnvironment
-  /**
-   * Marks contains accepted startup marks through the measured terminal boundary; sealing occurs after this timeline.
-   *
-   * @generated from field: repeated bldr.web.boot.BootMark marks = 14;
-   */
-  marks?: BootMark[]
-  /**
-   * Spans contains owner intervals that attribute work between marks.
-   *
-   * @generated from field: repeated bldr.web.boot.BootSpan spans = 15;
-   */
-  spans?: BootSpan[]
-  /**
-   * Accounting contains timestamped owner counters.
-   *
-   * @generated from field: bldr.web.boot.BootAccounting accounting = 16;
-   */
-  accounting?: BootAccounting
-  /**
-   * Validation contains the last deterministic validator result.
-   *
-   * @generated from field: bldr.web.boot.BootValidation validation = 17;
-   */
-  validation?: BootValidation
-  /**
-   * Attachments contains generation-matched optional deep-evidence metadata.
-   *
-   * @generated from field: repeated bldr.web.boot.BootAttachment attachments = 18;
-   */
-  attachments?: BootAttachment[]
-  /**
-   * Privacy records the export allowlist version and explicit sharing facts.
-   *
-   * @generated from field: bldr.web.boot.BootPrivacy privacy = 19;
-   */
-  privacy?: BootPrivacy
-}
-
-export const BootReport: MessageType<BootReport> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.boot.BootReport',
-    fields: [
-      { no: 1, name: 'schema_version', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'report_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'parent_report_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'started_unix_micros',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      {
-        no: 5,
-        name: 'monotonic_origin_unix_micros',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-      { no: 6, name: 'entrypoint_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'usable_mark', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'state', kind: 'enum', T: BootReportState_Enum },
-      { no: 9, name: 'terminal_mark', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 10,
-        name: 'terminal_error_code',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 11,
-        name: 'terminal_monotonic_micros',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 12, name: 'build', kind: 'message', T: BootBuild },
-      { no: 13, name: 'environment', kind: 'message', T: BootEnvironment },
-      { no: 14, name: 'marks', kind: 'message', T: BootMark, repeated: true },
-      { no: 15, name: 'spans', kind: 'message', T: BootSpan, repeated: true },
-      { no: 16, name: 'accounting', kind: 'message', T: BootAccounting },
-      { no: 17, name: 'validation', kind: 'message', T: BootValidation },
-      {
-        no: 18,
-        name: 'attachments',
-        kind: 'message',
-        T: BootAttachment,
-        repeated: true,
-      },
-      { no: 19, name: 'privacy', kind: 'message', T: BootPrivacy },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BootPrivacy>(
+    'bldr.web.boot.BootPrivacy',
+    () => [
+      [1, 'export_policy_version', 13],
+      [2, 'removed_fields', 9, 1],
+      [3, 'bucketed_fields', 9, 1],
+      [4, 'shared_unix_micros', 3],
+      [5, 'share_destination', 14, 0, BootShareDestination_Enum],
+    ],
+  )

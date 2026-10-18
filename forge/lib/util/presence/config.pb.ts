@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config checks whether a path exists on the Worker's host.
@@ -19,29 +17,24 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * Path is the absolute host path to check. It follows symbolic links.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
   /**
    * PresentOutput names the output set when the path exists.
-   *
-   * @generated from field: string present_output = 2;
    */
   presentOutput?: string
   /**
    * AbsentOutput names the output set when the path does not exist.
-   *
-   * @generated from field: string absent_output = 3;
    */
   absentOutput?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.lib.util.presence.Config',
-  fields: [
-    { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'present_output', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'absent_output', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'forge.lib.util.presence.Config',
+    () => [
+      [1, 'path', 9],
+      [2, 'present_output', 9],
+      [3, 'absent_output', 9],
+    ],
+  )

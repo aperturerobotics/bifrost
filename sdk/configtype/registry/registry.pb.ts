@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * ConfigTypeRegistration is a registered config type editor.
@@ -22,55 +17,43 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface ConfigTypeRegistration {
   /**
    * ConfigId is the config type identifier (e.g. "forge/task", "git/repo").
-   *
-   * @generated from field: string config_id = 1;
    */
   configId?: string
   /**
    * RegistrationId is the server-assigned ID for this registration.
-   *
-   * @generated from field: uint32 registration_id = 2;
    */
   registrationId?: number
   /**
    * PluginId is the source plugin.
-   *
-   * @generated from field: string plugin_id = 3;
    */
   pluginId?: string
   /**
    * DisplayName is the human-readable name shown in the UI.
-   *
-   * @generated from field: string display_name = 4;
    */
   displayName?: string
   /**
    * Category groups the config type in the UI (e.g. "Forge", "Code").
-   *
-   * @generated from field: string category = 5;
    */
   category?: string
   /**
    * ScriptPath is the React module path for dynamic plugin editors.
    * Used with React.lazy for dynamic loading. Empty for static editors.
-   *
-   * @generated from field: string script_path = 6;
    */
   scriptPath?: string
 }
 
 export const ConfigTypeRegistration: MessageType<ConfigTypeRegistration> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.configtype.registry.ConfigTypeRegistration',
-    fields: [
-      { no: 1, name: 'config_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'registration_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'category', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'script_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfigTypeRegistration>(
+    's4wave.configtype.registry.ConfigTypeRegistration',
+    () => [
+      [1, 'config_id', 9],
+      [2, 'registration_id', 13],
+      [3, 'plugin_id', 9],
+      [4, 'display_name', 9],
+      [5, 'category', 9],
+      [6, 'script_path', 9],
+    ],
+  )
 
 /**
  * RegisterConfigTypeRequest is the request for RegisterConfigType.
@@ -80,47 +63,37 @@ export const ConfigTypeRegistration: MessageType<ConfigTypeRegistration> =
 export interface RegisterConfigTypeRequest {
   /**
    * ConfigId is the config type identifier to register.
-   *
-   * @generated from field: string config_id = 1;
    */
   configId?: string
   /**
    * PluginId is the registering plugin's ID.
-   *
-   * @generated from field: string plugin_id = 2;
    */
   pluginId?: string
   /**
    * DisplayName is the human-readable name.
-   *
-   * @generated from field: string display_name = 3;
    */
   displayName?: string
   /**
    * Category is the UI grouping category.
-   *
-   * @generated from field: string category = 4;
    */
   category?: string
   /**
    * ScriptPath is the React module path for the editor component.
-   *
-   * @generated from field: string script_path = 5;
    */
   scriptPath?: string
 }
 
 export const RegisterConfigTypeRequest: MessageType<RegisterConfigTypeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.configtype.registry.RegisterConfigTypeRequest',
-    fields: [
-      { no: 1, name: 'config_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'category', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'script_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterConfigTypeRequest>(
+    's4wave.configtype.registry.RegisterConfigTypeRequest',
+    () => [
+      [1, 'config_id', 9],
+      [2, 'plugin_id', 9],
+      [3, 'display_name', 9],
+      [4, 'category', 9],
+      [5, 'script_path', 9],
+    ],
+  )
 
 /**
  * RegisterConfigTypeResponse is the response for RegisterConfigType.
@@ -130,19 +103,15 @@ export const RegisterConfigTypeRequest: MessageType<RegisterConfigTypeRequest> =
 export interface RegisterConfigTypeResponse {
   /**
    * ResourceId is the registration resource. Releasing it unregisters the type.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const RegisterConfigTypeResponse: MessageType<RegisterConfigTypeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.configtype.registry.RegisterConfigTypeResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterConfigTypeResponse>(
+    's4wave.configtype.registry.RegisterConfigTypeResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * WatchConfigTypesRequest is the request for WatchConfigTypes.
@@ -152,9 +121,9 @@ export const RegisterConfigTypeResponse: MessageType<RegisterConfigTypeResponse>
 export interface WatchConfigTypesRequest {}
 
 export const WatchConfigTypesRequest: MessageType<WatchConfigTypesRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchConfigTypesRequest>(
+  /* @__PURE__ */ createMessageType<WatchConfigTypesRequest>(
     's4wave.configtype.registry.WatchConfigTypesRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -165,22 +134,12 @@ export const WatchConfigTypesRequest: MessageType<WatchConfigTypesRequest> =
 export interface WatchConfigTypesResponse {
   /**
    * Registrations is the current set of registered config types.
-   *
-   * @generated from field: repeated s4wave.configtype.registry.ConfigTypeRegistration registrations = 1;
    */
   registrations?: ConfigTypeRegistration[]
 }
 
 export const WatchConfigTypesResponse: MessageType<WatchConfigTypesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.configtype.registry.WatchConfigTypesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'registrations',
-        kind: 'message',
-        T: ConfigTypeRegistration,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchConfigTypesResponse>(
+    's4wave.configtype.registry.WatchConfigTypesResponse',
+    () => [[1, 'registrations', 11, 1, ConfigTypeRegistration.codec]],
+  )

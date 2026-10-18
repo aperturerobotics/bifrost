@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures a controller to forward HandleWebView to a plugin.
@@ -17,23 +15,20 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * PluginId is the plugin to load and use as a HandleWebView service.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * WebViewidRe is the regex of web view IDs to fetch with this controller.
    * If empty, will forward any.
-   *
-   * @generated from field: string web_view_id_re = 2;
    */
   webViewIdRe?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.plugin.handle_web_view.Config',
-  fields: [
-    { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'web_view_id_re', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.plugin.handle_web_view.Config',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'web_view_id_re', 9],
+    ],
+  )

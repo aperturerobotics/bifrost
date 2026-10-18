@@ -3,12 +3,8 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Documentation } from '../proto/docs.pb.js'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * WatchDocsRequest is the request for WatchDocs.
@@ -18,9 +14,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface WatchDocsRequest {}
 
 export const WatchDocsRequest: MessageType<WatchDocsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchDocsRequest>(
+  /* @__PURE__ */ createMessageType<WatchDocsRequest>(
     'notes.WatchDocsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -31,16 +27,12 @@ export const WatchDocsRequest: MessageType<WatchDocsRequest> =
 export interface WatchDocsResponse {
   /**
    * Documentation is the current documentation state.
-   *
-   * @generated from field: notes.Documentation documentation = 1;
    */
   documentation?: Documentation
 }
 
 export const WatchDocsResponse: MessageType<WatchDocsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.WatchDocsResponse',
-    fields: [
-      { no: 1, name: 'documentation', kind: 'message', T: () => Documentation },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchDocsResponse>(
+    'notes.WatchDocsResponse',
+    () => [[1, 'documentation', 11, 0, Documentation.codec]],
+  )

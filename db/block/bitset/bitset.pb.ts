@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * BitSet is a block-backed BitSet representation.
@@ -15,28 +13,16 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface BitSet {
   /**
    * Set is the set of uint64 representing the bitset.
-   *
-   * @generated from field: repeated uint64 set = 1;
    */
   set?: bigint[]
   /**
    * Len is the length of the bitset.
-   *
-   * @generated from field: uint32 len = 2;
    */
   len?: number
 }
 
-export const BitSet: MessageType<BitSet> = /* @__PURE__ */ createMessageType({
-  typeName: 'bitset.BitSet',
-  fields: [
-    {
-      no: 1,
-      name: 'set',
-      kind: 'scalar',
-      T: ScalarType.UINT64,
-      repeated: true,
-    },
-    { no: 2, name: 'len', kind: 'scalar', T: ScalarType.UINT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const BitSet: MessageType<BitSet> =
+  /* @__PURE__ */ createMessageType<BitSet>('bitset.BitSet', () => [
+    [1, 'set', 4, 3],
+    [2, 'len', 13],
+  ])

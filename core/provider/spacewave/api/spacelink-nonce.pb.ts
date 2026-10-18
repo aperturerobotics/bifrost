@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * SpaceLinkNonceRequest checks or consumes consent in the authenticated account.
@@ -17,26 +15,22 @@ export interface SpaceLinkNonceRequest {
   /**
    * Payload is the exact signed SpaceLinkAuthRequest, not a re-encoding.
    * Consent must expire within 24 hours; the HTTP body is limited to 16 KiB.
-   *
-   * @generated from field: bytes payload = 1;
    */
   payload?: Uint8Array
   /**
    * Consume atomically reserves the payload before issuing an invitation.
-   *
-   * @generated from field: bool consume = 2;
    */
   consume?: boolean
 }
 
 export const SpaceLinkNonceRequest: MessageType<SpaceLinkNonceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.SpaceLinkNonceRequest',
-    fields: [
-      { no: 1, name: 'payload', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'consume', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceLinkNonceRequest>(
+    'provider.spacewave.api.SpaceLinkNonceRequest',
+    () => [
+      [1, 'payload', 12],
+      [2, 'consume', 8],
+    ],
+  )
 
 /**
  * SpaceLinkNonceResponse reports whether this call found prior consumption.
@@ -47,16 +41,12 @@ export const SpaceLinkNonceRequest: MessageType<SpaceLinkNonceRequest> =
 export interface SpaceLinkNonceResponse {
   /**
    * Consumed is true when an earlier request reserved these consent bytes.
-   *
-   * @generated from field: bool consumed = 1;
    */
   consumed?: boolean
 }
 
 export const SpaceLinkNonceResponse: MessageType<SpaceLinkNonceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.SpaceLinkNonceResponse',
-    fields: [
-      { no: 1, name: 'consumed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceLinkNonceResponse>(
+    'provider.spacewave.api.SpaceLinkNonceResponse',
+    () => [[1, 'consumed', 8]],
+  )

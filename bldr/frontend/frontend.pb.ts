@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Binding attaches a manifest-loaded view to a configured project entrypoint.
@@ -19,18 +14,14 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Binding {
   /**
    * Entrypoint is the configured source path relative to the project root.
-   *
-   * @generated from field: string entrypoint = 1;
    */
   entrypoint?: string
 }
 
-export const Binding: MessageType<Binding> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.frontend.Binding',
-  fields: [
-    { no: 1, name: 'entrypoint', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Binding: MessageType<Binding> =
+  /* @__PURE__ */ createMessageType<Binding>('bldr.frontend.Binding', () => [
+    [1, 'entrypoint', 9],
+  ])
 
 /**
  * Session identifies one retained compiler graph and its browser namespace.
@@ -40,45 +31,29 @@ export const Binding: MessageType<Binding> = /* @__PURE__ */ createMessageType({
 export interface Session {
   /**
    * Id changes whenever the compiler environment is replaced.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * RoutePrefix is the same-origin Bldr route ending in a slash.
-   *
-   * @generated from field: string route_prefix = 2;
    */
   routePrefix?: string
   /**
    * Entrypoints contains the source paths allowed as frontend attachments.
-   *
-   * @generated from field: repeated string entrypoints = 3;
    */
   entrypoints?: string[]
   /**
    * ViteVersion identifies the upstream format of opaque HMR payloads.
-   *
-   * @generated from field: string vite_version = 4;
    */
   viteVersion?: string
 }
 
-export const Session: MessageType<Session> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.frontend.Session',
-  fields: [
-    { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'route_prefix', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'entrypoints',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 4, name: 'vite_version', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Session: MessageType<Session> =
+  /* @__PURE__ */ createMessageType<Session>('bldr.frontend.Session', () => [
+    [1, 'id', 9],
+    [2, 'route_prefix', 9],
+    [3, 'entrypoints', 9, 1],
+    [4, 'vite_version', 9],
+  ])
 
 /**
  * WatchRequest subscribes to the current project frontend environment.
@@ -88,9 +63,9 @@ export const Session: MessageType<Session> = /* @__PURE__ */ createMessageType({
 export interface WatchRequest {}
 
 export const WatchRequest: MessageType<WatchRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchRequest>(
+  /* @__PURE__ */ createMessageType<WatchRequest>(
     'bldr.frontend.WatchRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -101,34 +76,26 @@ export const WatchRequest: MessageType<WatchRequest> =
 export interface Event {
   /**
    * Session is present on the initial snapshot of every stream.
-   *
-   * @generated from field: bldr.frontend.Session session = 1;
    */
   session?: Session
   /**
    * Sequence is the latest update number in the initial snapshot, then increases
    * by one for each payload. It is scoped to Session.Id.
-   *
-   * @generated from field: uint64 sequence = 2;
    */
   sequence?: bigint
   /**
    * Payload is the upstream Vite HMR JSON message, interpreted by Vite's client.
    * Bldr treats it as opaque data, not an application protocol.
-   *
-   * @generated from field: string payload = 3;
    */
   payload?: string
 }
 
-export const Event: MessageType<Event> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.frontend.Event',
-  fields: [
-    { no: 1, name: 'session', kind: 'message', T: Session },
-    { no: 2, name: 'sequence', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 3, name: 'payload', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Event: MessageType<Event> =
+  /* @__PURE__ */ createMessageType<Event>('bldr.frontend.Event', () => [
+    [1, 'session', 11, 0, Session.codec],
+    [2, 'sequence', 4],
+    [3, 'payload', 9],
+  ])
 
 /**
  * SendRequest sends one upstream client message to its originating session.
@@ -138,26 +105,22 @@ export const Event: MessageType<Event> = /* @__PURE__ */ createMessageType({
 export interface SendRequest {
   /**
    * SessionId identifies the compiler environment; stale sessions are rejected.
-   *
-   * @generated from field: string session_id = 1;
    */
   sessionId?: string
   /**
    * Payload contains an upstream Vite client HMR JSON message.
-   *
-   * @generated from field: string payload = 2;
    */
   payload?: string
 }
 
 export const SendRequest: MessageType<SendRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.frontend.SendRequest',
-    fields: [
-      { no: 1, name: 'session_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'payload', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SendRequest>(
+    'bldr.frontend.SendRequest',
+    () => [
+      [1, 'session_id', 9],
+      [2, 'payload', 9],
+    ],
+  )
 
 /**
  * SendResponse acknowledges delivery to the selected environment.
@@ -167,7 +130,7 @@ export const SendRequest: MessageType<SendRequest> =
 export interface SendResponse {}
 
 export const SendResponse: MessageType<SendResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SendResponse>(
+  /* @__PURE__ */ createMessageType<SendResponse>(
     'bldr.frontend.SendResponse',
-    true,
+    () => [],
   )

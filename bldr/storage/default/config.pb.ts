@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the default bldr storage.
@@ -15,23 +13,17 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * StorageId is the storage identifier to use for LookupStorage.
-   *
-   * @generated from field: string storage_id = 1;
    */
   storageId?: string
   /**
    * RootDir is the root directory to store volumes.
    * ignored on web platform.
-   *
-   * @generated from field: string root_dir = 2;
    */
   rootDir?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'storage.default.Config',
-  fields: [
-    { no: 1, name: 'storage_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'root_dir', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('storage.default.Config', () => [
+    [1, 'storage_id', 9],
+    [2, 'root_dir', 9],
+  ])

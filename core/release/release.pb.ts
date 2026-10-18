@@ -2,46 +2,10 @@
 // @generated from file github.com/s4wave/spacewave/core/release/release.proto (package release, syntax proto3)
 /* eslint-disable */
 
-import { BlockRef } from '../../db/block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { BlockRef } from '../../db/block/block.pb.js'
 import { ManifestRef } from '../../bldr/manifest/manifest.pb.js'
-
-/**
- * ChannelEntry points one channel key at release metadata.
- *
- * @generated from message release.ChannelEntry
- */
-export interface ChannelEntry {
-  /**
-   * ChannelKey is the stable channel identifier, such as stable or canary.
-   *
-   * @generated from field: string channel_key = 1;
-   */
-  channelKey?: string
-  /**
-   * ReleaseMetadataRef references the ReleaseMetadata for this channel.
-   *
-   * @generated from field: block.BlockRef release_metadata_ref = 2;
-   */
-  releaseMetadataRef?: BlockRef
-}
-
-export const ChannelEntry: MessageType<ChannelEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'release.ChannelEntry',
-    fields: [
-      { no: 1, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'release_metadata_ref',
-        kind: 'message',
-        T: () => BlockRef,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * ChannelDirectory lists the public release channels in a release Space.
@@ -51,162 +15,40 @@ export const ChannelEntry: MessageType<ChannelEntry> =
 export interface ChannelDirectory {
   /**
    * Channels is the list of named release channels.
-   *
-   * @generated from field: repeated release.ChannelEntry channels = 1;
    */
   channels?: ChannelEntry[]
 }
 
 export const ChannelDirectory: MessageType<ChannelDirectory> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'release.ChannelDirectory',
-    fields: [
-      {
-        no: 1,
-        name: 'channels',
-        kind: 'message',
-        T: ChannelEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChannelDirectory>(
+    'release.ChannelDirectory',
+    () => [[1, 'channels', 11, 1, ChannelEntry.codec]],
+  )
 
 /**
- * BrowserAsset describes one browser shell asset.
+ * ChannelEntry points one channel key at release metadata.
  *
- * @generated from message release.BrowserAsset
+ * @generated from message release.ChannelEntry
  */
-export interface BrowserAsset {
+export interface ChannelEntry {
   /**
-   * Path is the app-facing asset path.
-   *
-   * @generated from field: string path = 1;
+   * ChannelKey is the stable channel identifier, such as stable or canary.
    */
-  path?: string
+  channelKey?: string
   /**
-   * ContentRef references the asset bytes in the release world.
-   *
-   * @generated from field: block.BlockRef content_ref = 2;
+   * ReleaseMetadataRef references the ReleaseMetadata for this channel.
    */
-  contentRef?: BlockRef
-  /**
-   * Size is the asset size in bytes.
-   *
-   * @generated from field: uint64 size = 3;
-   */
-  size?: bigint
-  /**
-   * Sha256 is the SHA-256 digest of the asset bytes.
-   *
-   * @generated from field: bytes sha256 = 4;
-   */
-  sha256?: Uint8Array
-  /**
-   * ContentType is the HTTP content type to serve.
-   *
-   * @generated from field: string content_type = 5;
-   */
-  contentType?: string
-  /**
-   * CacheControl is the HTTP Cache-Control value to serve.
-   *
-   * @generated from field: string cache_control = 6;
-   */
-  cacheControl?: string
+  releaseMetadataRef?: BlockRef
 }
 
-export const BrowserAsset: MessageType<BrowserAsset> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'release.BrowserAsset',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'content_ref', kind: 'message', T: () => BlockRef },
-      { no: 3, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'sha256', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 5, name: 'content_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'cache_control', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BrowserShellMetadata describes the browser entrypoint shell for a release.
- *
- * @generated from message release.BrowserShellMetadata
- */
-export interface BrowserShellMetadata {
-  /**
-   * Version is the browser shell version.
-   *
-   * @generated from field: string version = 1;
-   */
-  version?: string
-  /**
-   * GenerationId is the browser generation identifier.
-   *
-   * @generated from field: string generation_id = 2;
-   */
-  generationId?: string
-  /**
-   * EntrypointPath is the app-facing entrypoint script path.
-   *
-   * @generated from field: string entrypoint_path = 3;
-   */
-  entrypointPath?: string
-  /**
-   * ServiceWorkerPath is the service worker path.
-   *
-   * @generated from field: string service_worker_path = 4;
-   */
-  serviceWorkerPath?: string
-  /**
-   * SharedWorkerPath is the shared worker path.
-   *
-   * @generated from field: string shared_worker_path = 5;
-   */
-  sharedWorkerPath?: string
-  /**
-   * WasmPath is the optional native Go runtime WASM path.
-   *
-   * @generated from field: string wasm_path = 6;
-   */
-  wasmPath?: string
-  /**
-   * Assets is the set of shell assets.
-   *
-   * @generated from field: repeated release.BrowserAsset assets = 7;
-   */
-  assets?: BrowserAsset[]
-}
-
-export const BrowserShellMetadata: MessageType<BrowserShellMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'release.BrowserShellMetadata',
-    fields: [
-      { no: 1, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'generation_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'entrypoint_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'service_worker_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 5,
-        name: 'shared_worker_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 6, name: 'wasm_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 7,
-        name: 'assets',
-        kind: 'message',
-        T: BrowserAsset,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const ChannelEntry: MessageType<ChannelEntry> =
+  /* @__PURE__ */ createMessageType<ChannelEntry>(
+    'release.ChannelEntry',
+    () => [
+      [1, 'channel_key', 9],
+      [2, 'release_metadata_ref', 11, 0, BlockRef.codec],
+    ],
+  )
 
 /**
  * ReleaseMetadata describes release-only metadata around bldr manifests.
@@ -216,78 +58,143 @@ export const BrowserShellMetadata: MessageType<BrowserShellMetadata> =
 export interface ReleaseMetadata {
   /**
    * ProjectId is the project identifier this release belongs to.
-   *
-   * @generated from field: string project_id = 1;
    */
   projectId?: string
   /**
    * Rev is the monotonic release revision.
-   *
-   * @generated from field: uint64 rev = 2;
    */
   rev?: bigint
   /**
    * Version is the human-readable application version.
-   *
-   * @generated from field: string version = 3;
    */
   version?: string
   /**
    * ChannelKey is the release channel this metadata belongs to.
-   *
-   * @generated from field: string channel_key = 4;
    */
   channelKey?: string
   /**
    * ManifestRefs are existing bldr app/plugin manifests resolved by clients.
-   *
-   * @generated from field: repeated bldr.manifest.ManifestRef manifest_refs = 5;
    */
   manifestRefs?: ManifestRef[]
   /**
    * BrowserShell is the browser shell/cache metadata.
-   *
-   * @generated from field: release.BrowserShellMetadata browser_shell = 6;
    */
   browserShell?: BrowserShellMetadata
   /**
    * MinimumLauncherVersion is the minimum launcher version that can read this
    * release.
-   *
-   * @generated from field: string minimum_launcher_version = 7;
    */
   minimumLauncherVersion?: string
 }
 
 export const ReleaseMetadata: MessageType<ReleaseMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'release.ReleaseMetadata',
-    fields: [
-      { no: 1, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'manifest_refs',
-        kind: 'message',
-        T: () => ManifestRef,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'browser_shell',
-        kind: 'message',
-        T: BrowserShellMetadata,
-      },
-      {
-        no: 7,
-        name: 'minimum_launcher_version',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReleaseMetadata>(
+    'release.ReleaseMetadata',
+    () => [
+      [1, 'project_id', 9],
+      [2, 'rev', 4],
+      [3, 'version', 9],
+      [4, 'channel_key', 9],
+      [5, 'manifest_refs', 11, 1, ManifestRef.codec],
+      [6, 'browser_shell', 11, 0, BrowserShellMetadata.codec],
+      [7, 'minimum_launcher_version', 9],
+    ],
+  )
+
+/**
+ * BrowserShellMetadata describes the browser entrypoint shell for a release.
+ *
+ * @generated from message release.BrowserShellMetadata
+ */
+export interface BrowserShellMetadata {
+  /**
+   * Version is the browser shell version.
+   */
+  version?: string
+  /**
+   * GenerationId is the browser generation identifier.
+   */
+  generationId?: string
+  /**
+   * EntrypointPath is the app-facing entrypoint script path.
+   */
+  entrypointPath?: string
+  /**
+   * ServiceWorkerPath is the service worker path.
+   */
+  serviceWorkerPath?: string
+  /**
+   * SharedWorkerPath is the shared worker path.
+   */
+  sharedWorkerPath?: string
+  /**
+   * WasmPath is the optional native Go runtime WASM path.
+   */
+  wasmPath?: string
+  /**
+   * Assets is the set of shell assets.
+   */
+  assets?: BrowserAsset[]
+}
+
+export const BrowserShellMetadata: MessageType<BrowserShellMetadata> =
+  /* @__PURE__ */ createMessageType<BrowserShellMetadata>(
+    'release.BrowserShellMetadata',
+    () => [
+      [1, 'version', 9],
+      [2, 'generation_id', 9],
+      [3, 'entrypoint_path', 9],
+      [4, 'service_worker_path', 9],
+      [5, 'shared_worker_path', 9],
+      [6, 'wasm_path', 9],
+      [7, 'assets', 11, 1, BrowserAsset.codec],
+    ],
+  )
+
+/**
+ * BrowserAsset describes one browser shell asset.
+ *
+ * @generated from message release.BrowserAsset
+ */
+export interface BrowserAsset {
+  /**
+   * Path is the app-facing asset path.
+   */
+  path?: string
+  /**
+   * ContentRef references the asset bytes in the release world.
+   */
+  contentRef?: BlockRef
+  /**
+   * Size is the asset size in bytes.
+   */
+  size?: bigint
+  /**
+   * Sha256 is the SHA-256 digest of the asset bytes.
+   */
+  sha256?: Uint8Array
+  /**
+   * ContentType is the HTTP content type to serve.
+   */
+  contentType?: string
+  /**
+   * CacheControl is the HTTP Cache-Control value to serve.
+   */
+  cacheControl?: string
+}
+
+export const BrowserAsset: MessageType<BrowserAsset> =
+  /* @__PURE__ */ createMessageType<BrowserAsset>(
+    'release.BrowserAsset',
+    () => [
+      [1, 'path', 9],
+      [2, 'content_ref', 11, 0, BlockRef.codec],
+      [3, 'size', 4],
+      [4, 'sha256', 12],
+      [5, 'content_type', 9],
+      [6, 'cache_control', 9],
+    ],
+  )
 
 /**
  * UpdateNotification describes a newly available release root.
@@ -297,36 +204,25 @@ export const ReleaseMetadata: MessageType<ReleaseMetadata> =
 export interface UpdateNotification {
   /**
    * ChannelKey is the release channel that changed.
-   *
-   * @generated from field: string channel_key = 1;
    */
   channelKey?: string
   /**
    * CheckpointHeight is the height of the observed public checkpoint.
-   *
-   * @generated from field: uint64 checkpoint_height = 2;
    */
   checkpointHeight?: bigint
   /**
    * RootPointerUrl is the URL of the root.packedmsg that produced this
    * notification.
-   *
-   * @generated from field: string root_pointer_url = 3;
    */
   rootPointerUrl?: string
 }
 
 export const UpdateNotification: MessageType<UpdateNotification> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'release.UpdateNotification',
-    fields: [
-      { no: 1, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'checkpoint_height',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 3, name: 'root_pointer_url', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateNotification>(
+    'release.UpdateNotification',
+    () => [
+      [1, 'channel_key', 9],
+      [2, 'checkpoint_height', 4],
+      [3, 'root_pointer_url', 9],
+    ],
+  )

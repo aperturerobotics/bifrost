@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the Wazero QuickJS PluginHost controller configuration.
@@ -19,15 +17,12 @@ export interface Config {
    * CacheDir is the directory caching the native code compiled from QuickJS
    * and the bytecode of plugin modules, so a restart skips both compilers.
    * Empty disables the cache.
-   *
-   * @generated from field: string cache_dir = 1;
    */
   cacheDir?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'plugin.host.wazero_quickjs.Config',
-  fields: [
-    { no: 1, name: 'cache_dir', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'plugin.host.wazero_quickjs.Config',
+    () => [[1, 'cache_dir', 9]],
+  )

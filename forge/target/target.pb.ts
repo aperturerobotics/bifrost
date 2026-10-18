@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Value } from '../value/value.pb.js'
 import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
 
@@ -18,51 +16,46 @@ import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/
 export enum InputType {
   /**
    * InputType_UNKNOWN is the zero output type.
-   *
-   * @generated from enum value: InputType_UNKNOWN = 0;
    */
   InputType_UNKNOWN = 0,
 
   /**
    * InputType_VALUE is an in-line value input.
-   *
-   * @generated from enum value: InputType_VALUE = 1;
    */
   InputType_VALUE = 1,
 
   /**
    * InputType_ALIAS aliases the input to another named input.
-   *
-   * @generated from enum value: InputType_ALIAS = 2;
    */
   InputType_ALIAS = 2,
 
   /**
    * InputType_WORLD passes a handle to a Hydra World as an input.
-   *
-   * @generated from enum value: InputType_WORLD = 3;
    */
   InputType_WORLD = 3,
 
   /**
    * InputType_WORLD_OBJECT passes a Value with the latest Object ref and a
    * world object handle attached to a WORLD input.
-   *
-   * @generated from enum value: InputType_WORLD_OBJECT = 4;
    */
   InputType_WORLD_OBJECT = 4,
 
   /**
    * InputType_TASK_OUTPUT reads a named output of a completed Task.
-   *
-   * @generated from enum value: InputType_TASK_OUTPUT = 5;
    */
   InputType_TASK_OUTPUT = 5,
 }
 
 export const InputType_Enum = /* @__PURE__ */ createEnumType(
   'forge.target.InputType',
-  InputType,
+  [
+    [0, 'InputType_UNKNOWN'],
+    [1, 'InputType_VALUE'],
+    [2, 'InputType_ALIAS'],
+    [3, 'InputType_WORLD'],
+    [4, 'InputType_WORLD_OBJECT'],
+    [5, 'InputType_TASK_OUTPUT'],
+  ],
 )
 
 /**
@@ -73,30 +66,139 @@ export const InputType_Enum = /* @__PURE__ */ createEnumType(
 export enum OutputType {
   /**
    * OutputType_UNKNOWN is the zero output type.
-   *
-   * @generated from enum value: OutputType_UNKNOWN = 0;
    */
   OutputType_UNKNOWN = 0,
 
   /**
    * OutputType_EXEC is an output value mounted from an exec instance.
-   *
-   * @generated from enum value: OutputType_EXEC = 1;
    */
   OutputType_EXEC = 1,
 
   /**
    * OutputType_VALUE is an in-line output value (specified in the target).
-   *
-   * @generated from enum value: OutputType_VALUE = 2;
    */
   OutputType_VALUE = 2,
 }
 
 export const OutputType_Enum = /* @__PURE__ */ createEnumType(
   'forge.target.OutputType',
-  OutputType,
+  [
+    [0, 'OutputType_UNKNOWN'],
+    [1, 'OutputType_EXEC'],
+    [2, 'OutputType_VALUE'],
+  ],
 )
+
+/**
+ * Target contains a desired Task target configuration.
+ *
+ * @generated from message forge.target.Target
+ */
+export interface Target {
+  /**
+   * Inputs is the mapping of inputs.
+   * Not necessarily sorted or unique, later values override earlier.
+   */
+  inputs?: Input[]
+  /**
+   * Outputs is the mapping of outputs.
+   * Not necessarily sorted or unique, later values override earlier.
+   */
+  outputs?: Output[]
+  /**
+   * Exec is the execution pass configuration.
+   */
+  exec?: Exec
+}
+
+export const Target: MessageType<Target> =
+  /* @__PURE__ */ createMessageType<Target>('forge.target.Target', () => [
+    [1, 'inputs', 11, 1, Input.codec],
+    [2, 'outputs', 11, 1, Output.codec],
+    [3, 'exec', 11, 0, Exec.codec],
+  ])
+
+/**
+ * Input contains configuration for a Task target input.
+ *
+ * @generated from message forge.target.Input
+ */
+export interface Input {
+  /**
+   * Name is the unique name of the input.
+   */
+  name?: string
+  /**
+   * InputType is the type of input.
+   * If UNKNOWN and Alias is set, assumes ALIAS.
+   */
+  inputType?: InputType
+  /**
+   * Alias is the name of the target aliased Input.
+   */
+  alias?: string
+  /**
+   * WatchChanges will restart the Task if the Value changes.
+   */
+  watchChanges?: boolean
+  /**
+   * Value is the in-line data for the value input type.
+   * InputType_VALUE
+   */
+  value?: Value
+  /**
+   * World contains the args for the world input type.
+   * InputType_WORLD
+   */
+  world?: InputWorld
+  /**
+   * WorldObject contains the args for the world object input type.
+   * Can be used for change detection: re-run Target when object changes.
+   * InputType_WORLD_OBJECT
+   */
+  worldObject?: InputWorldObject
+  /**
+   * TaskOutput selects an output of a completed Task in the Forge Job world.
+   */
+  taskOutput?: InputTaskOutput
+}
+
+export const Input: MessageType<Input> =
+  /* @__PURE__ */ createMessageType<Input>('forge.target.Input', () => [
+    [1, 'name', 9],
+    [2, 'input_type', 14, 0, InputType_Enum],
+    [3, 'alias', 9],
+    [4, 'value', 11, 0, Value.codec],
+    [5, 'world', 11, 0, InputWorld.codec],
+    [6, 'world_object', 11, 0, InputWorldObject.codec],
+    [7, 'watch_changes', 8],
+    [8, 'task_output', 11, 0, InputTaskOutput.codec],
+  ])
+
+/**
+ * InputTaskOutput selects an output of another Task.
+ *
+ * @generated from message forge.target.InputTaskOutput
+ */
+export interface InputTaskOutput {
+  /**
+   * TaskKey identifies the source Task for this immutable Target configuration.
+   */
+  taskKey?: string
+  /**
+   * OutputName is the source Task's output name.
+   */
+  outputName?: string
+}
+
+export const InputTaskOutput: MessageType<InputTaskOutput> =
+  /* @__PURE__ */ createMessageType<InputTaskOutput>(
+    'forge.target.InputTaskOutput',
+    () => [
+      [1, 'task_key', 9],
+      [2, 'output_name', 9],
+    ],
+  )
 
 /**
  * InputWorld are args for the world input type.
@@ -107,8 +209,6 @@ export const OutputType_Enum = /* @__PURE__ */ createEnumType(
 export interface InputWorld {
   /**
    * EngineId is the world engine ID to lookup.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
@@ -116,20 +216,18 @@ export interface InputWorld {
    * for the world engine to be ready before starting execution. If false, the
    * execution controller will pass a BusEngine handle which will lookup the
    * engine lazily (on first request).
-   *
-   * @generated from field: bool lookup_immediate = 2;
    */
   lookupImmediate?: boolean
 }
 
 export const InputWorld: MessageType<InputWorld> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.target.InputWorld',
-    fields: [
-      { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'lookup_immediate', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InputWorld>(
+    'forge.target.InputWorld',
+    () => [
+      [1, 'engine_id', 9],
+      [2, 'lookup_immediate', 8],
+    ],
+  )
 
 /**
  * InputWorldObject are args for the world object input type.
@@ -141,139 +239,29 @@ export interface InputWorldObject {
   /**
    * World is the name of the world input to lookup on.
    * If unset, defaults to the Forge Job world.
-   *
-   * @generated from field: string world = 1;
    */
   world?: string
   /**
    * ObjectKey is the object key to lookup.
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
   /**
    * ObjectRev is the minimum object rev to wait for.
    * If set, waits for the object to exist.
    * If object_rev == 0, does not wait for the object to exist.
-   *
-   * @generated from field: uint64 object_rev = 3;
    */
   objectRev?: bigint
 }
 
 export const InputWorldObject: MessageType<InputWorldObject> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.target.InputWorldObject',
-    fields: [
-      { no: 1, name: 'world', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'object_rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * InputTaskOutput selects an output of another Task.
- *
- * @generated from message forge.target.InputTaskOutput
- */
-export interface InputTaskOutput {
-  /**
-   * TaskKey identifies the source Task for this immutable Target configuration.
-   *
-   * @generated from field: string task_key = 1;
-   */
-  taskKey?: string
-  /**
-   * OutputName is the source Task's output name.
-   *
-   * @generated from field: string output_name = 2;
-   */
-  outputName?: string
-}
-
-export const InputTaskOutput: MessageType<InputTaskOutput> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.target.InputTaskOutput',
-    fields: [
-      { no: 1, name: 'task_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'output_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Input contains configuration for a Task target input.
- *
- * @generated from message forge.target.Input
- */
-export interface Input {
-  /**
-   * Name is the unique name of the input.
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-  /**
-   * InputType is the type of input.
-   * If UNKNOWN and Alias is set, assumes ALIAS.
-   *
-   * @generated from field: forge.target.InputType input_type = 2;
-   */
-  inputType?: InputType
-  /**
-   * Alias is the name of the target aliased Input.
-   *
-   * @generated from field: string alias = 3;
-   */
-  alias?: string
-  /**
-   * WatchChanges will restart the Task if the Value changes.
-   *
-   * @generated from field: bool watch_changes = 7;
-   */
-  watchChanges?: boolean
-  /**
-   * Value is the in-line data for the value input type.
-   * InputType_VALUE
-   *
-   * @generated from field: forge.value.Value value = 4;
-   */
-  value?: Value
-  /**
-   * World contains the args for the world input type.
-   * InputType_WORLD
-   *
-   * @generated from field: forge.target.InputWorld world = 5;
-   */
-  world?: InputWorld
-  /**
-   * WorldObject contains the args for the world object input type.
-   * Can be used for change detection: re-run Target when object changes.
-   * InputType_WORLD_OBJECT
-   *
-   * @generated from field: forge.target.InputWorldObject world_object = 6;
-   */
-  worldObject?: InputWorldObject
-  /**
-   * TaskOutput selects an output of a completed Task in the Forge Job world.
-   *
-   * @generated from field: forge.target.InputTaskOutput task_output = 8;
-   */
-  taskOutput?: InputTaskOutput
-}
-
-export const Input: MessageType<Input> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.target.Input',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'input_type', kind: 'enum', T: InputType_Enum },
-    { no: 3, name: 'alias', kind: 'scalar', T: ScalarType.STRING },
-    { no: 7, name: 'watch_changes', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'value', kind: 'message', T: () => Value },
-    { no: 5, name: 'world', kind: 'message', T: InputWorld },
-    { no: 6, name: 'world_object', kind: 'message', T: InputWorldObject },
-    { no: 8, name: 'task_output', kind: 'message', T: InputTaskOutput },
-  ] satisfies readonly PartialFieldInfo[],
-})
+  /* @__PURE__ */ createMessageType<InputWorldObject>(
+    'forge.target.InputWorldObject',
+    () => [
+      [1, 'world', 9],
+      [2, 'object_key', 9],
+      [3, 'object_rev', 4],
+    ],
+  )
 
 /**
  * Output contains configuration of a target task output.
@@ -284,41 +272,31 @@ export const Input: MessageType<Input> = /* @__PURE__ */ createMessageType({
 export interface Output {
   /**
    * Name is the unique name of the output.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * OutputType is the type of output.
-   *
-   * @generated from field: forge.target.OutputType output_type = 2;
    */
   outputType?: OutputType
   /**
    * ExecOutput is the name of the exec output to mount.
    * OutputType_EXEC
-   *
-   * @generated from field: string exec_output = 3;
    */
   execOutput?: string
   /**
    * Value is an in-line output value.
    * OutputType_VALUE
-   *
-   * @generated from field: forge.value.Value value = 4;
    */
   value?: Value
 }
 
-export const Output: MessageType<Output> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.target.Output',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'output_type', kind: 'enum', T: OutputType_Enum },
-    { no: 3, name: 'exec_output', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'value', kind: 'message', T: () => Value },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Output: MessageType<Output> =
+  /* @__PURE__ */ createMessageType<Output>('forge.target.Output', () => [
+    [1, 'name', 9],
+    [2, 'output_type', 14, 0, OutputType_Enum],
+    [3, 'exec_output', 9],
+    [4, 'value', 11, 0, Value.codec],
+  ])
 
 /**
  * Exec contains target execution configuration.
@@ -328,62 +306,21 @@ export const Output: MessageType<Output> = /* @__PURE__ */ createMessageType({
 export interface Exec {
   /**
    * Disable is a flag to ignore the below contents and inhibit the exec step.
-   *
-   * @generated from field: bool disable = 1;
    */
   disable?: boolean
   /**
    * Controller indicates to run a controllerbus controller.
-   *
-   * @generated from field: configset.proto.ControllerConfig controller = 2;
    */
   controller?: ControllerConfig
 }
 
-export const Exec: MessageType<Exec> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.target.Exec',
-  fields: [
-    { no: 1, name: 'disable', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 2, name: 'controller', kind: 'message', T: () => ControllerConfig },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * Target contains a desired Task target configuration.
- *
- * @generated from message forge.target.Target
- */
-export interface Target {
-  /**
-   * Inputs is the mapping of inputs.
-   * Not necessarily sorted or unique, later values override earlier.
-   *
-   * @generated from field: repeated forge.target.Input inputs = 1;
-   */
-  inputs?: Input[]
-  /**
-   * Outputs is the mapping of outputs.
-   * Not necessarily sorted or unique, later values override earlier.
-   *
-   * @generated from field: repeated forge.target.Output outputs = 2;
-   */
-  outputs?: Output[]
-  /**
-   * Exec is the execution pass configuration.
-   *
-   * @generated from field: forge.target.Exec exec = 3;
-   */
-  exec?: Exec
-}
-
-export const Target: MessageType<Target> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.target.Target',
-  fields: [
-    { no: 1, name: 'inputs', kind: 'message', T: Input, repeated: true },
-    { no: 2, name: 'outputs', kind: 'message', T: Output, repeated: true },
-    { no: 3, name: 'exec', kind: 'message', T: Exec },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Exec: MessageType<Exec> = /* @__PURE__ */ createMessageType<Exec>(
+  'forge.target.Exec',
+  () => [
+    [1, 'disable', 8],
+    [2, 'controller', 11, 0, ControllerConfig.codec],
+  ],
+)
 
 /**
  * ValueSet is the set of values satisfying inputs/outputs of a target.
@@ -395,37 +332,18 @@ export interface ValueSet {
    * Inputs is the set of inputs.
    * Unique by the "name" field.
    * Sorted by name.
-   *
-   * @generated from field: repeated forge.value.Value inputs = 1;
    */
   inputs?: Value[]
   /**
    * Outputs is the set of outputs.
    * Unique by the "name" field.
    * Sorted by name.
-   *
-   * @generated from field: repeated forge.value.Value outputs = 2;
    */
   outputs?: Value[]
 }
 
 export const ValueSet: MessageType<ValueSet> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.target.ValueSet',
-    fields: [
-      {
-        no: 1,
-        name: 'inputs',
-        kind: 'message',
-        T: () => Value,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'outputs',
-        kind: 'message',
-        T: () => Value,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ValueSet>('forge.target.ValueSet', () => [
+    [1, 'inputs', 11, 1, Value.codec],
+    [2, 'outputs', 11, 1, Value.codec],
+  ])

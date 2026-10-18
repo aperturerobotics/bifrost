@@ -4,38 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * PublishRequest is a message published via the subscribe channel.
- *
- * @generated from message pubsub.api.PublishRequest
- */
-export interface PublishRequest {
-  /**
-   * Data is the published data.
-   *
-   * @generated from field: bytes data = 1;
-   */
-  data?: Uint8Array
-  /**
-   * Identifier is a uint32 identifier to use for outgoing status.
-   * If zero, no outgoing status response will be sent.
-   *
-   * @generated from field: uint32 identifier = 2;
-   */
-  identifier?: number
-}
-
-export const PublishRequest: MessageType<PublishRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pubsub.api.PublishRequest',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'identifier', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * SubcribeRequest is a pubsub subscription request message.
@@ -47,129 +15,60 @@ export interface SubscribeRequest {
    * ChannelId is the channel id to subscribe to.
    * Must be sent before / with publish.
    * Cannot change the channel ID after first transmission.
-   *
-   * @generated from field: string channel_id = 1;
    */
   channelId?: string
   /**
    * PeerId is the peer identifier of the publisher/subscriber.
    * The peer ID will be used to acquire the peer private key.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * PrivKeyPem is an alternate to PeerId, specify private key inline.
    * Overrides PeerId if set.
-   *
-   * @generated from field: string priv_key_pem = 3;
    */
   privKeyPem?: string
   /**
    * PublishRequest contains a publish message request.
-   *
-   * @generated from field: pubsub.api.PublishRequest publish_request = 4;
    */
   publishRequest?: PublishRequest
 }
 
 export const SubscribeRequest: MessageType<SubscribeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pubsub.api.SubscribeRequest',
-    fields: [
-      { no: 1, name: 'channel_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'priv_key_pem', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'publish_request', kind: 'message', T: PublishRequest },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SubscribeRequest>(
+    'pubsub.api.SubscribeRequest',
+    () => [
+      [1, 'channel_id', 9],
+      [2, 'peer_id', 9],
+      [3, 'priv_key_pem', 9],
+      [4, 'publish_request', 11, 0, PublishRequest.codec],
+    ],
+  )
 
 /**
- * IncomingMessage implements Message with a proto object.
+ * PublishRequest is a message published via the subscribe channel.
  *
- * @generated from message pubsub.api.IncomingMessage
+ * @generated from message pubsub.api.PublishRequest
  */
-export interface IncomingMessage {
+export interface PublishRequest {
   /**
-   * FromPeerId is the peer identifier of the sender.
-   *
-   * @generated from field: string from_peer_id = 1;
-   */
-  fromPeerId?: string
-  /**
-   * Authenticated indicates if the message is verified to be from the sender.
-   *
-   * @generated from field: bool authenticated = 2;
-   */
-  authenticated?: boolean
-  /**
-   * Data is the inner data.
-   *
-   * @generated from field: bytes data = 3;
+   * Data is the published data.
    */
   data?: Uint8Array
-}
-
-export const IncomingMessage: MessageType<IncomingMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pubsub.api.IncomingMessage',
-    fields: [
-      { no: 1, name: 'from_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'authenticated', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * OutgoingStatus is status of an outgoing message.
- *
- * @generated from message pubsub.api.OutgoingStatus
- */
-export interface OutgoingStatus {
   /**
-   * Identifier is the request-provided identifier for the message.
-   *
-   * @generated from field: uint32 identifier = 1;
+   * Identifier is a uint32 identifier to use for outgoing status.
+   * If zero, no outgoing status response will be sent.
    */
   identifier?: number
-  /**
-   * Sent indicates if the message was sent.
-   *
-   * @generated from field: bool sent = 2;
-   */
-  sent?: boolean
 }
 
-export const OutgoingStatus: MessageType<OutgoingStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pubsub.api.OutgoingStatus',
-    fields: [
-      { no: 1, name: 'identifier', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'sent', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SubscripionStatus is the status of the subscription handle.
- *
- * @generated from message pubsub.api.SubscriptionStatus
- */
-export interface SubscriptionStatus {
-  /**
-   * Subscribed indicates the subscription is established.
-   *
-   * @generated from field: bool subscribed = 1;
-   */
-  subscribed?: boolean
-}
-
-export const SubscriptionStatus: MessageType<SubscriptionStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pubsub.api.SubscriptionStatus',
-    fields: [
-      { no: 1, name: 'subscribed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const PublishRequest: MessageType<PublishRequest> =
+  /* @__PURE__ */ createMessageType<PublishRequest>(
+    'pubsub.api.PublishRequest',
+    () => [
+      [1, 'data', 12],
+      [2, 'identifier', 13],
+    ],
+  )
 
 /**
  * SubcribeResponse is a pubsub subscription response message.
@@ -179,36 +78,98 @@ export const SubscriptionStatus: MessageType<SubscriptionStatus> =
 export interface SubscribeResponse {
   /**
    * IncomingMessage is an incoming message.
-   *
-   * @generated from field: pubsub.api.IncomingMessage incoming_message = 1;
    */
   incomingMessage?: IncomingMessage
   /**
    * OutgoingStatus is status of an outgoing message.
    * Sent when a Publish request finishes.
-   *
-   * @generated from field: pubsub.api.OutgoingStatus outgoing_status = 2;
    */
   outgoingStatus?: OutgoingStatus
   /**
    * SubscriptionStatus is the status of the subscription
-   *
-   * @generated from field: pubsub.api.SubscriptionStatus subscription_status = 3;
    */
   subscriptionStatus?: SubscriptionStatus
 }
 
 export const SubscribeResponse: MessageType<SubscribeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pubsub.api.SubscribeResponse',
-    fields: [
-      { no: 1, name: 'incoming_message', kind: 'message', T: IncomingMessage },
-      { no: 2, name: 'outgoing_status', kind: 'message', T: OutgoingStatus },
-      {
-        no: 3,
-        name: 'subscription_status',
-        kind: 'message',
-        T: SubscriptionStatus,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SubscribeResponse>(
+    'pubsub.api.SubscribeResponse',
+    () => [
+      [1, 'incoming_message', 11, 0, IncomingMessage.codec],
+      [2, 'outgoing_status', 11, 0, OutgoingStatus.codec],
+      [3, 'subscription_status', 11, 0, SubscriptionStatus.codec],
+    ],
+  )
+
+/**
+ * SubscripionStatus is the status of the subscription handle.
+ *
+ * @generated from message pubsub.api.SubscriptionStatus
+ */
+export interface SubscriptionStatus {
+  /**
+   * Subscribed indicates the subscription is established.
+   */
+  subscribed?: boolean
+}
+
+export const SubscriptionStatus: MessageType<SubscriptionStatus> =
+  /* @__PURE__ */ createMessageType<SubscriptionStatus>(
+    'pubsub.api.SubscriptionStatus',
+    () => [[1, 'subscribed', 8]],
+  )
+
+/**
+ * OutgoingStatus is status of an outgoing message.
+ *
+ * @generated from message pubsub.api.OutgoingStatus
+ */
+export interface OutgoingStatus {
+  /**
+   * Identifier is the request-provided identifier for the message.
+   */
+  identifier?: number
+  /**
+   * Sent indicates if the message was sent.
+   */
+  sent?: boolean
+}
+
+export const OutgoingStatus: MessageType<OutgoingStatus> =
+  /* @__PURE__ */ createMessageType<OutgoingStatus>(
+    'pubsub.api.OutgoingStatus',
+    () => [
+      [1, 'identifier', 13],
+      [2, 'sent', 8],
+    ],
+  )
+
+/**
+ * IncomingMessage implements Message with a proto object.
+ *
+ * @generated from message pubsub.api.IncomingMessage
+ */
+export interface IncomingMessage {
+  /**
+   * FromPeerId is the peer identifier of the sender.
+   */
+  fromPeerId?: string
+  /**
+   * Authenticated indicates if the message is verified to be from the sender.
+   */
+  authenticated?: boolean
+  /**
+   * Data is the inner data.
+   */
+  data?: Uint8Array
+}
+
+export const IncomingMessage: MessageType<IncomingMessage> =
+  /* @__PURE__ */ createMessageType<IncomingMessage>(
+    'pubsub.api.IncomingMessage',
+    () => [
+      [1, 'from_peer_id', 9],
+      [2, 'authenticated', 8],
+      [3, 'data', 12],
+    ],
+  )

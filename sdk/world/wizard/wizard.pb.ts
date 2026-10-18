@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
 /**
@@ -20,37 +15,33 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export enum GitCloneProgressState {
   /**
    * GIT_CLONE_PROGRESS_STATE_IDLE means no clone has started.
-   *
-   * @generated from enum value: GIT_CLONE_PROGRESS_STATE_IDLE = 0;
    */
   IDLE = 0,
 
   /**
    * GIT_CLONE_PROGRESS_STATE_RUNNING means the clone is active.
-   *
-   * @generated from enum value: GIT_CLONE_PROGRESS_STATE_RUNNING = 1;
    */
   RUNNING = 1,
 
   /**
    * GIT_CLONE_PROGRESS_STATE_DONE means the repo object was created.
-   *
-   * @generated from enum value: GIT_CLONE_PROGRESS_STATE_DONE = 2;
    */
   DONE = 2,
 
   /**
    * GIT_CLONE_PROGRESS_STATE_FAILED means the clone failed.
-   *
-   * @generated from enum value: GIT_CLONE_PROGRESS_STATE_FAILED = 3;
    */
   FAILED = 3,
 }
 
 export const GitCloneProgressState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.wizard.GitCloneProgressState',
-  GitCloneProgressState,
-  'GIT_CLONE_PROGRESS_STATE_',
+  [
+    [0, 'GIT_CLONE_PROGRESS_STATE_IDLE'],
+    [1, 'GIT_CLONE_PROGRESS_STATE_RUNNING'],
+    [2, 'GIT_CLONE_PROGRESS_STATE_DONE'],
+    [3, 'GIT_CLONE_PROGRESS_STATE_FAILED'],
+  ],
 )
 
 /**
@@ -62,44 +53,39 @@ export const GitCloneProgressState_Enum = /* @__PURE__ */ createEnumType(
 export enum IntroWizardRegion {
   /**
    * INTRO_WIZARD_REGION_UNSPECIFIED is an unset region.
-   *
-   * @generated from enum value: INTRO_WIZARD_REGION_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * INTRO_WIZARD_REGION_TOP points at the top toolbar area.
-   *
-   * @generated from enum value: INTRO_WIZARD_REGION_TOP = 1;
    */
   TOP = 1,
 
   /**
    * INTRO_WIZARD_REGION_CENTER points at the main content area.
-   *
-   * @generated from enum value: INTRO_WIZARD_REGION_CENTER = 2;
    */
   CENTER = 2,
 
   /**
    * INTRO_WIZARD_REGION_BOTTOM_RIGHT points at the bottom-right status area.
-   *
-   * @generated from enum value: INTRO_WIZARD_REGION_BOTTOM_RIGHT = 3;
    */
   BOTTOM_RIGHT = 3,
 
   /**
    * INTRO_WIZARD_REGION_LEFT points at the left navigation area.
-   *
-   * @generated from enum value: INTRO_WIZARD_REGION_LEFT = 4;
    */
   LEFT = 4,
 }
 
 export const IntroWizardRegion_Enum = /* @__PURE__ */ createEnumType(
   's4wave.wizard.IntroWizardRegion',
-  IntroWizardRegion,
-  'INTRO_WIZARD_REGION_',
+  [
+    [0, 'INTRO_WIZARD_REGION_UNSPECIFIED'],
+    [1, 'INTRO_WIZARD_REGION_TOP'],
+    [2, 'INTRO_WIZARD_REGION_CENTER'],
+    [3, 'INTRO_WIZARD_REGION_BOTTOM_RIGHT'],
+    [4, 'INTRO_WIZARD_REGION_LEFT'],
+  ],
 )
 
 /**
@@ -110,9 +96,390 @@ export const IntroWizardRegion_Enum = /* @__PURE__ */ createEnumType(
 export interface WatchWizardStateRequest {}
 
 export const WatchWizardStateRequest: MessageType<WatchWizardStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchWizardStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchWizardStateRequest>(
     's4wave.wizard.WatchWizardStateRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * WatchWizardStateResponse is a stream response with wizard state.
+ *
+ * @generated from message s4wave.wizard.WatchWizardStateResponse
+ */
+export interface WatchWizardStateResponse {
+  /**
+   * State is the current wizard state.
+   */
+  state?: WizardState
+}
+
+export const WatchWizardStateResponse: MessageType<WatchWizardStateResponse> =
+  /* @__PURE__ */ createMessageType<WatchWizardStateResponse>(
+    's4wave.wizard.WatchWizardStateResponse',
+    () => [[1, 'state', 11, 0, WizardState.codec]],
+  )
+
+/**
+ * UpdateWizardStateRequest updates the wizard block state.
+ *
+ * @generated from message s4wave.wizard.UpdateWizardStateRequest
+ */
+export interface UpdateWizardStateRequest {
+  /**
+   * Step is the new step value. Set to -1 to leave unchanged.
+   */
+  step?: number
+  /**
+   * Name is the new name. Empty string leaves unchanged.
+   */
+  name?: string
+  /**
+   * ConfigData is the new config data. Nil leaves unchanged.
+   */
+  configData?: Uint8Array
+  /**
+   * HasConfigData indicates config_data is being set (allows clearing to empty bytes).
+   */
+  hasConfigData?: boolean
+}
+
+export const UpdateWizardStateRequest: MessageType<UpdateWizardStateRequest> =
+  /* @__PURE__ */ createMessageType<UpdateWizardStateRequest>(
+    's4wave.wizard.UpdateWizardStateRequest',
+    () => [
+      [1, 'step', 5],
+      [2, 'name', 9],
+      [3, 'config_data', 12],
+      [4, 'has_config_data', 8],
+    ],
+  )
+
+/**
+ * UpdateWizardStateResponse is the response for UpdateWizardState.
+ *
+ * @generated from message s4wave.wizard.UpdateWizardStateResponse
+ */
+export interface UpdateWizardStateResponse {
+  /**
+   * State is the updated wizard state.
+   */
+  state?: WizardState
+}
+
+export const UpdateWizardStateResponse: MessageType<UpdateWizardStateResponse> =
+  /* @__PURE__ */ createMessageType<UpdateWizardStateResponse>(
+    's4wave.wizard.UpdateWizardStateResponse',
+    () => [[1, 'state', 11, 0, WizardState.codec]],
+  )
+
+/**
+ * StartGitCloneRequest is the request for StartGitClone.
+ *
+ * @generated from message s4wave.wizard.StartGitCloneRequest
+ */
+export interface StartGitCloneRequest {
+  /**
+   * ObjectKey is the object key for the cloned git/repo.
+   */
+  objectKey?: string
+  /**
+   * Name is the repository display name.
+   */
+  name?: string
+  /**
+   * ConfigData is the serialized CreateGitRepoWizardOp config.
+   */
+  configData?: Uint8Array
+  /**
+   * OpSender is the peer ID to attach to the final world operation.
+   */
+  opSender?: string
+}
+
+export const StartGitCloneRequest: MessageType<StartGitCloneRequest> =
+  /* @__PURE__ */ createMessageType<StartGitCloneRequest>(
+    's4wave.wizard.StartGitCloneRequest',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'config_data', 12],
+      [4, 'op_sender', 9],
+    ],
+  )
+
+/**
+ * StartGitCloneResponse is the response for StartGitClone.
+ *
+ * @generated from message s4wave.wizard.StartGitCloneResponse
+ */
+export interface StartGitCloneResponse {
+  /**
+   * Progress is the current clone progress snapshot.
+   */
+  progress?: GitCloneProgress
+}
+
+export const StartGitCloneResponse: MessageType<StartGitCloneResponse> =
+  /* @__PURE__ */ createMessageType<StartGitCloneResponse>(
+    's4wave.wizard.StartGitCloneResponse',
+    () => [[1, 'progress', 11, 0, GitCloneProgress.codec]],
+  )
+
+/**
+ * WatchGitCloneProgressRequest is the request for WatchGitCloneProgress.
+ *
+ * @generated from message s4wave.wizard.WatchGitCloneProgressRequest
+ */
+export interface WatchGitCloneProgressRequest {}
+
+export const WatchGitCloneProgressRequest: MessageType<WatchGitCloneProgressRequest> =
+  /* @__PURE__ */ createMessageType<WatchGitCloneProgressRequest>(
+    's4wave.wizard.WatchGitCloneProgressRequest',
+    () => [],
+  )
+
+/**
+ * WatchGitCloneProgressResponse is a stream response with Git clone progress.
+ *
+ * @generated from message s4wave.wizard.WatchGitCloneProgressResponse
+ */
+export interface WatchGitCloneProgressResponse {
+  /**
+   * Progress is the current clone progress snapshot.
+   */
+  progress?: GitCloneProgress
+}
+
+export const WatchGitCloneProgressResponse: MessageType<WatchGitCloneProgressResponse> =
+  /* @__PURE__ */ createMessageType<WatchGitCloneProgressResponse>(
+    's4wave.wizard.WatchGitCloneProgressResponse',
+    () => [[1, 'progress', 11, 0, GitCloneProgress.codec]],
+  )
+
+/**
+ * GitCloneProgress is the in-memory progress state for a wizard Git clone.
+ *
+ * @generated from message s4wave.wizard.GitCloneProgress
+ */
+export interface GitCloneProgress {
+  /**
+   * State is the current clone lifecycle state.
+   */
+  state?: GitCloneProgressState
+  /**
+   * Message is the latest human-readable progress line.
+   */
+  message?: string
+  /**
+   * Error is the terminal error message when state is FAILED.
+   */
+  error?: string
+  /**
+   * ObjectKey is the created git/repo object key when known.
+   */
+  objectKey?: string
+}
+
+export const GitCloneProgress: MessageType<GitCloneProgress> =
+  /* @__PURE__ */ createMessageType<GitCloneProgress>(
+    's4wave.wizard.GitCloneProgress',
+    () => [
+      [1, 'state', 14, 0, GitCloneProgressState_Enum],
+      [2, 'message', 9],
+      [3, 'error', 9],
+      [4, 'object_key', 9],
+    ],
+  )
+
+/**
+ * ListWizardsRequest is the request for ListWizards.
+ *
+ * @generated from message s4wave.wizard.ListWizardsRequest
+ */
+export interface ListWizardsRequest {
+  /**
+   * InstanceKey selects the wizards visible to one plugin installation, such
+   * as a Space world engine id. Empty selects only global wizards.
+   */
+  instanceKey?: string
+}
+
+export const ListWizardsRequest: MessageType<ListWizardsRequest> =
+  /* @__PURE__ */ createMessageType<ListWizardsRequest>(
+    's4wave.wizard.ListWizardsRequest',
+    () => [[1, 'instance_key', 9]],
+  )
+
+/**
+ * RegisterWizardRequest is the request for RegisterWizard.
+ *
+ * @generated from message s4wave.wizard.RegisterWizardRequest
+ */
+export interface RegisterWizardRequest {
+  /**
+   * Wizard is the plugin-provided ObjectWizard to register.
+   */
+  wizard?: ObjectWizard
+}
+
+export const RegisterWizardRequest: MessageType<RegisterWizardRequest> =
+  /* @__PURE__ */ createMessageType<RegisterWizardRequest>(
+    's4wave.wizard.RegisterWizardRequest',
+    () => [[1, 'wizard', 11, 0, ObjectWizard.codec]],
+  )
+
+/**
+ * RegisterWizardResponse is the response for RegisterWizard.
+ *
+ * @generated from message s4wave.wizard.RegisterWizardResponse
+ */
+export interface RegisterWizardResponse {
+  /**
+   * ResourceId is the registration resource. Releasing it unregisters the wizard.
+   */
+  resourceId?: number
+}
+
+export const RegisterWizardResponse: MessageType<RegisterWizardResponse> =
+  /* @__PURE__ */ createMessageType<RegisterWizardResponse>(
+    's4wave.wizard.RegisterWizardResponse',
+    () => [[1, 'resource_id', 13]],
+  )
+
+/**
+ * ListWizardsResponse contains all registered object wizards.
+ *
+ * @generated from message s4wave.wizard.ListWizardsResponse
+ */
+export interface ListWizardsResponse {
+  /**
+   * Wizards is the list of registered object wizards.
+   */
+  wizards?: ObjectWizard[]
+}
+
+export const ListWizardsResponse: MessageType<ListWizardsResponse> =
+  /* @__PURE__ */ createMessageType<ListWizardsResponse>(
+    's4wave.wizard.ListWizardsResponse',
+    () => [[1, 'wizards', 11, 1, ObjectWizard.codec]],
+  )
+
+/**
+ * WatchWizardsRequest is the request for WatchWizards.
+ *
+ * @generated from message s4wave.wizard.WatchWizardsRequest
+ */
+export interface WatchWizardsRequest {
+  /**
+   * InstanceKey selects the wizards visible to one plugin installation, such
+   * as a Space world engine id. Empty selects only global wizards.
+   */
+  instanceKey?: string
+}
+
+export const WatchWizardsRequest: MessageType<WatchWizardsRequest> =
+  /* @__PURE__ */ createMessageType<WatchWizardsRequest>(
+    's4wave.wizard.WatchWizardsRequest',
+    () => [[1, 'instance_key', 9]],
+  )
+
+/**
+ * WatchWizardsResponse contains the current registered object wizards.
+ *
+ * @generated from message s4wave.wizard.WatchWizardsResponse
+ */
+export interface WatchWizardsResponse {
+  /**
+   * Wizards is the list of registered object wizards.
+   */
+  wizards?: ObjectWizard[]
+}
+
+export const WatchWizardsResponse: MessageType<WatchWizardsResponse> =
+  /* @__PURE__ */ createMessageType<WatchWizardsResponse>(
+    's4wave.wizard.WatchWizardsResponse',
+    () => [[1, 'wizards', 11, 1, ObjectWizard.codec]],
+  )
+
+/**
+ * ObjectWizard defines a creatable object type for the creation drawer.
+ *
+ * @generated from message s4wave.wizard.ObjectWizard
+ */
+export interface ObjectWizard {
+  /**
+   * TypeId is the target object type ID (e.g., "canvas", "forge/cluster").
+   */
+  typeId?: string
+  /**
+   * DisplayName is the human-readable name shown in the drawer.
+   */
+  displayName?: string
+  /**
+   * Category groups the wizard in the drawer (e.g., "Layout", "Forge").
+   */
+  category?: string
+  /**
+   * IconName is the react-icons icon identifier (e.g., "LuLayoutGrid").
+   */
+  iconName?: string
+  /**
+   * CreateOpId is the world op ID for ephemeral creation.
+   */
+  createOpId?: string
+  /**
+   * DefaultNamePattern is the default name for new objects (e.g., "Canvas").
+   */
+  defaultNamePattern?: string
+  /**
+   * Persistent indicates this type uses a persistent wizard block flow.
+   */
+  persistent?: boolean
+  /**
+   * WizardTypeId is the wizard/ type ID for persistent wizard blocks.
+   * Only set when persistent is true.
+   */
+  wizardTypeId?: string
+  /**
+   * KeyPrefix is the object key prefix (e.g., "canvas/", "forge/cluster/").
+   */
+  keyPrefix?: string
+  /**
+   * Experimental marks creators that are hidden in release builds.
+   */
+  experimental?: boolean
+  /**
+   * RegistrationId is the server-assigned ID for plugin-provided wizards.
+   */
+  registrationId?: number
+  /**
+   * PluginId is the registering plugin's ID.
+   */
+  pluginId?: string
+  /**
+   * Description is an optional one-line description shown under the display name.
+   */
+  description?: string
+}
+
+export const ObjectWizard: MessageType<ObjectWizard> =
+  /* @__PURE__ */ createMessageType<ObjectWizard>(
+    's4wave.wizard.ObjectWizard',
+    () => [
+      [1, 'type_id', 9],
+      [2, 'display_name', 9],
+      [3, 'category', 9],
+      [4, 'icon_name', 9],
+      [5, 'create_op_id', 9],
+      [6, 'default_name_pattern', 9],
+      [7, 'persistent', 8],
+      [8, 'wizard_type_id', 9],
+      [9, 'key_prefix', 9],
+      [10, 'experimental', 8],
+      [11, 'registration_id', 13],
+      [12, 'plugin_id', 9],
+      [13, 'description', 9],
+    ],
   )
 
 /**
@@ -124,540 +491,37 @@ export const WatchWizardStateRequest: MessageType<WatchWizardStateRequest> =
 export interface WizardState {
   /**
    * Step is the current wizard step (0-indexed).
-   *
-   * @generated from field: int32 step = 1;
    */
   step?: number
   /**
    * TargetTypeId is the object type being created (e.g., "git/repo").
-   *
-   * @generated from field: string target_type_id = 2;
    */
   targetTypeId?: string
   /**
    * TargetKeyPrefix is the key prefix for the target object.
-   *
-   * @generated from field: string target_key_prefix = 3;
    */
   targetKeyPrefix?: string
   /**
    * Name is the user-provided name for the target object.
-   *
-   * @generated from field: string name = 4;
    */
   name?: string
   /**
    * ConfigData is type-specific wizard configuration (serialized by the target wizard viewer).
-   *
-   * @generated from field: bytes config_data = 5;
    */
   configData?: Uint8Array
 }
 
 export const WizardState: MessageType<WizardState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.WizardState',
-    fields: [
-      { no: 1, name: 'step', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 2, name: 'target_type_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'target_key_prefix',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'config_data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WatchWizardStateResponse is a stream response with wizard state.
- *
- * @generated from message s4wave.wizard.WatchWizardStateResponse
- */
-export interface WatchWizardStateResponse {
-  /**
-   * State is the current wizard state.
-   *
-   * @generated from field: s4wave.wizard.WizardState state = 1;
-   */
-  state?: WizardState
-}
-
-export const WatchWizardStateResponse: MessageType<WatchWizardStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.WatchWizardStateResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: WizardState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * UpdateWizardStateRequest updates the wizard block state.
- *
- * @generated from message s4wave.wizard.UpdateWizardStateRequest
- */
-export interface UpdateWizardStateRequest {
-  /**
-   * Step is the new step value. Set to -1 to leave unchanged.
-   *
-   * @generated from field: int32 step = 1;
-   */
-  step?: number
-  /**
-   * Name is the new name. Empty string leaves unchanged.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-  /**
-   * ConfigData is the new config data. Nil leaves unchanged.
-   *
-   * @generated from field: bytes config_data = 3;
-   */
-  configData?: Uint8Array
-  /**
-   * HasConfigData indicates config_data is being set (allows clearing to empty bytes).
-   *
-   * @generated from field: bool has_config_data = 4;
-   */
-  hasConfigData?: boolean
-}
-
-export const UpdateWizardStateRequest: MessageType<UpdateWizardStateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.UpdateWizardStateRequest',
-    fields: [
-      { no: 1, name: 'step', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'config_data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'has_config_data', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * UpdateWizardStateResponse is the response for UpdateWizardState.
- *
- * @generated from message s4wave.wizard.UpdateWizardStateResponse
- */
-export interface UpdateWizardStateResponse {
-  /**
-   * State is the updated wizard state.
-   *
-   * @generated from field: s4wave.wizard.WizardState state = 1;
-   */
-  state?: WizardState
-}
-
-export const UpdateWizardStateResponse: MessageType<UpdateWizardStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.UpdateWizardStateResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: WizardState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * StartGitCloneRequest is the request for StartGitClone.
- *
- * @generated from message s4wave.wizard.StartGitCloneRequest
- */
-export interface StartGitCloneRequest {
-  /**
-   * ObjectKey is the object key for the cloned git/repo.
-   *
-   * @generated from field: string object_key = 1;
-   */
-  objectKey?: string
-  /**
-   * Name is the repository display name.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-  /**
-   * ConfigData is the serialized CreateGitRepoWizardOp config.
-   *
-   * @generated from field: bytes config_data = 3;
-   */
-  configData?: Uint8Array
-  /**
-   * OpSender is the peer ID to attach to the final world operation.
-   *
-   * @generated from field: string op_sender = 4;
-   */
-  opSender?: string
-}
-
-export const StartGitCloneRequest: MessageType<StartGitCloneRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.StartGitCloneRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'config_data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'op_sender', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * GitCloneProgress is the in-memory progress state for a wizard Git clone.
- *
- * @generated from message s4wave.wizard.GitCloneProgress
- */
-export interface GitCloneProgress {
-  /**
-   * State is the current clone lifecycle state.
-   *
-   * @generated from field: s4wave.wizard.GitCloneProgressState state = 1;
-   */
-  state?: GitCloneProgressState
-  /**
-   * Message is the latest human-readable progress line.
-   *
-   * @generated from field: string message = 2;
-   */
-  message?: string
-  /**
-   * Error is the terminal error message when state is FAILED.
-   *
-   * @generated from field: string error = 3;
-   */
-  error?: string
-  /**
-   * ObjectKey is the created git/repo object key when known.
-   *
-   * @generated from field: string object_key = 4;
-   */
-  objectKey?: string
-}
-
-export const GitCloneProgress: MessageType<GitCloneProgress> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.GitCloneProgress',
-    fields: [
-      { no: 1, name: 'state', kind: 'enum', T: GitCloneProgressState_Enum },
-      { no: 2, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * StartGitCloneResponse is the response for StartGitClone.
- *
- * @generated from message s4wave.wizard.StartGitCloneResponse
- */
-export interface StartGitCloneResponse {
-  /**
-   * Progress is the current clone progress snapshot.
-   *
-   * @generated from field: s4wave.wizard.GitCloneProgress progress = 1;
-   */
-  progress?: GitCloneProgress
-}
-
-export const StartGitCloneResponse: MessageType<StartGitCloneResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.StartGitCloneResponse',
-    fields: [
-      { no: 1, name: 'progress', kind: 'message', T: GitCloneProgress },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WatchGitCloneProgressRequest is the request for WatchGitCloneProgress.
- *
- * @generated from message s4wave.wizard.WatchGitCloneProgressRequest
- */
-export interface WatchGitCloneProgressRequest {}
-
-export const WatchGitCloneProgressRequest: MessageType<WatchGitCloneProgressRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchGitCloneProgressRequest>(
-    's4wave.wizard.WatchGitCloneProgressRequest',
-    true,
+  /* @__PURE__ */ createMessageType<WizardState>(
+    's4wave.wizard.WizardState',
+    () => [
+      [1, 'step', 5],
+      [2, 'target_type_id', 9],
+      [3, 'target_key_prefix', 9],
+      [4, 'name', 9],
+      [5, 'config_data', 12],
+    ],
   )
-
-/**
- * WatchGitCloneProgressResponse is a stream response with Git clone progress.
- *
- * @generated from message s4wave.wizard.WatchGitCloneProgressResponse
- */
-export interface WatchGitCloneProgressResponse {
-  /**
-   * Progress is the current clone progress snapshot.
-   *
-   * @generated from field: s4wave.wizard.GitCloneProgress progress = 1;
-   */
-  progress?: GitCloneProgress
-}
-
-export const WatchGitCloneProgressResponse: MessageType<WatchGitCloneProgressResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.WatchGitCloneProgressResponse',
-    fields: [
-      { no: 1, name: 'progress', kind: 'message', T: GitCloneProgress },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ListWizardsRequest is the request for ListWizards.
- *
- * @generated from message s4wave.wizard.ListWizardsRequest
- */
-export interface ListWizardsRequest {
-  /**
-   * InstanceKey selects the wizards visible to one plugin installation, such
-   * as a Space world engine id. Empty selects only global wizards.
-   *
-   * @generated from field: string instance_key = 1;
-   */
-  instanceKey?: string
-}
-
-export const ListWizardsRequest: MessageType<ListWizardsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.ListWizardsRequest',
-    fields: [
-      { no: 1, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ObjectWizard defines a creatable object type for the creation drawer.
- *
- * @generated from message s4wave.wizard.ObjectWizard
- */
-export interface ObjectWizard {
-  /**
-   * TypeId is the target object type ID (e.g., "canvas", "forge/cluster").
-   *
-   * @generated from field: string type_id = 1;
-   */
-  typeId?: string
-  /**
-   * DisplayName is the human-readable name shown in the drawer.
-   *
-   * @generated from field: string display_name = 2;
-   */
-  displayName?: string
-  /**
-   * Category groups the wizard in the drawer (e.g., "Layout", "Forge").
-   *
-   * @generated from field: string category = 3;
-   */
-  category?: string
-  /**
-   * IconName is the react-icons icon identifier (e.g., "LuLayoutGrid").
-   *
-   * @generated from field: string icon_name = 4;
-   */
-  iconName?: string
-  /**
-   * CreateOpId is the world op ID for ephemeral creation.
-   *
-   * @generated from field: string create_op_id = 5;
-   */
-  createOpId?: string
-  /**
-   * DefaultNamePattern is the default name for new objects (e.g., "Canvas").
-   *
-   * @generated from field: string default_name_pattern = 6;
-   */
-  defaultNamePattern?: string
-  /**
-   * Persistent indicates this type uses a persistent wizard block flow.
-   *
-   * @generated from field: bool persistent = 7;
-   */
-  persistent?: boolean
-  /**
-   * WizardTypeId is the wizard/ type ID for persistent wizard blocks.
-   * Only set when persistent is true.
-   *
-   * @generated from field: string wizard_type_id = 8;
-   */
-  wizardTypeId?: string
-  /**
-   * KeyPrefix is the object key prefix (e.g., "canvas/", "forge/cluster/").
-   *
-   * @generated from field: string key_prefix = 9;
-   */
-  keyPrefix?: string
-  /**
-   * Experimental marks creators that are hidden in release builds.
-   *
-   * @generated from field: bool experimental = 10;
-   */
-  experimental?: boolean
-  /**
-   * RegistrationId is the server-assigned ID for plugin-provided wizards.
-   *
-   * @generated from field: uint32 registration_id = 11;
-   */
-  registrationId?: number
-  /**
-   * PluginId is the registering plugin's ID.
-   *
-   * @generated from field: string plugin_id = 12;
-   */
-  pluginId?: string
-  /**
-   * Description is an optional one-line description shown under the display name.
-   *
-   * @generated from field: string description = 13;
-   */
-  description?: string
-}
-
-export const ObjectWizard: MessageType<ObjectWizard> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.ObjectWizard',
-    fields: [
-      { no: 1, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'category', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'icon_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'create_op_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'default_name_pattern',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 7, name: 'persistent', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'wizard_type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'key_prefix', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'experimental', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 11, name: 'registration_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 12, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 13, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RegisterWizardRequest is the request for RegisterWizard.
- *
- * @generated from message s4wave.wizard.RegisterWizardRequest
- */
-export interface RegisterWizardRequest {
-  /**
-   * Wizard is the plugin-provided ObjectWizard to register.
-   *
-   * @generated from field: s4wave.wizard.ObjectWizard wizard = 1;
-   */
-  wizard?: ObjectWizard
-}
-
-export const RegisterWizardRequest: MessageType<RegisterWizardRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.RegisterWizardRequest',
-    fields: [
-      { no: 1, name: 'wizard', kind: 'message', T: ObjectWizard },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RegisterWizardResponse is the response for RegisterWizard.
- *
- * @generated from message s4wave.wizard.RegisterWizardResponse
- */
-export interface RegisterWizardResponse {
-  /**
-   * ResourceId is the registration resource. Releasing it unregisters the wizard.
-   *
-   * @generated from field: uint32 resource_id = 1;
-   */
-  resourceId?: number
-}
-
-export const RegisterWizardResponse: MessageType<RegisterWizardResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.RegisterWizardResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ListWizardsResponse contains all registered object wizards.
- *
- * @generated from message s4wave.wizard.ListWizardsResponse
- */
-export interface ListWizardsResponse {
-  /**
-   * Wizards is the list of registered object wizards.
-   *
-   * @generated from field: repeated s4wave.wizard.ObjectWizard wizards = 1;
-   */
-  wizards?: ObjectWizard[]
-}
-
-export const ListWizardsResponse: MessageType<ListWizardsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.ListWizardsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'wizards',
-        kind: 'message',
-        T: ObjectWizard,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WatchWizardsRequest is the request for WatchWizards.
- *
- * @generated from message s4wave.wizard.WatchWizardsRequest
- */
-export interface WatchWizardsRequest {
-  /**
-   * InstanceKey selects the wizards visible to one plugin installation, such
-   * as a Space world engine id. Empty selects only global wizards.
-   *
-   * @generated from field: string instance_key = 1;
-   */
-  instanceKey?: string
-}
-
-export const WatchWizardsRequest: MessageType<WatchWizardsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.WatchWizardsRequest',
-    fields: [
-      { no: 1, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WatchWizardsResponse contains the current registered object wizards.
- *
- * @generated from message s4wave.wizard.WatchWizardsResponse
- */
-export interface WatchWizardsResponse {
-  /**
-   * Wizards is the list of registered object wizards.
-   *
-   * @generated from field: repeated s4wave.wizard.ObjectWizard wizards = 1;
-   */
-  wizards?: ObjectWizard[]
-}
-
-export const WatchWizardsResponse: MessageType<WatchWizardsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.WatchWizardsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'wizards',
-        kind: 'message',
-        T: ObjectWizard,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * CreateWizardObjectOp creates a persistent wizard object in the world.
@@ -667,114 +531,52 @@ export const WatchWizardsResponse: MessageType<WatchWizardsResponse> =
 export interface CreateWizardObjectOp {
   /**
    * ObjectKey is the object key for the wizard object.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * WizardTypeId is the wizard type ID (e.g., "wizard/git/repo").
-   *
-   * @generated from field: string wizard_type_id = 2;
    */
   wizardTypeId?: string
   /**
    * TargetTypeId is the target object type being created.
-   *
-   * @generated from field: string target_type_id = 3;
    */
   targetTypeId?: string
   /**
    * TargetKeyPrefix is the key prefix for the target object.
-   *
-   * @generated from field: string target_key_prefix = 4;
    */
   targetKeyPrefix?: string
   /**
    * Name is the initial name for the target object.
-   *
-   * @generated from field: string name = 5;
    */
   name?: string
   /**
    * Timestamp is the creation time.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 6;
    */
   timestamp?: Date
   /**
    * InitialStep is the initial wizard step (0-indexed). Defaults to 0.
-   *
-   * @generated from field: int32 initial_step = 7;
    */
   initialStep?: number
   /**
    * InitialConfigData is the initial type-specific wizard configuration.
-   *
-   * @generated from field: bytes initial_config_data = 8;
    */
   initialConfigData?: Uint8Array
 }
 
 export const CreateWizardObjectOp: MessageType<CreateWizardObjectOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.CreateWizardObjectOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'wizard_type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'target_type_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'target_key_prefix',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 5, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 7, name: 'initial_step', kind: 'scalar', T: ScalarType.INT32 },
-      {
-        no: 8,
-        name: 'initial_config_data',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * IntroWizardCallout labels one part of the introduced object's UI.
- *
- * @generated from message s4wave.wizard.IntroWizardCallout
- */
-export interface IntroWizardCallout {
-  /**
-   * Region is the frame region this callout points at.
-   *
-   * @generated from field: s4wave.wizard.IntroWizardRegion region = 1;
-   */
-  region?: IntroWizardRegion
-  /**
-   * Title names the UI part.
-   *
-   * @generated from field: string title = 2;
-   */
-  title?: string
-  /**
-   * Detail explains what the part is for.
-   *
-   * @generated from field: string detail = 3;
-   */
-  detail?: string
-}
-
-export const IntroWizardCallout: MessageType<IntroWizardCallout> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.IntroWizardCallout',
-    fields: [
-      { no: 1, name: 'region', kind: 'enum', T: IntroWizardRegion_Enum },
-      { no: 2, name: 'title', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWizardObjectOp>(
+    's4wave.wizard.CreateWizardObjectOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'wizard_type_id', 9],
+      [3, 'target_type_id', 9],
+      [4, 'target_key_prefix', 9],
+      [5, 'name', 9],
+      [6, 'timestamp', 11, 0, Timestamp.codec],
+      [7, 'initial_step', 5],
+      [8, 'initial_config_data', 12],
+    ],
+  )
 
 /**
  * IntroWizardConfig is the config_data payload for a wizard/intro object. It
@@ -786,43 +588,59 @@ export const IntroWizardCallout: MessageType<IntroWizardCallout> =
 export interface IntroWizardConfig {
   /**
    * Headline is the introduction title shown in the control panel.
-   *
-   * @generated from field: string headline = 1;
    */
   headline?: string
   /**
    * Subhead is the one-line description under the headline.
-   *
-   * @generated from field: string subhead = 2;
    */
   subhead?: string
   /**
    * Callouts are the labeled pointers drawn at regions of the object frame.
-   *
-   * @generated from field: repeated s4wave.wizard.IntroWizardCallout callouts = 3;
    */
   callouts?: IntroWizardCallout[]
   /**
    * FinishLabel is the primary button label that ends the introduction.
-   *
-   * @generated from field: string finish_label = 4;
    */
   finishLabel?: string
 }
 
 export const IntroWizardConfig: MessageType<IntroWizardConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.wizard.IntroWizardConfig',
-    fields: [
-      { no: 1, name: 'headline', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'subhead', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'callouts',
-        kind: 'message',
-        T: IntroWizardCallout,
-        repeated: true,
-      },
-      { no: 4, name: 'finish_label', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IntroWizardConfig>(
+    's4wave.wizard.IntroWizardConfig',
+    () => [
+      [1, 'headline', 9],
+      [2, 'subhead', 9],
+      [3, 'callouts', 11, 1, IntroWizardCallout.codec],
+      [4, 'finish_label', 9],
+    ],
+  )
+
+/**
+ * IntroWizardCallout labels one part of the introduced object's UI.
+ *
+ * @generated from message s4wave.wizard.IntroWizardCallout
+ */
+export interface IntroWizardCallout {
+  /**
+   * Region is the frame region this callout points at.
+   */
+  region?: IntroWizardRegion
+  /**
+   * Title names the UI part.
+   */
+  title?: string
+  /**
+   * Detail explains what the part is for.
+   */
+  detail?: string
+}
+
+export const IntroWizardCallout: MessageType<IntroWizardCallout> =
+  /* @__PURE__ */ createMessageType<IntroWizardCallout>(
+    's4wave.wizard.IntroWizardCallout',
+    () => [
+      [1, 'region', 14, 0, IntroWizardRegion_Enum],
+      [2, 'title', 9],
+      [3, 'detail', 9],
+    ],
+  )

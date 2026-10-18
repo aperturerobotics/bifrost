@@ -7,8 +7,6 @@ import { Config as Config$2 } from '../controller/controller.pb.js'
 import { Config as Config$3 } from '../../store/kvtx/kvtx.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the browser volume controller config.
@@ -19,51 +17,37 @@ export interface Config {
   /**
    * Name names the volume's storage: its OPFS directory path and its
    * IndexedDB database name.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * KvKeyOpts are key/value key constants.
-   *
-   * @generated from field: store.kvkey.Config kv_key_opts = 2;
    */
   kvKeyOpts?: Config$1
   /**
    * NoGenerateKey disables generating a peer private key when the volume has
    * none.
-   *
-   * @generated from field: bool no_generate_key = 3;
    */
   noGenerateKey?: boolean
   /**
    * NoWriteKey disables writing a generated peer private key to storage.
-   *
-   * @generated from field: bool no_write_key = 4;
    */
   noWriteKey?: boolean
   /**
    * VolumeConfig is the volume controller config.
-   *
-   * @generated from field: volume.controller.Config volume_config = 6;
    */
   volumeConfig?: Config$2
   /**
    * StoreConfig is the store configuration for kvtx.
-   *
-   * @generated from field: store.kvtx.Config store_config = 7;
    */
   storeConfig?: Config$3
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'volume.browser.Config',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'kv_key_opts', kind: 'message', T: () => Config$1 },
-    { no: 3, name: 'no_generate_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'no_write_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 6, name: 'volume_config', kind: 'message', T: () => Config$2 },
-    { no: 7, name: 'store_config', kind: 'message', T: () => Config$3 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('volume.browser.Config', () => [
+    [1, 'name', 9],
+    [2, 'kv_key_opts', 11, 0, Config$1.codec],
+    [3, 'no_generate_key', 8],
+    [4, 'no_write_key', 8],
+    [6, 'volume_config', 11, 0, Config$2.codec],
+    [7, 'store_config', 11, 0, Config$3.codec],
+  ])

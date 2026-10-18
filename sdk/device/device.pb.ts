@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
 /**
@@ -20,44 +15,39 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export enum DeviceSetupState {
   /**
    * DEVICE_SETUP_STATE_UNKNOWN is unset.
-   *
-   * @generated from enum value: DEVICE_SETUP_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * DEVICE_SETUP_STATE_WAITING_FOR_COMPLETION means a SpaceLink ticket is pending approval.
-   *
-   * @generated from enum value: DEVICE_SETUP_STATE_WAITING_FOR_COMPLETION = 1;
    */
   WAITING_FOR_COMPLETION = 1,
 
   /**
    * DEVICE_SETUP_STATE_COMPLETION_IMPORTED means approval was imported locally.
-   *
-   * @generated from enum value: DEVICE_SETUP_STATE_COMPLETION_IMPORTED = 2;
    */
   COMPLETION_IMPORTED = 2,
 
   /**
    * DEVICE_SETUP_STATE_DEVICE_SESSION_READY means the approved DEVICE session mounted.
-   *
-   * @generated from enum value: DEVICE_SETUP_STATE_DEVICE_SESSION_READY = 3;
    */
   DEVICE_SESSION_READY = 3,
 
   /**
    * DEVICE_SETUP_STATE_FAILED means setup stopped in a retryable failure state.
-   *
-   * @generated from enum value: DEVICE_SETUP_STATE_FAILED = 4;
    */
   FAILED = 4,
 }
 
 export const DeviceSetupState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.device.DeviceSetupState',
-  DeviceSetupState,
-  'DEVICE_SETUP_STATE_',
+  [
+    [0, 'DEVICE_SETUP_STATE_UNKNOWN'],
+    [1, 'DEVICE_SETUP_STATE_WAITING_FOR_COMPLETION'],
+    [2, 'DEVICE_SETUP_STATE_COMPLETION_IMPORTED'],
+    [3, 'DEVICE_SETUP_STATE_DEVICE_SESSION_READY'],
+    [4, 'DEVICE_SETUP_STATE_FAILED'],
+  ],
 )
 
 /**
@@ -68,58 +58,51 @@ export const DeviceSetupState_Enum = /* @__PURE__ */ createEnumType(
 export enum DeviceUpdateState {
   /**
    * DEVICE_UPDATE_STATE_UNKNOWN is unset.
-   *
-   * @generated from enum value: DEVICE_UPDATE_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * DEVICE_UPDATE_STATE_IDLE means no update is pending.
-   *
-   * @generated from enum value: DEVICE_UPDATE_STATE_IDLE = 1;
    */
   IDLE = 1,
 
   /**
    * DEVICE_UPDATE_STATE_READY means an update is ready to stage or apply.
-   *
-   * @generated from enum value: DEVICE_UPDATE_STATE_READY = 2;
    */
   READY = 2,
 
   /**
    * DEVICE_UPDATE_STATE_STAGING means update assets are being staged.
-   *
-   * @generated from enum value: DEVICE_UPDATE_STATE_STAGING = 3;
    */
   STAGING = 3,
 
   /**
    * DEVICE_UPDATE_STATE_APPLYING means the daemon is applying an update.
-   *
-   * @generated from enum value: DEVICE_UPDATE_STATE_APPLYING = 4;
    */
   APPLYING = 4,
 
   /**
    * DEVICE_UPDATE_STATE_UPDATED means the last update completed.
-   *
-   * @generated from enum value: DEVICE_UPDATE_STATE_UPDATED = 5;
    */
   UPDATED = 5,
 
   /**
    * DEVICE_UPDATE_STATE_FAILED means the last update attempt failed.
-   *
-   * @generated from enum value: DEVICE_UPDATE_STATE_FAILED = 6;
    */
   FAILED = 6,
 }
 
 export const DeviceUpdateState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.device.DeviceUpdateState',
-  DeviceUpdateState,
-  'DEVICE_UPDATE_STATE_',
+  [
+    [0, 'DEVICE_UPDATE_STATE_UNKNOWN'],
+    [1, 'DEVICE_UPDATE_STATE_IDLE'],
+    [2, 'DEVICE_UPDATE_STATE_READY'],
+    [3, 'DEVICE_UPDATE_STATE_STAGING'],
+    [4, 'DEVICE_UPDATE_STATE_APPLYING'],
+    [5, 'DEVICE_UPDATE_STATE_UPDATED'],
+    [6, 'DEVICE_UPDATE_STATE_FAILED'],
+  ],
 )
 
 /**
@@ -130,37 +113,33 @@ export const DeviceUpdateState_Enum = /* @__PURE__ */ createEnumType(
 export enum DeviceLiveness {
   /**
    * DEVICE_LIVENESS_UNKNOWN is unset.
-   *
-   * @generated from enum value: DEVICE_LIVENESS_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * DEVICE_LIVENESS_ONLINE means the daemon last reported itself reachable.
-   *
-   * @generated from enum value: DEVICE_LIVENESS_ONLINE = 1;
    */
   ONLINE = 1,
 
   /**
    * DEVICE_LIVENESS_DEGRADED means the daemon last reported partial service.
-   *
-   * @generated from enum value: DEVICE_LIVENESS_DEGRADED = 2;
    */
   DEGRADED = 2,
 
   /**
    * DEVICE_LIVENESS_OFFLINE means the daemon last reported a shutdown/offline state.
-   *
-   * @generated from enum value: DEVICE_LIVENESS_OFFLINE = 3;
    */
   OFFLINE = 3,
 }
 
 export const DeviceLiveness_Enum = /* @__PURE__ */ createEnumType(
   's4wave.device.DeviceLiveness',
-  DeviceLiveness,
-  'DEVICE_LIVENESS_',
+  [
+    [0, 'DEVICE_LIVENESS_UNKNOWN'],
+    [1, 'DEVICE_LIVENESS_ONLINE'],
+    [2, 'DEVICE_LIVENESS_DEGRADED'],
+    [3, 'DEVICE_LIVENESS_OFFLINE'],
+  ],
 )
 
 /**
@@ -171,59 +150,52 @@ export const DeviceLiveness_Enum = /* @__PURE__ */ createEnumType(
 export enum DeviceCapabilityState {
   /**
    * DEVICE_CAPABILITY_STATE_UNKNOWN is unset.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * DEVICE_CAPABILITY_STATE_DECLARED means the daemon advertises this capability.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_STATE_DECLARED = 1;
    */
   DECLARED = 1,
 
   /**
    * DEVICE_CAPABILITY_STATE_DISABLED means local policy disables this capability.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_STATE_DISABLED = 2;
    */
   DISABLED = 2,
 
   /**
    * DEVICE_CAPABILITY_STATE_GRANT_BLOCKED means Space grants block this capability.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_STATE_GRANT_BLOCKED = 3;
    */
   GRANT_BLOCKED = 3,
 
   /**
    * DEVICE_CAPABILITY_STATE_AVAILABLE means the capability can be used.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_STATE_AVAILABLE = 4;
    */
   AVAILABLE = 4,
 
   /**
    * DEVICE_CAPABILITY_STATE_ACTIVE means the capability currently has active work.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_STATE_ACTIVE = 5;
    */
   ACTIVE = 5,
 
   /**
    * DEVICE_CAPABILITY_STATE_REJECTED means the daemon declined or failed to run the
    * capability; Detail carries the reason.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_STATE_REJECTED = 6;
    */
   REJECTED = 6,
 }
 
 export const DeviceCapabilityState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.device.DeviceCapabilityState',
-  DeviceCapabilityState,
-  'DEVICE_CAPABILITY_STATE_',
+  [
+    [0, 'DEVICE_CAPABILITY_STATE_UNKNOWN'],
+    [1, 'DEVICE_CAPABILITY_STATE_DECLARED'],
+    [2, 'DEVICE_CAPABILITY_STATE_DISABLED'],
+    [3, 'DEVICE_CAPABILITY_STATE_GRANT_BLOCKED'],
+    [4, 'DEVICE_CAPABILITY_STATE_AVAILABLE'],
+    [5, 'DEVICE_CAPABILITY_STATE_ACTIVE'],
+    [6, 'DEVICE_CAPABILITY_STATE_REJECTED'],
+  ],
 )
 
 /**
@@ -234,30 +206,27 @@ export const DeviceCapabilityState_Enum = /* @__PURE__ */ createEnumType(
 export enum DeviceCapabilityLocalState {
   /**
    * DEVICE_CAPABILITY_LOCAL_STATE_UNKNOWN is unset.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_LOCAL_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * DEVICE_CAPABILITY_LOCAL_STATE_ENABLED means daemon-local policy allows the capability.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_LOCAL_STATE_ENABLED = 1;
    */
   ENABLED = 1,
 
   /**
    * DEVICE_CAPABILITY_LOCAL_STATE_DISABLED means daemon-local policy disables the capability.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_LOCAL_STATE_DISABLED = 2;
    */
   DISABLED = 2,
 }
 
 export const DeviceCapabilityLocalState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.device.DeviceCapabilityLocalState',
-  DeviceCapabilityLocalState,
-  'DEVICE_CAPABILITY_LOCAL_STATE_',
+  [
+    [0, 'DEVICE_CAPABILITY_LOCAL_STATE_UNKNOWN'],
+    [1, 'DEVICE_CAPABILITY_LOCAL_STATE_ENABLED'],
+    [2, 'DEVICE_CAPABILITY_LOCAL_STATE_DISABLED'],
+  ],
 )
 
 /**
@@ -268,30 +237,27 @@ export const DeviceCapabilityLocalState_Enum = /* @__PURE__ */ createEnumType(
 export enum DeviceCapabilityGrantState {
   /**
    * DEVICE_CAPABILITY_GRANT_STATE_UNKNOWN is unset.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_GRANT_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * DEVICE_CAPABILITY_GRANT_STATE_ALLOWED means Space policy currently allows the capability.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_GRANT_STATE_ALLOWED = 1;
    */
   ALLOWED = 1,
 
   /**
    * DEVICE_CAPABILITY_GRANT_STATE_BLOCKED means Space policy currently blocks the capability.
-   *
-   * @generated from enum value: DEVICE_CAPABILITY_GRANT_STATE_BLOCKED = 2;
    */
   BLOCKED = 2,
 }
 
 export const DeviceCapabilityGrantState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.device.DeviceCapabilityGrantState',
-  DeviceCapabilityGrantState,
-  'DEVICE_CAPABILITY_GRANT_STATE_',
+  [
+    [0, 'DEVICE_CAPABILITY_GRANT_STATE_UNKNOWN'],
+    [1, 'DEVICE_CAPABILITY_GRANT_STATE_ALLOWED'],
+    [2, 'DEVICE_CAPABILITY_GRANT_STATE_BLOCKED'],
+  ],
 )
 
 /**
@@ -302,30 +268,27 @@ export const DeviceCapabilityGrantState_Enum = /* @__PURE__ */ createEnumType(
 export enum DeviceCheckoutRootAccess {
   /**
    * DEVICE_CHECKOUT_ROOT_ACCESS_UNKNOWN is unset.
-   *
-   * @generated from enum value: DEVICE_CHECKOUT_ROOT_ACCESS_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * DEVICE_CHECKOUT_ROOT_ACCESS_READ_ONLY means the checkout root can be read but not mutated.
-   *
-   * @generated from enum value: DEVICE_CHECKOUT_ROOT_ACCESS_READ_ONLY = 1;
    */
   READ_ONLY = 1,
 
   /**
    * DEVICE_CHECKOUT_ROOT_ACCESS_READ_WRITE means the checkout root can be read and written after approval.
-   *
-   * @generated from enum value: DEVICE_CHECKOUT_ROOT_ACCESS_READ_WRITE = 2;
    */
   READ_WRITE = 2,
 }
 
 export const DeviceCheckoutRootAccess_Enum = /* @__PURE__ */ createEnumType(
   's4wave.device.DeviceCheckoutRootAccess',
-  DeviceCheckoutRootAccess,
-  'DEVICE_CHECKOUT_ROOT_ACCESS_',
+  [
+    [0, 'DEVICE_CHECKOUT_ROOT_ACCESS_UNKNOWN'],
+    [1, 'DEVICE_CHECKOUT_ROOT_ACCESS_READ_ONLY'],
+    [2, 'DEVICE_CHECKOUT_ROOT_ACCESS_READ_WRITE'],
+  ],
 )
 
 /**
@@ -336,26 +299,22 @@ export const DeviceCheckoutRootAccess_Enum = /* @__PURE__ */ createEnumType(
 export interface DevicePlatform {
   /**
    * Os is the daemon operating system.
-   *
-   * @generated from field: string os = 1;
    */
   os?: string
   /**
    * Arch is the daemon architecture.
-   *
-   * @generated from field: string arch = 2;
    */
   arch?: string
 }
 
 export const DevicePlatform: MessageType<DevicePlatform> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.DevicePlatform',
-    fields: [
-      { no: 1, name: 'os', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'arch', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DevicePlatform>(
+    's4wave.device.DevicePlatform',
+    () => [
+      [1, 'os', 9],
+      [2, 'arch', 9],
+    ],
+  )
 
 /**
  * DeviceStatus is the durable last status summary authored by the daemon.
@@ -365,40 +324,92 @@ export const DevicePlatform: MessageType<DevicePlatform> =
 export interface DeviceStatus {
   /**
    * Liveness is the last reported durable liveness.
-   *
-   * @generated from field: s4wave.device.DeviceLiveness liveness = 1;
    */
   liveness?: DeviceLiveness
   /**
    * Message is a short operator-visible status.
-   *
-   * @generated from field: string message = 2;
    */
   message?: string
   /**
    * Error is the last reported error, if any.
-   *
-   * @generated from field: string error = 3;
    */
   error?: string
   /**
    * ObservedAt is when the daemon observed this status.
-   *
-   * @generated from field: google.protobuf.Timestamp observed_at = 4;
    */
   observedAt?: Date
 }
 
 export const DeviceStatus: MessageType<DeviceStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.DeviceStatus',
-    fields: [
-      { no: 1, name: 'liveness', kind: 'enum', T: DeviceLiveness_Enum },
-      { no: 2, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'observed_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeviceStatus>(
+    's4wave.device.DeviceStatus',
+    () => [
+      [1, 'liveness', 14, 0, DeviceLiveness_Enum],
+      [2, 'message', 9],
+      [3, 'error', 9],
+      [4, 'observed_at', 11, 0, Timestamp.codec],
+    ],
+  )
+
+/**
+ * DeviceCapability is a declared capability summary, not the capability owner.
+ *
+ * @generated from message s4wave.device.DeviceCapability
+ */
+export interface DeviceCapability {
+  /**
+   * Id is the stable capability identifier.
+   */
+  id?: string
+  /**
+   * Kind is the capability family, such as filesystem or forge-worker.
+   */
+  kind?: string
+  /**
+   * Label is the operator-visible capability label.
+   */
+  label?: string
+  /**
+   * State is the projected capability state.
+   */
+  state?: DeviceCapabilityState
+  /**
+   * Detail is a short status or policy note.
+   */
+  detail?: string
+  /**
+   * Link points at the owner that executes the capability.
+   */
+  link?: DeviceCapabilityLink
+  /**
+   * Policy records the local and Space policy refs used for the effective state.
+   */
+  policy?: DeviceCapabilityPolicy
+  /**
+   * CheckoutRoot records named checkout-root metadata for filesystem capabilities.
+   */
+  checkoutRoot?: DeviceCheckoutRootCapability
+  /**
+   * WorkerDeclaration records the declared capacity for forge-worker capabilities.
+   */
+  workerDeclaration?: ForgeWorkerDeclaration
+}
+
+export const DeviceCapability: MessageType<DeviceCapability> =
+  /* @__PURE__ */ createMessageType<DeviceCapability>(
+    's4wave.device.DeviceCapability',
+    () => [
+      [1, 'id', 9],
+      [2, 'kind', 9],
+      [3, 'label', 9],
+      [4, 'state', 14, 0, DeviceCapabilityState_Enum],
+      [5, 'detail', 9],
+      [6, 'link', 11, 0, DeviceCapabilityLink.codec],
+      [7, 'policy', 11, 0, DeviceCapabilityPolicy.codec],
+      [8, 'checkout_root', 11, 0, DeviceCheckoutRootCapability.codec],
+      [9, 'worker_declaration', 11, 0, ForgeWorkerDeclaration.codec],
+    ],
+  )
 
 /**
  * DeviceCapabilityLink points at the capability execution owner.
@@ -408,33 +419,27 @@ export const DeviceStatus: MessageType<DeviceStatus> =
 export interface DeviceCapabilityLink {
   /**
    * ObjectKey is the linked owner object, such as a UnixFS root or Forge Worker.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * TypeId is the ObjectType id for ObjectKey when ObjectKey is set.
-   *
-   * @generated from field: string type_id = 2;
    */
   typeId?: string
   /**
    * ProtocolId is the post-registration Bifrost protocol id for stream-backed adapters.
-   *
-   * @generated from field: string protocol_id = 3;
    */
   protocolId?: string
 }
 
 export const DeviceCapabilityLink: MessageType<DeviceCapabilityLink> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.DeviceCapabilityLink',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeviceCapabilityLink>(
+    's4wave.device.DeviceCapabilityLink',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'type_id', 9],
+      [3, 'protocol_id', 9],
+    ],
+  )
 
 /**
  * DeviceCapabilityPolicy records inputs to the effective capability state.
@@ -444,50 +449,32 @@ export const DeviceCapabilityLink: MessageType<DeviceCapabilityLink> =
 export interface DeviceCapabilityPolicy {
   /**
    * LocalPolicyRef identifies the daemon-local policy entry.
-   *
-   * @generated from field: string local_policy_ref = 1;
    */
   localPolicyRef?: string
   /**
    * GrantPolicyRef identifies the Space grant or policy entry.
-   *
-   * @generated from field: string grant_policy_ref = 2;
    */
   grantPolicyRef?: string
   /**
    * LocalState is the daemon-local allowlist state.
-   *
-   * @generated from field: s4wave.device.DeviceCapabilityLocalState local_state = 3;
    */
   localState?: DeviceCapabilityLocalState
   /**
    * GrantState is the current Space grant projection.
-   *
-   * @generated from field: s4wave.device.DeviceCapabilityGrantState grant_state = 4;
    */
   grantState?: DeviceCapabilityGrantState
 }
 
 export const DeviceCapabilityPolicy: MessageType<DeviceCapabilityPolicy> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.DeviceCapabilityPolicy',
-    fields: [
-      { no: 1, name: 'local_policy_ref', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'grant_policy_ref', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'local_state',
-        kind: 'enum',
-        T: DeviceCapabilityLocalState_Enum,
-      },
-      {
-        no: 4,
-        name: 'grant_state',
-        kind: 'enum',
-        T: DeviceCapabilityGrantState_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeviceCapabilityPolicy>(
+    's4wave.device.DeviceCapabilityPolicy',
+    () => [
+      [1, 'local_policy_ref', 9],
+      [2, 'grant_policy_ref', 9],
+      [3, 'local_state', 14, 0, DeviceCapabilityLocalState_Enum],
+      [4, 'grant_state', 14, 0, DeviceCapabilityGrantState_Enum],
+    ],
+  )
 
 /**
  * DeviceCheckoutRootCapability records selection metadata for a named checkout root.
@@ -497,55 +484,43 @@ export const DeviceCapabilityPolicy: MessageType<DeviceCapabilityPolicy> =
 export interface DeviceCheckoutRootCapability {
   /**
    * Name is the stable checkout-root selector, such as skiffos.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * DisplayPath is a human-readable path or mount label.
-   *
-   * @generated from field: string display_path = 2;
    */
   displayPath?: string
   /**
    * SelectionRef is the durable selector for this root: the ID of the
    * capability that advertises it.
-   *
-   * @generated from field: string selection_ref = 3;
    */
   selectionRef?: string
   /**
    * Access is the read/write mode currently exposed by the Device policy.
-   *
-   * @generated from field: s4wave.device.DeviceCheckoutRootAccess access = 4;
    */
   access?: DeviceCheckoutRootAccess
   /**
    * ReadAvailable reports whether the linked filesystem owner may be opened for reads.
-   *
-   * @generated from field: bool read_available = 5;
    */
   readAvailable?: boolean
   /**
    * WriteAvailable reports whether the linked filesystem owner may accept writes after approval.
-   *
-   * @generated from field: bool write_available = 6;
    */
   writeAvailable?: boolean
 }
 
 export const DeviceCheckoutRootCapability: MessageType<DeviceCheckoutRootCapability> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.DeviceCheckoutRootCapability',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'selection_ref', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'access', kind: 'enum', T: DeviceCheckoutRootAccess_Enum },
-      { no: 5, name: 'read_available', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'write_available', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeviceCheckoutRootCapability>(
+    's4wave.device.DeviceCheckoutRootCapability',
+    () => [
+      [1, 'name', 9],
+      [2, 'display_path', 9],
+      [3, 'selection_ref', 9],
+      [4, 'access', 14, 0, DeviceCheckoutRootAccess_Enum],
+      [5, 'read_available', 8],
+      [6, 'write_available', 8],
+    ],
+  )
 
 /**
  * ForgeWorkerDeclaration is the capacity envelope a Device declares for the
@@ -556,139 +531,32 @@ export const DeviceCheckoutRootCapability: MessageType<DeviceCheckoutRootCapabil
 export interface ForgeWorkerDeclaration {
   /**
    * WorkerObjectKey is the Forge Worker object key this Device hosts.
-   *
-   * @generated from field: string worker_object_key = 1;
    */
   workerObjectKey?: string
   /**
    * MilliCpu is the declared total CPU in milli-cores.
-   *
-   * @generated from field: uint64 milli_cpu = 2;
    */
   milliCpu?: bigint
   /**
    * MemoryBytes is the declared total memory in bytes.
-   *
-   * @generated from field: uint64 memory_bytes = 3;
    */
   memoryBytes?: bigint
   /**
    * Backends lists the runtime backends the Worker supports.
-   *
-   * @generated from field: repeated string backends = 4;
    */
   backends?: string[]
 }
 
 export const ForgeWorkerDeclaration: MessageType<ForgeWorkerDeclaration> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.ForgeWorkerDeclaration',
-    fields: [
-      {
-        no: 1,
-        name: 'worker_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'milli_cpu', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'memory_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 4,
-        name: 'backends',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DeviceCapability is a declared capability summary, not the capability owner.
- *
- * @generated from message s4wave.device.DeviceCapability
- */
-export interface DeviceCapability {
-  /**
-   * Id is the stable capability identifier.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Kind is the capability family, such as filesystem or forge-worker.
-   *
-   * @generated from field: string kind = 2;
-   */
-  kind?: string
-  /**
-   * Label is the operator-visible capability label.
-   *
-   * @generated from field: string label = 3;
-   */
-  label?: string
-  /**
-   * State is the projected capability state.
-   *
-   * @generated from field: s4wave.device.DeviceCapabilityState state = 4;
-   */
-  state?: DeviceCapabilityState
-  /**
-   * Detail is a short status or policy note.
-   *
-   * @generated from field: string detail = 5;
-   */
-  detail?: string
-  /**
-   * Link points at the owner that executes the capability.
-   *
-   * @generated from field: s4wave.device.DeviceCapabilityLink link = 6;
-   */
-  link?: DeviceCapabilityLink
-  /**
-   * Policy records the local and Space policy refs used for the effective state.
-   *
-   * @generated from field: s4wave.device.DeviceCapabilityPolicy policy = 7;
-   */
-  policy?: DeviceCapabilityPolicy
-  /**
-   * CheckoutRoot records named checkout-root metadata for filesystem capabilities.
-   *
-   * @generated from field: s4wave.device.DeviceCheckoutRootCapability checkout_root = 8;
-   */
-  checkoutRoot?: DeviceCheckoutRootCapability
-  /**
-   * WorkerDeclaration records the declared capacity for forge-worker capabilities.
-   *
-   * @generated from field: s4wave.device.ForgeWorkerDeclaration worker_declaration = 9;
-   */
-  workerDeclaration?: ForgeWorkerDeclaration
-}
-
-export const DeviceCapability: MessageType<DeviceCapability> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.DeviceCapability',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'kind', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'state', kind: 'enum', T: DeviceCapabilityState_Enum },
-      { no: 5, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'link', kind: 'message', T: DeviceCapabilityLink },
-      { no: 7, name: 'policy', kind: 'message', T: DeviceCapabilityPolicy },
-      {
-        no: 8,
-        name: 'checkout_root',
-        kind: 'message',
-        T: DeviceCheckoutRootCapability,
-      },
-      {
-        no: 9,
-        name: 'worker_declaration',
-        kind: 'message',
-        T: ForgeWorkerDeclaration,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ForgeWorkerDeclaration>(
+    's4wave.device.ForgeWorkerDeclaration',
+    () => [
+      [1, 'worker_object_key', 9],
+      [2, 'milli_cpu', 4],
+      [3, 'memory_bytes', 4],
+      [4, 'backends', 9, 1],
+    ],
+  )
 
 /**
  * Device is the world-block state for a Spacewave-managed Device object.
@@ -698,87 +566,59 @@ export const DeviceCapability: MessageType<DeviceCapability> =
 export interface Device {
   /**
    * PeerId is the daemon DEVICE session peer ID.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * Label is the operator-visible Device label.
-   *
-   * @generated from field: string label = 2;
    */
   label?: string
   /**
    * Platform summarizes the daemon runtime platform.
-   *
-   * @generated from field: s4wave.device.DevicePlatform platform = 3;
    */
   platform?: DevicePlatform
   /**
    * DaemonVersion is the daemon entrypoint version label.
-   *
-   * @generated from field: string daemon_version = 4;
    */
   daemonVersion?: string
   /**
    * SetupState is the setup lifecycle projection.
-   *
-   * @generated from field: s4wave.device.DeviceSetupState setup_state = 5;
    */
   setupState?: DeviceSetupState
   /**
    * UpdateState is the daemon update lifecycle projection.
-   *
-   * @generated from field: s4wave.device.DeviceUpdateState update_state = 6;
    */
   updateState?: DeviceUpdateState
   /**
    * LastStatus is the last durable daemon-authored status.
-   *
-   * @generated from field: s4wave.device.DeviceStatus last_status = 7;
    */
   lastStatus?: DeviceStatus
   /**
    * Capabilities are declared capability summaries.
-   *
-   * @generated from field: repeated s4wave.device.DeviceCapability capabilities = 8;
    */
   capabilities?: DeviceCapability[]
   /**
    * CreatedAt is when this Device object was first created.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 9;
    */
   createdAt?: Date
   /**
    * UpdatedAt is when this Device object was last updated.
-   *
-   * @generated from field: google.protobuf.Timestamp updated_at = 10;
    */
   updatedAt?: Date
 }
 
-export const Device: MessageType<Device> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.device.Device',
-  fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'platform', kind: 'message', T: DevicePlatform },
-    { no: 4, name: 'daemon_version', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'setup_state', kind: 'enum', T: DeviceSetupState_Enum },
-    { no: 6, name: 'update_state', kind: 'enum', T: DeviceUpdateState_Enum },
-    { no: 7, name: 'last_status', kind: 'message', T: DeviceStatus },
-    {
-      no: 8,
-      name: 'capabilities',
-      kind: 'message',
-      T: DeviceCapability,
-      repeated: true,
-    },
-    { no: 9, name: 'created_at', kind: 'message', T: () => Timestamp },
-    { no: 10, name: 'updated_at', kind: 'message', T: () => Timestamp },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Device: MessageType<Device> =
+  /* @__PURE__ */ createMessageType<Device>('s4wave.device.Device', () => [
+    [1, 'peer_id', 9],
+    [2, 'label', 9],
+    [3, 'platform', 11, 0, DevicePlatform.codec],
+    [4, 'daemon_version', 9],
+    [5, 'setup_state', 14, 0, DeviceSetupState_Enum],
+    [6, 'update_state', 14, 0, DeviceUpdateState_Enum],
+    [7, 'last_status', 11, 0, DeviceStatus.codec],
+    [8, 'capabilities', 11, 1, DeviceCapability.codec],
+    [9, 'created_at', 11, 0, Timestamp.codec],
+    [10, 'updated_at', 11, 0, Timestamp.codec],
+  ])
 
 /**
  * ComputersDashboard is the Space-local dashboard for managed Devices and
@@ -789,26 +629,22 @@ export const Device: MessageType<Device> = /* @__PURE__ */ createMessageType({
 export interface ComputersDashboard {
   /**
    * Name is the display name of this dashboard.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * CreatedAt is the time this dashboard was created.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 2;
    */
   createdAt?: Date
 }
 
 export const ComputersDashboard: MessageType<ComputersDashboard> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.ComputersDashboard',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'created_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ComputersDashboard>(
+    's4wave.device.ComputersDashboard',
+    () => [
+      [1, 'name', 9],
+      [2, 'created_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * CreateComputersDashboardOp creates a ComputersDashboard world object.
@@ -818,33 +654,27 @@ export const ComputersDashboard: MessageType<ComputersDashboard> =
 export interface CreateComputersDashboardOp {
   /**
    * ObjectKey is the key to create the dashboard at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the display name of the dashboard.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
 }
 
 export const CreateComputersDashboardOp: MessageType<CreateComputersDashboardOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.CreateComputersDashboardOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateComputersDashboardOp>(
+    's4wave.device.CreateComputersDashboardOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * WatchDeviceStateRequest is a request to watch Device state.
@@ -854,9 +684,9 @@ export const CreateComputersDashboardOp: MessageType<CreateComputersDashboardOp>
 export interface WatchDeviceStateRequest {}
 
 export const WatchDeviceStateRequest: MessageType<WatchDeviceStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchDeviceStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchDeviceStateRequest>(
     's4wave.device.WatchDeviceStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -867,19 +697,15 @@ export const WatchDeviceStateRequest: MessageType<WatchDeviceStateRequest> =
 export interface WatchDeviceStateResponse {
   /**
    * State is the current Device block state.
-   *
-   * @generated from field: s4wave.device.Device state = 1;
    */
   state?: Device
 }
 
 export const WatchDeviceStateResponse: MessageType<WatchDeviceStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.WatchDeviceStateResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: Device },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchDeviceStateResponse>(
+    's4wave.device.WatchDeviceStateResponse',
+    () => [[1, 'state', 11, 0, Device.codec]],
+  )
 
 /**
  * ReportDeviceStatusRequest updates daemon-owned Device status fields.
@@ -889,65 +715,42 @@ export const WatchDeviceStateResponse: MessageType<WatchDeviceStateResponse> =
 export interface ReportDeviceStatusRequest {
   /**
    * PeerId must match the Device peer_id.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * SetupState updates setup state when not UNKNOWN.
-   *
-   * @generated from field: s4wave.device.DeviceSetupState setup_state = 2;
    */
   setupState?: DeviceSetupState
   /**
    * UpdateState updates update state when not UNKNOWN.
-   *
-   * @generated from field: s4wave.device.DeviceUpdateState update_state = 3;
    */
   updateState?: DeviceUpdateState
   /**
    * LastStatus replaces the durable last status when present.
-   *
-   * @generated from field: s4wave.device.DeviceStatus last_status = 4;
    */
   lastStatus?: DeviceStatus
   /**
    * Capabilities replaces capability summaries when replace_capabilities is true.
-   *
-   * @generated from field: repeated s4wave.device.DeviceCapability capabilities = 5;
    */
   capabilities?: DeviceCapability[]
   /**
    * ReplaceCapabilities enables capability replacement.
-   *
-   * @generated from field: bool replace_capabilities = 6;
    */
   replaceCapabilities?: boolean
 }
 
 export const ReportDeviceStatusRequest: MessageType<ReportDeviceStatusRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.ReportDeviceStatusRequest',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'setup_state', kind: 'enum', T: DeviceSetupState_Enum },
-      { no: 3, name: 'update_state', kind: 'enum', T: DeviceUpdateState_Enum },
-      { no: 4, name: 'last_status', kind: 'message', T: DeviceStatus },
-      {
-        no: 5,
-        name: 'capabilities',
-        kind: 'message',
-        T: DeviceCapability,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'replace_capabilities',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReportDeviceStatusRequest>(
+    's4wave.device.ReportDeviceStatusRequest',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'setup_state', 14, 0, DeviceSetupState_Enum],
+      [3, 'update_state', 14, 0, DeviceUpdateState_Enum],
+      [4, 'last_status', 11, 0, DeviceStatus.codec],
+      [5, 'capabilities', 11, 1, DeviceCapability.codec],
+      [6, 'replace_capabilities', 8],
+    ],
+  )
 
 /**
  * ReportDeviceStatusResponse contains the updated Device state.
@@ -957,19 +760,15 @@ export const ReportDeviceStatusRequest: MessageType<ReportDeviceStatusRequest> =
 export interface ReportDeviceStatusResponse {
   /**
    * State is the updated Device block state.
-   *
-   * @generated from field: s4wave.device.Device state = 1;
    */
   state?: Device
 }
 
 export const ReportDeviceStatusResponse: MessageType<ReportDeviceStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.ReportDeviceStatusResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: Device },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReportDeviceStatusResponse>(
+    's4wave.device.ReportDeviceStatusResponse',
+    () => [[1, 'state', 11, 0, Device.codec]],
+  )
 
 /**
  * AccessCheckoutRootRequest opens a named checkout root as a filesystem resource.
@@ -979,38 +778,27 @@ export const ReportDeviceStatusResponse: MessageType<ReportDeviceStatusResponse>
 export interface AccessCheckoutRootRequest {
   /**
    * Name is the checkout-root selector. Empty selects the first readable root.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Write requests a write-capable filesystem handle.
-   *
-   * @generated from field: bool write = 2;
    */
   write?: boolean
   /**
    * WriteApprovalRef identifies the Decision or equivalent approval for writes.
-   *
-   * @generated from field: string write_approval_ref = 3;
    */
   writeApprovalRef?: string
 }
 
 export const AccessCheckoutRootRequest: MessageType<AccessCheckoutRootRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.AccessCheckoutRootRequest',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'write', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'write_approval_ref',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessCheckoutRootRequest>(
+    's4wave.device.AccessCheckoutRootRequest',
+    () => [
+      [1, 'name', 9],
+      [2, 'write', 8],
+      [3, 'write_approval_ref', 9],
+    ],
+  )
 
 /**
  * AccessCheckoutRootResponse contains the mounted filesystem resource.
@@ -1020,75 +808,49 @@ export const AccessCheckoutRootRequest: MessageType<AccessCheckoutRootRequest> =
 export interface AccessCheckoutRootResponse {
   /**
    * ResourceId is the FSHandle resource id.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * CapabilityId is the selected Device capability id.
-   *
-   * @generated from field: string capability_id = 2;
    */
   capabilityId?: string
   /**
    * ObjectKey is the linked filesystem owner object key.
-   *
-   * @generated from field: string object_key = 3;
    */
   objectKey?: string
   /**
    * TypeId is the linked filesystem ObjectType id.
-   *
-   * @generated from field: string type_id = 4;
    */
   typeId?: string
   /**
    * CheckoutRoot is the selected checkout-root metadata.
-   *
-   * @generated from field: s4wave.device.DeviceCheckoutRootCapability checkout_root = 5;
    */
   checkoutRoot?: DeviceCheckoutRootCapability
   /**
    * WriteAvailable reports whether the selected capability can be write-gated.
-   *
-   * @generated from field: bool write_available = 6;
    */
   writeAvailable?: boolean
   /**
    * WriteEnabled reports whether this mounted handle was opened for writes.
-   *
-   * @generated from field: bool write_enabled = 7;
    */
   writeEnabled?: boolean
   /**
    * WriteApprovalRef is the approval ref accepted for a write-enabled handle.
-   *
-   * @generated from field: string write_approval_ref = 8;
    */
   writeApprovalRef?: string
 }
 
 export const AccessCheckoutRootResponse: MessageType<AccessCheckoutRootResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.AccessCheckoutRootResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'capability_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'checkout_root',
-        kind: 'message',
-        T: DeviceCheckoutRootCapability,
-      },
-      { no: 6, name: 'write_available', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'write_enabled', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 8,
-        name: 'write_approval_ref',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessCheckoutRootResponse>(
+    's4wave.device.AccessCheckoutRootResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'capability_id', 9],
+      [3, 'object_key', 9],
+      [4, 'type_id', 9],
+      [5, 'checkout_root', 11, 0, DeviceCheckoutRootCapability.codec],
+      [6, 'write_available', 8],
+      [7, 'write_enabled', 8],
+      [8, 'write_approval_ref', 9],
+    ],
+  )

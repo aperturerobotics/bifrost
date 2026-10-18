@@ -3,7 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Config carries the SQL plugin controller configuration.
@@ -13,7 +13,7 @@ import { createEmptyMessageType } from '@aptre/protobuf-es-lite/message'
 export interface Config {}
 
 export const Config: MessageType<Config> =
-  /* @__PURE__ */ createEmptyMessageType<Config>(
+  /* @__PURE__ */ createMessageType<Config>(
     's4wave.plugin.sql.Config',
-    true,
+    () => [],
   )

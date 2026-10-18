@@ -5,8 +5,6 @@
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * DialerOpts contains options relating to dialing a statically configured peer.
@@ -16,24 +14,17 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface DialerOpts {
   /**
    * Address is the address of the peer, in the format expected by the transport.
-   *
-   * @generated from field: string address = 1;
    */
   address?: string
   /**
    * Backoff is the dialing backoff configuration.
    * Can be empty.
-   *
-   * @generated from field: backoff.Backoff backoff = 2;
    */
   backoff?: Backoff
 }
 
 export const DialerOpts: MessageType<DialerOpts> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'dialer.DialerOpts',
-    fields: [
-      { no: 1, name: 'address', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'backoff', kind: 'message', T: () => Backoff },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DialerOpts>('dialer.DialerOpts', () => [
+    [1, 'address', 9],
+    [2, 'backoff', 11, 0, Backoff.codec],
+  ])

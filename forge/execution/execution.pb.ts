@@ -3,15 +3,13 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
-import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ValueSet } from '../target/target.pb.js'
 import { BlockRef } from '@go/github.com/s4wave/spacewave/db/block/block.pb.js'
 import { Result } from '../value/value.pb.js'
 import { Placement } from '../worker/worker.pb.js'
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
 /**
  * State contains the possible execution states.
@@ -21,119 +19,42 @@ import { Placement } from '../worker/worker.pb.js'
 export enum State {
   /**
    * ExecutionState_UNKNOWN is the unknown type.
-   *
-   * @generated from enum value: ExecutionState_UNKNOWN = 0;
    */
   ExecutionState_UNKNOWN = 0,
 
   /**
    * ExecutionState_PENDING is the state before the execution starts.
    * Transitions to RUNNING when the assigned peer acks exec start.
-   *
-   * @generated from enum value: ExecutionState_PENDING = 1;
    */
   ExecutionState_PENDING = 1,
 
   /**
    * ExecutionState_RUNNING is the state when the execution is running.
-   *
-   * @generated from enum value: ExecutionState_RUNNING = 2;
    */
   ExecutionState_RUNNING = 2,
 
   /**
    * ExecutionState_COMPLETE is the terminal state of the execution.
    * This includes both success and failure termination states.
-   *
-   * @generated from enum value: ExecutionState_COMPLETE = 3;
    */
   ExecutionState_COMPLETE = 3,
 
   /**
    * ExecutionState_CANCELING is the state while the executor drains custody.
-   *
-   * @generated from enum value: ExecutionState_CANCELING = 4;
    */
   ExecutionState_CANCELING = 4,
 }
 
 export const State_Enum = /* @__PURE__ */ createEnumType(
   'forge.execution.State',
-  State,
+  [
+    [0, 'ExecutionState_UNKNOWN'],
+    [1, 'ExecutionState_PENDING'],
+    [2, 'ExecutionState_RUNNING'],
+    [3, 'ExecutionState_COMPLETE'],
+    [4, 'ExecutionState_CANCELING'],
+  ],
 )
-
-/**
- * LogEntry is a single log line from an execution.
- *
- * @generated from message forge.execution.LogEntry
- */
-export interface LogEntry {
-  /**
-   * Timestamp is when the log entry was created.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 1;
-   */
-  timestamp?: Date
-  /**
-   * Level is the log level (e.g. "info", "warn", "error", "debug").
-   *
-   * @generated from field: string level = 2;
-   */
-  level?: string
-  /**
-   * Message is the log message text.
-   *
-   * @generated from field: string message = 3;
-   */
-  message?: string
-}
-
-export const LogEntry: MessageType<LogEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.execution.LogEntry',
-    fields: [
-      { no: 1, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 2, name: 'level', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Claim fences side effects and write-back for one execution owner.
- *
- * @generated from message forge.execution.Claim
- */
-export interface Claim {
-  /**
-   * ClaimId is the opaque identifier of the controller instance.
-   *
-   * @generated from field: string claim_id = 1;
-   */
-  claimId?: string
-  /**
-   * Epoch is the monotonic fencing token for this claim.
-   *
-   * @generated from field: uint64 epoch = 2;
-   */
-  epoch?: bigint
-  /**
-   * LeaseExpiresAt is when the claim stops being live unless its holder renews
-   * it. Once it has passed, a peer that observed the expiry may reclaim the
-   * Execution, which advances the epoch and fences the previous holder.
-   *
-   * @generated from field: google.protobuf.Timestamp lease_expires_at = 3;
-   */
-  leaseExpiresAt?: Date
-}
-
-export const Claim: MessageType<Claim> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.execution.Claim',
-  fields: [
-    { no: 1, name: 'claim_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'epoch', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 3, name: 'lease_expires_at', kind: 'message', T: () => Timestamp },
-  ] satisfies readonly PartialFieldInfo[],
-})
 
 /**
  * World graph links:
@@ -144,99 +65,127 @@ export const Claim: MessageType<Claim> = /* @__PURE__ */ createMessageType({
 export interface Execution {
   /**
    * ExecutionState is the current state of the execution.
-   *
-   * @generated from field: forge.execution.State execution_state = 1;
    */
   executionState?: State
   /**
    * PeerId is the identifier of the peer assigned to the execution.
    * Can be empty.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * Timestamp is the time the parent object (usually Pass) was created.
    * Used as a reference timestamp to make all ops deterministic.
    * Must be set & is not updated.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
   /**
    * ValueSet is the set of inputs and outputs used in the execution.
    * Outputs are updated while the execution is RUNNING or CANCELING.
-   *
-   * @generated from field: forge.target.ValueSet value_set = 4;
    */
   valueSet?: ValueSet
   /**
    * TargetRef is the block ref to the Target block.
-   *
-   * @generated from field: block.BlockRef target_ref = 5;
    */
   targetRef?: BlockRef
   /**
    * Result is information about the outcome of a completed execution.
-   *
-   * @generated from field: forge.value.Result result = 6;
    */
   result?: Result
   /**
    * LogEntries contains log output from the execution.
    * Appended while the execution is RUNNING or CANCELING.
-   *
-   * @generated from field: repeated forge.execution.LogEntry log_entries = 7;
    */
   logEntries?: LogEntry[]
   /**
    * Claim identifies the controller instance authorized to run and write back.
-   *
-   * @generated from field: forge.execution.Claim claim = 8;
    */
   claim?: Claim
   /**
    * WaitingPluginId names the plugin whose load currently blocks this
    * Execution. It is empty once the plugin's client is available.
-   *
-   * @generated from field: string waiting_plugin_id = 9;
    */
   waitingPluginId?: string
   /**
    * Placement is the immutable Worker and Device peer authorized for this Execution.
-   *
-   * @generated from field: forge.worker.Placement placement = 10;
    */
   placement?: Placement
 }
 
 export const Execution: MessageType<Execution> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.execution.Execution',
-    fields: [
-      { no: 1, name: 'execution_state', kind: 'enum', T: State_Enum },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 4, name: 'value_set', kind: 'message', T: () => ValueSet },
-      { no: 5, name: 'target_ref', kind: 'message', T: () => BlockRef },
-      { no: 6, name: 'result', kind: 'message', T: () => Result },
-      {
-        no: 7,
-        name: 'log_entries',
-        kind: 'message',
-        T: LogEntry,
-        repeated: true,
-      },
-      { no: 8, name: 'claim', kind: 'message', T: Claim },
-      {
-        no: 9,
-        name: 'waiting_plugin_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 10, name: 'placement', kind: 'message', T: () => Placement },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Execution>(
+    'forge.execution.Execution',
+    () => [
+      [1, 'execution_state', 14, 0, State_Enum],
+      [2, 'peer_id', 9],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+      [4, 'value_set', 11, 0, ValueSet.codec],
+      [5, 'target_ref', 11, 0, BlockRef.codec],
+      [6, 'result', 11, 0, Result.codec],
+      [7, 'log_entries', 11, 1, LogEntry.codec],
+      [8, 'claim', 11, 0, Claim.codec],
+      [9, 'waiting_plugin_id', 9],
+      [10, 'placement', 11, 0, Placement.codec],
+    ],
+  )
+
+/**
+ * Claim fences side effects and write-back for one execution owner.
+ *
+ * @generated from message forge.execution.Claim
+ */
+export interface Claim {
+  /**
+   * ClaimId is the opaque identifier of the controller instance.
+   */
+  claimId?: string
+  /**
+   * Epoch is the monotonic fencing token for this claim.
+   */
+  epoch?: bigint
+  /**
+   * LeaseExpiresAt is when the claim stops being live unless its holder renews
+   * it. Once it has passed, a peer that observed the expiry may reclaim the
+   * Execution, which advances the epoch and fences the previous holder.
+   */
+  leaseExpiresAt?: Date
+}
+
+export const Claim: MessageType<Claim> =
+  /* @__PURE__ */ createMessageType<Claim>('forge.execution.Claim', () => [
+    [1, 'claim_id', 9],
+    [2, 'epoch', 4],
+    [3, 'lease_expires_at', 11, 0, Timestamp.codec],
+  ])
+
+/**
+ * LogEntry is a single log line from an execution.
+ *
+ * @generated from message forge.execution.LogEntry
+ */
+export interface LogEntry {
+  /**
+   * Timestamp is when the log entry was created.
+   */
+  timestamp?: Date
+  /**
+   * Level is the log level (e.g. "info", "warn", "error", "debug").
+   */
+  level?: string
+  /**
+   * Message is the log message text.
+   */
+  message?: string
+}
+
+export const LogEntry: MessageType<LogEntry> =
+  /* @__PURE__ */ createMessageType<LogEntry>(
+    'forge.execution.LogEntry',
+    () => [
+      [1, 'timestamp', 11, 0, Timestamp.codec],
+      [2, 'level', 9],
+      [3, 'message', 9],
+    ],
+  )
 
 /**
  * Spec contains information specified when creating a Execution.
@@ -247,31 +196,25 @@ export interface Spec {
   /**
    * PeerId is the identifier of the peer assigned to the execution.
    * Can be empty.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * ValueSet is the set of inputs and outputs used in the execution.
    * Specified output values are used as initial values, and can be overridden.
-   *
-   * @generated from field: forge.target.ValueSet value_set = 2;
    */
   valueSet?: ValueSet
   /**
    * TargetRef is the target to run in the Execution.
    * Overrides "target" field if set.
-   *
-   * @generated from field: block.BlockRef target_ref = 3;
    */
   targetRef?: BlockRef
 }
 
-export const Spec: MessageType<Spec> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.execution.Spec',
-  fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'value_set', kind: 'message', T: () => ValueSet },
-    { no: 3, name: 'target_ref', kind: 'message', T: () => BlockRef },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Spec: MessageType<Spec> = /* @__PURE__ */ createMessageType<Spec>(
+  'forge.execution.Spec',
+  () => [
+    [1, 'peer_id', 9],
+    [2, 'value_set', 11, 0, ValueSet.codec],
+    [3, 'target_ref', 11, 0, BlockRef.codec],
+  ],
+)

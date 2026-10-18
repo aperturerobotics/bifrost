@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * WebWorkerGenerationState is the browser plugin worker generation lifecycle.
@@ -19,103 +14,91 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum WebWorkerGenerationState {
   /**
    * WEB_WORKER_GENERATION_STATE_UNKNOWN preserves old status producers.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * WEB_WORKER_GENERATION_STATE_WORKER_REQUESTED means the browser was asked
    * to create a generation.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_WORKER_REQUESTED = 1;
    */
   WORKER_REQUESTED = 1,
 
   /**
    * WEB_WORKER_GENERATION_STATE_WORKER_CREATED means the Worker object and
    * init port exist.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_WORKER_CREATED = 2;
    */
   WORKER_CREATED = 2,
 
   /**
    * WEB_WORKER_GENERATION_STATE_STARTUP_RUNNING means plugin startup is
    * executing inside the worker.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_STARTUP_RUNNING = 3;
    */
   STARTUP_RUNNING = 3,
 
   /**
    * WEB_WORKER_GENERATION_STATE_FRONTEND_READY means frontend handlers/assets
    * are usable for the generation.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_FRONTEND_READY = 4;
    */
   FRONTEND_READY = 4,
 
   /**
    * WEB_WORKER_GENERATION_STATE_CAPABILITY_READY means the startup capability
    * required by the current host path is ready.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_CAPABILITY_READY = 5;
    */
   CAPABILITY_READY = 5,
 
   /**
    * WEB_WORKER_GENERATION_STATE_RUNNING means the generation is fully running.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_RUNNING = 6;
    */
   RUNNING = 6,
 
   /**
    * WEB_WORKER_GENERATION_STATE_NORMAL_STOP means the generation stopped by
    * explicit lifecycle removal.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_NORMAL_STOP = 7;
    */
   NORMAL_STOP = 7,
 
   /**
    * WEB_WORKER_GENERATION_STATE_STARTUP_TIMEOUT means the host timed out while
    * waiting for startup.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_STARTUP_TIMEOUT = 8;
    */
   STARTUP_TIMEOUT = 8,
 
   /**
    * WEB_WORKER_GENERATION_STATE_TERMINAL_FAILURE means the worker reported a
    * terminal runtime failure.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_TERMINAL_FAILURE = 9;
    */
   TERMINAL_FAILURE = 9,
 
   /**
    * WEB_WORKER_GENERATION_STATE_LIFECYCLE_HIDDEN means the document lifecycle
    * prevented generation startup.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_LIFECYCLE_HIDDEN = 10;
    */
   LIFECYCLE_HIDDEN = 10,
 
   /**
    * WEB_WORKER_GENERATION_STATE_CONTROLLED_STREAM_RESET means a stream reset
    * was handled as controlled lifecycle rather than terminal plugin failure.
-   *
-   * @generated from enum value: WEB_WORKER_GENERATION_STATE_CONTROLLED_STREAM_RESET = 11;
    */
   CONTROLLED_STREAM_RESET = 11,
 }
 
 export const WebWorkerGenerationState_Enum = /* @__PURE__ */ createEnumType(
   'web.document.WebWorkerGenerationState',
-  WebWorkerGenerationState,
-  'WEB_WORKER_GENERATION_STATE_',
+  [
+    [0, 'WEB_WORKER_GENERATION_STATE_UNKNOWN'],
+    [1, 'WEB_WORKER_GENERATION_STATE_WORKER_REQUESTED'],
+    [2, 'WEB_WORKER_GENERATION_STATE_WORKER_CREATED'],
+    [3, 'WEB_WORKER_GENERATION_STATE_STARTUP_RUNNING'],
+    [4, 'WEB_WORKER_GENERATION_STATE_FRONTEND_READY'],
+    [5, 'WEB_WORKER_GENERATION_STATE_CAPABILITY_READY'],
+    [6, 'WEB_WORKER_GENERATION_STATE_RUNNING'],
+    [7, 'WEB_WORKER_GENERATION_STATE_NORMAL_STOP'],
+    [8, 'WEB_WORKER_GENERATION_STATE_STARTUP_TIMEOUT'],
+    [9, 'WEB_WORKER_GENERATION_STATE_TERMINAL_FAILURE'],
+    [10, 'WEB_WORKER_GENERATION_STATE_LIFECYCLE_HIDDEN'],
+    [11, 'WEB_WORKER_GENERATION_STATE_CONTROLLED_STREAM_RESET'],
+  ],
 )
 
 /**
@@ -127,29 +110,27 @@ export enum WebWorkerMode {
   /**
    * WORKER_MODE_DEFAULT preserves the legacy behavior for callers that do
    * not specify a mode.
-   *
-   * @generated from enum value: WORKER_MODE_DEFAULT = 0;
    */
   WORKER_MODE_DEFAULT = 0,
 
   /**
    * WORKER_MODE_SHARED requests a SharedWorker when supported.
-   *
-   * @generated from enum value: WORKER_MODE_SHARED = 1;
    */
   WORKER_MODE_SHARED = 1,
 
   /**
    * WORKER_MODE_DEDICATED requests a dedicated Worker.
-   *
-   * @generated from enum value: WORKER_MODE_DEDICATED = 2;
    */
   WORKER_MODE_DEDICATED = 2,
 }
 
 export const WebWorkerMode_Enum = /* @__PURE__ */ createEnumType(
   'web.document.WebWorkerMode',
-  WebWorkerMode,
+  [
+    [0, 'WORKER_MODE_DEFAULT'],
+    [1, 'WORKER_MODE_SHARED'],
+    [2, 'WORKER_MODE_DEDICATED'],
+  ],
 )
 
 /**
@@ -160,9 +141,57 @@ export const WebWorkerMode_Enum = /* @__PURE__ */ createEnumType(
 export interface WatchWebDocumentStatusRequest {}
 
 export const WatchWebDocumentStatusRequest: MessageType<WatchWebDocumentStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchWebDocumentStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchWebDocumentStatusRequest>(
     'web.document.WatchWebDocumentStatusRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * WebDocumentStatus contains a snapshot of status for a Document instance.
+ *
+ * @generated from message web.document.WebDocumentStatus
+ */
+export interface WebDocumentStatus {
+  /**
+   * Snapshot indicates this is a full snapshot of the lists.
+   */
+  snapshot?: boolean
+  /**
+   * Hidden indicates that the web document is not visible.
+   * The web document will unload all web views and suspend itself.
+   * Background pages are throttled in web browsers.
+   */
+  hidden?: boolean
+  /**
+   * WebViews contains the list of web view statuses.
+   */
+  webViews?: WebViewStatus[]
+  /**
+   * WebWorkers contains the list of web worker statuses.
+   */
+  webWorkers?: WebWorkerStatus[]
+  /**
+   * Closed indicates the web document is closed.
+   */
+  closed?: boolean
+  /**
+   * PluginWorkersBlocked indicates another document owns plugin worker creation.
+   * Ownership changes wake the scheduler independently of document visibility.
+   */
+  pluginWorkersBlocked?: boolean
+}
+
+export const WebDocumentStatus: MessageType<WebDocumentStatus> =
+  /* @__PURE__ */ createMessageType<WebDocumentStatus>(
+    'web.document.WebDocumentStatus',
+    () => [
+      [1, 'snapshot', 8],
+      [2, 'hidden', 8],
+      [3, 'web_views', 11, 1, WebViewStatus.codec],
+      [4, 'web_workers', 11, 1, WebWorkerStatus.codec],
+      [5, 'closed', 8],
+      [6, 'plugin_workers_blocked', 8],
+    ],
   )
 
 /**
@@ -173,42 +202,34 @@ export const WatchWebDocumentStatusRequest: MessageType<WatchWebDocumentStatusRe
 export interface WebViewStatus {
   /**
    * Id is the unique identifier for the webview.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Deleted indicates the web view was just removed.
    * If set, all below fields are ignored.
-   *
-   * @generated from field: bool deleted = 2;
    */
   deleted?: boolean
   /**
    * ParentId is the unique identifier for the parent web view.
    * May be empty.
-   *
-   * @generated from field: string parent_id = 3;
    */
   parentId?: string
   /**
    * Permanent indicates that this is a "root" webview and cannot be closed.
-   *
-   * @generated from field: bool permanent = 4;
    */
   permanent?: boolean
 }
 
 export const WebViewStatus: MessageType<WebViewStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.document.WebViewStatus',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'deleted', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'parent_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'permanent', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebViewStatus>(
+    'web.document.WebViewStatus',
+    () => [
+      [1, 'id', 9],
+      [2, 'deleted', 8],
+      [3, 'parent_id', 9],
+      [4, 'permanent', 8],
+    ],
+  )
 
 /**
  * WebWorkerStatus contains status for a web worker.
@@ -218,152 +239,54 @@ export const WebViewStatus: MessageType<WebViewStatus> =
 export interface WebWorkerStatus {
   /**
    * Id is the unique identifier for the worker.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Deleted indicates the web worker was just removed.
    * If set, all below fields are ignored.
-   *
-   * @generated from field: bool deleted = 2;
    */
   deleted?: boolean
   /**
    * Shared indicates that the worker is a SharedWorker.
-   *
-   * @generated from field: bool shared = 3;
    */
   shared?: boolean
   /**
    * Ready indicates the worker finished startup and registered with WebRuntime.
-   *
-   * @generated from field: bool ready = 4;
    */
   ready?: boolean
   /**
    * Failed indicates the worker closed because of a runtime failure.
    * Normal explicit worker removal or browser lifecycle close leaves this unset.
-   *
-   * @generated from field: bool failed = 5;
    */
   failed?: boolean
   /**
    * FailureReason contains the worker-provided failure reason, if any.
-   *
-   * @generated from field: string failure_reason = 6;
    */
   failureReason?: string
   /**
    * GenerationState is the typed lifecycle state for the worker generation.
-   *
-   * @generated from field: web.document.WebWorkerGenerationState generation_state = 7;
    */
   generationState?: WebWorkerGenerationState
   /**
    * Generation identifies the execution that created this worker.
-   *
-   * @generated from field: string generation = 8;
    */
   generation?: string
 }
 
 export const WebWorkerStatus: MessageType<WebWorkerStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.document.WebWorkerStatus',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'deleted', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'shared', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'ready', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'failed', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'failure_reason', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 7,
-        name: 'generation_state',
-        kind: 'enum',
-        T: WebWorkerGenerationState_Enum,
-      },
-      { no: 8, name: 'generation', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WebDocumentStatus contains a snapshot of status for a Document instance.
- *
- * @generated from message web.document.WebDocumentStatus
- */
-export interface WebDocumentStatus {
-  /**
-   * Snapshot indicates this is a full snapshot of the lists.
-   *
-   * @generated from field: bool snapshot = 1;
-   */
-  snapshot?: boolean
-  /**
-   * Hidden indicates that the web document is not visible.
-   * The web document will unload all web views and suspend itself.
-   * Background pages are throttled in web browsers.
-   *
-   * @generated from field: bool hidden = 2;
-   */
-  hidden?: boolean
-  /**
-   * WebViews contains the list of web view statuses.
-   *
-   * @generated from field: repeated web.document.WebViewStatus web_views = 3;
-   */
-  webViews?: WebViewStatus[]
-  /**
-   * WebWorkers contains the list of web worker statuses.
-   *
-   * @generated from field: repeated web.document.WebWorkerStatus web_workers = 4;
-   */
-  webWorkers?: WebWorkerStatus[]
-  /**
-   * Closed indicates the web document is closed.
-   *
-   * @generated from field: bool closed = 5;
-   */
-  closed?: boolean
-  /**
-   * PluginWorkersBlocked indicates another document owns plugin worker creation.
-   * Ownership changes wake the scheduler independently of document visibility.
-   *
-   * @generated from field: bool plugin_workers_blocked = 6;
-   */
-  pluginWorkersBlocked?: boolean
-}
-
-export const WebDocumentStatus: MessageType<WebDocumentStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.document.WebDocumentStatus',
-    fields: [
-      { no: 1, name: 'snapshot', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'hidden', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'web_views',
-        kind: 'message',
-        T: WebViewStatus,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'web_workers',
-        kind: 'message',
-        T: WebWorkerStatus,
-        repeated: true,
-      },
-      { no: 5, name: 'closed', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 6,
-        name: 'plugin_workers_blocked',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebWorkerStatus>(
+    'web.document.WebWorkerStatus',
+    () => [
+      [1, 'id', 9],
+      [2, 'deleted', 8],
+      [3, 'shared', 8],
+      [4, 'ready', 8],
+      [5, 'failed', 8],
+      [6, 'failure_reason', 9],
+      [7, 'generation_state', 14, 0, WebWorkerGenerationState_Enum],
+      [8, 'generation', 9],
+    ],
+  )
 
 /**
  * CreateWebViewRequest is a request to create a new web view.
@@ -373,19 +296,15 @@ export const WebDocumentStatus: MessageType<WebDocumentStatus> =
 export interface CreateWebViewRequest {
   /**
    * id is the identifier for the new WebView.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
 }
 
 export const CreateWebViewRequest: MessageType<CreateWebViewRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.document.CreateWebViewRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWebViewRequest>(
+    'web.document.CreateWebViewRequest',
+    () => [[1, 'id', 9]],
+  )
 
 /**
  * CreateWebViewResponse is the response to the CreateWebView request.
@@ -396,19 +315,15 @@ export interface CreateWebViewResponse {
   /**
    * Created indicates the web view was created.
    * If this is not set, assumes we cannot create WebViews.
-   *
-   * @generated from field: bool created = 1;
    */
   created?: boolean
 }
 
 export const CreateWebViewResponse: MessageType<CreateWebViewResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.document.CreateWebViewResponse',
-    fields: [
-      { no: 1, name: 'created', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWebViewResponse>(
+    'web.document.CreateWebViewResponse',
+    () => [[1, 'created', 8]],
+  )
 
 /**
  * CreateWebWorkerRequest is a request to create a new web worker.
@@ -418,52 +333,42 @@ export const CreateWebViewResponse: MessageType<CreateWebViewResponse> =
 export interface CreateWebWorkerRequest {
   /**
    * Id is the identifier for the new WebWorker.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Path is the path to the source to load into the worker.
    * This is passed to the shared-worker.ts loader.
    * Used as the path after the current host. For example /path/to/script.mjs
-   *
-   * @generated from field: string path = 2;
    */
   path?: string
   /**
    * WorkerMode controls whether the worker should be shared or dedicated.
    * If unset, defaults to WORKER_MODE_DEFAULT.
-   *
-   * @generated from field: web.document.WebWorkerMode worker_mode = 3;
    */
   workerMode?: WebWorkerMode
   /**
    * InitData is initialization data to pass to the worker.
    *
    * Usually a WebWorkerWasmPluginInit.
-   *
-   * @generated from field: bytes init_data = 4;
    */
   initData?: Uint8Array
   /**
    * Generation identifies the execution creating this worker.
-   *
-   * @generated from field: string generation = 6;
    */
   generation?: string
 }
 
 export const CreateWebWorkerRequest: MessageType<CreateWebWorkerRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.document.CreateWebWorkerRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'worker_mode', kind: 'enum', T: WebWorkerMode_Enum },
-      { no: 4, name: 'init_data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 6, name: 'generation', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWebWorkerRequest>(
+    'web.document.CreateWebWorkerRequest',
+    () => [
+      [1, 'id', 9],
+      [2, 'path', 9],
+      [3, 'worker_mode', 14, 0, WebWorkerMode_Enum],
+      [4, 'init_data', 12],
+      [6, 'generation', 9],
+    ],
+  )
 
 /**
  * CreateWebWorkerResponse is the response to the CreateWebWorker request.
@@ -474,27 +379,23 @@ export interface CreateWebWorkerResponse {
   /**
    * Created indicates the WebWorker was created.
    * If this is not set, assumes we cannot create WebWorkers.
-   *
-   * @generated from field: bool created = 1;
    */
   created?: boolean
   /**
    * Shared indicates that SharedWorker was supported & used
    * Should only be set if shared was also set in the request
-   *
-   * @generated from field: bool shared = 2;
    */
   shared?: boolean
 }
 
 export const CreateWebWorkerResponse: MessageType<CreateWebWorkerResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.document.CreateWebWorkerResponse',
-    fields: [
-      { no: 1, name: 'created', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'shared', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWebWorkerResponse>(
+    'web.document.CreateWebWorkerResponse',
+    () => [
+      [1, 'created', 8],
+      [2, 'shared', 8],
+    ],
+  )
 
 /**
  * RemoveWebWorkerRequest is a request to terminate a web worker.
@@ -504,26 +405,22 @@ export const CreateWebWorkerResponse: MessageType<CreateWebWorkerResponse> =
 export interface RemoveWebWorkerRequest {
   /**
    * Id is the identifier for the removed WebWorker.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Generation removes the worker only when it matches the current execution.
-   *
-   * @generated from field: string generation = 2;
    */
   generation?: string
 }
 
 export const RemoveWebWorkerRequest: MessageType<RemoveWebWorkerRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.document.RemoveWebWorkerRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'generation', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveWebWorkerRequest>(
+    'web.document.RemoveWebWorkerRequest',
+    () => [
+      [1, 'id', 9],
+      [2, 'generation', 9],
+    ],
+  )
 
 /**
  * RemoveWebWorkerResponse is the response to the RemoveWebWorker request.
@@ -534,16 +431,12 @@ export interface RemoveWebWorkerResponse {
   /**
    * Removed indicates the WebWorker was removed.
    * If false, the worker was not found or not running.
-   *
-   * @generated from field: bool removed = 1;
    */
   removed?: boolean
 }
 
 export const RemoveWebWorkerResponse: MessageType<RemoveWebWorkerResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.document.RemoveWebWorkerResponse',
-    fields: [
-      { no: 1, name: 'removed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveWebWorkerResponse>(
+    'web.document.RemoveWebWorkerResponse',
+    () => [[1, 'removed', 8]],
+  )

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the fetch RPC service controller.
@@ -19,22 +17,16 @@ export interface Config {
   /**
    * ServiceId overrides the service identifier to listen on.
    * Defaults to web.fetch.FetchService
-   *
-   * @generated from field: string service_id = 1;
    */
   serviceId?: string
   /**
    * NotFoundIfIdle returns 404 not found if the http handler lookup is idle.
-   *
-   * @generated from field: bool not_found_if_idle = 2;
    */
   notFoundIfIdle?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'web.fetch.service.Config',
-  fields: [
-    { no: 1, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'not_found_if_idle', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('web.fetch.service.Config', () => [
+    [1, 'service_id', 9],
+    [2, 'not_found_if_idle', 8],
+  ])

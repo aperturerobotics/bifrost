@@ -5,8 +5,6 @@
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the web plugin to forward RPC services to another plugin.
@@ -19,46 +17,37 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * WebPluginId is the id of the web plugin.
-   *
-   * @generated from field: string web_plugin_id = 1;
    */
   webPluginId?: string
   /**
    * HandlePluginId is the plugin the web plugin should send RPCs to.
-   *
-   * @generated from field: string handle_plugin_id = 2;
    */
   handlePluginId?: string
   /**
    * ServiceIdRe is the regex of service IDs to forward.
    * If empty, will forward any.
-   *
-   * @generated from field: string service_id_re = 3;
    */
   serviceIdRe?: string
   /**
    * ServerIdRe is the regex of server IDs to forward for.
    * If empty, will forward any.
-   *
-   * @generated from field: string server_id_re = 4;
    */
   serverIdRe?: string
   /**
    * Backoff is the backoff config for calling the RPC service.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff backoff = 5;
    */
   backoff?: Backoff
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.web.plugin.handle_rpc.Config',
-  fields: [
-    { no: 1, name: 'web_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'handle_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'service_id_re', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'server_id_re', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'backoff', kind: 'message', T: () => Backoff },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.web.plugin.handle_rpc.Config',
+    () => [
+      [1, 'web_plugin_id', 9],
+      [2, 'handle_plugin_id', 9],
+      [3, 'service_id_re', 9],
+      [4, 'server_id_re', 9],
+      [5, 'backoff', 11, 0, Backoff.codec],
+    ],
+  )

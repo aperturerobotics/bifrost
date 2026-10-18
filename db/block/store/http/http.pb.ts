@@ -6,8 +6,6 @@ import type { HashType } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.
 import { HashType_Enum } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { BlockRef, PutOpts } from '../../block.pb.js'
 
 /**
@@ -18,67 +16,45 @@ import { BlockRef, PutOpts } from '../../block.pb.js'
 export interface Config {
   /**
    * BlockStoreId is the block store id to use on the bus.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * Url is the base url to access the api.
-   *
-   * @generated from field: string url = 2;
    */
   url?: string
   /**
    * ReadOnly disables writing to the http store.
-   *
-   * @generated from field: bool read_only = 3;
    */
   readOnly?: boolean
   /**
    * ForceHashType forces writing the given hash type to the store.
    * If unset, accepts any hash type.
-   *
-   * @generated from field: hash.HashType force_hash_type = 4;
    */
   forceHashType?: HashType
   /**
    * BucketIds is a list of bucket ids to serve LookupBlockFromNetwork directives.
-   *
-   * @generated from field: repeated string bucket_ids = 5;
    */
   bucketIds?: string[]
   /**
    * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 6;
    */
   skipNotFound?: boolean
   /**
    * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 7;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.http.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'read_only', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'force_hash_type', kind: 'enum', T: HashType_Enum },
-    {
-      no: 5,
-      name: 'bucket_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 6, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 7, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('block.store.http.Config', () => [
+    [1, 'block_store_id', 9],
+    [2, 'url', 9],
+    [3, 'read_only', 8],
+    [4, 'force_hash_type', 14, 0, HashType_Enum],
+    [5, 'bucket_ids', 9, 1],
+    [6, 'skip_not_found', 8],
+    [7, 'verbose', 8],
+  ])
 
 /**
  * PutRequest is the request body for a Put request.
@@ -88,26 +64,22 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
 export interface PutRequest {
   /**
    * Data is the data to put at the key.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * PutOpts sets the put options.
-   *
-   * @generated from field: block.PutOpts put_opts = 2;
    */
   putOpts?: PutOpts
 }
 
 export const PutRequest: MessageType<PutRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.http.PutRequest',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'put_opts', kind: 'message', T: () => PutOpts },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutRequest>(
+    'block.store.http.PutRequest',
+    () => [
+      [1, 'data', 12],
+      [2, 'put_opts', 11, 0, PutOpts.codec],
+    ],
+  )
 
 /**
  * PutResponse is the response to a Put request.
@@ -117,35 +89,29 @@ export const PutRequest: MessageType<PutRequest> =
 export interface PutResponse {
   /**
    * Ref contains the put block ref.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
   /**
    * Exists indicates that the block already existed in the store.
    * Some stores may always return false for this.
-   *
-   * @generated from field: bool exists = 2;
    */
   exists?: boolean
   /**
    * Err contains any error putting the ref.
    * If empty, the ref must not be nil, op succeeded.
-   *
-   * @generated from field: string err = 3;
    */
   err?: string
 }
 
 export const PutResponse: MessageType<PutResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.http.PutResponse',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'exists', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'err', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutResponse>(
+    'block.store.http.PutResponse',
+    () => [
+      [1, 'ref', 11, 0, BlockRef.codec],
+      [2, 'exists', 8],
+      [3, 'err', 9],
+    ],
+  )
 
 /**
  * GetResponse is the response to a Get request.
@@ -155,55 +121,39 @@ export const PutResponse: MessageType<PutResponse> =
 export interface GetResponse {
   /**
    * NotFound indicates that the block did not exist in the store.
-   *
-   * @generated from field: bool not_found = 1;
    */
   notFound?: boolean
   /**
    * Data contains the block data, if not_found and err are empty.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * Err contains any error getting the ref.
    * If empty, not_found or data must be set.
-   *
-   * @generated from field: string err = 3;
    */
   err?: string
   /**
    * Refs are the block's outgoing refs when the request asked for refs and
    * refs_known is set. Empty with refs_known set means a leaf.
-   *
-   * @generated from field: repeated block.BlockRef refs = 4;
    */
   refs?: BlockRef[]
   /**
    * RefsKnown indicates the store recorded the block's outgoing refs.
-   *
-   * @generated from field: bool refs_known = 5;
    */
   refsKnown?: boolean
 }
 
 export const GetResponse: MessageType<GetResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.http.GetResponse',
-    fields: [
-      { no: 1, name: 'not_found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'err', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      { no: 5, name: 'refs_known', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetResponse>(
+    'block.store.http.GetResponse',
+    () => [
+      [1, 'not_found', 8],
+      [2, 'data', 12],
+      [3, 'err', 9],
+      [4, 'refs', 11, 1, BlockRef.codec],
+      [5, 'refs_known', 8],
+    ],
+  )
 
 /**
  * ExistsResponse is the response to a Exists request.
@@ -213,35 +163,29 @@ export const GetResponse: MessageType<GetResponse> =
 export interface ExistsResponse {
   /**
    * Exists indicates that the block existed in the store.
-   *
-   * @generated from field: bool exists = 1;
    */
   exists?: boolean
   /**
    * NotFound indicates that the block did not exist in the store.
    * If false, exists=true.
-   *
-   * @generated from field: bool not_found = 2;
    */
   notFound?: boolean
   /**
    * Err contains any error checking if the ref exists.
    * If empty, not_found or data must be set.
-   *
-   * @generated from field: string err = 3;
    */
   err?: string
 }
 
 export const ExistsResponse: MessageType<ExistsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.http.ExistsResponse',
-    fields: [
-      { no: 1, name: 'exists', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'not_found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'err', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ExistsResponse>(
+    'block.store.http.ExistsResponse',
+    () => [
+      [1, 'exists', 8],
+      [2, 'not_found', 8],
+      [3, 'err', 9],
+    ],
+  )
 
 /**
  * RmResponse is the response to a Rm request.
@@ -252,23 +196,19 @@ export interface RmResponse {
   /**
    * Removed indicates the request was processed successfully.
    * Must be set if err is empty.
-   *
-   * @generated from field: bool removed = 1;
    */
   removed?: boolean
   /**
    * Err contains any error deleting the block.
-   *
-   * @generated from field: string err = 2;
    */
   err?: string
 }
 
 export const RmResponse: MessageType<RmResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.store.http.RmResponse',
-    fields: [
-      { no: 1, name: 'removed', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'err', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RmResponse>(
+    'block.store.http.RmResponse',
+    () => [
+      [1, 'removed', 8],
+      [2, 'err', 9],
+    ],
+  )

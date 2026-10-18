@@ -9,8 +9,6 @@ import {
 import { Config } from '@go/github.com/s4wave/spacewave/db/block/transform/transform.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * MaterializeManifestRequest requests the materialization of one manifest.
@@ -20,28 +18,20 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface MaterializeManifestRequest {
   /**
    * Source is the immutable manifest object reference to follow.
-   *
-   * @generated from field: bucket.ObjectRef source = 1;
    */
   source?: ObjectRef
   /**
    * Destination is the bucket and volume to materialize into.
-   *
-   * @generated from field: bucket.BucketOpArgs destination = 2;
    */
   destination?: BucketOpArgs
   /**
    * DestinationTransformConf is the transform configuration for the
    * destination bucket root.
-   *
-   * @generated from field: block.transform.Config destination_transform_conf = 3;
    */
   destinationTransformConf?: Config
   /**
    * Concurrency limits concurrent block reads/writes during the copy.
    * Zero retains the copy engine's existing unlimited meaning.
-   *
-   * @generated from field: uint32 concurrency = 4;
    */
   concurrency?: number
   /**
@@ -51,33 +41,21 @@ export interface MaterializeManifestRequest {
    * lookup, and the source ref must carry its resolved inline transform
    * configuration (source.transform_conf_ref must be empty). Empty retains
    * the native bus source lookup.
-   *
-   * @generated from field: string source_service_id = 5;
    */
   sourceServiceId?: string
 }
 
 export const MaterializeManifestRequest: MessageType<MaterializeManifestRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.materializer.MaterializeManifestRequest',
-    fields: [
-      { no: 1, name: 'source', kind: 'message', T: () => ObjectRef },
-      { no: 2, name: 'destination', kind: 'message', T: () => BucketOpArgs },
-      {
-        no: 3,
-        name: 'destination_transform_conf',
-        kind: 'message',
-        T: () => Config,
-      },
-      { no: 4, name: 'concurrency', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 5,
-        name: 'source_service_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MaterializeManifestRequest>(
+    'bldr.manifest.materializer.MaterializeManifestRequest',
+    () => [
+      [1, 'source', 11, 0, ObjectRef.codec],
+      [2, 'destination', 11, 0, BucketOpArgs.codec],
+      [3, 'destination_transform_conf', 11, 0, Config.codec],
+      [4, 'concurrency', 13],
+      [5, 'source_service_id', 9],
+    ],
+  )
 
 /**
  * CopyStats reports logical copy accounting for one materialization.
@@ -87,66 +65,47 @@ export const MaterializeManifestRequest: MessageType<MaterializeManifestRequest>
 export interface CopyStats {
   /**
    * BlocksSeen is the number of logical source blocks encountered.
-   *
-   * @generated from field: int64 blocks_seen = 1;
    */
   blocksSeen?: bigint
   /**
    * BlocksCopied is the number of blocks copied.
-   *
-   * @generated from field: int64 blocks_copied = 2;
    */
   blocksCopied?: bigint
   /**
    * BlocksExisting is the number of blocks that already existed.
-   *
-   * @generated from field: int64 blocks_existing = 3;
    */
   blocksExisting?: bigint
   /**
    * BlocksWritten is the number of blocks written.
-   *
-   * @generated from field: int64 blocks_written = 4;
    */
   blocksWritten?: bigint
   /**
    * BlocksDeduped is the number of blocks skipped as duplicates.
-   *
-   * @generated from field: int64 blocks_deduped = 5;
    */
   blocksDeduped?: bigint
   /**
    * SubtreesSkipped is the number of subtrees skipped.
-   *
-   * @generated from field: int64 subtrees_skipped = 6;
    */
   subtreesSkipped?: bigint
   /**
    * LogicalSourceBytes is the number of logical source bytes seen.
-   *
-   * @generated from field: int64 logical_source_bytes = 7;
    */
   logicalSourceBytes?: bigint
 }
 
 export const CopyStats: MessageType<CopyStats> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.materializer.CopyStats',
-    fields: [
-      { no: 1, name: 'blocks_seen', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 2, name: 'blocks_copied', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 3, name: 'blocks_existing', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 4, name: 'blocks_written', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 5, name: 'blocks_deduped', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 6, name: 'subtrees_skipped', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 7,
-        name: 'logical_source_bytes',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CopyStats>(
+    'bldr.manifest.materializer.CopyStats',
+    () => [
+      [1, 'blocks_seen', 3],
+      [2, 'blocks_copied', 3],
+      [3, 'blocks_existing', 3],
+      [4, 'blocks_written', 3],
+      [5, 'blocks_deduped', 3],
+      [6, 'subtrees_skipped', 3],
+      [7, 'logical_source_bytes', 3],
+    ],
+  )
 
 /**
  * MaterializeManifestResponse is one streamed response for a materialization.
@@ -156,24 +115,20 @@ export const CopyStats: MessageType<CopyStats> =
 export interface MaterializeManifestResponse {
   /**
    * Stats is the cumulative logical copy accounting snapshot.
-   *
-   * @generated from field: bldr.manifest.materializer.CopyStats stats = 1;
    */
   stats?: CopyStats
   /**
    * CopiedRef is the copied root object reference.
    * Set only on the terminal successful message.
-   *
-   * @generated from field: bucket.ObjectRef copied_ref = 2;
    */
   copiedRef?: ObjectRef
 }
 
 export const MaterializeManifestResponse: MessageType<MaterializeManifestResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.materializer.MaterializeManifestResponse',
-    fields: [
-      { no: 1, name: 'stats', kind: 'message', T: CopyStats },
-      { no: 2, name: 'copied_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MaterializeManifestResponse>(
+    'bldr.manifest.materializer.MaterializeManifestResponse',
+    () => [
+      [1, 'stats', 11, 0, CopyStats.codec],
+      [2, 'copied_ref', 11, 0, ObjectRef.codec],
+    ],
+  )

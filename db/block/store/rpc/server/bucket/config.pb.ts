@@ -6,8 +6,6 @@ import type { HashType } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.
 import { HashType_Enum } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the block store bucket rpc server.
@@ -17,55 +15,44 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BucketId is the bucket id to lookup on the bus.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
   /**
    * VolumeId is the volume id to read/write from.
    * If unset, uses the BucketLookup API to lookup blocks.
    * Can be empty.
-   *
-   * @generated from field: string volume_id = 2;
    */
   volumeId?: string
   /**
    * Write enables the write api endpoints.
-   *
-   * @generated from field: bool write = 3;
    */
   write?: boolean
   /**
    * ServiceId is the service id to serve LookupRpcService requests.
    * Cannot be empty.
-   *
-   * @generated from field: string service_id = 4;
    */
   serviceId?: string
   /**
    * ServerIdRe is the regex of server IDs to accept for LookupRpcService.
    * If empty, will accept any.
-   *
-   * @generated from field: string server_id_re = 5;
    */
   serverIdRe?: string
   /**
    * ForceHashType forces writing the given hash type to the store.
    * If unset, accepts any hash type the underlying bucket accepts.
-   *
-   * @generated from field: hash.HashType force_hash_type = 6;
    */
   forceHashType?: HashType
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.rpc.server.bucket.Config',
-  fields: [
-    { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'write', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'server_id_re', kind: 'scalar', T: ScalarType.STRING },
-    { no: 6, name: 'force_hash_type', kind: 'enum', T: HashType_Enum },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'block.store.rpc.server.bucket.Config',
+    () => [
+      [1, 'bucket_id', 9],
+      [2, 'volume_id', 9],
+      [3, 'write', 8],
+      [4, 'service_id', 9],
+      [5, 'server_id_re', 9],
+      [6, 'force_hash_type', 14, 0, HashType_Enum],
+    ],
+  )

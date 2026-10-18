@@ -5,7 +5,6 @@
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the tptaddr dialer controller.
@@ -19,15 +18,11 @@ export interface Config {
   /**
    * DialBackoff is the dial backoff configuration.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff dial_backoff = 1;
    */
   dialBackoff?: Backoff
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'tptaddr.controller.Config',
-  fields: [
-    { no: 1, name: 'dial_backoff', kind: 'message', T: () => Backoff },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('tptaddr.controller.Config', () => [
+    [1, 'dial_backoff', 11, 0, Backoff.codec],
+  ])

@@ -2,33 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/db/block/mock/mock.proto (package block.mock, syntax proto3)
 /* eslint-disable */
 
-import { BlockRef } from '../block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-
-/**
- * SubBlock is a example sub-block of Root.
- *
- * @generated from message block.mock.SubBlock
- */
-export interface SubBlock {
-  /**
-   * ExamplePtr is an example reference.
-   *
-   * @generated from field: block.BlockRef example_ptr = 1;
-   */
-  examplePtr?: BlockRef
-}
-
-export const SubBlock: MessageType<SubBlock> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.mock.SubBlock',
-    fields: [
-      { no: 1, name: 'example_ptr', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import { BlockRef } from '../block.pb.js'
 
 /**
  * Root is the root of the mock structure.
@@ -38,18 +14,31 @@ export const SubBlock: MessageType<SubBlock> =
 export interface Root {
   /**
    * ExampleSubBlock is a sub-block.
-   *
-   * @generated from field: block.mock.SubBlock example_sub_block = 1;
    */
   exampleSubBlock?: SubBlock
 }
 
-export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.mock.Root',
-  fields: [
-    { no: 1, name: 'example_sub_block', kind: 'message', T: SubBlock },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType<Root>(
+  'block.mock.Root',
+  () => [[1, 'example_sub_block', 11, 0, SubBlock.codec]],
+)
+
+/**
+ * SubBlock is a example sub-block of Root.
+ *
+ * @generated from message block.mock.SubBlock
+ */
+export interface SubBlock {
+  /**
+   * ExamplePtr is an example reference.
+   */
+  examplePtr?: BlockRef
+}
+
+export const SubBlock: MessageType<SubBlock> =
+  /* @__PURE__ */ createMessageType<SubBlock>('block.mock.SubBlock', () => [
+    [1, 'example_ptr', 11, 0, BlockRef.codec],
+  ])
 
 /**
  * Example is the value pointed to by ExamplePtr.
@@ -59,15 +48,11 @@ export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType({
 export interface Example {
   /**
    * Msg is a message.
-   *
-   * @generated from field: string msg = 1;
    */
   msg?: string
 }
 
-export const Example: MessageType<Example> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.mock.Example',
-  fields: [
-    { no: 1, name: 'msg', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Example: MessageType<Example> =
+  /* @__PURE__ */ createMessageType<Example>('block.mock.Example', () => [
+    [1, 'msg', 9],
+  ])

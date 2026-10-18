@@ -3,77 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * Announce reports the sender's current DistConfig. The sender sends it when
- * the stream opens and whenever its config changes.
- *
- * @generated from message spacewave.launcher.gossip.Announce
- */
-export interface Announce {
-  /**
-   * Rev is the revision of the sender's DistConfig.
-   * Unverified: only the offered message is trusted.
-   *
-   * @generated from field: uint64 rev = 1;
-   */
-  rev?: bigint
-  /**
-   * Hash is the SHA-256 of the sender's signed DistConfig packedmsg.
-   *
-   * @generated from field: bytes hash = 2;
-   */
-  hash?: Uint8Array
-}
-
-export const Announce: MessageType<Announce> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.launcher.gossip.Announce',
-    fields: [
-      { no: 1, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'hash', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Request asks the receiver to offer its current signed DistConfig.
- *
- * @generated from message spacewave.launcher.gossip.Request
- */
-export interface Request {}
-
-export const Request: MessageType<Request> =
-  /* @__PURE__ */ createEmptyMessageType<Request>(
-    'spacewave.launcher.gossip.Request',
-    true,
-  )
-
-/**
- * Offer carries the sender's current signed DistConfig.
- *
- * @generated from message spacewave.launcher.gossip.Offer
- */
-export interface Offer {
-  /**
-   * DistConfigMsg is the signed DistConfig packedmsg.
-   *
-   * @generated from field: string dist_config_msg = 1;
-   */
-  distConfigMsg?: string
-}
-
-export const Offer: MessageType<Offer> = /* @__PURE__ */ createMessageType({
-  typeName: 'spacewave.launcher.gossip.Offer',
-  fields: [
-    { no: 1, name: 'dist_config_msg', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Message is one message on a DistConfig gossip stream. Each side announces
@@ -89,44 +19,76 @@ export interface Message {
    * @generated from oneof spacewave.launcher.gossip.Message.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Announce reports the sender's current DistConfig.
-         *
-         * @generated from field: spacewave.launcher.gossip.Announce announce = 1;
-         */
-        value: Announce
-        case: 'announce'
-      }
-    | {
-        /**
-         * Request asks the receiver to offer its current signed DistConfig.
-         *
-         * @generated from field: spacewave.launcher.gossip.Request request = 2;
-         */
-        value: Request
-        case: 'request'
-      }
-    | {
-        /**
-         * Offer carries the sender's current signed DistConfig.
-         *
-         * @generated from field: spacewave.launcher.gossip.Offer offer = 3;
-         */
-        value: Offer
-        case: 'offer'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: Announce; case: 'announce' }
+    | { value: Request; case: 'request' }
+    | { value: Offer; case: 'offer' }
 }
 
-export const Message: MessageType<Message> = /* @__PURE__ */ createMessageType({
-  typeName: 'spacewave.launcher.gossip.Message',
-  fields: [
-    { no: 1, name: 'announce', kind: 'message', T: Announce, oneof: 'body' },
-    { no: 2, name: 'request', kind: 'message', T: Request, oneof: 'body' },
-    { no: 3, name: 'offer', kind: 'message', T: Offer, oneof: 'body' },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Message: MessageType<Message> =
+  /* @__PURE__ */ createMessageType<Message>(
+    'spacewave.launcher.gossip.Message',
+    () => [
+      [1, 'announce', 11, 0, Announce.codec, 'body'],
+      [2, 'request', 11, 0, Request.codec, 'body'],
+      [3, 'offer', 11, 0, Offer.codec, 'body'],
+    ],
+  )
+
+/**
+ * Announce reports the sender's current DistConfig. The sender sends it when
+ * the stream opens and whenever its config changes.
+ *
+ * @generated from message spacewave.launcher.gossip.Announce
+ */
+export interface Announce {
+  /**
+   * Rev is the revision of the sender's DistConfig.
+   * Unverified: only the offered message is trusted.
+   */
+  rev?: bigint
+  /**
+   * Hash is the SHA-256 of the sender's signed DistConfig packedmsg.
+   */
+  hash?: Uint8Array
+}
+
+export const Announce: MessageType<Announce> =
+  /* @__PURE__ */ createMessageType<Announce>(
+    'spacewave.launcher.gossip.Announce',
+    () => [
+      [1, 'rev', 4],
+      [2, 'hash', 12],
+    ],
+  )
+
+/**
+ * Request asks the receiver to offer its current signed DistConfig.
+ *
+ * @generated from message spacewave.launcher.gossip.Request
+ */
+export interface Request {}
+
+export const Request: MessageType<Request> =
+  /* @__PURE__ */ createMessageType<Request>(
+    'spacewave.launcher.gossip.Request',
+    () => [],
+  )
+
+/**
+ * Offer carries the sender's current signed DistConfig.
+ *
+ * @generated from message spacewave.launcher.gossip.Offer
+ */
+export interface Offer {
+  /**
+   * DistConfigMsg is the signed DistConfig packedmsg.
+   */
+  distConfigMsg?: string
+}
+
+export const Offer: MessageType<Offer> =
+  /* @__PURE__ */ createMessageType<Offer>(
+    'spacewave.launcher.gossip.Offer',
+    () => [[1, 'dist_config_msg', 9]],
+  )

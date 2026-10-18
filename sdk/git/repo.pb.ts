@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * RefInfo contains information about a git reference.
@@ -18,32 +13,24 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface RefInfo {
   /**
    * Name is the short name of the reference.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * CommitHash is the hash of the commit this reference points to.
-   *
-   * @generated from field: string commit_hash = 2;
    */
   commitHash?: string
   /**
    * IsHead is true if this is the HEAD ref.
-   *
-   * @generated from field: bool is_head = 3;
    */
   isHead?: boolean
 }
 
-export const RefInfo: MessageType<RefInfo> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.git.RefInfo',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'commit_hash', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'is_head', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const RefInfo: MessageType<RefInfo> =
+  /* @__PURE__ */ createMessageType<RefInfo>('s4wave.git.RefInfo', () => [
+    [1, 'name', 9],
+    [2, 'commit_hash', 9],
+    [3, 'is_head', 8],
+  ])
 
 /**
  * CommitInfo contains information about a git commit.
@@ -53,60 +40,39 @@ export const RefInfo: MessageType<RefInfo> = /* @__PURE__ */ createMessageType({
 export interface CommitInfo {
   /**
    * Hash is the commit hash.
-   *
-   * @generated from field: string hash = 1;
    */
   hash?: string
   /**
    * Message is the commit message.
-   *
-   * @generated from field: string message = 2;
    */
   message?: string
   /**
    * AuthorName is the name of the commit author.
-   *
-   * @generated from field: string author_name = 3;
    */
   authorName?: string
   /**
    * AuthorEmail is the email of the commit author.
-   *
-   * @generated from field: string author_email = 4;
    */
   authorEmail?: string
   /**
    * AuthorTimestamp is the author timestamp as Unix seconds.
-   *
-   * @generated from field: int64 author_timestamp = 5;
    */
   authorTimestamp?: bigint
   /**
    * ParentHashes is the list of parent commit hashes.
-   *
-   * @generated from field: repeated string parent_hashes = 6;
    */
   parentHashes?: string[]
 }
 
 export const CommitInfo: MessageType<CommitInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.CommitInfo',
-    fields: [
-      { no: 1, name: 'hash', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'author_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'author_email', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'author_timestamp', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 6,
-        name: 'parent_hashes',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CommitInfo>('s4wave.git.CommitInfo', () => [
+    [1, 'hash', 9],
+    [2, 'message', 9],
+    [3, 'author_name', 9],
+    [4, 'author_email', 9],
+    [5, 'author_timestamp', 3],
+    [6, 'parent_hashes', 9, 1],
+  ])
 
 /**
  * ListRefsRequest is the request for ListRefs.
@@ -116,9 +82,9 @@ export const CommitInfo: MessageType<CommitInfo> =
 export interface ListRefsRequest {}
 
 export const ListRefsRequest: MessageType<ListRefsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ListRefsRequest>(
+  /* @__PURE__ */ createMessageType<ListRefsRequest>(
     's4wave.git.ListRefsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -129,33 +95,27 @@ export const ListRefsRequest: MessageType<ListRefsRequest> =
 export interface ListRefsResponse {
   /**
    * Branches is the list of branch references.
-   *
-   * @generated from field: repeated s4wave.git.RefInfo branches = 1;
    */
   branches?: RefInfo[]
   /**
    * Tags is the list of tag references.
-   *
-   * @generated from field: repeated s4wave.git.RefInfo tags = 2;
    */
   tags?: RefInfo[]
   /**
    * HeadRef is the name of the reference HEAD points to.
-   *
-   * @generated from field: string head_ref = 3;
    */
   headRef?: string
 }
 
 export const ListRefsResponse: MessageType<ListRefsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.ListRefsResponse',
-    fields: [
-      { no: 1, name: 'branches', kind: 'message', T: RefInfo, repeated: true },
-      { no: 2, name: 'tags', kind: 'message', T: RefInfo, repeated: true },
-      { no: 3, name: 'head_ref', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListRefsResponse>(
+    's4wave.git.ListRefsResponse',
+    () => [
+      [1, 'branches', 11, 1, RefInfo.codec],
+      [2, 'tags', 11, 1, RefInfo.codec],
+      [3, 'head_ref', 9],
+    ],
+  )
 
 /**
  * ResolveRefRequest is the request for ResolveRef.
@@ -165,19 +125,15 @@ export const ListRefsResponse: MessageType<ListRefsResponse> =
 export interface ResolveRefRequest {
   /**
    * RefName is the reference name to resolve.
-   *
-   * @generated from field: string ref_name = 1;
    */
   refName?: string
 }
 
 export const ResolveRefRequest: MessageType<ResolveRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.ResolveRefRequest',
-    fields: [
-      { no: 1, name: 'ref_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResolveRefRequest>(
+    's4wave.git.ResolveRefRequest',
+    () => [[1, 'ref_name', 9]],
+  )
 
 /**
  * ResolveRefResponse is the response for ResolveRef.
@@ -187,26 +143,22 @@ export const ResolveRefRequest: MessageType<ResolveRefRequest> =
 export interface ResolveRefResponse {
   /**
    * CommitHash is the resolved commit hash.
-   *
-   * @generated from field: string commit_hash = 1;
    */
   commitHash?: string
   /**
    * TreeHash is the tree hash of the resolved commit.
-   *
-   * @generated from field: string tree_hash = 2;
    */
   treeHash?: string
 }
 
 export const ResolveRefResponse: MessageType<ResolveRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.ResolveRefResponse',
-    fields: [
-      { no: 1, name: 'commit_hash', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'tree_hash', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResolveRefResponse>(
+    's4wave.git.ResolveRefResponse',
+    () => [
+      [1, 'commit_hash', 9],
+      [2, 'tree_hash', 9],
+    ],
+  )
 
 /**
  * GetRepoInfoRequest is the request for GetRepoInfo.
@@ -216,9 +168,9 @@ export const ResolveRefResponse: MessageType<ResolveRefResponse> =
 export interface GetRepoInfoRequest {}
 
 export const GetRepoInfoRequest: MessageType<GetRepoInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetRepoInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetRepoInfoRequest>(
     's4wave.git.GetRepoInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -229,47 +181,37 @@ export const GetRepoInfoRequest: MessageType<GetRepoInfoRequest> =
 export interface GetRepoInfoResponse {
   /**
    * HeadRef is the name of the reference HEAD points to.
-   *
-   * @generated from field: string head_ref = 1;
    */
   headRef?: string
   /**
    * HeadCommitHash is the commit hash HEAD resolves to.
-   *
-   * @generated from field: string head_commit_hash = 2;
    */
   headCommitHash?: string
   /**
    * ReadmePath is the path to the README file, if found.
-   *
-   * @generated from field: string readme_path = 3;
    */
   readmePath?: string
   /**
    * LastCommit contains info about the latest commit.
-   *
-   * @generated from field: s4wave.git.CommitInfo last_commit = 4;
    */
   lastCommit?: CommitInfo
   /**
    * IsEmpty is true if the repository has no commits.
-   *
-   * @generated from field: bool is_empty = 5;
    */
   isEmpty?: boolean
 }
 
 export const GetRepoInfoResponse: MessageType<GetRepoInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetRepoInfoResponse',
-    fields: [
-      { no: 1, name: 'head_ref', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'head_commit_hash', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'readme_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'last_commit', kind: 'message', T: CommitInfo },
-      { no: 5, name: 'is_empty', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetRepoInfoResponse>(
+    's4wave.git.GetRepoInfoResponse',
+    () => [
+      [1, 'head_ref', 9],
+      [2, 'head_commit_hash', 9],
+      [3, 'readme_path', 9],
+      [4, 'last_commit', 11, 0, CommitInfo.codec],
+      [5, 'is_empty', 8],
+    ],
+  )
 
 /**
  * GetTreeResourceRequest is the request for GetTreeResource.
@@ -280,19 +222,15 @@ export interface GetTreeResourceRequest {
   /**
    * RefName is the branch/tag/commit to get the tree for.
    * Empty means HEAD.
-   *
-   * @generated from field: string ref_name = 1;
    */
   refName?: string
 }
 
 export const GetTreeResourceRequest: MessageType<GetTreeResourceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetTreeResourceRequest',
-    fields: [
-      { no: 1, name: 'ref_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetTreeResourceRequest>(
+    's4wave.git.GetTreeResourceRequest',
+    () => [[1, 'ref_name', 9]],
+  )
 
 /**
  * GetTreeResourceResponse is the response for GetTreeResource.
@@ -302,19 +240,15 @@ export const GetTreeResourceRequest: MessageType<GetTreeResourceRequest> =
 export interface GetTreeResourceResponse {
   /**
    * ResourceId is the ID of the FSHandle sub-resource for the tree.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const GetTreeResourceResponse: MessageType<GetTreeResourceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetTreeResourceResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetTreeResourceResponse>(
+    's4wave.git.GetTreeResourceResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * GetRepoFilesystemResourceRequest is the request for GetRepoFilesystemResource.
@@ -324,19 +258,15 @@ export const GetTreeResourceResponse: MessageType<GetTreeResourceResponse> =
 export interface GetRepoFilesystemResourceRequest {
   /**
    * Writable requests writable repository filesystem capabilities.
-   *
-   * @generated from field: bool writable = 1;
    */
   writable?: boolean
 }
 
 export const GetRepoFilesystemResourceRequest: MessageType<GetRepoFilesystemResourceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetRepoFilesystemResourceRequest',
-    fields: [
-      { no: 1, name: 'writable', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetRepoFilesystemResourceRequest>(
+    's4wave.git.GetRepoFilesystemResourceRequest',
+    () => [[1, 'writable', 8]],
+  )
 
 /**
  * GetRepoFilesystemResourceResponse is the response for GetRepoFilesystemResource.
@@ -346,19 +276,15 @@ export const GetRepoFilesystemResourceRequest: MessageType<GetRepoFilesystemReso
 export interface GetRepoFilesystemResourceResponse {
   /**
    * ResourceId is the ID of the FSHandle sub-resource for the repository filesystem.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const GetRepoFilesystemResourceResponse: MessageType<GetRepoFilesystemResourceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetRepoFilesystemResourceResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetRepoFilesystemResourceResponse>(
+    's4wave.git.GetRepoFilesystemResourceResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * LogRequest is the request for Log.
@@ -368,40 +294,29 @@ export const GetRepoFilesystemResourceResponse: MessageType<GetRepoFilesystemRes
 export interface LogRequest {
   /**
    * RefName is the branch/tag/commit to start from. Empty means HEAD.
-   *
-   * @generated from field: string ref_name = 1;
    */
   refName?: string
   /**
    * Offset is the number of commits to skip.
-   *
-   * @generated from field: uint32 offset = 2;
    */
   offset?: number
   /**
    * Limit is the maximum number of commits to return. Default 50.
-   *
-   * @generated from field: uint32 limit = 3;
    */
   limit?: number
   /**
    * SinceRef filters to commits reachable from ref_name but not from since_ref.
-   *
-   * @generated from field: string since_ref = 4;
    */
   sinceRef?: string
 }
 
 export const LogRequest: MessageType<LogRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.LogRequest',
-    fields: [
-      { no: 1, name: 'ref_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'offset', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'since_ref', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LogRequest>('s4wave.git.LogRequest', () => [
+    [1, 'ref_name', 9],
+    [2, 'offset', 13],
+    [3, 'limit', 13],
+    [4, 'since_ref', 9],
+  ])
 
 /**
  * LogResponse is the response for Log.
@@ -411,32 +326,22 @@ export const LogRequest: MessageType<LogRequest> =
 export interface LogResponse {
   /**
    * Commits is the list of commits in reverse chronological order.
-   *
-   * @generated from field: repeated s4wave.git.CommitInfo commits = 1;
    */
   commits?: CommitInfo[]
   /**
    * HasMore is true if there are more commits beyond offset+limit.
-   *
-   * @generated from field: bool has_more = 2;
    */
   hasMore?: boolean
 }
 
 export const LogResponse: MessageType<LogResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.LogResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'commits',
-        kind: 'message',
-        T: CommitInfo,
-        repeated: true,
-      },
-      { no: 2, name: 'has_more', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LogResponse>(
+    's4wave.git.LogResponse',
+    () => [
+      [1, 'commits', 11, 1, CommitInfo.codec],
+      [2, 'has_more', 8],
+    ],
+  )
 
 /**
  * GetCommitRequest is the request for GetCommit.
@@ -446,19 +351,15 @@ export const LogResponse: MessageType<LogResponse> =
 export interface GetCommitRequest {
   /**
    * Hash is the commit hash to look up.
-   *
-   * @generated from field: string hash = 1;
    */
   hash?: string
 }
 
 export const GetCommitRequest: MessageType<GetCommitRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetCommitRequest',
-    fields: [
-      { no: 1, name: 'hash', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetCommitRequest>(
+    's4wave.git.GetCommitRequest',
+    () => [[1, 'hash', 9]],
+  )
 
 /**
  * GetCommitResponse is the response for GetCommit.
@@ -468,19 +369,15 @@ export const GetCommitRequest: MessageType<GetCommitRequest> =
 export interface GetCommitResponse {
   /**
    * Commit is the full commit metadata.
-   *
-   * @generated from field: s4wave.git.CommitInfo commit = 1;
    */
   commit?: CommitInfo
 }
 
 export const GetCommitResponse: MessageType<GetCommitResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetCommitResponse',
-    fields: [
-      { no: 1, name: 'commit', kind: 'message', T: CommitInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetCommitResponse>(
+    's4wave.git.GetCommitResponse',
+    () => [[1, 'commit', 11, 0, CommitInfo.codec]],
+  )
 
 /**
  * GetDiffStatRequest is the request for GetDiffStat.
@@ -490,62 +387,22 @@ export const GetCommitResponse: MessageType<GetCommitResponse> =
 export interface GetDiffStatRequest {
   /**
    * RefA is the first ref (branch, tag, or commit hash).
-   *
-   * @generated from field: string ref_a = 1;
    */
   refA?: string
   /**
    * RefB is the second ref. If empty, diffs against ref_a's parent.
-   *
-   * @generated from field: string ref_b = 2;
    */
   refB?: string
 }
 
 export const GetDiffStatRequest: MessageType<GetDiffStatRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetDiffStatRequest',
-    fields: [
-      { no: 1, name: 'ref_a', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'ref_b', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DiffFileStat contains line change stats for a single file.
- *
- * @generated from message s4wave.git.DiffFileStat
- */
-export interface DiffFileStat {
-  /**
-   * Path is the file path.
-   *
-   * @generated from field: string path = 1;
-   */
-  path?: string
-  /**
-   * Additions is the number of added lines.
-   *
-   * @generated from field: uint32 additions = 2;
-   */
-  additions?: number
-  /**
-   * Deletions is the number of deleted lines.
-   *
-   * @generated from field: uint32 deletions = 3;
-   */
-  deletions?: number
-}
-
-export const DiffFileStat: MessageType<DiffFileStat> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.DiffFileStat',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'additions', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'deletions', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetDiffStatRequest>(
+    's4wave.git.GetDiffStatRequest',
+    () => [
+      [1, 'ref_a', 9],
+      [2, 'ref_b', 9],
+    ],
+  )
 
 /**
  * GetDiffStatResponse is the response for GetDiffStat.
@@ -555,39 +412,27 @@ export const DiffFileStat: MessageType<DiffFileStat> =
 export interface GetDiffStatResponse {
   /**
    * Files is the list of changed files with stats.
-   *
-   * @generated from field: repeated s4wave.git.DiffFileStat files = 1;
    */
   files?: DiffFileStat[]
   /**
    * TotalAdditions is the total number of added lines.
-   *
-   * @generated from field: uint32 total_additions = 2;
    */
   totalAdditions?: number
   /**
    * TotalDeletions is the total number of deleted lines.
-   *
-   * @generated from field: uint32 total_deletions = 3;
    */
   totalDeletions?: number
 }
 
 export const GetDiffStatResponse: MessageType<GetDiffStatResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetDiffStatResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'files',
-        kind: 'message',
-        T: DiffFileStat,
-        repeated: true,
-      },
-      { no: 2, name: 'total_additions', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'total_deletions', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetDiffStatResponse>(
+    's4wave.git.GetDiffStatResponse',
+    () => [
+      [1, 'files', 11, 1, DiffFileStat.codec],
+      [2, 'total_additions', 13],
+      [3, 'total_deletions', 13],
+    ],
+  )
 
 /**
  * GetDiffPatchRequest is the request for GetDiffPatch.
@@ -597,26 +442,22 @@ export const GetDiffStatResponse: MessageType<GetDiffStatResponse> =
 export interface GetDiffPatchRequest {
   /**
    * RefA is the first ref (branch, tag, or commit hash).
-   *
-   * @generated from field: string ref_a = 1;
    */
   refA?: string
   /**
    * RefB is the second ref. If empty, diffs against ref_a's parent.
-   *
-   * @generated from field: string ref_b = 2;
    */
   refB?: string
 }
 
 export const GetDiffPatchRequest: MessageType<GetDiffPatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetDiffPatchRequest',
-    fields: [
-      { no: 1, name: 'ref_a', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'ref_b', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetDiffPatchRequest>(
+    's4wave.git.GetDiffPatchRequest',
+    () => [
+      [1, 'ref_a', 9],
+      [2, 'ref_b', 9],
+    ],
+  )
 
 /**
  * GetDiffPatchResponse is the response for GetDiffPatch.
@@ -626,37 +467,59 @@ export const GetDiffPatchRequest: MessageType<GetDiffPatchRequest> =
 export interface GetDiffPatchResponse {
   /**
    * Patch is the unified diff patch text.
-   *
-   * @generated from field: string patch = 1;
    */
   patch?: string
   /**
    * Truncated is true when patch was shortened to keep the response bounded.
-   *
-   * @generated from field: bool truncated = 2;
    */
   truncated?: boolean
   /**
    * TotalBytes is the original patch size in bytes before truncation.
-   *
-   * @generated from field: uint64 total_bytes = 3;
    */
   totalBytes?: bigint
   /**
    * LimitBytes is the maximum patch bytes returned by the resource.
-   *
-   * @generated from field: uint32 limit_bytes = 4;
    */
   limitBytes?: number
 }
 
 export const GetDiffPatchResponse: MessageType<GetDiffPatchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.GetDiffPatchResponse',
-    fields: [
-      { no: 1, name: 'patch', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'truncated', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'total_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'limit_bytes', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetDiffPatchResponse>(
+    's4wave.git.GetDiffPatchResponse',
+    () => [
+      [1, 'patch', 9],
+      [2, 'truncated', 8],
+      [3, 'total_bytes', 4],
+      [4, 'limit_bytes', 13],
+    ],
+  )
+
+/**
+ * DiffFileStat contains line change stats for a single file.
+ *
+ * @generated from message s4wave.git.DiffFileStat
+ */
+export interface DiffFileStat {
+  /**
+   * Path is the file path.
+   */
+  path?: string
+  /**
+   * Additions is the number of added lines.
+   */
+  additions?: number
+  /**
+   * Deletions is the number of deleted lines.
+   */
+  deletions?: number
+}
+
+export const DiffFileStat: MessageType<DiffFileStat> =
+  /* @__PURE__ */ createMessageType<DiffFileStat>(
+    's4wave.git.DiffFileStat',
+    () => [
+      [1, 'path', 9],
+      [2, 'additions', 13],
+      [3, 'deletions', 13],
+    ],
+  )

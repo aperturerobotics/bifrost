@@ -4,16 +4,11 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Result, Value } from '../../value/value.pb.js'
-import { LogEntry } from '../execution.pb.js'
 import { Placement } from '../../worker/worker.pb.js'
+import { LogEntry } from '../execution.pb.js'
 
 /**
  * TxType indicates the kind of transaction.
@@ -21,72 +16,192 @@ import { Placement } from '../../worker/worker.pb.js'
  * @generated from enum execution.tx.TxType
  */
 export enum TxType {
-  /**
-   * @generated from enum value: TxType_INVALID = 0;
-   */
   TxType_INVALID = 0,
 
   /**
    * TxType_START starts execution of the transaction.
-   *
-   * @generated from enum value: TxType_START = 1;
    */
   TxType_START = 1,
 
   /**
    * TxType_SET_OUTPUTS changes the value of an output.
-   *
-   * @generated from enum value: TxType_SET_OUTPUTS = 2;
    */
   TxType_SET_OUTPUTS = 2,
 
   /**
    * TxType_COMPLETE sets the result of the execution.
-   *
-   * @generated from enum value: TxType_COMPLETE = 3;
    */
   TxType_COMPLETE = 3,
 
   /**
    * TxType_APPEND_LOG appends log entries to the execution.
-   *
-   * @generated from enum value: TxType_APPEND_LOG = 4;
    */
   TxType_APPEND_LOG = 4,
 
   /**
    * TxType_CANCEL requests cancellation and custody drain.
-   *
-   * @generated from enum value: TxType_CANCEL = 5;
    */
   TxType_CANCEL = 5,
 
   /**
    * TxType_RECLAIM transfers a running execution to a new claim owner.
-   *
-   * @generated from enum value: TxType_RECLAIM = 6;
    */
   TxType_RECLAIM = 6,
 
   /**
    * TxType_SET_WAITING_PLUGIN changes the plugin load wait.
-   *
-   * @generated from enum value: TxType_SET_WAITING_PLUGIN = 7;
    */
   TxType_SET_WAITING_PLUGIN = 7,
 
   /**
    * TxType_RENEW_CLAIM extends the lease of the current claim.
-   *
-   * @generated from enum value: TxType_RENEW_CLAIM = 8;
    */
   TxType_RENEW_CLAIM = 8,
 }
 
 export const TxType_Enum = /* @__PURE__ */ createEnumType(
   'execution.tx.TxType',
-  TxType,
+  [
+    [0, 'TxType_INVALID'],
+    [1, 'TxType_START'],
+    [2, 'TxType_SET_OUTPUTS'],
+    [3, 'TxType_COMPLETE'],
+    [4, 'TxType_APPEND_LOG'],
+    [5, 'TxType_CANCEL'],
+    [6, 'TxType_RECLAIM'],
+    [7, 'TxType_SET_WAITING_PLUGIN'],
+    [8, 'TxType_RENEW_CLAIM'],
+  ],
 )
+
+/**
+ * Tx is the on-the-wire representation of a transaction.
+ *
+ * @generated from message execution.tx.Tx
+ */
+export interface Tx {
+  /**
+   * TxType is the kind of transaction this is.
+   */
+  txType?: TxType
+  /**
+   * TxStart contains the start transaction tx.
+   * TxType_START
+   */
+  txStart?: TxStart
+  /**
+   * TxSetOutputs contains the set outputs tx.
+   * TxType_SET_OUTPUTS
+   */
+  txSetOutputs?: TxSetOutputs
+  /**
+   * TxComplete contains the complete tx.
+   * TxType_COMPLETE
+   */
+  txComplete?: TxComplete
+  /**
+   * TxAppendLog contains the append log tx.
+   * TxType_APPEND_LOG
+   */
+  txAppendLog?: TxAppendLog
+  /**
+   * TxCancel contains the cancel tx.
+   * TxType_CANCEL
+   */
+  txCancel?: TxCancel
+  /**
+   * TxReclaim transfers a running execution after owner liveness is resolved.
+   * TxType_RECLAIM
+   */
+  txReclaim?: TxReclaim
+  /**
+   * TxSetWaitingPlugin updates the plugin load wait reported by the Execution.
+   */
+  txSetWaitingPlugin?: TxSetWaitingPlugin
+  /**
+   * TxRenewClaim extends the lease of the current claim.
+   * TxType_RENEW_CLAIM
+   */
+  txRenewClaim?: TxRenewClaim
+}
+
+export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType<Tx>(
+  'execution.tx.Tx',
+  () => [
+    [1, 'tx_type', 14, 0, TxType_Enum],
+    [2, 'tx_start', 11, 0, TxStart.codec],
+    [3, 'tx_set_outputs', 11, 0, TxSetOutputs.codec],
+    [4, 'tx_complete', 11, 0, TxComplete.codec],
+    [5, 'tx_append_log', 11, 0, TxAppendLog.codec],
+    [6, 'tx_cancel', 11, 0, TxCancel.codec],
+    [7, 'tx_reclaim', 11, 0, TxReclaim.codec],
+    [8, 'tx_set_waiting_plugin', 11, 0, TxSetWaitingPlugin.codec],
+    [9, 'tx_renew_claim', 11, 0, TxRenewClaim.codec],
+  ],
+)
+
+/**
+ * TxRenewClaim extends the claim lease while its holder is alive.
+ * Execution must be RUNNING or CANCELING.
+ * TxType: TxType_RENEW_CLAIM
+ *
+ * @generated from message execution.tx.TxRenewClaim
+ */
+export interface TxRenewClaim {
+  /**
+   * ClaimEpoch fences this renewal to the current claim.
+   */
+  claimEpoch?: bigint
+  /**
+   * ClaimId identifies the controller carrying the claim.
+   */
+  claimId?: string
+  /**
+   * LeaseExpiresAt is the new lease expiry. A renewal that would not extend
+   * the current lease changes nothing.
+   */
+  leaseExpiresAt?: Date
+}
+
+export const TxRenewClaim: MessageType<TxRenewClaim> =
+  /* @__PURE__ */ createMessageType<TxRenewClaim>(
+    'execution.tx.TxRenewClaim',
+    () => [
+      [1, 'claim_epoch', 4],
+      [2, 'claim_id', 9],
+      [3, 'lease_expires_at', 11, 0, Timestamp.codec],
+    ],
+  )
+
+/**
+ * TxSetWaitingPlugin records or clears the plugin load wait under the current claim.
+ *
+ * @generated from message execution.tx.TxSetWaitingPlugin
+ */
+export interface TxSetWaitingPlugin {
+  /**
+   * PluginId is the plugin being awaited, or empty after its client is available.
+   */
+  pluginId?: string
+  /**
+   * ClaimEpoch fences this update to the current claim.
+   */
+  claimEpoch?: bigint
+  /**
+   * ClaimId identifies the controller carrying the claim.
+   */
+  claimId?: string
+}
+
+export const TxSetWaitingPlugin: MessageType<TxSetWaitingPlugin> =
+  /* @__PURE__ */ createMessageType<TxSetWaitingPlugin>(
+    'execution.tx.TxSetWaitingPlugin',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'claim_epoch', 4],
+      [3, 'claim_id', 9],
+    ],
+  )
 
 /**
  * TxStart starts the execution with a peer id.
@@ -100,32 +215,24 @@ export interface TxStart {
    * PeerId is the peer identifier to set as the executor.
    * Must be the same as the sender of the transaction.
    * Must match peer_id on the Execution if it's not empty.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * ClaimId is the opaque identifier of the claiming controller instance.
-   *
-   * @generated from field: string claim_id = 2;
    */
   claimId?: string
   /**
    * LeaseExpiresAt is the initial lease expiry of a new claim.
-   *
-   * @generated from field: google.protobuf.Timestamp lease_expires_at = 3;
    */
   leaseExpiresAt?: Date
 }
 
-export const TxStart: MessageType<TxStart> = /* @__PURE__ */ createMessageType({
-  typeName: 'execution.tx.TxStart',
-  fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'claim_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'lease_expires_at', kind: 'message', T: () => Timestamp },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const TxStart: MessageType<TxStart> =
+  /* @__PURE__ */ createMessageType<TxStart>('execution.tx.TxStart', () => [
+    [1, 'peer_id', 9],
+    [2, 'claim_id', 9],
+    [3, 'lease_expires_at', 11, 0, Timestamp.codec],
+  ])
 
 /**
  * TxSetOutputs updates the value of one or more execution outputs.
@@ -138,46 +245,32 @@ export const TxStart: MessageType<TxStart> = /* @__PURE__ */ createMessageType({
 export interface TxSetOutputs {
   /**
    * Outputs is the set of values to set.
-   *
-   * @generated from field: repeated forge.value.Value outputs = 1;
    */
   outputs?: Value[]
   /**
    * ClearOld indicates to clear all old output values before setting.
-   *
-   * @generated from field: bool clear_old = 2;
    */
   clearOld?: boolean
   /**
    * ClaimEpoch is the fencing token authorizing this write.
-   *
-   * @generated from field: uint64 claim_epoch = 3;
    */
   claimEpoch?: bigint
   /**
    * ClaimId identifies the controller instance carrying the epoch.
-   *
-   * @generated from field: string claim_id = 4;
    */
   claimId?: string
 }
 
 export const TxSetOutputs: MessageType<TxSetOutputs> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'execution.tx.TxSetOutputs',
-    fields: [
-      {
-        no: 1,
-        name: 'outputs',
-        kind: 'message',
-        T: () => Value,
-        repeated: true,
-      },
-      { no: 2, name: 'clear_old', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'claim_epoch', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'claim_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxSetOutputs>(
+    'execution.tx.TxSetOutputs',
+    () => [
+      [1, 'outputs', 11, 1, Value.codec],
+      [2, 'clear_old', 8],
+      [3, 'claim_epoch', 4],
+      [4, 'claim_id', 9],
+    ],
+  )
 
 /**
  * TxComplete completes the execution by setting the result.
@@ -191,33 +284,90 @@ export const TxSetOutputs: MessageType<TxSetOutputs> =
 export interface TxComplete {
   /**
    * Result is information about the outcome of a completed execution.
-   *
-   * @generated from field: forge.value.Result result = 1;
    */
   result?: Result
   /**
    * ClaimEpoch is the fencing token authorizing this completion.
-   *
-   * @generated from field: uint64 claim_epoch = 2;
    */
   claimEpoch?: bigint
   /**
    * ClaimId identifies the controller instance carrying the epoch.
-   *
-   * @generated from field: string claim_id = 3;
    */
   claimId?: string
 }
 
 export const TxComplete: MessageType<TxComplete> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'execution.tx.TxComplete',
-    fields: [
-      { no: 1, name: 'result', kind: 'message', T: () => Result },
-      { no: 2, name: 'claim_epoch', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'claim_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxComplete>(
+    'execution.tx.TxComplete',
+    () => [
+      [1, 'result', 11, 0, Result.codec],
+      [2, 'claim_epoch', 4],
+      [3, 'claim_id', 9],
+    ],
+  )
+
+/**
+ * TxCancel requests cancellation of a running execution.
+ * TxType: TxType_CANCEL
+ *
+ * @generated from message execution.tx.TxCancel
+ */
+export interface TxCancel {}
+
+export const TxCancel: MessageType<TxCancel> =
+  /* @__PURE__ */ createMessageType<TxCancel>('execution.tx.TxCancel', () => [])
+
+/**
+ * TxReclaim transfers a RUNNING or CANCELING execution to a new controller
+ * instance once the current claim lease has expired.
+ * TxType: TxType_RECLAIM
+ *
+ * @generated from message execution.tx.TxReclaim
+ */
+export interface TxReclaim {
+  /**
+   * PeerId is the peer identifier to set as the executor.
+   */
+  peerId?: string
+  /**
+   * ClaimId is the opaque identifier of the new controller instance.
+   */
+  claimId?: string
+  /**
+   * ExpectedClaimEpoch prevents racing transfers from both succeeding.
+   */
+  expectedClaimEpoch?: bigint
+  /**
+   * ObservedAt is the time the sender observed the claim lease expired. The
+   * transaction applies only when the current lease expires at or before it.
+   */
+  observedAt?: Date
+  /**
+   * LeaseExpiresAt is the initial lease expiry of the new claim.
+   * Must be after observed_at.
+   */
+  leaseExpiresAt?: Date
+  /**
+   * ExecutionObjectKey identifies the Execution to reclaim in a World operation.
+   */
+  executionObjectKey?: string
+  /**
+   * Placement selects the reclaiming Worker's custody. Required when replacing
+   * an existing placement; its peer must match PeerId and be linked to the Worker.
+   */
+  placement?: Placement
+}
+
+export const TxReclaim: MessageType<TxReclaim> =
+  /* @__PURE__ */ createMessageType<TxReclaim>('execution.tx.TxReclaim', () => [
+    [1, 'peer_id', 9],
+    [2, 'claim_id', 9],
+    [3, 'expected_claim_epoch', 4],
+    [4, 'observed_at', 11, 0, Timestamp.codec],
+    [5, 'lease_expires_at', 11, 0, Timestamp.codec],
+    [6, 'execution_object_key', 9],
+    [7, 'placement', 11, 0, Placement.codec],
+  ])
 
 /**
  * TxAppendLog appends log entries to the execution.
@@ -230,293 +380,24 @@ export const TxComplete: MessageType<TxComplete> =
 export interface TxAppendLog {
   /**
    * Entries is the set of log entries to append.
-   *
-   * @generated from field: repeated forge.execution.LogEntry entries = 1;
    */
   entries?: LogEntry[]
   /**
    * ClaimEpoch is the fencing token authorizing this write.
-   *
-   * @generated from field: uint64 claim_epoch = 2;
    */
   claimEpoch?: bigint
   /**
    * ClaimId identifies the controller instance carrying the epoch.
-   *
-   * @generated from field: string claim_id = 3;
    */
   claimId?: string
 }
 
 export const TxAppendLog: MessageType<TxAppendLog> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'execution.tx.TxAppendLog',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'message',
-        T: () => LogEntry,
-        repeated: true,
-      },
-      { no: 2, name: 'claim_epoch', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'claim_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TxCancel requests cancellation of a running execution.
- * TxType: TxType_CANCEL
- *
- * @generated from message execution.tx.TxCancel
- */
-export interface TxCancel {}
-
-export const TxCancel: MessageType<TxCancel> =
-  /* @__PURE__ */ createEmptyMessageType<TxCancel>(
-    'execution.tx.TxCancel',
-    true,
+  /* @__PURE__ */ createMessageType<TxAppendLog>(
+    'execution.tx.TxAppendLog',
+    () => [
+      [1, 'entries', 11, 1, LogEntry.codec],
+      [2, 'claim_epoch', 4],
+      [3, 'claim_id', 9],
+    ],
   )
-
-/**
- * TxReclaim transfers a RUNNING or CANCELING execution to a new controller
- * instance once the current claim lease has expired.
- * TxType: TxType_RECLAIM
- *
- * @generated from message execution.tx.TxReclaim
- */
-export interface TxReclaim {
-  /**
-   * PeerId is the peer identifier to set as the executor.
-   *
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-  /**
-   * ClaimId is the opaque identifier of the new controller instance.
-   *
-   * @generated from field: string claim_id = 2;
-   */
-  claimId?: string
-  /**
-   * ExpectedClaimEpoch prevents racing transfers from both succeeding.
-   *
-   * @generated from field: uint64 expected_claim_epoch = 3;
-   */
-  expectedClaimEpoch?: bigint
-  /**
-   * ObservedAt is the time the sender observed the claim lease expired. The
-   * transaction applies only when the current lease expires at or before it.
-   *
-   * @generated from field: google.protobuf.Timestamp observed_at = 4;
-   */
-  observedAt?: Date
-  /**
-   * LeaseExpiresAt is the initial lease expiry of the new claim.
-   * Must be after observed_at.
-   *
-   * @generated from field: google.protobuf.Timestamp lease_expires_at = 5;
-   */
-  leaseExpiresAt?: Date
-  /**
-   * ExecutionObjectKey identifies the Execution to reclaim in a World operation.
-   *
-   * @generated from field: string execution_object_key = 6;
-   */
-  executionObjectKey?: string
-  /**
-   * Placement selects the reclaiming Worker's custody. Required when replacing
-   * an existing placement; its peer must match PeerId and be linked to the Worker.
-   *
-   * @generated from field: forge.worker.Placement placement = 7;
-   */
-  placement?: Placement
-}
-
-export const TxReclaim: MessageType<TxReclaim> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'execution.tx.TxReclaim',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'claim_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'expected_claim_epoch',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 4, name: 'observed_at', kind: 'message', T: () => Timestamp },
-      { no: 5, name: 'lease_expires_at', kind: 'message', T: () => Timestamp },
-      {
-        no: 6,
-        name: 'execution_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 7, name: 'placement', kind: 'message', T: () => Placement },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TxSetWaitingPlugin records or clears the plugin load wait under the current claim.
- *
- * @generated from message execution.tx.TxSetWaitingPlugin
- */
-export interface TxSetWaitingPlugin {
-  /**
-   * PluginId is the plugin being awaited, or empty after its client is available.
-   *
-   * @generated from field: string plugin_id = 1;
-   */
-  pluginId?: string
-  /**
-   * ClaimEpoch fences this update to the current claim.
-   *
-   * @generated from field: uint64 claim_epoch = 2;
-   */
-  claimEpoch?: bigint
-  /**
-   * ClaimId identifies the controller carrying the claim.
-   *
-   * @generated from field: string claim_id = 3;
-   */
-  claimId?: string
-}
-
-export const TxSetWaitingPlugin: MessageType<TxSetWaitingPlugin> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'execution.tx.TxSetWaitingPlugin',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'claim_epoch', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'claim_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TxRenewClaim extends the claim lease while its holder is alive.
- * Execution must be RUNNING or CANCELING.
- * TxType: TxType_RENEW_CLAIM
- *
- * @generated from message execution.tx.TxRenewClaim
- */
-export interface TxRenewClaim {
-  /**
-   * ClaimEpoch fences this renewal to the current claim.
-   *
-   * @generated from field: uint64 claim_epoch = 1;
-   */
-  claimEpoch?: bigint
-  /**
-   * ClaimId identifies the controller carrying the claim.
-   *
-   * @generated from field: string claim_id = 2;
-   */
-  claimId?: string
-  /**
-   * LeaseExpiresAt is the new lease expiry. A renewal that would not extend
-   * the current lease changes nothing.
-   *
-   * @generated from field: google.protobuf.Timestamp lease_expires_at = 3;
-   */
-  leaseExpiresAt?: Date
-}
-
-export const TxRenewClaim: MessageType<TxRenewClaim> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'execution.tx.TxRenewClaim',
-    fields: [
-      { no: 1, name: 'claim_epoch', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'claim_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'lease_expires_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Tx is the on-the-wire representation of a transaction.
- *
- * @generated from message execution.tx.Tx
- */
-export interface Tx {
-  /**
-   * TxType is the kind of transaction this is.
-   *
-   * @generated from field: execution.tx.TxType tx_type = 1;
-   */
-  txType?: TxType
-  /**
-   * TxStart contains the start transaction tx.
-   * TxType_START
-   *
-   * @generated from field: execution.tx.TxStart tx_start = 2;
-   */
-  txStart?: TxStart
-  /**
-   * TxSetOutputs contains the set outputs tx.
-   * TxType_SET_OUTPUTS
-   *
-   * @generated from field: execution.tx.TxSetOutputs tx_set_outputs = 3;
-   */
-  txSetOutputs?: TxSetOutputs
-  /**
-   * TxComplete contains the complete tx.
-   * TxType_COMPLETE
-   *
-   * @generated from field: execution.tx.TxComplete tx_complete = 4;
-   */
-  txComplete?: TxComplete
-  /**
-   * TxAppendLog contains the append log tx.
-   * TxType_APPEND_LOG
-   *
-   * @generated from field: execution.tx.TxAppendLog tx_append_log = 5;
-   */
-  txAppendLog?: TxAppendLog
-  /**
-   * TxCancel contains the cancel tx.
-   * TxType_CANCEL
-   *
-   * @generated from field: execution.tx.TxCancel tx_cancel = 6;
-   */
-  txCancel?: TxCancel
-  /**
-   * TxReclaim transfers a running execution after owner liveness is resolved.
-   * TxType_RECLAIM
-   *
-   * @generated from field: execution.tx.TxReclaim tx_reclaim = 7;
-   */
-  txReclaim?: TxReclaim
-  /**
-   * TxSetWaitingPlugin updates the plugin load wait reported by the Execution.
-   *
-   * @generated from field: execution.tx.TxSetWaitingPlugin tx_set_waiting_plugin = 8;
-   */
-  txSetWaitingPlugin?: TxSetWaitingPlugin
-  /**
-   * TxRenewClaim extends the lease of the current claim.
-   * TxType_RENEW_CLAIM
-   *
-   * @generated from field: execution.tx.TxRenewClaim tx_renew_claim = 9;
-   */
-  txRenewClaim?: TxRenewClaim
-}
-
-export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType({
-  typeName: 'execution.tx.Tx',
-  fields: [
-    { no: 1, name: 'tx_type', kind: 'enum', T: TxType_Enum },
-    { no: 2, name: 'tx_start', kind: 'message', T: TxStart },
-    { no: 3, name: 'tx_set_outputs', kind: 'message', T: TxSetOutputs },
-    { no: 4, name: 'tx_complete', kind: 'message', T: TxComplete },
-    { no: 5, name: 'tx_append_log', kind: 'message', T: TxAppendLog },
-    { no: 6, name: 'tx_cancel', kind: 'message', T: TxCancel },
-    { no: 7, name: 'tx_reclaim', kind: 'message', T: TxReclaim },
-    {
-      no: 8,
-      name: 'tx_set_waiting_plugin',
-      kind: 'message',
-      T: TxSetWaitingPlugin,
-    },
-    { no: 9, name: 'tx_renew_claim', kind: 'message', T: TxRenewClaim },
-  ] satisfies readonly PartialFieldInfo[],
-})

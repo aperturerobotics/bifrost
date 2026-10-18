@@ -8,8 +8,6 @@ import { Config as Config$3 } from '../../store/kvtx/kvtx.pb.js'
 import { ObjectRef } from '../../bucket/bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the World Object block-graph backed hydra volume config.
@@ -19,26 +17,18 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * KvKeyOpts are key/value key constants.
-   *
-   * @generated from field: store.kvkey.Config kv_key_opts = 1;
    */
   kvKeyOpts?: Config$1
   /**
    * Verbose will log all operations to the logger for debugging.
-   *
-   * @generated from field: bool verbose = 2;
    */
   verbose?: boolean
   /**
    * VolumeConfig is the volume controller config.
-   *
-   * @generated from field: volume.controller.Config volume_config = 3;
    */
   volumeConfig?: Config$2
   /**
    * StoreConfig is the store configuration for kvtx.
-   *
-   * @generated from field: store.kvtx.Config store_config = 4;
    */
   storeConfig?: Config$3
   /**
@@ -46,8 +36,6 @@ export interface Config {
    * one is not already present. Setting this to false will cause the system to
    * create a new private key if one is not present in the store at startup. If
    * no key is in the store at startup and this is true, returns an error.
-   *
-   * @generated from field: bool no_generate_key = 5;
    */
   noGenerateKey?: boolean
   /**
@@ -56,63 +44,49 @@ export interface Config {
    * identity if there is no key present in the store already.
    *
    * Has no effect if the store has a peer private key.
-   *
-   * @generated from field: bool no_write_key = 11;
    */
   noWriteKey?: boolean
   /**
    * InitHeadRef is the reference to the initial HEAD state of the volume.
    * If the object does not exist, uses this reference to initialize it.
-   *
-   * @generated from field: bucket.ObjectRef init_head_ref = 6;
    */
   initHeadRef?: ObjectRef
   /**
    * EngineId is the world engine to attach to for reading/writing state.
-   *
-   * @generated from field: string engine_id = 7;
    */
   engineId?: string
   /**
    * ObjectKey is the BlockVolume object to attach to.
    * If not exists, waits for it to exist.
-   *
-   * @generated from field: string object_key = 8;
    */
   objectKey?: string
   /**
    * BucketId is the bucket id to attach to for reading/writing state.
    * If set, overrides the bucket id from init_head_ref and the state.
    * If unset, the bucket id is determined from head_ref.
-   *
-   * @generated from field: string bucket_id = 9;
    */
   bucketId?: string
   /**
    * VolumeId is the volume id to attach to for reading/writing data.
    * If unset, init_head_ref must be set, and the volume will be read-only.
-   *
-   * @generated from field: string volume_id = 10;
    */
   volumeId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'volume.world.Config',
-  fields: [
-    { no: 1, name: 'kv_key_opts', kind: 'message', T: () => Config$1 },
-    { no: 2, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 3, name: 'volume_config', kind: 'message', T: () => Config$2 },
-    { no: 4, name: 'store_config', kind: 'message', T: () => Config$3 },
-    { no: 5, name: 'no_generate_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 11, name: 'no_write_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 6, name: 'init_head_ref', kind: 'message', T: () => ObjectRef },
-    { no: 7, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 8, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 9, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 10, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('volume.world.Config', () => [
+    [1, 'kv_key_opts', 11, 0, Config$1.codec],
+    [2, 'verbose', 8],
+    [3, 'volume_config', 11, 0, Config$2.codec],
+    [4, 'store_config', 11, 0, Config$3.codec],
+    [5, 'no_generate_key', 8],
+    [6, 'init_head_ref', 11, 0, ObjectRef.codec],
+    [7, 'engine_id', 9],
+    [8, 'object_key', 9],
+    [9, 'bucket_id', 9],
+    [10, 'volume_id', 9],
+    [11, 'no_write_key', 8],
+  ])
 
 /**
  * Backing is the body of a hydra/volume object backed by a transactional KV object.
@@ -123,15 +97,11 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
 export interface Backing {
   /**
    * KvObjectKey identifies the kv/store object containing the complete Volume.
-   *
-   * @generated from field: string kv_object_key = 1;
    */
   kvObjectKey?: string
 }
 
-export const Backing: MessageType<Backing> = /* @__PURE__ */ createMessageType({
-  typeName: 'volume.world.Backing',
-  fields: [
-    { no: 1, name: 'kv_object_key', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Backing: MessageType<Backing> =
+  /* @__PURE__ */ createMessageType<Backing>('volume.world.Backing', () => [
+    [1, 'kv_object_key', 9],
+  ])

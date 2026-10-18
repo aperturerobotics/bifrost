@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * HashType identifies the hash type in use.
@@ -16,39 +14,33 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum HashType {
   /**
    * HashType_UNKNOWN is an unknown hash type.
-   *
-   * @generated from enum value: HashType_UNKNOWN = 0;
    */
   HashType_UNKNOWN = 0,
 
   /**
    * HashType_SHA256 is the sha256 hash type.
-   *
-   * @generated from enum value: HashType_SHA256 = 1;
    */
   HashType_SHA256 = 1,
 
   /**
    * HashType_SHA1 is the sha1 hash type.
    * NOTE: Do not use SHA1 unless you absolutely have to for backwards compat! (Git)
-   *
-   * @generated from enum value: HashType_SHA1 = 2;
    */
   HashType_SHA1 = 2,
 
   /**
    * HashType_BLAKE3 is the blake3 hash type.
    * Uses a 32-byte digest size.
-   *
-   * @generated from enum value: HashType_BLAKE3 = 3;
    */
   HashType_BLAKE3 = 3,
 }
 
-export const HashType_Enum = /* @__PURE__ */ createEnumType(
-  'hash.HashType',
-  HashType,
-)
+export const HashType_Enum = /* @__PURE__ */ createEnumType('hash.HashType', [
+  [0, 'HashType_UNKNOWN'],
+  [1, 'HashType_SHA256'],
+  [2, 'HashType_SHA1'],
+  [3, 'HashType_BLAKE3'],
+])
 
 /**
  * Hash is a hash of a binary blob.
@@ -58,22 +50,18 @@ export const HashType_Enum = /* @__PURE__ */ createEnumType(
 export interface Hash {
   /**
    * HashType is the hash type in use.
-   *
-   * @generated from field: hash.HashType hash_type = 1;
    */
   hashType?: HashType
   /**
    * Hash is the hash value.
-   *
-   * @generated from field: bytes hash = 2;
    */
   hash?: Uint8Array
 }
 
-export const Hash: MessageType<Hash> = /* @__PURE__ */ createMessageType({
-  typeName: 'hash.Hash',
-  fields: [
-    { no: 1, name: 'hash_type', kind: 'enum', T: HashType_Enum },
-    { no: 2, name: 'hash', kind: 'scalar', T: ScalarType.BYTES },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Hash: MessageType<Hash> = /* @__PURE__ */ createMessageType<Hash>(
+  'hash.Hash',
+  () => [
+    [1, 'hash_type', 14, 0, HashType_Enum],
+    [2, 'hash', 12],
+  ],
+)

@@ -5,7 +5,6 @@
 import { ObjectRef } from '../../bucket/bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * NestedWorld holds an immutable World snapshot beneath a typed World object.
@@ -17,23 +16,19 @@ export interface NestedWorld {
   /**
    * WorldRef is a local edge to the nested World root in the enclosing World bucket.
    * Its transform settings remain attached to the reference.
-   *
-   * @generated from field: bucket.ObjectRef world_ref = 1;
    */
   worldRef?: ObjectRef
   /**
    * PayloadRef is an optional local edge to an opaque app-owned block.
-   *
-   * @generated from field: bucket.ObjectRef payload_ref = 2;
    */
   payloadRef?: ObjectRef
 }
 
 export const NestedWorld: MessageType<NestedWorld> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.NestedWorld',
-    fields: [
-      { no: 1, name: 'world_ref', kind: 'message', T: () => ObjectRef },
-      { no: 2, name: 'payload_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<NestedWorld>(
+    'world.block.NestedWorld',
+    () => [
+      [1, 'world_ref', 11, 0, ObjectRef.codec],
+      [2, 'payload_ref', 11, 0, ObjectRef.codec],
+    ],
+  )

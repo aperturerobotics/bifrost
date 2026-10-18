@@ -5,8 +5,6 @@
 import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the node controller config.
@@ -16,15 +14,11 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * DisableLookup disables lookup processing entirely.
-   *
-   * @generated from field: bool disable_lookup = 1;
    */
   disableLookup?: boolean
   /**
    * DisableDefaultLookup disables the default lookup controller.
    * If a controller is defined in a bucket config this has no effect.
-   *
-   * @generated from field: bool disable_default_lookup = 2;
    */
   disableDefaultLookup?: boolean
   /**
@@ -32,27 +26,13 @@ export interface Config {
    * If this is empty, uses the hard-coded default controller.
    * If DisableDefaultLookup is set, this has no effect.
    * If a controller is defined in a bucket config this has no effect.
-   *
-   * @generated from field: configset.proto.ControllerConfig default_lookup = 3;
    */
   defaultLookup?: ControllerConfig
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'node.controller.Config',
-  fields: [
-    { no: 1, name: 'disable_lookup', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 2,
-      name: 'disable_default_lookup',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    {
-      no: 3,
-      name: 'default_lookup',
-      kind: 'message',
-      T: () => ControllerConfig,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('node.controller.Config', () => [
+    [1, 'disable_lookup', 8],
+    [2, 'disable_default_lookup', 8],
+    [3, 'default_lookup', 11, 0, ControllerConfig.codec],
+  ])

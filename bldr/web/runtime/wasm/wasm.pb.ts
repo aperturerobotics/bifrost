@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * WebWorkerWasmPluginInit is a message passed to initialize a web worker with a wasm plugin.
@@ -16,42 +14,24 @@ export interface WebWorkerWasmPluginInit {
   /**
    * Entrypoint is the path to the wasm entrypoint.
    * /b/pd/{plugin-id}/{plugin-id}.wasm
-   *
-   * @generated from field: string entrypoint = 1;
    */
   entrypoint?: string
   /**
    * Argv is the set of command line arguments to pass to the plugin.
-   *
-   * @generated from field: repeated string argv = 2;
    */
   argv?: string[]
   /**
    * Env is the set of environment variables to pass to the plugin.
-   *
-   * @generated from field: map<string, string> env = 3;
    */
   env?: { [key: string]: string }
 }
 
 export const WebWorkerWasmPluginInit: MessageType<WebWorkerWasmPluginInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.runtime.wasm.WebWorkerWasmPluginInit',
-    fields: [
-      { no: 1, name: 'entrypoint', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'argv',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'env',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebWorkerWasmPluginInit>(
+    'web.runtime.wasm.WebWorkerWasmPluginInit',
+    () => [
+      [1, 'entrypoint', 9],
+      [2, 'argv', 9, 1],
+      [3, 'env', 9, 584],
+    ],
+  )

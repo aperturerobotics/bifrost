@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import {
   SessionListEntry,
   SessionRef,
@@ -20,19 +18,15 @@ import { SOInviteMessage } from '../../../core/sobject/sobject.pb.js'
 export interface AttachAccountRequest {
   /**
    * AccountId identifies the local provider account to attach.
-   *
-   * @generated from field: string account_id = 1;
    */
   accountId?: string
 }
 
 export const AttachAccountRequest: MessageType<AttachAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.local.AttachAccountRequest',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AttachAccountRequest>(
+    's4wave.provider.local.AttachAccountRequest',
+    () => [[1, 'account_id', 9]],
+  )
 
 /**
  * AttachAccountResponse identifies the registered or previously attached Session.
@@ -42,24 +36,15 @@ export const AttachAccountRequest: MessageType<AttachAccountRequest> =
 export interface AttachAccountResponse {
   /**
    * SessionListEntry identifies the Session in the shared catalog.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
 }
 
 export const AttachAccountResponse: MessageType<AttachAccountResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.local.AttachAccountResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AttachAccountResponse>(
+    's4wave.provider.local.AttachAccountResponse',
+    () => [[1, 'session_list_entry', 11, 0, SessionListEntry.codec]],
+  )
 
 /**
  * CompleteSpaceLinkEnrollmentRequest creates the caller's local session from
@@ -72,39 +57,28 @@ export interface CompleteSpaceLinkEnrollmentRequest {
    * SessionPemPrivateKey is the Device's durable session private key. The
    * local provider uses it only to seed this Device's own local session; it
    * is never forwarded, logged, or copied to another peer.
-   *
-   * @generated from field: bytes session_pem_private_key = 1;
    */
   sessionPemPrivateKey?: Uint8Array
   /**
    * SessionPeerId is the peer ID expected to derive from the key. Empty
    * skips the identity check.
-   *
-   * @generated from field: string session_peer_id = 2;
    */
   sessionPeerId?: string
   /**
    * Invite is the one-use targeted SOInviteMessage from the approval.
-   *
-   * @generated from field: sobject.SOInviteMessage invite = 3;
    */
   invite?: SOInviteMessage
 }
 
 export const CompleteSpaceLinkEnrollmentRequest: MessageType<CompleteSpaceLinkEnrollmentRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.local.CompleteSpaceLinkEnrollmentRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'session_pem_private_key',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-      { no: 2, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'invite', kind: 'message', T: () => SOInviteMessage },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CompleteSpaceLinkEnrollmentRequest>(
+    's4wave.provider.local.CompleteSpaceLinkEnrollmentRequest',
+    () => [
+      [1, 'session_pem_private_key', 12],
+      [2, 'session_peer_id', 9],
+      [3, 'invite', 11, 0, SOInviteMessage.codec],
+    ],
+  )
 
 /**
  * CompleteSpaceLinkEnrollmentResponse returns the enrolled session entry.
@@ -114,24 +88,15 @@ export const CompleteSpaceLinkEnrollmentRequest: MessageType<CompleteSpaceLinkEn
 export interface CompleteSpaceLinkEnrollmentResponse {
   /**
    * SessionListEntry is the enrolled local session entry.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
 }
 
 export const CompleteSpaceLinkEnrollmentResponse: MessageType<CompleteSpaceLinkEnrollmentResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.local.CompleteSpaceLinkEnrollmentResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CompleteSpaceLinkEnrollmentResponse>(
+    's4wave.provider.local.CompleteSpaceLinkEnrollmentResponse',
+    () => [[1, 'session_list_entry', 11, 0, SessionListEntry.codec]],
+  )
 
 /**
  * CreateAccountRequest creates a new account on the local provider.
@@ -142,19 +107,15 @@ export interface CreateAccountRequest {
   /**
    * DeferRegistration prepares a private pairing Session without adding an
    * unrelated account to Home. The completed enrollment registers its result.
-   *
-   * @generated from field: bool defer_registration = 1;
    */
   deferRegistration?: boolean
 }
 
 export const CreateAccountRequest: MessageType<CreateAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.local.CreateAccountRequest',
-    fields: [
-      { no: 1, name: 'defer_registration', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateAccountRequest>(
+    's4wave.provider.local.CreateAccountRequest',
+    () => [[1, 'defer_registration', 8]],
+  )
 
 /**
  * CreateAccountResponse returns the details of the created provider account.
@@ -164,28 +125,19 @@ export const CreateAccountRequest: MessageType<CreateAccountRequest> =
 export interface CreateAccountResponse {
   /**
    * SessionListEntry is the created session entry.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
   /**
    * SessionRef can be mounted before registration for the pairing exchange.
-   *
-   * @generated from field: session.SessionRef session_ref = 2;
    */
   sessionRef?: SessionRef
 }
 
 export const CreateAccountResponse: MessageType<CreateAccountResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.local.CreateAccountResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-      { no: 2, name: 'session_ref', kind: 'message', T: () => SessionRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateAccountResponse>(
+    's4wave.provider.local.CreateAccountResponse',
+    () => [
+      [1, 'session_list_entry', 11, 0, SessionListEntry.codec],
+      [2, 'session_ref', 11, 0, SessionRef.codec],
+    ],
+  )

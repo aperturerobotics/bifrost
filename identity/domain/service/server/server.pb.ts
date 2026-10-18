@@ -5,8 +5,6 @@
 import { Config as Config$1 } from '@go/github.com/s4wave/spacewave/net/stream/srpc/server/server.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the identity server.
@@ -18,36 +16,25 @@ export interface Config {
   /**
    * Server configures the peer ids and protocol ids to listen on.
    * If the protocol IDs list is empty, uses the default protocol id.
-   *
-   * @generated from field: stream.srpc.server.Config server = 1;
    */
   server?: Config$1
   /**
    * DomainIds is the list of domain IDs to service.
    * If empty, allows any domain ID.
-   *
-   * @generated from field: repeated string domain_ids = 2;
    */
   domainIds?: string[]
   /**
    * RequestTimeout limits the amount of time a request can take.
-   *
-   * @generated from field: string request_timeout = 3;
    */
   requestTimeout?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'identity.domain.server.Config',
-  fields: [
-    { no: 1, name: 'server', kind: 'message', T: () => Config$1 },
-    {
-      no: 2,
-      name: 'domain_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 3, name: 'request_timeout', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'identity.domain.server.Config',
+    () => [
+      [1, 'server', 11, 0, Config$1.codec],
+      [2, 'domain_ids', 9, 1],
+      [3, 'request_timeout', 9],
+    ],
+  )

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { RbacRole } from '../../../rbac/rbac.pb.js'
 
 /**
@@ -14,55 +12,38 @@ import { RbacRole } from '../../../rbac/rbac.pb.js'
  * @generated from message provider.spacewave.api.RbacListRolesRequest
  */
 export interface RbacListRolesRequest {
-  /**
-   * @generated from field: string after_id = 1;
-   */
   afterId?: string
   /**
    * Defaults to 100; maximum 200.
-   *
-   * @generated from field: uint32 limit = 2;
    */
   limit?: number
 }
 
 export const RbacListRolesRequest: MessageType<RbacListRolesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacListRolesRequest',
-    fields: [
-      { no: 1, name: 'after_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacListRolesRequest>(
+    'provider.spacewave.api.RbacListRolesRequest',
+    () => [
+      [1, 'after_id', 9],
+      [2, 'limit', 13],
+    ],
+  )
 
 /**
  * @generated from message provider.spacewave.api.RbacListRolesResponse
  */
 export interface RbacListRolesResponse {
-  /**
-   * @generated from field: repeated rbac.RbacRole roles = 1;
-   */
   roles?: RbacRole[]
-  /**
-   * @generated from field: string next_after_id = 2;
-   */
   nextAfterId?: string
 }
 
 export const RbacListRolesResponse: MessageType<RbacListRolesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacListRolesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'roles',
-        kind: 'message',
-        T: () => RbacRole,
-        repeated: true,
-      },
-      { no: 2, name: 'next_after_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacListRolesResponse>(
+    'provider.spacewave.api.RbacListRolesResponse',
+    () => [
+      [1, 'roles', 11, 1, RbacRole.codec],
+      [2, 'next_after_id', 9],
+    ],
+  )
 
 /**
  * RbacPutRoleRequest creates or replaces a custom platform role.
@@ -70,37 +51,27 @@ export const RbacListRolesResponse: MessageType<RbacListRolesResponse> =
  * @generated from message provider.spacewave.api.RbacPutRoleRequest
  */
 export interface RbacPutRoleRequest {
-  /**
-   * @generated from field: rbac.RbacRole role = 1;
-   */
   role?: RbacRole
 }
 
 export const RbacPutRoleRequest: MessageType<RbacPutRoleRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacPutRoleRequest',
-    fields: [
-      { no: 1, name: 'role', kind: 'message', T: () => RbacRole },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacPutRoleRequest>(
+    'provider.spacewave.api.RbacPutRoleRequest',
+    () => [[1, 'role', 11, 0, RbacRole.codec]],
+  )
 
 /**
  * @generated from message provider.spacewave.api.RbacPutRoleResponse
  */
 export interface RbacPutRoleResponse {
-  /**
-   * @generated from field: string role_id = 1;
-   */
   roleId?: string
 }
 
 export const RbacPutRoleResponse: MessageType<RbacPutRoleResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacPutRoleResponse',
-    fields: [
-      { no: 1, name: 'role_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacPutRoleResponse>(
+    'provider.spacewave.api.RbacPutRoleResponse',
+    () => [[1, 'role_id', 9]],
+  )
 
 /**
  * RbacDeleteRoleRequest removes a custom platform role and revokes its grants.
@@ -108,37 +79,27 @@ export const RbacPutRoleResponse: MessageType<RbacPutRoleResponse> =
  * @generated from message provider.spacewave.api.RbacDeleteRoleRequest
  */
 export interface RbacDeleteRoleRequest {
-  /**
-   * @generated from field: string role_id = 1;
-   */
   roleId?: string
 }
 
 export const RbacDeleteRoleRequest: MessageType<RbacDeleteRoleRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacDeleteRoleRequest',
-    fields: [
-      { no: 1, name: 'role_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacDeleteRoleRequest>(
+    'provider.spacewave.api.RbacDeleteRoleRequest',
+    () => [[1, 'role_id', 9]],
+  )
 
 /**
  * @generated from message provider.spacewave.api.RbacDeleteRoleResponse
  */
 export interface RbacDeleteRoleResponse {
-  /**
-   * @generated from field: string role_id = 1;
-   */
   roleId?: string
 }
 
 export const RbacDeleteRoleResponse: MessageType<RbacDeleteRoleResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacDeleteRoleResponse',
-    fields: [
-      { no: 1, name: 'role_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacDeleteRoleResponse>(
+    'provider.spacewave.api.RbacDeleteRoleResponse',
+    () => [[1, 'role_id', 9]],
+  )
 
 /**
  * RbacGrantRecord includes historical grants; revocation never deletes a grant.
@@ -146,71 +107,32 @@ export const RbacDeleteRoleResponse: MessageType<RbacDeleteRoleResponse> =
  * @generated from message provider.spacewave.api.RbacGrantRecord
  */
 export interface RbacGrantRecord {
-  /**
-   * @generated from field: string id = 1;
-   */
   id?: string
-  /**
-   * @generated from field: string role_id = 2;
-   */
   roleId?: string
-  /**
-   * @generated from field: string account_id = 3;
-   */
   accountId?: string
-  /**
-   * @generated from field: uint32 version = 4;
-   */
   version?: number
-  /**
-   * @generated from field: optional int64 expires_at_ms = 5;
-   */
   expiresAtMs?: bigint
-  /**
-   * @generated from field: optional int64 revoked_at_ms = 6;
-   */
   revokedAtMs?: bigint
-  /**
-   * @generated from field: int64 created_at_ms = 7;
-   */
   createdAtMs?: bigint
-  /**
-   * @generated from field: string issuer_type = 8;
-   */
   issuerType?: string
-  /**
-   * @generated from field: string issuer_id = 9;
-   */
   issuerId?: string
 }
 
 export const RbacGrantRecord: MessageType<RbacGrantRecord> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacGrantRecord',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'role_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'version', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 5,
-        name: 'expires_at_ms',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-        opt: true,
-      },
-      {
-        no: 6,
-        name: 'revoked_at_ms',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-        opt: true,
-      },
-      { no: 7, name: 'created_at_ms', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 8, name: 'issuer_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'issuer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacGrantRecord>(
+    'provider.spacewave.api.RbacGrantRecord',
+    () => [
+      [1, 'id', 9],
+      [2, 'role_id', 9],
+      [3, 'account_id', 9],
+      [4, 'version', 13],
+      [5, 'expires_at_ms', 3, 4],
+      [6, 'revoked_at_ms', 3, 4],
+      [7, 'created_at_ms', 3],
+      [8, 'issuer_type', 9],
+      [9, 'issuer_id', 9],
+    ],
+  )
 
 /**
  * RbacListGrantsRequest lists account platform grants in ID order.
@@ -218,70 +140,44 @@ export const RbacGrantRecord: MessageType<RbacGrantRecord> =
  * @generated from message provider.spacewave.api.RbacListGrantsRequest
  */
 export interface RbacListGrantsRequest {
-  /**
-   * @generated from field: string account_id = 1;
-   */
   accountId?: string
-  /**
-   * @generated from field: string role_id = 2;
-   */
   roleId?: string
-  /**
-   * @generated from field: bool include_inactive = 3;
-   */
   includeInactive?: boolean
-  /**
-   * @generated from field: string after_id = 4;
-   */
   afterId?: string
   /**
    * Defaults to 100; maximum 200.
-   *
-   * @generated from field: uint32 limit = 5;
    */
   limit?: number
 }
 
 export const RbacListGrantsRequest: MessageType<RbacListGrantsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacListGrantsRequest',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'role_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'include_inactive', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'after_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacListGrantsRequest>(
+    'provider.spacewave.api.RbacListGrantsRequest',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'role_id', 9],
+      [3, 'include_inactive', 8],
+      [4, 'after_id', 9],
+      [5, 'limit', 13],
+    ],
+  )
 
 /**
  * @generated from message provider.spacewave.api.RbacListGrantsResponse
  */
 export interface RbacListGrantsResponse {
-  /**
-   * @generated from field: repeated provider.spacewave.api.RbacGrantRecord grants = 1;
-   */
   grants?: RbacGrantRecord[]
-  /**
-   * @generated from field: string next_after_id = 2;
-   */
   nextAfterId?: string
 }
 
 export const RbacListGrantsResponse: MessageType<RbacListGrantsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacListGrantsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'grants',
-        kind: 'message',
-        T: RbacGrantRecord,
-        repeated: true,
-      },
-      { no: 2, name: 'next_after_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacListGrantsResponse>(
+    'provider.spacewave.api.RbacListGrantsResponse',
+    () => [
+      [1, 'grants', 11, 1, RbacGrantRecord.codec],
+      [2, 'next_after_id', 9],
+    ],
+  )
 
 /**
  * RbacIssueGrantRequest grants a platform role to an active account.
@@ -289,53 +185,33 @@ export const RbacListGrantsResponse: MessageType<RbacListGrantsResponse> =
  * @generated from message provider.spacewave.api.RbacIssueGrantRequest
  */
 export interface RbacIssueGrantRequest {
-  /**
-   * @generated from field: string role_id = 1;
-   */
   roleId?: string
-  /**
-   * @generated from field: string account_id = 2;
-   */
   accountId?: string
-  /**
-   * @generated from field: optional int64 expires_at_ms = 3;
-   */
   expiresAtMs?: bigint
 }
 
 export const RbacIssueGrantRequest: MessageType<RbacIssueGrantRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacIssueGrantRequest',
-    fields: [
-      { no: 1, name: 'role_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'expires_at_ms',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-        opt: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacIssueGrantRequest>(
+    'provider.spacewave.api.RbacIssueGrantRequest',
+    () => [
+      [1, 'role_id', 9],
+      [2, 'account_id', 9],
+      [3, 'expires_at_ms', 3, 4],
+    ],
+  )
 
 /**
  * @generated from message provider.spacewave.api.RbacIssueGrantResponse
  */
 export interface RbacIssueGrantResponse {
-  /**
-   * @generated from field: string grant_id = 1;
-   */
   grantId?: string
 }
 
 export const RbacIssueGrantResponse: MessageType<RbacIssueGrantResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacIssueGrantResponse',
-    fields: [
-      { no: 1, name: 'grant_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacIssueGrantResponse>(
+    'provider.spacewave.api.RbacIssueGrantResponse',
+    () => [[1, 'grant_id', 9]],
+  )
 
 /**
  * RbacRevokeGrantRequest tombstones an account platform grant. Repeating is safe.
@@ -343,34 +219,24 @@ export const RbacIssueGrantResponse: MessageType<RbacIssueGrantResponse> =
  * @generated from message provider.spacewave.api.RbacRevokeGrantRequest
  */
 export interface RbacRevokeGrantRequest {
-  /**
-   * @generated from field: string grant_id = 1;
-   */
   grantId?: string
 }
 
 export const RbacRevokeGrantRequest: MessageType<RbacRevokeGrantRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacRevokeGrantRequest',
-    fields: [
-      { no: 1, name: 'grant_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacRevokeGrantRequest>(
+    'provider.spacewave.api.RbacRevokeGrantRequest',
+    () => [[1, 'grant_id', 9]],
+  )
 
 /**
  * @generated from message provider.spacewave.api.RbacRevokeGrantResponse
  */
 export interface RbacRevokeGrantResponse {
-  /**
-   * @generated from field: string grant_id = 1;
-   */
   grantId?: string
 }
 
 export const RbacRevokeGrantResponse: MessageType<RbacRevokeGrantResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RbacRevokeGrantResponse',
-    fields: [
-      { no: 1, name: 'grant_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacRevokeGrantResponse>(
+    'provider.spacewave.api.RbacRevokeGrantResponse',
+    () => [[1, 'grant_id', 9]],
+  )

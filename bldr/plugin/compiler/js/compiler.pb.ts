@@ -3,22 +3,20 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
-import { StringFilter } from '@go/github.com/aperturerobotics/util/filter/filter.pb.js'
-import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import {
-  SetHtmlLinksRequest,
-  SetRenderModeRequest,
-} from '../../../web/view/view.pb.js'
 import { EsbuildBundleMeta } from '../../../web/bundler/esbuild/compiler/compiler.pb.js'
 import { ViteBundleMeta } from '../../../web/bundler/vite/compiler/compiler.pb.js'
 import { WebPkgRefConfig } from '../../../web/bundler/bundler.pb.js'
 import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { WebPkgRef } from '../../../web/pkg/pkg.pb.js'
 import { EsbuildOutputMeta } from '../../../web/bundler/esbuild/esbuild.pb.js'
 import { ViteOutputMeta } from '../../../web/bundler/vite/vite.pb.js'
+import { StringFilter } from '@go/github.com/aperturerobotics/util/filter/filter.pb.js'
+import {
+  SetHtmlLinksRequest,
+  SetRenderModeRequest,
+} from '../../../web/view/view.pb.js'
 
 /**
  * JsModuleKind specifies the kind of the JS module.
@@ -28,219 +26,30 @@ import { ViteOutputMeta } from '../../../web/bundler/vite/vite.pb.js'
 export enum JsModuleKind {
   /**
    * JS_MODULE_KIND_INVALID is the invalid value.
-   *
-   * @generated from enum value: JS_MODULE_KIND_INVALID = 0;
    */
   INVALID = 0,
 
   /**
    * JS_MODULE_KIND_BACKEND indicates the module runs on the plugin backend.
    * The module should export a function matching the Plugin interface.
-   *
-   * @generated from enum value: JS_MODULE_KIND_BACKEND = 1;
    */
   BACKEND = 1,
 
   /**
    * JS_MODULE_KIND_FRONTEND indicates the module runs on the plugin frontend.
    * This usually means running within a WebView.
-   *
-   * @generated from enum value: JS_MODULE_KIND_FRONTEND = 2;
    */
   FRONTEND = 2,
 }
 
 export const JsModuleKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.plugin.compiler.js.JsModuleKind',
-  JsModuleKind,
-  'JS_MODULE_KIND_',
+  [
+    [0, 'JS_MODULE_KIND_INVALID'],
+    [1, 'JS_MODULE_KIND_BACKEND'],
+    [2, 'JS_MODULE_KIND_FRONTEND'],
+  ],
 )
-
-/**
- * JsModule defines a high-level module to include in the plugin.
- *
- * This is a shortcut for configuring bundles and entrypoints.
- * See the top-level comments on Config for details.
- *
- * @generated from message bldr.plugin.compiler.js.JsModule
- */
-export interface JsModule {
-  /**
-   * Kind is the kind of the module.
-   *
-   * @generated from field: bldr.plugin.compiler.js.JsModuleKind kind = 1;
-   */
-  kind?: JsModuleKind
-  /**
-   * Path is the path to the module source file relative to the project root.
-   * Example: "src/plugin.ts"
-   *
-   * @generated from field: string path = 2;
-   */
-  path?: string
-  /**
-   * ViteConfigPaths are the paths to Vite configuration files to use for this module's bundle.
-   * These are merged with the top-level vite_config_paths.
-   *
-   * @generated from field: repeated string vite_config_paths = 3;
-   */
-  viteConfigPaths?: string[]
-  /**
-   * DisableProjectConfig disables searching for the vite.config.ts in the project root for this module's bundle.
-   * Overrides the top-level vite_disable_project_config if set to true.
-   *
-   * @generated from field: bool disable_project_config = 4;
-   */
-  disableProjectConfig?: boolean
-  /**
-   * Entrypoint enables adding an entrypoint for this module.
-   * If false, no BackendEntrypoint or FrontendEntrypoint will be automatically created.
-   *
-   * @generated from field: bool entrypoint = 5;
-   */
-  entrypoint?: boolean
-  /**
-   * WebViewId filters by web view id for FRONTEND modules.
-   * Frontend modules only create a FrontendEntrypoint when WebViewId or
-   * WebViewParentId is set.
-   *
-   * @generated from field: filter.StringFilter web_view_id = 6;
-   */
-  webViewId?: StringFilter
-  /**
-   * WebViewParentId filters by web view parent id for FRONTEND modules.
-   * Frontend modules only create a FrontendEntrypoint when WebViewId or
-   * WebViewParentId is set.
-   *
-   * @generated from field: filter.StringFilter web_view_parent_id = 7;
-   */
-  webViewParentId?: StringFilter
-}
-
-export const JsModule: MessageType<JsModule> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.js.JsModule',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: JsModuleKind_Enum },
-      { no: 2, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'vite_config_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'disable_project_config',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 5, name: 'entrypoint', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'web_view_id', kind: 'message', T: () => StringFilter },
-      {
-        no: 7,
-        name: 'web_view_parent_id',
-        kind: 'message',
-        T: () => StringFilter,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BackendEntrypoint configures a backend entrypoint.
- *
- * @generated from message bldr.plugin.compiler.js.BackendEntrypoint
- */
-export interface BackendEntrypoint {
-  /**
-   * ImportPath is the path to the module within the assets fs to import().
-   * Example: "esb/backend/index.js"
-   * The path must export a export which matches ImportName (defaults to the default export).
-   * For example: export default async function runBackend(api: bldr.PluginAPI): Promise<void> => {}
-   *
-   * @generated from field: string import_path = 1;
-   */
-  importPath?: string
-  /**
-   * ImportName is the name of the import to consume from the es module.
-   * Defaults to "default" which is the default export.
-   *
-   * @generated from field: string import_name = 2;
-   */
-  importName?: string
-}
-
-export const BackendEntrypoint: MessageType<BackendEntrypoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.js.BackendEntrypoint',
-    fields: [
-      { no: 1, name: 'import_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'import_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * FrontendEntrypoint configures a frontend entrypoint.
- *
- * @generated from message bldr.plugin.compiler.js.FrontendEntrypoint
- */
-export interface FrontendEntrypoint {
-  /**
-   * SetRenderMode contains the set render mode request for the web view.
-   * The script path will have /b/pa/{plugin-id}/ prepended to it automatically.
-   * Ignored if empty.
-   *
-   * @generated from field: web.view.SetRenderModeRequest set_render_mode = 1;
-   */
-  setRenderMode?: SetRenderModeRequest
-  /**
-   * SetHtmlLinks contains the set html links request for the web view.
-   * The html links paths will have /b/pa/{plugin-id}/ prepended to them automatically.
-   * Ignored if empty.
-   *
-   * @generated from field: web.view.SetHtmlLinksRequest set_html_links = 2;
-   */
-  setHtmlLinks?: SetHtmlLinksRequest
-  /**
-   * WebViewId filters by web view id.
-   *
-   * @generated from field: filter.StringFilter web_view_id = 3;
-   */
-  webViewId?: StringFilter
-  /**
-   * WebViewParentId filters by web view parent id.
-   *
-   * @generated from field: filter.StringFilter web_view_parent_id = 4;
-   */
-  webViewParentId?: StringFilter
-}
-
-export const FrontendEntrypoint: MessageType<FrontendEntrypoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.js.FrontendEntrypoint',
-    fields: [
-      {
-        no: 1,
-        name: 'set_render_mode',
-        kind: 'message',
-        T: () => SetRenderModeRequest,
-      },
-      {
-        no: 2,
-        name: 'set_html_links',
-        kind: 'message',
-        T: () => SetHtmlLinksRequest,
-      },
-      { no: 3, name: 'web_view_id', kind: 'message', T: () => StringFilter },
-      {
-        no: 4,
-        name: 'web_view_parent_id',
-        kind: 'message',
-        T: () => StringFilter,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Config configures the Js/TypeScript plugin compiler controller.
@@ -281,59 +90,43 @@ export interface Config {
    * Modules is a high-level way of defining elements of a Js plugin.
    *
    * See the top-level comments on Config for details.
-   *
-   * @generated from field: repeated bldr.plugin.compiler.js.JsModule modules = 1;
    */
   modules?: JsModule[]
   /**
    * EsbuildBundles is the list of esbuild bundles to compile.
    * These bundles will be included in the assets fs under esb/
-   *
-   * @generated from field: repeated bldr.web.bundler.esbuild.compiler.EsbuildBundleMeta esbuild_bundles = 2;
    */
   esbuildBundles?: EsbuildBundleMeta[]
   /**
    * EsbuildFlags is a string list containing additional flags to pass to esbuild.
    * Flags passed by esbuild_bundles can override these values.
    * E.x.: --target es2020
-   *
-   * @generated from field: repeated string esbuild_flags = 3;
    */
   esbuildFlags?: string[]
   /**
    * ViteBundles is the list of vite bundles to compile.
    * These bundles will be included in the assets fs under vite/
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.compiler.ViteBundleMeta vite_bundles = 4;
    */
   viteBundles?: ViteBundleMeta[]
   /**
    * ViteConfigPaths is a list of paths to Vite configuration files to apply to all bundles.
    * Ignored unless any vite_bundles are defined.
-   *
-   * @generated from field: repeated string vite_config_paths = 5;
    */
   viteConfigPaths?: string[]
   /**
    * ViteDisableProjectConfig indicates whether to disable automatic project config detection for Vite.
    * Disables finding the root vite.conf.ts for the project.
    * Ignored unless any bldr:vite directives are found in the code.
-   *
-   * @generated from field: bool vite_disable_project_config = 6;
    */
   viteDisableProjectConfig?: boolean
   /**
    * BackendEntrypoints are scripts loaded from the assets fs when the plugin is started into the backend.
    * The backend is usually a WebWorker.
-   *
-   * @generated from field: repeated bldr.plugin.compiler.js.BackendEntrypoint backend_entrypoints = 7;
    */
   backendEntrypoints?: BackendEntrypoint[]
   /**
    * FrontendEntrypoints are scripts loaded from the assets fs into the frontend.
    * The frontend is usually a WebView.
-   *
-   * @generated from field: repeated bldr.plugin.compiler.js.FrontendEntrypoint frontend_entrypoints = 8;
    */
   frontendEntrypoints?: FrontendEntrypoint[]
   /**
@@ -351,8 +144,6 @@ export interface Config {
    * They will also be available at /b/pkg: e.g. /b/pkg/@my/npm-package/foo/bar/index.js
    *
    * Note: only files & entrypoints imported by at least one js file will be included.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 9;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
@@ -361,8 +152,6 @@ export interface Config {
    * This will be included in the plugin binary.
    * Adds a config to configSet with ID bldr/plugin/host/configset
    * Merged with the plugin compiler HostConfigSet field.
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> host_config_set = 10;
    */
   hostConfigSet?: { [key: string]: ControllerConfig }
   /**
@@ -370,22 +159,16 @@ export interface Config {
    * The handler handles the Fetch service by consuming a set of HTTP handlers.
    * This service is used for the ServiceWorker HTTP calls.
    * TODO: unimplemented
-   *
-   * @generated from field: bool disable_rpc_fetch = 11;
    */
   disableRpcFetch?: boolean
   /**
    * WebPluginId sets the plugin id for the web plugin.
    *
    * If set, the plugin will load the web plugin with the given ID and load frontend entrypoints.
-   *
-   * @generated from field: string web_plugin_id = 13;
    */
   webPluginId?: string
   /**
    * BuildTypes contains a mapping of BuildType to Config override.
-   *
-   * @generated from field: map<string, bldr.plugin.compiler.js.Config> build_types = 14;
    */
   buildTypes?: { [key: string]: Config }
   /**
@@ -393,96 +176,30 @@ export interface Config {
    * Keys are platform IDs (e.g., "desktop", "js", "none", "desktop/linux/amd64").
    * Both base platform IDs and full platform IDs are checked: a build for
    * "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
-   *
-   * @generated from field: map<string, bldr.plugin.compiler.js.Config> platform_types = 15;
    */
   platformTypes?: { [key: string]: Config }
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.plugin.compiler.js.Config',
-  fields: [
-    { no: 1, name: 'modules', kind: 'message', T: JsModule, repeated: true },
-    {
-      no: 2,
-      name: 'esbuild_bundles',
-      kind: 'message',
-      T: () => EsbuildBundleMeta,
-      repeated: true,
-    },
-    {
-      no: 3,
-      name: 'esbuild_flags',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 4,
-      name: 'vite_bundles',
-      kind: 'message',
-      T: () => ViteBundleMeta,
-      repeated: true,
-    },
-    {
-      no: 5,
-      name: 'vite_config_paths',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 6,
-      name: 'vite_disable_project_config',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    {
-      no: 7,
-      name: 'backend_entrypoints',
-      kind: 'message',
-      T: BackendEntrypoint,
-      repeated: true,
-    },
-    {
-      no: 8,
-      name: 'frontend_entrypoints',
-      kind: 'message',
-      T: FrontendEntrypoint,
-      repeated: true,
-    },
-    {
-      no: 9,
-      name: 'web_pkgs',
-      kind: 'message',
-      T: () => WebPkgRefConfig,
-      repeated: true,
-    },
-    {
-      no: 10,
-      name: 'host_config_set',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => ControllerConfig },
-    },
-    { no: 11, name: 'disable_rpc_fetch', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 13, name: 'web_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 14,
-      name: 'build_types',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => Config },
-    },
-    {
-      no: 15,
-      name: 'platform_types',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => Config },
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.plugin.compiler.js.Config',
+    () => [
+      [1, 'modules', 11, 1, JsModule.codec],
+      [2, 'esbuild_bundles', 11, 1, EsbuildBundleMeta.codec],
+      [3, 'esbuild_flags', 9, 1],
+      [4, 'vite_bundles', 11, 1, ViteBundleMeta.codec],
+      [5, 'vite_config_paths', 9, 1],
+      [6, 'vite_disable_project_config', 8],
+      [7, 'backend_entrypoints', 11, 1, BackendEntrypoint.codec],
+      [8, 'frontend_entrypoints', 11, 1, FrontendEntrypoint.codec],
+      [9, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [10, 'host_config_set', 11, 584, ControllerConfig.codec],
+      [11, 'disable_rpc_fetch', 8],
+      [13, 'web_plugin_id', 9],
+      [14, 'build_types', 11, 584, Config.codec],
+      [15, 'platform_types', 11, 584, Config.codec],
+    ],
+  )
 
 /**
  * PreBuildHookResult is the output of a pre-build hook.
@@ -493,19 +210,15 @@ export interface PreBuildHookResult {
   /**
    * Config is the configuration for the plugin build step.
    * Merged with the existing configuration.
-   *
-   * @generated from field: bldr.plugin.compiler.js.Config config = 1;
    */
   config?: Config
 }
 
 export const PreBuildHookResult: MessageType<PreBuildHookResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.js.PreBuildHookResult',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PreBuildHookResult>(
+    'bldr.plugin.compiler.js.PreBuildHookResult',
+    () => [[1, 'config', 11, 0, Config.codec]],
+  )
 
 /**
  * InputManifestMeta is metadata attached to the input manifest.
@@ -515,139 +228,190 @@ export const PreBuildHookResult: MessageType<PreBuildHookResult> =
 export interface InputManifestMeta {
   /**
    * WebPkgRefs contains the list of web pkg references.
-   *
-   * @generated from field: repeated web.pkg.WebPkgRef web_pkg_refs = 1;
    */
   webPkgRefs?: WebPkgRef[]
   /**
    * WebPkgs is the list of web pkgs that we separate from the bundle.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 2;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
    * EsbuildBundles is the list of esbuild bundles that were configured.
-   *
-   * @generated from field: repeated bldr.web.bundler.esbuild.compiler.EsbuildBundleMeta esbuild_bundles = 3;
    */
   esbuildBundles?: EsbuildBundleMeta[]
   /**
    * EsbuildFlags are the base command-line arguments to pass to all esbuild bundles.
-   *
-   * @generated from field: repeated string esbuild_flags = 4;
    */
   esbuildFlags?: string[]
   /**
    * EsbuildOutputs contains a list of files written by esbuild.
-   *
-   * @generated from field: repeated bldr.web.bundler.esbuild.EsbuildOutputMeta esbuild_outputs = 5;
    */
   esbuildOutputs?: EsbuildOutputMeta[]
   /**
    * ViteBundles is the list of vite bundles that were configured.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.compiler.ViteBundleMeta vite_bundles = 6;
    */
   viteBundles?: ViteBundleMeta[]
   /**
    * ViteConfigPaths are paths to Vite configuration files to merge together.
-   *
-   * @generated from field: repeated string vite_config_paths = 7;
    */
   viteConfigPaths?: string[]
   /**
    * ViteOutputs contains a list of files written by vite.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.ViteOutputMeta vite_outputs = 8;
    */
   viteOutputs?: ViteOutputMeta[]
   /**
    * ViteDisableProjectConfig indicates whether to disable automatic project config detection.
    * Disables finding the root vite.conf.ts for the project.
-   *
-   * @generated from field: bool vite_disable_project_config = 9;
    */
   viteDisableProjectConfig?: boolean
   /**
    * CompiledEntrypointPath is the path within the assets filesystem to the compiled plugin entrypoint script.
    * Usually: plugin.mjs
-   *
-   * @generated from field: string compiled_entrypoint_path = 10;
    */
   compiledEntrypointPath?: string
 }
 
 export const InputManifestMeta: MessageType<InputManifestMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.js.InputManifestMeta',
-    fields: [
-      {
-        no: 1,
-        name: 'web_pkg_refs',
-        kind: 'message',
-        T: () => WebPkgRef,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'web_pkgs',
-        kind: 'message',
-        T: () => WebPkgRefConfig,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'esbuild_bundles',
-        kind: 'message',
-        T: () => EsbuildBundleMeta,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'esbuild_flags',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'esbuild_outputs',
-        kind: 'message',
-        T: () => EsbuildOutputMeta,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'vite_bundles',
-        kind: 'message',
-        T: () => ViteBundleMeta,
-        repeated: true,
-      },
-      {
-        no: 7,
-        name: 'vite_config_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 8,
-        name: 'vite_outputs',
-        kind: 'message',
-        T: () => ViteOutputMeta,
-        repeated: true,
-      },
-      {
-        no: 9,
-        name: 'vite_disable_project_config',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      {
-        no: 10,
-        name: 'compiled_entrypoint_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InputManifestMeta>(
+    'bldr.plugin.compiler.js.InputManifestMeta',
+    () => [
+      [1, 'web_pkg_refs', 11, 1, WebPkgRef.codec],
+      [2, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [3, 'esbuild_bundles', 11, 1, EsbuildBundleMeta.codec],
+      [4, 'esbuild_flags', 9, 1],
+      [5, 'esbuild_outputs', 11, 1, EsbuildOutputMeta.codec],
+      [6, 'vite_bundles', 11, 1, ViteBundleMeta.codec],
+      [7, 'vite_config_paths', 9, 1],
+      [8, 'vite_outputs', 11, 1, ViteOutputMeta.codec],
+      [9, 'vite_disable_project_config', 8],
+      [10, 'compiled_entrypoint_path', 9],
+    ],
+  )
+
+/**
+ * JsModule defines a high-level module to include in the plugin.
+ *
+ * This is a shortcut for configuring bundles and entrypoints.
+ * See the top-level comments on Config for details.
+ *
+ * @generated from message bldr.plugin.compiler.js.JsModule
+ */
+export interface JsModule {
+  /**
+   * Kind is the kind of the module.
+   */
+  kind?: JsModuleKind
+  /**
+   * Path is the path to the module source file relative to the project root.
+   * Example: "src/plugin.ts"
+   */
+  path?: string
+  /**
+   * ViteConfigPaths are the paths to Vite configuration files to use for this module's bundle.
+   * These are merged with the top-level vite_config_paths.
+   */
+  viteConfigPaths?: string[]
+  /**
+   * DisableProjectConfig disables searching for the vite.config.ts in the project root for this module's bundle.
+   * Overrides the top-level vite_disable_project_config if set to true.
+   */
+  disableProjectConfig?: boolean
+  /**
+   * Entrypoint enables adding an entrypoint for this module.
+   * If false, no BackendEntrypoint or FrontendEntrypoint will be automatically created.
+   */
+  entrypoint?: boolean
+  /**
+   * WebViewId filters by web view id for FRONTEND modules.
+   * Frontend modules only create a FrontendEntrypoint when WebViewId or
+   * WebViewParentId is set.
+   */
+  webViewId?: StringFilter
+  /**
+   * WebViewParentId filters by web view parent id for FRONTEND modules.
+   * Frontend modules only create a FrontendEntrypoint when WebViewId or
+   * WebViewParentId is set.
+   */
+  webViewParentId?: StringFilter
+}
+
+export const JsModule: MessageType<JsModule> =
+  /* @__PURE__ */ createMessageType<JsModule>(
+    'bldr.plugin.compiler.js.JsModule',
+    () => [
+      [1, 'kind', 14, 0, JsModuleKind_Enum],
+      [2, 'path', 9],
+      [3, 'vite_config_paths', 9, 1],
+      [4, 'disable_project_config', 8],
+      [5, 'entrypoint', 8],
+      [6, 'web_view_id', 11, 0, StringFilter.codec],
+      [7, 'web_view_parent_id', 11, 0, StringFilter.codec],
+    ],
+  )
+
+/**
+ * BackendEntrypoint configures a backend entrypoint.
+ *
+ * @generated from message bldr.plugin.compiler.js.BackendEntrypoint
+ */
+export interface BackendEntrypoint {
+  /**
+   * ImportPath is the path to the module within the assets fs to import().
+   * Example: "esb/backend/index.js"
+   * The path must export a export which matches ImportName (defaults to the default export).
+   * For example: export default async function runBackend(api: bldr.PluginAPI): Promise<void> => {}
+   */
+  importPath?: string
+  /**
+   * ImportName is the name of the import to consume from the es module.
+   * Defaults to "default" which is the default export.
+   */
+  importName?: string
+}
+
+export const BackendEntrypoint: MessageType<BackendEntrypoint> =
+  /* @__PURE__ */ createMessageType<BackendEntrypoint>(
+    'bldr.plugin.compiler.js.BackendEntrypoint',
+    () => [
+      [1, 'import_path', 9],
+      [2, 'import_name', 9],
+    ],
+  )
+
+/**
+ * FrontendEntrypoint configures a frontend entrypoint.
+ *
+ * @generated from message bldr.plugin.compiler.js.FrontendEntrypoint
+ */
+export interface FrontendEntrypoint {
+  /**
+   * SetRenderMode contains the set render mode request for the web view.
+   * The script path will have /b/pa/{plugin-id}/ prepended to it automatically.
+   * Ignored if empty.
+   */
+  setRenderMode?: SetRenderModeRequest
+  /**
+   * SetHtmlLinks contains the set html links request for the web view.
+   * The html links paths will have /b/pa/{plugin-id}/ prepended to them automatically.
+   * Ignored if empty.
+   */
+  setHtmlLinks?: SetHtmlLinksRequest
+  /**
+   * WebViewId filters by web view id.
+   */
+  webViewId?: StringFilter
+  /**
+   * WebViewParentId filters by web view parent id.
+   */
+  webViewParentId?: StringFilter
+}
+
+export const FrontendEntrypoint: MessageType<FrontendEntrypoint> =
+  /* @__PURE__ */ createMessageType<FrontendEntrypoint>(
+    'bldr.plugin.compiler.js.FrontendEntrypoint',
+    () => [
+      [1, 'set_render_mode', 11, 0, SetRenderModeRequest.codec],
+      [2, 'set_html_links', 11, 0, SetHtmlLinksRequest.codec],
+      [3, 'web_view_id', 11, 0, StringFilter.codec],
+      [4, 'web_view_parent_id', 11, 0, StringFilter.codec],
+    ],
+  )

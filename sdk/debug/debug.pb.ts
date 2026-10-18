@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * EvalJSRequest is a request to evaluate JavaScript code.
@@ -18,35 +13,29 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface EvalJSRequest {
   /**
    * Code is the JavaScript code to evaluate.
-   *
-   * @generated from field: string code = 1;
    */
   code?: string
   /**
    * Url is a URL to import as an ES module (alternative to code).
    * Set by the bridge service; the default export is used as the result.
-   *
-   * @generated from field: string url = 2;
    */
   url?: string
   /**
    * IsModule indicates the code is already a full ES module.
    * When true, the bridge stores the code as-is without wrapping in an async IIFE.
-   *
-   * @generated from field: bool is_module = 3;
    */
   isModule?: boolean
 }
 
 export const EvalJSRequest: MessageType<EvalJSRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debug.EvalJSRequest',
-    fields: [
-      { no: 1, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'is_module', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EvalJSRequest>(
+    's4wave.debug.EvalJSRequest',
+    () => [
+      [1, 'code', 9],
+      [2, 'url', 9],
+      [3, 'is_module', 8],
+    ],
+  )
 
 /**
  * EvalJSResponse is the response from evaluating JavaScript code.
@@ -56,26 +45,22 @@ export const EvalJSRequest: MessageType<EvalJSRequest> =
 export interface EvalJSResponse {
   /**
    * Result is the JSON-stringified result of the evaluation.
-   *
-   * @generated from field: string result = 1;
    */
   result?: string
   /**
    * Error is the error message, if any.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const EvalJSResponse: MessageType<EvalJSResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debug.EvalJSResponse',
-    fields: [
-      { no: 1, name: 'result', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EvalJSResponse>(
+    's4wave.debug.EvalJSResponse',
+    () => [
+      [1, 'result', 9],
+      [2, 'error', 9],
+    ],
+  )
 
 /**
  * GetPageInfoRequest is a request to get page information.
@@ -85,9 +70,9 @@ export const EvalJSResponse: MessageType<EvalJSResponse> =
 export interface GetPageInfoRequest {}
 
 export const GetPageInfoRequest: MessageType<GetPageInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetPageInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetPageInfoRequest>(
     's4wave.debug.GetPageInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -98,37 +83,29 @@ export const GetPageInfoRequest: MessageType<GetPageInfoRequest> =
 export interface GetPageInfoResponse {
   /**
    * Url is the current page URL.
-   *
-   * @generated from field: string url = 1;
    */
   url?: string
   /**
    * Title is the current page title.
-   *
-   * @generated from field: string title = 2;
    */
   title?: string
   /**
    * WebViewId is the web view identifier.
-   *
-   * @generated from field: string web_view_id = 3;
    */
   webViewId?: string
   /**
    * DocumentId is the web document identifier.
-   *
-   * @generated from field: string document_id = 4;
    */
   documentId?: string
 }
 
 export const GetPageInfoResponse: MessageType<GetPageInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debug.GetPageInfoResponse',
-    fields: [
-      { no: 1, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'title', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'web_view_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'document_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetPageInfoResponse>(
+    's4wave.debug.GetPageInfoResponse',
+    () => [
+      [1, 'url', 9],
+      [2, 'title', 9],
+      [3, 'web_view_id', 9],
+      [4, 'document_id', 9],
+    ],
+  )

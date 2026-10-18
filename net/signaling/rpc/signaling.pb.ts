@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { SignedMsg } from '../../peer/peer.pb.js'
 
 /**
@@ -19,9 +14,9 @@ import { SignedMsg } from '../../peer/peer.pb.js'
 export interface ListenRequest {}
 
 export const ListenRequest: MessageType<ListenRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ListenRequest>(
+  /* @__PURE__ */ createMessageType<ListenRequest>(
     'signaling.rpc.ListenRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -36,103 +31,19 @@ export interface ListenResponse {
    * @generated from oneof signaling.rpc.ListenResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * SetPeer marks that a remote peer wants a session.
-         * The contents of the string is the encoded peer id of the remote peer.
-         *
-         * @generated from field: string set_peer = 1;
-         */
-        value: string
-        case: 'setPeer'
-      }
-    | {
-        /**
-         * ClearPeer marks that a remote peer no longer wants a session.
-         * The contents of the string is the encoded peer id of the remote peer.
-         *
-         * @generated from field: string clear_peer = 2;
-         */
-        value: string
-        case: 'clearPeer'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: string; case: 'setPeer' }
+    | { value: string; case: 'clearPeer' }
 }
 
 export const ListenResponse: MessageType<ListenResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'signaling.rpc.ListenResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'set_peer',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'clear_peer',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SessionInit is a message to init a Session.
- *
- * @generated from message signaling.rpc.SessionInit
- */
-export interface SessionInit {
-  /**
-   * PeerId is the remote peer id we want to contact.
-   *
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-}
-
-export const SessionInit: MessageType<SessionInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'signaling.rpc.SessionInit',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SessionMsg contains a signed message and a sequence number.
- *
- * @generated from message signaling.rpc.SessionMsg
- */
-export interface SessionMsg {
-  /**
-   * SignedMsg is the signed message body.
-   *
-   * @generated from field: peer.SignedMsg signed_msg = 1;
-   */
-  signedMsg?: SignedMsg
-  /**
-   * Seqno is the message sequence number for clear and ack.
-   *
-   * @generated from field: uint64 seqno = 2;
-   */
-  seqno?: bigint
-}
-
-export const SessionMsg: MessageType<SessionMsg> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'signaling.rpc.SessionMsg',
-    fields: [
-      { no: 1, name: 'signed_msg', kind: 'message', T: () => SignedMsg },
-      { no: 2, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListenResponse>(
+    'signaling.rpc.ListenResponse',
+    () => [
+      [1, 'set_peer', 9, 0, 0, 'body'],
+      [2, 'clear_peer', 9, 0, 0, 'body'],
+    ],
+  )
 
 /**
  * SessionRequest is a message sent from the client to the server.
@@ -144,94 +55,75 @@ export interface SessionRequest {
    * SessionSeqno is the session sequence number.
    * If this doesn't match the current session no, this pkt will be dropped.
    * This should be zero for the init packet.
-   *
-   * @generated from field: uint64 session_seqno = 1;
    */
   sessionSeqno?: bigint
-
   /**
    * Body is the body of the request.
    *
    * @generated from oneof signaling.rpc.SessionRequest.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Init initializes the session setting which peer to contact.
-         *
-         * @generated from field: signaling.rpc.SessionInit init = 2;
-         */
-        value: SessionInit
-        case: 'init'
-      }
-    | {
-        /**
-         * SendMsg sends a signed message to the remote peer.
-         * The server will buffer at most one message for the remote peer at a time.
-         * If there is an existing pending outgoing message this will overwrite it.
-         * Wait for the message received ack before sending again to avoid overwriting.
-         * The signature must match the peer id associated with the rpc session.
-         *
-         * @generated from field: signaling.rpc.SessionMsg send_msg = 3;
-         */
-        value: SessionMsg
-        case: 'sendMsg'
-      }
-    | {
-        /**
-         * ClearMsg clears a previously sent message from the outbox.
-         * If the sequence number does not match, does nothing.
-         *
-         * @generated from field: uint64 clear_msg = 4;
-         */
-        value: bigint
-        case: 'clearMsg'
-      }
-    | {
-        /**
-         * AckMsg acknowledges that the current incoming message was processed.
-         * If the id doesn't match the current incoming message seqno, does nothing.
-         *
-         * @generated from field: uint64 ack_msg = 5;
-         */
-        value: bigint
-        case: 'ackMsg'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: SessionInit; case: 'init' }
+    | { value: SessionMsg; case: 'sendMsg' }
+    | { value: bigint; case: 'clearMsg' }
+    | { value: bigint; case: 'ackMsg' }
 }
 
 export const SessionRequest: MessageType<SessionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'signaling.rpc.SessionRequest',
-    fields: [
-      { no: 1, name: 'session_seqno', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'init', kind: 'message', T: SessionInit, oneof: 'body' },
-      {
-        no: 3,
-        name: 'send_msg',
-        kind: 'message',
-        T: SessionMsg,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'clear_msg',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        oneof: 'body',
-      },
-      {
-        no: 5,
-        name: 'ack_msg',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SessionRequest>(
+    'signaling.rpc.SessionRequest',
+    () => [
+      [1, 'session_seqno', 4],
+      [2, 'init', 11, 0, SessionInit.codec, 'body'],
+      [3, 'send_msg', 11, 0, SessionMsg.codec, 'body'],
+      [4, 'clear_msg', 4, 0, 0, 'body'],
+      [5, 'ack_msg', 4, 0, 0, 'body'],
+    ],
+  )
+
+/**
+ * SessionInit is a message to init a Session.
+ *
+ * @generated from message signaling.rpc.SessionInit
+ */
+export interface SessionInit {
+  /**
+   * PeerId is the remote peer id we want to contact.
+   */
+  peerId?: string
+}
+
+export const SessionInit: MessageType<SessionInit> =
+  /* @__PURE__ */ createMessageType<SessionInit>(
+    'signaling.rpc.SessionInit',
+    () => [[1, 'peer_id', 9]],
+  )
+
+/**
+ * SessionMsg contains a signed message and a sequence number.
+ *
+ * @generated from message signaling.rpc.SessionMsg
+ */
+export interface SessionMsg {
+  /**
+   * SignedMsg is the signed message body.
+   */
+  signedMsg?: SignedMsg
+  /**
+   * Seqno is the message sequence number for clear and ack.
+   */
+  seqno?: bigint
+}
+
+export const SessionMsg: MessageType<SessionMsg> =
+  /* @__PURE__ */ createMessageType<SessionMsg>(
+    'signaling.rpc.SessionMsg',
+    () => [
+      [1, 'signed_msg', 11, 0, SignedMsg.codec],
+      [2, 'seqno', 4],
+    ],
+  )
 
 /**
  * SessionResponse is a message sent from the server to the client.
@@ -245,100 +137,22 @@ export interface SessionResponse {
    * @generated from oneof signaling.rpc.SessionResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Opened indicates the connection w/ the remote peer is open.
-         * Contains the session nonce, incremented if the peer re-connected.
-         * If this increments, re-send the outgoing message.
-         *
-         * @generated from field: uint64 opened = 1;
-         */
-        value: bigint
-        case: 'opened'
-      }
-    | {
-        /**
-         * Closed indicates the connection w/ the remote peer is closed.
-         * This is the assumed initial state.
-         *
-         * @generated from field: bool closed = 2;
-         */
-        value: boolean
-        case: 'closed'
-      }
-    | {
-        /**
-         * RecvMsg transfers a message sent by the remote peer.
-         * Send ACK once the message has been processed.
-         *
-         * @generated from field: signaling.rpc.SessionMsg recv_msg = 3;
-         */
-        value: SessionMsg
-        case: 'recvMsg'
-      }
-    | {
-        /**
-         * ClearMsg clears a message from the remote peer previously sent with recv_msg.
-         * This is sent if the remote peer clears their outgoing message before acked.
-         *
-         * @generated from field: uint64 clear_msg = 4;
-         */
-        value: bigint
-        case: 'clearMsg'
-      }
-    | {
-        /**
-         * AckMsg confirms that the outgoing message was sent and acked.
-         *
-         * @generated from field: uint64 ack_msg = 5;
-         */
-        value: bigint
-        case: 'ackMsg'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: bigint; case: 'opened' }
+    | { value: boolean; case: 'closed' }
+    | { value: SessionMsg; case: 'recvMsg' }
+    | { value: bigint; case: 'clearMsg' }
+    | { value: bigint; case: 'ackMsg' }
 }
 
 export const SessionResponse: MessageType<SessionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'signaling.rpc.SessionResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'opened',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'closed',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'recv_msg',
-        kind: 'message',
-        T: SessionMsg,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'clear_msg',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        oneof: 'body',
-      },
-      {
-        no: 5,
-        name: 'ack_msg',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SessionResponse>(
+    'signaling.rpc.SessionResponse',
+    () => [
+      [1, 'opened', 4, 0, 0, 'body'],
+      [2, 'closed', 8, 0, 0, 'body'],
+      [3, 'recv_msg', 11, 0, SessionMsg.codec, 'body'],
+      [4, 'clear_msg', 4, 0, 0, 'body'],
+      [5, 'ack_msg', 4, 0, 0, 'body'],
+    ],
+  )

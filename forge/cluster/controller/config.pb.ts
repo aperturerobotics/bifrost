@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the Cluster controller configuration.
@@ -15,8 +13,6 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * EngineId is the world engine id.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
@@ -24,24 +20,18 @@ export interface Config {
    * If not exists, waits for it to exist.
    *
    * Executions are created at <object-key>/execution/<object-rev>/<replica>
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
   /**
    * PeerId is the peer ID to use for transactions.
    * Must match the peer ID on the Cluster object.
-   *
-   * @generated from field: string peer_id = 3;
    */
   peerId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'cluster.controller.Config',
-  fields: [
-    { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('cluster.controller.Config', () => [
+    [1, 'engine_id', 9],
+    [2, 'object_key', 9],
+    [3, 'peer_id', 9],
+  ])

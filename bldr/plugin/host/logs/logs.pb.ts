@@ -5,9 +5,7 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * StructuredLogLevel is the severity of a structured plugin log event.
@@ -17,58 +15,51 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum StructuredLogLevel {
   /**
    * STRUCTURED_LOG_LEVEL_UNSPECIFIED preserves the proto3 default.
-   *
-   * @generated from enum value: STRUCTURED_LOG_LEVEL_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * STRUCTURED_LOG_LEVEL_TRACE is the most detailed diagnostic level.
-   *
-   * @generated from enum value: STRUCTURED_LOG_LEVEL_TRACE = 1;
    */
   TRACE = 1,
 
   /**
    * STRUCTURED_LOG_LEVEL_DEBUG is for development diagnostics.
-   *
-   * @generated from enum value: STRUCTURED_LOG_LEVEL_DEBUG = 2;
    */
   DEBUG = 2,
 
   /**
    * STRUCTURED_LOG_LEVEL_INFO is for normal operational messages.
-   *
-   * @generated from enum value: STRUCTURED_LOG_LEVEL_INFO = 3;
    */
   INFO = 3,
 
   /**
    * STRUCTURED_LOG_LEVEL_WARN is for recoverable problems.
-   *
-   * @generated from enum value: STRUCTURED_LOG_LEVEL_WARN = 4;
    */
   WARN = 4,
 
   /**
    * STRUCTURED_LOG_LEVEL_ERROR is for failed operations.
-   *
-   * @generated from enum value: STRUCTURED_LOG_LEVEL_ERROR = 5;
    */
   ERROR = 5,
 
   /**
    * STRUCTURED_LOG_LEVEL_FATAL is for terminal plugin failures.
-   *
-   * @generated from enum value: STRUCTURED_LOG_LEVEL_FATAL = 6;
    */
   FATAL = 6,
 }
 
 export const StructuredLogLevel_Enum = /* @__PURE__ */ createEnumType(
   'plugin.host.logs.StructuredLogLevel',
-  StructuredLogLevel,
-  'STRUCTURED_LOG_LEVEL_',
+  [
+    [0, 'STRUCTURED_LOG_LEVEL_UNSPECIFIED'],
+    [1, 'STRUCTURED_LOG_LEVEL_TRACE'],
+    [2, 'STRUCTURED_LOG_LEVEL_DEBUG'],
+    [3, 'STRUCTURED_LOG_LEVEL_INFO'],
+    [4, 'STRUCTURED_LOG_LEVEL_WARN'],
+    [5, 'STRUCTURED_LOG_LEVEL_ERROR'],
+    [6, 'STRUCTURED_LOG_LEVEL_FATAL'],
+  ],
 )
 
 /**
@@ -79,37 +70,33 @@ export const StructuredLogLevel_Enum = /* @__PURE__ */ createEnumType(
 export enum StructuredLogStream {
   /**
    * STRUCTURED_LOG_STREAM_UNSPECIFIED preserves the proto3 default.
-   *
-   * @generated from enum value: STRUCTURED_LOG_STREAM_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * STRUCTURED_LOG_STREAM_LOGGER is an application logger event.
-   *
-   * @generated from enum value: STRUCTURED_LOG_STREAM_LOGGER = 1;
    */
   LOGGER = 1,
 
   /**
    * STRUCTURED_LOG_STREAM_STDOUT is captured stdout.
-   *
-   * @generated from enum value: STRUCTURED_LOG_STREAM_STDOUT = 2;
    */
   STDOUT = 2,
 
   /**
    * STRUCTURED_LOG_STREAM_STDERR is captured stderr.
-   *
-   * @generated from enum value: STRUCTURED_LOG_STREAM_STDERR = 3;
    */
   STDERR = 3,
 }
 
 export const StructuredLogStream_Enum = /* @__PURE__ */ createEnumType(
   'plugin.host.logs.StructuredLogStream',
-  StructuredLogStream,
-  'STRUCTURED_LOG_STREAM_',
+  [
+    [0, 'STRUCTURED_LOG_STREAM_UNSPECIFIED'],
+    [1, 'STRUCTURED_LOG_STREAM_LOGGER'],
+    [2, 'STRUCTURED_LOG_STREAM_STDOUT'],
+    [3, 'STRUCTURED_LOG_STREAM_STDERR'],
+  ],
 )
 
 /**
@@ -121,74 +108,52 @@ export interface StructuredLogEvent {
   /**
    * Sequence is assigned by the log owner and is monotonically increasing
    * within that owner.
-   *
-   * @generated from field: uint64 sequence = 1;
    */
   sequence?: bigint
   /**
    * Timestamp is when the event was observed by the log owner.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
   /**
    * PluginId is the manifest plugin identifier.
-   *
-   * @generated from field: string plugin_id = 3;
    */
   pluginId?: string
   /**
    * InstanceKey is the optional key for instanced plugins.
-   *
-   * @generated from field: string instance_key = 4;
    */
   instanceKey?: string
   /**
    * Stream identifies the source stream for the event.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogStream stream = 5;
    */
   stream?: StructuredLogStream
   /**
    * Level is the event severity.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogLevel level = 6;
    */
   level?: StructuredLogLevel
   /**
    * Message is the human-readable log text.
-   *
-   * @generated from field: string message = 7;
    */
   message?: string
   /**
    * Fields are structured key/value attributes attached to the event.
-   *
-   * @generated from field: map<string, string> fields = 8;
    */
   fields?: { [key: string]: string }
 }
 
 export const StructuredLogEvent: MessageType<StructuredLogEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.StructuredLogEvent',
-    fields: [
-      { no: 1, name: 'sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 3, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'stream', kind: 'enum', T: StructuredLogStream_Enum },
-      { no: 6, name: 'level', kind: 'enum', T: StructuredLogLevel_Enum },
-      { no: 7, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 8,
-        name: 'fields',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StructuredLogEvent>(
+    'plugin.host.logs.StructuredLogEvent',
+    () => [
+      [1, 'sequence', 4],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+      [3, 'plugin_id', 9],
+      [4, 'instance_key', 9],
+      [5, 'stream', 14, 0, StructuredLogStream_Enum],
+      [6, 'level', 14, 0, StructuredLogLevel_Enum],
+      [7, 'message', 9],
+      [8, 'fields', 9, 584],
+    ],
+  )
 
 /**
  * StructuredLogFilter selects a subset of structured plugin log events.
@@ -198,78 +163,42 @@ export const StructuredLogEvent: MessageType<StructuredLogEvent> =
 export interface StructuredLogFilter {
   /**
    * PluginIds restricts events to the listed plugin identifiers.
-   *
-   * @generated from field: repeated string plugin_ids = 1;
    */
   pluginIds?: string[]
   /**
    * InstanceKeys restricts events to the listed plugin instance keys.
-   *
-   * @generated from field: repeated string instance_keys = 2;
    */
   instanceKeys?: string[]
   /**
    * Streams restricts events to the listed streams.
-   *
-   * @generated from field: repeated plugin.host.logs.StructuredLogStream streams = 3;
    */
   streams?: StructuredLogStream[]
   /**
    * MinLevel restricts events to this severity and above.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogLevel min_level = 4;
    */
   minLevel?: StructuredLogLevel
   /**
    * SearchText restricts events to messages or fields containing this text.
-   *
-   * @generated from field: string search_text = 5;
    */
   searchText?: string
   /**
    * Fields restricts events to exact key/value field matches.
-   *
-   * @generated from field: map<string, string> fields = 6;
    */
   fields?: { [key: string]: string }
 }
 
 export const StructuredLogFilter: MessageType<StructuredLogFilter> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.StructuredLogFilter',
-    fields: [
-      {
-        no: 1,
-        name: 'plugin_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'instance_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'streams',
-        kind: 'enum',
-        T: StructuredLogStream_Enum,
-        repeated: true,
-      },
-      { no: 4, name: 'min_level', kind: 'enum', T: StructuredLogLevel_Enum },
-      { no: 5, name: 'search_text', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'fields',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StructuredLogFilter>(
+    'plugin.host.logs.StructuredLogFilter',
+    () => [
+      [1, 'plugin_ids', 9, 1],
+      [2, 'instance_keys', 9, 1],
+      [3, 'streams', 14, 3, StructuredLogStream_Enum],
+      [4, 'min_level', 14, 0, StructuredLogLevel_Enum],
+      [5, 'search_text', 9],
+      [6, 'fields', 9, 584],
+    ],
+  )
 
 /**
  * StructuredLogRange selects a sequence window.
@@ -280,40 +209,32 @@ export interface StructuredLogRange {
   /**
    * AfterSequence starts the window after this sequence. Zero starts at the
    * beginning of retained events unless Tail is set.
-   *
-   * @generated from field: uint64 after_sequence = 1;
    */
   afterSequence?: bigint
   /**
    * Limit is the maximum number of retained events to return.
-   *
-   * @generated from field: uint32 limit = 2;
    */
   limit?: number
   /**
    * Tail selects the newest retained events before following updates.
-   *
-   * @generated from field: bool tail = 3;
    */
   tail?: boolean
   /**
    * Follow keeps the stream open for new events after the retained window.
-   *
-   * @generated from field: bool follow = 4;
    */
   follow?: boolean
 }
 
 export const StructuredLogRange: MessageType<StructuredLogRange> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.StructuredLogRange',
-    fields: [
-      { no: 1, name: 'after_sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'tail', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'follow', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StructuredLogRange>(
+    'plugin.host.logs.StructuredLogRange',
+    () => [
+      [1, 'after_sequence', 4],
+      [2, 'limit', 13],
+      [3, 'tail', 8],
+      [4, 'follow', 8],
+    ],
+  )
 
 /**
  * StructuredLogState is the current snapshot for an open structured-log view.
@@ -323,58 +244,37 @@ export const StructuredLogRange: MessageType<StructuredLogRange> =
 export interface StructuredLogState {
   /**
    * Filter is the active filter.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogFilter filter = 1;
    */
   filter?: StructuredLogFilter
   /**
    * Range is the active sequence window.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogRange range = 2;
    */
   range?: StructuredLogRange
   /**
    * Events are the retained events currently visible in the view.
-   *
-   * @generated from field: repeated plugin.host.logs.StructuredLogEvent events = 3;
    */
   events?: StructuredLogEvent[]
   /**
    * DroppedEventCount is the number of matching events dropped before Events.
-   *
-   * @generated from field: uint64 dropped_event_count = 4;
    */
   droppedEventCount?: bigint
   /**
    * Closed indicates the producer will not emit more events for this view.
-   *
-   * @generated from field: bool closed = 5;
    */
   closed?: boolean
 }
 
 export const StructuredLogState: MessageType<StructuredLogState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.StructuredLogState',
-    fields: [
-      { no: 1, name: 'filter', kind: 'message', T: StructuredLogFilter },
-      { no: 2, name: 'range', kind: 'message', T: StructuredLogRange },
-      {
-        no: 3,
-        name: 'events',
-        kind: 'message',
-        T: StructuredLogEvent,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'dropped_event_count',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 5, name: 'closed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StructuredLogState>(
+    'plugin.host.logs.StructuredLogState',
+    () => [
+      [1, 'filter', 11, 0, StructuredLogFilter.codec],
+      [2, 'range', 11, 0, StructuredLogRange.codec],
+      [3, 'events', 11, 1, StructuredLogEvent.codec],
+      [4, 'dropped_event_count', 4],
+      [5, 'closed', 8],
+    ],
+  )
 
 /**
  * OpenStructuredLogsRequest opens a structured-log view.
@@ -384,26 +284,22 @@ export const StructuredLogState: MessageType<StructuredLogState> =
 export interface OpenStructuredLogsRequest {
   /**
    * Filter selects the events included in the view.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogFilter filter = 1;
    */
   filter?: StructuredLogFilter
   /**
    * Range selects the initial retained window and follow behavior.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogRange range = 2;
    */
   range?: StructuredLogRange
 }
 
 export const OpenStructuredLogsRequest: MessageType<OpenStructuredLogsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.OpenStructuredLogsRequest',
-    fields: [
-      { no: 1, name: 'filter', kind: 'message', T: StructuredLogFilter },
-      { no: 2, name: 'range', kind: 'message', T: StructuredLogRange },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenStructuredLogsRequest>(
+    'plugin.host.logs.OpenStructuredLogsRequest',
+    () => [
+      [1, 'filter', 11, 0, StructuredLogFilter.codec],
+      [2, 'range', 11, 0, StructuredLogRange.codec],
+    ],
+  )
 
 /**
  * OpenStructuredLogsResponse returns the resource and initial view state.
@@ -413,26 +309,22 @@ export const OpenStructuredLogsRequest: MessageType<OpenStructuredLogsRequest> =
 export interface OpenStructuredLogsResponse {
   /**
    * ResourceId is the resource ID for the opened structured-log view.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * State is the initial state of the opened view.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogState state = 2;
    */
   state?: StructuredLogState
 }
 
 export const OpenStructuredLogsResponse: MessageType<OpenStructuredLogsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.OpenStructuredLogsResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'state', kind: 'message', T: StructuredLogState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenStructuredLogsResponse>(
+    'plugin.host.logs.OpenStructuredLogsResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'state', 11, 0, StructuredLogState.codec],
+    ],
+  )
 
 /**
  * SetStructuredLogViewRequest updates an open structured-log view.
@@ -442,26 +334,22 @@ export const OpenStructuredLogsResponse: MessageType<OpenStructuredLogsResponse>
 export interface SetStructuredLogViewRequest {
   /**
    * Filter selects the events included in the view.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogFilter filter = 1;
    */
   filter?: StructuredLogFilter
   /**
    * Range selects the retained window and follow behavior.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogRange range = 2;
    */
   range?: StructuredLogRange
 }
 
 export const SetStructuredLogViewRequest: MessageType<SetStructuredLogViewRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.SetStructuredLogViewRequest',
-    fields: [
-      { no: 1, name: 'filter', kind: 'message', T: StructuredLogFilter },
-      { no: 2, name: 'range', kind: 'message', T: StructuredLogRange },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetStructuredLogViewRequest>(
+    'plugin.host.logs.SetStructuredLogViewRequest',
+    () => [
+      [1, 'filter', 11, 0, StructuredLogFilter.codec],
+      [2, 'range', 11, 0, StructuredLogRange.codec],
+    ],
+  )
 
 /**
  * SetStructuredLogViewResponse returns the updated view state.
@@ -471,19 +359,15 @@ export const SetStructuredLogViewRequest: MessageType<SetStructuredLogViewReques
 export interface SetStructuredLogViewResponse {
   /**
    * State is the current state after applying the view change.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogState state = 1;
    */
   state?: StructuredLogState
 }
 
 export const SetStructuredLogViewResponse: MessageType<SetStructuredLogViewResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.SetStructuredLogViewResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: StructuredLogState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetStructuredLogViewResponse>(
+    'plugin.host.logs.SetStructuredLogViewResponse',
+    () => [[1, 'state', 11, 0, StructuredLogState.codec]],
+  )
 
 /**
  * EmitStructuredLogRequest appends a structured log event.
@@ -493,19 +377,15 @@ export const SetStructuredLogViewResponse: MessageType<SetStructuredLogViewRespo
 export interface EmitStructuredLogRequest {
   /**
    * Event is the structured event to append.
-   *
-   * @generated from field: plugin.host.logs.StructuredLogEvent event = 1;
    */
   event?: StructuredLogEvent
 }
 
 export const EmitStructuredLogRequest: MessageType<EmitStructuredLogRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.EmitStructuredLogRequest',
-    fields: [
-      { no: 1, name: 'event', kind: 'message', T: StructuredLogEvent },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EmitStructuredLogRequest>(
+    'plugin.host.logs.EmitStructuredLogRequest',
+    () => [[1, 'event', 11, 0, StructuredLogEvent.codec]],
+  )
 
 /**
  * EmitStructuredLogResponse returns the owner-assigned event metadata.
@@ -515,23 +395,19 @@ export const EmitStructuredLogRequest: MessageType<EmitStructuredLogRequest> =
 export interface EmitStructuredLogResponse {
   /**
    * Sequence is the assigned event sequence.
-   *
-   * @generated from field: uint64 sequence = 1;
    */
   sequence?: bigint
   /**
    * Timestamp is the assigned observation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
 }
 
 export const EmitStructuredLogResponse: MessageType<EmitStructuredLogResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.logs.EmitStructuredLogResponse',
-    fields: [
-      { no: 1, name: 'sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EmitStructuredLogResponse>(
+    'plugin.host.logs.EmitStructuredLogResponse',
+    () => [
+      [1, 'sequence', 4],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

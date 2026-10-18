@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * WorkbenchTabKind identifies the kind of object opened in a workbench tab.
@@ -17,125 +12,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
  * @generated from enum s4wave.sql.workbench.WorkbenchTabKind
  */
 export enum WorkbenchTabKind {
-  /**
-   * @generated from enum value: WORKBENCH_TAB_KIND_UNSPECIFIED = 0;
-   */
   UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: WORKBENCH_TAB_KIND_QUERY = 1;
-   */
   QUERY = 1,
-
-  /**
-   * @generated from enum value: WORKBENCH_TAB_KIND_QUERY_RESULT = 2;
-   */
   QUERY_RESULT = 2,
 }
 
 export const WorkbenchTabKind_Enum = /* @__PURE__ */ createEnumType(
   's4wave.sql.workbench.WorkbenchTabKind',
-  WorkbenchTabKind,
-  'WORKBENCH_TAB_KIND_',
+  [
+    [0, 'WORKBENCH_TAB_KIND_UNSPECIFIED'],
+    [1, 'WORKBENCH_TAB_KIND_QUERY'],
+    [2, 'WORKBENCH_TAB_KIND_QUERY_RESULT'],
+  ],
 )
-
-/**
- * WorkbenchTab describes one persisted workbench tab.
- *
- * @generated from message s4wave.sql.workbench.WorkbenchTab
- */
-export interface WorkbenchTab {
-  /**
-   * TabId is the stable tab identifier in the workbench layout.
-   *
-   * @generated from field: string tab_id = 1;
-   */
-  tabId?: string
-  /**
-   * ObjectKey is the sql/query or sql/query-result object shown by the tab.
-   *
-   * @generated from field: string object_key = 2;
-   */
-  objectKey?: string
-  /**
-   * Kind identifies the object type expected for ObjectKey.
-   *
-   * @generated from field: s4wave.sql.workbench.WorkbenchTabKind kind = 3;
-   */
-  kind?: WorkbenchTabKind
-  /**
-   * Title is an optional tab label.
-   *
-   * @generated from field: string title = 4;
-   */
-  title?: string
-  /**
-   * Pinned keeps the tab open across layout changes.
-   *
-   * @generated from field: bool pinned = 5;
-   */
-  pinned?: boolean
-}
-
-export const WorkbenchTab: MessageType<WorkbenchTab> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.workbench.WorkbenchTab',
-    fields: [
-      { no: 1, name: 'tab_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'kind', kind: 'enum', T: WorkbenchTabKind_Enum },
-      { no: 4, name: 'title', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'pinned', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WorkbenchLayout stores layout preferences for the workbench viewer.
- *
- * @generated from message s4wave.sql.workbench.WorkbenchLayout
- */
-export interface WorkbenchLayout {
-  /**
-   * Mode names the viewer layout mode.
-   *
-   * @generated from field: string mode = 1;
-   */
-  mode?: string
-  /**
-   * SidebarWidth stores the preferred database tree width in pixels.
-   *
-   * @generated from field: uint32 sidebar_width = 2;
-   */
-  sidebarWidth?: number
-  /**
-   * ResultPanelHeight stores the preferred result panel height in pixels.
-   *
-   * @generated from field: uint32 result_panel_height = 3;
-   */
-  resultPanelHeight?: number
-  /**
-   * ActiveTabId stores the selected tab.
-   *
-   * @generated from field: string active_tab_id = 4;
-   */
-  activeTabId?: string
-}
-
-export const WorkbenchLayout: MessageType<WorkbenchLayout> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.workbench.WorkbenchLayout',
-    fields: [
-      { no: 1, name: 'mode', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'sidebar_width', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 3,
-        name: 'result_panel_height',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 4, name: 'active_tab_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Workbench is a persistent SQL exploration workspace.
@@ -145,71 +34,117 @@ export const WorkbenchLayout: MessageType<WorkbenchLayout> =
 export interface Workbench {
   /**
    * TargetDbObjectKey is the sql/db object this workbench explores.
-   *
-   * @generated from field: string target_db_object_key = 1;
    */
   targetDbObjectKey?: string
   /**
    * PinnedQueryObjectKeys are sql/query objects pinned in the workbench.
-   *
-   * @generated from field: repeated string pinned_query_object_keys = 2;
    */
   pinnedQueryObjectKeys?: string[]
   /**
    * OpenTabs are persisted query/result tabs in display order.
-   *
-   * @generated from field: repeated s4wave.sql.workbench.WorkbenchTab open_tabs = 3;
    */
   openTabs?: WorkbenchTab[]
   /**
    * Layout stores user preferences for the workbench frame.
-   *
-   * @generated from field: s4wave.sql.workbench.WorkbenchLayout layout = 4;
    */
   layout?: WorkbenchLayout
   /**
    * DisplayName is an optional user-facing label.
-   *
-   * @generated from field: string display_name = 5;
    */
   displayName?: string
   /**
    * Description is optional user-facing metadata.
-   *
-   * @generated from field: string description = 6;
    */
   description?: string
 }
 
 export const Workbench: MessageType<Workbench> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.workbench.Workbench',
-    fields: [
-      {
-        no: 1,
-        name: 'target_db_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'pinned_query_object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'open_tabs',
-        kind: 'message',
-        T: WorkbenchTab,
-        repeated: true,
-      },
-      { no: 4, name: 'layout', kind: 'message', T: WorkbenchLayout },
-      { no: 5, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Workbench>(
+    's4wave.sql.workbench.Workbench',
+    () => [
+      [1, 'target_db_object_key', 9],
+      [2, 'pinned_query_object_keys', 9, 1],
+      [3, 'open_tabs', 11, 1, WorkbenchTab.codec],
+      [4, 'layout', 11, 0, WorkbenchLayout.codec],
+      [5, 'display_name', 9],
+      [6, 'description', 9],
+    ],
+  )
+
+/**
+ * WorkbenchTab describes one persisted workbench tab.
+ *
+ * @generated from message s4wave.sql.workbench.WorkbenchTab
+ */
+export interface WorkbenchTab {
+  /**
+   * TabId is the stable tab identifier in the workbench layout.
+   */
+  tabId?: string
+  /**
+   * ObjectKey is the sql/query or sql/query-result object shown by the tab.
+   */
+  objectKey?: string
+  /**
+   * Kind identifies the object type expected for ObjectKey.
+   */
+  kind?: WorkbenchTabKind
+  /**
+   * Title is an optional tab label.
+   */
+  title?: string
+  /**
+   * Pinned keeps the tab open across layout changes.
+   */
+  pinned?: boolean
+}
+
+export const WorkbenchTab: MessageType<WorkbenchTab> =
+  /* @__PURE__ */ createMessageType<WorkbenchTab>(
+    's4wave.sql.workbench.WorkbenchTab',
+    () => [
+      [1, 'tab_id', 9],
+      [2, 'object_key', 9],
+      [3, 'kind', 14, 0, WorkbenchTabKind_Enum],
+      [4, 'title', 9],
+      [5, 'pinned', 8],
+    ],
+  )
+
+/**
+ * WorkbenchLayout stores layout preferences for the workbench viewer.
+ *
+ * @generated from message s4wave.sql.workbench.WorkbenchLayout
+ */
+export interface WorkbenchLayout {
+  /**
+   * Mode names the viewer layout mode.
+   */
+  mode?: string
+  /**
+   * SidebarWidth stores the preferred database tree width in pixels.
+   */
+  sidebarWidth?: number
+  /**
+   * ResultPanelHeight stores the preferred result panel height in pixels.
+   */
+  resultPanelHeight?: number
+  /**
+   * ActiveTabId stores the selected tab.
+   */
+  activeTabId?: string
+}
+
+export const WorkbenchLayout: MessageType<WorkbenchLayout> =
+  /* @__PURE__ */ createMessageType<WorkbenchLayout>(
+    's4wave.sql.workbench.WorkbenchLayout',
+    () => [
+      [1, 'mode', 9],
+      [2, 'sidebar_width', 13],
+      [3, 'result_panel_height', 13],
+      [4, 'active_tab_id', 9],
+    ],
+  )
 
 /**
  * InitializeWorkbenchRequest contains the first workbench root values.
@@ -219,31 +154,22 @@ export const Workbench: MessageType<Workbench> =
 export interface InitializeWorkbenchRequest {
   /**
    * TargetDbObjectKey is the sql/db object this workbench explores.
-   *
-   * @generated from field: string target_db_object_key = 1;
    */
   targetDbObjectKey?: string
   /**
    * DisplayName is an optional user-facing label.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
 }
 
 export const InitializeWorkbenchRequest: MessageType<InitializeWorkbenchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.workbench.InitializeWorkbenchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'target_db_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitializeWorkbenchRequest>(
+    's4wave.sql.workbench.InitializeWorkbenchRequest',
+    () => [
+      [1, 'target_db_object_key', 9],
+      [2, 'display_name', 9],
+    ],
+  )
 
 /**
  * InitializeWorkbenchResponse is returned after creating the first workbench root.
@@ -253,9 +179,9 @@ export const InitializeWorkbenchRequest: MessageType<InitializeWorkbenchRequest>
 export interface InitializeWorkbenchResponse {}
 
 export const InitializeWorkbenchResponse: MessageType<InitializeWorkbenchResponse> =
-  /* @__PURE__ */ createEmptyMessageType<InitializeWorkbenchResponse>(
+  /* @__PURE__ */ createMessageType<InitializeWorkbenchResponse>(
     's4wave.sql.workbench.InitializeWorkbenchResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -266,9 +192,9 @@ export const InitializeWorkbenchResponse: MessageType<InitializeWorkbenchRespons
 export interface GetWorkbenchRequest {}
 
 export const GetWorkbenchRequest: MessageType<GetWorkbenchRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetWorkbenchRequest>(
+  /* @__PURE__ */ createMessageType<GetWorkbenchRequest>(
     's4wave.sql.workbench.GetWorkbenchRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -279,19 +205,15 @@ export const GetWorkbenchRequest: MessageType<GetWorkbenchRequest> =
 export interface GetWorkbenchResponse {
   /**
    * Workbench is the persisted workbench block.
-   *
-   * @generated from field: s4wave.sql.workbench.Workbench workbench = 1;
    */
   workbench?: Workbench
 }
 
 export const GetWorkbenchResponse: MessageType<GetWorkbenchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.workbench.GetWorkbenchResponse',
-    fields: [
-      { no: 1, name: 'workbench', kind: 'message', T: Workbench },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetWorkbenchResponse>(
+    's4wave.sql.workbench.GetWorkbenchResponse',
+    () => [[1, 'workbench', 11, 0, Workbench.codec]],
+  )
 
 /**
  * AddPinRequest pins a sql/query object.
@@ -301,19 +223,15 @@ export const GetWorkbenchResponse: MessageType<GetWorkbenchResponse> =
 export interface AddPinRequest {
   /**
    * QueryObjectKey is the sql/query object to pin.
-   *
-   * @generated from field: string query_object_key = 1;
    */
   queryObjectKey?: string
 }
 
 export const AddPinRequest: MessageType<AddPinRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.workbench.AddPinRequest',
-    fields: [
-      { no: 1, name: 'query_object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddPinRequest>(
+    's4wave.sql.workbench.AddPinRequest',
+    () => [[1, 'query_object_key', 9]],
+  )
 
 /**
  * AddPinResponse is returned after adding a pin.
@@ -323,9 +241,9 @@ export const AddPinRequest: MessageType<AddPinRequest> =
 export interface AddPinResponse {}
 
 export const AddPinResponse: MessageType<AddPinResponse> =
-  /* @__PURE__ */ createEmptyMessageType<AddPinResponse>(
+  /* @__PURE__ */ createMessageType<AddPinResponse>(
     's4wave.sql.workbench.AddPinResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -336,19 +254,15 @@ export const AddPinResponse: MessageType<AddPinResponse> =
 export interface RemovePinRequest {
   /**
    * QueryObjectKey is the sql/query object to unpin.
-   *
-   * @generated from field: string query_object_key = 1;
    */
   queryObjectKey?: string
 }
 
 export const RemovePinRequest: MessageType<RemovePinRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.workbench.RemovePinRequest',
-    fields: [
-      { no: 1, name: 'query_object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemovePinRequest>(
+    's4wave.sql.workbench.RemovePinRequest',
+    () => [[1, 'query_object_key', 9]],
+  )
 
 /**
  * RemovePinResponse is returned after removing a pin.
@@ -358,9 +272,9 @@ export const RemovePinRequest: MessageType<RemovePinRequest> =
 export interface RemovePinResponse {}
 
 export const RemovePinResponse: MessageType<RemovePinResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RemovePinResponse>(
+  /* @__PURE__ */ createMessageType<RemovePinResponse>(
     's4wave.sql.workbench.RemovePinResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -371,32 +285,22 @@ export const RemovePinResponse: MessageType<RemovePinResponse> =
 export interface SetLayoutRequest {
   /**
    * OpenTabs are persisted query/result tabs in display order.
-   *
-   * @generated from field: repeated s4wave.sql.workbench.WorkbenchTab open_tabs = 1;
    */
   openTabs?: WorkbenchTab[]
   /**
    * Layout stores user preferences for the workbench frame.
-   *
-   * @generated from field: s4wave.sql.workbench.WorkbenchLayout layout = 2;
    */
   layout?: WorkbenchLayout
 }
 
 export const SetLayoutRequest: MessageType<SetLayoutRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.workbench.SetLayoutRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'open_tabs',
-        kind: 'message',
-        T: WorkbenchTab,
-        repeated: true,
-      },
-      { no: 2, name: 'layout', kind: 'message', T: WorkbenchLayout },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetLayoutRequest>(
+    's4wave.sql.workbench.SetLayoutRequest',
+    () => [
+      [1, 'open_tabs', 11, 1, WorkbenchTab.codec],
+      [2, 'layout', 11, 0, WorkbenchLayout.codec],
+    ],
+  )
 
 /**
  * SetLayoutResponse is returned after updating layout state.
@@ -406,7 +310,7 @@ export const SetLayoutRequest: MessageType<SetLayoutRequest> =
 export interface SetLayoutResponse {}
 
 export const SetLayoutResponse: MessageType<SetLayoutResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetLayoutResponse>(
+  /* @__PURE__ */ createMessageType<SetLayoutResponse>(
     's4wave.sql.workbench.SetLayoutResponse',
-    true,
+    () => [],
   )

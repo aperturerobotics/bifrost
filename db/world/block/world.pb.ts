@@ -3,14 +3,12 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
-import { Quad } from '../../block/quad/quad.pb.js'
+import { KeyValueStore } from '../../kvtx/block/kvtx.pb.js'
 import { BlockRef } from '../../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { KeyValueStore } from '../../kvtx/block/kvtx.pb.js'
 import { ObjectRef } from '../../bucket/bucket.pb.js'
+import { Quad } from '../../block/quad/quad.pb.js'
 
 /**
  * WorldChangeType is the list of possible change types for the world.
@@ -18,234 +16,35 @@ import { ObjectRef } from '../../bucket/bucket.pb.js'
  * @generated from enum world.block.WorldChangeType
  */
 export enum WorldChangeType {
-  /**
-   * @generated from enum value: WorldChange_INVALID = 0;
-   */
   WorldChange_INVALID = 0,
-
-  /**
-   * @generated from enum value: WorldChange_OBJECT_SET = 1;
-   */
   WorldChange_OBJECT_SET = 1,
-
-  /**
-   * @generated from enum value: WorldChange_OBJECT_INC_REV = 2;
-   */
   WorldChange_OBJECT_INC_REV = 2,
-
-  /**
-   * @generated from enum value: WorldChange_OBJECT_DELETE = 3;
-   */
   WorldChange_OBJECT_DELETE = 3,
-
-  /**
-   * @generated from enum value: WorldChange_OBJECT_RENAME = 4;
-   */
   WorldChange_OBJECT_RENAME = 4,
 
   /**
    * WorldChange_GRAPH_SET is fired when setting a graph quad.
-   *
-   * @generated from enum value: WorldChange_GRAPH_SET = 5;
    */
   WorldChange_GRAPH_SET = 5,
 
   /**
    * WorldChange_GRAPH_DELETE is fired when deleting a graph quad.
-   *
-   * @generated from enum value: WorldChange_GRAPH_DELETE = 6;
    */
   WorldChange_GRAPH_DELETE = 6,
 }
 
 export const WorldChangeType_Enum = /* @__PURE__ */ createEnumType(
   'world.block.WorldChangeType',
-  WorldChangeType,
+  [
+    [0, 'WorldChange_INVALID'],
+    [1, 'WorldChange_OBJECT_SET'],
+    [2, 'WorldChange_OBJECT_INC_REV'],
+    [3, 'WorldChange_OBJECT_DELETE'],
+    [4, 'WorldChange_OBJECT_RENAME'],
+    [5, 'WorldChange_GRAPH_SET'],
+    [6, 'WorldChange_GRAPH_DELETE'],
+  ],
 )
-
-/**
- * WorldChange is an entry in the changelog.
- * A transaction may convert into multiple changes.
- *
- * @generated from message world.block.WorldChange
- */
-export interface WorldChange {
-  /**
-   * ChangeType is the type of change this is.
-   *
-   * @generated from field: world.block.WorldChangeType change_type = 1;
-   */
-  changeType?: WorldChangeType
-  /**
-   * Key is the associated key of the change.
-   * May be a key prefix, depending on change type.
-   * If a rename transaction, this is the old key.
-   * If a Graph transaction, this will be empty.
-   *
-   * @generated from field: string key = 2;
-   */
-  key?: string
-  /**
-   * Quad is the associated graph quad of the change.
-   * If a Object transaction, this will be empty.
-   *
-   * @generated from field: quad.Quad quad = 3;
-   */
-  quad?: Quad
-  /**
-   * TransactionRef is the reference to the associated transaction.
-   * This is transparent to the core World code.
-   *
-   * @generated from field: block.BlockRef transaction_ref = 4;
-   */
-  transactionRef?: BlockRef
-  /**
-   * ObjectRef is the reference to the associated Object block.
-   * Empty for graph operations.
-   *
-   * @generated from field: block.BlockRef object_ref = 5;
-   */
-  objectRef?: BlockRef
-  /**
-   * PrevObjectRef is the reference to the associated previous Object block.
-   * If set, this will be the old object.
-   * If deleted, this will be the object just before deletion.
-   * Empty for graph operations.
-   *
-   * @generated from field: block.BlockRef prev_object_ref = 6;
-   */
-  prevObjectRef?: BlockRef
-  /**
-   * ObjectRev is the updated revision of the Object.
-   * If a Graph transaction, this will be empty.
-   *
-   * @generated from field: uint64 object_rev = 7;
-   */
-  objectRev?: bigint
-  /**
-   * NewKey is the new key for a rename transaction.
-   *
-   * @generated from field: string new_key = 8;
-   */
-  newKey?: string
-}
-
-export const WorldChange: MessageType<WorldChange> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.WorldChange',
-    fields: [
-      { no: 1, name: 'change_type', kind: 'enum', T: WorldChangeType_Enum },
-      { no: 2, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'quad', kind: 'message', T: () => Quad },
-      { no: 4, name: 'transaction_ref', kind: 'message', T: () => BlockRef },
-      { no: 5, name: 'object_ref', kind: 'message', T: () => BlockRef },
-      { no: 6, name: 'prev_object_ref', kind: 'message', T: () => BlockRef },
-      { no: 7, name: 'object_rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 8, name: 'new_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WorldChangeLL is a linked-list of world change batches.
- *
- * @generated from message world.block.WorldChangeLL
- */
-export interface WorldChangeLL {
-  /**
-   * Height is the index in the batch linked-list.
-   * The first change in the set is at height=0.
-   *
-   * @generated from field: uint32 height = 1;
-   */
-  height?: number
-  /**
-   * PrevRef is the reference to the previous WorldChangeLL in the linked list.
-   * If height == 0, this field must be empty.
-   *
-   * @generated from field: block.BlockRef prev_ref = 2;
-   */
-  prevRef?: BlockRef
-  /**
-   * TotalSize is len(changes) + total_size of prev node in list.
-   *
-   * @generated from field: uint32 total_size = 3;
-   */
-  totalSize?: number
-  /**
-   * Changes is the set of changes in the world change batch.
-   * Changes are added until the batch reaches the target batch size.
-   *
-   * @generated from field: repeated world.block.WorldChange changes = 4;
-   */
-  changes?: WorldChange[]
-}
-
-export const WorldChangeLL: MessageType<WorldChangeLL> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.WorldChangeLL',
-    fields: [
-      { no: 1, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'prev_ref', kind: 'message', T: () => BlockRef },
-      { no: 3, name: 'total_size', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 4,
-        name: 'changes',
-        kind: 'message',
-        T: WorldChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ChangeLogLL is a world change log linked-list entry.
- * The size of a ChangeLogLL entry is capped to 1MiB, targeting 512KiB.
- *
- * @generated from message world.block.ChangeLogLL
- */
-export interface ChangeLogLL {
-  /**
-   * Seqno is the world sequence number after this changeset is applied.
-   * An entry without a change batch marks where the history starts.
-   *
-   * @generated from field: uint64 seqno = 1;
-   */
-  seqno?: bigint
-  /**
-   * PrevRef is the reference to the previous change in the segment.
-   * Empty on the first entry of a segment.
-   *
-   * @generated from field: block.BlockRef prev_ref = 2;
-   */
-  prevRef?: BlockRef
-  /**
-   * ChangeBatch is the world change batch linked-list first node.
-   * Linked-list is used to reduce the size of changelog entries.
-   * The HEAD of the ChangeLogLL is limited to 5 embedded changes.
-   * The nodes of the ChangeLogLL are limited to 2048 entries (~512KiB).
-   *
-   * @generated from field: world.block.WorldChangeLL change_batch = 3;
-   */
-  changeBatch?: WorldChangeLL
-  /**
-   * ChangeType is the type of change applied.
-   * If there are multiple changes, they will all be of this type.
-   *
-   * @generated from field: world.block.WorldChangeType change_type = 4;
-   */
-  changeType?: WorldChangeType
-}
-
-export const ChangeLogLL: MessageType<ChangeLogLL> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.ChangeLogLL',
-    fields: [
-      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'prev_ref', kind: 'message', T: () => BlockRef },
-      { no: 3, name: 'change_batch', kind: 'message', T: WorldChangeLL },
-      { no: 4, name: 'change_type', kind: 'enum', T: WorldChangeType_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * World contains a key/value Object store, and a graph database with quads
@@ -259,58 +58,41 @@ export interface World {
    * ObjectKeyValue is the key/value tree of objects.
    * Key: string
    * Value: cid.BlockRef -> Object
-   *
-   * @generated from field: kvtx.block.KeyValueStore object_key_value = 1;
    */
   objectKeyValue?: KeyValueStore
   /**
    * GraphKeyValue is the key/value tree storing the graph.
    * k/v structure managed by cayley graph kvtx implementation
    * Value: cid.BlockRef -> Quad
-   *
-   * @generated from field: kvtx.block.KeyValueStore graph_key_value = 2;
    */
   graphKeyValue?: KeyValueStore
   /**
    * LastChange is the head of the current changelog segment.
    * If seqno == 0, this field is empty.
-   *
-   * @generated from field: world.block.ChangeLogLL last_change = 3;
    */
   lastChange?: ChangeLogLL
   /**
    * LastChangeDisable indicates the changelog is disabled for this world.
    * If set, last_change will be empty, except for the seqno field.
    * NOTE: the seqno field will not be empty on LastChange.
-   *
-   * @generated from field: bool last_change_disable = 4;
    */
   lastChangeDisable?: boolean
   /**
    * PrevChanges is the head of the previous changelog segment.
    * Each segment holds ChangeLogSegmentLen entries. Starting a new segment
    * replaces this field, so the World retains between one and two segments.
-   *
-   * @generated from field: block.BlockRef prev_changes = 7;
    */
   prevChanges?: BlockRef
 }
 
-export const World: MessageType<World> = /* @__PURE__ */ createMessageType({
-  typeName: 'world.block.World',
-  fields: [
-    {
-      no: 1,
-      name: 'object_key_value',
-      kind: 'message',
-      T: () => KeyValueStore,
-    },
-    { no: 2, name: 'graph_key_value', kind: 'message', T: () => KeyValueStore },
-    { no: 3, name: 'last_change', kind: 'message', T: ChangeLogLL },
-    { no: 4, name: 'last_change_disable', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 7, name: 'prev_changes', kind: 'message', T: () => BlockRef },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const World: MessageType<World> =
+  /* @__PURE__ */ createMessageType<World>('world.block.World', () => [
+    [1, 'object_key_value', 11, 0, KeyValueStore.codec],
+    [2, 'graph_key_value', 11, 0, KeyValueStore.codec],
+    [3, 'last_change', 11, 0, ChangeLogLL.codec],
+    [4, 'last_change_disable', 8],
+    [7, 'prev_changes', 11, 0, BlockRef.codec],
+  ])
 
 /**
  * Object is an atomic unit for a object in a World graph.
@@ -320,15 +102,11 @@ export const World: MessageType<World> = /* @__PURE__ */ createMessageType({
 export interface Object$ {
   /**
    * Key is the unique Object key.
-   *
-   * @generated from field: string key = 1;
    */
   key?: string
   /**
    * RootRef is the block ref to the root of the object structure.
    * Note: Object type is not stored. Type data is stored in the Graph, inline, or not at all.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
    */
   rootRef?: ObjectRef
   /**
@@ -336,17 +114,159 @@ export interface Object$ {
    * Incremented when a transaction is applied to the object.
    * Incremented when root_ref is changed (SetRootRef).
    * Incremented when adding or removing a graph quad referencing Object.
-   *
-   * @generated from field: uint64 rev = 3;
    */
   rev?: bigint
 }
 
-export const Object$: MessageType<Object$> = /* @__PURE__ */ createMessageType({
-  typeName: 'world.block.Object',
-  fields: [
-    { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-    { no: 3, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Object$: MessageType<Object$> =
+  /* @__PURE__ */ createMessageType<Object$>('world.block.Object', () => [
+    [1, 'key', 9],
+    [2, 'root_ref', 11, 0, ObjectRef.codec],
+    [3, 'rev', 4],
+  ])
+
+/**
+ * WorldChange is an entry in the changelog.
+ * A transaction may convert into multiple changes.
+ *
+ * @generated from message world.block.WorldChange
+ */
+export interface WorldChange {
+  /**
+   * ChangeType is the type of change this is.
+   */
+  changeType?: WorldChangeType
+  /**
+   * Key is the associated key of the change.
+   * May be a key prefix, depending on change type.
+   * If a rename transaction, this is the old key.
+   * If a Graph transaction, this will be empty.
+   */
+  key?: string
+  /**
+   * Quad is the associated graph quad of the change.
+   * If a Object transaction, this will be empty.
+   */
+  quad?: Quad
+  /**
+   * TransactionRef is the reference to the associated transaction.
+   * This is transparent to the core World code.
+   */
+  transactionRef?: BlockRef
+  /**
+   * ObjectRef is the reference to the associated Object block.
+   * Empty for graph operations.
+   */
+  objectRef?: BlockRef
+  /**
+   * PrevObjectRef is the reference to the associated previous Object block.
+   * If set, this will be the old object.
+   * If deleted, this will be the object just before deletion.
+   * Empty for graph operations.
+   */
+  prevObjectRef?: BlockRef
+  /**
+   * ObjectRev is the updated revision of the Object.
+   * If a Graph transaction, this will be empty.
+   */
+  objectRev?: bigint
+  /**
+   * NewKey is the new key for a rename transaction.
+   */
+  newKey?: string
+}
+
+export const WorldChange: MessageType<WorldChange> =
+  /* @__PURE__ */ createMessageType<WorldChange>(
+    'world.block.WorldChange',
+    () => [
+      [1, 'change_type', 14, 0, WorldChangeType_Enum],
+      [2, 'key', 9],
+      [3, 'quad', 11, 0, Quad.codec],
+      [4, 'transaction_ref', 11, 0, BlockRef.codec],
+      [5, 'object_ref', 11, 0, BlockRef.codec],
+      [6, 'prev_object_ref', 11, 0, BlockRef.codec],
+      [7, 'object_rev', 4],
+      [8, 'new_key', 9],
+    ],
+  )
+
+/**
+ * WorldChangeLL is a linked-list of world change batches.
+ *
+ * @generated from message world.block.WorldChangeLL
+ */
+export interface WorldChangeLL {
+  /**
+   * Height is the index in the batch linked-list.
+   * The first change in the set is at height=0.
+   */
+  height?: number
+  /**
+   * PrevRef is the reference to the previous WorldChangeLL in the linked list.
+   * If height == 0, this field must be empty.
+   */
+  prevRef?: BlockRef
+  /**
+   * TotalSize is len(changes) + total_size of prev node in list.
+   */
+  totalSize?: number
+  /**
+   * Changes is the set of changes in the world change batch.
+   * Changes are added until the batch reaches the target batch size.
+   */
+  changes?: WorldChange[]
+}
+
+export const WorldChangeLL: MessageType<WorldChangeLL> =
+  /* @__PURE__ */ createMessageType<WorldChangeLL>(
+    'world.block.WorldChangeLL',
+    () => [
+      [1, 'height', 13],
+      [2, 'prev_ref', 11, 0, BlockRef.codec],
+      [3, 'total_size', 13],
+      [4, 'changes', 11, 1, WorldChange.codec],
+    ],
+  )
+
+/**
+ * ChangeLogLL is a world change log linked-list entry.
+ * The size of a ChangeLogLL entry is capped to 1MiB, targeting 512KiB.
+ *
+ * @generated from message world.block.ChangeLogLL
+ */
+export interface ChangeLogLL {
+  /**
+   * Seqno is the world sequence number after this changeset is applied.
+   * An entry without a change batch marks where the history starts.
+   */
+  seqno?: bigint
+  /**
+   * PrevRef is the reference to the previous change in the segment.
+   * Empty on the first entry of a segment.
+   */
+  prevRef?: BlockRef
+  /**
+   * ChangeBatch is the world change batch linked-list first node.
+   * Linked-list is used to reduce the size of changelog entries.
+   * The HEAD of the ChangeLogLL is limited to 5 embedded changes.
+   * The nodes of the ChangeLogLL are limited to 2048 entries (~512KiB).
+   */
+  changeBatch?: WorldChangeLL
+  /**
+   * ChangeType is the type of change applied.
+   * If there are multiple changes, they will all be of this type.
+   */
+  changeType?: WorldChangeType
+}
+
+export const ChangeLogLL: MessageType<ChangeLogLL> =
+  /* @__PURE__ */ createMessageType<ChangeLogLL>(
+    'world.block.ChangeLogLL',
+    () => [
+      [1, 'seqno', 4],
+      [2, 'prev_ref', 11, 0, BlockRef.codec],
+      [3, 'change_batch', 11, 0, WorldChangeLL.codec],
+      [4, 'change_type', 14, 0, WorldChangeType_Enum],
+    ],
+  )

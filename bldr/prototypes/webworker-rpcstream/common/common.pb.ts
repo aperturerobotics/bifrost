@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * PrototypeRequest is the request message for the Prototype RPC.
@@ -13,19 +11,14 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
  * @generated from message prototype.webworker_rpcstream.common.PrototypeRequest
  */
 export interface PrototypeRequest {
-  /**
-   * @generated from field: string body = 1;
-   */
   body?: string
 }
 
 export const PrototypeRequest: MessageType<PrototypeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'prototype.webworker_rpcstream.common.PrototypeRequest',
-    fields: [
-      { no: 1, name: 'body', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PrototypeRequest>(
+    'prototype.webworker_rpcstream.common.PrototypeRequest',
+    () => [[1, 'body', 9]],
+  )
 
 /**
  * PrototypeResponse is the response message for the Prototype RPC.
@@ -33,21 +26,15 @@ export const PrototypeRequest: MessageType<PrototypeRequest> =
  * @generated from message prototype.webworker_rpcstream.common.PrototypeResponse
  */
 export interface PrototypeResponse {
-  /**
-   * @generated from field: string body = 1;
-   */
   body?: string
-  /**
-   * @generated from field: int32 sequence_number = 2;
-   */
   sequenceNumber?: number
 }
 
 export const PrototypeResponse: MessageType<PrototypeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'prototype.webworker_rpcstream.common.PrototypeResponse',
-    fields: [
-      { no: 1, name: 'body', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'sequence_number', kind: 'scalar', T: ScalarType.INT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PrototypeResponse>(
+    'prototype.webworker_rpcstream.common.PrototypeResponse',
+    () => [
+      [1, 'body', 9],
+      [2, 'sequence_number', 5],
+    ],
+  )

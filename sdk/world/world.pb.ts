@@ -5,12 +5,7 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import { BlockRef } from '../../db/block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { SOParticipantConfig } from '../../core/sobject/sobject.pb.js'
 import { ObjectRef } from '../../db/bucket/bucket.pb.js'
 import { Quad } from '../../db/block/quad/quad.pb.js'
@@ -23,37 +18,33 @@ import { Quad } from '../../db/block/quad/quad.pb.js'
 export enum GraphEdgeBucketDirection {
   /**
    * GRAPH_EDGE_BUCKET_DIRECTION_UNSPECIFIED lists incoming and outgoing edges.
-   *
-   * @generated from enum value: GRAPH_EDGE_BUCKET_DIRECTION_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * GRAPH_EDGE_BUCKET_DIRECTION_OUT lists only outgoing edges.
-   *
-   * @generated from enum value: GRAPH_EDGE_BUCKET_DIRECTION_OUT = 1;
    */
   OUT = 1,
 
   /**
    * GRAPH_EDGE_BUCKET_DIRECTION_IN lists only incoming edges.
-   *
-   * @generated from enum value: GRAPH_EDGE_BUCKET_DIRECTION_IN = 2;
    */
   IN = 2,
 
   /**
    * GRAPH_EDGE_BUCKET_DIRECTION_BOTH lists incoming and outgoing edges.
-   *
-   * @generated from enum value: GRAPH_EDGE_BUCKET_DIRECTION_BOTH = 3;
    */
   BOTH = 3,
 }
 
 export const GraphEdgeBucketDirection_Enum = /* @__PURE__ */ createEnumType(
   's4wave.world.GraphEdgeBucketDirection',
-  GraphEdgeBucketDirection,
-  'GRAPH_EDGE_BUCKET_DIRECTION_',
+  [
+    [0, 'GRAPH_EDGE_BUCKET_DIRECTION_UNSPECIFIED'],
+    [1, 'GRAPH_EDGE_BUCKET_DIRECTION_OUT'],
+    [2, 'GRAPH_EDGE_BUCKET_DIRECTION_IN'],
+    [3, 'GRAPH_EDGE_BUCKET_DIRECTION_BOTH'],
+  ],
 )
 
 /**
@@ -64,37 +55,33 @@ export const GraphEdgeBucketDirection_Enum = /* @__PURE__ */ createEnumType(
 export enum GraphPathDirection {
   /**
    * GRAPH_PATH_DIRECTION_UNSPECIFIED is invalid.
-   *
-   * @generated from enum value: GRAPH_PATH_DIRECTION_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * GRAPH_PATH_DIRECTION_OUT follows quads where the current key is the subject.
-   *
-   * @generated from enum value: GRAPH_PATH_DIRECTION_OUT = 1;
    */
   OUT = 1,
 
   /**
    * GRAPH_PATH_DIRECTION_IN follows quads where the current key is the object.
-   *
-   * @generated from enum value: GRAPH_PATH_DIRECTION_IN = 2;
    */
   IN = 2,
 
   /**
    * GRAPH_PATH_DIRECTION_BOTH follows incoming and outgoing quads.
-   *
-   * @generated from enum value: GRAPH_PATH_DIRECTION_BOTH = 3;
    */
   BOTH = 3,
 }
 
 export const GraphPathDirection_Enum = /* @__PURE__ */ createEnumType(
   's4wave.world.GraphPathDirection',
-  GraphPathDirection,
-  'GRAPH_PATH_DIRECTION_',
+  [
+    [0, 'GRAPH_PATH_DIRECTION_UNSPECIFIED'],
+    [1, 'GRAPH_PATH_DIRECTION_OUT'],
+    [2, 'GRAPH_PATH_DIRECTION_IN'],
+    [3, 'GRAPH_PATH_DIRECTION_BOTH'],
+  ],
 )
 
 /**
@@ -105,39 +92,35 @@ export const GraphPathDirection_Enum = /* @__PURE__ */ createEnumType(
 export enum WorldErrorCode {
   /**
    * WORLD_ERROR_CODE_UNSPECIFIED carries no built-in World error.
-   *
-   * @generated from enum value: WORLD_ERROR_CODE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * WORLD_ERROR_CODE_UNHANDLED_OP indicates that no handler accepted the operation.
-   *
-   * @generated from enum value: WORLD_ERROR_CODE_UNHANDLED_OP = 1;
    */
   UNHANDLED_OP = 1,
 
   /**
    * WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED indicates that retirement of
    * this exact granting World mount prevented typed-object acquisition.
-   *
-   * @generated from enum value: WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED = 2;
    */
   TYPED_OBJECT_GRANT_RETIRED = 2,
 
   /**
    * WORLD_ERROR_CODE_OBJECT_NOT_FOUND indicates that the World holds no object
    * at the requested key.
-   *
-   * @generated from enum value: WORLD_ERROR_CODE_OBJECT_NOT_FOUND = 3;
    */
   OBJECT_NOT_FOUND = 3,
 }
 
 export const WorldErrorCode_Enum = /* @__PURE__ */ createEnumType(
   's4wave.world.WorldErrorCode',
-  WorldErrorCode,
-  'WORLD_ERROR_CODE_',
+  [
+    [0, 'WORLD_ERROR_CODE_UNSPECIFIED'],
+    [1, 'WORLD_ERROR_CODE_UNHANDLED_OP'],
+    [2, 'WORLD_ERROR_CODE_TYPED_OBJECT_GRANT_RETIRED'],
+    [3, 'WORLD_ERROR_CODE_OBJECT_NOT_FOUND'],
+  ],
 )
 
 /**
@@ -148,25 +131,15 @@ export const WorldErrorCode_Enum = /* @__PURE__ */ createEnumType(
 export interface ReleaseRootsRequest {
   /**
    * RootRefs are the roots the stage no longer owns.
-   *
-   * @generated from field: repeated block.BlockRef root_refs = 1;
    */
   rootRefs?: BlockRef[]
 }
 
 export const ReleaseRootsRequest: MessageType<ReleaseRootsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ReleaseRootsRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'root_refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReleaseRootsRequest>(
+    's4wave.world.ReleaseRootsRequest',
+    () => [[1, 'root_refs', 11, 1, BlockRef.codec]],
+  )
 
 /**
  * ReleaseRootsResponse is the response type for ReleaseRoots.
@@ -176,9 +149,9 @@ export const ReleaseRootsRequest: MessageType<ReleaseRootsRequest> =
 export interface ReleaseRootsResponse {}
 
 export const ReleaseRootsResponse: MessageType<ReleaseRootsResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ReleaseRootsResponse>(
+  /* @__PURE__ */ createMessageType<ReleaseRootsResponse>(
     's4wave.world.ReleaseRootsResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -189,9 +162,9 @@ export const ReleaseRootsResponse: MessageType<ReleaseRootsResponse> =
 export interface StageWorldStateRequest {}
 
 export const StageWorldStateRequest: MessageType<StageWorldStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<StageWorldStateRequest>(
+  /* @__PURE__ */ createMessageType<StageWorldStateRequest>(
     's4wave.world.StageWorldStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -202,19 +175,15 @@ export const StageWorldStateRequest: MessageType<StageWorldStateRequest> =
 export interface StageWorldStateResponse {
   /**
    * ResourceId is the ID of the WorldStageResourceService resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const StageWorldStateResponse: MessageType<StageWorldStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.StageWorldStateResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StageWorldStateResponse>(
+    's4wave.world.StageWorldStateResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * SyncRequest is the request type for Sync.
@@ -224,9 +193,9 @@ export const StageWorldStateResponse: MessageType<StageWorldStateResponse> =
 export interface SyncRequest {}
 
 export const SyncRequest: MessageType<SyncRequest> =
-  /* @__PURE__ */ createEmptyMessageType<SyncRequest>(
+  /* @__PURE__ */ createMessageType<SyncRequest>(
     's4wave.world.SyncRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -237,19 +206,15 @@ export const SyncRequest: MessageType<SyncRequest> =
 export interface SyncResponse {
   /**
    * Fenced indicates whether a durability fence was applied.
-   *
-   * @generated from field: bool fenced = 1;
    */
   fenced?: boolean
 }
 
 export const SyncResponse: MessageType<SyncResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SyncResponse',
-    fields: [
-      { no: 1, name: 'fenced', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SyncResponse>(
+    's4wave.world.SyncResponse',
+    () => [[1, 'fenced', 8]],
+  )
 
 /**
  * SyncThroughRequest is the request type for SyncThrough.
@@ -303,26 +268,22 @@ export const SyncThroughResponse: MessageType<SyncThroughResponse> =
 export interface EngineInfo {
   /**
    * EngineId is the ID of the world engine.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
    * BucketId is the bucket ID the engine is attached to.
-   *
-   * @generated from field: string bucket_id = 2;
    */
   bucketId?: string
 }
 
 export const EngineInfo: MessageType<EngineInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.EngineInfo',
-    fields: [
-      { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EngineInfo>(
+    's4wave.world.EngineInfo',
+    () => [
+      [1, 'engine_id', 9],
+      [2, 'bucket_id', 9],
+    ],
+  )
 
 /**
  * GetEngineInfoRequest is the request type for GetEngineInfo.
@@ -332,9 +293,9 @@ export const EngineInfo: MessageType<EngineInfo> =
 export interface GetEngineInfoRequest {}
 
 export const GetEngineInfoRequest: MessageType<GetEngineInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetEngineInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetEngineInfoRequest>(
     's4wave.world.GetEngineInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -345,40 +306,29 @@ export const GetEngineInfoRequest: MessageType<GetEngineInfoRequest> =
 export interface GetEngineInfoResponse {
   /**
    * EngineInfo is the engine information.
-   *
-   * @generated from field: s4wave.world.EngineInfo engine_info = 1;
    */
   engineInfo?: EngineInfo
   /**
    * SessionPeerId is the authenticated sender bound to this Resource, when present.
-   *
-   * @generated from field: string session_peer_id = 2;
    */
   sessionPeerId?: string
   /**
    * CallerParticipant is the accepted participant of the authenticated caller,
    * when the granting mount knows it. Consumers resolve current permissions
    * from the addressed SharedObject instead of treating this snapshot as a grant.
-   *
-   * @generated from field: sobject.SOParticipantConfig caller_participant = 3;
    */
   callerParticipant?: SOParticipantConfig
 }
 
 export const GetEngineInfoResponse: MessageType<GetEngineInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetEngineInfoResponse',
-    fields: [
-      { no: 1, name: 'engine_info', kind: 'message', T: EngineInfo },
-      { no: 2, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'caller_participant',
-        kind: 'message',
-        T: () => SOParticipantConfig,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetEngineInfoResponse>(
+    's4wave.world.GetEngineInfoResponse',
+    () => [
+      [1, 'engine_info', 11, 0, EngineInfo.codec],
+      [2, 'session_peer_id', 9],
+      [3, 'caller_participant', 11, 0, SOParticipantConfig.codec],
+    ],
+  )
 
 /**
  * WorldRootSnapshot identifies one committed Engine root.
@@ -388,45 +338,32 @@ export const GetEngineInfoResponse: MessageType<GetEngineInfoResponse> =
 export interface WorldRootSnapshot {
   /**
    * RootRef is the committed World root reference.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 1;
    */
   rootRef?: ObjectRef
   /**
    * Seqno is the world sequence number observed with RootRef.
-   *
-   * @generated from field: uint64 seqno = 2;
    */
   seqno?: bigint
   /**
    * EngineInfo is the Engine metadata associated with RootRef.
-   *
-   * @generated from field: s4wave.world.EngineInfo engine_info = 3;
    */
   engineInfo?: EngineInfo
   /**
    * StorageVolumeId is the local storage volume hint, when visible to the Engine.
-   *
-   * @generated from field: string storage_volume_id = 4;
    */
   storageVolumeId?: string
 }
 
 export const WorldRootSnapshot: MessageType<WorldRootSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WorldRootSnapshot',
-    fields: [
-      { no: 1, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-      { no: 2, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'engine_info', kind: 'message', T: EngineInfo },
-      {
-        no: 4,
-        name: 'storage_volume_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WorldRootSnapshot>(
+    's4wave.world.WorldRootSnapshot',
+    () => [
+      [1, 'root_ref', 11, 0, ObjectRef.codec],
+      [2, 'seqno', 4],
+      [3, 'engine_info', 11, 0, EngineInfo.codec],
+      [4, 'storage_volume_id', 9],
+    ],
+  )
 
 /**
  * GetWorldRootSnapshotRequest is the request type for GetWorldRootSnapshot.
@@ -436,9 +373,9 @@ export const WorldRootSnapshot: MessageType<WorldRootSnapshot> =
 export interface GetWorldRootSnapshotRequest {}
 
 export const GetWorldRootSnapshotRequest: MessageType<GetWorldRootSnapshotRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetWorldRootSnapshotRequest>(
+  /* @__PURE__ */ createMessageType<GetWorldRootSnapshotRequest>(
     's4wave.world.GetWorldRootSnapshotRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -449,9 +386,9 @@ export const GetWorldRootSnapshotRequest: MessageType<GetWorldRootSnapshotReques
 export interface WatchWorldRootSnapshotsRequest {}
 
 export const WatchWorldRootSnapshotsRequest: MessageType<WatchWorldRootSnapshotsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchWorldRootSnapshotsRequest>(
+  /* @__PURE__ */ createMessageType<WatchWorldRootSnapshotsRequest>(
     's4wave.world.WatchWorldRootSnapshotsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -462,26 +399,22 @@ export const WatchWorldRootSnapshotsRequest: MessageType<WatchWorldRootSnapshots
 export interface SetRetainedRootRequest {
   /**
    * Name identifies the retained root, 1 to 64 bytes.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * RootRef is the accepted World root to retain, or empty to release the name.
-   *
-   * @generated from field: block.BlockRef root_ref = 2;
    */
   rootRef?: BlockRef
 }
 
 export const SetRetainedRootRequest: MessageType<SetRetainedRootRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SetRetainedRootRequest',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetRetainedRootRequest>(
+    's4wave.world.SetRetainedRootRequest',
+    () => [
+      [1, 'name', 9],
+      [2, 'root_ref', 11, 0, BlockRef.codec],
+    ],
+  )
 
 /**
  * SetRetainedRootResponse is the response type for SetRetainedRoot.
@@ -491,9 +424,9 @@ export const SetRetainedRootRequest: MessageType<SetRetainedRootRequest> =
 export interface SetRetainedRootResponse {}
 
 export const SetRetainedRootResponse: MessageType<SetRetainedRootResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetRetainedRootResponse>(
+  /* @__PURE__ */ createMessageType<SetRetainedRootResponse>(
     's4wave.world.SetRetainedRootResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -504,19 +437,15 @@ export const SetRetainedRootResponse: MessageType<SetRetainedRootResponse> =
 export interface NewTransactionRequest {
   /**
    * Write indicates whether this transaction will perform write operations.
-   *
-   * @generated from field: bool write = 1;
    */
   write?: boolean
 }
 
 export const NewTransactionRequest: MessageType<NewTransactionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.NewTransactionRequest',
-    fields: [
-      { no: 1, name: 'write', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<NewTransactionRequest>(
+    's4wave.world.NewTransactionRequest',
+    () => [[1, 'write', 8]],
+  )
 
 /**
  * NewTransactionResponse is the response type for NewTransaction.
@@ -526,26 +455,22 @@ export const NewTransactionRequest: MessageType<NewTransactionRequest> =
 export interface NewTransactionResponse {
   /**
    * ResourceId is the ID of the created Tx resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * ReadOnly indicates whether the transaction is read-only.
-   *
-   * @generated from field: bool read_only = 2;
    */
   readOnly?: boolean
 }
 
 export const NewTransactionResponse: MessageType<NewTransactionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.NewTransactionResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'read_only', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<NewTransactionResponse>(
+    's4wave.world.NewTransactionResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'read_only', 8],
+    ],
+  )
 
 /**
  * GetSeqnoRequest is the request type for GetSeqno.
@@ -555,9 +480,9 @@ export const NewTransactionResponse: MessageType<NewTransactionResponse> =
 export interface GetSeqnoRequest {}
 
 export const GetSeqnoRequest: MessageType<GetSeqnoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetSeqnoRequest>(
+  /* @__PURE__ */ createMessageType<GetSeqnoRequest>(
     's4wave.world.GetSeqnoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -568,19 +493,15 @@ export const GetSeqnoRequest: MessageType<GetSeqnoRequest> =
 export interface GetSeqnoResponse {
   /**
    * Seqno is the current sequence number of the world state.
-   *
-   * @generated from field: uint64 seqno = 1;
    */
   seqno?: bigint
 }
 
 export const GetSeqnoResponse: MessageType<GetSeqnoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetSeqnoResponse',
-    fields: [
-      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSeqnoResponse>(
+    's4wave.world.GetSeqnoResponse',
+    () => [[1, 'seqno', 4]],
+  )
 
 /**
  * WaitSeqnoRequest is the request type for WaitSeqno.
@@ -590,19 +511,15 @@ export const GetSeqnoResponse: MessageType<GetSeqnoResponse> =
 export interface WaitSeqnoRequest {
   /**
    * Seqno is the minimum sequence number to wait for.
-   *
-   * @generated from field: uint64 seqno = 1;
    */
   seqno?: bigint
 }
 
 export const WaitSeqnoRequest: MessageType<WaitSeqnoRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WaitSeqnoRequest',
-    fields: [
-      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WaitSeqnoRequest>(
+    's4wave.world.WaitSeqnoRequest',
+    () => [[1, 'seqno', 4]],
+  )
 
 /**
  * WaitSeqnoResponse is the response type for WaitSeqno.
@@ -612,19 +529,15 @@ export const WaitSeqnoRequest: MessageType<WaitSeqnoRequest> =
 export interface WaitSeqnoResponse {
   /**
    * Seqno is the sequence number when the wait condition was satisfied.
-   *
-   * @generated from field: uint64 seqno = 1;
    */
   seqno?: bigint
 }
 
 export const WaitSeqnoResponse: MessageType<WaitSeqnoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WaitSeqnoResponse',
-    fields: [
-      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WaitSeqnoResponse>(
+    's4wave.world.WaitSeqnoResponse',
+    () => [[1, 'seqno', 4]],
+  )
 
 /**
  * WatchChangesRequest is the request type for WatchChanges.
@@ -634,19 +547,15 @@ export const WaitSeqnoResponse: MessageType<WaitSeqnoResponse> =
 export interface WatchChangesRequest {
   /**
    * AfterSeqno is the revision the stream starts after.
-   *
-   * @generated from field: uint64 after_seqno = 1;
    */
   afterSeqno?: bigint
 }
 
 export const WatchChangesRequest: MessageType<WatchChangesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WatchChangesRequest',
-    fields: [
-      { no: 1, name: 'after_seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchChangesRequest>(
+    's4wave.world.WatchChangesRequest',
+    () => [[1, 'after_seqno', 4]],
+  )
 
 /**
  * WorldChange lists what one or more coalesced commits changed.
@@ -656,47 +565,33 @@ export const WatchChangesRequest: MessageType<WatchChangesRequest> =
 export interface WorldChange {
   /**
    * Seqno is the World revision the change reaches.
-   *
-   * @generated from field: uint64 seqno = 1;
    */
   seqno?: bigint
   /**
    * Unknown is set when the changes could not be listed. Any read may have
    * changed.
-   *
-   * @generated from field: bool unknown = 2;
    */
   unknown?: boolean
   /**
    * Keys are the object keys that were set, deleted, renamed or revised.
-   *
-   * @generated from field: repeated string keys = 3;
    */
   keys?: string[]
   /**
    * Quads are the graph quads that were set or deleted.
-   *
-   * @generated from field: repeated quad.Quad quads = 4;
    */
   quads?: Quad[]
 }
 
 export const WorldChange: MessageType<WorldChange> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WorldChange',
-    fields: [
-      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'unknown', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 4, name: 'quads', kind: 'message', T: () => Quad, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WorldChange>(
+    's4wave.world.WorldChange',
+    () => [
+      [1, 'seqno', 4],
+      [2, 'unknown', 8],
+      [3, 'keys', 9, 1],
+      [4, 'quads', 11, 1, Quad.codec],
+    ],
+  )
 
 /**
  * WaitObjectRevRequest is the request type for WaitObjectRev.
@@ -706,33 +601,27 @@ export const WorldChange: MessageType<WorldChange> =
 export interface WaitObjectRevRequest {
   /**
    * Key is the object key to wait on.
-   *
-   * @generated from field: string key = 1;
    */
   key?: string
   /**
    * Rev is the minimum object revision to wait for.
-   *
-   * @generated from field: uint64 rev = 2;
    */
   rev?: bigint
   /**
    * IgnoreNotFound waits for a missing object to appear instead of failing.
-   *
-   * @generated from field: bool ignore_not_found = 3;
    */
   ignoreNotFound?: boolean
 }
 
 export const WaitObjectRevRequest: MessageType<WaitObjectRevRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WaitObjectRevRequest',
-    fields: [
-      { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'ignore_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WaitObjectRevRequest>(
+    's4wave.world.WaitObjectRevRequest',
+    () => [
+      [1, 'key', 9],
+      [2, 'rev', 4],
+      [3, 'ignore_not_found', 8],
+    ],
+  )
 
 /**
  * WaitObjectRevResponse is the response type for WaitObjectRev.
@@ -742,27 +631,23 @@ export const WaitObjectRevRequest: MessageType<WaitObjectRevRequest> =
 export interface WaitObjectRevResponse {
   /**
    * Rev is the object revision that satisfied the wait.
-   *
-   * @generated from field: uint64 rev = 1;
    */
   rev?: bigint
   /**
    * ErrorCode is WORLD_ERROR_CODE_OBJECT_NOT_FOUND when the object is missing
    * and IgnoreNotFound is unset.
-   *
-   * @generated from field: s4wave.world.WorldErrorCode error_code = 2;
    */
   errorCode?: WorldErrorCode
 }
 
 export const WaitObjectRevResponse: MessageType<WaitObjectRevResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WaitObjectRevResponse',
-    fields: [
-      { no: 1, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'error_code', kind: 'enum', T: WorldErrorCode_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WaitObjectRevResponse>(
+    's4wave.world.WaitObjectRevResponse',
+    () => [
+      [1, 'rev', 4],
+      [2, 'error_code', 14, 0, WorldErrorCode_Enum],
+    ],
+  )
 
 /**
  * AccessWorldStateRequest is the request type for AccessWorldState.
@@ -773,19 +658,15 @@ export interface AccessWorldStateRequest {
   /**
    * Ref is an optional reference to access a specific object.
    * If unset, we will access the Root of the WorldState.
-   *
-   * @generated from field: bucket.ObjectRef ref = 1;
    */
   ref?: ObjectRef
 }
 
 export const AccessWorldStateRequest: MessageType<AccessWorldStateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.AccessWorldStateRequest',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessWorldStateRequest>(
+    's4wave.world.AccessWorldStateRequest',
+    () => [[1, 'ref', 11, 0, ObjectRef.codec]],
+  )
 
 /**
  * OpenNestedWorldRequest selects a typed outer object whose root is a NestedWorld block.
@@ -795,19 +676,15 @@ export const AccessWorldStateRequest: MessageType<AccessWorldStateRequest> =
 export interface OpenNestedWorldRequest {
   /**
    * ObjectKey identifies the enclosing object in this World state.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const OpenNestedWorldRequest: MessageType<OpenNestedWorldRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.OpenNestedWorldRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenNestedWorldRequest>(
+    's4wave.world.OpenNestedWorldRequest',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * OpenNestedWorldResponse grants a read-only Engine over the nested World.
@@ -819,19 +696,15 @@ export interface OpenNestedWorldResponse {
    * ResourceId identifies the nested World Engine resource.
    * Its seqno is the outer object's revision, and each transaction reads the
    * nested World published at the revision it opened.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const OpenNestedWorldResponse: MessageType<OpenNestedWorldResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.OpenNestedWorldResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenNestedWorldResponse>(
+    's4wave.world.OpenNestedWorldResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * OpenOuterWorldRequest opens the enclosing Space World from a nested World resource.
@@ -841,9 +714,9 @@ export const OpenNestedWorldResponse: MessageType<OpenNestedWorldResponse> =
 export interface OpenOuterWorldRequest {}
 
 export const OpenOuterWorldRequest: MessageType<OpenOuterWorldRequest> =
-  /* @__PURE__ */ createEmptyMessageType<OpenOuterWorldRequest>(
+  /* @__PURE__ */ createMessageType<OpenOuterWorldRequest>(
     's4wave.world.OpenOuterWorldRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -854,19 +727,15 @@ export const OpenOuterWorldRequest: MessageType<OpenOuterWorldRequest> =
 export interface OpenOuterWorldResponse {
   /**
    * ResourceId identifies the enclosing Space Engine resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const OpenOuterWorldResponse: MessageType<OpenOuterWorldResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.OpenOuterWorldResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenOuterWorldResponse>(
+    's4wave.world.OpenOuterWorldResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * AccessWorldStateResponse is the response type for AccessWorldState.
@@ -876,99 +745,33 @@ export const OpenOuterWorldResponse: MessageType<OpenOuterWorldResponse> =
 export interface AccessWorldStateResponse {
   /**
    * ResourceId is the ID of the bucket cursor resource for accessing world state.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessWorldStateResponse: MessageType<AccessWorldStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.AccessWorldStateResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessWorldStateResponse>(
+    's4wave.world.AccessWorldStateResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
- * CreateObjectRequest is the request type for CreateObject.
+ * CommitMutationsRequest is the request type for CommitMutations.
  *
- * @generated from message s4wave.world.CreateObjectRequest
+ * @generated from message s4wave.world.CommitMutationsRequest
  */
-export interface CreateObjectRequest {
+export interface CommitMutationsRequest {
   /**
-   * ObjectKey is the unique identifier for the object within the world.
-   *
-   * @generated from field: string object_key = 1;
+   * Mutations are applied in request order before the transaction commits.
    */
-  objectKey?: string
-  /**
-   * RootRef is the initial reference to the object's root data.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
-   */
-  rootRef?: ObjectRef
+  mutations?: TransactionMutation[]
 }
 
-export const CreateObjectRequest: MessageType<CreateObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.CreateObjectRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SetObjectRootMutation replaces an object's root by its exact key.
- *
- * @generated from message s4wave.world.SetObjectRootMutation
- */
-export interface SetObjectRootMutation {
-  /**
-   * ObjectKey identifies the exact object inside this transaction.
-   *
-   * @generated from field: string object_key = 1;
-   */
-  objectKey?: string
-  /**
-   * RootRef is the replacement immutable object root.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
-   */
-  rootRef?: ObjectRef
-}
-
-export const SetObjectRootMutation: MessageType<SetObjectRootMutation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SetObjectRootMutation',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SetGraphQuadRequest is the request type for SetGraphQuad.
- *
- * @generated from message s4wave.world.SetGraphQuadRequest
- */
-export interface SetGraphQuadRequest {
-  /**
-   * Quad is the graph quad to add or update in the store.
-   *
-   * @generated from field: quad.Quad quad = 1;
-   */
-  quad?: Quad
-}
-
-export const SetGraphQuadRequest: MessageType<SetGraphQuadRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SetGraphQuadRequest',
-    fields: [
-      { no: 1, name: 'quad', kind: 'message', T: () => Quad },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const CommitMutationsRequest: MessageType<CommitMutationsRequest> =
+  /* @__PURE__ */ createMessageType<CommitMutationsRequest>(
+    's4wave.world.CommitMutationsRequest',
+    () => [[1, 'mutations', 11, 1, TransactionMutation.codec]],
+  )
 
 /**
  * TransactionMutation applies one World mutation.
@@ -980,157 +783,45 @@ export interface TransactionMutation {
    * @generated from oneof s4wave.world.TransactionMutation.mutation
    */
   mutation?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * CreateObject creates one object with its initial root.
-         *
-         * @generated from field: s4wave.world.CreateObjectRequest create_object = 1;
-         */
-        value: CreateObjectRequest
-        case: 'createObject'
-      }
-    | {
-        /**
-         * SetObjectRoot replaces one existing object's root.
-         *
-         * @generated from field: s4wave.world.SetObjectRootMutation set_object_root = 2;
-         */
-        value: SetObjectRootMutation
-        case: 'setObjectRoot'
-      }
-    | {
-        /**
-         * SetGraphQuad writes one graph quad.
-         *
-         * @generated from field: s4wave.world.SetGraphQuadRequest set_graph_quad = 3;
-         */
-        value: SetGraphQuadRequest
-        case: 'setGraphQuad'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: CreateObjectRequest; case: 'createObject' }
+    | { value: SetObjectRootMutation; case: 'setObjectRoot' }
+    | { value: SetGraphQuadRequest; case: 'setGraphQuad' }
 }
 
 export const TransactionMutation: MessageType<TransactionMutation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.TransactionMutation',
-    fields: [
-      {
-        no: 1,
-        name: 'create_object',
-        kind: 'message',
-        T: CreateObjectRequest,
-        oneof: 'mutation',
-      },
-      {
-        no: 2,
-        name: 'set_object_root',
-        kind: 'message',
-        T: SetObjectRootMutation,
-        oneof: 'mutation',
-      },
-      {
-        no: 3,
-        name: 'set_graph_quad',
-        kind: 'message',
-        T: SetGraphQuadRequest,
-        oneof: 'mutation',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TransactionMutation>(
+    's4wave.world.TransactionMutation',
+    () => [
+      [1, 'create_object', 11, 0, CreateObjectRequest.codec, 'mutation'],
+      [2, 'set_object_root', 11, 0, SetObjectRootMutation.codec, 'mutation'],
+      [3, 'set_graph_quad', 11, 0, SetGraphQuadRequest.codec, 'mutation'],
+    ],
+  )
 
 /**
- * CommitMutationsRequest is the request type for CommitMutations.
+ * SetObjectRootMutation replaces an object's root by its exact key.
  *
- * @generated from message s4wave.world.CommitMutationsRequest
+ * @generated from message s4wave.world.SetObjectRootMutation
  */
-export interface CommitMutationsRequest {
+export interface SetObjectRootMutation {
   /**
-   * Mutations are applied in request order before the transaction commits.
-   *
-   * @generated from field: repeated s4wave.world.TransactionMutation mutations = 1;
-   */
-  mutations?: TransactionMutation[]
-}
-
-export const CommitMutationsRequest: MessageType<CommitMutationsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.CommitMutationsRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'mutations',
-        kind: 'message',
-        T: TransactionMutation,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * CreateObjectMutationResult returns the created object's key.
- *
- * @generated from message s4wave.world.CreateObjectMutationResult
- */
-export interface CreateObjectMutationResult {
-  /**
-   * ObjectKey identifies the created object.
-   *
-   * @generated from field: string object_key = 1;
+   * ObjectKey identifies the exact object inside this transaction.
    */
   objectKey?: string
   /**
-   * Rev is the created object's committed revision.
-   *
-   * @generated from field: uint64 rev = 2;
+   * RootRef is the replacement immutable object root.
    */
-  rev?: bigint
+  rootRef?: ObjectRef
 }
 
-export const CreateObjectMutationResult: MessageType<CreateObjectMutationResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.CreateObjectMutationResult',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SetObjectRootMutationResult returns the object's new revision.
- *
- * @generated from message s4wave.world.SetObjectRootMutationResult
- */
-export interface SetObjectRootMutationResult {
-  /**
-   * Rev is the object's revision after the root replacement.
-   *
-   * @generated from field: uint64 rev = 1;
-   */
-  rev?: bigint
-}
-
-export const SetObjectRootMutationResult: MessageType<SetObjectRootMutationResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SetObjectRootMutationResult',
-    fields: [
-      { no: 1, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SetGraphQuadResponse is the response type for SetGraphQuad.
- *
- * @generated from message s4wave.world.SetGraphQuadResponse
- */
-export interface SetGraphQuadResponse {}
-
-export const SetGraphQuadResponse: MessageType<SetGraphQuadResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetGraphQuadResponse>(
-    's4wave.world.SetGraphQuadResponse',
-    true,
+export const SetObjectRootMutation: MessageType<SetObjectRootMutation> =
+  /* @__PURE__ */ createMessageType<SetObjectRootMutation>(
+    's4wave.world.SetObjectRootMutation',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+    ],
   )
 
 /**
@@ -1143,66 +834,71 @@ export interface TransactionMutationResult {
    * @generated from oneof s4wave.world.TransactionMutationResult.result
    */
   result?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * CreateObject reports the created object.
-         *
-         * @generated from field: s4wave.world.CreateObjectMutationResult create_object = 1;
-         */
-        value: CreateObjectMutationResult
-        case: 'createObject'
-      }
-    | {
-        /**
-         * SetObjectRoot reports the updated object revision.
-         *
-         * @generated from field: s4wave.world.SetObjectRootMutationResult set_object_root = 2;
-         */
-        value: SetObjectRootMutationResult
-        case: 'setObjectRoot'
-      }
-    | {
-        /**
-         * SetGraphQuad reports the graph mutation result.
-         *
-         * @generated from field: s4wave.world.SetGraphQuadResponse set_graph_quad = 3;
-         */
-        value: SetGraphQuadResponse
-        case: 'setGraphQuad'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: CreateObjectMutationResult; case: 'createObject' }
+    | { value: SetObjectRootMutationResult; case: 'setObjectRoot' }
+    | { value: SetGraphQuadResponse; case: 'setGraphQuad' }
 }
 
 export const TransactionMutationResult: MessageType<TransactionMutationResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.TransactionMutationResult',
-    fields: [
-      {
-        no: 1,
-        name: 'create_object',
-        kind: 'message',
-        T: CreateObjectMutationResult,
-        oneof: 'result',
-      },
-      {
-        no: 2,
-        name: 'set_object_root',
-        kind: 'message',
-        T: SetObjectRootMutationResult,
-        oneof: 'result',
-      },
-      {
-        no: 3,
-        name: 'set_graph_quad',
-        kind: 'message',
-        T: SetGraphQuadResponse,
-        oneof: 'result',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TransactionMutationResult>(
+    's4wave.world.TransactionMutationResult',
+    () => [
+      [1, 'create_object', 11, 0, CreateObjectMutationResult.codec, 'result'],
+      [
+        2,
+        'set_object_root',
+        11,
+        0,
+        SetObjectRootMutationResult.codec,
+        'result',
+      ],
+      [3, 'set_graph_quad', 11, 0, SetGraphQuadResponse.codec, 'result'],
+    ],
+  )
+
+/**
+ * CreateObjectMutationResult returns the created object's key.
+ *
+ * @generated from message s4wave.world.CreateObjectMutationResult
+ */
+export interface CreateObjectMutationResult {
+  /**
+   * ObjectKey identifies the created object.
+   */
+  objectKey?: string
+  /**
+   * Rev is the created object's committed revision.
+   */
+  rev?: bigint
+}
+
+export const CreateObjectMutationResult: MessageType<CreateObjectMutationResult> =
+  /* @__PURE__ */ createMessageType<CreateObjectMutationResult>(
+    's4wave.world.CreateObjectMutationResult',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'rev', 4],
+    ],
+  )
+
+/**
+ * SetObjectRootMutationResult returns the object's new revision.
+ *
+ * @generated from message s4wave.world.SetObjectRootMutationResult
+ */
+export interface SetObjectRootMutationResult {
+  /**
+   * Rev is the object's revision after the root replacement.
+   */
+  rev?: bigint
+}
+
+export const SetObjectRootMutationResult: MessageType<SetObjectRootMutationResult> =
+  /* @__PURE__ */ createMessageType<SetObjectRootMutationResult>(
+    's4wave.world.SetObjectRootMutationResult',
+    () => [[1, 'rev', 4]],
+  )
 
 /**
  * CommitMutationsResponse is the response type for CommitMutations.
@@ -1212,25 +908,15 @@ export const TransactionMutationResult: MessageType<TransactionMutationResult> =
 export interface CommitMutationsResponse {
   /**
    * Results correspond one-for-one with the ordered request mutations.
-   *
-   * @generated from field: repeated s4wave.world.TransactionMutationResult results = 1;
    */
   results?: TransactionMutationResult[]
 }
 
 export const CommitMutationsResponse: MessageType<CommitMutationsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.CommitMutationsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'results',
-        kind: 'message',
-        T: TransactionMutationResult,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CommitMutationsResponse>(
+    's4wave.world.CommitMutationsResponse',
+    () => [[1, 'results', 11, 1, TransactionMutationResult.codec]],
+  )
 
 /**
  * CommitRequest is the request type for Commit.
@@ -1240,9 +926,9 @@ export const CommitMutationsResponse: MessageType<CommitMutationsResponse> =
 export interface CommitRequest {}
 
 export const CommitRequest: MessageType<CommitRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CommitRequest>(
+  /* @__PURE__ */ createMessageType<CommitRequest>(
     's4wave.world.CommitRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1253,9 +939,9 @@ export const CommitRequest: MessageType<CommitRequest> =
 export interface CommitResponse {}
 
 export const CommitResponse: MessageType<CommitResponse> =
-  /* @__PURE__ */ createEmptyMessageType<CommitResponse>(
+  /* @__PURE__ */ createMessageType<CommitResponse>(
     's4wave.world.CommitResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1266,9 +952,9 @@ export const CommitResponse: MessageType<CommitResponse> =
 export interface DiscardRequest {}
 
 export const DiscardRequest: MessageType<DiscardRequest> =
-  /* @__PURE__ */ createEmptyMessageType<DiscardRequest>(
+  /* @__PURE__ */ createMessageType<DiscardRequest>(
     's4wave.world.DiscardRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1279,9 +965,9 @@ export const DiscardRequest: MessageType<DiscardRequest> =
 export interface DiscardResponse {}
 
 export const DiscardResponse: MessageType<DiscardResponse> =
-  /* @__PURE__ */ createEmptyMessageType<DiscardResponse>(
+  /* @__PURE__ */ createMessageType<DiscardResponse>(
     's4wave.world.DiscardResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1292,9 +978,9 @@ export const DiscardResponse: MessageType<DiscardResponse> =
 export interface GetReadOnlyRequest {}
 
 export const GetReadOnlyRequest: MessageType<GetReadOnlyRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetReadOnlyRequest>(
+  /* @__PURE__ */ createMessageType<GetReadOnlyRequest>(
     's4wave.world.GetReadOnlyRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1305,19 +991,15 @@ export const GetReadOnlyRequest: MessageType<GetReadOnlyRequest> =
 export interface GetReadOnlyResponse {
   /**
    * ReadOnly indicates whether the transaction is read-only.
-   *
-   * @generated from field: bool read_only = 1;
    */
   readOnly?: boolean
 }
 
 export const GetReadOnlyResponse: MessageType<GetReadOnlyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetReadOnlyResponse',
-    fields: [
-      { no: 1, name: 'read_only', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetReadOnlyResponse>(
+    's4wave.world.GetReadOnlyResponse',
+    () => [[1, 'read_only', 8]],
+  )
 
 /**
  * BuildStorageCursorRequest is the request type for BuildStorageCursor.
@@ -1327,9 +1009,9 @@ export const GetReadOnlyResponse: MessageType<GetReadOnlyResponse> =
 export interface BuildStorageCursorRequest {}
 
 export const BuildStorageCursorRequest: MessageType<BuildStorageCursorRequest> =
-  /* @__PURE__ */ createEmptyMessageType<BuildStorageCursorRequest>(
+  /* @__PURE__ */ createMessageType<BuildStorageCursorRequest>(
     's4wave.world.BuildStorageCursorRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1340,19 +1022,40 @@ export const BuildStorageCursorRequest: MessageType<BuildStorageCursorRequest> =
 export interface BuildStorageCursorResponse {
   /**
    * ResourceId is the ID of the storage cursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const BuildStorageCursorResponse: MessageType<BuildStorageCursorResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.BuildStorageCursorResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildStorageCursorResponse>(
+    's4wave.world.BuildStorageCursorResponse',
+    () => [[1, 'resource_id', 13]],
+  )
+
+/**
+ * CreateObjectRequest is the request type for CreateObject.
+ *
+ * @generated from message s4wave.world.CreateObjectRequest
+ */
+export interface CreateObjectRequest {
+  /**
+   * ObjectKey is the unique identifier for the object within the world.
+   */
+  objectKey?: string
+  /**
+   * RootRef is the initial reference to the object's root data.
+   */
+  rootRef?: ObjectRef
+}
+
+export const CreateObjectRequest: MessageType<CreateObjectRequest> =
+  /* @__PURE__ */ createMessageType<CreateObjectRequest>(
+    's4wave.world.CreateObjectRequest',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+    ],
+  )
 
 /**
  * CreateObjectResponse is the response type for CreateObject.
@@ -1362,26 +1065,22 @@ export const BuildStorageCursorResponse: MessageType<BuildStorageCursorResponse>
 export interface CreateObjectResponse {
   /**
    * ResourceId is the ID of the created ObjectState resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * ObjectKey is the unique identifier of the created object.
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
 }
 
 export const CreateObjectResponse: MessageType<CreateObjectResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.CreateObjectResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateObjectResponse>(
+    's4wave.world.CreateObjectResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'object_key', 9],
+    ],
+  )
 
 /**
  * GetObjectRequest is the request type for GetObject.
@@ -1391,19 +1090,15 @@ export const CreateObjectResponse: MessageType<CreateObjectResponse> =
 export interface GetObjectRequest {
   /**
    * ObjectKey is the unique identifier of the object to retrieve.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const GetObjectRequest: MessageType<GetObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetObjectRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetObjectRequest>(
+    's4wave.world.GetObjectRequest',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * GetObjectResponse is the response type for GetObject.
@@ -1413,33 +1108,27 @@ export const GetObjectRequest: MessageType<GetObjectRequest> =
 export interface GetObjectResponse {
   /**
    * Found indicates whether the object exists in the world.
-   *
-   * @generated from field: bool found = 1;
    */
   found?: boolean
   /**
    * ResourceId is the ID of the ObjectState resource, if found.
-   *
-   * @generated from field: uint32 resource_id = 2;
    */
   resourceId?: number
   /**
    * ObjectKey is the unique identifier of the object, if found.
-   *
-   * @generated from field: string object_key = 3;
    */
   objectKey?: string
 }
 
 export const GetObjectResponse: MessageType<GetObjectResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetObjectResponse',
-    fields: [
-      { no: 1, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetObjectResponse>(
+    's4wave.world.GetObjectResponse',
+    () => [
+      [1, 'found', 8],
+      [2, 'resource_id', 13],
+      [3, 'object_key', 9],
+    ],
+  )
 
 /**
  * RenameObjectRequest is the request type for RenameObject.
@@ -1449,33 +1138,27 @@ export const GetObjectResponse: MessageType<GetObjectResponse> =
 export interface RenameObjectRequest {
   /**
    * OldObjectKey is the object key to rename.
-   *
-   * @generated from field: string old_object_key = 1;
    */
   oldObjectKey?: string
   /**
    * NewObjectKey is the new object key.
-   *
-   * @generated from field: string new_object_key = 2;
    */
   newObjectKey?: string
   /**
    * Descendants renames objects under old_object_key + "/" to the new prefix.
-   *
-   * @generated from field: bool descendants = 3;
    */
   descendants?: boolean
 }
 
 export const RenameObjectRequest: MessageType<RenameObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.RenameObjectRequest',
-    fields: [
-      { no: 1, name: 'old_object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'new_object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'descendants', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RenameObjectRequest>(
+    's4wave.world.RenameObjectRequest',
+    () => [
+      [1, 'old_object_key', 9],
+      [2, 'new_object_key', 9],
+      [3, 'descendants', 8],
+    ],
+  )
 
 /**
  * RenameObjectResponse is the response type for RenameObject.
@@ -1485,26 +1168,22 @@ export const RenameObjectRequest: MessageType<RenameObjectRequest> =
 export interface RenameObjectResponse {
   /**
    * ResourceId is the ID of the renamed ObjectState resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * ObjectKey is the unique identifier of the renamed object.
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
 }
 
 export const RenameObjectResponse: MessageType<RenameObjectResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.RenameObjectResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RenameObjectResponse>(
+    's4wave.world.RenameObjectResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'object_key', 9],
+    ],
+  )
 
 /**
  * DeleteObjectRequest is the request type for DeleteObject.
@@ -1514,19 +1193,15 @@ export const RenameObjectResponse: MessageType<RenameObjectResponse> =
 export interface DeleteObjectRequest {
   /**
    * ObjectKey is the unique identifier of the object to delete.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const DeleteObjectRequest: MessageType<DeleteObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.DeleteObjectRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteObjectRequest>(
+    's4wave.world.DeleteObjectRequest',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * DeleteObjectResponse is the response type for DeleteObject.
@@ -1536,19 +1211,15 @@ export const DeleteObjectRequest: MessageType<DeleteObjectRequest> =
 export interface DeleteObjectResponse {
   /**
    * Deleted indicates whether the object was found and successfully deleted.
-   *
-   * @generated from field: bool deleted = 1;
    */
   deleted?: boolean
 }
 
 export const DeleteObjectResponse: MessageType<DeleteObjectResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.DeleteObjectResponse',
-    fields: [
-      { no: 1, name: 'deleted', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteObjectResponse>(
+    's4wave.world.DeleteObjectResponse',
+    () => [[1, 'deleted', 8]],
+  )
 
 /**
  * IterateObjectsRequest is the request type for IterateObjects.
@@ -1559,26 +1230,22 @@ export interface IterateObjectsRequest {
   /**
    * Prefix filters objects to those whose keys start with this string.
    * Empty prefix returns all objects.
-   *
-   * @generated from field: string prefix = 1;
    */
   prefix?: string
   /**
    * Reversed indicates whether to return results in descending order.
-   *
-   * @generated from field: bool reversed = 2;
    */
   reversed?: boolean
 }
 
 export const IterateObjectsRequest: MessageType<IterateObjectsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.IterateObjectsRequest',
-    fields: [
-      { no: 1, name: 'prefix', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'reversed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IterateObjectsRequest>(
+    's4wave.world.IterateObjectsRequest',
+    () => [
+      [1, 'prefix', 9],
+      [2, 'reversed', 8],
+    ],
+  )
 
 /**
  * IterateObjectsResponse is the response type for IterateObjects.
@@ -1588,19 +1255,15 @@ export const IterateObjectsRequest: MessageType<IterateObjectsRequest> =
 export interface IterateObjectsResponse {
   /**
    * ResourceId is the ID of the ObjectIterator resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const IterateObjectsResponse: MessageType<IterateObjectsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.IterateObjectsResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IterateObjectsResponse>(
+    's4wave.world.IterateObjectsResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * ListObjectsRequest is the request type for ListObjects.
@@ -1611,23 +1274,17 @@ export interface ListObjectsRequest {
   /**
    * Prefix limits the listing to object keys that start with this string.
    * Empty prefix lists all objects.
-   *
-   * @generated from field: string prefix = 1;
    */
   prefix?: string
   /**
    * StartAfter resumes the listing after this object key. It must start with
    * prefix. Empty starts at the first key.
-   *
-   * @generated from field: string start_after = 2;
    */
   startAfter?: string
   /**
    * Limit is the maximum number of entries, objects plus prefixes, in the
    * page. It must be non-zero. The server may return a shorter page and set
    * more.
-   *
-   * @generated from field: uint32 limit = 3;
    */
   limit?: number
   /**
@@ -1635,63 +1292,20 @@ export interface ListObjectsRequest {
    * remainder after prefix contains the delimiter is listed once as its prefix
    * up to and including the first delimiter, instead of as an object. Empty
    * lists every key under prefix.
-   *
-   * @generated from field: string delimiter = 4;
    */
   delimiter?: string
 }
 
 export const ListObjectsRequest: MessageType<ListObjectsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ListObjectsRequest',
-    fields: [
-      { no: 1, name: 'prefix', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'start_after', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'delimiter', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ObjectMetadata contains graph metadata for one object key.
- *
- * @generated from message s4wave.world.ObjectMetadata
- */
-export interface ObjectMetadata {
-  /**
-   * ObjectKey is the object key.
-   *
-   * @generated from field: string object_key = 1;
-   */
-  objectKey?: string
-  /**
-   * TypeId is the object type identifier, if present.
-   *
-   * @generated from field: string type_id = 2;
-   */
-  typeId?: string
-  /**
-   * ParentObjectKey is the parent object key, if present.
-   *
-   * @generated from field: string parent_object_key = 3;
-   */
-  parentObjectKey?: string
-}
-
-export const ObjectMetadata: MessageType<ObjectMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ObjectMetadata',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'parent_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListObjectsRequest>(
+    's4wave.world.ListObjectsRequest',
+    () => [
+      [1, 'prefix', 9],
+      [2, 'start_after', 9],
+      [3, 'limit', 13],
+      [4, 'delimiter', 9],
+    ],
+  )
 
 /**
  * ListObjectsResponse is the response type for ListObjects.
@@ -1701,48 +1315,61 @@ export const ObjectMetadata: MessageType<ObjectMetadata> =
 export interface ListObjectsResponse {
   /**
    * Objects are the page's objects in ascending key order.
-   *
-   * @generated from field: repeated s4wave.world.ObjectMetadata objects = 1;
    */
   objects?: ObjectMetadata[]
   /**
    * More reports that entries after the last one match the prefix. Pass the
    * greater of the last object key and the last prefix as start_after to read
    * the next page.
-   *
-   * @generated from field: bool more = 2;
    */
   more?: boolean
   /**
    * Prefixes are the page's grouped key prefixes in ascending order. Each sorts
    * where its first key would. Set only when the request has a delimiter.
-   *
-   * @generated from field: repeated string prefixes = 3;
    */
   prefixes?: string[]
 }
 
 export const ListObjectsResponse: MessageType<ListObjectsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ListObjectsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'objects',
-        kind: 'message',
-        T: ObjectMetadata,
-        repeated: true,
-      },
-      { no: 2, name: 'more', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'prefixes',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListObjectsResponse>(
+    's4wave.world.ListObjectsResponse',
+    () => [
+      [1, 'objects', 11, 1, ObjectMetadata.codec],
+      [2, 'more', 8],
+      [3, 'prefixes', 9, 1],
+    ],
+  )
+
+/**
+ * SetGraphQuadRequest is the request type for SetGraphQuad.
+ *
+ * @generated from message s4wave.world.SetGraphQuadRequest
+ */
+export interface SetGraphQuadRequest {
+  /**
+   * Quad is the graph quad to add or update in the store.
+   */
+  quad?: Quad
+}
+
+export const SetGraphQuadRequest: MessageType<SetGraphQuadRequest> =
+  /* @__PURE__ */ createMessageType<SetGraphQuadRequest>(
+    's4wave.world.SetGraphQuadRequest',
+    () => [[1, 'quad', 11, 0, Quad.codec]],
+  )
+
+/**
+ * SetGraphQuadResponse is the response type for SetGraphQuad.
+ *
+ * @generated from message s4wave.world.SetGraphQuadResponse
+ */
+export interface SetGraphQuadResponse {}
+
+export const SetGraphQuadResponse: MessageType<SetGraphQuadResponse> =
+  /* @__PURE__ */ createMessageType<SetGraphQuadResponse>(
+    's4wave.world.SetGraphQuadResponse',
+    () => [],
+  )
 
 /**
  * DeleteGraphQuadRequest is the request type for DeleteGraphQuad.
@@ -1752,19 +1379,15 @@ export const ListObjectsResponse: MessageType<ListObjectsResponse> =
 export interface DeleteGraphQuadRequest {
   /**
    * Quad is the graph quad to remove from the store.
-   *
-   * @generated from field: quad.Quad quad = 1;
    */
   quad?: Quad
 }
 
 export const DeleteGraphQuadRequest: MessageType<DeleteGraphQuadRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.DeleteGraphQuadRequest',
-    fields: [
-      { no: 1, name: 'quad', kind: 'message', T: () => Quad },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteGraphQuadRequest>(
+    's4wave.world.DeleteGraphQuadRequest',
+    () => [[1, 'quad', 11, 0, Quad.codec]],
+  )
 
 /**
  * DeleteGraphQuadResponse is the response type for DeleteGraphQuad.
@@ -1774,9 +1397,9 @@ export const DeleteGraphQuadRequest: MessageType<DeleteGraphQuadRequest> =
 export interface DeleteGraphQuadResponse {}
 
 export const DeleteGraphQuadResponse: MessageType<DeleteGraphQuadResponse> =
-  /* @__PURE__ */ createEmptyMessageType<DeleteGraphQuadResponse>(
+  /* @__PURE__ */ createMessageType<DeleteGraphQuadResponse>(
     's4wave.world.DeleteGraphQuadResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1788,27 +1411,23 @@ export interface LookupGraphQuadsRequest {
   /**
    * Filter specifies the criteria for matching quads.
    * Empty fields in the filter match any value for that field.
-   *
-   * @generated from field: quad.Quad filter = 1;
    */
   filter?: Quad
   /**
    * Limit restricts the maximum number of quads to return.
    * Zero means no limit.
-   *
-   * @generated from field: uint32 limit = 2;
    */
   limit?: number
 }
 
 export const LookupGraphQuadsRequest: MessageType<LookupGraphQuadsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.LookupGraphQuadsRequest',
-    fields: [
-      { no: 1, name: 'filter', kind: 'message', T: () => Quad },
-      { no: 2, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupGraphQuadsRequest>(
+    's4wave.world.LookupGraphQuadsRequest',
+    () => [
+      [1, 'filter', 11, 0, Quad.codec],
+      [2, 'limit', 13],
+    ],
+  )
 
 /**
  * LookupGraphQuadsResponse is the response type for LookupGraphQuads.
@@ -1818,19 +1437,15 @@ export const LookupGraphQuadsRequest: MessageType<LookupGraphQuadsRequest> =
 export interface LookupGraphQuadsResponse {
   /**
    * Quads is the list of graph quads matching the filter criteria.
-   *
-   * @generated from field: repeated quad.Quad quads = 1;
    */
   quads?: Quad[]
 }
 
 export const LookupGraphQuadsResponse: MessageType<LookupGraphQuadsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.LookupGraphQuadsResponse',
-    fields: [
-      { no: 1, name: 'quads', kind: 'message', T: () => Quad, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupGraphQuadsResponse>(
+    's4wave.world.LookupGraphQuadsResponse',
+    () => [[1, 'quads', 11, 1, Quad.codec]],
+  )
 
 /**
  * LookupGraphQuadsBatchRequest is the request type for LookupGraphQuadsBatch.
@@ -1841,33 +1456,23 @@ export interface LookupGraphQuadsBatchRequest {
   /**
    * Filters is the bounded list of subject/predicate or object/predicate
    * filters to evaluate server-side.
-   *
-   * @generated from field: repeated quad.Quad filters = 1;
    */
   filters?: Quad[]
   /**
    * LimitPerFilter is the maximum number of quads returned for each filter.
    * It must be non-zero.
-   *
-   * @generated from field: uint32 limit_per_filter = 2;
    */
   limitPerFilter?: number
 }
 
 export const LookupGraphQuadsBatchRequest: MessageType<LookupGraphQuadsBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.LookupGraphQuadsBatchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'filters',
-        kind: 'message',
-        T: () => Quad,
-        repeated: true,
-      },
-      { no: 2, name: 'limit_per_filter', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupGraphQuadsBatchRequest>(
+    's4wave.world.LookupGraphQuadsBatchRequest',
+    () => [
+      [1, 'filters', 11, 1, Quad.codec],
+      [2, 'limit_per_filter', 13],
+    ],
+  )
 
 /**
  * LookupGraphQuadsBatchResult is one filtered graph lookup result.
@@ -1877,19 +1482,15 @@ export const LookupGraphQuadsBatchRequest: MessageType<LookupGraphQuadsBatchRequ
 export interface LookupGraphQuadsBatchResult {
   /**
    * Quads is the list of graph quads matching one filter.
-   *
-   * @generated from field: repeated quad.Quad quads = 1;
    */
   quads?: Quad[]
 }
 
 export const LookupGraphQuadsBatchResult: MessageType<LookupGraphQuadsBatchResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.LookupGraphQuadsBatchResult',
-    fields: [
-      { no: 1, name: 'quads', kind: 'message', T: () => Quad, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupGraphQuadsBatchResult>(
+    's4wave.world.LookupGraphQuadsBatchResult',
+    () => [[1, 'quads', 11, 1, Quad.codec]],
+  )
 
 /**
  * LookupGraphQuadsBatchResponse is the response type for
@@ -1900,25 +1501,15 @@ export const LookupGraphQuadsBatchResult: MessageType<LookupGraphQuadsBatchResul
 export interface LookupGraphQuadsBatchResponse {
   /**
    * Results preserves the request filter order.
-   *
-   * @generated from field: repeated s4wave.world.LookupGraphQuadsBatchResult results = 1;
    */
   results?: LookupGraphQuadsBatchResult[]
 }
 
 export const LookupGraphQuadsBatchResponse: MessageType<LookupGraphQuadsBatchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.LookupGraphQuadsBatchResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'results',
-        kind: 'message',
-        T: LookupGraphQuadsBatchResult,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupGraphQuadsBatchResponse>(
+    's4wave.world.LookupGraphQuadsBatchResponse',
+    () => [[1, 'results', 11, 1, LookupGraphQuadsBatchResult.codec]],
+  )
 
 /**
  * ListGraphEdgeBucketsRequest lists grouped inbound/outbound graph edges for
@@ -1930,53 +1521,34 @@ export interface ListGraphEdgeBucketsRequest {
   /**
    * OriginObjectKeys are object keys whose graph edges should be grouped.
    * The response contains one bucket per requested origin in request order.
-   *
-   * @generated from field: repeated string origin_object_keys = 1;
    */
   originObjectKeys?: string[]
   /**
    * Predicate optionally restricts the grouped edges.
-   *
-   * @generated from field: string predicate = 2;
    */
   predicate?: string
   /**
    * LimitPerOrigin is the maximum edge count returned per origin direction.
    * It must be non-zero.
-   *
-   * @generated from field: uint32 limit_per_origin = 3;
    */
   limitPerOrigin?: number
   /**
    * Direction selects which edge directions are included.
    * Unspecified means both incoming and outgoing.
-   *
-   * @generated from field: s4wave.world.GraphEdgeBucketDirection direction = 4;
    */
   direction?: GraphEdgeBucketDirection
 }
 
 export const ListGraphEdgeBucketsRequest: MessageType<ListGraphEdgeBucketsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ListGraphEdgeBucketsRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'origin_object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'predicate', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'limit_per_origin', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 4,
-        name: 'direction',
-        kind: 'enum',
-        T: GraphEdgeBucketDirection_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListGraphEdgeBucketsRequest>(
+    's4wave.world.ListGraphEdgeBucketsRequest',
+    () => [
+      [1, 'origin_object_keys', 9, 1],
+      [2, 'predicate', 9],
+      [3, 'limit_per_origin', 13],
+      [4, 'direction', 14, 0, GraphEdgeBucketDirection_Enum],
+    ],
+  )
 
 /**
  * GraphEdgeBucket contains grouped graph edges for one origin object key.
@@ -1986,64 +1558,37 @@ export const ListGraphEdgeBucketsRequest: MessageType<ListGraphEdgeBucketsReques
 export interface GraphEdgeBucket {
   /**
    * OriginObjectKey is the requested origin object key for this bucket.
-   *
-   * @generated from field: string origin_object_key = 1;
    */
   originObjectKey?: string
   /**
    * Outgoing contains quads where the origin is the subject.
-   *
-   * @generated from field: repeated quad.Quad outgoing = 2;
    */
   outgoing?: Quad[]
   /**
    * Incoming contains quads where the origin is the object.
-   *
-   * @generated from field: repeated quad.Quad incoming = 3;
    */
   incoming?: Quad[]
   /**
    * OutgoingTruncated indicates more outgoing edges matched than were returned.
-   *
-   * @generated from field: bool outgoing_truncated = 4;
    */
   outgoingTruncated?: boolean
   /**
    * IncomingTruncated indicates more incoming edges matched than were returned.
-   *
-   * @generated from field: bool incoming_truncated = 5;
    */
   incomingTruncated?: boolean
 }
 
 export const GraphEdgeBucket: MessageType<GraphEdgeBucket> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GraphEdgeBucket',
-    fields: [
-      {
-        no: 1,
-        name: 'origin_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'outgoing',
-        kind: 'message',
-        T: () => Quad,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'incoming',
-        kind: 'message',
-        T: () => Quad,
-        repeated: true,
-      },
-      { no: 4, name: 'outgoing_truncated', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'incoming_truncated', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GraphEdgeBucket>(
+    's4wave.world.GraphEdgeBucket',
+    () => [
+      [1, 'origin_object_key', 9],
+      [2, 'outgoing', 11, 1, Quad.codec],
+      [3, 'incoming', 11, 1, Quad.codec],
+      [4, 'outgoing_truncated', 8],
+      [5, 'incoming_truncated', 8],
+    ],
+  )
 
 /**
  * ListGraphEdgeBucketsResponse returns grouped graph edge buckets.
@@ -2053,25 +1598,15 @@ export const GraphEdgeBucket: MessageType<GraphEdgeBucket> =
 export interface ListGraphEdgeBucketsResponse {
   /**
    * Buckets preserves the request origin order.
-   *
-   * @generated from field: repeated s4wave.world.GraphEdgeBucket buckets = 1;
    */
   buckets?: GraphEdgeBucket[]
 }
 
 export const ListGraphEdgeBucketsResponse: MessageType<ListGraphEdgeBucketsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ListGraphEdgeBucketsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'buckets',
-        kind: 'message',
-        T: GraphEdgeBucket,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListGraphEdgeBucketsResponse>(
+    's4wave.world.ListGraphEdgeBucketsResponse',
+    () => [[1, 'buckets', 11, 1, GraphEdgeBucket.codec]],
+  )
 
 /**
  * ListObjectsWithTypeRequest selects one page of subjects of the type quads.
@@ -2081,35 +1616,29 @@ export const ListGraphEdgeBucketsResponse: MessageType<ListGraphEdgeBucketsRespo
 export interface ListObjectsWithTypeRequest {
   /**
    * TypeId is the type identifier to match.
-   *
-   * @generated from field: string type_id = 1;
    */
   typeId?: string
   /**
    * StartAfter is the last object key returned by the previous page.
    * Empty starts at the first subject in graph-index order.
-   *
-   * @generated from field: string start_after = 2;
    */
   startAfter?: string
   /**
    * Limit bounds the number of returned keys and must be non-zero.
    * The server may return a shorter page and set more.
-   *
-   * @generated from field: uint32 limit = 3;
    */
   limit?: number
 }
 
 export const ListObjectsWithTypeRequest: MessageType<ListObjectsWithTypeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ListObjectsWithTypeRequest',
-    fields: [
-      { no: 1, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'start_after', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListObjectsWithTypeRequest>(
+    's4wave.world.ListObjectsWithTypeRequest',
+    () => [
+      [1, 'type_id', 9],
+      [2, 'start_after', 9],
+      [3, 'limit', 13],
+    ],
+  )
 
 /**
  * ListObjectsWithTypeResponse contains one page in Cayley graph-index order.
@@ -2121,33 +1650,23 @@ export const ListObjectsWithTypeRequest: MessageType<ListObjectsWithTypeRequest>
 export interface ListObjectsWithTypeResponse {
   /**
    * ObjectKeys contains distinct matching subjects in graph-index order.
-   *
-   * @generated from field: repeated string object_keys = 1;
    */
   objectKeys?: string[]
   /**
    * More reports that matching subjects follow the last returned object key.
    * Pass that key as start_after to read the next page.
-   *
-   * @generated from field: bool more = 2;
    */
   more?: boolean
 }
 
 export const ListObjectsWithTypeResponse: MessageType<ListObjectsWithTypeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ListObjectsWithTypeResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'more', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListObjectsWithTypeResponse>(
+    's4wave.world.ListObjectsWithTypeResponse',
+    () => [
+      [1, 'object_keys', 9, 1],
+      [2, 'more', 8],
+    ],
+  )
 
 /**
  * ObjectRootRef contains root reference metadata for one object key.
@@ -2157,40 +1676,32 @@ export const ListObjectsWithTypeResponse: MessageType<ListObjectsWithTypeRespons
 export interface ObjectRootRef {
   /**
    * ObjectKey is the object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RootRef is the current object root reference, if the object exists.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
    */
   rootRef?: ObjectRef
   /**
    * Rev is the object revision.
-   *
-   * @generated from field: uint64 rev = 3;
    */
   rev?: bigint
   /**
    * Exists indicates whether the object key exists.
-   *
-   * @generated from field: bool exists = 4;
    */
   exists?: boolean
 }
 
 export const ObjectRootRef: MessageType<ObjectRootRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ObjectRootRef',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-      { no: 3, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'exists', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectRootRef>(
+    's4wave.world.ObjectRootRef',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+      [3, 'rev', 4],
+      [4, 'exists', 8],
+    ],
+  )
 
 /**
  * GetObjectRootRefsBatchRequest is the request type for
@@ -2201,25 +1712,15 @@ export const ObjectRootRef: MessageType<ObjectRootRef> =
 export interface GetObjectRootRefsBatchRequest {
   /**
    * ObjectKeys is the list of object keys to inspect.
-   *
-   * @generated from field: repeated string object_keys = 1;
    */
   objectKeys?: string[]
 }
 
 export const GetObjectRootRefsBatchRequest: MessageType<GetObjectRootRefsBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetObjectRootRefsBatchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetObjectRootRefsBatchRequest>(
+    's4wave.world.GetObjectRootRefsBatchRequest',
+    () => [[1, 'object_keys', 9, 1]],
+  )
 
 /**
  * GetObjectRootRefsBatchResponse is the response type for
@@ -2230,25 +1731,45 @@ export const GetObjectRootRefsBatchRequest: MessageType<GetObjectRootRefsBatchRe
 export interface GetObjectRootRefsBatchResponse {
   /**
    * RootRefs preserves the request object key order.
-   *
-   * @generated from field: repeated s4wave.world.ObjectRootRef root_refs = 1;
    */
   rootRefs?: ObjectRootRef[]
 }
 
 export const GetObjectRootRefsBatchResponse: MessageType<GetObjectRootRefsBatchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetObjectRootRefsBatchResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'root_refs',
-        kind: 'message',
-        T: ObjectRootRef,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetObjectRootRefsBatchResponse>(
+    's4wave.world.GetObjectRootRefsBatchResponse',
+    () => [[1, 'root_refs', 11, 1, ObjectRootRef.codec]],
+  )
+
+/**
+ * ObjectMetadata contains graph metadata for one object key.
+ *
+ * @generated from message s4wave.world.ObjectMetadata
+ */
+export interface ObjectMetadata {
+  /**
+   * ObjectKey is the object key.
+   */
+  objectKey?: string
+  /**
+   * TypeId is the object type identifier, if present.
+   */
+  typeId?: string
+  /**
+   * ParentObjectKey is the parent object key, if present.
+   */
+  parentObjectKey?: string
+}
+
+export const ObjectMetadata: MessageType<ObjectMetadata> =
+  /* @__PURE__ */ createMessageType<ObjectMetadata>(
+    's4wave.world.ObjectMetadata',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'type_id', 9],
+      [3, 'parent_object_key', 9],
+    ],
+  )
 
 /**
  * GetObjectMetadataBatchRequest is the request type for
@@ -2259,25 +1780,15 @@ export const GetObjectRootRefsBatchResponse: MessageType<GetObjectRootRefsBatchR
 export interface GetObjectMetadataBatchRequest {
   /**
    * ObjectKeys is the list of object keys to inspect.
-   *
-   * @generated from field: repeated string object_keys = 1;
    */
   objectKeys?: string[]
 }
 
 export const GetObjectMetadataBatchRequest: MessageType<GetObjectMetadataBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetObjectMetadataBatchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetObjectMetadataBatchRequest>(
+    's4wave.world.GetObjectMetadataBatchRequest',
+    () => [[1, 'object_keys', 9, 1]],
+  )
 
 /**
  * GetObjectMetadataBatchResponse is the response type for
@@ -2288,25 +1799,15 @@ export const GetObjectMetadataBatchRequest: MessageType<GetObjectMetadataBatchRe
 export interface GetObjectMetadataBatchResponse {
   /**
    * Metadata preserves the request object key order.
-   *
-   * @generated from field: repeated s4wave.world.ObjectMetadata metadata = 1;
    */
   metadata?: ObjectMetadata[]
 }
 
 export const GetObjectMetadataBatchResponse: MessageType<GetObjectMetadataBatchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetObjectMetadataBatchResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'metadata',
-        kind: 'message',
-        T: ObjectMetadata,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetObjectMetadataBatchResponse>(
+    's4wave.world.GetObjectMetadataBatchResponse',
+    () => [[1, 'metadata', 11, 1, ObjectMetadata.codec]],
+  )
 
 /**
  * ObjectBody contains the serialized root body for one object key.
@@ -2316,40 +1817,32 @@ export const GetObjectMetadataBatchResponse: MessageType<GetObjectMetadataBatchR
 export interface ObjectBody {
   /**
    * ObjectKey is the requested object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Body is the transformed root block data when the object exists.
-   *
-   * @generated from field: bytes body = 2;
    */
   body?: Uint8Array
   /**
    * Exists indicates whether the object key exists.
-   *
-   * @generated from field: bool exists = 3;
    */
   exists?: boolean
   /**
    * Rev is the object revision observed with body.
-   *
-   * @generated from field: uint64 rev = 4;
    */
   rev?: bigint
 }
 
 export const ObjectBody: MessageType<ObjectBody> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ObjectBody',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'body', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'exists', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectBody>(
+    's4wave.world.ObjectBody',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'body', 12],
+      [3, 'exists', 8],
+      [4, 'rev', 4],
+    ],
+  )
 
 /**
  * GetObjectBodiesBatchRequest is the request type for
@@ -2360,25 +1853,15 @@ export const ObjectBody: MessageType<ObjectBody> =
 export interface GetObjectBodiesBatchRequest {
   /**
    * ObjectKeys is the list of object keys to inspect.
-   *
-   * @generated from field: repeated string object_keys = 1;
    */
   objectKeys?: string[]
 }
 
 export const GetObjectBodiesBatchRequest: MessageType<GetObjectBodiesBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetObjectBodiesBatchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetObjectBodiesBatchRequest>(
+    's4wave.world.GetObjectBodiesBatchRequest',
+    () => [[1, 'object_keys', 9, 1]],
+  )
 
 /**
  * GetObjectBodiesBatchResponse is one page of GetObjectBodiesBatch.
@@ -2391,27 +1874,23 @@ export const GetObjectBodiesBatchRequest: MessageType<GetObjectBodiesBatchReques
 export interface GetObjectBodiesBatchResponse {
   /**
    * Bodies continues the request object key order.
-   *
-   * @generated from field: repeated s4wave.world.ObjectBody bodies = 1;
    */
   bodies?: ObjectBody[]
   /**
    * WorldSeqno is the World sequence number observed for this page. A reader
    * that needs one revision restarts when pages disagree.
-   *
-   * @generated from field: uint64 world_seqno = 2;
    */
   worldSeqno?: bigint
 }
 
 export const GetObjectBodiesBatchResponse: MessageType<GetObjectBodiesBatchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetObjectBodiesBatchResponse',
-    fields: [
-      { no: 1, name: 'bodies', kind: 'message', T: ObjectBody, repeated: true },
-      { no: 2, name: 'world_seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetObjectBodiesBatchResponse>(
+    's4wave.world.GetObjectBodiesBatchResponse',
+    () => [
+      [1, 'bodies', 11, 1, ObjectBody.codec],
+      [2, 'world_seqno', 4],
+    ],
+  )
 
 /**
  * GraphPathStep is one bounded predicate traversal step.
@@ -2421,33 +1900,27 @@ export const GetObjectBodiesBatchResponse: MessageType<GetObjectBodiesBatchRespo
 export interface GraphPathStep {
   /**
    * Direction is the edge direction to follow.
-   *
-   * @generated from field: s4wave.world.GraphPathDirection direction = 1;
    */
   direction?: GraphPathDirection
   /**
    * Predicate is the graph predicate to match.
-   *
-   * @generated from field: string predicate = 2;
    */
   predicate?: string
   /**
    * Limit is the maximum number of quads to inspect for each current object key.
-   *
-   * @generated from field: uint32 limit = 3;
    */
   limit?: number
 }
 
 export const GraphPathStep: MessageType<GraphPathStep> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GraphPathStep',
-    fields: [
-      { no: 1, name: 'direction', kind: 'enum', T: GraphPathDirection_Enum },
-      { no: 2, name: 'predicate', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GraphPathStep>(
+    's4wave.world.GraphPathStep',
+    () => [
+      [1, 'direction', 14, 0, GraphPathDirection_Enum],
+      [2, 'predicate', 9],
+      [3, 'limit', 13],
+    ],
+  )
 
 /**
  * QueryGraphPathRequest is the request type for QueryGraphPath.
@@ -2457,61 +1930,39 @@ export const GraphPathStep: MessageType<GraphPathStep> =
 export interface QueryGraphPathRequest {
   /**
    * StartKeys is the list of object keys where traversal starts.
-   *
-   * @generated from field: repeated string start_keys = 1;
    */
   startKeys?: string[]
   /**
    * Steps is the bounded traversal to execute server-side.
-   *
-   * @generated from field: repeated s4wave.world.GraphPathStep steps = 2;
    */
   steps?: GraphPathStep[]
   /**
    * ResultLimit is the maximum number of object keys returned.
    * It must be non-zero.
-   *
-   * @generated from field: uint32 result_limit = 3;
    */
   resultLimit?: number
   /**
    * IncludeQuads includes traversed quads in result pages.
-   *
-   * @generated from field: bool include_quads = 4;
    */
   includeQuads?: boolean
   /**
    * PageSize is the maximum number of object keys returned by one Next call.
    * If unset, the server uses ResultLimit.
-   *
-   * @generated from field: uint32 page_size = 5;
    */
   pageSize?: number
 }
 
 export const QueryGraphPathRequest: MessageType<QueryGraphPathRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.QueryGraphPathRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'start_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'steps',
-        kind: 'message',
-        T: GraphPathStep,
-        repeated: true,
-      },
-      { no: 3, name: 'result_limit', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'include_quads', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'page_size', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<QueryGraphPathRequest>(
+    's4wave.world.QueryGraphPathRequest',
+    () => [
+      [1, 'start_keys', 9, 1],
+      [2, 'steps', 11, 1, GraphPathStep.codec],
+      [3, 'result_limit', 13],
+      [4, 'include_quads', 8],
+      [5, 'page_size', 13],
+    ],
+  )
 
 /**
  * QueryGraphPathResponse is the response type for QueryGraphPath.
@@ -2521,19 +1972,15 @@ export const QueryGraphPathRequest: MessageType<QueryGraphPathRequest> =
 export interface QueryGraphPathResponse {
   /**
    * ResourceId is the ID of the GraphPathQuery resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const QueryGraphPathResponse: MessageType<QueryGraphPathResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.QueryGraphPathResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<QueryGraphPathResponse>(
+    's4wave.world.QueryGraphPathResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * DeleteGraphObjectRequest is the request type for DeleteGraphObject.
@@ -2543,19 +1990,15 @@ export const QueryGraphPathResponse: MessageType<QueryGraphPathResponse> =
 export interface DeleteGraphObjectRequest {
   /**
    * ObjectKey is the key of the object whose graph references should be deleted.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const DeleteGraphObjectRequest: MessageType<DeleteGraphObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.DeleteGraphObjectRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteGraphObjectRequest>(
+    's4wave.world.DeleteGraphObjectRequest',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * DeleteGraphObjectResponse is the response type for DeleteGraphObject.
@@ -2565,9 +2008,9 @@ export const DeleteGraphObjectRequest: MessageType<DeleteGraphObjectRequest> =
 export interface DeleteGraphObjectResponse {}
 
 export const DeleteGraphObjectResponse: MessageType<DeleteGraphObjectResponse> =
-  /* @__PURE__ */ createEmptyMessageType<DeleteGraphObjectResponse>(
+  /* @__PURE__ */ createMessageType<DeleteGraphObjectResponse>(
     's4wave.world.DeleteGraphObjectResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2578,33 +2021,27 @@ export const DeleteGraphObjectResponse: MessageType<DeleteGraphObjectResponse> =
 export interface ApplyWorldOpRequest {
   /**
    * OpTypeId is the operation type identifier.
-   *
-   * @generated from field: string op_type_id = 1;
    */
   opTypeId?: string
   /**
    * OpData is the encoded operation body.
-   *
-   * @generated from field: bytes op_data = 2;
    */
   opData?: Uint8Array
   /**
    * OpSender is the peer ID of the sender applying the operation.
-   *
-   * @generated from field: string op_sender = 3;
    */
   opSender?: string
 }
 
 export const ApplyWorldOpRequest: MessageType<ApplyWorldOpRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ApplyWorldOpRequest',
-    fields: [
-      { no: 1, name: 'op_type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'op_data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'op_sender', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyWorldOpRequest>(
+    's4wave.world.ApplyWorldOpRequest',
+    () => [
+      [1, 'op_type_id', 9],
+      [2, 'op_data', 12],
+      [3, 'op_sender', 9],
+    ],
+  )
 
 /**
  * ApplyWorldOpResponse is the response type for ApplyWorldOp.
@@ -2614,52 +2051,37 @@ export const ApplyWorldOpRequest: MessageType<ApplyWorldOpRequest> =
 export interface ApplyWorldOpResponse {
   /**
    * Seqno is the sequence number following the operation execution.
-   *
-   * @generated from field: uint64 seqno = 1;
    */
   seqno?: bigint
   /**
    * SysErr indicates if the error is a transient system error.
-   *
-   * @generated from field: bool sys_err = 2;
    */
   sysErr?: boolean
   /**
    * ErrorCode identifies a typed operation error when the RPC succeeds.
-   *
-   * @generated from field: s4wave.world.WorldErrorCode error_code = 3;
    */
   errorCode?: WorldErrorCode
   /**
    * RejectionCode is a stable application-defined rejection code.
-   *
-   * @generated from field: string rejection_code = 4;
    */
   rejectionCode?: string
   /**
    * RejectionMessage is the safe explanation of a rejected operation.
-   *
-   * @generated from field: string rejection_message = 5;
    */
   rejectionMessage?: string
 }
 
 export const ApplyWorldOpResponse: MessageType<ApplyWorldOpResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ApplyWorldOpResponse',
-    fields: [
-      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'sys_err', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'error_code', kind: 'enum', T: WorldErrorCode_Enum },
-      { no: 4, name: 'rejection_code', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'rejection_message',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyWorldOpResponse>(
+    's4wave.world.ApplyWorldOpResponse',
+    () => [
+      [1, 'seqno', 4],
+      [2, 'sys_err', 8],
+      [3, 'error_code', 14, 0, WorldErrorCode_Enum],
+      [4, 'rejection_code', 9],
+      [5, 'rejection_message', 9],
+    ],
+  )
 
 /**
  * WatchWorldStateRequest is the request type for WatchWorldState.
@@ -2669,9 +2091,9 @@ export const ApplyWorldOpResponse: MessageType<ApplyWorldOpResponse> =
 export interface WatchWorldStateRequest {}
 
 export const WatchWorldStateRequest: MessageType<WatchWorldStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchWorldStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchWorldStateRequest>(
     's4wave.world.WatchWorldStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2687,19 +2109,15 @@ export interface WatchWorldStateResponse {
    * because its snapshot was released finds the replacement on this stream.
    * A watch that ends instead releases its snapshot and closes the stream.
    * Adopted child resources stay readable until the client releases them.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const WatchWorldStateResponse: MessageType<WatchWorldStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WatchWorldStateResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchWorldStateResponse>(
+    's4wave.world.WatchWorldStateResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * ErrRequest is the request type for Err.
@@ -2709,9 +2127,9 @@ export const WatchWorldStateResponse: MessageType<WatchWorldStateResponse> =
 export interface ErrRequest {}
 
 export const ErrRequest: MessageType<ErrRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ErrRequest>(
+  /* @__PURE__ */ createMessageType<ErrRequest>(
     's4wave.world.ErrRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2722,19 +2140,15 @@ export const ErrRequest: MessageType<ErrRequest> =
 export interface ErrResponse {
   /**
    * Error is the error message, empty if no error.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
 }
 
 export const ErrResponse: MessageType<ErrResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ErrResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ErrResponse>(
+    's4wave.world.ErrResponse',
+    () => [[1, 'error', 9]],
+  )
 
 /**
  * ValidRequest is the request type for Valid.
@@ -2744,9 +2158,9 @@ export const ErrResponse: MessageType<ErrResponse> =
 export interface ValidRequest {}
 
 export const ValidRequest: MessageType<ValidRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ValidRequest>(
+  /* @__PURE__ */ createMessageType<ValidRequest>(
     's4wave.world.ValidRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2757,19 +2171,15 @@ export const ValidRequest: MessageType<ValidRequest> =
 export interface ValidResponse {
   /**
    * Valid indicates if the iterator points to a valid entry.
-   *
-   * @generated from field: bool valid = 1;
    */
   valid?: boolean
 }
 
 export const ValidResponse: MessageType<ValidResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ValidResponse',
-    fields: [
-      { no: 1, name: 'valid', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ValidResponse>(
+    's4wave.world.ValidResponse',
+    () => [[1, 'valid', 8]],
+  )
 
 /**
  * KeyRequest is the request type for Key.
@@ -2779,9 +2189,9 @@ export const ValidResponse: MessageType<ValidResponse> =
 export interface KeyRequest {}
 
 export const KeyRequest: MessageType<KeyRequest> =
-  /* @__PURE__ */ createEmptyMessageType<KeyRequest>(
+  /* @__PURE__ */ createMessageType<KeyRequest>(
     's4wave.world.KeyRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2792,19 +2202,15 @@ export const KeyRequest: MessageType<KeyRequest> =
 export interface KeyResponse {
   /**
    * ObjectKey is the current entry key, or empty if not valid.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const KeyResponse: MessageType<KeyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.KeyResponse',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KeyResponse>(
+    's4wave.world.KeyResponse',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * NextRequest is the request type for Next.
@@ -2814,9 +2220,9 @@ export const KeyResponse: MessageType<KeyResponse> =
 export interface NextRequest {}
 
 export const NextRequest: MessageType<NextRequest> =
-  /* @__PURE__ */ createEmptyMessageType<NextRequest>(
+  /* @__PURE__ */ createMessageType<NextRequest>(
     's4wave.world.NextRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2827,19 +2233,15 @@ export const NextRequest: MessageType<NextRequest> =
 export interface NextResponse {
   /**
    * Valid indicates if the iterator points to a valid entry after advancing.
-   *
-   * @generated from field: bool valid = 1;
    */
   valid?: boolean
 }
 
 export const NextResponse: MessageType<NextResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.NextResponse',
-    fields: [
-      { no: 1, name: 'valid', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<NextResponse>(
+    's4wave.world.NextResponse',
+    () => [[1, 'valid', 8]],
+  )
 
 /**
  * SeekRequest is the request type for Seek.
@@ -2849,19 +2251,15 @@ export const NextResponse: MessageType<NextResponse> =
 export interface SeekRequest {
   /**
    * ObjectKey is the key to seek to, or empty to seek to beginning (or end if reversed).
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const SeekRequest: MessageType<SeekRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SeekRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SeekRequest>(
+    's4wave.world.SeekRequest',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * SeekResponse is the response type for Seek.
@@ -2871,9 +2269,9 @@ export const SeekRequest: MessageType<SeekRequest> =
 export interface SeekResponse {}
 
 export const SeekResponse: MessageType<SeekResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SeekResponse>(
+  /* @__PURE__ */ createMessageType<SeekResponse>(
     's4wave.world.SeekResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2884,9 +2282,9 @@ export const SeekResponse: MessageType<SeekResponse> =
 export interface CloseRequest {}
 
 export const CloseRequest: MessageType<CloseRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CloseRequest>(
+  /* @__PURE__ */ createMessageType<CloseRequest>(
     's4wave.world.CloseRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2897,9 +2295,9 @@ export const CloseRequest: MessageType<CloseRequest> =
 export interface CloseResponse {}
 
 export const CloseResponse: MessageType<CloseResponse> =
-  /* @__PURE__ */ createEmptyMessageType<CloseResponse>(
+  /* @__PURE__ */ createMessageType<CloseResponse>(
     's4wave.world.CloseResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2910,9 +2308,9 @@ export const CloseResponse: MessageType<CloseResponse> =
 export interface NextGraphPathQueryRequest {}
 
 export const NextGraphPathQueryRequest: MessageType<NextGraphPathQueryRequest> =
-  /* @__PURE__ */ createEmptyMessageType<NextGraphPathQueryRequest>(
+  /* @__PURE__ */ createMessageType<NextGraphPathQueryRequest>(
     's4wave.world.NextGraphPathQueryRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2923,39 +2321,27 @@ export const NextGraphPathQueryRequest: MessageType<NextGraphPathQueryRequest> =
 export interface NextGraphPathQueryResponse {
   /**
    * ObjectKeys is the next page of reached object keys.
-   *
-   * @generated from field: repeated string object_keys = 1;
    */
   objectKeys?: string[]
   /**
    * Quads is the traversed graph quads when requested.
-   *
-   * @generated from field: repeated quad.Quad quads = 2;
    */
   quads?: Quad[]
   /**
    * Done indicates the resource has no more result pages.
-   *
-   * @generated from field: bool done = 3;
    */
   done?: boolean
 }
 
 export const NextGraphPathQueryResponse: MessageType<NextGraphPathQueryResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.NextGraphPathQueryResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'quads', kind: 'message', T: () => Quad, repeated: true },
-      { no: 3, name: 'done', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<NextGraphPathQueryResponse>(
+    's4wave.world.NextGraphPathQueryResponse',
+    () => [
+      [1, 'object_keys', 9, 1],
+      [2, 'quads', 11, 1, Quad.codec],
+      [3, 'done', 8],
+    ],
+  )
 
 /**
  * CloseGraphPathQueryRequest is the request type for GraphPathQuery Close.
@@ -2965,9 +2351,9 @@ export const NextGraphPathQueryResponse: MessageType<NextGraphPathQueryResponse>
 export interface CloseGraphPathQueryRequest {}
 
 export const CloseGraphPathQueryRequest: MessageType<CloseGraphPathQueryRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CloseGraphPathQueryRequest>(
+  /* @__PURE__ */ createMessageType<CloseGraphPathQueryRequest>(
     's4wave.world.CloseGraphPathQueryRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2978,9 +2364,9 @@ export const CloseGraphPathQueryRequest: MessageType<CloseGraphPathQueryRequest>
 export interface CloseGraphPathQueryResponse {}
 
 export const CloseGraphPathQueryResponse: MessageType<CloseGraphPathQueryResponse> =
-  /* @__PURE__ */ createEmptyMessageType<CloseGraphPathQueryResponse>(
+  /* @__PURE__ */ createMessageType<CloseGraphPathQueryResponse>(
     's4wave.world.CloseGraphPathQueryResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2991,9 +2377,9 @@ export const CloseGraphPathQueryResponse: MessageType<CloseGraphPathQueryRespons
 export interface GetKeyRequest {}
 
 export const GetKeyRequest: MessageType<GetKeyRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetKeyRequest>(
+  /* @__PURE__ */ createMessageType<GetKeyRequest>(
     's4wave.world.GetKeyRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3004,19 +2390,15 @@ export const GetKeyRequest: MessageType<GetKeyRequest> =
 export interface GetKeyResponse {
   /**
    * ObjectKey is the unique identifier of the object within the world.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const GetKeyResponse: MessageType<GetKeyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetKeyResponse',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetKeyResponse>(
+    's4wave.world.GetKeyResponse',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * GetRootRefRequest is the request type for GetRootRef.
@@ -3026,9 +2408,9 @@ export const GetKeyResponse: MessageType<GetKeyResponse> =
 export interface GetRootRefRequest {}
 
 export const GetRootRefRequest: MessageType<GetRootRefRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetRootRefRequest>(
+  /* @__PURE__ */ createMessageType<GetRootRefRequest>(
     's4wave.world.GetRootRefRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3039,26 +2421,22 @@ export const GetRootRefRequest: MessageType<GetRootRefRequest> =
 export interface GetRootRefResponse {
   /**
    * RootRef is the reference to the object's root data.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 1;
    */
   rootRef?: ObjectRef
   /**
    * Rev is the revision number when this reference was retrieved.
-   *
-   * @generated from field: uint64 rev = 2;
    */
   rev?: bigint
 }
 
 export const GetRootRefResponse: MessageType<GetRootRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.GetRootRefResponse',
-    fields: [
-      { no: 1, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-      { no: 2, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetRootRefResponse>(
+    's4wave.world.GetRootRefResponse',
+    () => [
+      [1, 'root_ref', 11, 0, ObjectRef.codec],
+      [2, 'rev', 4],
+    ],
+  )
 
 /**
  * SetRootRefRequest is the request type for SetRootRef.
@@ -3068,19 +2446,15 @@ export const GetRootRefResponse: MessageType<GetRootRefResponse> =
 export interface SetRootRefRequest {
   /**
    * RootRef is the new reference to set as the object's root data.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 1;
    */
   rootRef?: ObjectRef
 }
 
 export const SetRootRefRequest: MessageType<SetRootRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SetRootRefRequest',
-    fields: [
-      { no: 1, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetRootRefRequest>(
+    's4wave.world.SetRootRefRequest',
+    () => [[1, 'root_ref', 11, 0, ObjectRef.codec]],
+  )
 
 /**
  * SetRootRefResponse is the response type for SetRootRef.
@@ -3090,19 +2464,15 @@ export const SetRootRefRequest: MessageType<SetRootRefRequest> =
 export interface SetRootRefResponse {
   /**
    * Rev is the revision number after the update.
-   *
-   * @generated from field: uint64 rev = 1;
    */
   rev?: bigint
 }
 
 export const SetRootRefResponse: MessageType<SetRootRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.SetRootRefResponse',
-    fields: [
-      { no: 1, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetRootRefResponse>(
+    's4wave.world.SetRootRefResponse',
+    () => [[1, 'rev', 4]],
+  )
 
 /**
  * ApplyObjectOpRequest is the request type for ApplyObjectOp.
@@ -3112,33 +2482,27 @@ export const SetRootRefResponse: MessageType<SetRootRefResponse> =
 export interface ApplyObjectOpRequest {
   /**
    * OpTypeId is the operation type identifier.
-   *
-   * @generated from field: string op_type_id = 1;
    */
   opTypeId?: string
   /**
    * OpData is the encoded operation body.
-   *
-   * @generated from field: bytes op_data = 2;
    */
   opData?: Uint8Array
   /**
    * OpSender is the peer ID of the sender applying the operation.
-   *
-   * @generated from field: string op_sender = 3;
    */
   opSender?: string
 }
 
 export const ApplyObjectOpRequest: MessageType<ApplyObjectOpRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ApplyObjectOpRequest',
-    fields: [
-      { no: 1, name: 'op_type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'op_data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'op_sender', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyObjectOpRequest>(
+    's4wave.world.ApplyObjectOpRequest',
+    () => [
+      [1, 'op_type_id', 9],
+      [2, 'op_data', 12],
+      [3, 'op_sender', 9],
+    ],
+  )
 
 /**
  * ApplyObjectOpResponse is the response type for ApplyObjectOp.
@@ -3148,52 +2512,37 @@ export const ApplyObjectOpRequest: MessageType<ApplyObjectOpRequest> =
 export interface ApplyObjectOpResponse {
   /**
    * Rev is the revision number following the operation execution.
-   *
-   * @generated from field: uint64 rev = 1;
    */
   rev?: bigint
   /**
    * SysErr indicates if the error is a transient system error.
-   *
-   * @generated from field: bool sys_err = 2;
    */
   sysErr?: boolean
   /**
    * ErrorCode identifies a typed operation error when the RPC succeeds.
-   *
-   * @generated from field: s4wave.world.WorldErrorCode error_code = 3;
    */
   errorCode?: WorldErrorCode
   /**
    * RejectionCode is a stable application-defined rejection code.
-   *
-   * @generated from field: string rejection_code = 4;
    */
   rejectionCode?: string
   /**
    * RejectionMessage is the safe explanation of a rejected operation.
-   *
-   * @generated from field: string rejection_message = 5;
    */
   rejectionMessage?: string
 }
 
 export const ApplyObjectOpResponse: MessageType<ApplyObjectOpResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ApplyObjectOpResponse',
-    fields: [
-      { no: 1, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'sys_err', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'error_code', kind: 'enum', T: WorldErrorCode_Enum },
-      { no: 4, name: 'rejection_code', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'rejection_message',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyObjectOpResponse>(
+    's4wave.world.ApplyObjectOpResponse',
+    () => [
+      [1, 'rev', 4],
+      [2, 'sys_err', 8],
+      [3, 'error_code', 14, 0, WorldErrorCode_Enum],
+      [4, 'rejection_code', 9],
+      [5, 'rejection_message', 9],
+    ],
+  )
 
 /**
  * IncrementRevRequest is the request type for IncrementRev.
@@ -3203,9 +2552,9 @@ export const ApplyObjectOpResponse: MessageType<ApplyObjectOpResponse> =
 export interface IncrementRevRequest {}
 
 export const IncrementRevRequest: MessageType<IncrementRevRequest> =
-  /* @__PURE__ */ createEmptyMessageType<IncrementRevRequest>(
+  /* @__PURE__ */ createMessageType<IncrementRevRequest>(
     's4wave.world.IncrementRevRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3216,19 +2565,15 @@ export const IncrementRevRequest: MessageType<IncrementRevRequest> =
 export interface IncrementRevResponse {
   /**
    * Rev is the revision number after the increment.
-   *
-   * @generated from field: uint64 rev = 1;
    */
   rev?: bigint
 }
 
 export const IncrementRevResponse: MessageType<IncrementRevResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.IncrementRevResponse',
-    fields: [
-      { no: 1, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IncrementRevResponse>(
+    's4wave.world.IncrementRevResponse',
+    () => [[1, 'rev', 4]],
+  )
 
 /**
  * WaitRevRequest is the request type for WaitRev.
@@ -3238,26 +2583,22 @@ export const IncrementRevResponse: MessageType<IncrementRevResponse> =
 export interface WaitRevRequest {
   /**
    * Rev is the minimum revision number to wait for.
-   *
-   * @generated from field: uint64 rev = 1;
    */
   rev?: bigint
   /**
    * IgnoreNotFound waits for the object to exist if it doesn't.
-   *
-   * @generated from field: bool ignore_not_found = 2;
    */
   ignoreNotFound?: boolean
 }
 
 export const WaitRevRequest: MessageType<WaitRevRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WaitRevRequest',
-    fields: [
-      { no: 1, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'ignore_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WaitRevRequest>(
+    's4wave.world.WaitRevRequest',
+    () => [
+      [1, 'rev', 4],
+      [2, 'ignore_not_found', 8],
+    ],
+  )
 
 /**
  * WaitRevResponse is the response type for WaitRev.
@@ -3267,19 +2608,15 @@ export const WaitRevRequest: MessageType<WaitRevRequest> =
 export interface WaitRevResponse {
   /**
    * Rev is the revision number when the wait condition was satisfied.
-   *
-   * @generated from field: uint64 rev = 1;
    */
   rev?: bigint
 }
 
 export const WaitRevResponse: MessageType<WaitRevResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WaitRevResponse',
-    fields: [
-      { no: 1, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WaitRevResponse>(
+    's4wave.world.WaitRevResponse',
+    () => [[1, 'rev', 4]],
+  )
 
 /**
  * AccessTypedObjectRequest is the request type for AccessTypedObject.
@@ -3289,19 +2626,15 @@ export const WaitRevResponse: MessageType<WaitRevResponse> =
 export interface AccessTypedObjectRequest {
   /**
    * ObjectKey is the key of the object to access.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const AccessTypedObjectRequest: MessageType<AccessTypedObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.AccessTypedObjectRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessTypedObjectRequest>(
+    's4wave.world.AccessTypedObjectRequest',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * AccessTypedObjectResponse is the response type for AccessTypedObject.
@@ -3312,34 +2645,28 @@ export interface AccessTypedObjectResponse {
   /**
    * ResourceId is the ID of the typed resource.
    * The resource implements the RPC service appropriate for the object type.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * TypeId is the type identifier of the object.
-   *
-   * @generated from field: string type_id = 2;
    */
   typeId?: string
   /**
    * ErrorCode reports acquisition prevented by the exact granting mount's
    * retirement. A failed acquisition returns no ResourceId or TypeId.
-   *
-   * @generated from field: s4wave.world.WorldErrorCode error_code = 3;
    */
   errorCode?: WorldErrorCode
 }
 
 export const AccessTypedObjectResponse: MessageType<AccessTypedObjectResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.AccessTypedObjectResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'error_code', kind: 'enum', T: WorldErrorCode_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessTypedObjectResponse>(
+    's4wave.world.AccessTypedObjectResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'type_id', 9],
+      [3, 'error_code', 14, 0, WorldErrorCode_Enum],
+    ],
+  )
 
 /**
  * WatchTypedObjectRequest selects an object within the mounted World and registry scope.
@@ -3349,19 +2676,15 @@ export const AccessTypedObjectResponse: MessageType<AccessTypedObjectResponse> =
 export interface WatchTypedObjectRequest {
   /**
    * ObjectKey identifies the object whose typed handler is watched.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const WatchTypedObjectRequest: MessageType<WatchTypedObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WatchTypedObjectRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchTypedObjectRequest>(
+    's4wave.world.WatchTypedObjectRequest',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * WatchTypedObjectResponse describes the current typed-handler generation or its absence.
@@ -3375,27 +2698,23 @@ export interface WatchTypedObjectResponse {
    * receives a new child; the child implements the RPC service for TypeId.
    * The consumer adopts and releases its reference; the watch also releases
    * the child on loss, replacement or cancellation, including adopted children.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * TypeId identifies the object's type even when its handler is absent.
    * It is empty when the object is absent or has no type.
-   *
-   * @generated from field: string type_id = 2;
    */
   typeId?: string
 }
 
 export const WatchTypedObjectResponse: MessageType<WatchTypedObjectResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.WatchTypedObjectResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchTypedObjectResponse>(
+    's4wave.world.WatchTypedObjectResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'type_id', 9],
+    ],
+  )
 
 /**
  * ObjectRecordBase identifies a previous immutable root for one watched collection.
@@ -3405,26 +2724,22 @@ export const WatchTypedObjectResponse: MessageType<WatchTypedObjectResponse> =
 export interface ObjectRecordBase {
   /**
    * ObjectKey identifies the collection object in this World.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RootRef is the immutable root from the previous query snapshot.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
    */
   rootRef?: ObjectRef
 }
 
 export const ObjectRecordBase: MessageType<ObjectRecordBase> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ObjectRecordBase',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectRecordBase>(
+    's4wave.world.ObjectRecordBase',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+    ],
+  )
 
 /**
  * CompareObjectRecordsRequest selects previous roots to compare with this snapshot.
@@ -3434,25 +2749,15 @@ export const ObjectRecordBase: MessageType<ObjectRecordBase> =
 export interface CompareObjectRecordsRequest {
   /**
    * Bases contains at most 256 watched collection roots.
-   *
-   * @generated from field: repeated s4wave.world.ObjectRecordBase bases = 1;
    */
   bases?: ObjectRecordBase[]
 }
 
 export const CompareObjectRecordsRequest: MessageType<CompareObjectRecordsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.CompareObjectRecordsRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'bases',
-        kind: 'message',
-        T: ObjectRecordBase,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CompareObjectRecordsRequest>(
+    's4wave.world.CompareObjectRecordsRequest',
+    () => [[1, 'bases', 11, 1, ObjectRecordBase.codec]],
+  )
 
 /**
  * ObjectRecordChanges lists changed keys without materializing unchanged records.
@@ -3462,39 +2767,27 @@ export const CompareObjectRecordsRequest: MessageType<CompareObjectRecordsReques
 export interface ObjectRecordChanges {
   /**
    * ObjectKey identifies the requested collection.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Keys contains inserted, deleted, and changed record keys.
-   *
-   * @generated from field: repeated bytes keys = 2;
    */
   keys?: Uint8Array[]
   /**
    * Unknown requires full reevaluation when a root is unavailable or the comparison exceeds its bounds.
-   *
-   * @generated from field: bool unknown = 3;
    */
   unknown?: boolean
 }
 
 export const ObjectRecordChanges: MessageType<ObjectRecordChanges> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.ObjectRecordChanges',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'keys',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        repeated: true,
-      },
-      { no: 3, name: 'unknown', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectRecordChanges>(
+    's4wave.world.ObjectRecordChanges',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'keys', 12, 1],
+      [3, 'unknown', 8],
+    ],
+  )
 
 /**
  * CompareObjectRecordsResponse contains one result per requested base, in request order.
@@ -3504,22 +2797,12 @@ export const ObjectRecordChanges: MessageType<ObjectRecordChanges> =
 export interface CompareObjectRecordsResponse {
   /**
    * Changes corresponds to Bases in request order.
-   *
-   * @generated from field: repeated s4wave.world.ObjectRecordChanges changes = 1;
    */
   changes?: ObjectRecordChanges[]
 }
 
 export const CompareObjectRecordsResponse: MessageType<CompareObjectRecordsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.world.CompareObjectRecordsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'changes',
-        kind: 'message',
-        T: ObjectRecordChanges,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CompareObjectRecordsResponse>(
+    's4wave.world.CompareObjectRecordsResponse',
+    () => [[1, 'changes', 11, 1, ObjectRecordChanges.codec]],
+  )

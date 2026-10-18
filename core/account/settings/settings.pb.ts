@@ -2,324 +2,14 @@
 // @generated from file github.com/s4wave/spacewave/core/account/settings/settings.proto (package account.settings, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { SharedObjectListEntry } from '../../sobject/sobject.pb.js'
-import { Pricing } from '../../../db/block/store/s3/s3.pb.js'
-import { Secret } from '../../../sdk/secret/secret.pb.js'
 import { EntityKeypair } from '../../session/session.pb.js'
 import { KeybindingOverrideSet } from '../../../sdk/command/command.pb.js'
 import { AccountTransition } from '../../provider/provider.pb.js'
-
-/**
- * PairedDevice is a device that has been paired with this account via P2P.
- *
- * @generated from message account.settings.PairedDevice
- */
-export interface PairedDevice {
-  /**
-   * PeerId is the base58 string representation of the paired device's peer ID.
-   *
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-  /**
-   * DisplayName is a human-readable name for the device.
-   *
-   * @generated from field: string display_name = 2;
-   */
-  displayName?: string
-  /**
-   * PairedAt is the unix timestamp (seconds) when the device was paired.
-   *
-   * @generated from field: int64 paired_at = 3;
-   */
-  pairedAt?: bigint
-}
-
-export const PairedDevice: MessageType<PairedDevice> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.PairedDevice',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'paired_at', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SessionPresentation stores private presentation metadata for a session row.
- *
- * @generated from message account.settings.SessionPresentation
- */
-export interface SessionPresentation {
-  /**
-   * PeerId is the session peer ID.
-   *
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-  /**
-   * Label is the primary display label for the session.
-   *
-   * @generated from field: string label = 2;
-   */
-  label?: string
-  /**
-   * DeviceType identifies the broad device class ("web", "desktop", etc.).
-   *
-   * @generated from field: string device_type = 3;
-   */
-  deviceType?: string
-  /**
-   * ClientName is the app or browser name when known.
-   *
-   * @generated from field: string client_name = 4;
-   */
-  clientName?: string
-  /**
-   * Os is the operating system or platform when known.
-   *
-   * @generated from field: string os = 5;
-   */
-  os?: string
-  /**
-   * Location is the observed network location when known.
-   *
-   * @generated from field: string location = 6;
-   */
-  location?: string
-}
-
-export const SessionPresentation: MessageType<SessionPresentation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.SessionPresentation',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'device_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'client_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'os', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'location', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * AccountSession is an approved account replica, distinct from a managed Device.
- *
- * @generated from message account.settings.AccountSession
- */
-export interface AccountSession {
-  /**
-   * PeerId is the independently generated Session's transport identity.
-   *
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-  /**
-   * StoragePeerId identifies the replica's SharedObject signing and encryption key.
-   *
-   * @generated from field: string storage_peer_id = 2;
-   */
-  storagePeerId?: string
-  /**
-   * Revoked retains the binding after access is withdrawn.
-   *
-   * @generated from field: bool revoked = 3;
-   */
-  revoked?: boolean
-  /**
-   * RevokedByStoragePeerId owns the signed configuration changes for revocation.
-   * Other replicas import that writer's lineage instead of signing competing changes.
-   *
-   * @generated from field: string revoked_by_storage_peer_id = 4;
-   */
-  revokedByStoragePeerId?: string
-}
-
-export const AccountSession: MessageType<AccountSession> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.AccountSession',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'storage_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'revoked', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 4,
-        name: 'revoked_by_storage_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * AccountCatalogEntry records one account object or its durable deletion.
- *
- * @generated from message account.settings.AccountCatalogEntry
- */
-export interface AccountCatalogEntry {
-  /**
-   * Entry identifies the object and its presentation metadata.
-   *
-   * @generated from field: sobject.SharedObjectListEntry entry = 1;
-   */
-  entry?: SharedObjectListEntry
-  /**
-   * Deleted prevents an offline replica from rediscovering a removed object.
-   *
-   * @generated from field: bool deleted = 2;
-   */
-  deleted?: boolean
-}
-
-export const AccountCatalogEntry: MessageType<AccountCatalogEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.AccountCatalogEntry',
-    fields: [
-      { no: 1, name: 'entry', kind: 'message', T: () => SharedObjectListEntry },
-      { no: 2, name: 'deleted', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * S3Location locates an S3-compatible bucket and the key space it uses.
- *
- * @generated from message account.settings.S3Location
- */
-export interface S3Location {
-  /**
-   * Endpoint is the host and optional port, without a scheme.
-   *
-   * @generated from field: string endpoint = 1;
-   */
-  endpoint?: string
-  /**
-   * Region is the signing region.
-   *
-   * @generated from field: string region = 2;
-   */
-  region?: string
-  /**
-   * Bucket is the bucket name.
-   *
-   * @generated from field: string bucket = 3;
-   */
-  bucket?: string
-  /**
-   * ObjectPrefix precedes every object key the account writes.
-   * Each block store writes under ObjectPrefix + block store id + "/".
-   *
-   * @generated from field: string object_prefix = 4;
-   */
-  objectPrefix?: string
-  /**
-   * DisableSsl connects with HTTP instead of HTTPS.
-   *
-   * @generated from field: bool disable_ssl = 5;
-   */
-  disableSsl?: boolean
-  /**
-   * Pricing overrides the price list storage reclaim uses. Empty uses the
-   * published prices of the service the endpoint names.
-   *
-   * @generated from field: block.store.s3.Pricing pricing = 6;
-   */
-  pricing?: Pricing
-}
-
-export const S3Location: MessageType<S3Location> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.S3Location',
-    fields: [
-      { no: 1, name: 'endpoint', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'region', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'bucket', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'object_prefix', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'disable_ssl', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'pricing', kind: 'message', T: () => Pricing },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * StorageBackend is block storage the account's devices share.
- *
- * @generated from message account.settings.StorageBackend
- */
-export interface StorageBackend {
-  /**
-   * Id identifies the backend within the account and never changes.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * DisplayName is the user-visible backend name, unique within the account.
-   *
-   * @generated from field: string display_name = 2;
-   */
-  displayName?: string
-  /**
-   * S3 locates the S3-compatible bucket that holds the blocks.
-   *
-   * @generated from field: account.settings.S3Location s3 = 3;
-   */
-  s3?: S3Location
-  /**
-   * Credential is the redacted Secret whose payload holds the access keys.
-   * The payload value is a block_store_s3.Credentials message.
-   *
-   * @generated from field: s4wave.secret.Secret credential = 4;
-   */
-  credential?: Secret
-}
-
-export const StorageBackend: MessageType<StorageBackend> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.StorageBackend',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 's3', kind: 'message', T: S3Location },
-      { no: 4, name: 'credential', kind: 'message', T: () => Secret },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BlockStorePlacement places one block store on a storage backend.
- *
- * @generated from message account.settings.BlockStorePlacement
- */
-export interface BlockStorePlacement {
-  /**
-   * BlockStoreId identifies the placed block store.
-   *
-   * @generated from field: string block_store_id = 1;
-   */
-  blockStoreId?: string
-  /**
-   * StorageBackendId identifies the StorageBackend that holds its blocks.
-   *
-   * @generated from field: string storage_backend_id = 2;
-   */
-  storageBackendId?: string
-}
-
-export const BlockStorePlacement: MessageType<BlockStorePlacement> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.BlockStorePlacement',
-    fields: [
-      { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import { Secret } from '../../../sdk/secret/secret.pb.js'
+import { Pricing } from '../../../db/block/store/s3/s3.pb.js'
+import { SharedObjectListEntry } from '../../sobject/sobject.pb.js'
 
 /**
  * AccountSettings is the root state data for account settings SharedObjects.
@@ -330,410 +20,333 @@ export const BlockStorePlacement: MessageType<BlockStorePlacement> =
 export interface AccountSettings {
   /**
    * DisplayName is the user-visible name for the local provider account.
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
   /**
    * PairedDevices is the list of paired devices for this account.
-   *
-   * @generated from field: repeated account.settings.PairedDevice paired_devices = 2;
    */
   pairedDevices?: PairedDevice[]
   /**
    * EntityKeypairs is the list of entity keypairs for authentication.
    * Synced between devices via the SharedObject.
-   *
-   * @generated from field: repeated session.EntityKeypair entity_keypairs = 3;
    */
   entityKeypairs?: EntityKeypair[]
   /**
    * SessionPresentations is the mirrored private presentation metadata keyed
    * by session peer ID for both local and cloud sessions.
-   *
-   * @generated from field: repeated account.settings.SessionPresentation session_presentations = 4;
    */
   sessionPresentations?: SessionPresentation[]
   /**
    * KeybindingOverrides stores account-scope keybinding overrides.
-   *
-   * @generated from field: s4wave.command.KeybindingOverrideSet keybinding_overrides = 5;
    */
   keybindingOverrides?: KeybindingOverrideSet
   /**
    * Sessions binds each approved account Session to its replica's storage identity.
-   *
-   * @generated from field: repeated account.settings.AccountSession sessions = 6;
    */
   sessions?: AccountSession[]
   /**
    * Catalog names account objects. Checkpoints require separate authenticated enrollment.
-   *
-   * @generated from field: repeated account.settings.AccountCatalogEntry catalog = 7;
    */
   catalog?: AccountCatalogEntry[]
   /**
    * Transition redirects returning Sessions after all destination resources are durable.
-   *
-   * @generated from field: provider.AccountTransition transition = 8;
    */
   transition?: AccountTransition
   /**
    * AcceptedMigrations authorizes returning source Session peers to bind their local storage.
-   *
-   * @generated from field: repeated provider.AccountTransition accepted_migrations = 9;
    */
   acceptedMigrations?: AccountTransition[]
   /**
    * StorageBackends lists the account's bring-your-own block storage backends.
-   *
-   * @generated from field: repeated account.settings.StorageBackend storage_backends = 10;
    */
   storageBackends?: StorageBackend[]
   /**
    * DefaultStorageBackendId names the backend that new Spaces use.
    * Empty places new Spaces on the account's own storage.
-   *
-   * @generated from field: string default_storage_backend_id = 11;
    */
   defaultStorageBackendId?: string
   /**
    * BlockStorePlacements names the backend holding each placed block store.
    * A block store without a placement is on the account's own storage.
-   *
-   * @generated from field: repeated account.settings.BlockStorePlacement block_store_placements = 12;
    */
   blockStorePlacements?: BlockStorePlacement[]
   /**
    * StorageReleases are former placements whose objects remain in the
    * backend's bucket. A device deletes them, then completes the release.
-   *
-   * @generated from field: repeated account.settings.BlockStorePlacement storage_releases = 13;
    */
   storageReleases?: BlockStorePlacement[]
   /**
    * DeveloperSpaceId names the account's developer Space, which holds the
    * repositories the user adds and what is built from them. Empty until the
    * first repository is added. Every device of the account uses this Space.
-   *
-   * @generated from field: string developer_space_id = 14;
    */
   developerSpaceId?: string
 }
 
 export const AccountSettings: MessageType<AccountSettings> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.AccountSettings',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'paired_devices',
-        kind: 'message',
-        T: PairedDevice,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'entity_keypairs',
-        kind: 'message',
-        T: () => EntityKeypair,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'session_presentations',
-        kind: 'message',
-        T: SessionPresentation,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'keybinding_overrides',
-        kind: 'message',
-        T: () => KeybindingOverrideSet,
-      },
-      {
-        no: 6,
-        name: 'sessions',
-        kind: 'message',
-        T: AccountSession,
-        repeated: true,
-      },
-      {
-        no: 7,
-        name: 'catalog',
-        kind: 'message',
-        T: AccountCatalogEntry,
-        repeated: true,
-      },
-      {
-        no: 8,
-        name: 'transition',
-        kind: 'message',
-        T: () => AccountTransition,
-      },
-      {
-        no: 9,
-        name: 'accepted_migrations',
-        kind: 'message',
-        T: () => AccountTransition,
-        repeated: true,
-      },
-      {
-        no: 10,
-        name: 'storage_backends',
-        kind: 'message',
-        T: StorageBackend,
-        repeated: true,
-      },
-      {
-        no: 11,
-        name: 'default_storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 12,
-        name: 'block_store_placements',
-        kind: 'message',
-        T: BlockStorePlacement,
-        repeated: true,
-      },
-      {
-        no: 13,
-        name: 'storage_releases',
-        kind: 'message',
-        T: BlockStorePlacement,
-        repeated: true,
-      },
-      {
-        no: 14,
-        name: 'developer_space_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccountSettings>(
+    'account.settings.AccountSettings',
+    () => [
+      [1, 'display_name', 9],
+      [2, 'paired_devices', 11, 1, PairedDevice.codec],
+      [3, 'entity_keypairs', 11, 1, EntityKeypair.codec],
+      [4, 'session_presentations', 11, 1, SessionPresentation.codec],
+      [5, 'keybinding_overrides', 11, 0, KeybindingOverrideSet.codec],
+      [6, 'sessions', 11, 1, AccountSession.codec],
+      [7, 'catalog', 11, 1, AccountCatalogEntry.codec],
+      [8, 'transition', 11, 0, AccountTransition.codec],
+      [9, 'accepted_migrations', 11, 1, AccountTransition.codec],
+      [10, 'storage_backends', 11, 1, StorageBackend.codec],
+      [11, 'default_storage_backend_id', 9],
+      [12, 'block_store_placements', 11, 1, BlockStorePlacement.codec],
+      [13, 'storage_releases', 11, 1, BlockStorePlacement.codec],
+      [14, 'developer_space_id', 9],
+    ],
+  )
 
 /**
- * UpdateDisplayNameOp changes the local provider account display name.
+ * StorageBackend is block storage the account's devices share.
  *
- * @generated from message account.settings.UpdateDisplayNameOp
+ * @generated from message account.settings.StorageBackend
  */
-export interface UpdateDisplayNameOp {
+export interface StorageBackend {
   /**
-   * DisplayName is the new display name for the account.
-   *
-   * @generated from field: string display_name = 1;
+   * Id identifies the backend within the account and never changes.
+   */
+  id?: string
+  /**
+   * DisplayName is the user-visible backend name, unique within the account.
    */
   displayName?: string
+  /**
+   * S3 locates the S3-compatible bucket that holds the blocks.
+   */
+  s3?: S3Location
+  /**
+   * Credential is the redacted Secret whose payload holds the access keys.
+   * The payload value is a block_store_s3.Credentials message.
+   */
+  credential?: Secret
 }
 
-export const UpdateDisplayNameOp: MessageType<UpdateDisplayNameOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.UpdateDisplayNameOp',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const StorageBackend: MessageType<StorageBackend> =
+  /* @__PURE__ */ createMessageType<StorageBackend>(
+    'account.settings.StorageBackend',
+    () => [
+      [1, 'id', 9],
+      [2, 'display_name', 9],
+      [3, 's3', 11, 0, S3Location.codec],
+      [4, 'credential', 11, 0, Secret.codec],
+    ],
+  )
 
 /**
- * RemovePairedDeviceOp removes a paired device by peer ID.
+ * S3Location locates an S3-compatible bucket and the key space it uses.
  *
- * @generated from message account.settings.RemovePairedDeviceOp
+ * @generated from message account.settings.S3Location
  */
-export interface RemovePairedDeviceOp {
+export interface S3Location {
   /**
-   * PeerId is the peer ID of the device to remove.
-   *
-   * @generated from field: string peer_id = 1;
+   * Endpoint is the host and optional port, without a scheme.
    */
-  peerId?: string
+  endpoint?: string
+  /**
+   * Region is the signing region.
+   */
+  region?: string
+  /**
+   * Bucket is the bucket name.
+   */
+  bucket?: string
+  /**
+   * ObjectPrefix precedes every object key the account writes.
+   * Each block store writes under ObjectPrefix + block store id + "/".
+   */
+  objectPrefix?: string
+  /**
+   * DisableSsl connects with HTTP instead of HTTPS.
+   */
+  disableSsl?: boolean
+  /**
+   * Pricing overrides the price list storage reclaim uses. Empty uses the
+   * published prices of the service the endpoint names.
+   */
+  pricing?: Pricing
 }
 
-export const RemovePairedDeviceOp: MessageType<RemovePairedDeviceOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.RemovePairedDeviceOp',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const S3Location: MessageType<S3Location> =
+  /* @__PURE__ */ createMessageType<S3Location>(
+    'account.settings.S3Location',
+    () => [
+      [1, 'endpoint', 9],
+      [2, 'region', 9],
+      [3, 'bucket', 9],
+      [4, 'object_prefix', 9],
+      [5, 'disable_ssl', 8],
+      [6, 'pricing', 11, 0, Pricing.codec],
+    ],
+  )
 
 /**
- * RemoveEntityKeypairOp removes an entity keypair by peer ID.
+ * BlockStorePlacement places one block store on a storage backend.
  *
- * @generated from message account.settings.RemoveEntityKeypairOp
+ * @generated from message account.settings.BlockStorePlacement
  */
-export interface RemoveEntityKeypairOp {
+export interface BlockStorePlacement {
   /**
-   * PeerId is the peer ID of the entity keypair to remove.
-   *
-   * @generated from field: string peer_id = 1;
+   * BlockStoreId identifies the placed block store.
    */
-  peerId?: string
-}
-
-export const RemoveEntityKeypairOp: MessageType<RemoveEntityKeypairOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.RemoveEntityKeypairOp',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RemoveSessionPresentationOp removes session presentation metadata by peer ID.
- *
- * @generated from message account.settings.RemoveSessionPresentationOp
- */
-export interface RemoveSessionPresentationOp {
+  blockStoreId?: string
   /**
-   * PeerId is the peer ID of the session metadata entry to remove.
-   *
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-}
-
-export const RemoveSessionPresentationOp: MessageType<RemoveSessionPresentationOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.RemoveSessionPresentationOp',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ReplaceKeybindingOverrideSetOp applies a complete layer replacement with per-surface conflict detection.
- *
- * @generated from message account.settings.ReplaceKeybindingOverrideSetOp
- */
-export interface ReplaceKeybindingOverrideSetOp {
-  /**
-   * ExpectedOverrideSet is the snapshot used to derive the replacement.
-   *
-   * @generated from field: s4wave.command.KeybindingOverrideSet expected_override_set = 1;
-   */
-  expectedOverrideSet?: KeybindingOverrideSet
-  /**
-   * OverrideSet is the complete replacement value.
-   *
-   * @generated from field: s4wave.command.KeybindingOverrideSet override_set = 2;
-   */
-  overrideSet?: KeybindingOverrideSet
-}
-
-export const ReplaceKeybindingOverrideSetOp: MessageType<ReplaceKeybindingOverrideSetOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.ReplaceKeybindingOverrideSetOp',
-    fields: [
-      {
-        no: 1,
-        name: 'expected_override_set',
-        kind: 'message',
-        T: () => KeybindingOverrideSet,
-      },
-      {
-        no: 2,
-        name: 'override_set',
-        kind: 'message',
-        T: () => KeybindingOverrideSet,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RemoveStorageBackendOp removes a storage backend by id.
- *
- * @generated from message account.settings.RemoveStorageBackendOp
- */
-export interface RemoveStorageBackendOp {
-  /**
-   * StorageBackendId identifies the backend to remove.
-   *
-   * @generated from field: string storage_backend_id = 1;
+   * StorageBackendId identifies the StorageBackend that holds its blocks.
    */
   storageBackendId?: string
 }
 
-export const RemoveStorageBackendOp: MessageType<RemoveStorageBackendOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.RemoveStorageBackendOp',
-    fields: [
-      {
-        no: 1,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const BlockStorePlacement: MessageType<BlockStorePlacement> =
+  /* @__PURE__ */ createMessageType<BlockStorePlacement>(
+    'account.settings.BlockStorePlacement',
+    () => [
+      [1, 'block_store_id', 9],
+      [2, 'storage_backend_id', 9],
+    ],
+  )
 
 /**
- * SetDefaultStorageBackendOp selects the default storage backend.
+ * AccountSession is an approved account replica, distinct from a managed Device.
  *
- * @generated from message account.settings.SetDefaultStorageBackendOp
+ * @generated from message account.settings.AccountSession
  */
-export interface SetDefaultStorageBackendOp {
+export interface AccountSession {
   /**
-   * StorageBackendId identifies the new default, or empty for the account's
-   * own storage.
-   *
-   * @generated from field: string storage_backend_id = 1;
+   * PeerId is the independently generated Session's transport identity.
    */
-  storageBackendId?: string
+  peerId?: string
+  /**
+   * StoragePeerId identifies the replica's SharedObject signing and encryption key.
+   */
+  storagePeerId?: string
+  /**
+   * Revoked retains the binding after access is withdrawn.
+   */
+  revoked?: boolean
+  /**
+   * RevokedByStoragePeerId owns the signed configuration changes for revocation.
+   * Other replicas import that writer's lineage instead of signing competing changes.
+   */
+  revokedByStoragePeerId?: string
 }
 
-export const SetDefaultStorageBackendOp: MessageType<SetDefaultStorageBackendOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.SetDefaultStorageBackendOp',
-    fields: [
-      {
-        no: 1,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const AccountSession: MessageType<AccountSession> =
+  /* @__PURE__ */ createMessageType<AccountSession>(
+    'account.settings.AccountSession',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'storage_peer_id', 9],
+      [3, 'revoked', 8],
+      [4, 'revoked_by_storage_peer_id', 9],
+    ],
+  )
 
 /**
- * SetDeveloperSpaceOp records the account's developer Space.
+ * AccountCatalogEntry records one account object or its durable deletion.
  *
- * @generated from message account.settings.SetDeveloperSpaceOp
+ * @generated from message account.settings.AccountCatalogEntry
  */
-export interface SetDeveloperSpaceOp {
+export interface AccountCatalogEntry {
   /**
-   * SpaceId identifies the Space the account uses as its developer Space.
-   *
-   * @generated from field: string space_id = 1;
+   * Entry identifies the object and its presentation metadata.
    */
-  spaceId?: string
+  entry?: SharedObjectListEntry
   /**
-   * PreviousSpaceId is the developer Space the writer observed before
-   * creating SpaceId, or empty when it observed none. The operation applies
-   * only while the account still records that Space, so devices that race to
-   * replace a missing Space converge on one.
-   *
-   * @generated from field: string previous_space_id = 2;
+   * Deleted prevents an offline replica from rediscovering a removed object.
    */
-  previousSpaceId?: string
+  deleted?: boolean
 }
 
-export const SetDeveloperSpaceOp: MessageType<SetDeveloperSpaceOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.SetDeveloperSpaceOp',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'previous_space_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const AccountCatalogEntry: MessageType<AccountCatalogEntry> =
+  /* @__PURE__ */ createMessageType<AccountCatalogEntry>(
+    'account.settings.AccountCatalogEntry',
+    () => [
+      [1, 'entry', 11, 0, SharedObjectListEntry.codec],
+      [2, 'deleted', 8],
+    ],
+  )
+
+/**
+ * PairedDevice is a device that has been paired with this account via P2P.
+ *
+ * @generated from message account.settings.PairedDevice
+ */
+export interface PairedDevice {
+  /**
+   * PeerId is the base58 string representation of the paired device's peer ID.
+   */
+  peerId?: string
+  /**
+   * DisplayName is a human-readable name for the device.
+   */
+  displayName?: string
+  /**
+   * PairedAt is the unix timestamp (seconds) when the device was paired.
+   */
+  pairedAt?: bigint
+}
+
+export const PairedDevice: MessageType<PairedDevice> =
+  /* @__PURE__ */ createMessageType<PairedDevice>(
+    'account.settings.PairedDevice',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'display_name', 9],
+      [3, 'paired_at', 3],
+    ],
+  )
+
+/**
+ * SessionPresentation stores private presentation metadata for a session row.
+ *
+ * @generated from message account.settings.SessionPresentation
+ */
+export interface SessionPresentation {
+  /**
+   * PeerId is the session peer ID.
+   */
+  peerId?: string
+  /**
+   * Label is the primary display label for the session.
+   */
+  label?: string
+  /**
+   * DeviceType identifies the broad device class ("web", "desktop", etc.).
+   */
+  deviceType?: string
+  /**
+   * ClientName is the app or browser name when known.
+   */
+  clientName?: string
+  /**
+   * Os is the operating system or platform when known.
+   */
+  os?: string
+  /**
+   * Location is the observed network location when known.
+   */
+  location?: string
+}
+
+export const SessionPresentation: MessageType<SessionPresentation> =
+  /* @__PURE__ */ createMessageType<SessionPresentation>(
+    'account.settings.SessionPresentation',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'label', 9],
+      [3, 'device_type', 9],
+      [4, 'client_name', 9],
+      [5, 'os', 9],
+      [6, 'location', 9],
+    ],
+  )
 
 /**
  * AccountSettingsOp is an operation on the account settings SharedObject.
@@ -746,307 +359,241 @@ export interface AccountSettingsOp {
    * @generated from oneof account.settings.AccountSettingsOp.op
    */
   op?:
+    | { value?: undefined; case: undefined }
+    | { value: UpdateDisplayNameOp; case: 'updateDisplayName' }
+    | { value: PairedDevice; case: 'addPairedDevice' }
+    | { value: RemovePairedDeviceOp; case: 'removePairedDevice' }
+    | { value: EntityKeypair; case: 'addEntityKeypair' }
+    | { value: RemoveEntityKeypairOp; case: 'removeEntityKeypair' }
+    | { value: SessionPresentation; case: 'upsertSessionPresentation' }
+    | { value: RemoveSessionPresentationOp; case: 'removeSessionPresentation' }
     | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * UpdateDisplayName changes the local provider account display name.
-         *
-         * @generated from field: account.settings.UpdateDisplayNameOp update_display_name = 1;
-         */
-        value: UpdateDisplayNameOp
-        case: 'updateDisplayName'
-      }
-    | {
-        /**
-         * AddPairedDevice adds a paired device.
-         *
-         * @generated from field: account.settings.PairedDevice add_paired_device = 2;
-         */
-        value: PairedDevice
-        case: 'addPairedDevice'
-      }
-    | {
-        /**
-         * RemovePairedDevice removes a paired device by peer_id.
-         *
-         * @generated from field: account.settings.RemovePairedDeviceOp remove_paired_device = 3;
-         */
-        value: RemovePairedDeviceOp
-        case: 'removePairedDevice'
-      }
-    | {
-        /**
-         * AddEntityKeypair adds an entity keypair. Deduplicates by peer_id.
-         *
-         * @generated from field: session.EntityKeypair add_entity_keypair = 4;
-         */
-        value: EntityKeypair
-        case: 'addEntityKeypair'
-      }
-    | {
-        /**
-         * RemoveEntityKeypair removes an entity keypair by peer_id.
-         *
-         * @generated from field: account.settings.RemoveEntityKeypairOp remove_entity_keypair = 5;
-         */
-        value: RemoveEntityKeypairOp
-        case: 'removeEntityKeypair'
-      }
-    | {
-        /**
-         * UpsertSessionPresentation adds or replaces a session presentation row.
-         *
-         * @generated from field: account.settings.SessionPresentation upsert_session_presentation = 6;
-         */
-        value: SessionPresentation
-        case: 'upsertSessionPresentation'
-      }
-    | {
-        /**
-         * RemoveSessionPresentation removes a session presentation by peer_id.
-         *
-         * @generated from field: account.settings.RemoveSessionPresentationOp remove_session_presentation = 7;
-         */
-        value: RemoveSessionPresentationOp
-        case: 'removeSessionPresentation'
-      }
-    | {
-        /**
-         * ReplaceKeybindingOverrideSet atomically replaces the complete persisted layer.
-         *
-         * @generated from field: account.settings.ReplaceKeybindingOverrideSetOp replace_keybinding_override_set = 8;
-         */
         value: ReplaceKeybindingOverrideSetOp
         case: 'replaceKeybindingOverrideSet'
       }
-    | {
-        /**
-         * UpsertAccountSession applies an explicitly authorized Session enrollment or revocation.
-         *
-         * @generated from field: account.settings.AccountSession upsert_account_session = 9;
-         */
-        value: AccountSession
-        case: 'upsertAccountSession'
-      }
-    | {
-        /**
-         * UpsertCatalogEntry publishes an object or its permanent deletion tombstone.
-         *
-         * @generated from field: account.settings.AccountCatalogEntry upsert_catalog_entry = 10;
-         */
-        value: AccountCatalogEntry
-        case: 'upsertCatalogEntry'
-      }
-    | {
-        /**
-         * AcceptAccountMigration records provider-approved returning Session authorization.
-         *
-         * @generated from field: provider.AccountTransition accept_account_migration = 11;
-         */
-        value: AccountTransition
-        case: 'acceptAccountMigration'
-      }
-    | {
-        /**
-         * CommitAccountTransition fixes the destination once resources and Sessions are durable.
-         *
-         * @generated from field: provider.AccountTransition commit_account_transition = 12;
-         */
-        value: AccountTransition
-        case: 'commitAccountTransition'
-      }
-    | {
-        /**
-         * UpsertStorageBackend adds a storage backend or replaces the one with its id.
-         *
-         * @generated from field: account.settings.StorageBackend upsert_storage_backend = 13;
-         */
-        value: StorageBackend
-        case: 'upsertStorageBackend'
-      }
-    | {
-        /**
-         * RemoveStorageBackend removes a storage backend that holds no block store.
-         *
-         * @generated from field: account.settings.RemoveStorageBackendOp remove_storage_backend = 14;
-         */
-        value: RemoveStorageBackendOp
-        case: 'removeStorageBackend'
-      }
-    | {
-        /**
-         * SetDefaultStorageBackend selects the backend that new Spaces use.
-         *
-         * @generated from field: account.settings.SetDefaultStorageBackendOp set_default_storage_backend = 15;
-         */
-        value: SetDefaultStorageBackendOp
-        case: 'setDefaultStorageBackend'
-      }
-    | {
-        /**
-         * SetBlockStorePlacement places a block store, or returns it to the
-         * account's own storage when storage_backend_id is empty.
-         *
-         * @generated from field: account.settings.BlockStorePlacement set_block_store_placement = 16;
-         */
-        value: BlockStorePlacement
-        case: 'setBlockStorePlacement'
-      }
-    | {
-        /**
-         * CompleteStorageRelease records that the released block store's objects
-         * are gone from the backend's bucket.
-         *
-         * @generated from field: account.settings.BlockStorePlacement complete_storage_release = 17;
-         */
-        value: BlockStorePlacement
-        case: 'completeStorageRelease'
-      }
-    | {
-        /**
-         * SetDeveloperSpace records the account's developer Space. It replaces the
-         * recorded Space only when that Space is the one the operation names as
-         * previous; otherwise it is rejected.
-         *
-         * @generated from field: account.settings.SetDeveloperSpaceOp set_developer_space = 18;
-         */
-        value: SetDeveloperSpaceOp
-        case: 'setDeveloperSpace'
-      }
+    | { value: AccountSession; case: 'upsertAccountSession' }
+    | { value: AccountCatalogEntry; case: 'upsertCatalogEntry' }
+    | { value: AccountTransition; case: 'acceptAccountMigration' }
+    | { value: AccountTransition; case: 'commitAccountTransition' }
+    | { value: StorageBackend; case: 'upsertStorageBackend' }
+    | { value: RemoveStorageBackendOp; case: 'removeStorageBackend' }
+    | { value: SetDefaultStorageBackendOp; case: 'setDefaultStorageBackend' }
+    | { value: BlockStorePlacement; case: 'setBlockStorePlacement' }
+    | { value: BlockStorePlacement; case: 'completeStorageRelease' }
+    | { value: SetDeveloperSpaceOp; case: 'setDeveloperSpace' }
 }
 
 export const AccountSettingsOp: MessageType<AccountSettingsOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'account.settings.AccountSettingsOp',
-    fields: [
-      {
-        no: 1,
-        name: 'update_display_name',
-        kind: 'message',
-        T: UpdateDisplayNameOp,
-        oneof: 'op',
-      },
-      {
-        no: 2,
-        name: 'add_paired_device',
-        kind: 'message',
-        T: PairedDevice,
-        oneof: 'op',
-      },
-      {
-        no: 3,
-        name: 'remove_paired_device',
-        kind: 'message',
-        T: RemovePairedDeviceOp,
-        oneof: 'op',
-      },
-      {
-        no: 4,
-        name: 'add_entity_keypair',
-        kind: 'message',
-        T: () => EntityKeypair,
-        oneof: 'op',
-      },
-      {
-        no: 5,
-        name: 'remove_entity_keypair',
-        kind: 'message',
-        T: RemoveEntityKeypairOp,
-        oneof: 'op',
-      },
-      {
-        no: 6,
-        name: 'upsert_session_presentation',
-        kind: 'message',
-        T: SessionPresentation,
-        oneof: 'op',
-      },
-      {
-        no: 7,
-        name: 'remove_session_presentation',
-        kind: 'message',
-        T: RemoveSessionPresentationOp,
-        oneof: 'op',
-      },
-      {
-        no: 8,
-        name: 'replace_keybinding_override_set',
-        kind: 'message',
-        T: ReplaceKeybindingOverrideSetOp,
-        oneof: 'op',
-      },
-      {
-        no: 9,
-        name: 'upsert_account_session',
-        kind: 'message',
-        T: AccountSession,
-        oneof: 'op',
-      },
-      {
-        no: 10,
-        name: 'upsert_catalog_entry',
-        kind: 'message',
-        T: AccountCatalogEntry,
-        oneof: 'op',
-      },
-      {
-        no: 11,
-        name: 'accept_account_migration',
-        kind: 'message',
-        T: () => AccountTransition,
-        oneof: 'op',
-      },
-      {
-        no: 12,
-        name: 'commit_account_transition',
-        kind: 'message',
-        T: () => AccountTransition,
-        oneof: 'op',
-      },
-      {
-        no: 13,
-        name: 'upsert_storage_backend',
-        kind: 'message',
-        T: StorageBackend,
-        oneof: 'op',
-      },
-      {
-        no: 14,
-        name: 'remove_storage_backend',
-        kind: 'message',
-        T: RemoveStorageBackendOp,
-        oneof: 'op',
-      },
-      {
-        no: 15,
-        name: 'set_default_storage_backend',
-        kind: 'message',
-        T: SetDefaultStorageBackendOp,
-        oneof: 'op',
-      },
-      {
-        no: 16,
-        name: 'set_block_store_placement',
-        kind: 'message',
-        T: BlockStorePlacement,
-        oneof: 'op',
-      },
-      {
-        no: 17,
-        name: 'complete_storage_release',
-        kind: 'message',
-        T: BlockStorePlacement,
-        oneof: 'op',
-      },
-      {
-        no: 18,
-        name: 'set_developer_space',
-        kind: 'message',
-        T: SetDeveloperSpaceOp,
-        oneof: 'op',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccountSettingsOp>(
+    'account.settings.AccountSettingsOp',
+    () => [
+      [1, 'update_display_name', 11, 0, UpdateDisplayNameOp.codec, 'op'],
+      [2, 'add_paired_device', 11, 0, PairedDevice.codec, 'op'],
+      [3, 'remove_paired_device', 11, 0, RemovePairedDeviceOp.codec, 'op'],
+      [4, 'add_entity_keypair', 11, 0, EntityKeypair.codec, 'op'],
+      [5, 'remove_entity_keypair', 11, 0, RemoveEntityKeypairOp.codec, 'op'],
+      [
+        6,
+        'upsert_session_presentation',
+        11,
+        0,
+        SessionPresentation.codec,
+        'op',
+      ],
+      [
+        7,
+        'remove_session_presentation',
+        11,
+        0,
+        RemoveSessionPresentationOp.codec,
+        'op',
+      ],
+      [
+        8,
+        'replace_keybinding_override_set',
+        11,
+        0,
+        ReplaceKeybindingOverrideSetOp.codec,
+        'op',
+      ],
+      [9, 'upsert_account_session', 11, 0, AccountSession.codec, 'op'],
+      [10, 'upsert_catalog_entry', 11, 0, AccountCatalogEntry.codec, 'op'],
+      [11, 'accept_account_migration', 11, 0, AccountTransition.codec, 'op'],
+      [12, 'commit_account_transition', 11, 0, AccountTransition.codec, 'op'],
+      [13, 'upsert_storage_backend', 11, 0, StorageBackend.codec, 'op'],
+      [14, 'remove_storage_backend', 11, 0, RemoveStorageBackendOp.codec, 'op'],
+      [
+        15,
+        'set_default_storage_backend',
+        11,
+        0,
+        SetDefaultStorageBackendOp.codec,
+        'op',
+      ],
+      [16, 'set_block_store_placement', 11, 0, BlockStorePlacement.codec, 'op'],
+      [17, 'complete_storage_release', 11, 0, BlockStorePlacement.codec, 'op'],
+      [18, 'set_developer_space', 11, 0, SetDeveloperSpaceOp.codec, 'op'],
+    ],
+  )
+
+/**
+ * SetDeveloperSpaceOp records the account's developer Space.
+ *
+ * @generated from message account.settings.SetDeveloperSpaceOp
+ */
+export interface SetDeveloperSpaceOp {
+  /**
+   * SpaceId identifies the Space the account uses as its developer Space.
+   */
+  spaceId?: string
+  /**
+   * PreviousSpaceId is the developer Space the writer observed before
+   * creating SpaceId, or empty when it observed none. The operation applies
+   * only while the account still records that Space, so devices that race to
+   * replace a missing Space converge on one.
+   */
+  previousSpaceId?: string
+}
+
+export const SetDeveloperSpaceOp: MessageType<SetDeveloperSpaceOp> =
+  /* @__PURE__ */ createMessageType<SetDeveloperSpaceOp>(
+    'account.settings.SetDeveloperSpaceOp',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'previous_space_id', 9],
+    ],
+  )
+
+/**
+ * RemoveStorageBackendOp removes a storage backend by id.
+ *
+ * @generated from message account.settings.RemoveStorageBackendOp
+ */
+export interface RemoveStorageBackendOp {
+  /**
+   * StorageBackendId identifies the backend to remove.
+   */
+  storageBackendId?: string
+}
+
+export const RemoveStorageBackendOp: MessageType<RemoveStorageBackendOp> =
+  /* @__PURE__ */ createMessageType<RemoveStorageBackendOp>(
+    'account.settings.RemoveStorageBackendOp',
+    () => [[1, 'storage_backend_id', 9]],
+  )
+
+/**
+ * SetDefaultStorageBackendOp selects the default storage backend.
+ *
+ * @generated from message account.settings.SetDefaultStorageBackendOp
+ */
+export interface SetDefaultStorageBackendOp {
+  /**
+   * StorageBackendId identifies the new default, or empty for the account's
+   * own storage.
+   */
+  storageBackendId?: string
+}
+
+export const SetDefaultStorageBackendOp: MessageType<SetDefaultStorageBackendOp> =
+  /* @__PURE__ */ createMessageType<SetDefaultStorageBackendOp>(
+    'account.settings.SetDefaultStorageBackendOp',
+    () => [[1, 'storage_backend_id', 9]],
+  )
+
+/**
+ * ReplaceKeybindingOverrideSetOp applies a complete layer replacement with per-surface conflict detection.
+ *
+ * @generated from message account.settings.ReplaceKeybindingOverrideSetOp
+ */
+export interface ReplaceKeybindingOverrideSetOp {
+  /**
+   * ExpectedOverrideSet is the snapshot used to derive the replacement.
+   */
+  expectedOverrideSet?: KeybindingOverrideSet
+  /**
+   * OverrideSet is the complete replacement value.
+   */
+  overrideSet?: KeybindingOverrideSet
+}
+
+export const ReplaceKeybindingOverrideSetOp: MessageType<ReplaceKeybindingOverrideSetOp> =
+  /* @__PURE__ */ createMessageType<ReplaceKeybindingOverrideSetOp>(
+    'account.settings.ReplaceKeybindingOverrideSetOp',
+    () => [
+      [1, 'expected_override_set', 11, 0, KeybindingOverrideSet.codec],
+      [2, 'override_set', 11, 0, KeybindingOverrideSet.codec],
+    ],
+  )
+
+/**
+ * UpdateDisplayNameOp changes the local provider account display name.
+ *
+ * @generated from message account.settings.UpdateDisplayNameOp
+ */
+export interface UpdateDisplayNameOp {
+  /**
+   * DisplayName is the new display name for the account.
+   */
+  displayName?: string
+}
+
+export const UpdateDisplayNameOp: MessageType<UpdateDisplayNameOp> =
+  /* @__PURE__ */ createMessageType<UpdateDisplayNameOp>(
+    'account.settings.UpdateDisplayNameOp',
+    () => [[1, 'display_name', 9]],
+  )
+
+/**
+ * RemoveEntityKeypairOp removes an entity keypair by peer ID.
+ *
+ * @generated from message account.settings.RemoveEntityKeypairOp
+ */
+export interface RemoveEntityKeypairOp {
+  /**
+   * PeerId is the peer ID of the entity keypair to remove.
+   */
+  peerId?: string
+}
+
+export const RemoveEntityKeypairOp: MessageType<RemoveEntityKeypairOp> =
+  /* @__PURE__ */ createMessageType<RemoveEntityKeypairOp>(
+    'account.settings.RemoveEntityKeypairOp',
+    () => [[1, 'peer_id', 9]],
+  )
+
+/**
+ * RemovePairedDeviceOp removes a paired device by peer ID.
+ *
+ * @generated from message account.settings.RemovePairedDeviceOp
+ */
+export interface RemovePairedDeviceOp {
+  /**
+   * PeerId is the peer ID of the device to remove.
+   */
+  peerId?: string
+}
+
+export const RemovePairedDeviceOp: MessageType<RemovePairedDeviceOp> =
+  /* @__PURE__ */ createMessageType<RemovePairedDeviceOp>(
+    'account.settings.RemovePairedDeviceOp',
+    () => [[1, 'peer_id', 9]],
+  )
+
+/**
+ * RemoveSessionPresentationOp removes session presentation metadata by peer ID.
+ *
+ * @generated from message account.settings.RemoveSessionPresentationOp
+ */
+export interface RemoveSessionPresentationOp {
+  /**
+   * PeerId is the peer ID of the session metadata entry to remove.
+   */
+  peerId?: string
+}
+
+export const RemoveSessionPresentationOp: MessageType<RemoveSessionPresentationOp> =
+  /* @__PURE__ */ createMessageType<RemoveSessionPresentationOp>(
+    'account.settings.RemoveSessionPresentationOp',
+    () => [[1, 'peer_id', 9]],
+  )

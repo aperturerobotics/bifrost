@@ -3,13 +3,9 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { AccountTransition } from '../provider.pb.js'
 import { Identity, SharedObject } from '../../pairing/pairing.pb.js'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * AccountTransitionReceipt acknowledges a verified source-account redirect.
@@ -19,9 +15,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface AccountTransitionReceipt {}
 
 export const AccountTransitionReceipt: MessageType<AccountTransitionReceipt> =
-  /* @__PURE__ */ createEmptyMessageType<AccountTransitionReceipt>(
+  /* @__PURE__ */ createMessageType<AccountTransitionReceipt>(
     'provider.migration.AccountTransitionReceipt',
-    true,
+    () => [],
   )
 
 /**
@@ -32,31 +28,22 @@ export const AccountTransitionReceipt: MessageType<AccountTransitionReceipt> =
 export interface MigratedSessionRequest {
   /**
    * Transition must match the destination's durable authorization.
-   *
-   * @generated from field: provider.AccountTransition transition = 1;
    */
   transition?: AccountTransition
   /**
    * Identity proves possession of the caller's Session and local storage keys.
-   *
-   * @generated from field: pairing.Identity identity = 2;
    */
   identity?: Identity
 }
 
 export const MigratedSessionRequest: MessageType<MigratedSessionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.migration.MigratedSessionRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'transition',
-        kind: 'message',
-        T: () => AccountTransition,
-      },
-      { no: 2, name: 'identity', kind: 'message', T: () => Identity },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MigratedSessionRequest>(
+    'provider.migration.MigratedSessionRequest',
+    () => [
+      [1, 'transition', 11, 0, AccountTransition.codec],
+      [2, 'identity', 11, 0, Identity.codec],
+    ],
+  )
 
 /**
  * MigratedSessionResponse carries verified checkpoints for the enrolled keys.
@@ -66,22 +53,12 @@ export const MigratedSessionRequest: MessageType<MigratedSessionRequest> =
 export interface MigratedSessionResponse {
   /**
    * Objects includes canonical settings and every current account object.
-   *
-   * @generated from field: repeated pairing.SharedObject objects = 1;
    */
   objects?: SharedObject[]
 }
 
 export const MigratedSessionResponse: MessageType<MigratedSessionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.migration.MigratedSessionResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'objects',
-        kind: 'message',
-        T: () => SharedObject,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MigratedSessionResponse>(
+    'provider.migration.MigratedSessionResponse',
+    () => [[1, 'objects', 11, 1, SharedObject.codec]],
+  )

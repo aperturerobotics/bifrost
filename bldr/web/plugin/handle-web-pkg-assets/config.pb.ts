@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures a controller to serve LookupWebPkg from a plugin assets fs.
@@ -17,42 +15,29 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * WebPluginId is the id of the web plugin.
-   *
-   * @generated from field: string web_plugin_id = 1;
    */
   webPluginId?: string
   /**
    * HandlePluginId is the plugin to serve assets from.
-   *
-   * @generated from field: string handle_plugin_id = 2;
    */
   handlePluginId?: string
   /**
    * WebPkgsPath is the sub-directory of the plugin assets fs to look up the web pkgs root.
-   *
-   * @generated from field: string web_pkgs_path = 3;
    */
   webPkgsPath?: string
   /**
    * WebPkgIdList is a list of web pkg IDs to resolve.
-   *
-   * @generated from field: repeated string web_pkg_id_list = 4;
    */
   webPkgIdList?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.web.plugin.handle_web_pkg_assets.Config',
-  fields: [
-    { no: 1, name: 'web_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'handle_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'web_pkgs_path', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 4,
-      name: 'web_pkg_id_list',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.web.plugin.handle_web_pkg_assets.Config',
+    () => [
+      [1, 'web_plugin_id', 9],
+      [2, 'handle_plugin_id', 9],
+      [3, 'web_pkgs_path', 9],
+      [4, 'web_pkg_id_list', 9, 1],
+    ],
+  )

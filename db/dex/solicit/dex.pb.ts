@@ -5,8 +5,6 @@
 import { BlockRef } from '../../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * DexMessage is a message sent over a DEX stream.
@@ -20,38 +18,26 @@ export interface DexMessage {
   /**
    * RequestId is a unique ID for this request/response pair.
    * The requester picks a unique ID. The responder echoes it back.
-   *
-   * @generated from field: uint32 request_id = 1;
    */
   requestId?: number
   /**
    * IsResponse indicates this is a response to a prior request.
-   *
-   * @generated from field: bool is_response = 2;
    */
   isResponse?: boolean
   /**
    * Ref is the block reference to look up (request only).
-   *
-   * @generated from field: block.BlockRef ref = 3;
    */
   ref?: BlockRef
   /**
    * Found indicates whether the block was found (response only).
-   *
-   * @generated from field: bool found = 4;
    */
   found?: boolean
   /**
    * Data is the block data (response only).
-   *
-   * @generated from field: bytes data = 5;
    */
   data?: Uint8Array
   /**
    * Error is an error message (response only).
-   *
-   * @generated from field: string error = 6;
    */
   error?: string
   /**
@@ -59,53 +45,39 @@ export interface DexMessage {
    * When a node does not have the block locally and remaining_hops > 0,
    * it forwards the request to other connected peers with remaining_hops - 1.
    * Zero means no forwarding allowed (local lookup only).
-   *
-   * @generated from field: uint32 remaining_hops = 7;
    */
   remainingHops?: number
   /**
    * Refs are the block's outgoing references when refs_known is set
    * (response only). An empty list with refs_known set means a leaf.
-   *
-   * @generated from field: repeated block.BlockRef refs = 8;
    */
   refs?: BlockRef[]
   /**
    * RefsKnown is false when the responder held the block without its
    * outgoing references (response only).
-   *
-   * @generated from field: bool refs_known = 9;
    */
   refsKnown?: boolean
   /**
    * Cancel withdraws the request with request_id. The responder stops
    * handling it and sends no response. A cancel for a request that already
    * completed is ignored.
-   *
-   * @generated from field: bool cancel = 10;
    */
   cancel?: boolean
 }
 
 export const DexMessage: MessageType<DexMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'dex.solicit.DexMessage',
-    fields: [
-      { no: 1, name: 'request_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'is_response', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 4, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 6, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'remaining_hops', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 8,
-        name: 'refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      { no: 9, name: 'refs_known', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 10, name: 'cancel', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DexMessage>(
+    'dex.solicit.DexMessage',
+    () => [
+      [1, 'request_id', 13],
+      [2, 'is_response', 8],
+      [3, 'ref', 11, 0, BlockRef.codec],
+      [4, 'found', 8],
+      [5, 'data', 12],
+      [6, 'error', 9],
+      [7, 'remaining_hops', 13],
+      [8, 'refs', 11, 1, BlockRef.codec],
+      [9, 'refs_known', 8],
+      [10, 'cancel', 8],
+    ],
+  )

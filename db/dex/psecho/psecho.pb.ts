@@ -5,8 +5,6 @@
 import { BlockRef } from '../../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * PubSubMessage is gossipped on the pub-sub channel.
@@ -16,54 +14,29 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface PubSubMessage {
   /**
    * WantRefs is a full snapshot of blocks we currently want.
-   *
-   * @generated from field: repeated block.BlockRef want_refs = 1;
    */
   wantRefs?: BlockRef[]
   /**
    * ClearRefs signals we no longer want these blocks.
-   *
-   * @generated from field: repeated block.BlockRef clear_refs = 2;
    */
   clearRefs?: BlockRef[]
   /**
    * WantEmpty indicates the wantlist is empty.
-   *
-   * @generated from field: bool want_empty = 3;
    */
   wantEmpty?: boolean
   /**
    * TimestampUnixNano is the message timestamp (for ordering).
-   *
-   * @generated from field: int64 timestamp_unix_nano = 4;
    */
   timestampUnixNano?: bigint
 }
 
 export const PubSubMessage: MessageType<PubSubMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'psecho.PubSubMessage',
-    fields: [
-      {
-        no: 1,
-        name: 'want_refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'clear_refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      { no: 3, name: 'want_empty', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 4,
-        name: 'timestamp_unix_nano',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PubSubMessage>(
+    'psecho.PubSubMessage',
+    () => [
+      [1, 'want_refs', 11, 1, BlockRef.codec],
+      [2, 'clear_refs', 11, 1, BlockRef.codec],
+      [3, 'want_empty', 8],
+      [4, 'timestamp_unix_nano', 3],
+    ],
+  )

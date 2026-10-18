@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import type { VmState } from './v86.pb.js'
 import { VmImageCdnSource, VmState_Enum } from './v86.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
@@ -22,29 +17,27 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export enum WasiVmWindowPlace {
   /**
    * WasiVmWindowPlace_UNKNOWN is unset.
-   *
-   * @generated from enum value: WasiVmWindowPlace_UNKNOWN = 0;
    */
   WasiVmWindowPlace_UNKNOWN = 0,
 
   /**
    * WasiVmWindowPlace_DESKTOP means the window shows on the desktop.
-   *
-   * @generated from enum value: WasiVmWindowPlace_DESKTOP = 1;
    */
   WasiVmWindowPlace_DESKTOP = 1,
 
   /**
    * WasiVmWindowPlace_VIEWER means the window shows in a viewer of its own.
-   *
-   * @generated from enum value: WasiVmWindowPlace_VIEWER = 2;
    */
   WasiVmWindowPlace_VIEWER = 2,
 }
 
 export const WasiVmWindowPlace_Enum = /* @__PURE__ */ createEnumType(
   's4wave.vm.WasiVmWindowPlace',
-  WasiVmWindowPlace,
+  [
+    [0, 'WasiVmWindowPlace_UNKNOWN'],
+    [1, 'WasiVmWindowPlace_DESKTOP'],
+    [2, 'WasiVmWindowPlace_VIEWER'],
+  ],
 )
 
 /**
@@ -55,45 +48,27 @@ export const WasiVmWindowPlace_Enum = /* @__PURE__ */ createEnumType(
 export interface WasiVmConfig {
   /**
    * InitPath is the init program in the rootfs. Empty runs /bin/sh.
-   *
-   * @generated from field: string init_path = 1;
    */
   initPath?: string
   /**
    * InitArgs are the arguments after the program name.
-   *
-   * @generated from field: repeated string init_args = 2;
    */
   initArgs?: string[]
   /**
    * Env replaces the default environment of PATH, HOME and TERM when set.
-   *
-   * @generated from field: map<string, string> env = 3;
    */
   env?: { [key: string]: string }
 }
 
 export const WasiVmConfig: MessageType<WasiVmConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmConfig',
-    fields: [
-      { no: 1, name: 'init_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'init_args',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'env',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WasiVmConfig>(
+    's4wave.vm.WasiVmConfig',
+    () => [
+      [1, 'init_path', 9],
+      [2, 'init_args', 9, 1],
+      [3, 'env', 9, 584],
+    ],
+  )
 
 /**
  * WasiVm is a virtual machine that runs WebAssembly programs on the WasiVM
@@ -104,38 +79,26 @@ export const WasiVmConfig: MessageType<WasiVmConfig> =
 export interface WasiVm {
   /**
    * State is the desired VM state. Runtime observations are in observed_state.
-   *
-   * @generated from field: s4wave.vm.VmState state = 1;
    */
   state?: VmState
   /**
    * Name is the human-readable name of this VM instance.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Config configures the init process.
-   *
-   * @generated from field: s4wave.vm.WasiVmConfig config = 3;
    */
   config?: WasiVmConfig
   /**
    * CreatedAt is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 4;
    */
   createdAt?: Date
   /**
    * ErrorMessage is the terminal diagnostic for the observed generation.
-   *
-   * @generated from field: string error_message = 5;
    */
   errorMessage?: string
   /**
    * ObservedState is the runtime state committed by the VM resource owner.
-   *
-   * @generated from field: s4wave.vm.VmState observed_state = 6;
    */
   observedState?: VmState
   /**
@@ -144,24 +107,20 @@ export interface WasiVm {
    * Links (via graph edges, not proto fields):
    *   wasivm/rootfs -> UnixFS object (root filesystem, preferred when set)
    *   wasivm/image  -> WasiVmImage (root filesystem when wasivm/rootfs is unset)
-   *
-   * @generated from field: uint64 run_generation = 7;
    */
   runGeneration?: bigint
 }
 
-export const WasiVm: MessageType<WasiVm> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.vm.WasiVm',
-  fields: [
-    { no: 1, name: 'state', kind: 'enum', T: VmState_Enum },
-    { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'config', kind: 'message', T: WasiVmConfig },
-    { no: 4, name: 'created_at', kind: 'message', T: () => Timestamp },
-    { no: 5, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-    { no: 6, name: 'observed_state', kind: 'enum', T: VmState_Enum },
-    { no: 7, name: 'run_generation', kind: 'scalar', T: ScalarType.UINT64 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const WasiVm: MessageType<WasiVm> =
+  /* @__PURE__ */ createMessageType<WasiVm>('s4wave.vm.WasiVm', () => [
+    [1, 'state', 14, 0, VmState_Enum],
+    [2, 'name', 9],
+    [3, 'config', 11, 0, WasiVmConfig.codec],
+    [4, 'created_at', 11, 0, Timestamp.codec],
+    [5, 'error_message', 9],
+    [6, 'observed_state', 14, 0, VmState_Enum],
+    [7, 'run_generation', 4],
+  ])
 
 /**
  * CreateWasiVmOp creates a new WasiVm world object linked to its root
@@ -172,59 +131,42 @@ export const WasiVm: MessageType<WasiVm> = /* @__PURE__ */ createMessageType({
 export interface CreateWasiVmOp {
   /**
    * ObjectKey is the key to create the VM at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the display name.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Config configures the init process.
-   *
-   * @generated from field: s4wave.vm.WasiVmConfig config = 3;
    */
   config?: WasiVmConfig
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
   /**
    * RootfsObjectKey points at the UnixFS object holding the root filesystem.
-   *
-   * @generated from field: string rootfs_object_key = 5;
    */
   rootfsObjectKey?: string
   /**
    * ImageObjectKey points at the WasiVmImage supplying the root filesystem.
-   *
-   * @generated from field: string image_object_key = 6;
    */
   imageObjectKey?: string
 }
 
 export const CreateWasiVmOp: MessageType<CreateWasiVmOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.CreateWasiVmOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'config', kind: 'message', T: WasiVmConfig },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      {
-        no: 5,
-        name: 'rootfs_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 6, name: 'image_object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWasiVmOp>(
+    's4wave.vm.CreateWasiVmOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'config', 11, 0, WasiVmConfig.codec],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+      [5, 'rootfs_object_key', 9],
+      [6, 'image_object_key', 9],
+    ],
+  )
 
 /**
  * WasiVmImage is a root filesystem published for WasiVMs. The object carries
@@ -236,32 +178,22 @@ export const CreateWasiVmOp: MessageType<CreateWasiVmOp> =
 export interface WasiVmImage {
   /**
    * Name is the human-readable name of the image.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Version identifies this revision of the image.
-   *
-   * @generated from field: string version = 2;
    */
   version?: string
   /**
    * Description is a free-form description of the image.
-   *
-   * @generated from field: string description = 3;
    */
   description?: string
   /**
    * Tags is a list of discovery tags, e.g. ["default"].
-   *
-   * @generated from field: repeated string tags = 4;
    */
   tags?: string[]
   /**
    * CreatedAt is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 5;
    */
   createdAt?: Date
   /**
@@ -272,30 +204,22 @@ export interface WasiVmImage {
    *   wasivmimage/rootfs  -> UnixFS object (root filesystem)
    *   wasivmimage/package -> WasiVmPackage (each package the image asks for;
    *                          the rootfs holds their runtime closure)
-   *
-   * @generated from field: s4wave.vm.VmImageCdnSource cdn_source = 6;
    */
   cdnSource?: VmImageCdnSource
 }
 
 export const WasiVmImage: MessageType<WasiVmImage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmImage',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'tags',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 5, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 6, name: 'cdn_source', kind: 'message', T: () => VmImageCdnSource },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WasiVmImage>(
+    's4wave.vm.WasiVmImage',
+    () => [
+      [1, 'name', 9],
+      [2, 'version', 9],
+      [3, 'description', 9],
+      [4, 'tags', 9, 1],
+      [5, 'created_at', 11, 0, Timestamp.codec],
+      [6, 'cdn_source', 11, 0, VmImageCdnSource.codec],
+    ],
+  )
 
 /**
  * CreateWasiVmImageOp creates a new WasiVmImage world object. Its rootfs edge,
@@ -306,33 +230,27 @@ export const WasiVmImage: MessageType<WasiVmImage> =
 export interface CreateWasiVmImageOp {
   /**
    * ObjectKey is the key to create the image at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Image carries the metadata of the new image. Name is required.
-   *
-   * @generated from field: s4wave.vm.WasiVmImage image = 2;
    */
   image?: WasiVmImage
   /**
    * Timestamp is the creation timestamp. Stored on the block as CreatedAt.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
 }
 
 export const CreateWasiVmImageOp: MessageType<CreateWasiVmImageOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.CreateWasiVmImageOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'image', kind: 'message', T: WasiVmImage },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWasiVmImageOp>(
+    's4wave.vm.CreateWasiVmImageOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'image', 11, 0, WasiVmImage.codec],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * WasiVmPackage is one version of a package built for WasiVMs. Its files are
@@ -345,26 +263,18 @@ export const CreateWasiVmImageOp: MessageType<CreateWasiVmImageOp> =
 export interface WasiVmPackage {
   /**
    * Name is the package's category and name, such as app-editors/nano.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Version is the package version with its revision, such as 9.2-r1.
-   *
-   * @generated from field: string version = 2;
    */
   version?: string
   /**
    * Description is a one-line description of the package.
-   *
-   * @generated from field: string description = 3;
    */
   description?: string
   /**
    * License is the package's license expression, such as GPL-2+.
-   *
-   * @generated from field: string license = 4;
    */
   license?: string
   /**
@@ -374,23 +284,21 @@ export interface WasiVmPackage {
    *   wasivmpkg/runtime -> UnixFS object (runtime files)
    *   wasivmpkg/dev     -> UnixFS object (build-time files)
    *   wasivmpkg/depends -> WasiVmPackage (each runtime dependency)
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 5;
    */
   createdAt?: Date
 }
 
 export const WasiVmPackage: MessageType<WasiVmPackage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmPackage',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'license', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'created_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WasiVmPackage>(
+    's4wave.vm.WasiVmPackage',
+    () => [
+      [1, 'name', 9],
+      [2, 'version', 9],
+      [3, 'description', 9],
+      [4, 'license', 9],
+      [5, 'created_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * CreateWasiVmPackageOp creates a new WasiVmPackage world object. Its layer and
@@ -401,34 +309,28 @@ export const WasiVmPackage: MessageType<WasiVmPackage> =
 export interface CreateWasiVmPackageOp {
   /**
    * ObjectKey is the key to create the package at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Package carries the metadata of the new package. Name and version are
    * required.
-   *
-   * @generated from field: s4wave.vm.WasiVmPackage package = 2;
    */
   package?: WasiVmPackage
   /**
    * Timestamp is the creation timestamp. Stored on the block as CreatedAt.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
 }
 
 export const CreateWasiVmPackageOp: MessageType<CreateWasiVmPackageOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.CreateWasiVmPackageOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'package', kind: 'message', T: WasiVmPackage },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWasiVmPackageOp>(
+    's4wave.vm.CreateWasiVmPackageOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'package', 11, 0, WasiVmPackage.codec],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * SetWasiVmStateOp changes the desired state of an existing WasiVm object.
@@ -438,26 +340,22 @@ export const CreateWasiVmPackageOp: MessageType<CreateWasiVmPackageOp> =
 export interface SetWasiVmStateOp {
   /**
    * ObjectKey is the object key of the WasiVm to update.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * State is the target state: VmState_RUNNING or VmState_STOPPED.
-   *
-   * @generated from field: s4wave.vm.VmState state = 2;
    */
   state?: VmState
 }
 
 export const SetWasiVmStateOp: MessageType<SetWasiVmStateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.SetWasiVmStateOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'state', kind: 'enum', T: VmState_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetWasiVmStateOp>(
+    's4wave.vm.SetWasiVmStateOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'state', 14, 0, VmState_Enum],
+    ],
+  )
 
 /**
  * WatchWasiVmDownloadsRequest asks for the downloads of a running WasiVM.
@@ -467,9 +365,9 @@ export const SetWasiVmStateOp: MessageType<SetWasiVmStateOp> =
 export interface WatchWasiVmDownloadsRequest {}
 
 export const WatchWasiVmDownloadsRequest: MessageType<WatchWasiVmDownloadsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchWasiVmDownloadsRequest>(
+  /* @__PURE__ */ createMessageType<WatchWasiVmDownloadsRequest>(
     's4wave.vm.WatchWasiVmDownloadsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -482,33 +380,27 @@ export interface WasiVmDownloads {
   /**
    * Remote is set when the root filesystem is a published image read from
    * the CDN as it is used. A root filesystem in the Space downloads nothing.
-   *
-   * @generated from field: bool remote = 1;
    */
   remote?: boolean
   /**
    * InFlight is the number of reads from the CDN waiting on the network.
-   *
-   * @generated from field: uint32 in_flight = 2;
    */
   inFlight?: number
   /**
    * Bytes is the number of bytes downloaded since the run began.
-   *
-   * @generated from field: uint64 bytes = 3;
    */
   bytes?: bigint
 }
 
 export const WasiVmDownloads: MessageType<WasiVmDownloads> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmDownloads',
-    fields: [
-      { no: 1, name: 'remote', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'in_flight', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'bytes', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WasiVmDownloads>(
+    's4wave.vm.WasiVmDownloads',
+    () => [
+      [1, 'remote', 8],
+      [2, 'in_flight', 13],
+      [3, 'bytes', 4],
+    ],
+  )
 
 /**
  * WatchWasiVmWindowsRequest asks for the windows of a running WasiVM.
@@ -518,9 +410,27 @@ export const WasiVmDownloads: MessageType<WasiVmDownloads> =
 export interface WatchWasiVmWindowsRequest {}
 
 export const WatchWasiVmWindowsRequest: MessageType<WatchWasiVmWindowsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchWasiVmWindowsRequest>(
+  /* @__PURE__ */ createMessageType<WatchWasiVmWindowsRequest>(
     's4wave.vm.WatchWasiVmWindowsRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * WasiVmWindowList is the mapped Wayland windows of a display, oldest first.
+ *
+ * @generated from message s4wave.vm.WasiVmWindowList
+ */
+export interface WasiVmWindowList {
+  /**
+   * Windows is the mapped windows.
+   */
+  windows?: WasiVmWindow[]
+}
+
+export const WasiVmWindowList: MessageType<WasiVmWindowList> =
+  /* @__PURE__ */ createMessageType<WasiVmWindowList>(
+    's4wave.vm.WasiVmWindowList',
+    () => [[1, 'windows', 11, 1, WasiVmWindow.codec]],
   )
 
 /**
@@ -531,97 +441,58 @@ export const WatchWasiVmWindowsRequest: MessageType<WatchWasiVmWindowsRequest> =
 export interface WasiVmWindow {
   /**
    * Id identifies the window for the life of the VM's run.
-   *
-   * @generated from field: uint32 id = 1;
    */
   id?: number
   /**
    * Title is the title the client set, or empty.
-   *
-   * @generated from field: string title = 2;
    */
   title?: string
   /**
    * AppId names the client's application, or is empty.
-   *
-   * @generated from field: string app_id = 3;
    */
   appId?: string
   /**
    * Place is where the window shows.
-   *
-   * @generated from field: s4wave.vm.WasiVmWindowPlace place = 4;
    */
   place?: WasiVmWindowPlace
 }
 
 export const WasiVmWindow: MessageType<WasiVmWindow> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmWindow',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'title', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'app_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'place', kind: 'enum', T: WasiVmWindowPlace_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WasiVmWindow>(
+    's4wave.vm.WasiVmWindow',
+    () => [
+      [1, 'id', 13],
+      [2, 'title', 9],
+      [3, 'app_id', 9],
+      [4, 'place', 14, 0, WasiVmWindowPlace_Enum],
+    ],
+  )
 
 /**
- * WasiVmWindowList is the mapped Wayland windows of a display, oldest first.
+ * WasiVmWindowInput is an input to a window's viewer stream.
  *
- * @generated from message s4wave.vm.WasiVmWindowList
+ * @generated from message s4wave.vm.WasiVmWindowInput
  */
-export interface WasiVmWindowList {
+export interface WasiVmWindowInput {
   /**
-   * Windows is the mapped windows.
-   *
-   * @generated from field: repeated s4wave.vm.WasiVmWindow windows = 1;
+   * @generated from oneof s4wave.vm.WasiVmWindowInput.body
    */
-  windows?: WasiVmWindow[]
+  body?:
+    | { value?: undefined; case: undefined }
+    | { value: WasiVmWindowOpen; case: 'open' }
+    | { value: WasiVmWindowSize; case: 'resize' }
+    | { value: WasiVmDisplayInput; case: 'input' }
 }
 
-export const WasiVmWindowList: MessageType<WasiVmWindowList> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmWindowList',
-    fields: [
-      {
-        no: 1,
-        name: 'windows',
-        kind: 'message',
-        T: WasiVmWindow,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmWindowSize is the size of a window's viewer in pixels.
- *
- * @generated from message s4wave.vm.WasiVmWindowSize
- */
-export interface WasiVmWindowSize {
-  /**
-   * Width is the width in pixels.
-   *
-   * @generated from field: uint32 width = 1;
-   */
-  width?: number
-  /**
-   * Height is the height in pixels.
-   *
-   * @generated from field: uint32 height = 2;
-   */
-  height?: number
-}
-
-export const WasiVmWindowSize: MessageType<WasiVmWindowSize> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmWindowSize',
-    fields: [
-      { no: 1, name: 'width', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const WasiVmWindowInput: MessageType<WasiVmWindowInput> =
+  /* @__PURE__ */ createMessageType<WasiVmWindowInput>(
+    's4wave.vm.WasiVmWindowInput',
+    () => [
+      [1, 'open', 11, 0, WasiVmWindowOpen.codec, 'body'],
+      [2, 'resize', 11, 0, WasiVmWindowSize.codec, 'body'],
+      [3, 'input', 11, 0, WasiVmDisplayInput.codec, 'body'],
+    ],
+  )
 
 /**
  * WasiVmWindowOpen opens a window in a viewer of its own.
@@ -631,129 +502,178 @@ export const WasiVmWindowSize: MessageType<WasiVmWindowSize> =
 export interface WasiVmWindowOpen {
   /**
    * Id is the window's id from the window list.
-   *
-   * @generated from field: uint32 id = 1;
    */
   id?: number
   /**
    * Size is the viewer's size.
-   *
-   * @generated from field: s4wave.vm.WasiVmWindowSize size = 2;
    */
   size?: WasiVmWindowSize
 }
 
 export const WasiVmWindowOpen: MessageType<WasiVmWindowOpen> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmWindowOpen',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'size', kind: 'message', T: WasiVmWindowSize },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmPointerEvent moves the pointer and sets which buttons are held.
- *
- * @generated from message s4wave.vm.WasiVmPointerEvent
- */
-export interface WasiVmPointerEvent {
-  /**
-   * X is the pointer's column in screen pixels.
-   *
-   * @generated from field: int32 x = 1;
-   */
-  x?: number
-  /**
-   * Y is the pointer's row in screen pixels.
-   *
-   * @generated from field: int32 y = 2;
-   */
-  y?: number
-  /**
-   * Buttons holds bit n-1 for each held X button n: 1 is the left, 2 the
-   * middle, 3 the right, and 4 and 5 scroll up and down.
-   *
-   * @generated from field: uint32 buttons = 3;
-   */
-  buttons?: number
-}
-
-export const WasiVmPointerEvent: MessageType<WasiVmPointerEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmPointerEvent',
-    fields: [
-      { no: 1, name: 'x', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 2, name: 'y', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 3, name: 'buttons', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmKeyEvent presses or releases a key.
- *
- * @generated from message s4wave.vm.WasiVmKeyEvent
- */
-export interface WasiVmKeyEvent {
-  /**
-   * Keysym is the X keysym the key produces.
-   *
-   * @generated from field: uint32 keysym = 1;
-   */
-  keysym?: number
-  /**
-   * Down is set for a press and clear for a release.
-   *
-   * @generated from field: bool down = 2;
-   */
-  down?: boolean
-}
-
-export const WasiVmKeyEvent: MessageType<WasiVmKeyEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmKeyEvent',
-    fields: [
-      { no: 1, name: 'keysym', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'down', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmFrameDrawn reports that the viewer drew the last frame it received.
- *
- * @generated from message s4wave.vm.WasiVmFrameDrawn
- */
-export interface WasiVmFrameDrawn {}
-
-export const WasiVmFrameDrawn: MessageType<WasiVmFrameDrawn> =
-  /* @__PURE__ */ createEmptyMessageType<WasiVmFrameDrawn>(
-    's4wave.vm.WasiVmFrameDrawn',
-    true,
+  /* @__PURE__ */ createMessageType<WasiVmWindowOpen>(
+    's4wave.vm.WasiVmWindowOpen',
+    () => [
+      [1, 'id', 13],
+      [2, 'size', 11, 0, WasiVmWindowSize.codec],
+    ],
   )
 
 /**
- * WasiVmDisplayScale is the number of device pixels per CSS pixel on the
- * viewer's screen, rounded up. The display draws at the latest scale any
- * viewer reported.
+ * WasiVmWindowSize is the size of a window's viewer in pixels.
  *
- * @generated from message s4wave.vm.WasiVmDisplayScale
+ * @generated from message s4wave.vm.WasiVmWindowSize
  */
-export interface WasiVmDisplayScale {
+export interface WasiVmWindowSize {
   /**
-   * Scale is the device pixels per CSS pixel, at least one.
-   *
-   * @generated from field: uint32 scale = 1;
+   * Width is the width in pixels.
+   */
+  width?: number
+  /**
+   * Height is the height in pixels.
+   */
+  height?: number
+}
+
+export const WasiVmWindowSize: MessageType<WasiVmWindowSize> =
+  /* @__PURE__ */ createMessageType<WasiVmWindowSize>(
+    's4wave.vm.WasiVmWindowSize',
+    () => [
+      [1, 'width', 13],
+      [2, 'height', 13],
+    ],
+  )
+
+/**
+ * WasiVmDisplayFrame is a change to the screen: areas the viewer moves on its
+ * copy, then regions it draws over the result.
+ *
+ * @generated from message s4wave.vm.WasiVmDisplayFrame
+ */
+export interface WasiVmDisplayFrame {
+  /**
+   * ScreenWidth is the screen's width in pixels.
+   */
+  screenWidth?: number
+  /**
+   * ScreenHeight is the screen's height in pixels.
+   */
+  screenHeight?: number
+  /**
+   * Copies move areas of the viewer's screen, in order, before the regions
+   * draw.
+   */
+  copies?: WasiVmDisplayCopy[]
+  /**
+   * Regions draw pixels over the screen after the copies.
+   */
+  regions?: WasiVmDisplayRegion[]
+  /**
+   * Scale is the number of screen pixels per CSS pixel the viewer shows the
+   * screen at; zero means one.
    */
   scale?: number
 }
 
-export const WasiVmDisplayScale: MessageType<WasiVmDisplayScale> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmDisplayScale',
-    fields: [
-      { no: 1, name: 'scale', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const WasiVmDisplayFrame: MessageType<WasiVmDisplayFrame> =
+  /* @__PURE__ */ createMessageType<WasiVmDisplayFrame>(
+    's4wave.vm.WasiVmDisplayFrame',
+    () => [
+      [1, 'screen_width', 13],
+      [2, 'screen_height', 13],
+      [3, 'copies', 11, 1, WasiVmDisplayCopy.codec],
+      [4, 'regions', 11, 1, WasiVmDisplayRegion.codec],
+      [5, 'scale', 13],
+    ],
+  )
+
+/**
+ * WasiVmDisplayCopy moves an area of the viewer's screen, as a window that
+ * moves on screen does, so its pixels need not be sent again. The source and
+ * the destination lie inside the screen and may overlap.
+ *
+ * @generated from message s4wave.vm.WasiVmDisplayCopy
+ */
+export interface WasiVmDisplayCopy {
+  /**
+   * X is the left edge of the source area.
+   */
+  x?: number
+  /**
+   * Y is the top edge of the source area.
+   */
+  y?: number
+  /**
+   * Width is the area's width in pixels.
+   */
+  width?: number
+  /**
+   * Height is the area's height in pixels.
+   */
+  height?: number
+  /**
+   * ToX is the left edge of the destination.
+   */
+  toX?: number
+  /**
+   * ToY is the top edge of the destination.
+   */
+  toY?: number
+}
+
+export const WasiVmDisplayCopy: MessageType<WasiVmDisplayCopy> =
+  /* @__PURE__ */ createMessageType<WasiVmDisplayCopy>(
+    's4wave.vm.WasiVmDisplayCopy',
+    () => [
+      [1, 'x', 13],
+      [2, 'y', 13],
+      [3, 'width', 13],
+      [4, 'height', 13],
+      [5, 'to_x', 13],
+      [6, 'to_y', 13],
+    ],
+  )
+
+/**
+ * WasiVmDisplayRegion is a rectangle of the screen's pixels.
+ *
+ * @generated from message s4wave.vm.WasiVmDisplayRegion
+ */
+export interface WasiVmDisplayRegion {
+  /**
+   * X is the left edge of the region.
+   */
+  x?: number
+  /**
+   * Y is the top edge of the region.
+   */
+  y?: number
+  /**
+   * Width is the region's width in pixels.
+   */
+  width?: number
+  /**
+   * Height is the region's height in pixels.
+   */
+  height?: number
+  /**
+   * Rgba holds the region's pixels row by row, four bytes each: red, green,
+   * blue and an opaque alpha.
+   */
+  rgba?: Uint8Array
+}
+
+export const WasiVmDisplayRegion: MessageType<WasiVmDisplayRegion> =
+  /* @__PURE__ */ createMessageType<WasiVmDisplayRegion>(
+    's4wave.vm.WasiVmDisplayRegion',
+    () => [
+      [1, 'x', 13],
+      [2, 'y', 13],
+      [3, 'width', 13],
+      [4, 'height', 13],
+      [5, 'rgba', 12],
+    ],
+  )
 
 /**
  * WasiVmDisplayInput is a pointer or key event from the viewer, or its report
@@ -766,320 +686,109 @@ export interface WasiVmDisplayInput {
    * @generated from oneof s4wave.vm.WasiVmDisplayInput.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Pointer moves the pointer and sets its buttons.
-         *
-         * @generated from field: s4wave.vm.WasiVmPointerEvent pointer = 1;
-         */
-        value: WasiVmPointerEvent
-        case: 'pointer'
-      }
-    | {
-        /**
-         * Key presses or releases a key.
-         *
-         * @generated from field: s4wave.vm.WasiVmKeyEvent key = 2;
-         */
-        value: WasiVmKeyEvent
-        case: 'key'
-      }
-    | {
-        /**
-         * Drawn reports the viewer drew the last frame and takes the next.
-         *
-         * @generated from field: s4wave.vm.WasiVmFrameDrawn drawn = 3;
-         */
-        value: WasiVmFrameDrawn
-        case: 'drawn'
-      }
-    | {
-        /**
-         * Scale reports the viewer's device pixels per CSS pixel.
-         *
-         * @generated from field: s4wave.vm.WasiVmDisplayScale scale = 4;
-         */
-        value: WasiVmDisplayScale
-        case: 'scale'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: WasiVmPointerEvent; case: 'pointer' }
+    | { value: WasiVmKeyEvent; case: 'key' }
+    | { value: WasiVmFrameDrawn; case: 'drawn' }
+    | { value: WasiVmDisplayScale; case: 'scale' }
 }
 
 export const WasiVmDisplayInput: MessageType<WasiVmDisplayInput> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmDisplayInput',
-    fields: [
-      {
-        no: 1,
-        name: 'pointer',
-        kind: 'message',
-        T: WasiVmPointerEvent,
-        oneof: 'body',
-      },
-      { no: 2, name: 'key', kind: 'message', T: WasiVmKeyEvent, oneof: 'body' },
-      {
-        no: 3,
-        name: 'drawn',
-        kind: 'message',
-        T: WasiVmFrameDrawn,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'scale',
-        kind: 'message',
-        T: WasiVmDisplayScale,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WasiVmDisplayInput>(
+    's4wave.vm.WasiVmDisplayInput',
+    () => [
+      [1, 'pointer', 11, 0, WasiVmPointerEvent.codec, 'body'],
+      [2, 'key', 11, 0, WasiVmKeyEvent.codec, 'body'],
+      [3, 'drawn', 11, 0, WasiVmFrameDrawn.codec, 'body'],
+      [4, 'scale', 11, 0, WasiVmDisplayScale.codec, 'body'],
+    ],
+  )
 
 /**
- * WasiVmWindowInput is an input to a window's viewer stream.
+ * WasiVmDisplayScale is the number of device pixels per CSS pixel on the
+ * viewer's screen, rounded up. The display draws at the latest scale any
+ * viewer reported.
  *
- * @generated from message s4wave.vm.WasiVmWindowInput
+ * @generated from message s4wave.vm.WasiVmDisplayScale
  */
-export interface WasiVmWindowInput {
+export interface WasiVmDisplayScale {
   /**
-   * @generated from oneof s4wave.vm.WasiVmWindowInput.body
-   */
-  body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Open takes the window off the desktop at the viewer's size. It is the
-         * stream's first input.
-         *
-         * @generated from field: s4wave.vm.WasiVmWindowOpen open = 1;
-         */
-        value: WasiVmWindowOpen
-        case: 'open'
-      }
-    | {
-        /**
-         * Resize sets the window's size to the viewer's new size.
-         *
-         * @generated from field: s4wave.vm.WasiVmWindowSize resize = 2;
-         */
-        value: WasiVmWindowSize
-        case: 'resize'
-      }
-    | {
-        /**
-         * Input is a pointer or key event in window pixels, or a drawn report.
-         *
-         * @generated from field: s4wave.vm.WasiVmDisplayInput input = 3;
-         */
-        value: WasiVmDisplayInput
-        case: 'input'
-      }
-}
-
-export const WasiVmWindowInput: MessageType<WasiVmWindowInput> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmWindowInput',
-    fields: [
-      {
-        no: 1,
-        name: 'open',
-        kind: 'message',
-        T: WasiVmWindowOpen,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'resize',
-        kind: 'message',
-        T: WasiVmWindowSize,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'input',
-        kind: 'message',
-        T: WasiVmDisplayInput,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmDisplayCopy moves an area of the viewer's screen, as a window that
- * moves on screen does, so its pixels need not be sent again. The source and
- * the destination lie inside the screen and may overlap.
- *
- * @generated from message s4wave.vm.WasiVmDisplayCopy
- */
-export interface WasiVmDisplayCopy {
-  /**
-   * X is the left edge of the source area.
-   *
-   * @generated from field: uint32 x = 1;
-   */
-  x?: number
-  /**
-   * Y is the top edge of the source area.
-   *
-   * @generated from field: uint32 y = 2;
-   */
-  y?: number
-  /**
-   * Width is the area's width in pixels.
-   *
-   * @generated from field: uint32 width = 3;
-   */
-  width?: number
-  /**
-   * Height is the area's height in pixels.
-   *
-   * @generated from field: uint32 height = 4;
-   */
-  height?: number
-  /**
-   * ToX is the left edge of the destination.
-   *
-   * @generated from field: uint32 to_x = 5;
-   */
-  toX?: number
-  /**
-   * ToY is the top edge of the destination.
-   *
-   * @generated from field: uint32 to_y = 6;
-   */
-  toY?: number
-}
-
-export const WasiVmDisplayCopy: MessageType<WasiVmDisplayCopy> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmDisplayCopy',
-    fields: [
-      { no: 1, name: 'x', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'y', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'width', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'to_x', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 6, name: 'to_y', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmDisplayRegion is a rectangle of the screen's pixels.
- *
- * @generated from message s4wave.vm.WasiVmDisplayRegion
- */
-export interface WasiVmDisplayRegion {
-  /**
-   * X is the left edge of the region.
-   *
-   * @generated from field: uint32 x = 1;
-   */
-  x?: number
-  /**
-   * Y is the top edge of the region.
-   *
-   * @generated from field: uint32 y = 2;
-   */
-  y?: number
-  /**
-   * Width is the region's width in pixels.
-   *
-   * @generated from field: uint32 width = 3;
-   */
-  width?: number
-  /**
-   * Height is the region's height in pixels.
-   *
-   * @generated from field: uint32 height = 4;
-   */
-  height?: number
-  /**
-   * Rgba holds the region's pixels row by row, four bytes each: red, green,
-   * blue and an opaque alpha.
-   *
-   * @generated from field: bytes rgba = 5;
-   */
-  rgba?: Uint8Array
-}
-
-export const WasiVmDisplayRegion: MessageType<WasiVmDisplayRegion> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmDisplayRegion',
-    fields: [
-      { no: 1, name: 'x', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'y', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'width', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'rgba', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WasiVmDisplayFrame is a change to the screen: areas the viewer moves on its
- * copy, then regions it draws over the result.
- *
- * @generated from message s4wave.vm.WasiVmDisplayFrame
- */
-export interface WasiVmDisplayFrame {
-  /**
-   * ScreenWidth is the screen's width in pixels.
-   *
-   * @generated from field: uint32 screen_width = 1;
-   */
-  screenWidth?: number
-  /**
-   * ScreenHeight is the screen's height in pixels.
-   *
-   * @generated from field: uint32 screen_height = 2;
-   */
-  screenHeight?: number
-  /**
-   * Copies move areas of the viewer's screen, in order, before the regions
-   * draw.
-   *
-   * @generated from field: repeated s4wave.vm.WasiVmDisplayCopy copies = 3;
-   */
-  copies?: WasiVmDisplayCopy[]
-  /**
-   * Regions draw pixels over the screen after the copies.
-   *
-   * @generated from field: repeated s4wave.vm.WasiVmDisplayRegion regions = 4;
-   */
-  regions?: WasiVmDisplayRegion[]
-  /**
-   * Scale is the number of screen pixels per CSS pixel the viewer shows the
-   * screen at; zero means one.
-   *
-   * @generated from field: uint32 scale = 5;
+   * Scale is the device pixels per CSS pixel, at least one.
    */
   scale?: number
 }
 
-export const WasiVmDisplayFrame: MessageType<WasiVmDisplayFrame> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.WasiVmDisplayFrame',
-    fields: [
-      { no: 1, name: 'screen_width', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'screen_height', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 3,
-        name: 'copies',
-        kind: 'message',
-        T: WasiVmDisplayCopy,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'regions',
-        kind: 'message',
-        T: WasiVmDisplayRegion,
-        repeated: true,
-      },
-      { no: 5, name: 'scale', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const WasiVmDisplayScale: MessageType<WasiVmDisplayScale> =
+  /* @__PURE__ */ createMessageType<WasiVmDisplayScale>(
+    's4wave.vm.WasiVmDisplayScale',
+    () => [[1, 'scale', 13]],
+  )
+
+/**
+ * WasiVmFrameDrawn reports that the viewer drew the last frame it received.
+ *
+ * @generated from message s4wave.vm.WasiVmFrameDrawn
+ */
+export interface WasiVmFrameDrawn {}
+
+export const WasiVmFrameDrawn: MessageType<WasiVmFrameDrawn> =
+  /* @__PURE__ */ createMessageType<WasiVmFrameDrawn>(
+    's4wave.vm.WasiVmFrameDrawn',
+    () => [],
+  )
+
+/**
+ * WasiVmPointerEvent moves the pointer and sets which buttons are held.
+ *
+ * @generated from message s4wave.vm.WasiVmPointerEvent
+ */
+export interface WasiVmPointerEvent {
+  /**
+   * X is the pointer's column in screen pixels.
+   */
+  x?: number
+  /**
+   * Y is the pointer's row in screen pixels.
+   */
+  y?: number
+  /**
+   * Buttons holds bit n-1 for each held X button n: 1 is the left, 2 the
+   * middle, 3 the right, and 4 and 5 scroll up and down.
+   */
+  buttons?: number
+}
+
+export const WasiVmPointerEvent: MessageType<WasiVmPointerEvent> =
+  /* @__PURE__ */ createMessageType<WasiVmPointerEvent>(
+    's4wave.vm.WasiVmPointerEvent',
+    () => [
+      [1, 'x', 5],
+      [2, 'y', 5],
+      [3, 'buttons', 13],
+    ],
+  )
+
+/**
+ * WasiVmKeyEvent presses or releases a key.
+ *
+ * @generated from message s4wave.vm.WasiVmKeyEvent
+ */
+export interface WasiVmKeyEvent {
+  /**
+   * Keysym is the X keysym the key produces.
+   */
+  keysym?: number
+  /**
+   * Down is set for a press and clear for a release.
+   */
+  down?: boolean
+}
+
+export const WasiVmKeyEvent: MessageType<WasiVmKeyEvent> =
+  /* @__PURE__ */ createMessageType<WasiVmKeyEvent>(
+    's4wave.vm.WasiVmKeyEvent',
+    () => [
+      [1, 'keysym', 13],
+      [2, 'down', 8],
+    ],
+  )

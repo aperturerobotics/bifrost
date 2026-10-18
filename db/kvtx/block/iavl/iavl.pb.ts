@@ -6,8 +6,6 @@ import { BlockRef } from '../../../block/block.pb.js'
 import { Blob } from '../../../block/blob/blob.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Node is a node in the tree.
@@ -18,63 +16,49 @@ export interface Node {
   /**
    * Height contains the item's height.
    * Height is distance from the leaf.
-   *
-   * @generated from field: uint32 height = 1;
    */
   height?: number
   /**
    * Size contains the node's size.
-   *
-   * @generated from field: uint64 size = 2;
    */
   size?: bigint
   /**
    * Key contains the node's key.
-   *
-   * @generated from field: bytes key = 3;
    */
   key?: Uint8Array
   /**
    * ValueRef contains a reference to the item's value.
    * Set only if height == 0.
    * Empty if ValueBlob is set.
-   *
-   * @generated from field: block.BlockRef value_ref = 7;
    */
   valueRef?: BlockRef
   /**
    * ValueBlob contains the value in-line as a Blob.
    * ValueRefBlob indicates that the ValueRef is a Blob.
    * If false, Get() will return the raw data of the block.
-   *
-   * @generated from field: blob.Blob value_blob = 8;
    */
   valueBlob?: Blob
   /**
    * LeftChildRef contains the left child ref.
    * Set only if height != 0.
-   *
-   * @generated from field: block.BlockRef left_child_ref = 5;
    */
   leftChildRef?: BlockRef
   /**
    * RightChildRef contains the right child ref.
    * Set only if height != 0.
-   *
-   * @generated from field: block.BlockRef right_child_ref = 6;
    */
   rightChildRef?: BlockRef
 }
 
-export const Node: MessageType<Node> = /* @__PURE__ */ createMessageType({
-  typeName: 'kvtx.block.iavl.Node',
-  fields: [
-    { no: 1, name: 'height', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 2, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 3, name: 'key', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 7, name: 'value_ref', kind: 'message', T: () => BlockRef },
-    { no: 8, name: 'value_blob', kind: 'message', T: () => Blob },
-    { no: 5, name: 'left_child_ref', kind: 'message', T: () => BlockRef },
-    { no: 6, name: 'right_child_ref', kind: 'message', T: () => BlockRef },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Node: MessageType<Node> = /* @__PURE__ */ createMessageType<Node>(
+  'kvtx.block.iavl.Node',
+  () => [
+    [1, 'height', 13],
+    [2, 'size', 4],
+    [3, 'key', 12],
+    [5, 'left_child_ref', 11, 0, BlockRef.codec],
+    [6, 'right_child_ref', 11, 0, BlockRef.codec],
+    [7, 'value_ref', 11, 0, BlockRef.codec],
+    [8, 'value_blob', 11, 0, Blob.codec],
+  ],
+)

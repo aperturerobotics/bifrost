@@ -6,8 +6,6 @@ import { ObjectRef } from '../../../bucket/bucket.pb.js'
 import { Config as Config$1 } from '../../../block/transform/transform.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures a object store backed sql db controller.
@@ -18,111 +16,68 @@ export interface Config {
   /**
    * SqlDbId is the identifier used to look up the sql db on the bus.
    * If empty, LookupSqlDB will not be processed.
-   *
-   * @generated from field: string sql_db_id = 1;
    */
   sqlDbId?: string
   /**
    * BucketId is the bucket id to attach to for reading/writing state.
    * If set, overrides the bucket id from init_head_ref and the state.
    * If unset, the bucket id is determined from head_ref.
-   *
-   * @generated from field: string bucket_id = 2;
    */
   bucketId?: string
   /**
    * VolumeId is the volume id to attach to for writing DB state.
    * If unset, init_head_ref must be set, and the db will be read-only.
-   *
-   * @generated from field: string volume_id = 3;
    */
   volumeId?: string
   /**
    * ObjectStoreId is the hydra object store to open to store the HEAD ref.
    * If unset, init_head_ref must be set, and the db will be read-only.
-   *
-   * @generated from field: string object_store_id = 4;
    */
   objectStoreId?: string
   /**
    * ObjectStorePrefix is the prefix to use for all object store ops.
-   *
-   * @generated from field: string object_store_prefix = 5;
    */
   objectStorePrefix?: string
   /**
    * ObjectStoreHeadKey is the key to use in the object store for HEAD ref.
    *
    * Defaults to "sql-head"
-   *
-   * @generated from field: string object_store_head_key = 6;
    */
   objectStoreHeadKey?: string
   /**
    * InitHeadRef is the reference to the initial HEAD state of the database.
    * If the object store is empty, uses this reference to initialize it.
    * BucketId is overridden by BucketId field if it is set.
-   *
-   * @generated from field: bucket.ObjectRef init_head_ref = 7;
    */
   initHeadRef?: ObjectRef
   /**
    * StateTransformConf transforms the HEAD ref before storing it in storage.
-   *
-   * @generated from field: block.transform.Config state_transform_conf = 8;
    */
   stateTransformConf?: Config$1
   /**
    * CreateDbs is a list of database names to create (if they don't exist).
-   *
-   * @generated from field: repeated string create_dbs = 9;
    */
   createDbs?: string[]
   /**
    * SqlRpcServiceId is the optional RPC service id used to expose the SQL store.
    * If empty, LookupRpcService is not processed by this controller.
-   *
-   * @generated from field: string sql_rpc_service_id = 10;
    */
   sqlRpcServiceId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'mysql.controller.Config',
-  fields: [
-    { no: 1, name: 'sql_db_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 5,
-      name: 'object_store_prefix',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 6,
-      name: 'object_store_head_key',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 7, name: 'init_head_ref', kind: 'message', T: () => ObjectRef },
-    { no: 8, name: 'state_transform_conf', kind: 'message', T: () => Config$1 },
-    {
-      no: 9,
-      name: 'create_dbs',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 10,
-      name: 'sql_rpc_service_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('mysql.controller.Config', () => [
+    [1, 'sql_db_id', 9],
+    [2, 'bucket_id', 9],
+    [3, 'volume_id', 9],
+    [4, 'object_store_id', 9],
+    [5, 'object_store_prefix', 9],
+    [6, 'object_store_head_key', 9],
+    [7, 'init_head_ref', 11, 0, ObjectRef.codec],
+    [8, 'state_transform_conf', 11, 0, Config$1.codec],
+    [9, 'create_dbs', 9, 1],
+    [10, 'sql_rpc_service_id', 9],
+  ])
 
 /**
  * HeadState contains the head state in the object storage.
@@ -132,16 +87,12 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
 export interface HeadState {
   /**
    * HeadRef is the reference to the current HEAD state of the database.
-   *
-   * @generated from field: bucket.ObjectRef head_ref = 1;
    */
   headRef?: ObjectRef
 }
 
 export const HeadState: MessageType<HeadState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.controller.HeadState',
-    fields: [
-      { no: 1, name: 'head_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HeadState>(
+    'mysql.controller.HeadState',
+    () => [[1, 'head_ref', 11, 0, ObjectRef.codec]],
+  )

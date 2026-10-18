@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * BlockSize is the list of available block sizes.
@@ -16,36 +14,33 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum BlockSize {
   /**
    * BlockSize_4MB is the default 4 megabyte block size.
-   *
-   * @generated from enum value: BlockSize_4MB = 0;
    */
   BlockSize_4MB = 0,
 
   /**
    * BlockSize_64KB is the 64 kilobyte block size.
-   *
-   * @generated from enum value: BlockSize_64KB = 1;
    */
   BlockSize_64KB = 1,
 
   /**
    * BlockSize_256KB is the 256 kilobyte block size.
-   *
-   * @generated from enum value: BlockSize_256KB = 2;
    */
   BlockSize_256KB = 2,
 
   /**
    * BlockSize_1MB is the 1 megabyte block size.
-   *
-   * @generated from enum value: BlockSize_1MB = 3;
    */
   BlockSize_1MB = 3,
 }
 
 export const BlockSize_Enum = /* @__PURE__ */ createEnumType(
   'transform.lz4.BlockSize',
-  BlockSize,
+  [
+    [0, 'BlockSize_4MB'],
+    [1, 'BlockSize_64KB'],
+    [2, 'BlockSize_256KB'],
+    [3, 'BlockSize_1MB'],
+  ],
 )
 
 /**
@@ -57,38 +52,28 @@ export interface Config {
   /**
    * BlockSize defines the maximum size of compressed blocks.
    * Defaults to 4MB.
-   *
-   * @generated from field: transform.lz4.BlockSize block_size = 1;
    */
   blockSize?: BlockSize
   /**
    * BlockChecksum enables the block checksum feature.
-   *
-   * @generated from field: bool block_checksum = 2;
    */
   blockChecksum?: boolean
   /**
    * DisableChecksum disables all blocks or content checksum.
    * Default=false.
-   *
-   * @generated from field: bool disable_checksum = 3;
    */
   disableChecksum?: boolean
   /**
    * CompressionLevel sets the compression level from 0-9.
    * The default value (0) is "FAST."
-   *
-   * @generated from field: uint32 compression_level = 4;
    */
   compressionLevel?: number
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'transform.lz4.Config',
-  fields: [
-    { no: 1, name: 'block_size', kind: 'enum', T: BlockSize_Enum },
-    { no: 2, name: 'block_checksum', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 3, name: 'disable_checksum', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'compression_level', kind: 'scalar', T: ScalarType.UINT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('transform.lz4.Config', () => [
+    [1, 'block_size', 14, 0, BlockSize_Enum],
+    [2, 'block_checksum', 8],
+    [3, 'disable_checksum', 8],
+    [4, 'compression_level', 13],
+  ])

@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * PrepareRequest identifies the immutable implementation being registered.
@@ -18,34 +13,28 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface PrepareRequest {
   /**
    * PluginId names the plugin family whose registrations are replaced together.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * ManifestRoot identifies the exact executable behind this generation.
-   *
-   * @generated from field: string manifest_root = 2;
    */
   manifestRoot?: string
   /**
    * InstanceKey scopes admission to the host's logical installation binding.
    * Empty registers globally; a Space supplies its World engine ID.
-   *
-   * @generated from field: string instance_key = 3;
    */
   instanceKey?: string
 }
 
 export const PrepareRequest: MessageType<PrepareRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.plugin.registration.PrepareRequest',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'manifest_root', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PrepareRequest>(
+    's4wave.plugin.registration.PrepareRequest',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'manifest_root', 9],
+      [3, 'instance_key', 9],
+    ],
+  )
 
 /**
  * PrepareResponse retains the private registration scope.
@@ -56,19 +45,15 @@ export interface PrepareResponse {
   /**
    * ResourceId serves the existing registries and GenerationService. Releasing
    * it hides its registrations, including an activated generation.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const PrepareResponse: MessageType<PrepareResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.plugin.registration.PrepareResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PrepareResponse>(
+    's4wave.plugin.registration.PrepareResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * ActivateRequest admits the registrations owned by the addressed scope.
@@ -78,9 +63,9 @@ export const PrepareResponse: MessageType<PrepareResponse> =
 export interface ActivateRequest {}
 
 export const ActivateRequest: MessageType<ActivateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ActivateRequest>(
+  /* @__PURE__ */ createMessageType<ActivateRequest>(
     's4wave.plugin.registration.ActivateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -91,7 +76,7 @@ export const ActivateRequest: MessageType<ActivateRequest> =
 export interface ActivateResponse {}
 
 export const ActivateResponse: MessageType<ActivateResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ActivateResponse>(
+  /* @__PURE__ */ createMessageType<ActivateResponse>(
     's4wave.plugin.registration.ActivateResponse',
-    true,
+    () => [],
   )

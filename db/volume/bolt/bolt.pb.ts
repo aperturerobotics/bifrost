@@ -7,8 +7,6 @@ import { Config as Config$2 } from '../controller/controller.pb.js'
 import { Config as Config$3 } from '../../store/kvtx/kvtx.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the bolt volume controller config.
@@ -18,39 +16,27 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * Path is the file to store the data in.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
   /**
    * KvKeyOpts are key/value options..
-   *
-   * @generated from field: store.kvkey.Config kv_key_opts = 2;
    */
   kvKeyOpts?: Config$1
   /**
    * Verbose indicates we should log every operation.
-   *
-   * @generated from field: bool verbose = 3;
    */
   verbose?: boolean
   /**
    * VolumeConfig is the volume controller config.
-   *
-   * @generated from field: volume.controller.Config volume_config = 5;
    */
   volumeConfig?: Config$2
   /**
    * StoreConfig is the store configuration for kvtx.
-   *
-   * @generated from field: store.kvtx.Config store_config = 6;
    */
   storeConfig?: Config$3
   /**
    * NoGenerateKey indicates to skip generating a private key.
    * This has no effect if a key already exists.
-   *
-   * @generated from field: bool no_generate_key = 7;
    */
   noGenerateKey?: boolean
   /**
@@ -59,55 +45,43 @@ export interface Config {
    * identity if there is no key present in the store already.
    *
    * Has no effect if the store has a peer private key.
-   *
-   * @generated from field: bool no_write_key = 10;
    */
   noWriteKey?: boolean
   /**
    * Sync indicates to sync after every write.
    * Reduces write performance but increases data safety.
-   *
-   * @generated from field: bool sync = 8;
    */
   sync?: boolean
   /**
    * FreelistSync enables syncing the freelist to disk.
    * Reduces write performance but increases recovery performance.
-   *
-   * @generated from field: bool freelist_sync = 9;
    */
   freelistSync?: boolean
   /**
    * BatchSize coalesces this many write transactions into one BoltDB commit.
    * Dramatically reduces fsync overhead for bulk write workloads.
    * 0 or 1 disables batching (default). Typical value: 100-1000.
-   *
-   * @generated from field: uint32 batch_size = 11;
    */
   batchSize?: number
   /**
    * Exclusive opens the volume file for this process alone. Opens of the file
    * in other processes wait until the volume closes, then open any file that
    * replaced it. Offline maintenance that rewrites the file sets it.
-   *
-   * @generated from field: bool exclusive = 12;
    */
   exclusive?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'volume.bolt.Config',
-  fields: [
-    { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'kv_key_opts', kind: 'message', T: () => Config$1 },
-    { no: 3, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'volume_config', kind: 'message', T: () => Config$2 },
-    { no: 6, name: 'store_config', kind: 'message', T: () => Config$3 },
-    { no: 7, name: 'no_generate_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 10, name: 'no_write_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 8, name: 'sync', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 9, name: 'freelist_sync', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 11, name: 'batch_size', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 12, name: 'exclusive', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('volume.bolt.Config', () => [
+    [1, 'path', 9],
+    [2, 'kv_key_opts', 11, 0, Config$1.codec],
+    [3, 'verbose', 8],
+    [5, 'volume_config', 11, 0, Config$2.codec],
+    [6, 'store_config', 11, 0, Config$3.codec],
+    [7, 'no_generate_key', 8],
+    [8, 'sync', 8],
+    [9, 'freelist_sync', 8],
+    [10, 'no_write_key', 8],
+    [11, 'batch_size', 13],
+    [12, 'exclusive', 8],
+  ])

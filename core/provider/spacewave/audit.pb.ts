@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * RbacGrantMutationAction identifies the RBAC grant mutation represented by
@@ -17,51 +15,45 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum RbacGrantMutationAction {
   /**
    * RBAC_GRANT_MUTATION_ACTION_UNSPECIFIED is the zero value.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_ACTION_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * RBAC_GRANT_MUTATION_ACTION_GRANT_ISSUED identifies a new grant.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_ACTION_GRANT_ISSUED = 1;
    */
   GRANT_ISSUED = 1,
 
   /**
    * RBAC_GRANT_MUTATION_ACTION_GRANT_UPDATED identifies a grant update.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_ACTION_GRANT_UPDATED = 2;
    */
   GRANT_UPDATED = 2,
 
   /**
    * RBAC_GRANT_MUTATION_ACTION_GRANT_REVOKED identifies a grant revocation.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_ACTION_GRANT_REVOKED = 3;
    */
   GRANT_REVOKED = 3,
 
   /**
    * RBAC_GRANT_MUTATION_ACTION_GRANT_EXPIRED_ON_USE identifies read-time expiry.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_ACTION_GRANT_EXPIRED_ON_USE = 4;
    */
   GRANT_EXPIRED_ON_USE = 4,
 
   /**
    * RBAC_GRANT_MUTATION_ACTION_ROLE_CHANGED identifies a role change.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_ACTION_ROLE_CHANGED = 5;
    */
   ROLE_CHANGED = 5,
 }
 
 export const RbacGrantMutationAction_Enum = /* @__PURE__ */ createEnumType(
   'provider.spacewave.RbacGrantMutationAction',
-  RbacGrantMutationAction,
-  'RBAC_GRANT_MUTATION_ACTION_',
+  [
+    [0, 'RBAC_GRANT_MUTATION_ACTION_UNSPECIFIED'],
+    [1, 'RBAC_GRANT_MUTATION_ACTION_GRANT_ISSUED'],
+    [2, 'RBAC_GRANT_MUTATION_ACTION_GRANT_UPDATED'],
+    [3, 'RBAC_GRANT_MUTATION_ACTION_GRANT_REVOKED'],
+    [4, 'RBAC_GRANT_MUTATION_ACTION_GRANT_EXPIRED_ON_USE'],
+    [5, 'RBAC_GRANT_MUTATION_ACTION_ROLE_CHANGED'],
+  ],
 )
 
 /**
@@ -72,625 +64,34 @@ export const RbacGrantMutationAction_Enum = /* @__PURE__ */ createEnumType(
 export enum RbacGrantMutationOutcome {
   /**
    * RBAC_GRANT_MUTATION_OUTCOME_UNSPECIFIED is the zero value.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_OUTCOME_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * RBAC_GRANT_MUTATION_OUTCOME_SUCCESS identifies a committed mutation.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_OUTCOME_SUCCESS = 1;
    */
   SUCCESS = 1,
 
   /**
    * RBAC_GRANT_MUTATION_OUTCOME_DENIED identifies a rejected mutation.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_OUTCOME_DENIED = 2;
    */
   DENIED = 2,
 
   /**
    * RBAC_GRANT_MUTATION_OUTCOME_FAILED identifies an unsuccessful mutation.
-   *
-   * @generated from enum value: RBAC_GRANT_MUTATION_OUTCOME_FAILED = 3;
    */
   FAILED = 3,
 }
 
 export const RbacGrantMutationOutcome_Enum = /* @__PURE__ */ createEnumType(
   'provider.spacewave.RbacGrantMutationOutcome',
-  RbacGrantMutationOutcome,
-  'RBAC_GRANT_MUTATION_OUTCOME_',
+  [
+    [0, 'RBAC_GRANT_MUTATION_OUTCOME_UNSPECIFIED'],
+    [1, 'RBAC_GRANT_MUTATION_OUTCOME_SUCCESS'],
+    [2, 'RBAC_GRANT_MUTATION_OUTCOME_DENIED'],
+    [3, 'RBAC_GRANT_MUTATION_OUTCOME_FAILED'],
+  ],
 )
-
-/**
- * UserCreatedAuditMetadata describes a new-account creation action.
- *
- * @generated from message provider.spacewave.UserCreatedAuditMetadata
- */
-export interface UserCreatedAuditMetadata {
-  /**
-   * Username is the created account username.
-   *
-   * @generated from field: string username = 1;
-   */
-  username?: string
-  /**
-   * AuthMethod is the initial account auth method family.
-   *
-   * @generated from field: string auth_method = 2;
-   */
-  authMethod?: string
-  /**
-   * BillingAccountId is the initial managed billing-account id.
-   *
-   * @generated from field: string billing_account_id = 3;
-   */
-  billingAccountId?: string
-  /**
-   * Email is the initial linked email when one exists.
-   *
-   * @generated from field: string email = 4;
-   */
-  email?: string
-}
-
-export const UserCreatedAuditMetadata: MessageType<UserCreatedAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.UserCreatedAuditMetadata',
-    fields: [
-      { no: 1, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'auth_method', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'email', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * EntityKeypairsChangedAuditMetadata describes a keypair/auth-method mutation.
- *
- * @generated from message provider.spacewave.EntityKeypairsChangedAuditMetadata
- */
-export interface EntityKeypairsChangedAuditMetadata {
-  /**
-   * ChangeType identifies the mutation kind (add/remove/update-threshold/etc).
-   *
-   * @generated from field: string change_type = 1;
-   */
-  changeType?: string
-  /**
-   * KeypairPeerId is the affected keypair when one specific keypair changed.
-   *
-   * @generated from field: string keypair_peer_id = 2;
-   */
-  keypairPeerId?: string
-  /**
-   * AuthMethod is the auth-method family for attached credentials.
-   *
-   * @generated from field: string auth_method = 3;
-   */
-  authMethod?: string
-  /**
-   * SessionPeerId is the affected session for revoke actions.
-   *
-   * @generated from field: string session_peer_id = 4;
-   */
-  sessionPeerId?: string
-  /**
-   * AuthThreshold is the resulting auth threshold when relevant.
-   *
-   * @generated from field: uint32 auth_threshold = 5;
-   */
-  authThreshold?: number
-}
-
-export const EntityKeypairsChangedAuditMetadata: MessageType<EntityKeypairsChangedAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.EntityKeypairsChangedAuditMetadata',
-    fields: [
-      { no: 1, name: 'change_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'keypair_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'auth_method', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'auth_threshold', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceCreatedAuditMetadata describes resource creation.
- *
- * @generated from message provider.spacewave.ResourceCreatedAuditMetadata
- */
-export interface ResourceCreatedAuditMetadata {
-  /**
-   * ResourceType is the created resource type.
-   *
-   * @generated from field: string resource_type = 1;
-   */
-  resourceType?: string
-  /**
-   * OwnerType is the owner principal type.
-   *
-   * @generated from field: string owner_type = 2;
-   */
-  ownerType?: string
-  /**
-   * OwnerId is the owner principal id.
-   *
-   * @generated from field: string owner_id = 3;
-   */
-  ownerId?: string
-  /**
-   * DisplayName is the resource display name when one exists.
-   *
-   * @generated from field: string display_name = 4;
-   */
-  displayName?: string
-  /**
-   * ObjectType is the shared-object body/object type when relevant.
-   *
-   * @generated from field: string object_type = 5;
-   */
-  objectType?: string
-  /**
-   * AccountPrivate reflects the shared-object account_private flag when relevant.
-   *
-   * @generated from field: bool account_private = 6;
-   */
-  accountPrivate?: boolean
-}
-
-export const ResourceCreatedAuditMetadata: MessageType<ResourceCreatedAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.ResourceCreatedAuditMetadata',
-    fields: [
-      { no: 1, name: 'resource_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'owner_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'owner_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'object_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'account_private', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceOwnershipTransferredAuditMetadata describes a transfer action.
- *
- * @generated from message provider.spacewave.ResourceOwnershipTransferredAuditMetadata
- */
-export interface ResourceOwnershipTransferredAuditMetadata {
-  /**
-   * PreviousOwnerType is the owner type before transfer.
-   *
-   * @generated from field: string previous_owner_type = 1;
-   */
-  previousOwnerType?: string
-  /**
-   * PreviousOwnerId is the owner id before transfer.
-   *
-   * @generated from field: string previous_owner_id = 2;
-   */
-  previousOwnerId?: string
-  /**
-   * NewOwnerType is the owner type after transfer.
-   *
-   * @generated from field: string new_owner_type = 3;
-   */
-  newOwnerType?: string
-  /**
-   * NewOwnerId is the owner id after transfer.
-   *
-   * @generated from field: string new_owner_id = 4;
-   */
-  newOwnerId?: string
-}
-
-export const ResourceOwnershipTransferredAuditMetadata: MessageType<ResourceOwnershipTransferredAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.ResourceOwnershipTransferredAuditMetadata',
-    fields: [
-      {
-        no: 1,
-        name: 'previous_owner_type',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'previous_owner_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'new_owner_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'new_owner_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SharedObjectChangedAuditMetadata describes shared-object metadata changes.
- *
- * @generated from message provider.spacewave.SharedObjectChangedAuditMetadata
- */
-export interface SharedObjectChangedAuditMetadata {
-  /**
-   * ChangeType identifies the mutation kind.
-   *
-   * @generated from field: string change_type = 1;
-   */
-  changeType?: string
-  /**
-   * DisplayName is the updated display name when present.
-   *
-   * @generated from field: string display_name = 2;
-   */
-  displayName?: string
-  /**
-   * ObjectType is the SO object type when relevant.
-   *
-   * @generated from field: string object_type = 3;
-   */
-  objectType?: string
-  /**
-   * PublicRead is the resulting public_read value when relevant.
-   *
-   * @generated from field: bool public_read = 4;
-   */
-  publicRead?: boolean
-}
-
-export const SharedObjectChangedAuditMetadata: MessageType<SharedObjectChangedAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.SharedObjectChangedAuditMetadata',
-    fields: [
-      { no: 1, name: 'change_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'object_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'public_read', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * OrganizationChangedAuditMetadata describes organization mutations.
- *
- * @generated from message provider.spacewave.OrganizationChangedAuditMetadata
- */
-export interface OrganizationChangedAuditMetadata {
-  /**
-   * ChangeType identifies the org mutation kind.
-   *
-   * @generated from field: string change_type = 1;
-   */
-  changeType?: string
-  /**
-   * OrganizationId is the affected organization.
-   *
-   * @generated from field: string organization_id = 2;
-   */
-  organizationId?: string
-  /**
-   * DisplayName is the org display name when relevant.
-   *
-   * @generated from field: string display_name = 3;
-   */
-  displayName?: string
-  /**
-   * MemberAccountId is the affected member account when relevant.
-   *
-   * @generated from field: string member_account_id = 4;
-   */
-  memberAccountId?: string
-  /**
-   * InviteId is the affected invite id when relevant.
-   *
-   * @generated from field: string invite_id = 5;
-   */
-  inviteId?: string
-}
-
-export const OrganizationChangedAuditMetadata: MessageType<OrganizationChangedAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.OrganizationChangedAuditMetadata',
-    fields: [
-      { no: 1, name: 'change_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'organization_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'member_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 5, name: 'invite_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BillingStatusChangedAuditMetadata describes billing lifecycle changes.
- *
- * @generated from message provider.spacewave.BillingStatusChangedAuditMetadata
- */
-export interface BillingStatusChangedAuditMetadata {
-  /**
-   * BillingAccountId is the affected billing account.
-   *
-   * @generated from field: string billing_account_id = 1;
-   */
-  billingAccountId?: string
-  /**
-   * PreviousStatus is the prior subscription status.
-   *
-   * @generated from field: string previous_status = 2;
-   */
-  previousStatus?: string
-  /**
-   * NewStatus is the new subscription status.
-   *
-   * @generated from field: string new_status = 3;
-   */
-  newStatus?: string
-  /**
-   * PreviousLifecycleState is the prior lifecycle state.
-   *
-   * @generated from field: string previous_lifecycle_state = 4;
-   */
-  previousLifecycleState?: string
-  /**
-   * NewLifecycleState is the new lifecycle state.
-   *
-   * @generated from field: string new_lifecycle_state = 5;
-   */
-  newLifecycleState?: string
-}
-
-export const BillingStatusChangedAuditMetadata: MessageType<BillingStatusChangedAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.BillingStatusChangedAuditMetadata',
-    fields: [
-      {
-        no: 1,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'previous_status', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'new_status', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'previous_lifecycle_state',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 5,
-        name: 'new_lifecycle_state',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BillingAdminActionAuditMetadata describes admin-driven billing actions.
- *
- * @generated from message provider.spacewave.BillingAdminActionAuditMetadata
- */
-export interface BillingAdminActionAuditMetadata {
-  /**
-   * AdminAction identifies the admin action kind.
-   *
-   * @generated from field: string admin_action = 1;
-   */
-  adminAction?: string
-  /**
-   * BillingAccountId is the affected billing account when one exists.
-   *
-   * @generated from field: string billing_account_id = 2;
-   */
-  billingAccountId?: string
-  /**
-   * DisputeId is the affected dispute id when one exists.
-   *
-   * @generated from field: string dispute_id = 3;
-   */
-  disputeId?: string
-  /**
-   * DisputerId is the affected disputer row id when one exists.
-   *
-   * @generated from field: string disputer_id = 4;
-   */
-  disputerId?: string
-}
-
-export const BillingAdminActionAuditMetadata: MessageType<BillingAdminActionAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.BillingAdminActionAuditMetadata',
-    fields: [
-      { no: 1, name: 'admin_action', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'dispute_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'disputer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * GenericAuditMetadata is a minimal fallback summary payload.
- *
- * @generated from message provider.spacewave.GenericAuditMetadata
- */
-export interface GenericAuditMetadata {
-  /**
-   * Summary is a short summary for generic actions.
-   *
-   * @generated from field: string summary = 1;
-   */
-  summary?: string
-}
-
-export const GenericAuditMetadata: MessageType<GenericAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.GenericAuditMetadata',
-    fields: [
-      { no: 1, name: 'summary', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RbacPrincipal identifies a typed RBAC grant principal.
- *
- * @generated from message provider.spacewave.RbacPrincipal
- */
-export interface RbacPrincipal {
-  /**
-   * Type identifies the principal kind.
-   *
-   * @generated from field: string type = 1;
-   */
-  type?: string
-  /**
-   * Id identifies the principal.
-   *
-   * @generated from field: string id = 2;
-   */
-  id?: string
-}
-
-export const RbacPrincipal: MessageType<RbacPrincipal> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.RbacPrincipal',
-    fields: [
-      { no: 1, name: 'type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RbacGrantRevocation describes a grant revocation tombstone.
- *
- * @generated from message provider.spacewave.RbacGrantRevocation
- */
-export interface RbacGrantRevocation {
-  /**
-   * RevokedAtMs is when the grant was revoked in epoch milliseconds.
-   *
-   * @generated from field: int64 revoked_at_ms = 1;
-   */
-  revokedAtMs?: bigint
-}
-
-export const RbacGrantRevocation: MessageType<RbacGrantRevocation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.RbacGrantRevocation',
-    fields: [
-      { no: 1, name: 'revoked_at_ms', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RbacGrantMutationAuditMetadata describes one typed RBAC grant mutation.
- *
- * @generated from message provider.spacewave.RbacGrantMutationAuditMetadata
- */
-export interface RbacGrantMutationAuditMetadata {
-  /**
-   * Action identifies the grant mutation kind.
-   *
-   * @generated from field: provider.spacewave.RbacGrantMutationAction action = 1;
-   */
-  action?: RbacGrantMutationAction
-  /**
-   * GrantId identifies the affected grant.
-   *
-   * @generated from field: string grant_id = 2;
-   */
-  grantId?: string
-  /**
-   * Principal identifies the typed grant principal.
-   *
-   * @generated from field: provider.spacewave.RbacPrincipal principal = 3;
-   */
-  principal?: RbacPrincipal
-  /**
-   * RoleId identifies the resulting role.
-   *
-   * @generated from field: string role_id = 4;
-   */
-  roleId?: string
-  /**
-   * Scope identifies the authority scope.
-   *
-   * @generated from field: string scope = 5;
-   */
-  scope?: string
-  /**
-   * ResourceId identifies the scoped resource.
-   *
-   * @generated from field: string resource_id = 6;
-   */
-  resourceId?: string
-  /**
-   * ResultingVersion is the grant version after the mutation.
-   *
-   * @generated from field: uint64 resulting_version = 7;
-   */
-  resultingVersion?: bigint
-  /**
-   * ExpiresAtMs is the grant expiry in epoch milliseconds when present.
-   *
-   * @generated from field: int64 expires_at_ms = 8;
-   */
-  expiresAtMs?: bigint
-  /**
-   * Revocation is present when the grant has a revocation tombstone.
-   *
-   * @generated from field: provider.spacewave.RbacGrantRevocation revocation = 9;
-   */
-  revocation?: RbacGrantRevocation
-  /**
-   * Outcome identifies whether the mutation committed.
-   *
-   * @generated from field: provider.spacewave.RbacGrantMutationOutcome outcome = 10;
-   */
-  outcome?: RbacGrantMutationOutcome
-}
-
-export const RbacGrantMutationAuditMetadata: MessageType<RbacGrantMutationAuditMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.RbacGrantMutationAuditMetadata',
-    fields: [
-      { no: 1, name: 'action', kind: 'enum', T: RbacGrantMutationAction_Enum },
-      { no: 2, name: 'grant_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'principal', kind: 'message', T: RbacPrincipal },
-      { no: 4, name: 'role_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'scope', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'resource_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 7,
-        name: 'resulting_version',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 8, name: 'expires_at_ms', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 9, name: 'revocation', kind: 'message', T: RbacGrantRevocation },
-      {
-        no: 10,
-        name: 'outcome',
-        kind: 'enum',
-        T: RbacGrantMutationOutcome_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * AuditEventMetadata is the typed metadata wrapper serialized into the
@@ -701,212 +102,553 @@ export const RbacGrantMutationAuditMetadata: MessageType<RbacGrantMutationAuditM
 export interface AuditEventMetadata {
   /**
    * RequestMethod is the originating HTTP method when one exists.
-   *
-   * @generated from field: string request_method = 1;
    */
   requestMethod?: string
   /**
    * RequestPath is the originating HTTP path when one exists.
-   *
-   * @generated from field: string request_path = 2;
    */
   requestPath?: string
   /**
    * ActorPeerId is the session or entity peer id when the mutation came from a
    * signed caller.
-   *
-   * @generated from field: string actor_peer_id = 3;
    */
   actorPeerId?: string
   /**
    * AuthorizedBy names the entity keypair that authorized a session action.
-   *
-   * @generated from field: string authorized_by = 4;
    */
   authorizedBy?: string
-
   /**
    * Body is the per-action metadata payload.
    *
    * @generated from oneof provider.spacewave.AuditEventMetadata.body
    */
   body?:
+    | { value?: undefined; case: undefined }
+    | { value: UserCreatedAuditMetadata; case: 'userCreated' }
     | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * UserCreated is metadata for account-creation actions.
-         *
-         * @generated from field: provider.spacewave.UserCreatedAuditMetadata user_created = 10;
-         */
-        value: UserCreatedAuditMetadata
-        case: 'userCreated'
-      }
-    | {
-        /**
-         * EntityKeypairsChanged is metadata for auth-method and keypair changes.
-         *
-         * @generated from field: provider.spacewave.EntityKeypairsChangedAuditMetadata entity_keypairs_changed = 11;
-         */
         value: EntityKeypairsChangedAuditMetadata
         case: 'entityKeypairsChanged'
       }
+    | { value: ResourceCreatedAuditMetadata; case: 'resourceCreated' }
     | {
-        /**
-         * ResourceCreated is metadata for block-store and shared-object creation.
-         *
-         * @generated from field: provider.spacewave.ResourceCreatedAuditMetadata resource_created = 12;
-         */
-        value: ResourceCreatedAuditMetadata
-        case: 'resourceCreated'
-      }
-    | {
-        /**
-         * ResourceOwnershipTransferred is metadata for owner-transfer actions.
-         *
-         * @generated from field: provider.spacewave.ResourceOwnershipTransferredAuditMetadata resource_ownership_transferred = 13;
-         */
         value: ResourceOwnershipTransferredAuditMetadata
         case: 'resourceOwnershipTransferred'
       }
-    | {
-        /**
-         * SharedObjectChanged is metadata for shared-object metadata or delete actions.
-         *
-         * @generated from field: provider.spacewave.SharedObjectChangedAuditMetadata shared_object_changed = 14;
-         */
-        value: SharedObjectChangedAuditMetadata
-        case: 'sharedObjectChanged'
-      }
-    | {
-        /**
-         * OrganizationChanged is metadata for org lifecycle and membership actions.
-         *
-         * @generated from field: provider.spacewave.OrganizationChangedAuditMetadata organization_changed = 15;
-         */
-        value: OrganizationChangedAuditMetadata
-        case: 'organizationChanged'
-      }
-    | {
-        /**
-         * BillingStatusChanged is metadata for billing lifecycle transitions.
-         *
-         * @generated from field: provider.spacewave.BillingStatusChangedAuditMetadata billing_status_changed = 16;
-         */
-        value: BillingStatusChangedAuditMetadata
-        case: 'billingStatusChanged'
-      }
-    | {
-        /**
-         * BillingAdminAction is metadata for admin-driven billing actions.
-         *
-         * @generated from field: provider.spacewave.BillingAdminActionAuditMetadata billing_admin_action = 17;
-         */
-        value: BillingAdminActionAuditMetadata
-        case: 'billingAdminAction'
-      }
-    | {
-        /**
-         * Generic is metadata for actions that only need a small summary.
-         *
-         * @generated from field: provider.spacewave.GenericAuditMetadata generic = 18;
-         */
-        value: GenericAuditMetadata
-        case: 'generic'
-      }
-    | {
-        /**
-         * RbacGrantMutation is metadata for typed RBAC grant mutations.
-         *
-         * @generated from field: provider.spacewave.RbacGrantMutationAuditMetadata rbac_grant_mutation = 19;
-         */
-        value: RbacGrantMutationAuditMetadata
-        case: 'rbacGrantMutation'
-      }
+    | { value: SharedObjectChangedAuditMetadata; case: 'sharedObjectChanged' }
+    | { value: OrganizationChangedAuditMetadata; case: 'organizationChanged' }
+    | { value: BillingStatusChangedAuditMetadata; case: 'billingStatusChanged' }
+    | { value: BillingAdminActionAuditMetadata; case: 'billingAdminAction' }
+    | { value: GenericAuditMetadata; case: 'generic' }
+    | { value: RbacGrantMutationAuditMetadata; case: 'rbacGrantMutation' }
 }
 
 export const AuditEventMetadata: MessageType<AuditEventMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.AuditEventMetadata',
-    fields: [
-      { no: 1, name: 'request_method', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'request_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'actor_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'authorized_by', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 10,
-        name: 'user_created',
-        kind: 'message',
-        T: UserCreatedAuditMetadata,
-        oneof: 'body',
-      },
-      {
-        no: 11,
-        name: 'entity_keypairs_changed',
-        kind: 'message',
-        T: EntityKeypairsChangedAuditMetadata,
-        oneof: 'body',
-      },
-      {
-        no: 12,
-        name: 'resource_created',
-        kind: 'message',
-        T: ResourceCreatedAuditMetadata,
-        oneof: 'body',
-      },
-      {
-        no: 13,
-        name: 'resource_ownership_transferred',
-        kind: 'message',
-        T: ResourceOwnershipTransferredAuditMetadata,
-        oneof: 'body',
-      },
-      {
-        no: 14,
-        name: 'shared_object_changed',
-        kind: 'message',
-        T: SharedObjectChangedAuditMetadata,
-        oneof: 'body',
-      },
-      {
-        no: 15,
-        name: 'organization_changed',
-        kind: 'message',
-        T: OrganizationChangedAuditMetadata,
-        oneof: 'body',
-      },
-      {
-        no: 16,
-        name: 'billing_status_changed',
-        kind: 'message',
-        T: BillingStatusChangedAuditMetadata,
-        oneof: 'body',
-      },
-      {
-        no: 17,
-        name: 'billing_admin_action',
-        kind: 'message',
-        T: BillingAdminActionAuditMetadata,
-        oneof: 'body',
-      },
-      {
-        no: 18,
-        name: 'generic',
-        kind: 'message',
-        T: GenericAuditMetadata,
-        oneof: 'body',
-      },
-      {
-        no: 19,
-        name: 'rbac_grant_mutation',
-        kind: 'message',
-        T: RbacGrantMutationAuditMetadata,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AuditEventMetadata>(
+    'provider.spacewave.AuditEventMetadata',
+    () => [
+      [1, 'request_method', 9],
+      [2, 'request_path', 9],
+      [3, 'actor_peer_id', 9],
+      [4, 'authorized_by', 9],
+      [10, 'user_created', 11, 0, UserCreatedAuditMetadata.codec, 'body'],
+      [
+        11,
+        'entity_keypairs_changed',
+        11,
+        0,
+        EntityKeypairsChangedAuditMetadata.codec,
+        'body',
+      ],
+      [
+        12,
+        'resource_created',
+        11,
+        0,
+        ResourceCreatedAuditMetadata.codec,
+        'body',
+      ],
+      [
+        13,
+        'resource_ownership_transferred',
+        11,
+        0,
+        ResourceOwnershipTransferredAuditMetadata.codec,
+        'body',
+      ],
+      [
+        14,
+        'shared_object_changed',
+        11,
+        0,
+        SharedObjectChangedAuditMetadata.codec,
+        'body',
+      ],
+      [
+        15,
+        'organization_changed',
+        11,
+        0,
+        OrganizationChangedAuditMetadata.codec,
+        'body',
+      ],
+      [
+        16,
+        'billing_status_changed',
+        11,
+        0,
+        BillingStatusChangedAuditMetadata.codec,
+        'body',
+      ],
+      [
+        17,
+        'billing_admin_action',
+        11,
+        0,
+        BillingAdminActionAuditMetadata.codec,
+        'body',
+      ],
+      [18, 'generic', 11, 0, GenericAuditMetadata.codec, 'body'],
+      [
+        19,
+        'rbac_grant_mutation',
+        11,
+        0,
+        RbacGrantMutationAuditMetadata.codec,
+        'body',
+      ],
+    ],
+  )
+
+/**
+ * UserCreatedAuditMetadata describes a new-account creation action.
+ *
+ * @generated from message provider.spacewave.UserCreatedAuditMetadata
+ */
+export interface UserCreatedAuditMetadata {
+  /**
+   * Username is the created account username.
+   */
+  username?: string
+  /**
+   * AuthMethod is the initial account auth method family.
+   */
+  authMethod?: string
+  /**
+   * BillingAccountId is the initial managed billing-account id.
+   */
+  billingAccountId?: string
+  /**
+   * Email is the initial linked email when one exists.
+   */
+  email?: string
+}
+
+export const UserCreatedAuditMetadata: MessageType<UserCreatedAuditMetadata> =
+  /* @__PURE__ */ createMessageType<UserCreatedAuditMetadata>(
+    'provider.spacewave.UserCreatedAuditMetadata',
+    () => [
+      [1, 'username', 9],
+      [2, 'auth_method', 9],
+      [3, 'billing_account_id', 9],
+      [4, 'email', 9],
+    ],
+  )
+
+/**
+ * EntityKeypairsChangedAuditMetadata describes a keypair/auth-method mutation.
+ *
+ * @generated from message provider.spacewave.EntityKeypairsChangedAuditMetadata
+ */
+export interface EntityKeypairsChangedAuditMetadata {
+  /**
+   * ChangeType identifies the mutation kind (add/remove/update-threshold/etc).
+   */
+  changeType?: string
+  /**
+   * KeypairPeerId is the affected keypair when one specific keypair changed.
+   */
+  keypairPeerId?: string
+  /**
+   * AuthMethod is the auth-method family for attached credentials.
+   */
+  authMethod?: string
+  /**
+   * SessionPeerId is the affected session for revoke actions.
+   */
+  sessionPeerId?: string
+  /**
+   * AuthThreshold is the resulting auth threshold when relevant.
+   */
+  authThreshold?: number
+}
+
+export const EntityKeypairsChangedAuditMetadata: MessageType<EntityKeypairsChangedAuditMetadata> =
+  /* @__PURE__ */ createMessageType<EntityKeypairsChangedAuditMetadata>(
+    'provider.spacewave.EntityKeypairsChangedAuditMetadata',
+    () => [
+      [1, 'change_type', 9],
+      [2, 'keypair_peer_id', 9],
+      [3, 'auth_method', 9],
+      [4, 'session_peer_id', 9],
+      [5, 'auth_threshold', 13],
+    ],
+  )
+
+/**
+ * ResourceCreatedAuditMetadata describes resource creation.
+ *
+ * @generated from message provider.spacewave.ResourceCreatedAuditMetadata
+ */
+export interface ResourceCreatedAuditMetadata {
+  /**
+   * ResourceType is the created resource type.
+   */
+  resourceType?: string
+  /**
+   * OwnerType is the owner principal type.
+   */
+  ownerType?: string
+  /**
+   * OwnerId is the owner principal id.
+   */
+  ownerId?: string
+  /**
+   * DisplayName is the resource display name when one exists.
+   */
+  displayName?: string
+  /**
+   * ObjectType is the shared-object body/object type when relevant.
+   */
+  objectType?: string
+  /**
+   * AccountPrivate reflects the shared-object account_private flag when relevant.
+   */
+  accountPrivate?: boolean
+}
+
+export const ResourceCreatedAuditMetadata: MessageType<ResourceCreatedAuditMetadata> =
+  /* @__PURE__ */ createMessageType<ResourceCreatedAuditMetadata>(
+    'provider.spacewave.ResourceCreatedAuditMetadata',
+    () => [
+      [1, 'resource_type', 9],
+      [2, 'owner_type', 9],
+      [3, 'owner_id', 9],
+      [4, 'display_name', 9],
+      [5, 'object_type', 9],
+      [6, 'account_private', 8],
+    ],
+  )
+
+/**
+ * ResourceOwnershipTransferredAuditMetadata describes a transfer action.
+ *
+ * @generated from message provider.spacewave.ResourceOwnershipTransferredAuditMetadata
+ */
+export interface ResourceOwnershipTransferredAuditMetadata {
+  /**
+   * PreviousOwnerType is the owner type before transfer.
+   */
+  previousOwnerType?: string
+  /**
+   * PreviousOwnerId is the owner id before transfer.
+   */
+  previousOwnerId?: string
+  /**
+   * NewOwnerType is the owner type after transfer.
+   */
+  newOwnerType?: string
+  /**
+   * NewOwnerId is the owner id after transfer.
+   */
+  newOwnerId?: string
+}
+
+export const ResourceOwnershipTransferredAuditMetadata: MessageType<ResourceOwnershipTransferredAuditMetadata> =
+  /* @__PURE__ */ createMessageType<ResourceOwnershipTransferredAuditMetadata>(
+    'provider.spacewave.ResourceOwnershipTransferredAuditMetadata',
+    () => [
+      [1, 'previous_owner_type', 9],
+      [2, 'previous_owner_id', 9],
+      [3, 'new_owner_type', 9],
+      [4, 'new_owner_id', 9],
+    ],
+  )
+
+/**
+ * SharedObjectChangedAuditMetadata describes shared-object metadata changes.
+ *
+ * @generated from message provider.spacewave.SharedObjectChangedAuditMetadata
+ */
+export interface SharedObjectChangedAuditMetadata {
+  /**
+   * ChangeType identifies the mutation kind.
+   */
+  changeType?: string
+  /**
+   * DisplayName is the updated display name when present.
+   */
+  displayName?: string
+  /**
+   * ObjectType is the SO object type when relevant.
+   */
+  objectType?: string
+  /**
+   * PublicRead is the resulting public_read value when relevant.
+   */
+  publicRead?: boolean
+}
+
+export const SharedObjectChangedAuditMetadata: MessageType<SharedObjectChangedAuditMetadata> =
+  /* @__PURE__ */ createMessageType<SharedObjectChangedAuditMetadata>(
+    'provider.spacewave.SharedObjectChangedAuditMetadata',
+    () => [
+      [1, 'change_type', 9],
+      [2, 'display_name', 9],
+      [3, 'object_type', 9],
+      [4, 'public_read', 8],
+    ],
+  )
+
+/**
+ * OrganizationChangedAuditMetadata describes organization mutations.
+ *
+ * @generated from message provider.spacewave.OrganizationChangedAuditMetadata
+ */
+export interface OrganizationChangedAuditMetadata {
+  /**
+   * ChangeType identifies the org mutation kind.
+   */
+  changeType?: string
+  /**
+   * OrganizationId is the affected organization.
+   */
+  organizationId?: string
+  /**
+   * DisplayName is the org display name when relevant.
+   */
+  displayName?: string
+  /**
+   * MemberAccountId is the affected member account when relevant.
+   */
+  memberAccountId?: string
+  /**
+   * InviteId is the affected invite id when relevant.
+   */
+  inviteId?: string
+}
+
+export const OrganizationChangedAuditMetadata: MessageType<OrganizationChangedAuditMetadata> =
+  /* @__PURE__ */ createMessageType<OrganizationChangedAuditMetadata>(
+    'provider.spacewave.OrganizationChangedAuditMetadata',
+    () => [
+      [1, 'change_type', 9],
+      [2, 'organization_id', 9],
+      [3, 'display_name', 9],
+      [4, 'member_account_id', 9],
+      [5, 'invite_id', 9],
+    ],
+  )
+
+/**
+ * BillingStatusChangedAuditMetadata describes billing lifecycle changes.
+ *
+ * @generated from message provider.spacewave.BillingStatusChangedAuditMetadata
+ */
+export interface BillingStatusChangedAuditMetadata {
+  /**
+   * BillingAccountId is the affected billing account.
+   */
+  billingAccountId?: string
+  /**
+   * PreviousStatus is the prior subscription status.
+   */
+  previousStatus?: string
+  /**
+   * NewStatus is the new subscription status.
+   */
+  newStatus?: string
+  /**
+   * PreviousLifecycleState is the prior lifecycle state.
+   */
+  previousLifecycleState?: string
+  /**
+   * NewLifecycleState is the new lifecycle state.
+   */
+  newLifecycleState?: string
+}
+
+export const BillingStatusChangedAuditMetadata: MessageType<BillingStatusChangedAuditMetadata> =
+  /* @__PURE__ */ createMessageType<BillingStatusChangedAuditMetadata>(
+    'provider.spacewave.BillingStatusChangedAuditMetadata',
+    () => [
+      [1, 'billing_account_id', 9],
+      [2, 'previous_status', 9],
+      [3, 'new_status', 9],
+      [4, 'previous_lifecycle_state', 9],
+      [5, 'new_lifecycle_state', 9],
+    ],
+  )
+
+/**
+ * BillingAdminActionAuditMetadata describes admin-driven billing actions.
+ *
+ * @generated from message provider.spacewave.BillingAdminActionAuditMetadata
+ */
+export interface BillingAdminActionAuditMetadata {
+  /**
+   * AdminAction identifies the admin action kind.
+   */
+  adminAction?: string
+  /**
+   * BillingAccountId is the affected billing account when one exists.
+   */
+  billingAccountId?: string
+  /**
+   * DisputeId is the affected dispute id when one exists.
+   */
+  disputeId?: string
+  /**
+   * DisputerId is the affected disputer row id when one exists.
+   */
+  disputerId?: string
+}
+
+export const BillingAdminActionAuditMetadata: MessageType<BillingAdminActionAuditMetadata> =
+  /* @__PURE__ */ createMessageType<BillingAdminActionAuditMetadata>(
+    'provider.spacewave.BillingAdminActionAuditMetadata',
+    () => [
+      [1, 'admin_action', 9],
+      [2, 'billing_account_id', 9],
+      [3, 'dispute_id', 9],
+      [4, 'disputer_id', 9],
+    ],
+  )
+
+/**
+ * GenericAuditMetadata is a minimal fallback summary payload.
+ *
+ * @generated from message provider.spacewave.GenericAuditMetadata
+ */
+export interface GenericAuditMetadata {
+  /**
+   * Summary is a short summary for generic actions.
+   */
+  summary?: string
+}
+
+export const GenericAuditMetadata: MessageType<GenericAuditMetadata> =
+  /* @__PURE__ */ createMessageType<GenericAuditMetadata>(
+    'provider.spacewave.GenericAuditMetadata',
+    () => [[1, 'summary', 9]],
+  )
+
+/**
+ * RbacPrincipal identifies a typed RBAC grant principal.
+ *
+ * @generated from message provider.spacewave.RbacPrincipal
+ */
+export interface RbacPrincipal {
+  /**
+   * Type identifies the principal kind.
+   */
+  type?: string
+  /**
+   * Id identifies the principal.
+   */
+  id?: string
+}
+
+export const RbacPrincipal: MessageType<RbacPrincipal> =
+  /* @__PURE__ */ createMessageType<RbacPrincipal>(
+    'provider.spacewave.RbacPrincipal',
+    () => [
+      [1, 'type', 9],
+      [2, 'id', 9],
+    ],
+  )
+
+/**
+ * RbacGrantRevocation describes a grant revocation tombstone.
+ *
+ * @generated from message provider.spacewave.RbacGrantRevocation
+ */
+export interface RbacGrantRevocation {
+  /**
+   * RevokedAtMs is when the grant was revoked in epoch milliseconds.
+   */
+  revokedAtMs?: bigint
+}
+
+export const RbacGrantRevocation: MessageType<RbacGrantRevocation> =
+  /* @__PURE__ */ createMessageType<RbacGrantRevocation>(
+    'provider.spacewave.RbacGrantRevocation',
+    () => [[1, 'revoked_at_ms', 3]],
+  )
+
+/**
+ * RbacGrantMutationAuditMetadata describes one typed RBAC grant mutation.
+ *
+ * @generated from message provider.spacewave.RbacGrantMutationAuditMetadata
+ */
+export interface RbacGrantMutationAuditMetadata {
+  /**
+   * Action identifies the grant mutation kind.
+   */
+  action?: RbacGrantMutationAction
+  /**
+   * GrantId identifies the affected grant.
+   */
+  grantId?: string
+  /**
+   * Principal identifies the typed grant principal.
+   */
+  principal?: RbacPrincipal
+  /**
+   * RoleId identifies the resulting role.
+   */
+  roleId?: string
+  /**
+   * Scope identifies the authority scope.
+   */
+  scope?: string
+  /**
+   * ResourceId identifies the scoped resource.
+   */
+  resourceId?: string
+  /**
+   * ResultingVersion is the grant version after the mutation.
+   */
+  resultingVersion?: bigint
+  /**
+   * ExpiresAtMs is the grant expiry in epoch milliseconds when present.
+   */
+  expiresAtMs?: bigint
+  /**
+   * Revocation is present when the grant has a revocation tombstone.
+   */
+  revocation?: RbacGrantRevocation
+  /**
+   * Outcome identifies whether the mutation committed.
+   */
+  outcome?: RbacGrantMutationOutcome
+}
+
+export const RbacGrantMutationAuditMetadata: MessageType<RbacGrantMutationAuditMetadata> =
+  /* @__PURE__ */ createMessageType<RbacGrantMutationAuditMetadata>(
+    'provider.spacewave.RbacGrantMutationAuditMetadata',
+    () => [
+      [1, 'action', 14, 0, RbacGrantMutationAction_Enum],
+      [2, 'grant_id', 9],
+      [3, 'principal', 11, 0, RbacPrincipal.codec],
+      [4, 'role_id', 9],
+      [5, 'scope', 9],
+      [6, 'resource_id', 9],
+      [7, 'resulting_version', 4],
+      [8, 'expires_at_ms', 3],
+      [9, 'revocation', 11, 0, RbacGrantRevocation.codec],
+      [10, 'outcome', 14, 0, RbacGrantMutationOutcome_Enum],
+    ],
+  )
 
 /**
  * AuditEvent is one decoded admin-visible audit row.
@@ -916,96 +658,72 @@ export const AuditEventMetadata: MessageType<AuditEventMetadata> =
 export interface AuditEvent {
   /**
    * Id is the audit event ULID.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Action is the normalized action name.
-   *
-   * @generated from field: string action = 2;
    */
   action?: string
   /**
    * ActorType is the normalized actor principal type.
-   *
-   * @generated from field: string actor_type = 3;
    */
   actorType?: string
   /**
    * ActorId is the normalized actor principal id.
-   *
-   * @generated from field: string actor_id = 4;
    */
   actorId?: string
   /**
    * ActorAccountId is the actor's backing account id when one exists.
-   *
-   * @generated from field: string actor_account_id = 5;
    */
   actorAccountId?: string
   /**
    * TargetType is the normalized target principal or resource type.
-   *
-   * @generated from field: string target_type = 6;
    */
   targetType?: string
   /**
    * TargetId is the normalized target id.
-   *
-   * @generated from field: string target_id = 7;
    */
   targetId?: string
   /**
    * Outcome is success, denied, or failed.
-   *
-   * @generated from field: string outcome = 8;
    */
   outcome?: string
   /**
    * HttpStatus is the HTTP status code for the outcome.
-   *
-   * @generated from field: int32 http_status = 9;
    */
   httpStatus?: number
   /**
    * ErrorCode is the stable audit error-code slug when one exists.
-   *
-   * @generated from field: string error_code = 10;
    */
   errorCode?: string
   /**
    * Metadata is the decoded audit metadata payload.
-   *
-   * @generated from field: provider.spacewave.AuditEventMetadata metadata = 11;
    */
   metadata?: AuditEventMetadata
   /**
    * CreatedAtMs is the event creation timestamp in epoch milliseconds.
-   *
-   * @generated from field: int64 created_at_ms = 12;
    */
   createdAtMs?: bigint
 }
 
 export const AuditEvent: MessageType<AuditEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.AuditEvent',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'action', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'actor_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'actor_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'actor_account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'target_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'target_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'outcome', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'http_status', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 10, name: 'error_code', kind: 'scalar', T: ScalarType.STRING },
-      { no: 11, name: 'metadata', kind: 'message', T: AuditEventMetadata },
-      { no: 12, name: 'created_at_ms', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AuditEvent>(
+    'provider.spacewave.AuditEvent',
+    () => [
+      [1, 'id', 9],
+      [2, 'action', 9],
+      [3, 'actor_type', 9],
+      [4, 'actor_id', 9],
+      [5, 'actor_account_id', 9],
+      [6, 'target_type', 9],
+      [7, 'target_id', 9],
+      [8, 'outcome', 9],
+      [9, 'http_status', 5],
+      [10, 'error_code', 9],
+      [11, 'metadata', 11, 0, AuditEventMetadata.codec],
+      [12, 'created_at_ms', 3],
+    ],
+  )
 
 /**
  * ListAuditEventsResponse is the admin audit list response.
@@ -1015,16 +733,12 @@ export const AuditEvent: MessageType<AuditEvent> =
 export interface ListAuditEventsResponse {
   /**
    * Events is the returned audit event page.
-   *
-   * @generated from field: repeated provider.spacewave.AuditEvent events = 1;
    */
   events?: AuditEvent[]
 }
 
 export const ListAuditEventsResponse: MessageType<ListAuditEventsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.ListAuditEventsResponse',
-    fields: [
-      { no: 1, name: 'events', kind: 'message', T: AuditEvent, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListAuditEventsResponse>(
+    'provider.spacewave.ListAuditEventsResponse',
+    () => [[1, 'events', 11, 1, AuditEvent.codec]],
+  )

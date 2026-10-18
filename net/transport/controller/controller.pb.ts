@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * StreamEstablish is the first message sent by the initiator of a stream.
@@ -17,24 +15,20 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface StreamEstablish {
   /**
    * ProtocolID is the protocol identifier string for the stream.
-   *
-   * @generated from field: string protocol_id = 1;
    */
   protocolId?: string
   /**
    * Unreliable marks a stream opened with OpenOpts.Unreliable. The stream
    * carries the establishment and becomes the message stream's control.
-   *
-   * @generated from field: bool unreliable = 2;
    */
   unreliable?: boolean
 }
 
 export const StreamEstablish: MessageType<StreamEstablish> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'transport.controller.StreamEstablish',
-    fields: [
-      { no: 1, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'unreliable', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StreamEstablish>(
+    'transport.controller.StreamEstablish',
+    () => [
+      [1, 'protocol_id', 9],
+      [2, 'unreliable', 8],
+    ],
+  )

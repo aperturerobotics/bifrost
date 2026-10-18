@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * HandleWebViewRequest is a request to handle a web view.
@@ -15,42 +13,34 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface HandleWebViewRequest {
   /**
    * Id is the unique identifier for the webview.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * ParentId is the identifier of the parent WebView.
    * May be empty.
-   *
-   * @generated from field: string parent_id = 2;
    */
   parentId?: string
   /**
    * DocumentId is the identifier of the parent WebDocument.
    * May be empty.
-   *
-   * @generated from field: string document_id = 3;
    */
   documentId?: string
   /**
    * Permanent indicates that this is a "root" webview and cannot be closed.
-   *
-   * @generated from field: bool permanent = 4;
    */
   permanent?: boolean
 }
 
 export const HandleWebViewRequest: MessageType<HandleWebViewRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.view.handler.HandleWebViewRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'parent_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'document_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'permanent', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebViewRequest>(
+    'web.view.handler.HandleWebViewRequest',
+    () => [
+      [1, 'id', 9],
+      [2, 'parent_id', 9],
+      [3, 'document_id', 9],
+      [4, 'permanent', 8],
+    ],
+  )
 
 /**
  * HandleWebViewResponse is a response to handle a web view.
@@ -61,16 +51,12 @@ export interface HandleWebViewResponse {
   /**
    * Error contains any error handling the web view.
    * If empty, returns and does not retry.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
 }
 
 export const HandleWebViewResponse: MessageType<HandleWebViewResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.view.handler.HandleWebViewResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebViewResponse>(
+    'web.view.handler.HandleWebViewResponse',
+    () => [[1, 'error', 9]],
+  )

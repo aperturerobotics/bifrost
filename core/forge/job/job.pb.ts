@@ -2,34 +2,10 @@
 // @generated from file github.com/s4wave/spacewave/core/forge/job/job.proto (package s4wave.forge.job, syntax proto3)
 /* eslint-disable */
 
+import { Placement } from '../../../forge/worker/worker.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { Placement } from '../../../forge/worker/worker.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-
-/**
- * ForgeJobTaskDef defines a task to create as part of a ForgeJobCreateOp.
- *
- * @generated from message s4wave.forge.job.ForgeJobTaskDef
- */
-export interface ForgeJobTaskDef {
-  /**
-   * Name is the task name (must be a valid DNS label).
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-}
-
-export const ForgeJobTaskDef: MessageType<ForgeJobTaskDef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.forge.job.ForgeJobTaskDef',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * ForgeJobCreateOp creates a Forge Job with tasks and assigns it to a Cluster.
@@ -40,50 +16,52 @@ export const ForgeJobTaskDef: MessageType<ForgeJobTaskDef> =
 export interface ForgeJobCreateOp {
   /**
    * JobKey is the object key for the new Job.
-   *
-   * @generated from field: string job_key = 1;
    */
   jobKey?: string
   /**
    * ClusterKey is the object key of the Cluster to assign the Job to.
-   *
-   * @generated from field: string cluster_key = 2;
    */
   clusterKey?: string
   /**
    * TaskDefs is the list of tasks to create under the Job.
-   *
-   * @generated from field: repeated s4wave.forge.job.ForgeJobTaskDef task_defs = 3;
    */
   taskDefs?: ForgeJobTaskDef[]
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
   /**
    * Placement freezes the selected Worker and authenticated Device peer for every Task.
-   *
-   * @generated from field: forge.worker.Placement placement = 5;
    */
   placement?: Placement
 }
 
 export const ForgeJobCreateOp: MessageType<ForgeJobCreateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.forge.job.ForgeJobCreateOp',
-    fields: [
-      { no: 1, name: 'job_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'task_defs',
-        kind: 'message',
-        T: ForgeJobTaskDef,
-        repeated: true,
-      },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 5, name: 'placement', kind: 'message', T: () => Placement },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ForgeJobCreateOp>(
+    's4wave.forge.job.ForgeJobCreateOp',
+    () => [
+      [1, 'job_key', 9],
+      [2, 'cluster_key', 9],
+      [3, 'task_defs', 11, 1, ForgeJobTaskDef.codec],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+      [5, 'placement', 11, 0, Placement.codec],
+    ],
+  )
+
+/**
+ * ForgeJobTaskDef defines a task to create as part of a ForgeJobCreateOp.
+ *
+ * @generated from message s4wave.forge.job.ForgeJobTaskDef
+ */
+export interface ForgeJobTaskDef {
+  /**
+   * Name is the task name (must be a valid DNS label).
+   */
+  name?: string
+}
+
+export const ForgeJobTaskDef: MessageType<ForgeJobTaskDef> =
+  /* @__PURE__ */ createMessageType<ForgeJobTaskDef>(
+    's4wave.forge.job.ForgeJobTaskDef',
+    () => [[1, 'name', 9]],
+  )

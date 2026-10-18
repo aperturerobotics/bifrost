@@ -5,7 +5,6 @@
 import { ObjectRef } from '@go/github.com/s4wave/spacewave/db/bucket/bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * EntityUpdateOp updates an entity and links to other objects.
@@ -19,19 +18,15 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface EntityUpdateOp {
   /**
    * EntityRef is the reference to the latest Entity object.
-   *
-   * @generated from field: bucket.ObjectRef entity_ref = 1;
    */
   entityRef?: ObjectRef
 }
 
 export const EntityUpdateOp: MessageType<EntityUpdateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'identity.world.EntityUpdateOp',
-    fields: [
-      { no: 1, name: 'entity_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EntityUpdateOp>(
+    'identity.world.EntityUpdateOp',
+    () => [[1, 'entity_ref', 11, 0, ObjectRef.codec]],
+  )
 
 /**
  * KeypairUpdateOp updates a Keypair.
@@ -41,19 +36,15 @@ export const EntityUpdateOp: MessageType<EntityUpdateOp> =
 export interface KeypairUpdateOp {
   /**
    * KeypairRef is the reference to the Keypair object.
-   *
-   * @generated from field: bucket.ObjectRef keypair_ref = 1;
    */
   keypairRef?: ObjectRef
 }
 
 export const KeypairUpdateOp: MessageType<KeypairUpdateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'identity.world.KeypairUpdateOp',
-    fields: [
-      { no: 1, name: 'keypair_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KeypairUpdateOp>(
+    'identity.world.KeypairUpdateOp',
+    () => [[1, 'keypair_ref', 11, 0, ObjectRef.codec]],
+  )
 
 /**
  * DomainInfoUpdateOp updates a DomainInfo.
@@ -63,16 +54,12 @@ export const KeypairUpdateOp: MessageType<KeypairUpdateOp> =
 export interface DomainInfoUpdateOp {
   /**
    * DomainInfoRef is the reference to the DomainInfo object.
-   *
-   * @generated from field: bucket.ObjectRef domain_info_ref = 1;
    */
   domainInfoRef?: ObjectRef
 }
 
 export const DomainInfoUpdateOp: MessageType<DomainInfoUpdateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'identity.world.DomainInfoUpdateOp',
-    fields: [
-      { no: 1, name: 'domain_info_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DomainInfoUpdateOp>(
+    'identity.world.DomainInfoUpdateOp',
+    () => [[1, 'domain_info_ref', 11, 0, ObjectRef.codec]],
+  )

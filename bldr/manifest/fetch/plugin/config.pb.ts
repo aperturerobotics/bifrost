@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures a controller to fetch via the ManifestFetch service.
@@ -17,28 +15,20 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * PluginId is the plugin to load and use as a ManifestFetch service.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * FetchManifestIdRe is the regex of manifest IDs to fetch with this controller.
    * If empty, will forward any FetchManifest directive to the plugin.
-   *
-   * @generated from field: string fetch_manifest_id_re = 2;
    */
   fetchManifestIdRe?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'manifest.fetch.plugin.Config',
-  fields: [
-    { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'fetch_manifest_id_re',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'manifest.fetch.plugin.Config',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'fetch_manifest_id_re', 9],
+    ],
+  )

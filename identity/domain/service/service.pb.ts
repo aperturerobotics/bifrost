@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import { Entity } from '../../identity.pb.js'
 
@@ -17,26 +15,22 @@ import { Entity } from '../../identity.pb.js'
 export interface EntityLookupIdentifier {
   /**
    * DomainId is the id of the domain to search.
-   *
-   * @generated from field: string domain_id = 1;
    */
   domainId?: string
   /**
    * EntityId is the id of the entity to search.
-   *
-   * @generated from field: string entity_id = 2;
    */
   entityId?: string
 }
 
 export const EntityLookupIdentifier: MessageType<EntityLookupIdentifier> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'identity.domain.service.EntityLookupIdentifier',
-    fields: [
-      { no: 1, name: 'domain_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EntityLookupIdentifier>(
+    'identity.domain.service.EntityLookupIdentifier',
+    () => [
+      [1, 'domain_id', 9],
+      [2, 'entity_id', 9],
+    ],
+  )
 
 /**
  * LookupEntityReq is the signed body of LookupEntity.
@@ -46,33 +40,27 @@ export const EntityLookupIdentifier: MessageType<EntityLookupIdentifier> =
 export interface LookupEntityReq {
   /**
    * Identifier is the id to lookup.
-   *
-   * @generated from field: identity.domain.service.EntityLookupIdentifier identifier = 1;
    */
   identifier?: EntityLookupIdentifier
   /**
    * Timestamp is the timestamp of the request.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
   /**
    * Nonce is a random one-time uint64.
-   *
-   * @generated from field: uint64 nonce = 3;
    */
   nonce?: bigint
 }
 
 export const LookupEntityReq: MessageType<LookupEntityReq> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'identity.domain.service.LookupEntityReq',
-    fields: [
-      { no: 1, name: 'identifier', kind: 'message', T: EntityLookupIdentifier },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 3, name: 'nonce', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupEntityReq>(
+    'identity.domain.service.LookupEntityReq',
+    () => [
+      [1, 'identifier', 11, 0, EntityLookupIdentifier.codec],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+      [3, 'nonce', 4],
+    ],
+  )
 
 /**
  * LookupEntityResp is the response to the LookupEntity.
@@ -82,37 +70,29 @@ export const LookupEntityReq: MessageType<LookupEntityReq> =
 export interface LookupEntityResp {
   /**
    * Identifier is the echoed id of the request.
-   *
-   * @generated from field: identity.domain.service.EntityLookupIdentifier identifier = 1;
    */
   identifier?: EntityLookupIdentifier
   /**
    * LookupError contains any error looking up the entity.
-   *
-   * @generated from field: string lookup_error = 2;
    */
   lookupError?: string
   /**
    * NotFound indicates if the error indicates a not found.
-   *
-   * @generated from field: bool not_found = 3;
    */
   notFound?: boolean
   /**
    * LookupEntity is the result of the lookup.
-   *
-   * @generated from field: identity.Entity lookup_entity = 4;
    */
   lookupEntity?: Entity
 }
 
 export const LookupEntityResp: MessageType<LookupEntityResp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'identity.domain.service.LookupEntityResp',
-    fields: [
-      { no: 1, name: 'identifier', kind: 'message', T: EntityLookupIdentifier },
-      { no: 2, name: 'lookup_error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'not_found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'lookup_entity', kind: 'message', T: () => Entity },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupEntityResp>(
+    'identity.domain.service.LookupEntityResp',
+    () => [
+      [1, 'identifier', 11, 0, EntityLookupIdentifier.codec],
+      [2, 'lookup_error', 9],
+      [3, 'not_found', 8],
+      [4, 'lookup_entity', 11, 0, Entity.codec],
+    ],
+  )

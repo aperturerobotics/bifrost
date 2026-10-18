@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import type { SessionType } from '../../core/session/session.pb.js'
 import {
   EntityCredential,
@@ -25,26 +20,22 @@ import { SOInviteMessage } from '../../core/sobject/sobject.pb.js'
 export interface ApproveLocalSpaceLinkRequest {
   /**
    * Ticket is the signed SpaceLinkAuthTicket from the Device.
-   *
-   * @generated from field: bytes ticket = 1;
    */
   ticket?: Uint8Array
   /**
    * ResourceId is the target Space shared object ID.
-   *
-   * @generated from field: string resource_id = 2;
    */
   resourceId?: string
 }
 
 export const ApproveLocalSpaceLinkRequest: MessageType<ApproveLocalSpaceLinkRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ApproveLocalSpaceLinkRequest',
-    fields: [
-      { no: 1, name: 'ticket', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'resource_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApproveLocalSpaceLinkRequest>(
+    's4wave.session.ApproveLocalSpaceLinkRequest',
+    () => [
+      [1, 'ticket', 12],
+      [2, 'resource_id', 9],
+    ],
+  )
 
 /**
  * LocalSpaceLinkCompletion is the approval result for a local Space. It
@@ -57,55 +48,43 @@ export const ApproveLocalSpaceLinkRequest: MessageType<ApproveLocalSpaceLinkRequ
 export interface LocalSpaceLinkCompletion {
   /**
    * ProviderId is the provider identifier of the local Space.
-   *
-   * @generated from field: string provider_id = 1;
    */
   providerId?: string
   /**
    * ResourceId is the target Space shared object ID.
-   *
-   * @generated from field: string resource_id = 2;
    */
   resourceId?: string
   /**
    * SessionPeerId is the approved Device session peer ID.
-   *
-   * @generated from field: bytes session_peer_id = 3;
    */
   sessionPeerId?: Uint8Array
   /**
    * SessionType is the approved session type from the ticket.
-   *
-   * @generated from field: session.SessionType session_type = 4;
    */
   sessionType?: SessionType
   /**
    * Invite is the one-use targeted SOInviteMessage signed by the OWNER.
-   *
-   * @generated from field: sobject.SOInviteMessage invite = 5;
    */
   invite?: SOInviteMessage
   /**
    * Nonce is the consumed ticket nonce, echoed for the Device to verify the
    * completion against its stored ticket payload.
-   *
-   * @generated from field: bytes nonce = 6;
    */
   nonce?: Uint8Array
 }
 
 export const LocalSpaceLinkCompletion: MessageType<LocalSpaceLinkCompletion> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.LocalSpaceLinkCompletion',
-    fields: [
-      { no: 1, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'resource_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'session_peer_id', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'session_type', kind: 'enum', T: SessionType_Enum },
-      { no: 5, name: 'invite', kind: 'message', T: () => SOInviteMessage },
-      { no: 6, name: 'nonce', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LocalSpaceLinkCompletion>(
+    's4wave.session.LocalSpaceLinkCompletion',
+    () => [
+      [1, 'provider_id', 9],
+      [2, 'resource_id', 9],
+      [3, 'session_peer_id', 12],
+      [4, 'session_type', 14, 0, SessionType_Enum],
+      [5, 'invite', 11, 0, SOInviteMessage.codec],
+      [6, 'nonce', 12],
+    ],
+  )
 
 /**
  * ApproveLocalSpaceLinkResponse is the response for ApproveSpaceLink on a
@@ -116,24 +95,15 @@ export const LocalSpaceLinkCompletion: MessageType<LocalSpaceLinkCompletion> =
 export interface ApproveLocalSpaceLinkResponse {
   /**
    * Completion carries the targeted local invite for the Device.
-   *
-   * @generated from field: s4wave.session.LocalSpaceLinkCompletion completion = 1;
    */
   completion?: LocalSpaceLinkCompletion
 }
 
 export const ApproveLocalSpaceLinkResponse: MessageType<ApproveLocalSpaceLinkResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ApproveLocalSpaceLinkResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'completion',
-        kind: 'message',
-        T: LocalSpaceLinkCompletion,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApproveLocalSpaceLinkResponse>(
+    's4wave.session.ApproveLocalSpaceLinkResponse',
+    () => [[1, 'completion', 11, 0, LocalSpaceLinkCompletion.codec]],
+  )
 
 /**
  * AddLocalEntityKeypairRequest is the request for AddEntityKeypair on local sessions.
@@ -143,19 +113,15 @@ export const ApproveLocalSpaceLinkResponse: MessageType<ApproveLocalSpaceLinkRes
 export interface AddLocalEntityKeypairRequest {
   /**
    * Credential is the entity signing credential (password or PEM key).
-   *
-   * @generated from field: session.EntityCredential credential = 1;
    */
   credential?: EntityCredential
 }
 
 export const AddLocalEntityKeypairRequest: MessageType<AddLocalEntityKeypairRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AddLocalEntityKeypairRequest',
-    fields: [
-      { no: 1, name: 'credential', kind: 'message', T: () => EntityCredential },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddLocalEntityKeypairRequest>(
+    's4wave.session.AddLocalEntityKeypairRequest',
+    () => [[1, 'credential', 11, 0, EntityCredential.codec]],
+  )
 
 /**
  * AddLocalEntityKeypairResponse is the response for AddEntityKeypair.
@@ -165,19 +131,15 @@ export const AddLocalEntityKeypairRequest: MessageType<AddLocalEntityKeypairRequ
 export interface AddLocalEntityKeypairResponse {
   /**
    * PeerId is the peer ID of the added keypair.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const AddLocalEntityKeypairResponse: MessageType<AddLocalEntityKeypairResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AddLocalEntityKeypairResponse',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddLocalEntityKeypairResponse>(
+    's4wave.session.AddLocalEntityKeypairResponse',
+    () => [[1, 'peer_id', 9]],
+  )
 
 /**
  * RemoveLocalEntityKeypairRequest is the request for RemoveEntityKeypair on local sessions.
@@ -187,19 +149,15 @@ export const AddLocalEntityKeypairResponse: MessageType<AddLocalEntityKeypairRes
 export interface RemoveLocalEntityKeypairRequest {
   /**
    * PeerId is the peer ID of the entity keypair to remove.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const RemoveLocalEntityKeypairRequest: MessageType<RemoveLocalEntityKeypairRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.RemoveLocalEntityKeypairRequest',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveLocalEntityKeypairRequest>(
+    's4wave.session.RemoveLocalEntityKeypairRequest',
+    () => [[1, 'peer_id', 9]],
+  )
 
 /**
  * RemoveLocalEntityKeypairResponse is the response for RemoveEntityKeypair.
@@ -209,9 +167,9 @@ export const RemoveLocalEntityKeypairRequest: MessageType<RemoveLocalEntityKeypa
 export interface RemoveLocalEntityKeypairResponse {}
 
 export const RemoveLocalEntityKeypairResponse: MessageType<RemoveLocalEntityKeypairResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RemoveLocalEntityKeypairResponse>(
+  /* @__PURE__ */ createMessageType<RemoveLocalEntityKeypairResponse>(
     's4wave.session.RemoveLocalEntityKeypairResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -222,19 +180,15 @@ export const RemoveLocalEntityKeypairResponse: MessageType<RemoveLocalEntityKeyp
 export interface SetLocalDisplayNameRequest {
   /**
    * DisplayName is the new display name for the local provider account.
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
 }
 
 export const SetLocalDisplayNameRequest: MessageType<SetLocalDisplayNameRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SetLocalDisplayNameRequest',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetLocalDisplayNameRequest>(
+    's4wave.session.SetLocalDisplayNameRequest',
+    () => [[1, 'display_name', 9]],
+  )
 
 /**
  * SetLocalDisplayNameResponse is the response for SetDisplayName.
@@ -244,9 +198,9 @@ export const SetLocalDisplayNameRequest: MessageType<SetLocalDisplayNameRequest>
 export interface SetLocalDisplayNameResponse {}
 
 export const SetLocalDisplayNameResponse: MessageType<SetLocalDisplayNameResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetLocalDisplayNameResponse>(
+  /* @__PURE__ */ createMessageType<SetLocalDisplayNameResponse>(
     's4wave.session.SetLocalDisplayNameResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -257,9 +211,9 @@ export const SetLocalDisplayNameResponse: MessageType<SetLocalDisplayNameRespons
 export interface WatchLocalDisplayNameRequest {}
 
 export const WatchLocalDisplayNameRequest: MessageType<WatchLocalDisplayNameRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchLocalDisplayNameRequest>(
+  /* @__PURE__ */ createMessageType<WatchLocalDisplayNameRequest>(
     's4wave.session.WatchLocalDisplayNameRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -270,16 +224,12 @@ export const WatchLocalDisplayNameRequest: MessageType<WatchLocalDisplayNameRequ
 export interface WatchLocalDisplayNameResponse {
   /**
    * DisplayName is the current local provider account display name.
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
 }
 
 export const WatchLocalDisplayNameResponse: MessageType<WatchLocalDisplayNameResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchLocalDisplayNameResponse',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchLocalDisplayNameResponse>(
+    's4wave.session.WatchLocalDisplayNameResponse',
+    () => [[1, 'display_name', 9]],
+  )

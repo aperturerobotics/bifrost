@@ -4,13 +4,8 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ManifestRef } from '../manifest/manifest.pb.js'
 import { VolumeInfo } from '@go/github.com/s4wave/spacewave/db/volume/volume.pb.js'
 
@@ -22,29 +17,27 @@ import { VolumeInfo } from '@go/github.com/s4wave/spacewave/db/volume/volume.pb.
 export enum PluginState {
   /**
    * PluginState_UNKNOWN indicates the scheduler has no state yet.
-   *
-   * @generated from enum value: PluginState_UNKNOWN = 0;
    */
   PluginState_UNKNOWN = 0,
 
   /**
    * PluginState_REQUESTED indicates the plugin has an active reference but no RPC client yet.
-   *
-   * @generated from enum value: PluginState_REQUESTED = 1;
    */
   PluginState_REQUESTED = 1,
 
   /**
    * PluginState_RUNNING indicates the plugin RPC client is ready.
-   *
-   * @generated from enum value: PluginState_RUNNING = 2;
    */
   PluginState_RUNNING = 2,
 }
 
 export const PluginState_Enum = /* @__PURE__ */ createEnumType(
   'bldr.plugin.PluginState',
-  PluginState,
+  [
+    [0, 'PluginState_UNKNOWN'],
+    [1, 'PluginState_REQUESTED'],
+    [2, 'PluginState_RUNNING'],
+  ],
 )
 
 /**
@@ -55,59 +48,42 @@ export const PluginState_Enum = /* @__PURE__ */ createEnumType(
 export interface PluginStatus {
   /**
    * PluginId is the plugin identifier.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * Running indicates the plugin is running.
-   *
-   * @generated from field: bool running = 2;
    */
   running?: boolean
   /**
    * InstanceKey is the optional instance key for instanced plugins.
-   *
-   * @generated from field: string instance_key = 3;
    */
   instanceKey?: string
   /**
    * State is the scheduler state for this plugin instance.
-   *
-   * @generated from field: bldr.plugin.PluginState state = 4;
    */
   state?: PluginState
   /**
    * LastErrorMessage is the most recent plugin execution error summary.
-   *
-   * @generated from field: string last_error_message = 5;
    */
   lastErrorMessage?: string
   /**
    * LastErrorAt is when LastErrorMessage was recorded.
-   *
-   * @generated from field: google.protobuf.Timestamp last_error_at = 6;
    */
   lastErrorAt?: Date
 }
 
 export const PluginStatus: MessageType<PluginStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.PluginStatus',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'running', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'state', kind: 'enum', T: PluginState_Enum },
-      {
-        no: 5,
-        name: 'last_error_message',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 6, name: 'last_error_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginStatus>(
+    'bldr.plugin.PluginStatus',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'running', 8],
+      [3, 'instance_key', 9],
+      [4, 'state', 14, 0, PluginState_Enum],
+      [5, 'last_error_message', 9],
+      [6, 'last_error_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * PluginManifestRecoveryStatus describes the retained Manifest selection and
@@ -118,122 +94,62 @@ export const PluginStatus: MessageType<PluginStatus> =
 export interface PluginManifestRecoveryStatus {
   /**
    * PluginId is the plugin identifier.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * InstanceKey is the optional instance key for instanced plugins.
-   *
-   * @generated from field: string instance_key = 2;
    */
   instanceKey?: string
   /**
    * ExecuteManifestRef is the ref of the manifest selected for execution.
-   *
-   * @generated from field: string execute_manifest_ref = 3;
    */
   executeManifestRef?: string
   /**
    * DownloadManifestRef is the ref of the manifest selected for download.
-   *
-   * @generated from field: string download_manifest_ref = 4;
    */
   downloadManifestRef?: string
   /**
    * SkippedCandidateCount is how many candidates were skipped.
-   *
-   * @generated from field: uint32 skipped_candidate_count = 5;
    */
   skippedCandidateCount?: number
   /**
    * SkippedCandidateSummary summarizes the skipped candidates.
-   *
-   * @generated from field: string skipped_candidate_summary = 6;
    */
   skippedCandidateSummary?: string
   /**
    * IgnoredCandidateCount is how many candidates were ignored.
-   *
-   * @generated from field: uint32 ignored_candidate_count = 7;
    */
   ignoredCandidateCount?: number
   /**
    * IgnoredCandidateSummary summarizes the ignored candidates.
-   *
-   * @generated from field: string ignored_candidate_summary = 8;
    */
   ignoredCandidateSummary?: string
   /**
    * QuarantinedCandidateCount is how many candidates were quarantined.
-   *
-   * @generated from field: uint32 quarantined_candidate_count = 9;
    */
   quarantinedCandidateCount?: number
   /**
    * QuarantinedCandidateSummary summarizes the quarantined candidates.
-   *
-   * @generated from field: string quarantined_candidate_summary = 10;
    */
   quarantinedCandidateSummary?: string
 }
 
 export const PluginManifestRecoveryStatus: MessageType<PluginManifestRecoveryStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.PluginManifestRecoveryStatus',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'execute_manifest_ref',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 4,
-        name: 'download_manifest_ref',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 5,
-        name: 'skipped_candidate_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 6,
-        name: 'skipped_candidate_summary',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 7,
-        name: 'ignored_candidate_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 8,
-        name: 'ignored_candidate_summary',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 9,
-        name: 'quarantined_candidate_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 10,
-        name: 'quarantined_candidate_summary',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginManifestRecoveryStatus>(
+    'bldr.plugin.PluginManifestRecoveryStatus',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'instance_key', 9],
+      [3, 'execute_manifest_ref', 9],
+      [4, 'download_manifest_ref', 9],
+      [5, 'skipped_candidate_count', 13],
+      [6, 'skipped_candidate_summary', 9],
+      [7, 'ignored_candidate_count', 13],
+      [8, 'ignored_candidate_summary', 9],
+      [9, 'quarantined_candidate_count', 13],
+      [10, 'quarantined_candidate_summary', 9],
+    ],
+  )
 
 /**
  * PluginStatusSnapshot describes a plugin host scheduler's plugin instances.
@@ -243,39 +159,23 @@ export const PluginManifestRecoveryStatus: MessageType<PluginManifestRecoverySta
 export interface PluginStatusSnapshot {
   /**
    * Plugins lists the per-instance statuses sorted by plugin id and instance key.
-   *
-   * @generated from field: repeated bldr.plugin.PluginStatus plugins = 1;
    */
   plugins?: PluginStatus[]
   /**
    * ManifestRecovery lists the per-instance manifest selection facts sorted by
    * plugin id and instance key.
-   *
-   * @generated from field: repeated bldr.plugin.PluginManifestRecoveryStatus manifest_recovery = 2;
    */
   manifestRecovery?: PluginManifestRecoveryStatus[]
 }
 
 export const PluginStatusSnapshot: MessageType<PluginStatusSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.PluginStatusSnapshot',
-    fields: [
-      {
-        no: 1,
-        name: 'plugins',
-        kind: 'message',
-        T: PluginStatus,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'manifest_recovery',
-        kind: 'message',
-        T: PluginManifestRecoveryStatus,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginStatusSnapshot>(
+    'bldr.plugin.PluginStatusSnapshot',
+    () => [
+      [1, 'plugins', 11, 1, PluginStatus.codec],
+      [2, 'manifest_recovery', 11, 1, PluginManifestRecoveryStatus.codec],
+    ],
+  )
 
 /**
  * CheckActivationRequest queries the running generation's replacement contract.
@@ -285,9 +185,9 @@ export const PluginStatusSnapshot: MessageType<PluginStatusSnapshot> =
 export interface CheckActivationRequest {}
 
 export const CheckActivationRequest: MessageType<CheckActivationRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CheckActivationRequest>(
+  /* @__PURE__ */ createMessageType<CheckActivationRequest>(
     'bldr.plugin.CheckActivationRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -298,9 +198,9 @@ export const CheckActivationRequest: MessageType<CheckActivationRequest> =
 export interface CheckActivationResponse {}
 
 export const CheckActivationResponse: MessageType<CheckActivationResponse> =
-  /* @__PURE__ */ createEmptyMessageType<CheckActivationResponse>(
+  /* @__PURE__ */ createMessageType<CheckActivationResponse>(
     'bldr.plugin.CheckActivationResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -311,9 +211,9 @@ export const CheckActivationResponse: MessageType<CheckActivationResponse> =
 export interface ActivatePluginRequest {}
 
 export const ActivatePluginRequest: MessageType<ActivatePluginRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ActivatePluginRequest>(
+  /* @__PURE__ */ createMessageType<ActivatePluginRequest>(
     'bldr.plugin.ActivatePluginRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -324,9 +224,9 @@ export const ActivatePluginRequest: MessageType<ActivatePluginRequest> =
 export interface ActivatePluginResponse {}
 
 export const ActivatePluginResponse: MessageType<ActivatePluginResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ActivatePluginResponse>(
+  /* @__PURE__ */ createMessageType<ActivatePluginResponse>(
     'bldr.plugin.ActivatePluginResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -337,9 +237,9 @@ export const ActivatePluginResponse: MessageType<ActivatePluginResponse> =
 export interface PrepareUpdateRequest {}
 
 export const PrepareUpdateRequest: MessageType<PrepareUpdateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<PrepareUpdateRequest>(
+  /* @__PURE__ */ createMessageType<PrepareUpdateRequest>(
     'bldr.plugin.PrepareUpdateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -350,9 +250,9 @@ export const PrepareUpdateRequest: MessageType<PrepareUpdateRequest> =
 export interface PrepareUpdateResponse {}
 
 export const PrepareUpdateResponse: MessageType<PrepareUpdateResponse> =
-  /* @__PURE__ */ createEmptyMessageType<PrepareUpdateResponse>(
+  /* @__PURE__ */ createMessageType<PrepareUpdateResponse>(
     'bldr.plugin.PrepareUpdateResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -363,9 +263,9 @@ export const PrepareUpdateResponse: MessageType<PrepareUpdateResponse> =
 export interface WatchPluginStatusRequest {}
 
 export const WatchPluginStatusRequest: MessageType<WatchPluginStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchPluginStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchPluginStatusRequest>(
     'bldr.plugin.WatchPluginStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -376,26 +276,22 @@ export const WatchPluginStatusRequest: MessageType<WatchPluginStatusRequest> =
 export interface WatchPluginStatusResponse {
   /**
    * InstanceKey is the instance key the host scheduler was configured with.
-   *
-   * @generated from field: string instance_key = 1;
    */
   instanceKey?: string
   /**
    * Status is the scheduler's current plugin status snapshot.
-   *
-   * @generated from field: bldr.plugin.PluginStatusSnapshot status = 2;
    */
   status?: PluginStatusSnapshot
 }
 
 export const WatchPluginStatusResponse: MessageType<WatchPluginStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.WatchPluginStatusResponse',
-    fields: [
-      { no: 1, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'status', kind: 'message', T: PluginStatusSnapshot },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchPluginStatusResponse>(
+    'bldr.plugin.WatchPluginStatusResponse',
+    () => [
+      [1, 'instance_key', 9],
+      [2, 'status', 11, 0, PluginStatusSnapshot.codec],
+    ],
+  )
 
 /**
  * GetPluginInfoRequest is a request to return the information for the current plugin.
@@ -405,9 +301,9 @@ export const WatchPluginStatusResponse: MessageType<WatchPluginStatusResponse> =
 export interface GetPluginInfoRequest {}
 
 export const GetPluginInfoRequest: MessageType<GetPluginInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetPluginInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetPluginInfoRequest>(
     'bldr.plugin.GetPluginInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -418,73 +314,57 @@ export const GetPluginInfoRequest: MessageType<GetPluginInfoRequest> =
 export interface GetPluginInfoResponse {
   /**
    * PluginId is the plugin identifier.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * ManifestRef is the reference to the Manifest object.
-   *
-   * @generated from field: bldr.manifest.ManifestRef manifest_ref = 2;
    */
   manifestRef?: ManifestRef
   /**
    * HostVolumeInfo is the optional information for the host Volume.
    * The volume is exposed with a ProxyVolume when present.
-   *
-   * @generated from field: volume.VolumeInfo host_volume_info = 3;
    */
   hostVolumeInfo?: VolumeInfo
   /**
    * Standalone reports that no PluginHost Resource graph is available.
-   *
-   * @generated from field: bool standalone = 4;
    */
   standalone?: boolean
   /**
    * HostStorageId is the Storage ID on the plugin host bus that this plugin
    * instance allocates named volumes through. Empty selects the host default
    * storage.
-   *
-   * @generated from field: string host_storage_id = 5;
    */
   hostStorageId?: string
   /**
    * Historical reports an immutable execution used for accepted-operation replay.
    * The plugin serves handlers without publishing current UI or type registrations.
-   *
-   * @generated from field: bool historical = 6;
    */
   historical?: boolean
   /**
    * Prepared requires private registrations until Activation.Activate is called.
-   *
-   * @generated from field: bool prepared = 7;
    */
   prepared?: boolean
   /**
    * InstanceKey is the logical installation binding, or empty for shared plugins.
    * A Space uses its World engine ID. Physical worker generations do not change it.
-   *
-   * @generated from field: string instance_key = 8;
    */
   instanceKey?: string
 }
 
 export const GetPluginInfoResponse: MessageType<GetPluginInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.GetPluginInfoResponse',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'manifest_ref', kind: 'message', T: () => ManifestRef },
-      { no: 3, name: 'host_volume_info', kind: 'message', T: () => VolumeInfo },
-      { no: 4, name: 'standalone', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'host_storage_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'historical', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'prepared', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetPluginInfoResponse>(
+    'bldr.plugin.GetPluginInfoResponse',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'manifest_ref', 11, 0, ManifestRef.codec],
+      [3, 'host_volume_info', 11, 0, VolumeInfo.codec],
+      [4, 'standalone', 8],
+      [5, 'host_storage_id', 9],
+      [6, 'historical', 8],
+      [7, 'prepared', 8],
+      [8, 'instance_key', 9],
+    ],
+  )
 
 /**
  * LoadPluginRequest is a request to load a plugin while the RPC is active.
@@ -494,8 +374,6 @@ export const GetPluginInfoResponse: MessageType<GetPluginInfoResponse> =
 export interface LoadPluginRequest {
   /**
    * PluginId is the plugin identifier to load.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
@@ -504,40 +382,28 @@ export interface LoadPluginRequest {
    * composite deduplication key, allowing multiple independent instances of the
    * same plugin to run concurrently in separate workers.
    * When empty, behavior is unchanged: a single shared instance per plugin_id.
-   *
-   * @generated from field: string instance_key = 2;
    */
   instanceKey?: string
   /**
    * Manifests selects the installation and its recovery artifacts, newest first.
-   *
-   * @generated from field: repeated bldr.manifest.ManifestRef manifests = 3;
    */
   manifests?: ManifestRef[]
   /**
    * ManifestRoot loads an exact historical executable without current registrations.
-   *
-   * @generated from field: string manifest_root = 4;
    */
   manifestRoot?: string
 }
 
 export const LoadPluginRequest: MessageType<LoadPluginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.LoadPluginRequest',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'manifests',
-        kind: 'message',
-        T: () => ManifestRef,
-        repeated: true,
-      },
-      { no: 4, name: 'manifest_root', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LoadPluginRequest>(
+    'bldr.plugin.LoadPluginRequest',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'instance_key', 9],
+      [3, 'manifests', 11, 1, ManifestRef.codec],
+      [4, 'manifest_root', 9],
+    ],
+  )
 
 /**
  * LoadPluginResponse is a status response to a LoadPlugin request.
@@ -547,19 +413,15 @@ export const LoadPluginRequest: MessageType<LoadPluginRequest> =
 export interface LoadPluginResponse {
   /**
    * PluginStatus contains the current plugin status object.
-   *
-   * @generated from field: bldr.plugin.PluginStatus plugin_status = 1;
    */
   pluginStatus?: PluginStatus
 }
 
 export const LoadPluginResponse: MessageType<LoadPluginResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.LoadPluginResponse',
-    fields: [
-      { no: 1, name: 'plugin_status', kind: 'message', T: PluginStatus },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LoadPluginResponse>(
+    'bldr.plugin.LoadPluginResponse',
+    () => [[1, 'plugin_status', 11, 0, PluginStatus.codec]],
+  )
 
 /**
  * PluginMeta is metadata embedded in a plugin entrypoint.
@@ -570,41 +432,33 @@ export interface PluginMeta {
   /**
    * ProjectId is the project identifier.
    * Must be a valid-dns-label.
-   *
-   * @generated from field: string project_id = 1;
    */
   projectId?: string
   /**
    * PluginId is the plugin identifier.
    * Must be a valid-dns-label.
-   *
-   * @generated from field: string plugin_id = 2;
    */
   pluginId?: string
   /**
    * PlatformId is the destination platform ID.
-   *
-   * @generated from field: string platform_id = 3;
    */
   platformId?: string
   /**
    * BuildType is the type of build this is.
-   *
-   * @generated from field: string build_type = 4;
    */
   buildType?: string
 }
 
 export const PluginMeta: MessageType<PluginMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.PluginMeta',
-    fields: [
-      { no: 1, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'build_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginMeta>(
+    'bldr.plugin.PluginMeta',
+    () => [
+      [1, 'project_id', 9],
+      [2, 'plugin_id', 9],
+      [3, 'platform_id', 9],
+      [4, 'build_type', 9],
+    ],
+  )
 
 /**
  * PluginStartInfo are details passed to the plugin by the plugin host in the environment.
@@ -614,43 +468,35 @@ export const PluginMeta: MessageType<PluginMeta> =
 export interface PluginStartInfo {
   /**
    * InstanceId is the plugin instance id.
-   *
-   * @generated from field: string instance_id = 1;
    */
   instanceId?: string
   /**
    * PluginId is the plugin identifier.
    * Must be a valid-dns-label.
-   *
-   * @generated from field: string plugin_id = 2;
    */
   pluginId?: string
   /**
    * InstanceKey is the instance key from the LoadPlugin request.
    * Empty for non-instanced (shared) plugins.
-   *
-   * @generated from field: string instance_key = 3;
    */
   instanceKey?: string
   /**
    * ManifestRoot identifies the exact executable whose assets this worker imports.
    * It is the base58-encoded manifest block hash, independent of the current revision.
-   *
-   * @generated from field: string manifest_root = 4;
    */
   manifestRoot?: string
 }
 
 export const PluginStartInfo: MessageType<PluginStartInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.PluginStartInfo',
-    fields: [
-      { no: 1, name: 'instance_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'manifest_root', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginStartInfo>(
+    'bldr.plugin.PluginStartInfo',
+    () => [
+      [1, 'instance_id', 9],
+      [2, 'plugin_id', 9],
+      [3, 'instance_key', 9],
+      [4, 'manifest_root', 9],
+    ],
+  )
 
 /**
  * PluginContextInfo contains information about the running plugin attached to
@@ -661,33 +507,27 @@ export const PluginStartInfo: MessageType<PluginStartInfo> =
 export interface PluginContextInfo {
   /**
    * PluginMeta is the plugin metadata.
-   *
-   * @generated from field: bldr.plugin.PluginMeta plugin_meta = 1;
    */
   pluginMeta?: PluginMeta
   /**
    * InstanceKey identifies the plugin installation the host runs.
    * Empty for a singleton plugin; a Space uses its World engine ID.
    * State private to one installation is scoped by this key.
-   *
-   * @generated from field: string instance_key = 2;
    */
   instanceKey?: string
   /**
    * ManifestRoot is the root of the manifest the plugin runs, which names the
    * exact build of its files. Empty when the host did not report it.
-   *
-   * @generated from field: string manifest_root = 3;
    */
   manifestRoot?: string
 }
 
 export const PluginContextInfo: MessageType<PluginContextInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.PluginContextInfo',
-    fields: [
-      { no: 1, name: 'plugin_meta', kind: 'message', T: PluginMeta },
-      { no: 2, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'manifest_root', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginContextInfo>(
+    'bldr.plugin.PluginContextInfo',
+    () => [
+      [1, 'plugin_meta', 11, 0, PluginMeta.codec],
+      [2, 'instance_key', 9],
+      [3, 'manifest_root', 9],
+    ],
+  )

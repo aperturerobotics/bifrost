@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ExternalLinks configures how external links are handled.
@@ -16,23 +14,21 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ExternalLinks {
   /**
    * EXTERNAL_LINKS_OS_BROWSER opens external links in the OS default browser.
-   *
-   * @generated from enum value: EXTERNAL_LINKS_OS_BROWSER = 0;
    */
   OS_BROWSER = 0,
 
   /**
    * EXTERNAL_LINKS_DENY denies all external link navigation.
-   *
-   * @generated from enum value: EXTERNAL_LINKS_DENY = 1;
    */
   DENY = 1,
 }
 
 export const ExternalLinks_Enum = /* @__PURE__ */ createEnumType(
   'saucer.ExternalLinks',
-  ExternalLinks,
-  'EXTERNAL_LINKS_',
+  [
+    [0, 'EXTERNAL_LINKS_OS_BROWSER'],
+    [1, 'EXTERNAL_LINKS_DENY'],
+  ],
 )
 
 /**
@@ -44,97 +40,64 @@ export const ExternalLinks_Enum = /* @__PURE__ */ createEnumType(
 export interface SaucerInit {
   /**
    * DevTools enables the developer tools.
-   *
-   * @generated from field: bool dev_tools = 1;
    */
   devTools?: boolean
   /**
    * BootstrapHtml is the HTML content to load initially.
    * This is the full HTML string, not base64 encoded.
    * Deprecated: Use bootstrap_html_path instead to avoid env var size limits.
-   *
-   * @generated from field: string bootstrap_html = 2;
    */
   bootstrapHtml?: string
   /**
    * ExternalLinks configures how external links are handled.
-   *
-   * @generated from field: saucer.ExternalLinks external_links = 3;
    */
   externalLinks?: ExternalLinks
   /**
    * BootstrapHtmlPath is the path to a file containing the bootstrap HTML.
    * Used instead of bootstrap_html to avoid "argument list too long" errors.
-   *
-   * @generated from field: string bootstrap_html_path = 4;
    */
   bootstrapHtmlPath?: string
   /**
    * EntrypointJs is the entrypoint JavaScript module content.
    * Written to a file and passed as entrypoint_js_path to C++.
-   *
-   * @generated from field: string entrypoint_js = 5;
    */
   entrypointJs?: string
   /**
    * EntrypointJsPath is the path to the entrypoint JS module file.
    * The C++ binary serves this at /entrypoint.mjs.
-   *
-   * @generated from field: string entrypoint_js_path = 6;
    */
   entrypointJsPath?: string
   /**
    * AppName is the application display name.
-   *
-   * @generated from field: string app_name = 7;
    */
   appName?: string
   /**
    * WindowTitle overrides the window title (defaults to app_name).
-   *
-   * @generated from field: string window_title = 8;
    */
   windowTitle?: string
   /**
    * WindowWidth is the default window width in pixels.
-   *
-   * @generated from field: uint32 window_width = 9;
    */
   windowWidth?: number
   /**
    * WindowHeight is the default window height in pixels.
-   *
-   * @generated from field: uint32 window_height = 10;
    */
   windowHeight?: number
 }
 
 export const SaucerInit: MessageType<SaucerInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'saucer.SaucerInit',
-    fields: [
-      { no: 1, name: 'dev_tools', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'bootstrap_html', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'external_links', kind: 'enum', T: ExternalLinks_Enum },
-      {
-        no: 4,
-        name: 'bootstrap_html_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 5, name: 'entrypoint_js', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'entrypoint_js_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 7, name: 'app_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'window_title', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'window_width', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 10, name: 'window_height', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SaucerInit>('saucer.SaucerInit', () => [
+    [1, 'dev_tools', 8],
+    [2, 'bootstrap_html', 9],
+    [3, 'external_links', 14, 0, ExternalLinks_Enum],
+    [4, 'bootstrap_html_path', 9],
+    [5, 'entrypoint_js', 9],
+    [6, 'entrypoint_js_path', 9],
+    [7, 'app_name', 9],
+    [8, 'window_title', 9],
+    [9, 'window_width', 13],
+    [10, 'window_height', 13],
+  ])
 
 /**
  * EvalJSRequest is a request to evaluate JavaScript code.
@@ -144,19 +107,15 @@ export const SaucerInit: MessageType<SaucerInit> =
 export interface EvalJSRequest {
   /**
    * Code is the JavaScript code to evaluate.
-   *
-   * @generated from field: string code = 1;
    */
   code?: string
 }
 
 export const EvalJSRequest: MessageType<EvalJSRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'saucer.EvalJSRequest',
-    fields: [
-      { no: 1, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EvalJSRequest>(
+    'saucer.EvalJSRequest',
+    () => [[1, 'code', 9]],
+  )
 
 /**
  * EvalJSResponse is the response from evaluating JavaScript code.
@@ -166,26 +125,22 @@ export const EvalJSRequest: MessageType<EvalJSRequest> =
 export interface EvalJSResponse {
   /**
    * Result is the result string.
-   *
-   * @generated from field: string result = 1;
    */
   result?: string
   /**
    * Error is the error message, if any.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const EvalJSResponse: MessageType<EvalJSResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'saucer.EvalJSResponse',
-    fields: [
-      { no: 1, name: 'result', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EvalJSResponse>(
+    'saucer.EvalJSResponse',
+    () => [
+      [1, 'result', 9],
+      [2, 'error', 9],
+    ],
+  )
 
 /**
  * Config is the configuration for the saucer runtime.
@@ -195,103 +150,71 @@ export const EvalJSResponse: MessageType<EvalJSResponse> =
 export interface Config {
   /**
    * SaucerPath is the path to the saucer binary.
-   *
-   * @generated from field: string saucer_path = 1;
    */
   saucerPath?: string
   /**
    * WorkdirPath is the path to the working directory to use.
    * If unset, defaults to the current working directory of the process.
-   *
-   * @generated from field: string workdir_path = 2;
    */
   workdirPath?: string
   /**
    * WebRuntimeId is the value to use for the runtime uuid.
    * Used for the Unix pipe paths and for the BroadcastChannel ids.
    * Should be unique against other running Saucer instances.
-   *
-   * @generated from field: string web_runtime_id = 3;
    */
   webRuntimeId?: string
   /**
    * ExternalLinks configures how external links are handled.
-   *
-   * @generated from field: saucer.ExternalLinks external_links = 4;
    */
   externalLinks?: ExternalLinks
   /**
    * SaucerFlags are additional flags to pass to the saucer binary.
-   *
-   * @generated from field: repeated string saucer_flags = 5;
    */
   saucerFlags?: string[]
   /**
    * BootstrapHtml is the HTML content to load initially.
    * This is the full HTML string with import map.
-   *
-   * @generated from field: string bootstrap_html = 6;
    */
   bootstrapHtml?: string
   /**
    * DevTools enables the developer tools in the webview.
-   *
-   * @generated from field: bool dev_tools = 7;
    */
   devTools?: boolean
   /**
    * EntrypointJs is the entrypoint JavaScript module.
    * This is written to a file and served at /entrypoint.mjs.
-   *
-   * @generated from field: string entrypoint_js = 8;
    */
   entrypointJs?: string
   /**
    * AppName is the application display name.
-   *
-   * @generated from field: string app_name = 9;
    */
   appName?: string
   /**
    * WindowTitle overrides the window title (defaults to app_name).
-   *
-   * @generated from field: string window_title = 10;
    */
   windowTitle?: string
   /**
    * WindowWidth is the default window width in pixels.
-   *
-   * @generated from field: uint32 window_width = 11;
    */
   windowWidth?: number
   /**
    * WindowHeight is the default window height in pixels.
-   *
-   * @generated from field: uint32 window_height = 12;
    */
   windowHeight?: number
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'saucer.Config',
-  fields: [
-    { no: 1, name: 'saucer_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'workdir_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'web_runtime_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'external_links', kind: 'enum', T: ExternalLinks_Enum },
-    {
-      no: 5,
-      name: 'saucer_flags',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 6, name: 'bootstrap_html', kind: 'scalar', T: ScalarType.STRING },
-    { no: 7, name: 'dev_tools', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 8, name: 'entrypoint_js', kind: 'scalar', T: ScalarType.STRING },
-    { no: 9, name: 'app_name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 10, name: 'window_title', kind: 'scalar', T: ScalarType.STRING },
-    { no: 11, name: 'window_width', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 12, name: 'window_height', kind: 'scalar', T: ScalarType.UINT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('saucer.Config', () => [
+    [1, 'saucer_path', 9],
+    [2, 'workdir_path', 9],
+    [3, 'web_runtime_id', 9],
+    [4, 'external_links', 14, 0, ExternalLinks_Enum],
+    [5, 'saucer_flags', 9, 1],
+    [6, 'bootstrap_html', 9],
+    [7, 'dev_tools', 8],
+    [8, 'entrypoint_js', 9],
+    [9, 'app_name', 9],
+    [10, 'window_title', 9],
+    [11, 'window_width', 13],
+    [12, 'window_height', 13],
+  ])

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the debug trace HTTP controller.
@@ -16,20 +14,11 @@ export interface Config {
   /**
    * TraceDurationSeconds is the trace capture duration.
    * Defaults to 30 seconds.
-   *
-   * @generated from field: uint32 trace_duration_seconds = 1;
    */
   traceDurationSeconds?: number
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'debug.trace.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'trace_duration_seconds',
-      kind: 'scalar',
-      T: ScalarType.UINT32,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('debug.trace.Config', () => [
+    [1, 'trace_duration_seconds', 13],
+  ])

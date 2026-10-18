@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Result } from '../../value/value.pb.js'
 import { ValueSet } from '../../target/target.pb.js'
 
@@ -19,16 +14,11 @@ import { ValueSet } from '../../target/target.pb.js'
  * @generated from enum pass.tx.TxType
  */
 export enum TxType {
-  /**
-   * @generated from enum value: TxType_INVALID = 0;
-   */
   TxType_INVALID = 0,
 
   /**
    * TxType_START marks the pass as running.
    * Transitions to state RUNNING from PENDING.
-   *
-   * @generated from enum value: TxType_START = 1;
    */
   TxType_START = 1,
 
@@ -37,8 +27,6 @@ export enum TxType {
    * Overwrites any already-existing executions with matching peer ids.
    * Can optionally clear the list of executions before creating.
    * Used to add / reset execution instances.
-   *
-   * @generated from enum value: TxType_CREATE_EXEC_SPECS = 2;
    */
   TxType_CREATE_EXEC_SPECS = 2,
 
@@ -47,8 +35,6 @@ export enum TxType {
    * Transitions RUNNING to CHECKING when every linked Execution is terminal.
    * Transitions CANCELING to COMPLETE after every linked Execution is terminal.
    * If all assigned Executions fail, the Pass also fails.
-   *
-   * @generated from enum value: TxType_UPDATE_EXEC_STATES = 3;
    */
   TxType_UPDATE_EXEC_STATES = 3,
 
@@ -56,22 +42,77 @@ export enum TxType {
    * TxType_COMPLETE sets the terminal result after every linked Execution is
    * terminal. Canceled completion requires CANCELING; other completion
    * requires CHECKING.
-   *
-   * @generated from enum value: TxType_COMPLETE = 4;
    */
   TxType_COMPLETE = 4,
 
   /**
    * TxType_CANCEL requests cancellation and custody drain.
-   *
-   * @generated from enum value: TxType_CANCEL = 5;
    */
   TxType_CANCEL = 5,
 }
 
-export const TxType_Enum = /* @__PURE__ */ createEnumType(
-  'pass.tx.TxType',
-  TxType,
+export const TxType_Enum = /* @__PURE__ */ createEnumType('pass.tx.TxType', [
+  [0, 'TxType_INVALID'],
+  [1, 'TxType_START'],
+  [2, 'TxType_CREATE_EXEC_SPECS'],
+  [3, 'TxType_UPDATE_EXEC_STATES'],
+  [4, 'TxType_COMPLETE'],
+  [5, 'TxType_CANCEL'],
+])
+
+/**
+ * Tx is the on-the-wire representation of a transaction.
+ *
+ * @generated from message pass.tx.Tx
+ */
+export interface Tx {
+  /**
+   * TxType is the kind of transaction this is.
+   */
+  txType?: TxType
+  /**
+   * PassObjectKey is the Pass object ID this is associated with.
+   * The Pass object must already exist.
+   */
+  passObjectKey?: string
+  /**
+   * TxStart contains the start transaction tx.
+   * TxType_START
+   */
+  txStart?: TxStart
+  /**
+   * TxCreateExecSpecs contains the create exec specs tx.
+   * TxType_CREATE_EXEC_SPECS
+   */
+  txCreateExecSpecs?: TxCreateExecSpecs
+  /**
+   * TxUpdateExecStates contains the update exec states tx.
+   * TxType_EXEC_COMPLETE
+   */
+  txUpdateExecStates?: TxUpdateExecStates
+  /**
+   * TxComplete contains the complete tx.
+   * TxType_COMPLETE
+   */
+  txComplete?: TxComplete
+  /**
+   * TxCancel contains the cancel tx.
+   * TxType_CANCEL
+   */
+  txCancel?: TxCancel
+}
+
+export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType<Tx>(
+  'pass.tx.Tx',
+  () => [
+    [1, 'tx_type', 14, 0, TxType_Enum],
+    [2, 'pass_object_key', 9],
+    [3, 'tx_start', 11, 0, TxStart.codec],
+    [4, 'tx_create_exec_specs', 11, 0, TxCreateExecSpecs.codec],
+    [5, 'tx_update_exec_states', 11, 0, TxUpdateExecStates.codec],
+    [6, 'tx_complete', 11, 0, TxComplete.codec],
+    [7, 'tx_cancel', 11, 0, TxCancel.codec],
+  ],
 )
 
 /**
@@ -83,57 +124,14 @@ export interface ExecSpec {
   /**
    * PeerId is the identifier of the peer assigned to the execution.
    * Cannot be empty.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const ExecSpec: MessageType<ExecSpec> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pass.tx.ExecSpec',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TxCreateExecSpecs creates a set of Execution objects from the specs.
- * Overwrites any already-existing executions with matching peer ids.
- * TxType: TxType_CREATE_EXEC_SPECS
- *
- * @generated from message pass.tx.TxCreateExecSpecs
- */
-export interface TxCreateExecSpecs {
-  /**
-   * ExecSpecs contains specifications for execution objects to create.
-   *
-   * @generated from field: repeated pass.tx.ExecSpec exec_specs = 1;
-   */
-  execSpecs?: ExecSpec[]
-  /**
-   * ClearExisting deletes all already-existing associated exec states.
-   * If set and len(exec_specs) == 0, clears all execution instances.
-   *
-   * @generated from field: bool clear_existing = 2;
-   */
-  clearExisting?: boolean
-}
-
-export const TxCreateExecSpecs: MessageType<TxCreateExecSpecs> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pass.tx.TxCreateExecSpecs',
-    fields: [
-      {
-        no: 1,
-        name: 'exec_specs',
-        kind: 'message',
-        T: ExecSpec,
-        repeated: true,
-      },
-      { no: 2, name: 'clear_existing', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ExecSpec>('pass.tx.ExecSpec', () => [
+    [1, 'peer_id', 9],
+  ])
 
 /**
  * TxStart starts the execution of the pass, optionally creating Executions.
@@ -147,18 +145,42 @@ export const TxCreateExecSpecs: MessageType<TxCreateExecSpecs> =
 export interface TxStart {
   /**
    * CreateExecSpecs is the nested create exec specs transaction.
-   *
-   * @generated from field: pass.tx.TxCreateExecSpecs create_exec_specs = 1;
    */
   createExecSpecs?: TxCreateExecSpecs
 }
 
-export const TxStart: MessageType<TxStart> = /* @__PURE__ */ createMessageType({
-  typeName: 'pass.tx.TxStart',
-  fields: [
-    { no: 1, name: 'create_exec_specs', kind: 'message', T: TxCreateExecSpecs },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const TxStart: MessageType<TxStart> =
+  /* @__PURE__ */ createMessageType<TxStart>('pass.tx.TxStart', () => [
+    [1, 'create_exec_specs', 11, 0, TxCreateExecSpecs.codec],
+  ])
+
+/**
+ * TxCreateExecSpecs creates a set of Execution objects from the specs.
+ * Overwrites any already-existing executions with matching peer ids.
+ * TxType: TxType_CREATE_EXEC_SPECS
+ *
+ * @generated from message pass.tx.TxCreateExecSpecs
+ */
+export interface TxCreateExecSpecs {
+  /**
+   * ExecSpecs contains specifications for execution objects to create.
+   */
+  execSpecs?: ExecSpec[]
+  /**
+   * ClearExisting deletes all already-existing associated exec states.
+   * If set and len(exec_specs) == 0, clears all execution instances.
+   */
+  clearExisting?: boolean
+}
+
+export const TxCreateExecSpecs: MessageType<TxCreateExecSpecs> =
+  /* @__PURE__ */ createMessageType<TxCreateExecSpecs>(
+    'pass.tx.TxCreateExecSpecs',
+    () => [
+      [1, 'exec_specs', 11, 1, ExecSpec.codec],
+      [2, 'clear_existing', 8],
+    ],
+  )
 
 /**
  * TxUpdateExecStates updates the list of execution states for the Pass.
@@ -172,9 +194,9 @@ export const TxStart: MessageType<TxStart> = /* @__PURE__ */ createMessageType({
 export interface TxUpdateExecStates {}
 
 export const TxUpdateExecStates: MessageType<TxUpdateExecStates> =
-  /* @__PURE__ */ createEmptyMessageType<TxUpdateExecStates>(
+  /* @__PURE__ */ createMessageType<TxUpdateExecStates>(
     'pass.tx.TxUpdateExecStates',
-    true,
+    () => [],
   )
 
 /**
@@ -188,8 +210,6 @@ export const TxUpdateExecStates: MessageType<TxUpdateExecStates> =
 export interface TxComplete {
   /**
    * Result is information about the outcome of a completed pass.
-   *
-   * @generated from field: forge.value.Result result = 1;
    */
   result?: Result
   /**
@@ -197,20 +217,15 @@ export interface TxComplete {
    * Inputs must be empty.
    * Must match the outputs calculated from the Execution objects.
    * Must be empty if the result is not success.
-   *
-   * @generated from field: forge.target.ValueSet value_set = 2;
    */
   valueSet?: ValueSet
 }
 
 export const TxComplete: MessageType<TxComplete> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pass.tx.TxComplete',
-    fields: [
-      { no: 1, name: 'result', kind: 'message', T: () => Result },
-      { no: 2, name: 'value_set', kind: 'message', T: () => ValueSet },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxComplete>('pass.tx.TxComplete', () => [
+    [1, 'result', 11, 0, Result.codec],
+    [2, 'value_set', 11, 0, ValueSet.codec],
+  ])
 
 /**
  * TxCancel requests cancellation and records the terminal canceled result.
@@ -221,95 +236,11 @@ export const TxComplete: MessageType<TxComplete> =
 export interface TxCancel {
   /**
    * Result is the canceled result recorded when the drain completes.
-   *
-   * @generated from field: forge.value.Result result = 1;
    */
   result?: Result
 }
 
 export const TxCancel: MessageType<TxCancel> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'pass.tx.TxCancel',
-    fields: [
-      { no: 1, name: 'result', kind: 'message', T: () => Result },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Tx is the on-the-wire representation of a transaction.
- *
- * @generated from message pass.tx.Tx
- */
-export interface Tx {
-  /**
-   * TxType is the kind of transaction this is.
-   *
-   * @generated from field: pass.tx.TxType tx_type = 1;
-   */
-  txType?: TxType
-  /**
-   * PassObjectKey is the Pass object ID this is associated with.
-   * The Pass object must already exist.
-   *
-   * @generated from field: string pass_object_key = 2;
-   */
-  passObjectKey?: string
-  /**
-   * TxStart contains the start transaction tx.
-   * TxType_START
-   *
-   * @generated from field: pass.tx.TxStart tx_start = 3;
-   */
-  txStart?: TxStart
-  /**
-   * TxCreateExecSpecs contains the create exec specs tx.
-   * TxType_CREATE_EXEC_SPECS
-   *
-   * @generated from field: pass.tx.TxCreateExecSpecs tx_create_exec_specs = 4;
-   */
-  txCreateExecSpecs?: TxCreateExecSpecs
-  /**
-   * TxUpdateExecStates contains the update exec states tx.
-   * TxType_EXEC_COMPLETE
-   *
-   * @generated from field: pass.tx.TxUpdateExecStates tx_update_exec_states = 5;
-   */
-  txUpdateExecStates?: TxUpdateExecStates
-  /**
-   * TxComplete contains the complete tx.
-   * TxType_COMPLETE
-   *
-   * @generated from field: pass.tx.TxComplete tx_complete = 6;
-   */
-  txComplete?: TxComplete
-  /**
-   * TxCancel contains the cancel tx.
-   * TxType_CANCEL
-   *
-   * @generated from field: pass.tx.TxCancel tx_cancel = 7;
-   */
-  txCancel?: TxCancel
-}
-
-export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType({
-  typeName: 'pass.tx.Tx',
-  fields: [
-    { no: 1, name: 'tx_type', kind: 'enum', T: TxType_Enum },
-    { no: 2, name: 'pass_object_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'tx_start', kind: 'message', T: TxStart },
-    {
-      no: 4,
-      name: 'tx_create_exec_specs',
-      kind: 'message',
-      T: TxCreateExecSpecs,
-    },
-    {
-      no: 5,
-      name: 'tx_update_exec_states',
-      kind: 'message',
-      T: TxUpdateExecStates,
-    },
-    { no: 6, name: 'tx_complete', kind: 'message', T: TxComplete },
-    { no: 7, name: 'tx_cancel', kind: 'message', T: TxCancel },
-  ] satisfies readonly PartialFieldInfo[],
-})
+  /* @__PURE__ */ createMessageType<TxCancel>('pass.tx.TxCancel', () => [
+    [1, 'result', 11, 0, Result.codec],
+  ])

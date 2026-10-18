@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
 import type { Enabled } from '@go/github.com/aperturerobotics/util/enabled/enabled.pb.js'
 import { Enabled_Enum } from '@go/github.com/aperturerobotics/util/enabled/enabled.pb.js'
@@ -29,27 +27,23 @@ import { GoCompiler_Enum } from '../../plugin/compiler/go/compiler.pb.js'
 export interface EmbedManifest {
   /**
    * ManifestId is the manifest id to embed.
-   *
-   * @generated from field: string manifest_id = 1;
    */
   manifestId?: string
   /**
    * PlatformId is the platform id of the manifest build to embed.
    * Must be a fully qualified platform id (e.g. "desktop/darwin/arm64", "js").
-   *
-   * @generated from field: string platform_id = 2;
    */
   platformId?: string
 }
 
 export const EmbedManifest: MessageType<EmbedManifest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.dist.compiler.EmbedManifest',
-    fields: [
-      { no: 1, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EmbedManifest>(
+    'bldr.dist.compiler.EmbedManifest',
+    () => [
+      [1, 'manifest_id', 9],
+      [2, 'platform_id', 9],
+    ],
+  )
 
 /**
  * IceServer configures one trusted ICE server for browser peer connections.
@@ -59,39 +53,27 @@ export const EmbedManifest: MessageType<EmbedManifest> =
 export interface IceServer {
   /**
    * Urls is the STUN or TURN URL list.
-   *
-   * @generated from field: repeated string urls = 1;
    */
   urls?: string[]
   /**
    * Username is the TURN username.
-   *
-   * @generated from field: string username = 2;
    */
   username?: string
   /**
    * Credential is the TURN credential.
-   *
-   * @generated from field: string credential = 3;
    */
   credential?: string
 }
 
 export const IceServer: MessageType<IceServer> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.dist.compiler.IceServer',
-    fields: [
-      {
-        no: 1,
-        name: 'urls',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'credential', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IceServer>(
+    'bldr.dist.compiler.IceServer',
+    () => [
+      [1, 'urls', 9, 1],
+      [2, 'username', 9],
+      [3, 'credential', 9],
+    ],
+  )
 
 /**
  * Config configures the dist compiler controller.
@@ -106,8 +88,6 @@ export interface Config {
    * EmbedManifests is the list of (manifest_id, platform_id) pairs to embed
    * in the dist binary. Creates a ManifestStore containing the named builds.
    * The manifest contents will be embedded in the dist binary.
-   *
-   * @generated from field: repeated bldr.dist.compiler.EmbedManifest embed_manifests = 1;
    */
   embedManifests?: EmbedManifest[]
   /**
@@ -115,8 +95,6 @@ export interface Config {
    * Note that plugins can also load other plugins with the LoadPlugin directive.
    * Use this to load your entrypoint plugin which then loads other plugins.
    * This will be included in the dist binary.
-   *
-   * @generated from field: repeated string load_plugins = 2;
    */
   loadPlugins?: string[]
   /**
@@ -125,35 +103,25 @@ export interface Config {
    * The file will be bundled with esbuild into the entrypoint bundle.
    * The component should contain a <WebView /> from @aptre/bldr-react.
    * The contents will be used for the children of BldrRoot.
-   *
-   * @generated from field: string load_web_startup = 8;
    */
   loadWebStartup?: string
   /**
    * HostConfigSet is a ConfigSet to apply to the host on dist startup.
    * This ConfigSet is applied to the dist host bus on startup.
    * This will be included in the dist binary.
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> host_config_set = 3;
    */
   hostConfigSet?: { [key: string]: ControllerConfig }
   /**
    * ProjectId overrides the project id set in the project config.
-   *
-   * @generated from field: string project_id = 4;
    */
   projectId?: string
   /**
    * EntrypointRole identifies the release role for the dist binary.
    * Expected values are "desktop", "browser", and "cli".
-   *
-   * @generated from field: string entrypoint_role = 10;
    */
   entrypointRole?: string
   /**
    * ChannelKey is the release channel this entrypoint targets.
-   *
-   * @generated from field: string channel_key = 11;
    */
   channelKey?: string
   /**
@@ -163,29 +131,21 @@ export interface Config {
    * https://github.com/golang/go/issues/57120#issuecomment-1420752516
    *
    * Cgo may still be force-disabled if incompatible with the target (wasm, tinygo).
-   *
-   * @generated from field: enabled.Enabled enable_cgo = 5;
    */
   enableCgo?: Enabled
   /**
    * GoCompiler selects the Go compiler used for the dist entrypoint.
-   *
-   * @generated from field: bldr.plugin.compiler.go.GoCompiler go_compiler = 6;
    */
   goCompiler?: GoCompiler
   /**
    * EnableCompression can optionally force-enable or force-disable binary compression.
    * The default is ENABLE for release-mode only.
    * Only applicable for the web platform (WebAssembly) (currently).
-   *
-   * @generated from field: enabled.Enabled enable_compression = 7;
    */
   enableCompression?: Enabled
   /**
    * CliPkgs is a list of Go packages providing native CLI commands.
    * Native dist builds may expose these commands when launched with arguments.
-   *
-   * @generated from field: repeated string cli_pkgs = 9;
    */
   cliPkgs?: string[]
   /**
@@ -193,16 +153,12 @@ export interface Config {
    * document shell to browser peer connections. Worker-provided ICE servers
    * are ignored at the main-thread bridge boundary. When empty, the shell uses
    * Spacewave's standard public STUN server.
-   *
-   * @generated from field: repeated bldr.dist.compiler.IceServer browser_ice_servers = 12;
    */
   browserIceServers?: IceServer[]
   /**
    * BrowserIceServersEndpoint is the optional trusted same-origin path that
    * returns short-lived ICE credentials ({ iceServers, expiresAt }). Only the
    * document shell may use it; worker-provided servers remain ignored.
-   *
-   * @generated from field: string browser_ice_servers_endpoint = 13;
    */
   browserIceServersEndpoint?: string
   /**
@@ -210,30 +166,22 @@ export interface Config {
    * native executable without producing a sidecar. Unspecified and DISABLE
    * retain the external volume layout. Web distributions always ship the
    * volume separately regardless of this option.
-   *
-   * @generated from field: enabled.Enabled embed_native_volume = 14;
    */
   embedNativeVolume?: Enabled
   /**
    * UpdateGuardPluginIds require the running plugin's UpdateGuard service to
    * authorize hot replacement. Initial startup does not require approval.
-   *
-   * @generated from field: repeated string update_guard_plugin_ids = 15;
    */
   updateGuardPluginIds?: string[]
   /**
    * GoscriptDeferredFunctions lists exported package/path.Function boundaries
    * whose modules initialize on first invocation in a GoScript dist build.
-   *
-   * @generated from field: repeated string goscript_deferred_functions = 16;
    */
   goscriptDeferredFunctions?: string[]
   /**
    * NativeRunnerPackage supplies Run with the dist_entrypoint.NativeRunner
    * signature. It owns a native event loop around the existing distribution
    * lifetime. Empty uses the default runner; browser builds ignore this field.
-   *
-   * @generated from field: string native_runner_package = 17;
    */
   nativeRunnerPackage?: string
   /**
@@ -241,87 +189,31 @@ export interface Config {
    * from bldr/entrypoint/compose. The dist host calls it once at startup and
    * adds the returned factories to its bus and, on native builds, the returned
    * commands to its CLI. May be relative to the project module.
-   *
-   * @generated from field: string compose_package = 18;
    */
   composePackage?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.dist.compiler.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'embed_manifests',
-      kind: 'message',
-      T: EmbedManifest,
-      repeated: true,
-    },
-    {
-      no: 2,
-      name: 'load_plugins',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 8, name: 'load_web_startup', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'host_config_set',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => ControllerConfig },
-    },
-    { no: 4, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 10, name: 'entrypoint_role', kind: 'scalar', T: ScalarType.STRING },
-    { no: 11, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'enable_cgo', kind: 'enum', T: Enabled_Enum },
-    { no: 6, name: 'go_compiler', kind: 'enum', T: GoCompiler_Enum },
-    { no: 7, name: 'enable_compression', kind: 'enum', T: Enabled_Enum },
-    {
-      no: 9,
-      name: 'cli_pkgs',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 12,
-      name: 'browser_ice_servers',
-      kind: 'message',
-      T: IceServer,
-      repeated: true,
-    },
-    {
-      no: 13,
-      name: 'browser_ice_servers_endpoint',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 14, name: 'embed_native_volume', kind: 'enum', T: Enabled_Enum },
-    {
-      no: 15,
-      name: 'update_guard_plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 16,
-      name: 'goscript_deferred_functions',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 17,
-      name: 'native_runner_package',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 18, name: 'compose_package', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('bldr.dist.compiler.Config', () => [
+    [1, 'embed_manifests', 11, 1, EmbedManifest.codec],
+    [2, 'load_plugins', 9, 1],
+    [3, 'host_config_set', 11, 584, ControllerConfig.codec],
+    [4, 'project_id', 9],
+    [5, 'enable_cgo', 14, 0, Enabled_Enum],
+    [6, 'go_compiler', 14, 0, GoCompiler_Enum],
+    [7, 'enable_compression', 14, 0, Enabled_Enum],
+    [8, 'load_web_startup', 9],
+    [9, 'cli_pkgs', 9, 1],
+    [10, 'entrypoint_role', 9],
+    [11, 'channel_key', 9],
+    [12, 'browser_ice_servers', 11, 1, IceServer.codec],
+    [13, 'browser_ice_servers_endpoint', 9],
+    [14, 'embed_native_volume', 14, 0, Enabled_Enum],
+    [15, 'update_guard_plugin_ids', 9, 1],
+    [16, 'goscript_deferred_functions', 9, 1],
+    [17, 'native_runner_package', 9],
+    [18, 'compose_package', 9],
+  ])
 
 /**
  * PreBuildHookResult is the output of a pre-build hook.
@@ -332,16 +224,12 @@ export interface PreBuildHookResult {
   /**
    * Config is the configuration for the dist build step.
    * Merged with the existing configuration.
-   *
-   * @generated from field: bldr.dist.compiler.Config config = 1;
    */
   config?: Config
 }
 
 export const PreBuildHookResult: MessageType<PreBuildHookResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.dist.compiler.PreBuildHookResult',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PreBuildHookResult>(
+    'bldr.dist.compiler.PreBuildHookResult',
+    () => [[1, 'config', 11, 0, Config.codec]],
+  )

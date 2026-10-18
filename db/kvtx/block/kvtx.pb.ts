@@ -7,7 +7,6 @@ import { Node } from './iavl/iavl.pb.js'
 import { Root } from './okra/okra.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * KVImplType is the key/value store implementation enum.
@@ -17,37 +16,34 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum KVImplType {
   /**
    * KEY_VALUE_IMPL_UNKNOWN is the zero value.
-   *
-   * @generated from enum value: KV_IMPL_TYPE_UNKNOWN = 0;
    */
   KV_IMPL_TYPE_UNKNOWN = 0,
 
   /**
    * KEY_VALUE_IMPL_IAVL is the immutable avl tree value.
-   *
-   * @generated from enum value: KV_IMPL_TYPE_IAVL = 1;
    */
   KV_IMPL_TYPE_IAVL = 1,
 
   /**
    * KEY_VALUE_IMPL_OKRA is the Okra-backed tree value.
-   *
-   * @generated from enum value: KV_IMPL_TYPE_OKRA = 2;
    */
   KV_IMPL_TYPE_OKRA = 2,
 
   /**
    * KV_IMPL_TYPE_OKRA_INLINE packs small byte values into Okra pages.
    * The distinct tag makes readers without inline-value support reject it.
-   *
-   * @generated from enum value: KV_IMPL_TYPE_OKRA_INLINE = 3;
    */
   KV_IMPL_TYPE_OKRA_INLINE = 3,
 }
 
 export const KVImplType_Enum = /* @__PURE__ */ createEnumType(
   'kvtx.block.KVImplType',
-  KVImplType,
+  [
+    [0, 'KV_IMPL_TYPE_UNKNOWN'],
+    [1, 'KV_IMPL_TYPE_IAVL'],
+    [2, 'KV_IMPL_TYPE_OKRA'],
+    [3, 'KV_IMPL_TYPE_OKRA_INLINE'],
+  ],
 )
 
 /**
@@ -59,32 +55,26 @@ export const KVImplType_Enum = /* @__PURE__ */ createEnumType(
 export interface KeyValueStore {
   /**
    * ImplType is the key value implementation type.
-   *
-   * @generated from field: kvtx.block.KVImplType impl_type = 1;
    */
   implType?: KVImplType
   /**
    * IavlRoot is the root node for the iavl tree.
    * KV_IMPL_TYPE_IAVL
-   *
-   * @generated from field: kvtx.block.iavl.Node iavl_root = 2;
    */
   iavlRoot?: Node
   /**
    * OkraRoot is the root metadata for the Okra tree.
    * KV_IMPL_TYPE_OKRA or KV_IMPL_TYPE_OKRA_INLINE
-   *
-   * @generated from field: kvtx.block.okra.Root okra_root = 3;
    */
   okraRoot?: Root
 }
 
 export const KeyValueStore: MessageType<KeyValueStore> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'kvtx.block.KeyValueStore',
-    fields: [
-      { no: 1, name: 'impl_type', kind: 'enum', T: KVImplType_Enum },
-      { no: 2, name: 'iavl_root', kind: 'message', T: () => Node },
-      { no: 3, name: 'okra_root', kind: 'message', T: () => Root },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<KeyValueStore>(
+    'kvtx.block.KeyValueStore',
+    () => [
+      [1, 'impl_type', 14, 0, KVImplType_Enum],
+      [2, 'iavl_root', 11, 0, Node.codec],
+      [3, 'okra_root', 11, 0, Root.codec],
+    ],
+  )

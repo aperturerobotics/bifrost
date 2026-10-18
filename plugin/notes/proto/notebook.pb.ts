@@ -4,38 +4,7 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-
-/**
- * NotebookSource is a reference to a UnixFS path.
- *
- * @generated from message notes.NotebookSource
- */
-export interface NotebookSource {
-  /**
-   * Name is the display name for this source in the sidebar.
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-  /**
-   * Ref is a UnixFS path reference (object-uri format: key/-/path).
-   *
-   * @generated from field: string ref = 2;
-   */
-  ref?: string
-}
-
-export const NotebookSource: MessageType<NotebookSource> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.NotebookSource',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'ref', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Notebook is a world object that curates markdown files from UnixFS
@@ -46,32 +15,44 @@ export const NotebookSource: MessageType<NotebookSource> =
 export interface Notebook {
   /**
    * Name is the display name of the notebook.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Sources is the ordered list of content sources.
-   *
-   * @generated from field: repeated notes.NotebookSource sources = 2;
    */
   sources?: NotebookSource[]
 }
 
 export const Notebook: MessageType<Notebook> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.Notebook',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'sources',
-        kind: 'message',
-        T: NotebookSource,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Notebook>('notes.Notebook', () => [
+    [1, 'name', 9],
+    [2, 'sources', 11, 1, NotebookSource.codec],
+  ])
+
+/**
+ * NotebookSource is a reference to a UnixFS path.
+ *
+ * @generated from message notes.NotebookSource
+ */
+export interface NotebookSource {
+  /**
+   * Name is the display name for this source in the sidebar.
+   */
+  name?: string
+  /**
+   * Ref is a UnixFS path reference (object-uri format: key/-/path).
+   */
+  ref?: string
+}
+
+export const NotebookSource: MessageType<NotebookSource> =
+  /* @__PURE__ */ createMessageType<NotebookSource>(
+    'notes.NotebookSource',
+    () => [
+      [1, 'name', 9],
+      [2, 'ref', 9],
+    ],
+  )
 
 /**
  * InitNotebookOp creates a Notebook with a UnixFS source and starter notes.
@@ -81,40 +62,24 @@ export const Notebook: MessageType<Notebook> =
 export interface InitNotebookOp {
   /**
    * NotebookObjectKey is the world object key for the notebook.
-   *
-   * @generated from field: string notebook_object_key = 1;
    */
   notebookObjectKey?: string
   /**
    * UnixfsObjectKey is the world object key for the UnixFS storage.
-   *
-   * @generated from field: string unixfs_object_key = 2;
    */
   unixfsObjectKey?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
 }
 
 export const InitNotebookOp: MessageType<InitNotebookOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.InitNotebookOp',
-    fields: [
-      {
-        no: 1,
-        name: 'notebook_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'unixfs_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitNotebookOp>(
+    'notes.InitNotebookOp',
+    () => [
+      [1, 'notebook_object_key', 9],
+      [2, 'unixfs_object_key', 9],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Target } from '../../forge/target/target.pb.js'
 import { BlockRef } from '../../db/block/block.pb.js'
 
@@ -21,30 +16,27 @@ import { BlockRef } from '../../db/block/block.pb.js'
 export enum FlowgraphPortDirection {
   /**
    * FLOWGRAPH_PORT_DIRECTION_UNKNOWN is unset.
-   *
-   * @generated from enum value: FLOWGRAPH_PORT_DIRECTION_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * FLOWGRAPH_PORT_DIRECTION_INPUT accepts data or an activation.
-   *
-   * @generated from enum value: FLOWGRAPH_PORT_DIRECTION_INPUT = 1;
    */
   INPUT = 1,
 
   /**
    * FLOWGRAPH_PORT_DIRECTION_OUTPUT supplies data or routes an activation.
-   *
-   * @generated from enum value: FLOWGRAPH_PORT_DIRECTION_OUTPUT = 2;
    */
   OUTPUT = 2,
 }
 
 export const FlowgraphPortDirection_Enum = /* @__PURE__ */ createEnumType(
   's4wave.flowgraph.FlowgraphPortDirection',
-  FlowgraphPortDirection,
-  'FLOWGRAPH_PORT_DIRECTION_',
+  [
+    [0, 'FLOWGRAPH_PORT_DIRECTION_UNKNOWN'],
+    [1, 'FLOWGRAPH_PORT_DIRECTION_INPUT'],
+    [2, 'FLOWGRAPH_PORT_DIRECTION_OUTPUT'],
+  ],
 )
 
 /**
@@ -55,30 +47,27 @@ export const FlowgraphPortDirection_Enum = /* @__PURE__ */ createEnumType(
 export enum FlowgraphPlacementKind {
   /**
    * FLOWGRAPH_PLACEMENT_KIND_UNKNOWN is unset.
-   *
-   * @generated from enum value: FLOWGRAPH_PLACEMENT_KIND_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * FLOWGRAPH_PLACEMENT_KIND_DEVICE places a standing node on a Device.
-   *
-   * @generated from enum value: FLOWGRAPH_PLACEMENT_KIND_DEVICE = 1;
    */
   DEVICE = 1,
 
   /**
    * FLOWGRAPH_PLACEMENT_KIND_ACTOR places a Step on an actor.
-   *
-   * @generated from enum value: FLOWGRAPH_PLACEMENT_KIND_ACTOR = 2;
    */
   ACTOR = 2,
 }
 
 export const FlowgraphPlacementKind_Enum = /* @__PURE__ */ createEnumType(
   's4wave.flowgraph.FlowgraphPlacementKind',
-  FlowgraphPlacementKind,
-  'FLOWGRAPH_PLACEMENT_KIND_',
+  [
+    [0, 'FLOWGRAPH_PLACEMENT_KIND_UNKNOWN'],
+    [1, 'FLOWGRAPH_PLACEMENT_KIND_DEVICE'],
+    [2, 'FLOWGRAPH_PLACEMENT_KIND_ACTOR'],
+  ],
 )
 
 /**
@@ -89,38 +78,99 @@ export const FlowgraphPlacementKind_Enum = /* @__PURE__ */ createEnumType(
 export enum FlowgraphRunState {
   /**
    * FLOWGRAPH_RUN_STATE_UNKNOWN is unset.
-   *
-   * @generated from enum value: FLOWGRAPH_RUN_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * FLOWGRAPH_RUN_STATE_RUNNING starts each Step whose inputs have arrived.
-   *
-   * @generated from enum value: FLOWGRAPH_RUN_STATE_RUNNING = 1;
    */
   RUNNING = 1,
 
   /**
    * FLOWGRAPH_RUN_STATE_PAUSED starts no Step until its owner resumes it.
-   *
-   * @generated from enum value: FLOWGRAPH_RUN_STATE_PAUSED = 2;
    */
   PAUSED = 2,
 
   /**
    * FLOWGRAPH_RUN_STATE_COMPLETE has no activation running or waiting.
-   *
-   * @generated from enum value: FLOWGRAPH_RUN_STATE_COMPLETE = 3;
    */
   COMPLETE = 3,
 }
 
 export const FlowgraphRunState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.flowgraph.FlowgraphRunState',
-  FlowgraphRunState,
-  'FLOWGRAPH_RUN_STATE_',
+  [
+    [0, 'FLOWGRAPH_RUN_STATE_UNKNOWN'],
+    [1, 'FLOWGRAPH_RUN_STATE_RUNNING'],
+    [2, 'FLOWGRAPH_RUN_STATE_PAUSED'],
+    [3, 'FLOWGRAPH_RUN_STATE_COMPLETE'],
+  ],
 )
+
+/**
+ * Flowgraph holds an authored composition of Device nodes and Steps.
+ *
+ * @generated from message s4wave.flowgraph.Flowgraph
+ */
+export interface Flowgraph {
+  /**
+   * Name is the display name of this graph.
+   */
+  name?: string
+  /**
+   * Nodes contains nodes keyed by their graph-local ID.
+   */
+  nodes?: { [key: string]: FlowgraphNode }
+  /**
+   * Connections contains connections keyed by their graph-local ID.
+   */
+  connections?: { [key: string]: FlowgraphConnection }
+}
+
+export const Flowgraph: MessageType<Flowgraph> =
+  /* @__PURE__ */ createMessageType<Flowgraph>(
+    's4wave.flowgraph.Flowgraph',
+    () => [
+      [1, 'name', 9],
+      [2, 'nodes', 11, 584, FlowgraphNode.codec],
+      [3, 'connections', 11, 584, FlowgraphConnection.codec],
+    ],
+  )
+
+/**
+ * FlowgraphNode holds the authored settings and ports of one node.
+ *
+ * @generated from message s4wave.flowgraph.FlowgraphNode
+ */
+export interface FlowgraphNode {
+  /**
+   * TypeId selects the node type supplied by a core or plugin controller.
+   */
+  typeId?: string
+  /**
+   * Parameters contains named settings interpreted by the node type.
+   */
+  parameters?: { [key: string]: string }
+  /**
+   * Ports declares the node's inputs and outputs.
+   */
+  ports?: FlowgraphPort[]
+  /**
+   * Step holds instructions for a node that runs once per activation.
+   */
+  step?: FlowgraphStep
+}
+
+export const FlowgraphNode: MessageType<FlowgraphNode> =
+  /* @__PURE__ */ createMessageType<FlowgraphNode>(
+    's4wave.flowgraph.FlowgraphNode',
+    () => [
+      [1, 'type_id', 9],
+      [2, 'parameters', 9, 584],
+      [3, 'ports', 11, 1, FlowgraphPort.codec],
+      [4, 'step', 11, 0, FlowgraphStep.codec],
+    ],
+  )
 
 /**
  * FlowgraphPort declares a node-local connection endpoint.
@@ -130,110 +180,32 @@ export const FlowgraphRunState_Enum = /* @__PURE__ */ createEnumType(
 export interface FlowgraphPort {
   /**
    * Name is unique among this node's ports.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Direction selects input or output.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphPortDirection direction = 2;
    */
   direction?: FlowgraphPortDirection
   /**
    * TypeId is the data contract of the port, such as stream or activation.
-   *
-   * @generated from field: string type_id = 3;
    */
   typeId?: string
   /**
    * Condition states when an activation takes this Step output.
-   *
-   * @generated from field: string condition = 4;
    */
   condition?: string
 }
 
 export const FlowgraphPort: MessageType<FlowgraphPort> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphPort',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'direction',
-        kind: 'enum',
-        T: FlowgraphPortDirection_Enum,
-      },
-      { no: 3, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'condition', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * FlowgraphSkill declares an allowed skill invocation.
- *
- * @generated from message s4wave.flowgraph.FlowgraphSkill
- */
-export interface FlowgraphSkill {
-  /**
-   * Name selects the skill.
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-  /**
-   * Parameters contains the invocation's named settings.
-   *
-   * @generated from field: map<string, string> parameters = 2;
-   */
-  parameters?: { [key: string]: string }
-}
-
-export const FlowgraphSkill: MessageType<FlowgraphSkill> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphSkill',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'parameters',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * FlowgraphBound limits the visits and the reported spend of a Step in a run.
- * A run that would exceed a limit pauses at the Step. Zero is unlimited.
- *
- * @generated from message s4wave.flowgraph.FlowgraphBound
- */
-export interface FlowgraphBound {
-  /**
-   * MaxVisits is the number of activations the Step may have.
-   *
-   * @generated from field: uint32 max_visits = 1;
-   */
-  maxVisits?: number
-  /**
-   * MaxSpend is the total spend the Step's activations may report.
-   *
-   * @generated from field: uint64 max_spend = 2;
-   */
-  maxSpend?: bigint
-}
-
-export const FlowgraphBound: MessageType<FlowgraphBound> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphBound',
-    fields: [
-      { no: 1, name: 'max_visits', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'max_spend', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FlowgraphPort>(
+    's4wave.flowgraph.FlowgraphPort',
+    () => [
+      [1, 'name', 9],
+      [2, 'direction', 14, 0, FlowgraphPortDirection_Enum],
+      [3, 'type_id', 9],
+      [4, 'condition', 9],
+    ],
+  )
 
 /**
  * FlowgraphStep holds the instructions for an actor or code Step.
@@ -243,14 +215,10 @@ export const FlowgraphBound: MessageType<FlowgraphBound> =
 export interface FlowgraphStep {
   /**
    * Prompt contains the actor's instructions.
-   *
-   * @generated from field: string prompt = 1;
    */
   prompt?: string
   /**
    * Skills lists the skills the actor may invoke.
-   *
-   * @generated from field: repeated s4wave.flowgraph.FlowgraphSkill skills = 2;
    */
   skills?: FlowgraphSkill[]
   /**
@@ -265,89 +233,75 @@ export interface FlowgraphStep {
    * output to a World object snapshot of the actor's conclusion, which records
    * a confidence and a reason for every output port. A runner whose actor
    * concludes nothing sets no port, so the run pauses with its inputs kept.
-   *
-   * @generated from field: forge.target.Target target = 3;
    */
   target?: Target
   /**
    * Bound limits this Step's activations within one run.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphBound bound = 4;
    */
   bound?: FlowgraphBound
 }
 
 export const FlowgraphStep: MessageType<FlowgraphStep> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphStep',
-    fields: [
-      { no: 1, name: 'prompt', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'skills',
-        kind: 'message',
-        T: FlowgraphSkill,
-        repeated: true,
-      },
-      { no: 3, name: 'target', kind: 'message', T: () => Target },
-      { no: 4, name: 'bound', kind: 'message', T: FlowgraphBound },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FlowgraphStep>(
+    's4wave.flowgraph.FlowgraphStep',
+    () => [
+      [1, 'prompt', 9],
+      [2, 'skills', 11, 1, FlowgraphSkill.codec],
+      [3, 'target', 11, 0, Target.codec],
+      [4, 'bound', 11, 0, FlowgraphBound.codec],
+    ],
+  )
 
 /**
- * FlowgraphNode holds the authored settings and ports of one node.
+ * FlowgraphBound limits the visits and the reported spend of a Step in a run.
+ * A run that would exceed a limit pauses at the Step. Zero is unlimited.
  *
- * @generated from message s4wave.flowgraph.FlowgraphNode
+ * @generated from message s4wave.flowgraph.FlowgraphBound
  */
-export interface FlowgraphNode {
+export interface FlowgraphBound {
   /**
-   * TypeId selects the node type supplied by a core or plugin controller.
-   *
-   * @generated from field: string type_id = 1;
+   * MaxVisits is the number of activations the Step may have.
    */
-  typeId?: string
+  maxVisits?: number
   /**
-   * Parameters contains named settings interpreted by the node type.
-   *
-   * @generated from field: map<string, string> parameters = 2;
+   * MaxSpend is the total spend the Step's activations may report.
    */
-  parameters?: { [key: string]: string }
-  /**
-   * Ports declares the node's inputs and outputs.
-   *
-   * @generated from field: repeated s4wave.flowgraph.FlowgraphPort ports = 3;
-   */
-  ports?: FlowgraphPort[]
-  /**
-   * Step holds instructions for a node that runs once per activation.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphStep step = 4;
-   */
-  step?: FlowgraphStep
+  maxSpend?: bigint
 }
 
-export const FlowgraphNode: MessageType<FlowgraphNode> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphNode',
-    fields: [
-      { no: 1, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'parameters',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-      {
-        no: 3,
-        name: 'ports',
-        kind: 'message',
-        T: FlowgraphPort,
-        repeated: true,
-      },
-      { no: 4, name: 'step', kind: 'message', T: FlowgraphStep },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const FlowgraphBound: MessageType<FlowgraphBound> =
+  /* @__PURE__ */ createMessageType<FlowgraphBound>(
+    's4wave.flowgraph.FlowgraphBound',
+    () => [
+      [1, 'max_visits', 13],
+      [2, 'max_spend', 4],
+    ],
+  )
+
+/**
+ * FlowgraphSkill declares an allowed skill invocation.
+ *
+ * @generated from message s4wave.flowgraph.FlowgraphSkill
+ */
+export interface FlowgraphSkill {
+  /**
+   * Name selects the skill.
+   */
+  name?: string
+  /**
+   * Parameters contains the invocation's named settings.
+   */
+  parameters?: { [key: string]: string }
+}
+
+export const FlowgraphSkill: MessageType<FlowgraphSkill> =
+  /* @__PURE__ */ createMessageType<FlowgraphSkill>(
+    's4wave.flowgraph.FlowgraphSkill',
+    () => [
+      [1, 'name', 9],
+      [2, 'parameters', 9, 584],
+    ],
+  )
 
 /**
  * FlowgraphConnection connects an output to an input within the graph.
@@ -357,88 +311,32 @@ export const FlowgraphNode: MessageType<FlowgraphNode> =
 export interface FlowgraphConnection {
   /**
    * OutputNode is the graph-local ID of the supplying node.
-   *
-   * @generated from field: string output_node = 1;
    */
   outputNode?: string
   /**
    * OutputPort is the supplying node's output port name.
-   *
-   * @generated from field: string output_port = 2;
    */
   outputPort?: string
   /**
    * InputNode is the graph-local ID of the receiving node.
-   *
-   * @generated from field: string input_node = 3;
    */
   inputNode?: string
   /**
    * InputPort is the receiving node's input port name.
-   *
-   * @generated from field: string input_port = 4;
    */
   inputPort?: string
 }
 
 export const FlowgraphConnection: MessageType<FlowgraphConnection> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphConnection',
-    fields: [
-      { no: 1, name: 'output_node', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'output_port', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'input_node', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'input_port', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Flowgraph holds an authored composition of Device nodes and Steps.
- *
- * @generated from message s4wave.flowgraph.Flowgraph
- */
-export interface Flowgraph {
-  /**
-   * Name is the display name of this graph.
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-  /**
-   * Nodes contains nodes keyed by their graph-local ID.
-   *
-   * @generated from field: map<string, s4wave.flowgraph.FlowgraphNode> nodes = 2;
-   */
-  nodes?: { [key: string]: FlowgraphNode }
-  /**
-   * Connections contains connections keyed by their graph-local ID.
-   *
-   * @generated from field: map<string, s4wave.flowgraph.FlowgraphConnection> connections = 3;
-   */
-  connections?: { [key: string]: FlowgraphConnection }
-}
-
-export const Flowgraph: MessageType<Flowgraph> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.Flowgraph',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'nodes',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: FlowgraphNode },
-      },
-      {
-        no: 3,
-        name: 'connections',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: FlowgraphConnection },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FlowgraphConnection>(
+    's4wave.flowgraph.FlowgraphConnection',
+    () => [
+      [1, 'output_node', 9],
+      [2, 'output_port', 9],
+      [3, 'input_node', 9],
+      [4, 'input_port', 9],
+    ],
+  )
 
 /**
  * FlowgraphPlacement is a command or readback of a placement graph edge.
@@ -448,27 +346,23 @@ export const Flowgraph: MessageType<Flowgraph> =
 export interface FlowgraphPlacement {
   /**
    * Kind selects the Device or actor placement predicate.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphPlacementKind kind = 1;
    */
   kind?: FlowgraphPlacementKind
   /**
    * ObjectKey is the edge's destination, supplied to or read from the graph.
    * This message is never stored in the Flowgraph body.
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
 }
 
 export const FlowgraphPlacement: MessageType<FlowgraphPlacement> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphPlacement',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: FlowgraphPlacementKind_Enum },
-      { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FlowgraphPlacement>(
+    's4wave.flowgraph.FlowgraphPlacement',
+    () => [
+      [1, 'kind', 14, 0, FlowgraphPlacementKind_Enum],
+      [2, 'object_key', 9],
+    ],
+  )
 
 /**
  * FlowgraphSnapshot reads authored state and its placement edges together.
@@ -478,39 +372,27 @@ export const FlowgraphPlacement: MessageType<FlowgraphPlacement> =
 export interface FlowgraphSnapshot {
   /**
    * State is the authored object body.
-   *
-   * @generated from field: s4wave.flowgraph.Flowgraph state = 1;
    */
   state?: Flowgraph
   /**
    * Placements contains placement edges keyed by node ID.
-   *
-   * @generated from field: map<string, s4wave.flowgraph.FlowgraphPlacement> placements = 2;
    */
   placements?: { [key: string]: FlowgraphPlacement }
   /**
    * Revision is the object's revision observed by this read.
-   *
-   * @generated from field: uint64 revision = 3;
    */
   revision?: bigint
 }
 
 export const FlowgraphSnapshot: MessageType<FlowgraphSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphSnapshot',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: Flowgraph },
-      {
-        no: 2,
-        name: 'placements',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: FlowgraphPlacement },
-      },
-      { no: 3, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FlowgraphSnapshot>(
+    's4wave.flowgraph.FlowgraphSnapshot',
+    () => [
+      [1, 'state', 11, 0, Flowgraph.codec],
+      [2, 'placements', 11, 584, FlowgraphPlacement.codec],
+      [3, 'revision', 4],
+    ],
+  )
 
 /**
  * CreateFlowgraphOp creates one independently addressed Flowgraph.
@@ -520,26 +402,22 @@ export const FlowgraphSnapshot: MessageType<FlowgraphSnapshot> =
 export interface CreateFlowgraphOp {
   /**
    * ObjectKey is the new Flowgraph's identity, of the form flowgraph/<id>.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the graph's display name.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
 }
 
 export const CreateFlowgraphOp: MessageType<CreateFlowgraphOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.CreateFlowgraphOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateFlowgraphOp>(
+    's4wave.flowgraph.CreateFlowgraphOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+    ],
+  )
 
 /**
  * GetFlowgraphRequest reads the mounted graph.
@@ -549,9 +427,9 @@ export const CreateFlowgraphOp: MessageType<CreateFlowgraphOp> =
 export interface GetFlowgraphRequest {}
 
 export const GetFlowgraphRequest: MessageType<GetFlowgraphRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetFlowgraphRequest>(
+  /* @__PURE__ */ createMessageType<GetFlowgraphRequest>(
     's4wave.flowgraph.GetFlowgraphRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -562,19 +440,15 @@ export const GetFlowgraphRequest: MessageType<GetFlowgraphRequest> =
 export interface GetFlowgraphResponse {
   /**
    * Snapshot is the graph at the observed revision.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphSnapshot snapshot = 1;
    */
   snapshot?: FlowgraphSnapshot
 }
 
 export const GetFlowgraphResponse: MessageType<GetFlowgraphResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.GetFlowgraphResponse',
-    fields: [
-      { no: 1, name: 'snapshot', kind: 'message', T: FlowgraphSnapshot },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetFlowgraphResponse>(
+    's4wave.flowgraph.GetFlowgraphResponse',
+    () => [[1, 'snapshot', 11, 0, FlowgraphSnapshot.codec]],
+  )
 
 /**
  * UpdateFlowgraphRequest edits nodes, connections, and placement edges.
@@ -584,97 +458,47 @@ export const GetFlowgraphResponse: MessageType<GetFlowgraphResponse> =
 export interface UpdateFlowgraphRequest {
   /**
    * Name replaces the display name when set.
-   *
-   * @generated from field: optional string name = 1;
    */
   name?: string
   /**
    * SetNodes adds or replaces nodes by ID.
-   *
-   * @generated from field: map<string, s4wave.flowgraph.FlowgraphNode> set_nodes = 2;
    */
   setNodes?: { [key: string]: FlowgraphNode }
   /**
    * RemoveNodeIds removes nodes, their placements, and their connections.
-   *
-   * @generated from field: repeated string remove_node_ids = 3;
    */
   removeNodeIds?: string[]
   /**
    * SetConnections adds or replaces connections by ID.
-   *
-   * @generated from field: map<string, s4wave.flowgraph.FlowgraphConnection> set_connections = 4;
    */
   setConnections?: { [key: string]: FlowgraphConnection }
   /**
    * RemoveConnectionIds removes connections by ID.
-   *
-   * @generated from field: repeated string remove_connection_ids = 5;
    */
   removeConnectionIds?: string[]
   /**
    * SetPlacements adds or replaces placement edges by node ID.
-   *
-   * @generated from field: map<string, s4wave.flowgraph.FlowgraphPlacement> set_placements = 6;
    */
   setPlacements?: { [key: string]: FlowgraphPlacement }
   /**
    * RemovePlacementNodeIds removes placement edges without deleting the nodes.
-   *
-   * @generated from field: repeated string remove_placement_node_ids = 7;
    */
   removePlacementNodeIds?: string[]
 }
 
 export const UpdateFlowgraphRequest: MessageType<UpdateFlowgraphRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.UpdateFlowgraphRequest',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING, opt: true },
-      {
-        no: 2,
-        name: 'set_nodes',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: FlowgraphNode },
-      },
-      {
-        no: 3,
-        name: 'remove_node_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'set_connections',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: FlowgraphConnection },
-      },
-      {
-        no: 5,
-        name: 'remove_connection_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'set_placements',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: FlowgraphPlacement },
-      },
-      {
-        no: 7,
-        name: 'remove_placement_node_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateFlowgraphRequest>(
+    's4wave.flowgraph.UpdateFlowgraphRequest',
+    () => [
+      [1, 'name', 9, 4],
+      [2, 'set_nodes', 11, 584, FlowgraphNode.codec],
+      [3, 'remove_node_ids', 9, 1],
+      [4, 'set_connections', 11, 584, FlowgraphConnection.codec],
+      [5, 'remove_connection_ids', 9, 1],
+      [6, 'set_placements', 11, 584, FlowgraphPlacement.codec],
+      [7, 'remove_placement_node_ids', 9, 1],
+    ],
+  )
 
 /**
  * UpdateFlowgraphResponse contains the committed authored result.
@@ -684,19 +508,15 @@ export const UpdateFlowgraphRequest: MessageType<UpdateFlowgraphRequest> =
 export interface UpdateFlowgraphResponse {
   /**
    * Snapshot is the graph at this change's revision.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphSnapshot snapshot = 1;
    */
   snapshot?: FlowgraphSnapshot
 }
 
 export const UpdateFlowgraphResponse: MessageType<UpdateFlowgraphResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.UpdateFlowgraphResponse',
-    fields: [
-      { no: 1, name: 'snapshot', kind: 'message', T: FlowgraphSnapshot },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateFlowgraphResponse>(
+    's4wave.flowgraph.UpdateFlowgraphResponse',
+    () => [[1, 'snapshot', 11, 0, FlowgraphSnapshot.codec]],
+  )
 
 /**
  * WatchFlowgraphRequest watches the mounted graph.
@@ -706,9 +526,9 @@ export const UpdateFlowgraphResponse: MessageType<UpdateFlowgraphResponse> =
 export interface WatchFlowgraphRequest {}
 
 export const WatchFlowgraphRequest: MessageType<WatchFlowgraphRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchFlowgraphRequest>(
+  /* @__PURE__ */ createMessageType<WatchFlowgraphRequest>(
     's4wave.flowgraph.WatchFlowgraphRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -719,19 +539,15 @@ export const WatchFlowgraphRequest: MessageType<WatchFlowgraphRequest> =
 export interface WatchFlowgraphResponse {
   /**
    * Snapshot is the graph at the observed revision.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphSnapshot snapshot = 1;
    */
   snapshot?: FlowgraphSnapshot
 }
 
 export const WatchFlowgraphResponse: MessageType<WatchFlowgraphResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.WatchFlowgraphResponse',
-    fields: [
-      { no: 1, name: 'snapshot', kind: 'message', T: FlowgraphSnapshot },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchFlowgraphResponse>(
+    's4wave.flowgraph.WatchFlowgraphResponse',
+    () => [[1, 'snapshot', 11, 0, FlowgraphSnapshot.codec]],
+  )
 
 /**
  * FlowgraphChange is one revision of a graph, read from the World changelog.
@@ -741,33 +557,27 @@ export const WatchFlowgraphResponse: MessageType<WatchFlowgraphResponse> =
 export interface FlowgraphChange {
   /**
    * Seqno is the World changelog seqno that recorded the revision.
-   *
-   * @generated from field: uint64 seqno = 1;
    */
   seqno?: bigint
   /**
    * Created is set when the revision created the graph.
-   *
-   * @generated from field: bool created = 2;
    */
   created?: boolean
   /**
    * Edit is the change from the preceding revision, as an update request.
-   *
-   * @generated from field: s4wave.flowgraph.UpdateFlowgraphRequest edit = 3;
    */
   edit?: UpdateFlowgraphRequest
 }
 
 export const FlowgraphChange: MessageType<FlowgraphChange> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphChange',
-    fields: [
-      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'created', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'edit', kind: 'message', T: UpdateFlowgraphRequest },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FlowgraphChange>(
+    's4wave.flowgraph.FlowgraphChange',
+    () => [
+      [1, 'seqno', 4],
+      [2, 'created', 8],
+      [3, 'edit', 11, 0, UpdateFlowgraphRequest.codec],
+    ],
+  )
 
 /**
  * ListFlowgraphChangesRequest reads the mounted graph's history.
@@ -777,19 +587,15 @@ export const FlowgraphChange: MessageType<FlowgraphChange> =
 export interface ListFlowgraphChangesRequest {
   /**
    * Limit bounds the number of changes returned; zero returns all retained.
-   *
-   * @generated from field: uint32 limit = 1;
    */
   limit?: number
 }
 
 export const ListFlowgraphChangesRequest: MessageType<ListFlowgraphChangesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.ListFlowgraphChangesRequest',
-    fields: [
-      { no: 1, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListFlowgraphChangesRequest>(
+    's4wave.flowgraph.ListFlowgraphChangesRequest',
+    () => [[1, 'limit', 13]],
+  )
 
 /**
  * ListFlowgraphChangesResponse contains the graph's retained revisions.
@@ -799,169 +605,28 @@ export const ListFlowgraphChangesRequest: MessageType<ListFlowgraphChangesReques
 export interface ListFlowgraphChangesResponse {
   /**
    * Changes contains the revisions, newest first.
-   *
-   * @generated from field: repeated s4wave.flowgraph.FlowgraphChange changes = 1;
    */
   changes?: FlowgraphChange[]
   /**
    * ChangelogDisabled is set when the World keeps no changelog, so the graph
    * has no history.
-   *
-   * @generated from field: bool changelog_disabled = 2;
    */
   changelogDisabled?: boolean
   /**
    * Complete is set when changes reach back to the graph's creation.
-   *
-   * @generated from field: bool complete = 3;
    */
   complete?: boolean
 }
 
 export const ListFlowgraphChangesResponse: MessageType<ListFlowgraphChangesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.ListFlowgraphChangesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'changes',
-        kind: 'message',
-        T: FlowgraphChange,
-        repeated: true,
-      },
-      { no: 2, name: 'changelog_disabled', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'complete', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * FlowgraphArrival is an output delivered to a Step's input port.
- *
- * @generated from message s4wave.flowgraph.FlowgraphArrival
- */
-export interface FlowgraphArrival {
-  /**
-   * NodeId is the receiving Step.
-   *
-   * @generated from field: string node_id = 1;
-   */
-  nodeId?: string
-  /**
-   * Port is the receiving input port, or empty for a run's start.
-   *
-   * @generated from field: string port = 2;
-   */
-  port?: string
-  /**
-   * TaskKey is the Task whose output arrived, or empty for a run's start.
-   *
-   * @generated from field: string task_key = 3;
-   */
-  taskKey?: string
-  /**
-   * OutputName is the arriving output of that Task.
-   *
-   * @generated from field: string output_name = 4;
-   */
-  outputName?: string
-}
-
-export const FlowgraphArrival: MessageType<FlowgraphArrival> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphArrival',
-    fields: [
-      { no: 1, name: 'node_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'port', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'task_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'output_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * FlowgraphActivation is one activation of a Step, run as one Forge Task.
- *
- * @generated from message s4wave.flowgraph.FlowgraphActivation
- */
-export interface FlowgraphActivation {
-  /**
-   * NodeId is the activated Step.
-   *
-   * @generated from field: string node_id = 1;
-   */
-  nodeId?: string
-  /**
-   * TaskKey is the activation's Task in the run's Job.
-   *
-   * @generated from field: string task_key = 2;
-   */
-  taskKey?: string
-  /**
-   * Inputs are the arrivals the activation consumed, kept so a failed
-   * activation can run again with the same context.
-   *
-   * @generated from field: repeated s4wave.flowgraph.FlowgraphArrival inputs = 3;
-   */
-  inputs?: FlowgraphArrival[]
-  /**
-   * Done is set once the run has routed the activation's outcome.
-   *
-   * @generated from field: bool done = 4;
-   */
-  done?: boolean
-  /**
-   * Output is the Step output port the activation chose.
-   *
-   * @generated from field: string output = 5;
-   */
-  output?: string
-}
-
-export const FlowgraphActivation: MessageType<FlowgraphActivation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphActivation',
-    fields: [
-      { no: 1, name: 'node_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'task_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'inputs',
-        kind: 'message',
-        T: FlowgraphArrival,
-        repeated: true,
-      },
-      { no: 4, name: 'done', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'output', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * FlowgraphVisits counts one Step's activations in a run.
- *
- * @generated from message s4wave.flowgraph.FlowgraphVisits
- */
-export interface FlowgraphVisits {
-  /**
-   * Count is the number of activations started.
-   *
-   * @generated from field: uint32 count = 1;
-   */
-  count?: number
-  /**
-   * Spend is the total spend the completed activations reported.
-   *
-   * @generated from field: uint64 spend = 2;
-   */
-  spend?: bigint
-}
-
-export const FlowgraphVisits: MessageType<FlowgraphVisits> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphVisits',
-    fields: [
-      { no: 1, name: 'count', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'spend', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListFlowgraphChangesResponse>(
+    's4wave.flowgraph.ListFlowgraphChangesResponse',
+    () => [
+      [1, 'changes', 11, 1, FlowgraphChange.codec],
+      [2, 'changelog_disabled', 8],
+      [3, 'complete', 8],
+    ],
+  )
 
 /**
  * FlowgraphRun is the state of one run of a Flowgraph's Steps on a Forge Job.
@@ -973,102 +638,160 @@ export const FlowgraphVisits: MessageType<FlowgraphVisits> =
 export interface FlowgraphRun {
   /**
    * FlowgraphKey is the Flowgraph this run executes.
-   *
-   * @generated from field: string flowgraph_key = 1;
    */
   flowgraphKey?: string
   /**
    * FlowgraphRevision is the Flowgraph revision the run executes.
-   *
-   * @generated from field: uint64 flowgraph_revision = 2;
    */
   flowgraphRevision?: bigint
   /**
    * GraphRef is the Flowgraph body at flowgraph_revision.
-   *
-   * @generated from field: block.BlockRef graph_ref = 3;
    */
   graphRef?: BlockRef
   /**
    * JobKey is the Forge Job holding one Task per activation.
-   *
-   * @generated from field: string job_key = 4;
    */
   jobKey?: string
   /**
    * State is the run's lifecycle state.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphRunState state = 5;
    */
   state?: FlowgraphRunState
   /**
    * Activations lists every Step activation in start order.
-   *
-   * @generated from field: repeated s4wave.flowgraph.FlowgraphActivation activations = 6;
    */
   activations?: FlowgraphActivation[]
   /**
    * Arrivals holds outputs delivered to Step inputs and not yet consumed.
-   *
-   * @generated from field: repeated s4wave.flowgraph.FlowgraphArrival arrivals = 7;
    */
   arrivals?: FlowgraphArrival[]
   /**
    * Visits counts activations and reported spend by Step node ID.
-   *
-   * @generated from field: map<string, s4wave.flowgraph.FlowgraphVisits> visits = 8;
    */
   visits?: { [key: string]: FlowgraphVisits }
   /**
    * PausedNode is the Step the run paused at.
-   *
-   * @generated from field: string paused_node = 9;
    */
   pausedNode?: string
   /**
    * PauseReason says why the run paused.
-   *
-   * @generated from field: string pause_reason = 10;
    */
   pauseReason?: string
 }
 
 export const FlowgraphRun: MessageType<FlowgraphRun> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.FlowgraphRun',
-    fields: [
-      { no: 1, name: 'flowgraph_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'flowgraph_revision',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 3, name: 'graph_ref', kind: 'message', T: () => BlockRef },
-      { no: 4, name: 'job_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'state', kind: 'enum', T: FlowgraphRunState_Enum },
-      {
-        no: 6,
-        name: 'activations',
-        kind: 'message',
-        T: FlowgraphActivation,
-        repeated: true,
-      },
-      {
-        no: 7,
-        name: 'arrivals',
-        kind: 'message',
-        T: FlowgraphArrival,
-        repeated: true,
-      },
-      {
-        no: 8,
-        name: 'visits',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: FlowgraphVisits },
-      },
-      { no: 9, name: 'paused_node', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'pause_reason', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FlowgraphRun>(
+    's4wave.flowgraph.FlowgraphRun',
+    () => [
+      [1, 'flowgraph_key', 9],
+      [2, 'flowgraph_revision', 4],
+      [3, 'graph_ref', 11, 0, BlockRef.codec],
+      [4, 'job_key', 9],
+      [5, 'state', 14, 0, FlowgraphRunState_Enum],
+      [6, 'activations', 11, 1, FlowgraphActivation.codec],
+      [7, 'arrivals', 11, 1, FlowgraphArrival.codec],
+      [8, 'visits', 11, 584, FlowgraphVisits.codec],
+      [9, 'paused_node', 9],
+      [10, 'pause_reason', 9],
+    ],
+  )
+
+/**
+ * FlowgraphActivation is one activation of a Step, run as one Forge Task.
+ *
+ * @generated from message s4wave.flowgraph.FlowgraphActivation
+ */
+export interface FlowgraphActivation {
+  /**
+   * NodeId is the activated Step.
+   */
+  nodeId?: string
+  /**
+   * TaskKey is the activation's Task in the run's Job.
+   */
+  taskKey?: string
+  /**
+   * Inputs are the arrivals the activation consumed, kept so a failed
+   * activation can run again with the same context.
+   */
+  inputs?: FlowgraphArrival[]
+  /**
+   * Done is set once the run has routed the activation's outcome.
+   */
+  done?: boolean
+  /**
+   * Output is the Step output port the activation chose.
+   */
+  output?: string
+}
+
+export const FlowgraphActivation: MessageType<FlowgraphActivation> =
+  /* @__PURE__ */ createMessageType<FlowgraphActivation>(
+    's4wave.flowgraph.FlowgraphActivation',
+    () => [
+      [1, 'node_id', 9],
+      [2, 'task_key', 9],
+      [3, 'inputs', 11, 1, FlowgraphArrival.codec],
+      [4, 'done', 8],
+      [5, 'output', 9],
+    ],
+  )
+
+/**
+ * FlowgraphArrival is an output delivered to a Step's input port.
+ *
+ * @generated from message s4wave.flowgraph.FlowgraphArrival
+ */
+export interface FlowgraphArrival {
+  /**
+   * NodeId is the receiving Step.
+   */
+  nodeId?: string
+  /**
+   * Port is the receiving input port, or empty for a run's start.
+   */
+  port?: string
+  /**
+   * TaskKey is the Task whose output arrived, or empty for a run's start.
+   */
+  taskKey?: string
+  /**
+   * OutputName is the arriving output of that Task.
+   */
+  outputName?: string
+}
+
+export const FlowgraphArrival: MessageType<FlowgraphArrival> =
+  /* @__PURE__ */ createMessageType<FlowgraphArrival>(
+    's4wave.flowgraph.FlowgraphArrival',
+    () => [
+      [1, 'node_id', 9],
+      [2, 'port', 9],
+      [3, 'task_key', 9],
+      [4, 'output_name', 9],
+    ],
+  )
+
+/**
+ * FlowgraphVisits counts one Step's activations in a run.
+ *
+ * @generated from message s4wave.flowgraph.FlowgraphVisits
+ */
+export interface FlowgraphVisits {
+  /**
+   * Count is the number of activations started.
+   */
+  count?: number
+  /**
+   * Spend is the total spend the completed activations reported.
+   */
+  spend?: bigint
+}
+
+export const FlowgraphVisits: MessageType<FlowgraphVisits> =
+  /* @__PURE__ */ createMessageType<FlowgraphVisits>(
+    's4wave.flowgraph.FlowgraphVisits',
+    () => [
+      [1, 'count', 13],
+      [2, 'spend', 4],
+    ],
+  )

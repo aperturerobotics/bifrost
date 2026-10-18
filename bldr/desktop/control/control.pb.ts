@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { WatchDesktopPresenceResponse } from '../../web/plugin/plugin.pb.js'
 
 /**
@@ -19,27 +14,23 @@ import { WatchDesktopPresenceResponse } from '../../web/plugin/plugin.pb.js'
 export interface OpenOrFocusDesktopRequest {
   /**
    * Route is the optional application route to open.
-   *
-   * @generated from field: string route = 1;
    */
   route?: string
   /**
    * InstalledApp is the application bundle that requested the desktop.
    * Desktop app updates replace this bundle; empty when not launched from one.
-   *
-   * @generated from field: string installed_app = 2;
    */
   installedApp?: string
 }
 
 export const OpenOrFocusDesktopRequest: MessageType<OpenOrFocusDesktopRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.control.OpenOrFocusDesktopRequest',
-    fields: [
-      { no: 1, name: 'route', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'installed_app', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenOrFocusDesktopRequest>(
+    'bldr.desktop.control.OpenOrFocusDesktopRequest',
+    () => [
+      [1, 'route', 9],
+      [2, 'installed_app', 9],
+    ],
+  )
 
 /**
  * OpenOrFocusDesktopResponse identifies the daemon and UI artifact that opened.
@@ -49,45 +40,32 @@ export const OpenOrFocusDesktopRequest: MessageType<OpenOrFocusDesktopRequest> =
 export interface OpenOrFocusDesktopResponse {
   /**
    * DaemonPid identifies the running daemon process.
-   *
-   * @generated from field: int64 daemon_pid = 1;
    */
   daemonPid?: bigint
   /**
    * DaemonExecutable is the running daemon's executable path.
-   *
-   * @generated from field: string daemon_executable = 2;
    */
   daemonExecutable?: string
   /**
    * DaemonRelease is the application release embedded in the running executable.
-   *
-   * @generated from field: string daemon_release = 3;
    */
   daemonRelease?: string
   /**
    * UiManifestRef identifies the selected web plugin artifact.
-   *
-   * @generated from field: string ui_manifest_ref = 4;
    */
   uiManifestRef?: string
 }
 
 export const OpenOrFocusDesktopResponse: MessageType<OpenOrFocusDesktopResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.control.OpenOrFocusDesktopResponse',
-    fields: [
-      { no: 1, name: 'daemon_pid', kind: 'scalar', T: ScalarType.INT64 },
-      {
-        no: 2,
-        name: 'daemon_executable',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'daemon_release', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'ui_manifest_ref', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenOrFocusDesktopResponse>(
+    'bldr.desktop.control.OpenOrFocusDesktopResponse',
+    () => [
+      [1, 'daemon_pid', 3],
+      [2, 'daemon_executable', 9],
+      [3, 'daemon_release', 9],
+      [4, 'ui_manifest_ref', 9],
+    ],
+  )
 
 /**
  * QuitDesktopRequest asks the daemon to stop after this desktop shell exits if unused.
@@ -97,9 +75,9 @@ export const OpenOrFocusDesktopResponse: MessageType<OpenOrFocusDesktopResponse>
 export interface QuitDesktopRequest {}
 
 export const QuitDesktopRequest: MessageType<QuitDesktopRequest> =
-  /* @__PURE__ */ createEmptyMessageType<QuitDesktopRequest>(
+  /* @__PURE__ */ createMessageType<QuitDesktopRequest>(
     'bldr.desktop.control.QuitDesktopRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -112,25 +90,15 @@ export interface QuitDesktopResponse {
    * OtherWork names the Resource clients and persistent services apart from
    * the requester and this desktop shell, sorted, with a count suffix on a
    * repeated name.
-   *
-   * @generated from field: repeated string other_work = 1;
    */
   otherWork?: string[]
 }
 
 export const QuitDesktopResponse: MessageType<QuitDesktopResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.control.QuitDesktopResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'other_work',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<QuitDesktopResponse>(
+    'bldr.desktop.control.QuitDesktopResponse',
+    () => [[1, 'other_work', 9, 1]],
+  )
 
 /**
  * WatchDesktopStatusRequest subscribes to the daemon's desktop observation.
@@ -140,9 +108,9 @@ export const QuitDesktopResponse: MessageType<QuitDesktopResponse> =
 export interface WatchDesktopStatusRequest {}
 
 export const WatchDesktopStatusRequest: MessageType<WatchDesktopStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchDesktopStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchDesktopStatusRequest>(
     'bldr.desktop.control.WatchDesktopStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -153,37 +121,26 @@ export const WatchDesktopStatusRequest: MessageType<WatchDesktopStatusRequest> =
 export interface WatchDesktopStatusResponse {
   /**
    * Generation identifies the shell in the selected web plugin; zero means none has opened.
-   *
-   * @generated from field: uint64 generation = 1;
    */
   generation?: bigint
   /**
    * Presence is the Electron owner's last observation, absent until confirmed.
    * ACTIVE confirms open readiness; ENDED confirms exit, with Error distinguishing failure.
-   *
-   * @generated from field: bldr.web.plugin.WatchDesktopPresenceResponse presence = 2;
    */
   presence?: WatchDesktopPresenceResponse
   /**
    * Failure reports an operation, observation, or busy Quit outcome, not proof of shell exit.
    * An observation failure preserves Presence and the daemon's service demand.
-   *
-   * @generated from field: string failure = 3;
    */
   failure?: string
 }
 
 export const WatchDesktopStatusResponse: MessageType<WatchDesktopStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.control.WatchDesktopStatusResponse',
-    fields: [
-      { no: 1, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 2,
-        name: 'presence',
-        kind: 'message',
-        T: () => WatchDesktopPresenceResponse,
-      },
-      { no: 3, name: 'failure', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchDesktopStatusResponse>(
+    'bldr.desktop.control.WatchDesktopStatusResponse',
+    () => [
+      [1, 'generation', 4],
+      [2, 'presence', 11, 0, WatchDesktopPresenceResponse.codec],
+      [3, 'failure', 9],
+    ],
+  )

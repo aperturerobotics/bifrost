@@ -5,8 +5,6 @@
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures a client for a srpc service.
@@ -16,53 +14,35 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * ServerPeerIds are the static list of peer IDs to contact.
-   *
-   * @generated from field: repeated string server_peer_ids = 1;
    */
   serverPeerIds?: string[]
   /**
    * PerServerBackoff is the server peer error backoff configuration.
    * Can be empty.
-   *
-   * @generated from field: backoff.Backoff per_server_backoff = 2;
    */
   perServerBackoff?: Backoff
   /**
    * SrcPeerId is the source peer id to contact from.
    * Can be empty.
-   *
-   * @generated from field: string src_peer_id = 3;
    */
   srcPeerId?: string
   /**
    * TransportId restricts which transport we can dial out from.
-   *
-   * @generated from field: uint64 transport_id = 4;
    */
   transportId?: bigint
   /**
    * TimeoutDur sets the per-server establish timeout.
    * If unset, no timeout.
    * Example: 15s
-   *
-   * @generated from field: string timeout_dur = 5;
    */
   timeoutDur?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'stream.srpc.client.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'server_peer_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 2, name: 'per_server_backoff', kind: 'message', T: () => Backoff },
-    { no: 3, name: 'src_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'transport_id', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 5, name: 'timeout_dur', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('stream.srpc.client.Config', () => [
+    [1, 'server_peer_ids', 9, 1],
+    [2, 'per_server_backoff', 11, 0, Backoff.codec],
+    [3, 'src_peer_id', 9],
+    [4, 'transport_id', 4],
+    [5, 'timeout_dur', 9],
+  ])

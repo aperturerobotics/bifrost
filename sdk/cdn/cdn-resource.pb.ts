@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * CopyV86ImageToSpaceStage is the server-owned CDN image-copy stage.
@@ -17,25 +12,18 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
  * @generated from enum s4wave.cdn.CopyV86ImageToSpaceStage
  */
 export enum CopyV86ImageToSpaceStage {
-  /**
-   * @generated from enum value: CopyV86ImageToSpaceStage_FETCHING = 0;
-   */
   CopyV86ImageToSpaceStage_FETCHING = 0,
-
-  /**
-   * @generated from enum value: CopyV86ImageToSpaceStage_COPYING = 1;
-   */
   CopyV86ImageToSpaceStage_COPYING = 1,
-
-  /**
-   * @generated from enum value: CopyV86ImageToSpaceStage_DONE = 2;
-   */
   CopyV86ImageToSpaceStage_DONE = 2,
 }
 
 export const CopyV86ImageToSpaceStage_Enum = /* @__PURE__ */ createEnumType(
   's4wave.cdn.CopyV86ImageToSpaceStage',
-  CopyV86ImageToSpaceStage,
+  [
+    [0, 'CopyV86ImageToSpaceStage_FETCHING'],
+    [1, 'CopyV86ImageToSpaceStage_COPYING'],
+    [2, 'CopyV86ImageToSpaceStage_DONE'],
+  ],
 )
 
 /**
@@ -46,9 +34,9 @@ export const CopyV86ImageToSpaceStage_Enum = /* @__PURE__ */ createEnumType(
 export interface GetCdnSpaceIdRequest {}
 
 export const GetCdnSpaceIdRequest: MessageType<GetCdnSpaceIdRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetCdnSpaceIdRequest>(
+  /* @__PURE__ */ createMessageType<GetCdnSpaceIdRequest>(
     's4wave.cdn.GetCdnSpaceIdRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -59,19 +47,15 @@ export const GetCdnSpaceIdRequest: MessageType<GetCdnSpaceIdRequest> =
 export interface GetCdnSpaceIdResponse {
   /**
    * SpaceId is the CDN Space ULID.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
 }
 
 export const GetCdnSpaceIdResponse: MessageType<GetCdnSpaceIdResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.cdn.GetCdnSpaceIdResponse',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetCdnSpaceIdResponse>(
+    's4wave.cdn.GetCdnSpaceIdResponse',
+    () => [[1, 'space_id', 9]],
+  )
 
 /**
  * MountCdnSpaceRequest is the request type for MountCdnSpace.
@@ -81,9 +65,9 @@ export const GetCdnSpaceIdResponse: MessageType<GetCdnSpaceIdResponse> =
 export interface MountCdnSpaceRequest {}
 
 export const MountCdnSpaceRequest: MessageType<MountCdnSpaceRequest> =
-  /* @__PURE__ */ createEmptyMessageType<MountCdnSpaceRequest>(
+  /* @__PURE__ */ createMessageType<MountCdnSpaceRequest>(
     's4wave.cdn.MountCdnSpaceRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -94,19 +78,15 @@ export const MountCdnSpaceRequest: MessageType<MountCdnSpaceRequest> =
 export interface MountCdnSpaceResponse {
   /**
    * ResourceId is the client resource id of the mounted SpaceResource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const MountCdnSpaceResponse: MessageType<MountCdnSpaceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.cdn.MountCdnSpaceResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MountCdnSpaceResponse>(
+    's4wave.cdn.MountCdnSpaceResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * CopyV86ImageToSpaceRequest is the request type for CopyV86ImageToSpace.
@@ -117,40 +97,32 @@ export interface CopyV86ImageToSpaceRequest {
   /**
    * SessionIdx is the caller's session index; used to resolve the
    * destination user Space via the standard session-aware mount path.
-   *
-   * @generated from field: uint32 session_idx = 1;
    */
   sessionIdx?: number
   /**
    * DstSpaceId is the ULID of the user Space the V86Image will land in.
-   *
-   * @generated from field: string dst_space_id = 2;
    */
   dstSpaceId?: string
   /**
    * SrcObjectKey is the V86Image object key in the CDN Space.
-   *
-   * @generated from field: string src_object_key = 3;
    */
   srcObjectKey?: string
   /**
    * DstObjectKey is the object key in the destination Space.
-   *
-   * @generated from field: string dst_object_key = 4;
    */
   dstObjectKey?: string
 }
 
 export const CopyV86ImageToSpaceRequest: MessageType<CopyV86ImageToSpaceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.cdn.CopyV86ImageToSpaceRequest',
-    fields: [
-      { no: 1, name: 'session_idx', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'dst_space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'src_object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'dst_object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CopyV86ImageToSpaceRequest>(
+    's4wave.cdn.CopyV86ImageToSpaceRequest',
+    () => [
+      [1, 'session_idx', 13],
+      [2, 'dst_space_id', 9],
+      [3, 'src_object_key', 9],
+      [4, 'dst_object_key', 9],
+    ],
+  )
 
 /**
  * CopyV86ImageToSpaceProgress reports cumulative logical copy accounting.
@@ -160,49 +132,34 @@ export const CopyV86ImageToSpaceRequest: MessageType<CopyV86ImageToSpaceRequest>
 export interface CopyV86ImageToSpaceProgress {
   /**
    * Stage is the current server-owned image-copy stage.
-   *
-   * @generated from field: s4wave.cdn.CopyV86ImageToSpaceStage stage = 1;
    */
   stage?: CopyV86ImageToSpaceStage
   /**
    * BlocksSeen counts unique eligible source blocks encountered.
-   *
-   * @generated from field: uint64 blocks_seen = 2;
    */
   blocksSeen?: bigint
   /**
    * BlocksCopied counts source blocks processed by the destination store.
-   *
-   * @generated from field: uint64 blocks_copied = 3;
    */
   blocksCopied?: bigint
   /**
    * BlocksWritten counts source blocks newly written to the destination.
-   *
-   * @generated from field: uint64 blocks_written = 4;
    */
   blocksWritten?: bigint
   /**
    * LogicalSourceBytes counts eligible source bytes before destination dedupe.
-   *
-   * @generated from field: uint64 logical_source_bytes = 5;
    */
   logicalSourceBytes?: bigint
 }
 
 export const CopyV86ImageToSpaceProgress: MessageType<CopyV86ImageToSpaceProgress> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.cdn.CopyV86ImageToSpaceProgress',
-    fields: [
-      { no: 1, name: 'stage', kind: 'enum', T: CopyV86ImageToSpaceStage_Enum },
-      { no: 2, name: 'blocks_seen', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'blocks_copied', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'blocks_written', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 5,
-        name: 'logical_source_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CopyV86ImageToSpaceProgress>(
+    's4wave.cdn.CopyV86ImageToSpaceProgress',
+    () => [
+      [1, 'stage', 14, 0, CopyV86ImageToSpaceStage_Enum],
+      [2, 'blocks_seen', 4],
+      [3, 'blocks_copied', 4],
+      [4, 'blocks_written', 4],
+      [5, 'logical_source_bytes', 4],
+    ],
+  )

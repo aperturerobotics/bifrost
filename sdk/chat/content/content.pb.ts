@@ -4,58 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * ChatRelation links a message to earlier messages in the same channel.
- *
- * @generated from message spacewave.chat.ChatRelation
- */
-export interface ChatRelation {
-  /**
-   * Type identifies the relationship, such as m.replace or m.thread.
-   *
-   * @generated from field: string type = 1;
-   */
-  type?: string
-  /**
-   * TargetKey identifies the message being edited or the thread root.
-   *
-   * @generated from field: string target_key = 2;
-   */
-  targetKey?: string
-  /**
-   * ReplyToKey identifies an explicit reply or a thread's fallback reply.
-   *
-   * @generated from field: string reply_to_key = 3;
-   */
-  replyToKey?: string
-  /**
-   * IsFallingBack marks a reply used only for clients without thread support.
-   *
-   * @generated from field: bool is_falling_back = 4;
-   */
-  isFallingBack?: boolean
-  /**
-   * Key is an optional public annotation value.
-   *
-   * @generated from field: string key = 5;
-   */
-  key?: string
-}
-
-export const ChatRelation: MessageType<ChatRelation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatRelation',
-    fields: [
-      { no: 1, name: 'type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'target_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'reply_to_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'is_falling_back', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * ChatCiphertext is an opaque encrypted message body.
@@ -65,54 +13,82 @@ export const ChatRelation: MessageType<ChatRelation> =
 export interface ChatCiphertext {
   /**
    * Algorithm is the encryption scheme identifier, e.g. m.megolm.v1.
-   *
-   * @generated from field: string algorithm = 1;
    */
   algorithm?: string
   /**
    * Ciphertext is the encrypted payload.
-   *
-   * @generated from field: string ciphertext = 2;
    */
   ciphertext?: string
   /**
    * SenderKey is the public key of the sending device.
-   *
-   * @generated from field: string sender_key = 3;
    */
   senderKey?: string
   /**
    * SessionId identifies the encryption session.
-   *
-   * @generated from field: string session_id = 4;
    */
   sessionId?: string
   /**
    * DeviceId is the identifier of the sending device.
-   *
-   * @generated from field: string device_id = 5;
    */
   deviceId?: string
   /**
    * Relation is public routing metadata carried beside the encrypted body.
-   *
-   * @generated from field: spacewave.chat.ChatRelation relation = 6;
    */
   relation?: ChatRelation
 }
 
 export const ChatCiphertext: MessageType<ChatCiphertext> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatCiphertext',
-    fields: [
-      { no: 1, name: 'algorithm', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'ciphertext', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'sender_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'session_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'device_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'relation', kind: 'message', T: ChatRelation },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatCiphertext>(
+    'spacewave.chat.ChatCiphertext',
+    () => [
+      [1, 'algorithm', 9],
+      [2, 'ciphertext', 9],
+      [3, 'sender_key', 9],
+      [4, 'session_id', 9],
+      [5, 'device_id', 9],
+      [6, 'relation', 11, 0, ChatRelation.codec],
+    ],
+  )
+
+/**
+ * ChatRelation links a message to earlier messages in the same channel.
+ *
+ * @generated from message spacewave.chat.ChatRelation
+ */
+export interface ChatRelation {
+  /**
+   * Type identifies the relationship, such as m.replace or m.thread.
+   */
+  type?: string
+  /**
+   * TargetKey identifies the message being edited or the thread root.
+   */
+  targetKey?: string
+  /**
+   * ReplyToKey identifies an explicit reply or a thread's fallback reply.
+   */
+  replyToKey?: string
+  /**
+   * IsFallingBack marks a reply used only for clients without thread support.
+   */
+  isFallingBack?: boolean
+  /**
+   * Key is an optional public annotation value.
+   */
+  key?: string
+}
+
+export const ChatRelation: MessageType<ChatRelation> =
+  /* @__PURE__ */ createMessageType<ChatRelation>(
+    'spacewave.chat.ChatRelation',
+    () => [
+      [1, 'type', 9],
+      [2, 'target_key', 9],
+      [3, 'reply_to_key', 9],
+      [4, 'is_falling_back', 8],
+      [5, 'key', 9],
+    ],
+  )
 
 /**
  * ChatAnnotation is an attributed public reaction to a channel message.
@@ -122,26 +98,22 @@ export const ChatCiphertext: MessageType<ChatCiphertext> =
 export interface ChatAnnotation {
   /**
    * TargetKey identifies the message receiving the annotation.
-   *
-   * @generated from field: string target_key = 1;
    */
   targetKey?: string
   /**
    * Key is the reaction value, such as an emoji.
-   *
-   * @generated from field: string key = 2;
    */
   key?: string
 }
 
 export const ChatAnnotation: MessageType<ChatAnnotation> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatAnnotation',
-    fields: [
-      { no: 1, name: 'target_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatAnnotation>(
+    'spacewave.chat.ChatAnnotation',
+    () => [
+      [1, 'target_key', 9],
+      [2, 'key', 9],
+    ],
+  )
 
 /**
  * ChatEnvelope is the exact wire form of a message another protocol originated.
@@ -153,30 +125,22 @@ export const ChatAnnotation: MessageType<ChatAnnotation> =
 export interface ChatEnvelope {
   /**
    * Id is the message's identity in its protocol, unique within the channel.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Data is the protocol's exact bytes, bounded to 64 KiB.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * RedactedData is the protocol's form of the message after redaction, bounded
    * to 64 KiB. Redacting the message replaces Data with it and clears it; empty
    * leaves no bytes.
-   *
-   * @generated from field: bytes redacted_data = 3;
    */
   redactedData?: Uint8Array
   /**
    * Prelude holds, in order, at most 16 events the protocol requires before this
    * one, such as the sender's admission to the conversation. Each carries only
    * its ID and data, and redaction leaves them unchanged.
-   *
-   * @generated from field: repeated spacewave.chat.ChatEnvelope prelude = 4;
    */
   prelude?: ChatEnvelope[]
   /**
@@ -184,8 +148,6 @@ export interface ChatEnvelope {
    * conversation, such as an event that only authorizes others or a batch of
    * history from before the channel's first message. A detached message
    * carries no content.
-   *
-   * @generated from field: bool detached = 5;
    */
   detached?: boolean
   /**
@@ -193,36 +155,22 @@ export interface ChatEnvelope {
    * protocol's state before this one, for a message whose predecessors the
    * channel lacks, such as the first one after a gap in its history. Empty when
    * its predecessors determine the state. At most 16384 IDs.
-   *
-   * @generated from field: repeated string state_ids = 6;
    */
   stateIds?: string[]
 }
 
 export const ChatEnvelope: MessageType<ChatEnvelope> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatEnvelope',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'redacted_data', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 4,
-        name: 'prelude',
-        kind: 'message',
-        T: () => ChatEnvelope,
-        repeated: true,
-      },
-      { no: 5, name: 'detached', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 6,
-        name: 'state_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatEnvelope>(
+    'spacewave.chat.ChatEnvelope',
+    () => [
+      [1, 'id', 9],
+      [2, 'data', 12],
+      [3, 'redacted_data', 12],
+      [4, 'prelude', 11, 1, ChatEnvelope.codec],
+      [5, 'detached', 8],
+      [6, 'state_ids', 9, 1],
+    ],
+  )
 
 /**
  * ChatRedaction removes the body of a message. Its author may remove it, as may
@@ -234,40 +182,29 @@ export const ChatEnvelope: MessageType<ChatEnvelope> =
 export interface ChatRedaction {
   /**
    * TargetKey identifies the message whose body is removed.
-   *
-   * @generated from field: string target_key = 1;
    */
   targetKey?: string
   /**
    * Reason is an optional public explanation.
-   *
-   * @generated from field: string reason = 2;
    */
   reason?: string
   /**
    * TargetEnvelopeId is the envelope ID the target carries, set when the
    * channel may not hold the target yet. TargetKey is then the envelope's
    * message key, and the body is removed when the target arrives.
-   *
-   * @generated from field: string target_envelope_id = 3;
    */
   targetEnvelopeId?: string
 }
 
 export const ChatRedaction: MessageType<ChatRedaction> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatRedaction',
-    fields: [
-      { no: 1, name: 'target_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'reason', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'target_envelope_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatRedaction>(
+    'spacewave.chat.ChatRedaction',
+    () => [
+      [1, 'target_key', 9],
+      [2, 'reason', 9],
+      [3, 'target_envelope_id', 9],
+    ],
+  )
 
 /**
  * ChatStateChange replaces one channel state value while retaining its history.
@@ -278,35 +215,29 @@ export interface ChatStateChange {
   /**
    * Type is an open protocol vocabulary identifying the state schema, of at
    * most 255 characters.
-   *
-   * @generated from field: string type = 1;
    */
   type?: string
   /**
    * StateKey is an external state identity within Type, not a World object key,
    * of at most 255 characters.
-   *
-   * @generated from field: string state_key = 2;
    */
   stateKey?: string
   /**
    * ContentJson is a complete JSON object, bounded to 64 KiB.
    * The producing protocol validates its schema and canonicalizes its encoding.
-   *
-   * @generated from field: string content_json = 3;
    */
   contentJson?: string
 }
 
 export const ChatStateChange: MessageType<ChatStateChange> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatStateChange',
-    fields: [
-      { no: 1, name: 'type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'state_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'content_json', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatStateChange>(
+    'spacewave.chat.ChatStateChange',
+    () => [
+      [1, 'type', 9],
+      [2, 'state_key', 9],
+      [3, 'content_json', 9],
+    ],
+  )
 
 /**
  * ChatEvent retains a message from an extensible external protocol.
@@ -316,34 +247,28 @@ export const ChatStateChange: MessageType<ChatStateChange> =
 export interface ChatEvent {
   /**
    * Type is an open protocol vocabulary identifying the message schema.
-   *
-   * @generated from field: string type = 1;
    */
   type?: string
   /**
    * ContentJson is a complete JSON object, bounded to 64 KiB.
    * The producing protocol validates its schema and canonicalizes its encoding.
-   *
-   * @generated from field: string content_json = 2;
    */
   contentJson?: string
   /**
    * Relation is protocol-neutral routing metadata expressed in native message keys.
-   *
-   * @generated from field: spacewave.chat.ChatRelation relation = 3;
    */
   relation?: ChatRelation
 }
 
 export const ChatEvent: MessageType<ChatEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatEvent',
-    fields: [
-      { no: 1, name: 'type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'content_json', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'relation', kind: 'message', T: ChatRelation },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatEvent>(
+    'spacewave.chat.ChatEvent',
+    () => [
+      [1, 'type', 9],
+      [2, 'content_json', 9],
+      [3, 'relation', 11, 0, ChatRelation.codec],
+    ],
+  )
 
 /**
  * ChatMessageContent contains the message body.
@@ -355,105 +280,24 @@ export interface ChatMessageContent {
    * @generated from oneof spacewave.chat.ChatMessageContent.content
    */
   content?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Text is a plain text message.
-         *
-         * @generated from field: string text = 1;
-         */
-        value: string
-        case: 'text'
-      }
-    | {
-        /**
-         * Ciphertext is an encrypted message body.
-         *
-         * @generated from field: spacewave.chat.ChatCiphertext ciphertext = 2;
-         */
-        value: ChatCiphertext
-        case: 'ciphertext'
-      }
-    | {
-        /**
-         * Annotation is public metadata even when message bodies require encryption.
-         *
-         * @generated from field: spacewave.chat.ChatAnnotation annotation = 3;
-         */
-        value: ChatAnnotation
-        case: 'annotation'
-      }
-    | {
-        /**
-         * StateChange is public channel metadata retained in message history.
-         *
-         * @generated from field: spacewave.chat.ChatStateChange state_change = 4;
-         */
-        value: ChatStateChange
-        case: 'stateChange'
-      }
-    | {
-        /**
-         * Event is a protocol message body subject to channel encryption policy.
-         *
-         * @generated from field: spacewave.chat.ChatEvent event = 5;
-         */
-        value: ChatEvent
-        case: 'event'
-      }
-    | {
-        /**
-         * Redaction removes an earlier body while keeping its history position.
-         *
-         * @generated from field: spacewave.chat.ChatRedaction redaction = 6;
-         */
-        value: ChatRedaction
-        case: 'redaction'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: string; case: 'text' }
+    | { value: ChatCiphertext; case: 'ciphertext' }
+    | { value: ChatAnnotation; case: 'annotation' }
+    | { value: ChatStateChange; case: 'stateChange' }
+    | { value: ChatEvent; case: 'event' }
+    | { value: ChatRedaction; case: 'redaction' }
 }
 
 export const ChatMessageContent: MessageType<ChatMessageContent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.ChatMessageContent',
-    fields: [
-      {
-        no: 1,
-        name: 'text',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'content',
-      },
-      {
-        no: 2,
-        name: 'ciphertext',
-        kind: 'message',
-        T: ChatCiphertext,
-        oneof: 'content',
-      },
-      {
-        no: 3,
-        name: 'annotation',
-        kind: 'message',
-        T: ChatAnnotation,
-        oneof: 'content',
-      },
-      {
-        no: 4,
-        name: 'state_change',
-        kind: 'message',
-        T: ChatStateChange,
-        oneof: 'content',
-      },
-      { no: 5, name: 'event', kind: 'message', T: ChatEvent, oneof: 'content' },
-      {
-        no: 6,
-        name: 'redaction',
-        kind: 'message',
-        T: ChatRedaction,
-        oneof: 'content',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatMessageContent>(
+    'spacewave.chat.ChatMessageContent',
+    () => [
+      [1, 'text', 9, 0, 0, 'content'],
+      [2, 'ciphertext', 11, 0, ChatCiphertext.codec, 'content'],
+      [3, 'annotation', 11, 0, ChatAnnotation.codec, 'content'],
+      [4, 'state_change', 11, 0, ChatStateChange.codec, 'content'],
+      [5, 'event', 11, 0, ChatEvent.codec, 'content'],
+      [6, 'redaction', 11, 0, ChatRedaction.codec, 'content'],
+    ],
+  )

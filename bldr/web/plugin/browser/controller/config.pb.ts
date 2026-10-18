@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the web plugin browser host controller.
@@ -17,15 +15,12 @@ export interface Config {
   /**
    * ServiceId is the service id to expose the WebPluginBrowserHost service.
    * If unset, defaults to bldr.web.plugin.browser.WebPluginBrowserHost
-   *
-   * @generated from field: string service_id = 1;
    */
   serviceId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.web.plugin.browser.controller.Config',
-  fields: [
-    { no: 1, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.web.plugin.browser.controller.Config',
+    () => [[1, 'service_id', 9]],
+  )

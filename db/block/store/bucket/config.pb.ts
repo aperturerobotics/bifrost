@@ -5,8 +5,6 @@
 import { Config as Config$1 } from '../../../bucket/bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the block-store backed bucket controller.
@@ -19,38 +17,28 @@ export interface Config {
   /**
    * BlockStoreId configures the block store to use for blocks.
    * uses LookupBlockStore to lookup the block store on the bus.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * BucketConfig is the bucket config to expose on the bus and back with the block store.
-   *
-   * @generated from field: bucket.Config bucket_config = 2;
    */
   bucketConfig?: Config$1
   /**
    * BucketStoreId configures the store id to use when filtering BuildBucketAPI directives.
    * If unset, defaults to the block_store_id.
-   *
-   * @generated from field: string bucket_store_id = 3;
    */
   bucketStoreId?: string
   /**
    * NotFoundIfIdle returns a not found error if the block store was not found.
    * If unset, waits until the block store is available.
-   *
-   * @generated from field: bool not_found_if_idle = 4;
    */
   notFoundIfIdle?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.bucket.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'bucket_config', kind: 'message', T: () => Config$1 },
-    { no: 3, name: 'bucket_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'not_found_if_idle', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('block.store.bucket.Config', () => [
+    [1, 'block_store_id', 9],
+    [2, 'bucket_config', 11, 0, Config$1.codec],
+    [3, 'bucket_store_id', 9],
+    [4, 'not_found_if_idle', 8],
+  ])

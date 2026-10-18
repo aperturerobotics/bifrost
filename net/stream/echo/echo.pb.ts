@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the echo controller.
@@ -16,22 +14,16 @@ export interface Config {
   /**
    * PeerId is the peer ID to echo for.
    * Can be empty.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * ProtocolId is the protocol ID to echo on.
-   *
-   * @generated from field: string protocol_id = 2;
    */
   protocolId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'stream.echo.Config',
-  fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('stream.echo.Config', () => [
+    [1, 'peer_id', 9],
+    [2, 'protocol_id', 9],
+  ])

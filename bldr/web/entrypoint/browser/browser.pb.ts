@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the configuration for the browser controller.
@@ -20,24 +18,21 @@ export interface Config {
    * must be set
    * used to determine the broadcast channel ids
    * determined by the webpage that started the worker
-   *
-   * @generated from field: string web_runtime_id = 1;
    */
   webRuntimeId?: string
   /**
    * MessagePort is the global value to lookup for the MessagePort.
    * This MessagePort is used to pass other MessagePorts to open clients for the WebRuntimeHost.
    * usually BLDR_WEB_RUNTIME_CLIENT_OPEN.
-   *
-   * @generated from field: string message_port = 2;
    */
   messagePort?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'web.entrypoint.browser.Config',
-  fields: [
-    { no: 1, name: 'web_runtime_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'message_port', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'web.entrypoint.browser.Config',
+    () => [
+      [1, 'web_runtime_id', 9],
+      [2, 'message_port', 9],
+    ],
+  )

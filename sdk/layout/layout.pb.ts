@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * BorderLocation is the list of possible border locations.
@@ -19,36 +14,33 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum BorderLocation {
   /**
    * BorderLocation_TOP is the default value.
-   *
-   * @generated from enum value: BorderLocation_TOP = 0;
    */
   BorderLocation_TOP = 0,
 
   /**
    * BorderLocation_BOTTOM is the bottom edge.
-   *
-   * @generated from enum value: BorderLocation_BOTTOM = 1;
    */
   BorderLocation_BOTTOM = 1,
 
   /**
    * BorderLocation_LEFT is the left edge.
-   *
-   * @generated from enum value: BorderLocation_LEFT = 2;
    */
   BorderLocation_LEFT = 2,
 
   /**
    * BorderLocation_RIGHT is the right edge.
-   *
-   * @generated from enum value: BorderLocation_RIGHT = 3;
    */
   BorderLocation_RIGHT = 3,
 }
 
 export const BorderLocation_Enum = /* @__PURE__ */ createEnumType(
   's4wave.layout.BorderLocation',
-  BorderLocation,
+  [
+    [0, 'BorderLocation_TOP'],
+    [1, 'BorderLocation_BOTTOM'],
+    [2, 'BorderLocation_LEFT'],
+    [3, 'BorderLocation_RIGHT'],
+  ],
 )
 
 /**
@@ -59,26 +51,22 @@ export const BorderLocation_Enum = /* @__PURE__ */ createEnumType(
 export interface NavigateTabRequest {
   /**
    * TabId is the identifier of the tab to navigate within.
-   *
-   * @generated from field: string tab_id = 1;
    */
   tabId?: string
   /**
    * Path is the path to navigate to, relative or absolute.
-   *
-   * @generated from field: string path = 2;
    */
   path?: string
 }
 
 export const NavigateTabRequest: MessageType<NavigateTabRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.NavigateTabRequest',
-    fields: [
-      { no: 1, name: 'tab_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<NavigateTabRequest>(
+    's4wave.layout.NavigateTabRequest',
+    () => [
+      [1, 'tab_id', 9],
+      [2, 'path', 9],
+    ],
+  )
 
 /**
  * NavigateTabResponse is a response to navigate within a tab.
@@ -88,59 +76,10 @@ export const NavigateTabRequest: MessageType<NavigateTabRequest> =
 export interface NavigateTabResponse {}
 
 export const NavigateTabResponse: MessageType<NavigateTabResponse> =
-  /* @__PURE__ */ createEmptyMessageType<NavigateTabResponse>(
+  /* @__PURE__ */ createMessageType<NavigateTabResponse>(
     's4wave.layout.NavigateTabResponse',
-    true,
+    () => [],
   )
-
-/**
- * TabDef contains information about a tab.
- *
- * @generated from message s4wave.layout.TabDef
- */
-export interface TabDef {
-  /**
-   * Id is the unique identifier for the tab.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Name is the title of the tab.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-  /**
-   * HelpText is text that shows when hovering over the tab.
-   *
-   * @generated from field: string help_text = 3;
-   */
-  helpText?: string
-  /**
-   * EnableClose enables closing the tab with the close button.
-   *
-   * @generated from field: bool enable_close = 4;
-   */
-  enableClose?: boolean
-  /**
-   * Data contains data passed to the tab contents.
-   *
-   * @generated from field: bytes data = 5;
-   */
-  data?: Uint8Array
-}
-
-export const TabDef: MessageType<TabDef> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.layout.TabDef',
-  fields: [
-    { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'help_text', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'enable_close', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-  ] satisfies readonly PartialFieldInfo[],
-})
 
 /**
  * ReplaceTabRequest is a request to replace the data and presentation fields of
@@ -151,27 +90,23 @@ export const TabDef: MessageType<TabDef> = /* @__PURE__ */ createMessageType({
 export interface ReplaceTabRequest {
   /**
    * TabId is the identifier of the tab to replace.
-   *
-   * @generated from field: string tab_id = 1;
    */
   tabId?: string
   /**
    * Tab contains the replacement title, help text, and data. The existing tab
    * keeps TabId as its id and preserves its close policy.
-   *
-   * @generated from field: s4wave.layout.TabDef tab = 2;
    */
   tab?: TabDef
 }
 
 export const ReplaceTabRequest: MessageType<ReplaceTabRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.ReplaceTabRequest',
-    fields: [
-      { no: 1, name: 'tab_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'tab', kind: 'message', T: TabDef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReplaceTabRequest>(
+    's4wave.layout.ReplaceTabRequest',
+    () => [
+      [1, 'tab_id', 9],
+      [2, 'tab', 11, 0, TabDef.codec],
+    ],
+  )
 
 /**
  * ReplaceTabResponse is a response to replacing a tab payload.
@@ -181,9 +116,9 @@ export const ReplaceTabRequest: MessageType<ReplaceTabRequest> =
 export interface ReplaceTabResponse {}
 
 export const ReplaceTabResponse: MessageType<ReplaceTabResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ReplaceTabResponse>(
+  /* @__PURE__ */ createMessageType<ReplaceTabResponse>(
     's4wave.layout.ReplaceTabResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -195,41 +130,33 @@ export interface AddTabRequest {
   /**
    * TabSetId is the identifier of the tabset to add the tab to.
    * If empty, the tab is added to the currently active tabset.
-   *
-   * @generated from field: string tab_set_id = 1;
    */
   tabSetId?: string
   /**
    * Tab is the tab definition to add.
-   *
-   * @generated from field: s4wave.layout.TabDef tab = 2;
    */
   tab?: TabDef
   /**
    * AfterTabId is the ID of the tab to insert after.
    * If empty, the tab is added at the end of the tabset.
-   *
-   * @generated from field: string after_tab_id = 3;
    */
   afterTabId?: string
   /**
    * Select indicates whether to select the new tab after adding.
-   *
-   * @generated from field: bool select = 4;
    */
   select?: boolean
 }
 
 export const AddTabRequest: MessageType<AddTabRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.AddTabRequest',
-    fields: [
-      { no: 1, name: 'tab_set_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'tab', kind: 'message', T: TabDef },
-      { no: 3, name: 'after_tab_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'select', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddTabRequest>(
+    's4wave.layout.AddTabRequest',
+    () => [
+      [1, 'tab_set_id', 9],
+      [2, 'tab', 11, 0, TabDef.codec],
+      [3, 'after_tab_id', 9],
+      [4, 'select', 8],
+    ],
+  )
 
 /**
  * AddTabResponse is a response to adding a new tab.
@@ -239,215 +166,15 @@ export const AddTabRequest: MessageType<AddTabRequest> =
 export interface AddTabResponse {
   /**
    * TabId is the ID of the newly added tab.
-   *
-   * @generated from field: string tab_id = 1;
    */
   tabId?: string
 }
 
 export const AddTabResponse: MessageType<AddTabResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.AddTabResponse',
-    fields: [
-      { no: 1, name: 'tab_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BorderDef contains a definition of a tab border.
- *
- * @generated from message s4wave.layout.BorderDef
- */
-export interface BorderDef {
-  /**
-   * BorderLocation is the border location.
-   *
-   * @generated from field: s4wave.layout.BorderLocation border_location = 1;
-   */
-  borderLocation?: BorderLocation
-  /**
-   * Children contains the list of tabs in this border.
-   *
-   * @generated from field: repeated s4wave.layout.TabDef children = 2;
-   */
-  children?: TabDef[]
-  /**
-   * Selected is the index of selected/visible tab in border; -1 means no tab selected
-   *
-   * @generated from field: int32 selected = 3;
-   */
-  selected?: number
-  /**
-   * Hide indicates if this border should be hidden
-   *
-   * @generated from field: bool hide = 4;
-   */
-  hide?: boolean
-}
-
-export const BorderDef: MessageType<BorderDef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.BorderDef',
-    fields: [
-      { no: 1, name: 'border_location', kind: 'enum', T: BorderLocation_Enum },
-      { no: 2, name: 'children', kind: 'message', T: TabDef, repeated: true },
-      { no: 3, name: 'selected', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 4, name: 'hide', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TabSetDef contains information about a set of tabs.
- *
- * @generated from message s4wave.layout.TabSetDef
- */
-export interface TabSetDef {
-  /**
-   * Id is the unique identifier for the tab.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Name is an optional title for the tab.
-   *
-   * @generated from field: string name = 2;
-   */
-  name?: string
-  /**
-   * Weight is the relative size of the tab set.
-   *
-   * @generated from field: float weight = 3;
-   */
-  weight?: number
-  /**
-   * Children contains the list of children tabs.
-   *
-   * @generated from field: repeated s4wave.layout.TabDef children = 4;
-   */
-  children?: TabDef[]
-}
-
-export const TabSetDef: MessageType<TabSetDef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.TabSetDef',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'weight', kind: 'scalar', T: ScalarType.FLOAT },
-      { no: 4, name: 'children', kind: 'message', T: TabDef, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RowOrTabSetDef contains either a RowDef or a TabSetDef.
- *
- * @generated from message s4wave.layout.RowOrTabSetDef
- */
-export interface RowOrTabSetDef {
-  /**
-   * @generated from oneof s4wave.layout.RowOrTabSetDef.node
-   */
-  node?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * @generated from field: s4wave.layout.RowDef row = 1;
-         */
-        value: RowDef
-        case: 'row'
-      }
-    | {
-        /**
-         * @generated from field: s4wave.layout.TabSetDef tab_set = 2;
-         */
-        value: TabSetDef
-        case: 'tabSet'
-      }
-}
-
-export const RowOrTabSetDef: MessageType<RowOrTabSetDef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.RowOrTabSetDef',
-    fields: [
-      { no: 1, name: 'row', kind: 'message', T: () => RowDef, oneof: 'node' },
-      { no: 2, name: 'tab_set', kind: 'message', T: TabSetDef, oneof: 'node' },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RowDef contains information about a row.
- *
- * @generated from message s4wave.layout.RowDef
- */
-export interface RowDef {
-  /**
-   * Id is the id of the row.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Children is the list of children nodes.
-   *
-   * @generated from field: repeated s4wave.layout.RowOrTabSetDef children = 2;
-   */
-  children?: RowOrTabSetDef[]
-  /**
-   * Weight is the weight of the row.
-   *
-   * @generated from field: float weight = 3;
-   */
-  weight?: number
-}
-
-export const RowDef: MessageType<RowDef> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.layout.RowDef',
-  fields: [
-    { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'children',
-      kind: 'message',
-      T: RowOrTabSetDef,
-      repeated: true,
-    },
-    { no: 3, name: 'weight', kind: 'scalar', T: ScalarType.FLOAT },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * LayoutModel contains information about Tabs and ObjectViewers in a layout.
- *
- * @generated from message s4wave.layout.LayoutModel
- */
-export interface LayoutModel {
-  /**
-   * Borders contains the optional list of borders containing tabs.
-   * Borders can contain tabs on the sides of the layout.
-   *
-   * @generated from field: repeated s4wave.layout.BorderDef borders = 1;
-   */
-  borders?: BorderDef[]
-  /**
-   * Layout contains the row definition for the model.
-   *
-   * @generated from field: s4wave.layout.RowDef layout = 2;
-   */
-  layout?: RowDef
-}
-
-export const LayoutModel: MessageType<LayoutModel> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.LayoutModel',
-    fields: [
-      { no: 1, name: 'borders', kind: 'message', T: BorderDef, repeated: true },
-      { no: 2, name: 'layout', kind: 'message', T: RowDef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddTabResponse>(
+    's4wave.layout.AddTabResponse',
+    () => [[1, 'tab_id', 9]],
+  )
 
 /**
  * WatchLayoutModelRequest is a request sent by the client of WatchLayoutModel.
@@ -459,89 +186,41 @@ export interface WatchLayoutModelRequest {
    * @generated from oneof s4wave.layout.WatchLayoutModelRequest.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * SetModel sets a full snapshot of the layout model.
-         * May return an error if the model does not validate correctly.
-         * Updates the model internally & yields new version on WatchLayoutModel.
-         *
-         * @generated from field: s4wave.layout.LayoutModel set_model = 1;
-         */
-        value: LayoutModel
-        case: 'setModel'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: LayoutModel; case: 'setModel' }
 }
 
 export const WatchLayoutModelRequest: MessageType<WatchLayoutModelRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.WatchLayoutModelRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'set_model',
-        kind: 'message',
-        T: LayoutModel,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchLayoutModelRequest>(
+    's4wave.layout.WatchLayoutModelRequest',
+    () => [[1, 'set_model', 11, 0, LayoutModel.codec, 'body']],
+  )
 
 /**
- * LayoutLocalState contains local/ephemeral layout state.
- * This state is not persisted to the server but preserved in URLs.
+ * LayoutModel contains information about Tabs and ObjectViewers in a layout.
  *
- * @generated from message s4wave.layout.LayoutLocalState
+ * @generated from message s4wave.layout.LayoutModel
  */
-export interface LayoutLocalState {
+export interface LayoutModel {
   /**
-   * ActiveTabSetId is the ID of the currently active/focused tabset.
-   *
-   * @generated from field: string active_tab_set_id = 1;
+   * Borders contains the optional list of borders containing tabs.
+   * Borders can contain tabs on the sides of the layout.
    */
-  activeTabSetId?: string
+  borders?: BorderDef[]
   /**
-   * TabSetSelections maps tabset IDs to their selected tab IDs.
-   *
-   * @generated from field: map<string, string> tab_set_selections = 2;
+   * Layout contains the row definition for the model.
    */
-  tabSetSelections?: { [key: string]: string }
-  /**
-   * MaximizedTabSetId is the ID of the maximized tabset, if any.
-   *
-   * @generated from field: string maximized_tab_set_id = 3;
-   */
-  maximizedTabSetId?: string
+  layout?: RowDef
 }
 
-export const LayoutLocalState: MessageType<LayoutLocalState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.LayoutLocalState',
-    fields: [
-      {
-        no: 1,
-        name: 'active_tab_set_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'tab_set_selections',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-      {
-        no: 3,
-        name: 'maximized_tab_set_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const LayoutModel: MessageType<LayoutModel> =
+  /* @__PURE__ */ createMessageType<LayoutModel>(
+    's4wave.layout.LayoutModel',
+    () => [
+      [1, 'borders', 11, 1, BorderDef.codec],
+      [2, 'layout', 11, 0, RowDef.codec],
+    ],
+  )
 
 /**
  * LayoutSnapshot contains a complete layout state including local UI state.
@@ -552,23 +231,208 @@ export const LayoutLocalState: MessageType<LayoutLocalState> =
 export interface LayoutSnapshot {
   /**
    * Model contains the structural layout (tabs, tabsets, rows).
-   *
-   * @generated from field: s4wave.layout.LayoutModel model = 1;
    */
   model?: LayoutModel
   /**
    * LocalState contains ephemeral UI state (selections, active tabset).
-   *
-   * @generated from field: s4wave.layout.LayoutLocalState local_state = 2;
    */
   localState?: LayoutLocalState
 }
 
 export const LayoutSnapshot: MessageType<LayoutSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.layout.LayoutSnapshot',
-    fields: [
-      { no: 1, name: 'model', kind: 'message', T: LayoutModel },
-      { no: 2, name: 'local_state', kind: 'message', T: LayoutLocalState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LayoutSnapshot>(
+    's4wave.layout.LayoutSnapshot',
+    () => [
+      [1, 'model', 11, 0, LayoutModel.codec],
+      [2, 'local_state', 11, 0, LayoutLocalState.codec],
+    ],
+  )
+
+/**
+ * LayoutLocalState contains local/ephemeral layout state.
+ * This state is not persisted to the server but preserved in URLs.
+ *
+ * @generated from message s4wave.layout.LayoutLocalState
+ */
+export interface LayoutLocalState {
+  /**
+   * ActiveTabSetId is the ID of the currently active/focused tabset.
+   */
+  activeTabSetId?: string
+  /**
+   * TabSetSelections maps tabset IDs to their selected tab IDs.
+   */
+  tabSetSelections?: { [key: string]: string }
+  /**
+   * MaximizedTabSetId is the ID of the maximized tabset, if any.
+   */
+  maximizedTabSetId?: string
+}
+
+export const LayoutLocalState: MessageType<LayoutLocalState> =
+  /* @__PURE__ */ createMessageType<LayoutLocalState>(
+    's4wave.layout.LayoutLocalState',
+    () => [
+      [1, 'active_tab_set_id', 9],
+      [2, 'tab_set_selections', 9, 584],
+      [3, 'maximized_tab_set_id', 9],
+    ],
+  )
+
+/**
+ * BorderDef contains a definition of a tab border.
+ *
+ * @generated from message s4wave.layout.BorderDef
+ */
+export interface BorderDef {
+  /**
+   * BorderLocation is the border location.
+   */
+  borderLocation?: BorderLocation
+  /**
+   * Children contains the list of tabs in this border.
+   */
+  children?: TabDef[]
+  /**
+   * Selected is the index of selected/visible tab in border; -1 means no tab selected
+   */
+  selected?: number
+  /**
+   * Hide indicates if this border should be hidden
+   */
+  hide?: boolean
+}
+
+export const BorderDef: MessageType<BorderDef> =
+  /* @__PURE__ */ createMessageType<BorderDef>(
+    's4wave.layout.BorderDef',
+    () => [
+      [1, 'border_location', 14, 0, BorderLocation_Enum],
+      [2, 'children', 11, 1, TabDef.codec],
+      [3, 'selected', 5],
+      [4, 'hide', 8],
+    ],
+  )
+
+/**
+ * TabDef contains information about a tab.
+ *
+ * @generated from message s4wave.layout.TabDef
+ */
+export interface TabDef {
+  /**
+   * Id is the unique identifier for the tab.
+   */
+  id?: string
+  /**
+   * Name is the title of the tab.
+   */
+  name?: string
+  /**
+   * HelpText is text that shows when hovering over the tab.
+   */
+  helpText?: string
+  /**
+   * EnableClose enables closing the tab with the close button.
+   */
+  enableClose?: boolean
+  /**
+   * Data contains data passed to the tab contents.
+   */
+  data?: Uint8Array
+}
+
+export const TabDef: MessageType<TabDef> =
+  /* @__PURE__ */ createMessageType<TabDef>('s4wave.layout.TabDef', () => [
+    [1, 'id', 9],
+    [2, 'name', 9],
+    [3, 'help_text', 9],
+    [4, 'enable_close', 8],
+    [5, 'data', 12],
+  ])
+
+/**
+ * RowDef contains information about a row.
+ *
+ * @generated from message s4wave.layout.RowDef
+ */
+export interface RowDef {
+  /**
+   * Id is the id of the row.
+   */
+  id?: string
+  /**
+   * Children is the list of children nodes.
+   */
+  children?: RowOrTabSetDef[]
+  /**
+   * Weight is the weight of the row.
+   */
+  weight?: number
+}
+
+export const RowDef: MessageType<RowDef> =
+  /* @__PURE__ */ createMessageType<RowDef>('s4wave.layout.RowDef', () => [
+    [1, 'id', 9],
+    [2, 'children', 11, 1, RowOrTabSetDef.codec],
+    [3, 'weight', 2],
+  ])
+
+/**
+ * TabSetDef contains information about a set of tabs.
+ *
+ * @generated from message s4wave.layout.TabSetDef
+ */
+export interface TabSetDef {
+  /**
+   * Id is the unique identifier for the tab.
+   */
+  id?: string
+  /**
+   * Name is an optional title for the tab.
+   */
+  name?: string
+  /**
+   * Weight is the relative size of the tab set.
+   */
+  weight?: number
+  /**
+   * Children contains the list of children tabs.
+   */
+  children?: TabDef[]
+}
+
+export const TabSetDef: MessageType<TabSetDef> =
+  /* @__PURE__ */ createMessageType<TabSetDef>(
+    's4wave.layout.TabSetDef',
+    () => [
+      [1, 'id', 9],
+      [2, 'name', 9],
+      [3, 'weight', 2],
+      [4, 'children', 11, 1, TabDef.codec],
+    ],
+  )
+
+/**
+ * RowOrTabSetDef contains either a RowDef or a TabSetDef.
+ *
+ * @generated from message s4wave.layout.RowOrTabSetDef
+ */
+export interface RowOrTabSetDef {
+  /**
+   * @generated from oneof s4wave.layout.RowOrTabSetDef.node
+   */
+  node?:
+    | { value?: undefined; case: undefined }
+    | { value: RowDef; case: 'row' }
+    | { value: TabSetDef; case: 'tabSet' }
+}
+
+export const RowOrTabSetDef: MessageType<RowOrTabSetDef> =
+  /* @__PURE__ */ createMessageType<RowOrTabSetDef>(
+    's4wave.layout.RowOrTabSetDef',
+    () => [
+      [1, 'row', 11, 0, RowDef.codec, 'node'],
+      [2, 'tab_set', 11, 0, TabSetDef.codec, 'node'],
+    ],
+  )

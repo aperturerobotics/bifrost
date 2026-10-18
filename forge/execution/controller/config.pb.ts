@@ -5,8 +5,6 @@
 import { InputWorld, Target } from '../../target/target.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Execution } from '../execution.pb.js'
 
 /**
@@ -17,90 +15,63 @@ import { Execution } from '../execution.pb.js'
 export interface Config {
   /**
    * EngineId is the world engine id for the forge state.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
    * ObjectKey is the Execution state object to attach to.
    * If not exists, waits for it to exist.
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
   /**
    * PeerId is the peer ID to use for the execution controller.
    * Must match the Execution peer except when reclaiming an expired claim.
    * If not set, will look up the peer id from the state.
-   *
-   * @generated from field: string peer_id = 3;
    */
   peerId?: string
   /**
    * ResolveControllerConfigTimeout is a timeout for resolving the exec.controller config.
-   *
-   * @generated from field: string resolve_controller_config_timeout = 4;
    */
   resolveControllerConfigTimeout?: string
   /**
    * AllowNonExecController allows exec.controller to not implement ExecController.
-   *
-   * @generated from field: bool allow_non_exec_controller = 5;
    */
   allowNonExecController?: boolean
   /**
    * InputWorld is the default value for the "world" input.
-   *
-   * @generated from field: forge.target.InputWorld input_world = 6;
    */
   inputWorld?: InputWorld
   /**
    * ClaimId is the stable owner token used across controller retries.
-   *
-   * @generated from field: string claim_id = 7;
    */
   claimId?: string
   /**
    * ClaimLease is how long a claim stays live without renewal, as a duration
    * string. The controller renews at a third of the lease. Peers may reclaim
    * an Execution once its holder has missed the lease. Defaults to five minutes.
-   *
-   * @generated from field: string claim_lease = 8;
    */
   claimLease?: string
   /**
    * WorkerObjectKey selects the Worker's placement on reclaim. Required when
    * reclaiming a placed Execution; the peer must be linked to this Worker.
-   *
-   * @generated from field: string worker_object_key = 9;
    */
   workerObjectKey?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'execution.controller.Config',
-  fields: [
-    { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 4,
-      name: 'resolve_controller_config_timeout',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 5,
-      name: 'allow_non_exec_controller',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    { no: 6, name: 'input_world', kind: 'message', T: () => InputWorld },
-    { no: 7, name: 'claim_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 8, name: 'claim_lease', kind: 'scalar', T: ScalarType.STRING },
-    { no: 9, name: 'worker_object_key', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'execution.controller.Config',
+    () => [
+      [1, 'engine_id', 9],
+      [2, 'object_key', 9],
+      [3, 'peer_id', 9],
+      [4, 'resolve_controller_config_timeout', 9],
+      [5, 'allow_non_exec_controller', 8],
+      [6, 'input_world', 11, 0, InputWorld.codec],
+      [7, 'claim_id', 9],
+      [8, 'claim_lease', 9],
+      [9, 'worker_object_key', 9],
+    ],
+  )
 
 /**
  * ExecConfig is a configuration for the execution routine.
@@ -111,24 +82,20 @@ export interface ExecConfig {
   /**
    * Execution is the current state of the execution.
    * NOTE: value_set and result are set to nil.
-   *
-   * @generated from field: forge.execution.Execution execution = 1;
    */
   execution?: Execution
   /**
    * Target is the current target to execute.
    * This is the value of the TargetRef in execution.
-   *
-   * @generated from field: forge.target.Target target = 2;
    */
   target?: Target
 }
 
 export const ExecConfig: MessageType<ExecConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'execution.controller.ExecConfig',
-    fields: [
-      { no: 1, name: 'execution', kind: 'message', T: () => Execution },
-      { no: 2, name: 'target', kind: 'message', T: () => Target },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ExecConfig>(
+    'execution.controller.ExecConfig',
+    () => [
+      [1, 'execution', 11, 0, Execution.codec],
+      [2, 'target', 11, 0, Target.codec],
+    ],
+  )

@@ -3,17 +3,15 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
-import type { State as State$1 } from '../execution/execution.pb.js'
-import { State_Enum as State_Enum$1 } from '../execution/execution.pb.js'
+import { BlockRef } from '@go/github.com/s4wave/spacewave/db/block/block.pb.js'
 import { ValueSet } from '../target/target.pb.js'
 import { Result } from '../value/value.pb.js'
+import { Placement } from '../worker/worker.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { BlockRef } from '@go/github.com/s4wave/spacewave/db/block/block.pb.js'
-import { Placement } from '../worker/worker.pb.js'
+import type { State as State$1 } from '../execution/execution.pb.js'
+import { State_Enum as State_Enum$1 } from '../execution/execution.pb.js'
 
 /**
  * State contains the possible Pass states.
@@ -23,24 +21,18 @@ import { Placement } from '../worker/worker.pb.js'
 export enum State {
   /**
    * PassState_UNKNOWN is the unknown type.
-   *
-   * @generated from enum value: PassState_UNKNOWN = 0;
    */
   PassState_UNKNOWN = 0,
 
   /**
    * PassState_PENDING is the state when the pass is not yet running.
    * Transitions to RUNNING when the pass is promoted to running.
-   *
-   * @generated from enum value: PassState_PENDING = 1;
    */
   PassState_PENDING = 1,
 
   /**
    * PassState_RUNNING is the state when the executions are running.
    * ExecStates can be added, removed, updated during this state as needed.
-   *
-   * @generated from enum value: PassState_RUNNING = 2;
    */
   PassState_RUNNING = 2,
 
@@ -48,92 +40,29 @@ export enum State {
    * PassState_CHECKING is the state when all exec states are completed.
    * If multiple executions were scheduled, they are checked for agreement.
    * Transition to COMPLETE state on failure (disageement) or success (validation).
-   *
-   * @generated from enum value: PassState_CHECKING = 3;
    */
   PassState_CHECKING = 3,
 
   /**
    * PassState_COMPLETE is the normal terminal state of the pass.
    * This includes both success and failure termination states.
-   *
-   * @generated from enum value: PassState_COMPLETE = 4;
    */
   PassState_COMPLETE = 4,
 
   /**
    * PassState_CANCELING is the state while linked Executions drain.
-   *
-   * @generated from enum value: PassState_CANCELING = 5;
    */
   PassState_CANCELING = 5,
 }
 
-export const State_Enum = /* @__PURE__ */ createEnumType(
-  'forge.pass.State',
-  State,
-)
-
-/**
- * ExecState contains the previous snapshot of an execution state.
- *
- * @generated from message forge.pass.ExecState
- */
-export interface ExecState {
-  /**
-   * ObjectKey is the object key of the execution instance.
-   * Must exist before adding to Pass state.
-   * Graph quad also exists: <pass> <pass/execution> <object_key>
-   *
-   * @generated from field: string object_key = 1;
-   */
-  objectKey?: string
-  /**
-   * ExecutionState is the current state of the execution.
-   *
-   * @generated from field: forge.execution.State execution_state = 2;
-   */
-  executionState?: State$1
-  /**
-   * PeerId is the identifier of the peer assigned to the execution.
-   * Can be empty.
-   *
-   * @generated from field: string peer_id = 3;
-   */
-  peerId?: string
-  /**
-   * Timestamp is the time the parent object (usually Pass) was created.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
-   */
-  timestamp?: Date
-  /**
-   * ValueSet is the set of inputs and outputs used in the execution.
-   * Outputs are updated when the execution reaches COMPLETE state.
-   *
-   * @generated from field: forge.target.ValueSet value_set = 5;
-   */
-  valueSet?: ValueSet
-  /**
-   * Result is information about the outcome of the execution.
-   *
-   * @generated from field: forge.value.Result result = 6;
-   */
-  result?: Result
-}
-
-export const ExecState: MessageType<ExecState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.pass.ExecState',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'execution_state', kind: 'enum', T: State_Enum$1 },
-      { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 5, name: 'value_set', kind: 'message', T: () => ValueSet },
-      { no: 6, name: 'result', kind: 'message', T: () => Result },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const State_Enum = /* @__PURE__ */ createEnumType('forge.pass.State', [
+  [0, 'PassState_UNKNOWN'],
+  [1, 'PassState_PENDING'],
+  [2, 'PassState_RUNNING'],
+  [3, 'PassState_CHECKING'],
+  [4, 'PassState_COMPLETE'],
+  [5, 'PassState_CANCELING'],
+])
 
 /**
  * Pass contains state for a Task pass.
@@ -158,22 +87,16 @@ export const ExecState: MessageType<ExecState> =
 export interface Pass {
   /**
    * PassState is the current state of the pass.
-   *
-   * @generated from field: forge.pass.State pass_state = 1;
    */
   passState?: State
   /**
    * PeerId is the Pass controller peer ID.
    * Usually the peer ID of the Cluster controller managing this Pass.
    * Can be empty.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * TargetRef is the block reference to the Target for the pass.
-   *
-   * @generated from field: block.BlockRef target_ref = 3;
    */
   targetRef?: BlockRef
   /**
@@ -181,29 +104,21 @@ export interface Pass {
    * The input set is resolved before creating the Pass object.
    * The inputs are copied to the Pass objects.
    * The output set is updated when transitioning from CHECKING -> COMPLETE.
-   *
-   * @generated from field: forge.target.ValueSet value_set = 4;
    */
   valueSet?: ValueSet
   /**
    * Result is the cancellation request while CANCELING, or the outcome of a
    * completed Pass.
-   *
-   * @generated from field: forge.value.Result result = 5;
    */
   result?: Result
   /**
    * Replicas is the configured number of executions for the Pass.
    *
    * len(replicas) must match len(exec_states) to complete
-   *
-   * @generated from field: uint32 replicas = 6;
    */
   replicas?: number
   /**
    * PassNonce is the nonce of the pass set by the pass creator.
-   *
-   * @generated from field: uint64 pass_nonce = 7;
    */
   passNonce?: bigint
   /**
@@ -213,8 +128,6 @@ export interface Pass {
    *  - RUNNING or CANCELING: updated as linked Executions change.
    *  - RUNNING to CHECKING or COMPLETE: contains final states (COMPLETE).
    *  - Any to PENDING: cleared (set to len=0).
-   *
-   * @generated from field: repeated forge.pass.ExecState exec_states = 8;
    */
   execStates?: ExecState[]
   /**
@@ -222,36 +135,72 @@ export interface Pass {
    * Used as a reference timestamp to make all ops deterministic.
    * For example: all unixfs timestamps will be set to this value.
    * Must be set.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 9;
    */
   timestamp?: Date
   /**
    * Placement is the immutable Worker and Device peer selected for this Pass.
-   *
-   * @generated from field: forge.worker.Placement placement = 10;
    */
   placement?: Placement
 }
 
-export const Pass: MessageType<Pass> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.pass.Pass',
-  fields: [
-    { no: 1, name: 'pass_state', kind: 'enum', T: State_Enum },
-    { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'target_ref', kind: 'message', T: () => BlockRef },
-    { no: 4, name: 'value_set', kind: 'message', T: () => ValueSet },
-    { no: 5, name: 'result', kind: 'message', T: () => Result },
-    { no: 6, name: 'replicas', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 7, name: 'pass_nonce', kind: 'scalar', T: ScalarType.UINT64 },
-    {
-      no: 8,
-      name: 'exec_states',
-      kind: 'message',
-      T: ExecState,
-      repeated: true,
-    },
-    { no: 9, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    { no: 10, name: 'placement', kind: 'message', T: () => Placement },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Pass: MessageType<Pass> = /* @__PURE__ */ createMessageType<Pass>(
+  'forge.pass.Pass',
+  () => [
+    [1, 'pass_state', 14, 0, State_Enum],
+    [2, 'peer_id', 9],
+    [3, 'target_ref', 11, 0, BlockRef.codec],
+    [4, 'value_set', 11, 0, ValueSet.codec],
+    [5, 'result', 11, 0, Result.codec],
+    [6, 'replicas', 13],
+    [7, 'pass_nonce', 4],
+    [8, 'exec_states', 11, 1, ExecState.codec],
+    [9, 'timestamp', 11, 0, Timestamp.codec],
+    [10, 'placement', 11, 0, Placement.codec],
+  ],
+)
+
+/**
+ * ExecState contains the previous snapshot of an execution state.
+ *
+ * @generated from message forge.pass.ExecState
+ */
+export interface ExecState {
+  /**
+   * ObjectKey is the object key of the execution instance.
+   * Must exist before adding to Pass state.
+   * Graph quad also exists: <pass> <pass/execution> <object_key>
+   */
+  objectKey?: string
+  /**
+   * ExecutionState is the current state of the execution.
+   */
+  executionState?: State$1
+  /**
+   * PeerId is the identifier of the peer assigned to the execution.
+   * Can be empty.
+   */
+  peerId?: string
+  /**
+   * Timestamp is the time the parent object (usually Pass) was created.
+   */
+  timestamp?: Date
+  /**
+   * ValueSet is the set of inputs and outputs used in the execution.
+   * Outputs are updated when the execution reaches COMPLETE state.
+   */
+  valueSet?: ValueSet
+  /**
+   * Result is information about the outcome of the execution.
+   */
+  result?: Result
+}
+
+export const ExecState: MessageType<ExecState> =
+  /* @__PURE__ */ createMessageType<ExecState>('forge.pass.ExecState', () => [
+    [1, 'object_key', 9],
+    [2, 'execution_state', 14, 0, State_Enum$1],
+    [3, 'peer_id', 9],
+    [4, 'timestamp', 11, 0, Timestamp.codec],
+    [5, 'value_set', 11, 0, ValueSet.codec],
+    [6, 'result', 11, 0, Result.codec],
+  ])

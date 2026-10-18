@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the disk checkout controller.
@@ -16,36 +14,25 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * MountPath is the destination mount path.
-   *
-   * @generated from field: string mount_path = 1;
    */
   mountPath?: string
   /**
    * Verbose enables verbose logging.
    * Volume attribute: verbose=true
-   *
-   * @generated from field: bool verbose = 2;
    */
   verbose?: boolean
   /**
    * SkipPathPrefixes are source path prefixes to skip when syncing.
-   *
-   * @generated from field: repeated string skip_path_prefixes = 3;
    */
   skipPathPrefixes?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'unixfs.mount.checkout.Config',
-  fields: [
-    { no: 1, name: 'mount_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 3,
-      name: 'skip_path_prefixes',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'unixfs.mount.checkout.Config',
+    () => [
+      [1, 'mount_path', 9],
+      [2, 'verbose', 8],
+      [3, 'skip_path_prefixes', 9, 1],
+    ],
+  )

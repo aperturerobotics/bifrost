@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the static controller.
@@ -20,21 +18,11 @@ export interface Config {
    *
    * Format: {peer-id}|{transport-id}|{address}
    * Anything after the second | is treated as part of the address.
-   *
-   * @generated from field: repeated string addresses = 1;
    */
   addresses?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'tptaddr.static.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'addresses',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('tptaddr.static.Config', () => [
+    [1, 'addresses', 9, 1],
+  ])

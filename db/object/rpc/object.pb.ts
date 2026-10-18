@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * DeleteObjectStoreRequest requests to remove an object store and all contents.
@@ -15,19 +13,15 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface DeleteObjectStoreRequest {
   /**
    * ObjectStoreId is the object store identifier to remove.
-   *
-   * @generated from field: string object_store_id = 1;
    */
   objectStoreId?: string
 }
 
 export const DeleteObjectStoreRequest: MessageType<DeleteObjectStoreRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'object.rpc.DeleteObjectStoreRequest',
-    fields: [
-      { no: 1, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteObjectStoreRequest>(
+    'object.rpc.DeleteObjectStoreRequest',
+    () => [[1, 'object_store_id', 9]],
+  )
 
 /**
  * DeleteObjectStoreResponse is the response to removing an object store.
@@ -38,16 +32,12 @@ export interface DeleteObjectStoreResponse {
   /**
    * Error is any error removing the object store.
    * Will be empty if the store did not exist.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
 }
 
 export const DeleteObjectStoreResponse: MessageType<DeleteObjectStoreResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'object.rpc.DeleteObjectStoreResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteObjectStoreResponse>(
+    'object.rpc.DeleteObjectStoreResponse',
+    () => [[1, 'error', 9]],
+  )

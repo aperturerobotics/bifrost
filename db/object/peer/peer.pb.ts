@@ -5,8 +5,6 @@
 import { Config as Config$1 } from '../../block/transform/transform.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the object store peer controller.
@@ -20,42 +18,32 @@ export interface Config {
   /**
    * ObjectStoreId is the hydra object store to open to store the private key.
    * Required.
-   *
-   * @generated from field: string object_store_id = 1;
    */
   objectStoreId?: string
   /**
    * VolumeId is the volume id to use for the object store.
    * Can be empty to select any.
-   *
-   * @generated from field: string volume_id = 2;
    */
   volumeId?: string
   /**
    * ObjectStoreKey is the key to use in the object store for the private key.
    *
    * Defaults to "priv"
-   *
-   * @generated from field: string object_store_key = 3;
    */
   objectStoreKey?: string
   /**
    * TransformConf transforms the private key before storing it in storage.
-   *
-   * @generated from field: block.transform.Config transform_conf = 4;
    */
   transformConf?: Config$1
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'object.peer.Config',
-  fields: [
-    { no: 1, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'object_store_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'transform_conf', kind: 'message', T: () => Config$1 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('object.peer.Config', () => [
+    [1, 'object_store_id', 9],
+    [2, 'volume_id', 9],
+    [3, 'object_store_key', 9],
+    [4, 'transform_conf', 11, 0, Config$1.codec],
+  ])
 
 /**
  * StoredValue is the value for the ObjectStore containing the private key.
@@ -65,16 +53,12 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
 export interface StoredValue {
   /**
    * PrivKeyPem is the private key value in pem format.
-   *
-   * @generated from field: string priv_key_pem = 1;
    */
   privKeyPem?: string
 }
 
 export const StoredValue: MessageType<StoredValue> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'object.peer.StoredValue',
-    fields: [
-      { no: 1, name: 'priv_key_pem', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StoredValue>(
+    'object.peer.StoredValue',
+    () => [[1, 'priv_key_pem', 9]],
+  )

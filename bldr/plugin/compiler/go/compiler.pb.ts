@@ -9,8 +9,6 @@ import type { Enabled } from '@go/github.com/aperturerobotics/util/enabled/enabl
 import { Enabled_Enum } from '@go/github.com/aperturerobotics/util/enabled/enabled.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { PluginDevInfo } from '../../vardef/vardef.pb.js'
 import { WebPkgRef } from '../../../web/pkg/pkg.pb.js'
 import { EsbuildOutputMeta } from '../../../web/bundler/esbuild/esbuild.pb.js'
@@ -24,37 +22,33 @@ import { ViteOutputMeta } from '../../../web/bundler/vite/vite.pb.js'
 export enum GoCompiler {
   /**
    * GO_COMPILER_DEFAULT preserves the current default policy.
-   *
-   * @generated from enum value: GO_COMPILER_DEFAULT = 0;
    */
   DEFAULT = 0,
 
   /**
    * GO_COMPILER_GO uses the standard Go compiler.
-   *
-   * @generated from enum value: GO_COMPILER_GO = 1;
    */
   GO = 1,
 
   /**
    * GO_COMPILER_TINYGO uses TinyGo.
-   *
-   * @generated from enum value: GO_COMPILER_TINYGO = 2;
    */
   TINYGO = 2,
 
   /**
    * GO_COMPILER_GOSCRIPT uses GoScript.
-   *
-   * @generated from enum value: GO_COMPILER_GOSCRIPT = 3;
    */
   GOSCRIPT = 3,
 }
 
 export const GoCompiler_Enum = /* @__PURE__ */ createEnumType(
   'bldr.plugin.compiler.go.GoCompiler',
-  GoCompiler,
-  'GO_COMPILER_',
+  [
+    [0, 'GO_COMPILER_DEFAULT'],
+    [1, 'GO_COMPILER_GO'],
+    [2, 'GO_COMPILER_TINYGO'],
+    [3, 'GO_COMPILER_GOSCRIPT'],
+  ],
 )
 
 /**
@@ -65,36 +59,33 @@ export const GoCompiler_Enum = /* @__PURE__ */ createEnumType(
 export enum InputFileKind {
   /**
    * InputFileKind_UNKNOWN is the default kind.
-   *
-   * @generated from enum value: InputFileKind_UNKNOWN = 0;
    */
   InputFileKind_UNKNOWN = 0,
 
   /**
    * InputFileKind_ASSET is a static asset.
-   *
-   * @generated from enum value: InputFileKind_ASSET = 1;
    */
   InputFileKind_ASSET = 1,
 
   /**
    * InputFileKind_GO is a file built by the Go compiler.
-   *
-   * @generated from enum value: InputFileKind_GO = 2;
    */
   InputFileKind_GO = 2,
 
   /**
    * InputFileKind_GOSCRIPT_OVERRIDE is a project-local GoScript override file.
-   *
-   * @generated from enum value: InputFileKind_GOSCRIPT_OVERRIDE = 3;
    */
   InputFileKind_GOSCRIPT_OVERRIDE = 3,
 }
 
 export const InputFileKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.plugin.compiler.go.InputFileKind',
-  InputFileKind,
+  [
+    [0, 'InputFileKind_UNKNOWN'],
+    [1, 'InputFileKind_ASSET'],
+    [2, 'InputFileKind_GO'],
+    [3, 'InputFileKind_GOSCRIPT_OVERRIDE'],
+  ],
 )
 
 /**
@@ -106,23 +97,22 @@ export enum EsbuildVarType {
   /**
    * EsbuildVarType_ENTRYPOINT_PATH is the path to the main entrypoint script.
    * output type is a string
-   *
-   * @generated from enum value: EsbuildVarType_ENTRYPOINT_PATH = 0;
    */
   EsbuildVarType_ENTRYPOINT_PATH = 0,
 
   /**
    * EsbuildVarType_WEB_BUNDLER_OUTPUT contains a single web bundler output object.
    * output type is bldr_web_bundler.WebBundlerOutput
-   *
-   * @generated from enum value: EsbuildVarType_WEB_BUNDLER_OUTPUT = 1;
    */
   EsbuildVarType_WEB_BUNDLER_OUTPUT = 1,
 }
 
 export const EsbuildVarType_Enum = /* @__PURE__ */ createEnumType(
   'bldr.plugin.compiler.go.EsbuildVarType',
-  EsbuildVarType,
+  [
+    [0, 'EsbuildVarType_ENTRYPOINT_PATH'],
+    [1, 'EsbuildVarType_WEB_BUNDLER_OUTPUT'],
+  ],
 )
 
 /**
@@ -134,23 +124,22 @@ export enum ViteVarType {
   /**
    * ViteVarType_ENTRYPOINT_PATH is the path to the main entrypoint script.
    * output type is a string
-   *
-   * @generated from enum value: ViteVarType_ENTRYPOINT_PATH = 0;
    */
   ViteVarType_ENTRYPOINT_PATH = 0,
 
   /**
    * ViteVarType_WEB_BUNDLER_OUTPUT contains a single web bundler output object.
    * output type is bldr_web_bundler.WebBundlerOutput
-   *
-   * @generated from enum value: ViteVarType_WEB_BUNDLER_OUTPUT = 1;
    */
   ViteVarType_WEB_BUNDLER_OUTPUT = 1,
 }
 
 export const ViteVarType_Enum = /* @__PURE__ */ createEnumType(
   'bldr.plugin.compiler.go.ViteVarType',
-  ViteVarType,
+  [
+    [0, 'ViteVarType_ENTRYPOINT_PATH'],
+    [1, 'ViteVarType_WEB_BUNDLER_OUTPUT'],
+  ],
 )
 
 /**
@@ -161,8 +150,6 @@ export const ViteVarType_Enum = /* @__PURE__ */ createEnumType(
 export interface Config {
   /**
    * ProjectId overrides the project id set in the project config.
-   *
-   * @generated from field: string project_id = 1;
    */
   projectId?: string
   /**
@@ -170,8 +157,6 @@ export interface Config {
    * This ConfigSet is applied to the plugin bus.
    * This will be included in the plugin binary.
    * Merged with the plugin compiler ConfigSet field.
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> config_set = 2;
    */
   configSet?: { [key: string]: ControllerConfig }
   /**
@@ -180,8 +165,6 @@ export interface Config {
    * This will be included in the plugin binary.
    * Adds a config to configSet with ID bldr/plugin/host/configset
    * Merged with the plugin compiler HostConfigSet field.
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> host_config_set = 3;
    */
   hostConfigSet?: { [key: string]: ControllerConfig }
   /**
@@ -192,15 +175,11 @@ export interface Config {
    * Appended to the list set in the plugin compiler settings. Imported
    * packages are not scanned for factories unless
    * EnableImportedFactoryDiscovery is ENABLE.
-   *
-   * @generated from field: repeated string go_pkgs = 4;
    */
   goPkgs?: string[]
   /**
    * GoscriptDeferredFunctions lists exported package/path.Function boundaries
    * whose modules initialize on first invocation in a GoScript plugin build.
-   *
-   * @generated from field: repeated string goscript_deferred_functions = 19;
    */
   goscriptDeferredFunctions?: string[]
   /**
@@ -218,23 +197,17 @@ export interface Config {
    * They will also be available at /b/pkg: e.g. /b/pkg/@my/npm-package/foo/bar/index.js
    *
    * Note: only files & entrypoints imported by at least one js file will be included.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 5;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
    * ViteConfigPaths is a list of paths to Vite configuration files to apply to all bundles.
    * Ignored unless any bldr:vite directives are found in the code.
-   *
-   * @generated from field: repeated string vite_config_paths = 15;
    */
   viteConfigPaths?: string[]
   /**
    * ViteDisableProjectConfig indicates whether to disable automatic project config detection for Vite.
    * Disables finding the root vite.conf.ts for the project.
    * Ignored unless any bldr:vite directives are found in the code.
-   *
-   * @generated from field: bool vite_disable_project_config = 16;
    */
   viteDisableProjectConfig?: boolean
   /**
@@ -242,8 +215,6 @@ export interface Config {
    * The handler handles the Fetch service by creating a directive.
    * You can also override config ID "rpc-fetch" in the config-set.
    * This service is used for the ServiceWorker HTTP calls.
-   *
-   * @generated from field: bool disable_rpc_fetch = 6;
    */
   disableRpcFetch?: boolean
   /**
@@ -253,8 +224,6 @@ export interface Config {
    * Allowed characters: [Z-a0-9.:]
    * Special value: "wait" - waits for plugin entrypoint to be run manually.
    * Example: ":5000"
-   *
-   * @generated from field: string delve_addr = 8;
    */
   delveAddr?: string
   /**
@@ -264,31 +233,23 @@ export interface Config {
    * https://github.com/golang/go/issues/57120#issuecomment-1420752516
    *
    * Cgo may still be force-disabled if incompatible with the target (wasm, tinygo).
-   *
-   * @generated from field: enabled.Enabled enable_cgo = 9;
    */
   enableCgo?: Enabled
   /**
    * GoCompiler selects the Go compiler. DEFAULT preserves the current
    * release browser default policy.
-   *
-   * @generated from field: bldr.plugin.compiler.go.GoCompiler go_compiler = 7;
    */
   goCompiler?: GoCompiler
   /**
    * EnableCompression can optionally force-enable or force-disable binary compression.
    * The default is ENABLE for release-mode only.
    * Only applicable for the web platform (WebAssembly) (currently).
-   *
-   * @generated from field: enabled.Enabled enable_compression = 11;
    */
   enableCompression?: Enabled
   /**
    * EsbuildFlags is a string containing additional flags to pass to esbuild.
    * Flags passed by bldr:esbuild directives can override these values.
    * E.x.: --target es2020
-   *
-   * @generated from field: repeated string esbuild_flags = 12;
    */
   esbuildFlags?: string[]
   /**
@@ -300,14 +261,10 @@ export interface Config {
    * - handle-web-view: handle web views via HandleWebView
    * - load-web: loads the web plugin on startup
    * - observe-web-view: handle LookupWebView with incoming HandleWebView directives
-   *
-   * @generated from field: string web_plugin_id = 13;
    */
   webPluginId?: string
   /**
    * BuildTypes contains a mapping of BuildType to Config override.
-   *
-   * @generated from field: map<string, bldr.plugin.compiler.go.Config> build_types = 14;
    */
   buildTypes?: { [key: string]: Config }
   /**
@@ -315,16 +272,12 @@ export interface Config {
    * Keys are platform IDs (e.g., "desktop", "js", "none", "desktop/linux/amd64").
    * Both base platform IDs and full platform IDs are checked: a build for
    * "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
-   *
-   * @generated from field: map<string, bldr.plugin.compiler.go.Config> platform_types = 17;
    */
   platformTypes?: { [key: string]: Config }
   /**
    * EnableImportedFactoryDiscovery scans same-module packages imported by
    * GoPkgs for controller factories. The default is disabled so GoPkgs is the
    * explicit generated factory surface.
-   *
-   * @generated from field: enabled.Enabled enable_imported_factory_discovery = 18;
    */
   enableImportedFactoryDiscovery?: Enabled
   /**
@@ -335,106 +288,35 @@ export interface Config {
    * after its own flags (-w -s in release builds, the Delve address in dev
    * builds) into the single -ldflags argument of the build. Build type and
    * platform type overrides append to the base list.
-   *
-   * @generated from field: repeated string linker_flags = 20;
    */
   linkerFlags?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.plugin.compiler.go.Config',
-  fields: [
-    { no: 1, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'config_set',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => ControllerConfig },
-    },
-    {
-      no: 3,
-      name: 'host_config_set',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => ControllerConfig },
-    },
-    {
-      no: 4,
-      name: 'go_pkgs',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 19,
-      name: 'goscript_deferred_functions',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 5,
-      name: 'web_pkgs',
-      kind: 'message',
-      T: () => WebPkgRefConfig,
-      repeated: true,
-    },
-    {
-      no: 15,
-      name: 'vite_config_paths',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 16,
-      name: 'vite_disable_project_config',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    { no: 6, name: 'disable_rpc_fetch', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 8, name: 'delve_addr', kind: 'scalar', T: ScalarType.STRING },
-    { no: 9, name: 'enable_cgo', kind: 'enum', T: Enabled_Enum },
-    { no: 7, name: 'go_compiler', kind: 'enum', T: GoCompiler_Enum },
-    { no: 11, name: 'enable_compression', kind: 'enum', T: Enabled_Enum },
-    {
-      no: 12,
-      name: 'esbuild_flags',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 13, name: 'web_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 14,
-      name: 'build_types',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => Config },
-    },
-    {
-      no: 17,
-      name: 'platform_types',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => Config },
-    },
-    {
-      no: 18,
-      name: 'enable_imported_factory_discovery',
-      kind: 'enum',
-      T: Enabled_Enum,
-    },
-    {
-      no: 20,
-      name: 'linker_flags',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.plugin.compiler.go.Config',
+    () => [
+      [1, 'project_id', 9],
+      [2, 'config_set', 11, 584, ControllerConfig.codec],
+      [3, 'host_config_set', 11, 584, ControllerConfig.codec],
+      [4, 'go_pkgs', 9, 1],
+      [5, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [6, 'disable_rpc_fetch', 8],
+      [7, 'go_compiler', 14, 0, GoCompiler_Enum],
+      [8, 'delve_addr', 9],
+      [9, 'enable_cgo', 14, 0, Enabled_Enum],
+      [11, 'enable_compression', 14, 0, Enabled_Enum],
+      [12, 'esbuild_flags', 9, 1],
+      [13, 'web_plugin_id', 9],
+      [14, 'build_types', 11, 584, Config.codec],
+      [15, 'vite_config_paths', 9, 1],
+      [16, 'vite_disable_project_config', 8],
+      [17, 'platform_types', 11, 584, Config.codec],
+      [18, 'enable_imported_factory_discovery', 14, 0, Enabled_Enum],
+      [19, 'goscript_deferred_functions', 9, 1],
+      [20, 'linker_flags', 9, 1],
+    ],
+  )
 
 /**
  * PreBuildHookResult is the output of a pre-build hook.
@@ -445,19 +327,15 @@ export interface PreBuildHookResult {
   /**
    * Config is the configuration for the plugin build step.
    * Merged with the existing configuration.
-   *
-   * @generated from field: bldr.plugin.compiler.go.Config config = 1;
    */
   config?: Config
 }
 
 export const PreBuildHookResult: MessageType<PreBuildHookResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.go.PreBuildHookResult',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PreBuildHookResult>(
+    'bldr.plugin.compiler.go.PreBuildHookResult',
+    () => [[1, 'config', 11, 0, Config.codec]],
+  )
 
 /**
  * InputFileMeta is metadata attached to an input manifest file.
@@ -467,221 +345,15 @@ export const PreBuildHookResult: MessageType<PreBuildHookResult> =
 export interface InputFileMeta {
   /**
    * Kind is the input file kind.
-   *
-   * @generated from field: bldr.plugin.compiler.go.InputFileKind kind = 1;
    */
   kind?: InputFileKind
 }
 
 export const InputFileMeta: MessageType<InputFileMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.go.InputFileMeta',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: InputFileKind_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * EsbuildEntrypointVar is a variable in the Go code referring to a esbuild entrypoint.
- *
- * @generated from message bldr.plugin.compiler.go.EsbuildEntrypointVar
- */
-export interface EsbuildEntrypointVar {
-  /**
-   * PkgImportPath is the go package import path.
-   *
-   * @generated from field: string pkg_import_path = 1;
-   */
-  pkgImportPath?: string
-  /**
-   * PkgVar is the variable within the go package.
-   *
-   * @generated from field: string pkg_var = 2;
-   */
-  pkgVar?: string
-  /**
-   * PkgCodePath is the relative path to the code dir from the project root.
-   *
-   * @generated from field: string pkg_code_path = 3;
-   */
-  pkgCodePath?: string
-  /**
-   * PkgVarType is the type of esbuild variable this is.
-   *
-   * @generated from field: bldr.plugin.compiler.go.EsbuildVarType pkg_var_type = 4;
-   */
-  pkgVarType?: EsbuildVarType
-  /**
-   * EsbuildFlags are the command-line arguments to pass to esbuild.
-   *
-   * @generated from field: repeated string esbuild_flags = 5;
-   */
-  esbuildFlags?: string[]
-}
-
-export const EsbuildEntrypointVar: MessageType<EsbuildEntrypointVar> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.go.EsbuildEntrypointVar',
-    fields: [
-      { no: 1, name: 'pkg_import_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'pkg_var', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'pkg_code_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'pkg_var_type', kind: 'enum', T: EsbuildVarType_Enum },
-      {
-        no: 5,
-        name: 'esbuild_flags',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * EsbuildBundleVarMeta is information about an esbuild bundle.
- *
- * @generated from message bldr.plugin.compiler.go.EsbuildBundleVarMeta
- */
-export interface EsbuildBundleVarMeta {
-  /**
-   * Id is the identifier of the bundle.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * EntrypointVars is the list of entrypoint variables.
-   *
-   * @generated from field: repeated bldr.plugin.compiler.go.EsbuildEntrypointVar entrypoint_vars = 2;
-   */
-  entrypointVars?: EsbuildEntrypointVar[]
-}
-
-export const EsbuildBundleVarMeta: MessageType<EsbuildBundleVarMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.go.EsbuildBundleVarMeta',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'entrypoint_vars',
-        kind: 'message',
-        T: EsbuildEntrypointVar,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ViteEntrypointVar is a variable in the Go code referring to a vite entrypoint.
- *
- * @generated from message bldr.plugin.compiler.go.ViteEntrypointVar
- */
-export interface ViteEntrypointVar {
-  /**
-   * PkgImportPath is the go package import path.
-   *
-   * @generated from field: string pkg_import_path = 1;
-   */
-  pkgImportPath?: string
-  /**
-   * PkgVar is the variable within the go package.
-   *
-   * @generated from field: string pkg_var = 2;
-   */
-  pkgVar?: string
-  /**
-   * PkgCodePath is the relative path to the code dir from the project root.
-   *
-   * @generated from field: string pkg_code_path = 3;
-   */
-  pkgCodePath?: string
-  /**
-   * PkgVarType is the type of vite variable this is.
-   *
-   * @generated from field: bldr.plugin.compiler.go.ViteVarType pkg_var_type = 4;
-   */
-  pkgVarType?: ViteVarType
-  /**
-   * ViteConfigPaths are the vite config paths options for this variable.
-   *
-   * @generated from field: repeated string vite_config_paths = 5;
-   */
-  viteConfigPaths?: string[]
-  /**
-   * EntrypointPath is the entrypoint path for vite.
-   *
-   * @generated from field: string entrypoint_path = 6;
-   */
-  entrypointPath?: string
-  /**
-   * DisableProjectConfig indicates whether to disable automatic project config detection.
-   * Disables finding the root vite.conf.ts for the project.
-   *
-   * @generated from field: bool disable_project_config = 7;
-   */
-  disableProjectConfig?: boolean
-}
-
-export const ViteEntrypointVar: MessageType<ViteEntrypointVar> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.go.ViteEntrypointVar',
-    fields: [
-      { no: 1, name: 'pkg_import_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'pkg_var', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'pkg_code_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'pkg_var_type', kind: 'enum', T: ViteVarType_Enum },
-      {
-        no: 5,
-        name: 'vite_config_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 6, name: 'entrypoint_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 7,
-        name: 'disable_project_config',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ViteBundleVarMeta is information about a vite bundle.
- *
- * @generated from message bldr.plugin.compiler.go.ViteBundleVarMeta
- */
-export interface ViteBundleVarMeta {
-  /**
-   * Id is the identifier of the bundle.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * EntrypointVars is the list of entrypoint variables.
-   *
-   * @generated from field: repeated bldr.plugin.compiler.go.ViteEntrypointVar entrypoint_vars = 2;
-   */
-  entrypointVars?: ViteEntrypointVar[]
-}
-
-export const ViteBundleVarMeta: MessageType<ViteBundleVarMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.go.ViteBundleVarMeta',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'entrypoint_vars',
-        kind: 'message',
-        T: ViteEntrypointVar,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InputFileMeta>(
+    'bldr.plugin.compiler.go.InputFileMeta',
+    () => [[1, 'kind', 14, 0, InputFileKind_Enum]],
+  )
 
 /**
  * InputManifestMeta is metadata attached to the input manifest.
@@ -691,178 +363,221 @@ export const ViteBundleVarMeta: MessageType<ViteBundleVarMeta> =
 export interface InputManifestMeta {
   /**
    * DevInfo contains the set of plugin variable definitions.
-   *
-   * @generated from field: bldr.plugin.vardef.PluginDevInfo dev_info = 1;
    */
   devInfo?: PluginDevInfo
   /**
    * WebPkgRefs contains the list of web pkg references.
-   *
-   * @generated from field: repeated web.pkg.WebPkgRef web_pkg_refs = 2;
    */
   webPkgRefs?: WebPkgRef[]
   /**
    * WebPkgs is the list of web pkgs that we separate from the bundle.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 3;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
    * EsbuildFlags are the base command-line arguments to pass to all esbuild bundles.
-   *
-   * @generated from field: repeated string esbuild_flags = 4;
    */
   esbuildFlags?: string[]
   /**
    * EsbuildBundles contains the set of esbuild bundles.
-   *
-   * @generated from field: repeated bldr.plugin.compiler.go.EsbuildBundleVarMeta esbuild_bundles = 5;
    */
   esbuildBundles?: EsbuildBundleVarMeta[]
   /**
    * EsbuildOutputs contains a list of files written by esbuild.
-   *
-   * @generated from field: repeated bldr.web.bundler.esbuild.EsbuildOutputMeta esbuild_outputs = 6;
    */
   esbuildOutputs?: EsbuildOutputMeta[]
   /**
    * ViteConfigPaths are paths to Vite configuration files to merge together.
-   *
-   * @generated from field: repeated string vite_config_paths = 7;
    */
   viteConfigPaths?: string[]
   /**
    * ViteBundles is the list of vite bundles with entrypoint configs.
-   *
-   * @generated from field: repeated bldr.plugin.compiler.go.ViteBundleVarMeta vite_bundles = 8;
    */
   viteBundles?: ViteBundleVarMeta[]
   /**
    * ViteOutputs contains a list of files written by vite.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.ViteOutputMeta vite_outputs = 9;
    */
   viteOutputs?: ViteOutputMeta[]
   /**
    * ViteDisableProjectConfig indicates whether to disable automatic project config detection.
    * Disables finding the root vite.conf.ts for the project.
-   *
-   * @generated from field: bool vite_disable_project_config = 10;
    */
   viteDisableProjectConfig?: boolean
   /**
    * GoCompiler is the resolved compiler used to produce this artifact.
-   *
-   * @generated from field: bldr.plugin.compiler.go.GoCompiler go_compiler = 11;
    */
   goCompiler?: GoCompiler
   /**
    * GoScriptBuildFlags are the exact Go build flags forwarded to GoScript.
-   *
-   * @generated from field: repeated string goscript_build_flags = 12;
    */
   goscriptBuildFlags?: string[]
   /**
    * GoScriptOverrideDirs are source-relative project-local GoScript override roots.
-   *
-   * @generated from field: repeated string goscript_override_dirs = 13;
    */
   goscriptOverrideDirs?: string[]
   /**
    * GoScriptAllDependencies records whether GoScript compiled the full dependency graph.
-   *
-   * @generated from field: bool goscript_all_dependencies = 14;
    */
   goscriptAllDependencies?: boolean
 }
 
 export const InputManifestMeta: MessageType<InputManifestMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.compiler.go.InputManifestMeta',
-    fields: [
-      { no: 1, name: 'dev_info', kind: 'message', T: () => PluginDevInfo },
-      {
-        no: 2,
-        name: 'web_pkg_refs',
-        kind: 'message',
-        T: () => WebPkgRef,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'web_pkgs',
-        kind: 'message',
-        T: () => WebPkgRefConfig,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'esbuild_flags',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'esbuild_bundles',
-        kind: 'message',
-        T: EsbuildBundleVarMeta,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'esbuild_outputs',
-        kind: 'message',
-        T: () => EsbuildOutputMeta,
-        repeated: true,
-      },
-      {
-        no: 7,
-        name: 'vite_config_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 8,
-        name: 'vite_bundles',
-        kind: 'message',
-        T: ViteBundleVarMeta,
-        repeated: true,
-      },
-      {
-        no: 9,
-        name: 'vite_outputs',
-        kind: 'message',
-        T: () => ViteOutputMeta,
-        repeated: true,
-      },
-      {
-        no: 10,
-        name: 'vite_disable_project_config',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 11, name: 'go_compiler', kind: 'enum', T: GoCompiler_Enum },
-      {
-        no: 12,
-        name: 'goscript_build_flags',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 13,
-        name: 'goscript_override_dirs',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 14,
-        name: 'goscript_all_dependencies',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InputManifestMeta>(
+    'bldr.plugin.compiler.go.InputManifestMeta',
+    () => [
+      [1, 'dev_info', 11, 0, PluginDevInfo.codec],
+      [2, 'web_pkg_refs', 11, 1, WebPkgRef.codec],
+      [3, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [4, 'esbuild_flags', 9, 1],
+      [5, 'esbuild_bundles', 11, 1, EsbuildBundleVarMeta.codec],
+      [6, 'esbuild_outputs', 11, 1, EsbuildOutputMeta.codec],
+      [7, 'vite_config_paths', 9, 1],
+      [8, 'vite_bundles', 11, 1, ViteBundleVarMeta.codec],
+      [9, 'vite_outputs', 11, 1, ViteOutputMeta.codec],
+      [10, 'vite_disable_project_config', 8],
+      [11, 'go_compiler', 14, 0, GoCompiler_Enum],
+      [12, 'goscript_build_flags', 9, 1],
+      [13, 'goscript_override_dirs', 9, 1],
+      [14, 'goscript_all_dependencies', 8],
+    ],
+  )
+
+/**
+ * EsbuildBundleVarMeta is information about an esbuild bundle.
+ *
+ * @generated from message bldr.plugin.compiler.go.EsbuildBundleVarMeta
+ */
+export interface EsbuildBundleVarMeta {
+  /**
+   * Id is the identifier of the bundle.
+   */
+  id?: string
+  /**
+   * EntrypointVars is the list of entrypoint variables.
+   */
+  entrypointVars?: EsbuildEntrypointVar[]
+}
+
+export const EsbuildBundleVarMeta: MessageType<EsbuildBundleVarMeta> =
+  /* @__PURE__ */ createMessageType<EsbuildBundleVarMeta>(
+    'bldr.plugin.compiler.go.EsbuildBundleVarMeta',
+    () => [
+      [1, 'id', 9],
+      [2, 'entrypoint_vars', 11, 1, EsbuildEntrypointVar.codec],
+    ],
+  )
+
+/**
+ * EsbuildEntrypointVar is a variable in the Go code referring to a esbuild entrypoint.
+ *
+ * @generated from message bldr.plugin.compiler.go.EsbuildEntrypointVar
+ */
+export interface EsbuildEntrypointVar {
+  /**
+   * PkgImportPath is the go package import path.
+   */
+  pkgImportPath?: string
+  /**
+   * PkgVar is the variable within the go package.
+   */
+  pkgVar?: string
+  /**
+   * PkgCodePath is the relative path to the code dir from the project root.
+   */
+  pkgCodePath?: string
+  /**
+   * PkgVarType is the type of esbuild variable this is.
+   */
+  pkgVarType?: EsbuildVarType
+  /**
+   * EsbuildFlags are the command-line arguments to pass to esbuild.
+   */
+  esbuildFlags?: string[]
+}
+
+export const EsbuildEntrypointVar: MessageType<EsbuildEntrypointVar> =
+  /* @__PURE__ */ createMessageType<EsbuildEntrypointVar>(
+    'bldr.plugin.compiler.go.EsbuildEntrypointVar',
+    () => [
+      [1, 'pkg_import_path', 9],
+      [2, 'pkg_var', 9],
+      [3, 'pkg_code_path', 9],
+      [4, 'pkg_var_type', 14, 0, EsbuildVarType_Enum],
+      [5, 'esbuild_flags', 9, 1],
+    ],
+  )
+
+/**
+ * ViteBundleVarMeta is information about a vite bundle.
+ *
+ * @generated from message bldr.plugin.compiler.go.ViteBundleVarMeta
+ */
+export interface ViteBundleVarMeta {
+  /**
+   * Id is the identifier of the bundle.
+   */
+  id?: string
+  /**
+   * EntrypointVars is the list of entrypoint variables.
+   */
+  entrypointVars?: ViteEntrypointVar[]
+}
+
+export const ViteBundleVarMeta: MessageType<ViteBundleVarMeta> =
+  /* @__PURE__ */ createMessageType<ViteBundleVarMeta>(
+    'bldr.plugin.compiler.go.ViteBundleVarMeta',
+    () => [
+      [1, 'id', 9],
+      [2, 'entrypoint_vars', 11, 1, ViteEntrypointVar.codec],
+    ],
+  )
+
+/**
+ * ViteEntrypointVar is a variable in the Go code referring to a vite entrypoint.
+ *
+ * @generated from message bldr.plugin.compiler.go.ViteEntrypointVar
+ */
+export interface ViteEntrypointVar {
+  /**
+   * PkgImportPath is the go package import path.
+   */
+  pkgImportPath?: string
+  /**
+   * PkgVar is the variable within the go package.
+   */
+  pkgVar?: string
+  /**
+   * PkgCodePath is the relative path to the code dir from the project root.
+   */
+  pkgCodePath?: string
+  /**
+   * PkgVarType is the type of vite variable this is.
+   */
+  pkgVarType?: ViteVarType
+  /**
+   * ViteConfigPaths are the vite config paths options for this variable.
+   */
+  viteConfigPaths?: string[]
+  /**
+   * EntrypointPath is the entrypoint path for vite.
+   */
+  entrypointPath?: string
+  /**
+   * DisableProjectConfig indicates whether to disable automatic project config detection.
+   * Disables finding the root vite.conf.ts for the project.
+   */
+  disableProjectConfig?: boolean
+}
+
+export const ViteEntrypointVar: MessageType<ViteEntrypointVar> =
+  /* @__PURE__ */ createMessageType<ViteEntrypointVar>(
+    'bldr.plugin.compiler.go.ViteEntrypointVar',
+    () => [
+      [1, 'pkg_import_path', 9],
+      [2, 'pkg_var', 9],
+      [3, 'pkg_code_path', 9],
+      [4, 'pkg_var_type', 14, 0, ViteVarType_Enum],
+      [5, 'vite_config_paths', 9, 1],
+      [6, 'entrypoint_path', 9],
+      [7, 'disable_project_config', 8],
+    ],
+  )

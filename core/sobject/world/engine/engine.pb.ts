@@ -2,53 +2,13 @@
 // @generated from file github.com/s4wave/spacewave/core/sobject/world/engine/engine.proto (package sobject.world.engine, syntax proto3)
 /* eslint-disable */
 
-import { Config as Config$1 } from '../../../../db/block/transform/transform.pb.js'
+import { SharedObjectRef } from '../../sobject.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { SharedObjectRef } from '../../sobject.pb.js'
-import { BlockRef } from '../../../../db/block/block.pb.js'
 import { ObjectRef } from '../../../../db/bucket/bucket.pb.js'
+import { BlockRef } from '../../../../db/block/block.pb.js'
+import { Config as Config$1 } from '../../../../db/block/transform/transform.pb.js'
 import { Tx } from '../../../../db/world/block/tx/tx.pb.js'
-
-/**
- * InitWorldOp is the operation to initialize the inner state.
- *
- * @generated from message sobject.world.engine.InitWorldOp
- */
-export interface InitWorldOp {
-  /**
-   * LastChangeDisable indicates the changelog is disabled for this world.
-   * If set, last_change will be empty, except for the seqno field.
-   * NOTE: the seqno field will not be empty on LastChange.
-   *
-   * @generated from field: bool last_change_disable = 1;
-   */
-  lastChangeDisable?: boolean
-  /**
-   * TransformConf is the transform configuration to use for the world.
-   * The author sets it so every member replays the same World. Replay
-   * rejects an operation without it.
-   *
-   * @generated from field: block.transform.Config transform_conf = 2;
-   */
-  transformConf?: Config$1
-}
-
-export const InitWorldOp: MessageType<InitWorldOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.InitWorldOp',
-    fields: [
-      {
-        no: 1,
-        name: 'last_change_disable',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 2, name: 'transform_conf', kind: 'message', T: () => Config$1 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Config configures a World Graph engine bound to a block graph and controlled by a Shared Object.
@@ -62,101 +22,49 @@ export interface Config {
    * EngineId is the identifier used to look up the world on the bus.
    * Used to match & resolve WorldEngine directives.
    * If empty, LookupWorldEngine will not be processed.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
    * Ref is the shared object ref.
-   *
-   * @generated from field: sobject.SharedObjectRef ref = 2;
    */
   ref?: SharedObjectRef
   /**
    * InitWorldOp overrides the contents of the InitWorldOp when initializing the world.
    * Only used if the shared object is empty.
-   *
-   * @generated from field: sobject.world.engine.InitWorldOp init_world_op = 3;
    */
   initWorldOp?: InitWorldOp
   /**
    * DisableLookup disables looking up anything on the bus via directives.
    * Implies both DisableApplyWorldOp and DisableApplyObjectOp.
-   *
-   * @generated from field: bool disable_lookup = 4;
    */
   disableLookup?: boolean
   /**
    * DisableApplyWorldOp disables calling the ApplyWorldOp directive.
-   *
-   * @generated from field: bool disable_apply_world_op = 5;
    */
   disableApplyWorldOp?: boolean
   /**
    * DisableApplyObjectOp disables calling the ApplyObjectOp directive.
-   *
-   * @generated from field: bool disable_apply_object_op = 6;
    */
   disableApplyObjectOp?: boolean
   /**
    * Verbose logs all operation results as debug messages.
-   *
-   * @generated from field: bool verbose = 7;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'sobject.world.engine.Config',
-  fields: [
-    { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'ref', kind: 'message', T: () => SharedObjectRef },
-    { no: 3, name: 'init_world_op', kind: 'message', T: InitWorldOp },
-    { no: 4, name: 'disable_lookup', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 5,
-      name: 'disable_apply_world_op',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    {
-      no: 6,
-      name: 'disable_apply_object_op',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    { no: 7, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * RetainedRoot is a past World root kept restorable under a name.
- *
- * @generated from message sobject.world.engine.RetainedRoot
- */
-export interface RetainedRoot {
-  /**
-   * Name identifies the root within the Space.
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-  /**
-   * RootRef is the World root block. It uses the head's transform config.
-   *
-   * @generated from field: block.BlockRef root_ref = 2;
-   */
-  rootRef?: BlockRef
-}
-
-export const RetainedRoot: MessageType<RetainedRoot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.RetainedRoot',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'sobject.world.engine.Config',
+    () => [
+      [1, 'engine_id', 9],
+      [2, 'ref', 11, 0, SharedObjectRef.codec],
+      [3, 'init_world_op', 11, 0, InitWorldOp.codec],
+      [4, 'disable_lookup', 8],
+      [5, 'disable_apply_world_op', 8],
+      [6, 'disable_apply_object_op', 8],
+      [7, 'verbose', 8],
+    ],
+  )
 
 /**
  * InnerState is the World state a SharedObject checkpoint carries and replay
@@ -171,137 +79,23 @@ export interface InnerState {
    * The bucket ID will be overridden when loaded.
    * The bucket ID should be set to empty.
    * The object referenced is a .world.block.World block.
-   *
-   * @generated from field: bucket.ObjectRef head_ref = 1;
    */
   headRef?: ObjectRef
   /**
    * RetainedRoots are past World roots the Space keeps restorable, sorted by
    * name.
-   *
-   * @generated from field: repeated sobject.world.engine.RetainedRoot retained_roots = 3;
    */
   retainedRoots?: RetainedRoot[]
 }
 
 export const InnerState: MessageType<InnerState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.InnerState',
-    fields: [
-      { no: 1, name: 'head_ref', kind: 'message', T: () => ObjectRef },
-      {
-        no: 3,
-        name: 'retained_roots',
-        kind: 'message',
-        T: RetainedRoot,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RetainedRootSet is the block each member keeps as its one local named root
- * for all retained roots. Its outgoing refs are the retained World roots.
- *
- * @generated from message sobject.world.engine.RetainedRootSet
- */
-export interface RetainedRootSet {
-  /**
-   * Roots are the retained roots, sorted by name.
-   *
-   * @generated from field: repeated sobject.world.engine.RetainedRoot roots = 1;
-   */
-  roots?: RetainedRoot[]
-}
-
-export const RetainedRootSet: MessageType<RetainedRootSet> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.RetainedRootSet',
-    fields: [
-      {
-        no: 1,
-        name: 'roots',
-        kind: 'message',
-        T: RetainedRoot,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ReplayCursorOutcome is the outcome of one replayed operation.
- *
- * @generated from message sobject.world.engine.ReplayCursorOutcome
- */
-export interface ReplayCursorOutcome {
-  /**
-   * Hash identifies the operation.
-   *
-   * @generated from field: bytes hash = 1;
-   */
-  hash?: Uint8Array
-  /**
-   * Reason is empty when the operation applied. Otherwise it says why the
-   * operation was not applied.
-   *
-   * @generated from field: string reason = 2;
-   */
-  reason?: string
-  /**
-   * Conflict is set when the World rejected the operation after the
-   * operations replayed before it.
-   *
-   * @generated from field: bool conflict = 3;
-   */
-  conflict?: boolean
-  /**
-   * Revoked is set when the operation is not applied but an earlier replay on
-   * this device applied it.
-   *
-   * @generated from field: bool revoked = 4;
-   */
-  revoked?: boolean
-  /**
-   * World is the root block of the World after the operation.
-   *
-   * @generated from field: block.BlockRef world = 5;
-   */
-  world?: BlockRef
-  /**
-   * Payloads are the roots of the operation's payload, which replay reads
-   * again while the operation is above the checkpoint.
-   *
-   * @generated from field: repeated block.BlockRef payloads = 6;
-   */
-  payloads?: BlockRef[]
-  /**
-   * RetainedRoots are the retained roots after the operation when they differ
-   * from those before it, and unset when the operation kept them.
-   *
-   * @generated from field: sobject.world.engine.RetainedRootSet retained_roots = 7;
-   */
-  retainedRoots?: RetainedRootSet
-}
-
-export const ReplayCursorOutcome: MessageType<ReplayCursorOutcome> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.ReplayCursorOutcome',
-    fields: [
-      { no: 1, name: 'hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'reason', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'conflict', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'revoked', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'world', kind: 'message', T: () => BlockRef },
-      {
-        no: 6,
-        name: 'payloads',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      { no: 7, name: 'retained_roots', kind: 'message', T: RetainedRootSet },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InnerState>(
+    'sobject.world.engine.InnerState',
+    () => [
+      [1, 'head_ref', 11, 0, ObjectRef.codec],
+      [3, 'retained_roots', 11, 1, RetainedRoot.codec],
+    ],
+  )
 
 /**
  * ReplayCursor is the replay a World engine last installed. A member keeps it
@@ -313,40 +107,83 @@ export const ReplayCursorOutcome: MessageType<ReplayCursorOutcome> =
 export interface ReplayCursor {
   /**
    * Base is the World of the checkpoint the replay started from.
-   *
-   * @generated from field: sobject.world.engine.InnerState base = 1;
    */
   base?: InnerState
   /**
    * Outcomes are the replayed operations in order.
-   *
-   * @generated from field: repeated sobject.world.engine.ReplayCursorOutcome outcomes = 2;
    */
   outcomes?: ReplayCursorOutcome[]
   /**
    * Head is the World after the last outcome. The engine holds it as its
    * installed World.
-   *
-   * @generated from field: sobject.world.engine.InnerState head = 3;
    */
   head?: InnerState
 }
 
 export const ReplayCursor: MessageType<ReplayCursor> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.ReplayCursor',
-    fields: [
-      { no: 1, name: 'base', kind: 'message', T: InnerState },
-      {
-        no: 2,
-        name: 'outcomes',
-        kind: 'message',
-        T: ReplayCursorOutcome,
-        repeated: true,
-      },
-      { no: 3, name: 'head', kind: 'message', T: InnerState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReplayCursor>(
+    'sobject.world.engine.ReplayCursor',
+    () => [
+      [1, 'base', 11, 0, InnerState.codec],
+      [2, 'outcomes', 11, 1, ReplayCursorOutcome.codec],
+      [3, 'head', 11, 0, InnerState.codec],
+    ],
+  )
+
+/**
+ * ReplayCursorOutcome is the outcome of one replayed operation.
+ *
+ * @generated from message sobject.world.engine.ReplayCursorOutcome
+ */
+export interface ReplayCursorOutcome {
+  /**
+   * Hash identifies the operation.
+   */
+  hash?: Uint8Array
+  /**
+   * Reason is empty when the operation applied. Otherwise it says why the
+   * operation was not applied.
+   */
+  reason?: string
+  /**
+   * Conflict is set when the World rejected the operation after the
+   * operations replayed before it.
+   */
+  conflict?: boolean
+  /**
+   * Revoked is set when the operation is not applied but an earlier replay on
+   * this device applied it.
+   */
+  revoked?: boolean
+  /**
+   * World is the root block of the World after the operation.
+   */
+  world?: BlockRef
+  /**
+   * Payloads are the roots of the operation's payload, which replay reads
+   * again while the operation is above the checkpoint.
+   */
+  payloads?: BlockRef[]
+  /**
+   * RetainedRoots are the retained roots after the operation when they differ
+   * from those before it, and unset when the operation kept them.
+   */
+  retainedRoots?: RetainedRootSet
+}
+
+export const ReplayCursorOutcome: MessageType<ReplayCursorOutcome> =
+  /* @__PURE__ */ createMessageType<ReplayCursorOutcome>(
+    'sobject.world.engine.ReplayCursorOutcome',
+    () => [
+      [1, 'hash', 12],
+      [2, 'reason', 9],
+      [3, 'conflict', 8],
+      [4, 'revoked', 8],
+      [5, 'world', 11, 0, BlockRef.codec],
+      [6, 'payloads', 11, 1, BlockRef.codec],
+      [7, 'retained_roots', 11, 0, RetainedRootSet.codec],
+    ],
+  )
 
 /**
  * ReplaySpan is one block of the chain each member keeps as its one local
@@ -361,98 +198,72 @@ export const ReplayCursor: MessageType<ReplayCursor> =
 export interface ReplaySpan {
   /**
    * Worlds are the World root blocks in replay order.
-   *
-   * @generated from field: repeated block.BlockRef worlds = 1;
    */
   worlds?: BlockRef[]
   /**
    * Payloads are the operation payload roots in replay order.
-   *
-   * @generated from field: repeated block.BlockRef payloads = 2;
    */
   payloads?: BlockRef[]
   /**
    * Prev is the span block holding the earlier operations, or empty for the
    * first block above the checkpoint.
-   *
-   * @generated from field: block.BlockRef prev = 3;
    */
   prev?: BlockRef
 }
 
 export const ReplaySpan: MessageType<ReplaySpan> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.ReplaySpan',
-    fields: [
-      {
-        no: 1,
-        name: 'worlds',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'payloads',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-      { no: 3, name: 'prev', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReplaySpan>(
+    'sobject.world.engine.ReplaySpan',
+    () => [
+      [1, 'worlds', 11, 1, BlockRef.codec],
+      [2, 'payloads', 11, 1, BlockRef.codec],
+      [3, 'prev', 11, 0, BlockRef.codec],
+    ],
+  )
 
 /**
- * ApplyTxOp is the operation to apply a world transaction.
+ * RetainedRoot is a past World root kept restorable under a name.
  *
- * @generated from message sobject.world.engine.ApplyTxOp
+ * @generated from message sobject.world.engine.RetainedRoot
  */
-export interface ApplyTxOp {
-  /**
-   * tx is the tx or tx batch to apply
-   *
-   * @generated from field: world.block.tx.Tx tx = 1;
-   */
-  tx?: Tx
-}
-
-export const ApplyTxOp: MessageType<ApplyTxOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.ApplyTxOp',
-    fields: [
-      { no: 1, name: 'tx', kind: 'message', T: () => Tx },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SetRetainedRootOp retains a past World root under a name, replacing a root
- * with the same name, or releases the name when root_ref is empty.
- *
- * @generated from message sobject.world.engine.SetRetainedRootOp
- */
-export interface SetRetainedRootOp {
+export interface RetainedRoot {
   /**
    * Name identifies the root within the Space.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
-   * RootRef is the World root block to retain, or empty to release.
-   *
-   * @generated from field: block.BlockRef root_ref = 2;
+   * RootRef is the World root block. It uses the head's transform config.
    */
   rootRef?: BlockRef
 }
 
-export const SetRetainedRootOp: MessageType<SetRetainedRootOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.SetRetainedRootOp',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const RetainedRoot: MessageType<RetainedRoot> =
+  /* @__PURE__ */ createMessageType<RetainedRoot>(
+    'sobject.world.engine.RetainedRoot',
+    () => [
+      [1, 'name', 9],
+      [2, 'root_ref', 11, 0, BlockRef.codec],
+    ],
+  )
+
+/**
+ * RetainedRootSet is the block each member keeps as its one local named root
+ * for all retained roots. Its outgoing refs are the retained World roots.
+ *
+ * @generated from message sobject.world.engine.RetainedRootSet
+ */
+export interface RetainedRootSet {
+  /**
+   * Roots are the retained roots, sorted by name.
+   */
+  roots?: RetainedRoot[]
+}
+
+export const RetainedRootSet: MessageType<RetainedRootSet> =
+  /* @__PURE__ */ createMessageType<RetainedRootSet>(
+    'sobject.world.engine.RetainedRootSet',
+    () => [[1, 'roots', 11, 1, RetainedRoot.codec]],
+  )
 
 /**
  * SOWorldOp is the outer wrapper for a shared object operation against a world InnerState.
@@ -466,66 +277,94 @@ export interface SOWorldOp {
    * @generated from oneof sobject.world.engine.SOWorldOp.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * InitWorld is the init world operation.
-         *
-         * @generated from field: sobject.world.engine.InitWorldOp init_world = 1;
-         */
-        value: InitWorldOp
-        case: 'initWorld'
-      }
-    | {
-        /**
-         * ApplyTxOp applies a world transaction.
-         *
-         * @generated from field: sobject.world.engine.ApplyTxOp apply_tx_op = 2;
-         */
-        value: ApplyTxOp
-        case: 'applyTxOp'
-      }
-    | {
-        /**
-         * SetRetainedRoot retains or releases a past World root.
-         *
-         * @generated from field: sobject.world.engine.SetRetainedRootOp set_retained_root = 4;
-         */
-        value: SetRetainedRootOp
-        case: 'setRetainedRoot'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: InitWorldOp; case: 'initWorld' }
+    | { value: ApplyTxOp; case: 'applyTxOp' }
+    | { value: SetRetainedRootOp; case: 'setRetainedRoot' }
 }
 
 export const SOWorldOp: MessageType<SOWorldOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.SOWorldOp',
-    fields: [
-      {
-        no: 1,
-        name: 'init_world',
-        kind: 'message',
-        T: InitWorldOp,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'apply_tx_op',
-        kind: 'message',
-        T: ApplyTxOp,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'set_retained_root',
-        kind: 'message',
-        T: SetRetainedRootOp,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SOWorldOp>(
+    'sobject.world.engine.SOWorldOp',
+    () => [
+      [1, 'init_world', 11, 0, InitWorldOp.codec, 'body'],
+      [2, 'apply_tx_op', 11, 0, ApplyTxOp.codec, 'body'],
+      [4, 'set_retained_root', 11, 0, SetRetainedRootOp.codec, 'body'],
+    ],
+  )
+
+/**
+ * InitWorldOp is the operation to initialize the inner state.
+ *
+ * @generated from message sobject.world.engine.InitWorldOp
+ */
+export interface InitWorldOp {
+  /**
+   * LastChangeDisable indicates the changelog is disabled for this world.
+   * If set, last_change will be empty, except for the seqno field.
+   * NOTE: the seqno field will not be empty on LastChange.
+   */
+  lastChangeDisable?: boolean
+  /**
+   * TransformConf is the transform configuration to use for the world.
+   * The author sets it so every member replays the same World. Replay
+   * rejects an operation without it.
+   */
+  transformConf?: Config$1
+}
+
+export const InitWorldOp: MessageType<InitWorldOp> =
+  /* @__PURE__ */ createMessageType<InitWorldOp>(
+    'sobject.world.engine.InitWorldOp',
+    () => [
+      [1, 'last_change_disable', 8],
+      [2, 'transform_conf', 11, 0, Config$1.codec],
+    ],
+  )
+
+/**
+ * ApplyTxOp is the operation to apply a world transaction.
+ *
+ * @generated from message sobject.world.engine.ApplyTxOp
+ */
+export interface ApplyTxOp {
+  /**
+   * tx is the tx or tx batch to apply
+   */
+  tx?: Tx
+}
+
+export const ApplyTxOp: MessageType<ApplyTxOp> =
+  /* @__PURE__ */ createMessageType<ApplyTxOp>(
+    'sobject.world.engine.ApplyTxOp',
+    () => [[1, 'tx', 11, 0, Tx.codec]],
+  )
+
+/**
+ * SetRetainedRootOp retains a past World root under a name, replacing a root
+ * with the same name, or releases the name when root_ref is empty.
+ *
+ * @generated from message sobject.world.engine.SetRetainedRootOp
+ */
+export interface SetRetainedRootOp {
+  /**
+   * Name identifies the root within the Space.
+   */
+  name?: string
+  /**
+   * RootRef is the World root block to retain, or empty to release.
+   */
+  rootRef?: BlockRef
+}
+
+export const SetRetainedRootOp: MessageType<SetRetainedRootOp> =
+  /* @__PURE__ */ createMessageType<SetRetainedRootOp>(
+    'sobject.world.engine.SetRetainedRootOp',
+    () => [
+      [1, 'name', 9],
+      [2, 'root_ref', 11, 0, BlockRef.codec],
+    ],
+  )
 
 /**
  * BackfillState is the outcome of the last finished backfill copy on this
@@ -537,31 +376,25 @@ export interface BackfillState {
   /**
    * Root is the installed World root the copy covered, with the retained
    * roots of that World.
-   *
-   * @generated from field: block.BlockRef root = 1;
    */
   root?: BlockRef
   /**
    * Holes counts the blocks of those roots that no reachable store held.
    * Zero means the local store holds every block of them.
-   *
-   * @generated from field: uint32 holes = 2;
    */
   holes?: number
   /**
    * Seqno is the World seqno of Root. A later copy never covers a lower one.
-   *
-   * @generated from field: uint64 seqno = 3;
    */
   seqno?: bigint
 }
 
 export const BackfillState: MessageType<BackfillState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sobject.world.engine.BackfillState',
-    fields: [
-      { no: 1, name: 'root', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'holes', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BackfillState>(
+    'sobject.world.engine.BackfillState',
+    () => [
+      [1, 'root', 11, 0, BlockRef.codec],
+      [2, 'holes', 13],
+      [3, 'seqno', 4],
+    ],
+  )

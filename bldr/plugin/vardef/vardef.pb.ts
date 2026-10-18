@@ -2,83 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/bldr/plugin/vardef/vardef.proto (package bldr.plugin.vardef, syntax proto3)
 /* eslint-disable */
 
-import { WebBundlerOutput } from '../../web/bundler/bundler.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * PluginVar contains a definition of a variable set by the development plugin entrypoint.
- *
- * @generated from message bldr.plugin.vardef.PluginVar
- */
-export interface PluginVar {
-  /**
-   * PkgImportPath is the go package import path.
-   *
-   * @generated from field: string pkg_import_path = 1;
-   */
-  pkgImportPath?: string
-  /**
-   * PkgVar is the variable within the go package.
-   *
-   * @generated from field: string pkg_var = 2;
-   */
-  pkgVar?: string
-
-  /**
-   * Body contains the variable value depending on the variable type.
-   *
-   * @generated from oneof bldr.plugin.vardef.PluginVar.body
-   */
-  body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * StringValue is a value set to a string variable.
-         *
-         * @generated from field: string string_value = 3;
-         */
-        value: string
-        case: 'stringValue'
-      }
-    | {
-        /**
-         * WebBundlerOutput is a web bundler build output / entrypoint.
-         *
-         * @generated from field: bldr.web.bundler.WebBundlerOutput web_bundler_output = 4;
-         */
-        value: WebBundlerOutput
-        case: 'webBundlerOutput'
-      }
-}
-
-export const PluginVar: MessageType<PluginVar> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.vardef.PluginVar',
-    fields: [
-      { no: 1, name: 'pkg_import_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'pkg_var', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'string_value',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'web_bundler_output',
-        kind: 'message',
-        T: () => WebBundlerOutput,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import { WebBundlerOutput } from '../../web/bundler/bundler.pb.js'
 
 /**
  * PluginDevInfo is information passed as a .bin file as part of the development plugin entrypoint.
@@ -88,22 +14,48 @@ export const PluginVar: MessageType<PluginVar> =
 export interface PluginDevInfo {
   /**
    * PluginVars is the set of variables to set at init time by the development plugin.
-   *
-   * @generated from field: repeated bldr.plugin.vardef.PluginVar plugin_vars = 1;
    */
   pluginVars?: PluginVar[]
 }
 
 export const PluginDevInfo: MessageType<PluginDevInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.plugin.vardef.PluginDevInfo',
-    fields: [
-      {
-        no: 1,
-        name: 'plugin_vars',
-        kind: 'message',
-        T: PluginVar,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PluginDevInfo>(
+    'bldr.plugin.vardef.PluginDevInfo',
+    () => [[1, 'plugin_vars', 11, 1, PluginVar.codec]],
+  )
+
+/**
+ * PluginVar contains a definition of a variable set by the development plugin entrypoint.
+ *
+ * @generated from message bldr.plugin.vardef.PluginVar
+ */
+export interface PluginVar {
+  /**
+   * PkgImportPath is the go package import path.
+   */
+  pkgImportPath?: string
+  /**
+   * PkgVar is the variable within the go package.
+   */
+  pkgVar?: string
+  /**
+   * Body contains the variable value depending on the variable type.
+   *
+   * @generated from oneof bldr.plugin.vardef.PluginVar.body
+   */
+  body?:
+    | { value?: undefined; case: undefined }
+    | { value: string; case: 'stringValue' }
+    | { value: WebBundlerOutput; case: 'webBundlerOutput' }
+}
+
+export const PluginVar: MessageType<PluginVar> =
+  /* @__PURE__ */ createMessageType<PluginVar>(
+    'bldr.plugin.vardef.PluginVar',
+    () => [
+      [1, 'pkg_import_path', 9],
+      [2, 'pkg_var', 9],
+      [3, 'string_value', 9, 0, 0, 'body'],
+      [4, 'web_bundler_output', 11, 0, WebBundlerOutput.codec, 'body'],
+    ],
+  )

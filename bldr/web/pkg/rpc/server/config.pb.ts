@@ -5,8 +5,6 @@
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the web pkg rpc server.
@@ -22,69 +20,43 @@ export interface Config {
   /**
    * ServiceIdPrefix is the service id prefix to listen on.
    * If empty, defaults to web.pkg.rpc.AccessWebPkg.
-   *
-   * @generated from field: string service_id_prefix = 1;
    */
   serviceIdPrefix?: string
   /**
    * WebPkgIdRe is a regex string to match web pkgs IDs.
    * Set to '.*' or empty to match all web pkgs ids.
-   *
-   * @generated from field: string web_pkg_id_re = 2;
    */
   webPkgIdRe?: string
   /**
    * WebPkgIdPrefixes is a list of web pkg id prefixes to match.
    * If the value is in this list, overrides web_pkg_id_re.
    * Set to '.*' or empty to match all web pkgs ids.
-   *
-   * @generated from field: repeated string web_pkg_id_prefixes = 3;
    */
   webPkgIdPrefixes?: string[]
   /**
    * WebPkgIdList is a list of web pkg IDs to resolve.
    * If the value is in this list, overrides web_pkg_id_re and web_pkg_id_prefixes.
    * Ignored if empty.
-   *
-   * @generated from field: repeated string web_pkg_id_list = 4;
    */
   webPkgIdList?: string[]
   /**
    * ReleaseDelay is a delay duration to wait before releasing a unreferenced web pkg.
    * If empty string, defaults to 1s (1 second).
-   *
-   * @generated from field: string release_delay = 5;
    */
   releaseDelay?: string
   /**
    * Backoff is the backoff config for resolving web pkgs.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff backoff = 6;
    */
   backoff?: Backoff
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'web.pkg.rpc.server.Config',
-  fields: [
-    { no: 1, name: 'service_id_prefix', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'web_pkg_id_re', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'web_pkg_id_prefixes',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 4,
-      name: 'web_pkg_id_list',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 5, name: 'release_delay', kind: 'scalar', T: ScalarType.STRING },
-    { no: 6, name: 'backoff', kind: 'message', T: () => Backoff },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('web.pkg.rpc.server.Config', () => [
+    [1, 'service_id_prefix', 9],
+    [2, 'web_pkg_id_re', 9],
+    [3, 'web_pkg_id_prefixes', 9, 1],
+    [4, 'web_pkg_id_list', 9, 1],
+    [5, 'release_delay', 9],
+    [6, 'backoff', 11, 0, Backoff.codec],
+  ])

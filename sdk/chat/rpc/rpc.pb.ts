@@ -3,14 +3,9 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ChatEnvelope, ChatMessageContent } from '../content/content.pb.js'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ChatReadPosition } from '../state/state.pb.js'
 
 /**
@@ -21,9 +16,27 @@ import { ChatReadPosition } from '../state/state.pb.js'
 export interface GetStateRequest {}
 
 export const GetStateRequest: MessageType<GetStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetStateRequest>(
+  /* @__PURE__ */ createMessageType<GetStateRequest>(
     'spacewave.chat.rpc.GetStateRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * GetStateResponse contains current state events with their immutable history identities.
+ *
+ * @generated from message spacewave.chat.rpc.GetStateResponse
+ */
+export interface GetStateResponse {
+  /**
+   * Messages is ordered by state type and state key.
+   */
+  messages?: ChatMessageInfo[]
+}
+
+export const GetStateResponse: MessageType<GetStateResponse> =
+  /* @__PURE__ */ createMessageType<GetStateResponse>(
+    'spacewave.chat.rpc.GetStateResponse',
+    () => [[1, 'messages', 11, 1, ChatMessageInfo.codec]],
   )
 
 /**
@@ -34,126 +47,74 @@ export const GetStateRequest: MessageType<GetStateRequest> =
 export interface ChatMessageInfo {
   /**
    * ObjectKey is the message world object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * SenderPeerId is the sender's peer ID.
-   *
-   * @generated from field: string sender_peer_id = 2;
    */
   senderPeerId?: string
   /**
    * Text is plaintext content or a readable state-change summary.
    * Empty for ciphertext messages and annotations.
-   *
-   * @generated from field: string text = 3;
    */
   text?: string
   /**
    * CreatedAt is the message creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 4;
    */
   createdAt?: Date
   /**
    * ReplyToKey is the key of the message being replied to.
-   *
-   * @generated from field: string reply_to_key = 5;
    */
   replyToKey?: string
   /**
    * Index is the immutable zero-based position in the channel history.
-   *
-   * @generated from field: uint64 index = 6;
    */
   index?: bigint
   /**
    * Content is the full typed message content, including ciphertext envelopes.
-   *
-   * @generated from field: spacewave.chat.ChatMessageContent content = 7;
    */
   content?: ChatMessageContent
   /**
    * PersonId is the accepted entity ID or local-only device ID.
-   *
-   * @generated from field: string person_id = 8;
    */
   personId?: string
   /**
    * RedactedByKey is the redaction message that removed this body, empty while intact.
-   *
-   * @generated from field: string redacted_by_key = 9;
    */
   redactedByKey?: string
   /**
    * ReplacesKey is the state message this state change replaced, empty for the first of its identity.
-   *
-   * @generated from field: string replaces_key = 10;
    */
   replacesKey?: string
   /**
    * Author is the agent or tool that sent the message for its person, empty
    * when the person sent it.
-   *
-   * @generated from field: string author = 11;
    */
   author?: string
   /**
    * Envelope is the exact wire form of a message another protocol originated.
-   *
-   * @generated from field: spacewave.chat.ChatEnvelope envelope = 12;
    */
   envelope?: ChatEnvelope
 }
 
 export const ChatMessageInfo: MessageType<ChatMessageInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.ChatMessageInfo',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'sender_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'text', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 5, name: 'reply_to_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'index', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 7, name: 'content', kind: 'message', T: () => ChatMessageContent },
-      { no: 8, name: 'person_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'redacted_by_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'replaces_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 11, name: 'author', kind: 'scalar', T: ScalarType.STRING },
-      { no: 12, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * GetStateResponse contains current state events with their immutable history identities.
- *
- * @generated from message spacewave.chat.rpc.GetStateResponse
- */
-export interface GetStateResponse {
-  /**
-   * Messages is ordered by state type and state key.
-   *
-   * @generated from field: repeated spacewave.chat.rpc.ChatMessageInfo messages = 1;
-   */
-  messages?: ChatMessageInfo[]
-}
-
-export const GetStateResponse: MessageType<GetStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.GetStateResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'messages',
-        kind: 'message',
-        T: ChatMessageInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatMessageInfo>(
+    'spacewave.chat.rpc.ChatMessageInfo',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'sender_peer_id', 9],
+      [3, 'text', 9],
+      [4, 'created_at', 11, 0, Timestamp.codec],
+      [5, 'reply_to_key', 9],
+      [6, 'index', 4],
+      [7, 'content', 11, 0, ChatMessageContent.codec],
+      [8, 'person_id', 9],
+      [9, 'redacted_by_key', 9],
+      [10, 'replaces_key', 9],
+      [11, 'author', 9],
+      [12, 'envelope', 11, 0, ChatEnvelope.codec],
+    ],
+  )
 
 /**
  * GetChannelInfoRequest is a request for channel info.
@@ -163,9 +124,9 @@ export const GetStateResponse: MessageType<GetStateResponse> =
 export interface GetChannelInfoRequest {}
 
 export const GetChannelInfoRequest: MessageType<GetChannelInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetChannelInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetChannelInfoRequest>(
     'spacewave.chat.rpc.GetChannelInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -176,60 +137,43 @@ export const GetChannelInfoRequest: MessageType<GetChannelInfoRequest> =
 export interface GetChannelInfoResponse {
   /**
    * Name is the channel name.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Topic is the channel topic.
-   *
-   * @generated from field: string topic = 2;
    */
   topic?: string
   /**
    * MessageCount is the number of messages retained in channel history.
-   *
-   * @generated from field: uint64 message_count = 3;
    */
   messageCount?: bigint
   /**
    * CreatedAt is the channel creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 4;
    */
   createdAt?: Date
   /**
    * CreatorPeerId is the peer identity that created the channel.
-   *
-   * @generated from field: string creator_peer_id = 5;
    */
   creatorPeerId?: string
   /**
    * EncryptionAlgorithm reports the channel encryption policy. Empty allows plaintext;
    * otherwise message bodies require this algorithm. State and annotations remain public.
-   *
-   * @generated from field: string encryption_algorithm = 6;
    */
   encryptionAlgorithm?: string
 }
 
 export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.GetChannelInfoResponse',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'topic', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'message_count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 5, name: 'creator_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'encryption_algorithm',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetChannelInfoResponse>(
+    'spacewave.chat.rpc.GetChannelInfoResponse',
+    () => [
+      [1, 'name', 9],
+      [2, 'topic', 9],
+      [3, 'message_count', 4],
+      [4, 'created_at', 11, 0, Timestamp.codec],
+      [5, 'creator_peer_id', 9],
+      [6, 'encryption_algorithm', 9],
+    ],
+  )
 
 /**
  * WatchChannelInfoRequest is a request to stream channel info.
@@ -239,9 +183,9 @@ export const GetChannelInfoResponse: MessageType<GetChannelInfoResponse> =
 export interface WatchChannelInfoRequest {}
 
 export const WatchChannelInfoRequest: MessageType<WatchChannelInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchChannelInfoRequest>(
+  /* @__PURE__ */ createMessageType<WatchChannelInfoRequest>(
     'spacewave.chat.rpc.WatchChannelInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -252,19 +196,15 @@ export const WatchChannelInfoRequest: MessageType<WatchChannelInfoRequest> =
 export interface WatchChannelInfoResponse {
   /**
    * Info contains the channel metadata as of a shared-state change.
-   *
-   * @generated from field: spacewave.chat.rpc.GetChannelInfoResponse info = 1;
    */
   info?: GetChannelInfoResponse
 }
 
 export const WatchChannelInfoResponse: MessageType<WatchChannelInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.WatchChannelInfoResponse',
-    fields: [
-      { no: 1, name: 'info', kind: 'message', T: GetChannelInfoResponse },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchChannelInfoResponse>(
+    'spacewave.chat.rpc.WatchChannelInfoResponse',
+    () => [[1, 'info', 11, 0, GetChannelInfoResponse.codec]],
+  )
 
 /**
  * GetMessageRequest identifies one channel message to read.
@@ -274,19 +214,15 @@ export const WatchChannelInfoResponse: MessageType<WatchChannelInfoResponse> =
 export interface GetMessageRequest {
   /**
    * MessageKey is the channel-scoped object key to read.
-   *
-   * @generated from field: string message_key = 1;
    */
   messageKey?: string
 }
 
 export const GetMessageRequest: MessageType<GetMessageRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.GetMessageRequest',
-    fields: [
-      { no: 1, name: 'message_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetMessageRequest>(
+    'spacewave.chat.rpc.GetMessageRequest',
+    () => [[1, 'message_key', 9]],
+  )
 
 /**
  * GetMessageResponse contains the selected channel message.
@@ -297,19 +233,15 @@ export interface GetMessageResponse {
   /**
    * Message is the selected message projection, unset when the key names no
    * message.
-   *
-   * @generated from field: spacewave.chat.rpc.ChatMessageInfo message = 1;
    */
   message?: ChatMessageInfo
 }
 
 export const GetMessageResponse: MessageType<GetMessageResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.GetMessageResponse',
-    fields: [
-      { no: 1, name: 'message', kind: 'message', T: ChatMessageInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetMessageResponse>(
+    'spacewave.chat.rpc.GetMessageResponse',
+    () => [[1, 'message', 11, 0, ChatMessageInfo.codec]],
+  )
 
 /**
  * ListMessagesRequest is a request for paginated messages.
@@ -319,52 +251,32 @@ export const GetMessageResponse: MessageType<GetMessageResponse> =
 export interface ListMessagesRequest {
   /**
    * BeforeKey returns messages before this key (for pagination).
-   *
-   * @generated from field: string before_key = 1;
    */
   beforeKey?: string
   /**
    * Limit is the maximum number of messages to return.
-   *
-   * @generated from field: uint32 limit = 2;
    */
   limit?: number
   /**
    * BeforeIndex selects an exclusive upper bound for backwards pagination.
-   *
-   * @generated from field: optional uint64 before_index = 3;
    */
   beforeIndex?: bigint
   /**
    * FromIndex selects an inclusive lower bound for forwards pagination.
-   *
-   * @generated from field: optional uint64 from_index = 4;
    */
   fromIndex?: bigint
 }
 
 export const ListMessagesRequest: MessageType<ListMessagesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.ListMessagesRequest',
-    fields: [
-      { no: 1, name: 'before_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 3,
-        name: 'before_index',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        opt: true,
-      },
-      {
-        no: 4,
-        name: 'from_index',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        opt: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListMessagesRequest>(
+    'spacewave.chat.rpc.ListMessagesRequest',
+    () => [
+      [1, 'before_key', 9],
+      [2, 'limit', 13],
+      [3, 'before_index', 4, 4],
+      [4, 'from_index', 4, 4],
+    ],
+  )
 
 /**
  * ListMessagesResponse contains a page of messages.
@@ -374,32 +286,22 @@ export const ListMessagesRequest: MessageType<ListMessagesRequest> =
 export interface ListMessagesResponse {
   /**
    * Messages is the list of messages.
-   *
-   * @generated from field: repeated spacewave.chat.rpc.ChatMessageInfo messages = 1;
    */
   messages?: ChatMessageInfo[]
   /**
    * HasMore indicates more messages exist in the selected pagination direction.
-   *
-   * @generated from field: bool has_more = 2;
    */
   hasMore?: boolean
 }
 
 export const ListMessagesResponse: MessageType<ListMessagesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.ListMessagesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'messages',
-        kind: 'message',
-        T: ChatMessageInfo,
-        repeated: true,
-      },
-      { no: 2, name: 'has_more', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListMessagesResponse>(
+    'spacewave.chat.rpc.ListMessagesResponse',
+    () => [
+      [1, 'messages', 11, 1, ChatMessageInfo.codec],
+      [2, 'has_more', 8],
+    ],
+  )
 
 /**
  * ListThreadsRequest selects an activity-ordered thread page.
@@ -409,39 +311,27 @@ export const ListMessagesResponse: MessageType<ListMessagesResponse> =
 export interface ListThreadsRequest {
   /**
    * BeforeIndex resumes after the thread whose latest reply has this history index.
-   *
-   * @generated from field: optional uint64 before_index = 1;
    */
   beforeIndex?: bigint
   /**
    * Limit is the maximum number of matching threads to return.
-   *
-   * @generated from field: uint32 limit = 2;
    */
   limit?: number
   /**
    * ParticipatedOnly selects threads with a reply by the authenticated person.
-   *
-   * @generated from field: bool participated_only = 3;
    */
   participatedOnly?: boolean
 }
 
 export const ListThreadsRequest: MessageType<ListThreadsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.ListThreadsRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'before_index',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        opt: true,
-      },
-      { no: 2, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'participated_only', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListThreadsRequest>(
+    'spacewave.chat.rpc.ListThreadsRequest',
+    () => [
+      [1, 'before_index', 4, 4],
+      [2, 'limit', 13],
+      [3, 'participated_only', 8],
+    ],
+  )
 
 /**
  * ChatThreadInfo projects one native thread summary.
@@ -451,45 +341,32 @@ export const ListThreadsRequest: MessageType<ListThreadsRequest> =
 export interface ChatThreadInfo {
   /**
    * Root is the retained thread-root message.
-   *
-   * @generated from field: spacewave.chat.rpc.ChatMessageInfo root = 1;
    */
   root?: ChatMessageInfo
   /**
    * LatestReply is the newest canonical thread reply.
-   *
-   * @generated from field: spacewave.chat.rpc.ChatMessageInfo latest_reply = 2;
    */
   latestReply?: ChatMessageInfo
   /**
    * ReplyCount is the number of canonical thread replies.
-   *
-   * @generated from field: uint64 reply_count = 3;
    */
   replyCount?: bigint
   /**
    * CurrentUserParticipated reports whether the authenticated person wrote a reply.
-   *
-   * @generated from field: bool current_user_participated = 4;
    */
   currentUserParticipated?: boolean
 }
 
 export const ChatThreadInfo: MessageType<ChatThreadInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.ChatThreadInfo',
-    fields: [
-      { no: 1, name: 'root', kind: 'message', T: ChatMessageInfo },
-      { no: 2, name: 'latest_reply', kind: 'message', T: ChatMessageInfo },
-      { no: 3, name: 'reply_count', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 4,
-        name: 'current_user_participated',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ChatThreadInfo>(
+    'spacewave.chat.rpc.ChatThreadInfo',
+    () => [
+      [1, 'root', 11, 0, ChatMessageInfo.codec],
+      [2, 'latest_reply', 11, 0, ChatMessageInfo.codec],
+      [3, 'reply_count', 4],
+      [4, 'current_user_participated', 8],
+    ],
+  )
 
 /**
  * ListThreadsResponse contains one bounded thread page.
@@ -499,38 +376,22 @@ export const ChatThreadInfo: MessageType<ChatThreadInfo> =
 export interface ListThreadsResponse {
   /**
    * Threads is ordered from most to least recent activity.
-   *
-   * @generated from field: repeated spacewave.chat.rpc.ChatThreadInfo threads = 1;
    */
   threads?: ChatThreadInfo[]
   /**
    * NextBeforeIndex resumes after the last summary examined by this page.
-   *
-   * @generated from field: optional uint64 next_before_index = 2;
    */
   nextBeforeIndex?: bigint
 }
 
 export const ListThreadsResponse: MessageType<ListThreadsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.ListThreadsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'threads',
-        kind: 'message',
-        T: ChatThreadInfo,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'next_before_index',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        opt: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListThreadsResponse>(
+    'spacewave.chat.rpc.ListThreadsResponse',
+    () => [
+      [1, 'threads', 11, 1, ChatThreadInfo.codec],
+      [2, 'next_before_index', 4, 4],
+    ],
+  )
 
 /**
  * WatchMessagesRequest is a request to stream messages.
@@ -540,9 +401,9 @@ export const ListThreadsResponse: MessageType<ListThreadsResponse> =
 export interface WatchMessagesRequest {}
 
 export const WatchMessagesRequest: MessageType<WatchMessagesRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchMessagesRequest>(
+  /* @__PURE__ */ createMessageType<WatchMessagesRequest>(
     'spacewave.chat.rpc.WatchMessagesRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -553,25 +414,15 @@ export const WatchMessagesRequest: MessageType<WatchMessagesRequest> =
 export interface WatchMessagesResponse {
   /**
    * Messages is the list of new messages since last response.
-   *
-   * @generated from field: repeated spacewave.chat.rpc.ChatMessageInfo messages = 1;
    */
   messages?: ChatMessageInfo[]
 }
 
 export const WatchMessagesResponse: MessageType<WatchMessagesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.WatchMessagesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'messages',
-        kind: 'message',
-        T: ChatMessageInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchMessagesResponse>(
+    'spacewave.chat.rpc.WatchMessagesResponse',
+    () => [[1, 'messages', 11, 1, ChatMessageInfo.codec]],
+  )
 
 /**
  * SendMessageRequest is a request to send a message.
@@ -581,28 +432,20 @@ export const WatchMessagesResponse: MessageType<WatchMessagesResponse> =
 export interface SendMessageRequest {
   /**
    * Text is the message text.
-   *
-   * @generated from field: string text = 1;
    */
   text?: string
   /**
    * ReplyToKey is the optional key of the message to reply to.
-   *
-   * @generated from field: string reply_to_key = 2;
    */
   replyToKey?: string
   /**
    * TransactionId identifies a retryable send within the authenticated sender
    * and channel. By default, differing content is rejected; empty always appends.
-   *
-   * @generated from field: string transaction_id = 3;
    */
   transactionId?: string
   /**
    * Content is the typed message content. When set, it is persisted as given
    * and the legacy text field is rejected if also supplied.
-   *
-   * @generated from field: spacewave.chat.ChatMessageContent content = 4;
    */
   content?: ChatMessageContent
   /**
@@ -610,60 +453,41 @@ export interface SendMessageRequest {
    * An empty value requires absent state; omission makes the write unconditional.
    * Only state changes accept this condition. Accepted transaction retries retain
    * their original result even when current state has since changed.
-   *
-   * @generated from field: optional string expected_state_message_key = 5;
    */
   expectedStateMessageKey?: string
   /**
    * ReuseAcceptedTransaction returns the original message for a valid retry
    * even when its content or reply differs. The authenticated author must still
    * match. It has no effect when TransactionId is empty.
-   *
-   * @generated from field: bool reuse_accepted_transaction = 6;
    */
   reuseAcceptedTransaction?: boolean
   /**
    * Author names the agent or tool sending for the authenticated person. It
    * must be a DNS label or empty, and a retry must repeat it.
-   *
-   * @generated from field: string author = 7;
    */
   author?: string
   /**
    * Envelope stores a message another protocol originated. Its ID selects the
    * message key in place of TransactionId, so a repeated envelope returns the
    * accepted message.
-   *
-   * @generated from field: spacewave.chat.ChatEnvelope envelope = 8;
    */
   envelope?: ChatEnvelope
 }
 
 export const SendMessageRequest: MessageType<SendMessageRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.SendMessageRequest',
-    fields: [
-      { no: 1, name: 'text', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'reply_to_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'transaction_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'content', kind: 'message', T: () => ChatMessageContent },
-      {
-        no: 5,
-        name: 'expected_state_message_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        opt: true,
-      },
-      {
-        no: 6,
-        name: 'reuse_accepted_transaction',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 7, name: 'author', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SendMessageRequest>(
+    'spacewave.chat.rpc.SendMessageRequest',
+    () => [
+      [1, 'text', 9],
+      [2, 'reply_to_key', 9],
+      [3, 'transaction_id', 9],
+      [4, 'content', 11, 0, ChatMessageContent.codec],
+      [5, 'expected_state_message_key', 9, 4],
+      [6, 'reuse_accepted_transaction', 8],
+      [7, 'author', 9],
+      [8, 'envelope', 11, 0, ChatEnvelope.codec],
+    ],
+  )
 
 /**
  * SendMessageResponse is the response after sending a message.
@@ -674,19 +498,15 @@ export interface SendMessageResponse {
   /**
    * MessageKey is the object key of the created message. It is empty when
    * expected_state_message_key no longer names the current state.
-   *
-   * @generated from field: string message_key = 1;
    */
   messageKey?: string
 }
 
 export const SendMessageResponse: MessageType<SendMessageResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.SendMessageResponse',
-    fields: [
-      { no: 1, name: 'message_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SendMessageResponse>(
+    'spacewave.chat.rpc.SendMessageResponse',
+    () => [[1, 'message_key', 9]],
+  )
 
 /**
  * AttachEnvelopeRequest attaches an envelope to a message of the channel.
@@ -696,27 +516,23 @@ export const SendMessageResponse: MessageType<SendMessageResponse> =
 export interface AttachEnvelopeRequest {
   /**
    * MessageKey identifies the message.
-   *
-   * @generated from field: string message_key = 1;
    */
   messageKey?: string
   /**
    * Envelope is the message's wire form. Its ID must not name another message's
    * envelope key.
-   *
-   * @generated from field: spacewave.chat.ChatEnvelope envelope = 2;
    */
   envelope?: ChatEnvelope
 }
 
 export const AttachEnvelopeRequest: MessageType<AttachEnvelopeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.AttachEnvelopeRequest',
-    fields: [
-      { no: 1, name: 'message_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AttachEnvelopeRequest>(
+    'spacewave.chat.rpc.AttachEnvelopeRequest',
+    () => [
+      [1, 'message_key', 9],
+      [2, 'envelope', 11, 0, ChatEnvelope.codec],
+    ],
+  )
 
 /**
  * AttachEnvelopeResponse returns the envelope the message holds.
@@ -727,19 +543,15 @@ export interface AttachEnvelopeResponse {
   /**
    * Envelope is the requested envelope, or the one an earlier attach or send
    * gave the message. A redacted message holds the redacted data.
-   *
-   * @generated from field: spacewave.chat.ChatEnvelope envelope = 1;
    */
   envelope?: ChatEnvelope
 }
 
 export const AttachEnvelopeResponse: MessageType<AttachEnvelopeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.AttachEnvelopeResponse',
-    fields: [
-      { no: 1, name: 'envelope', kind: 'message', T: () => ChatEnvelope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AttachEnvelopeResponse>(
+    'spacewave.chat.rpc.AttachEnvelopeResponse',
+    () => [[1, 'envelope', 11, 0, ChatEnvelope.codec]],
+  )
 
 /**
  * GetReadPositionsRequest selects shared receipt state for the mounted channel.
@@ -749,9 +561,9 @@ export const AttachEnvelopeResponse: MessageType<AttachEnvelopeResponse> =
 export interface GetReadPositionsRequest {}
 
 export const GetReadPositionsRequest: MessageType<GetReadPositionsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetReadPositionsRequest>(
+  /* @__PURE__ */ createMessageType<GetReadPositionsRequest>(
     'spacewave.chat.rpc.GetReadPositionsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -764,25 +576,15 @@ export interface GetReadPositionsResponse {
    * Positions maps each accepted person, and each author reading for one, to its
    * monotonic read position. The key is the person ID, followed by "." and the
    * author when there is one.
-   *
-   * @generated from field: map<string, spacewave.chat.ChatReadPosition> positions = 1;
    */
   positions?: { [key: string]: ChatReadPosition }
 }
 
 export const GetReadPositionsResponse: MessageType<GetReadPositionsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.GetReadPositionsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'positions',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: () => ChatReadPosition },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetReadPositionsResponse>(
+    'spacewave.chat.rpc.GetReadPositionsResponse',
+    () => [[1, 'positions', 11, 584, ChatReadPosition.codec]],
+  )
 
 /**
  * UpdateReadPositionRequest advances the person already authenticated by the host.
@@ -792,42 +594,30 @@ export const GetReadPositionsResponse: MessageType<GetReadPositionsResponse> =
 export interface UpdateReadPositionRequest {
   /**
    * NextIndex is the first unread index, bounded by the channel's message count.
-   *
-   * @generated from field: uint64 next_index = 1;
    */
   nextIndex?: bigint
   /**
    * ThreadRootKey limits the position to one timeline when present: a thread
    * root message key selects that thread, and the empty key the main timeline.
-   *
-   * @generated from field: optional string thread_root_key = 2;
    */
   threadRootKey?: string
   /**
    * Author names the agent or tool reading for the authenticated person. It
    * selects that author's own position, so an author never moves the person's.
    * It must be a DNS label or empty.
-   *
-   * @generated from field: string author = 3;
    */
   author?: string
 }
 
 export const UpdateReadPositionRequest: MessageType<UpdateReadPositionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.UpdateReadPositionRequest',
-    fields: [
-      { no: 1, name: 'next_index', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 2,
-        name: 'thread_root_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        opt: true,
-      },
-      { no: 3, name: 'author', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateReadPositionRequest>(
+    'spacewave.chat.rpc.UpdateReadPositionRequest',
+    () => [
+      [1, 'next_index', 4],
+      [2, 'thread_root_key', 9, 4],
+      [3, 'author', 9],
+    ],
+  )
 
 /**
  * UpdateReadPositionResponse reports the retained position, including unchanged retries.
@@ -837,16 +627,12 @@ export const UpdateReadPositionRequest: MessageType<UpdateReadPositionRequest> =
 export interface UpdateReadPositionResponse {
   /**
    * Position is the authenticated person's current shared read position.
-   *
-   * @generated from field: spacewave.chat.ChatReadPosition position = 1;
    */
   position?: ChatReadPosition
 }
 
 export const UpdateReadPositionResponse: MessageType<UpdateReadPositionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'spacewave.chat.rpc.UpdateReadPositionResponse',
-    fields: [
-      { no: 1, name: 'position', kind: 'message', T: () => ChatReadPosition },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateReadPositionResponse>(
+    'spacewave.chat.rpc.UpdateReadPositionResponse',
+    () => [[1, 'position', 11, 0, ChatReadPosition.codec]],
+  )

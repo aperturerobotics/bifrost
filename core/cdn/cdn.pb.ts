@@ -6,8 +6,6 @@ import { SOCheckpoint } from '../sobject/sobject.pb.js'
 import { PackfileEntry } from '../../db/packfile/packfile.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * CdnRootPointer is the top-level CDN artifact for a public_read Space.
@@ -22,27 +20,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface CdnRootPointer {
   /**
    * SpaceId is the SharedObject ULID for this Space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * Checkpoint is the owner-signed checkpoint covering every operation at the
    * time of publication. Clients verify it against the config chain's owners.
-   *
-   * @generated from field: sobject.SOCheckpoint checkpoint = 2;
    */
   checkpoint?: SOCheckpoint
   /**
    * ConfigChainHash is the hash of the current config chain head.
-   *
-   * @generated from field: bytes config_chain_hash = 3;
    */
   configChainHash?: Uint8Array
   /**
    * ConfigChainSeqno is the seqno of the current config chain head.
-   *
-   * @generated from field: uint64 config_chain_seqno = 4;
    */
   configChainSeqno?: bigint
   /**
@@ -50,39 +40,24 @@ export interface CdnRootPointer {
    * this Space. Each pack lives at
    * cdn.spacewave.app/{spaceId}/packs/{shard}/{id}.kvf. Bloom filters are
    * included so clients can skip packs that don't contain blocks they need.
-   *
-   * @generated from field: repeated packfile.PackfileEntry packs = 5;
    */
   packs?: PackfileEntry[]
   /**
    * CreatedAtMs is when this root pointer was regenerated, expressed as unix
    * epoch milliseconds. Informational only; does not affect verification.
-   *
-   * @generated from field: int64 created_at_ms = 6;
    */
   createdAtMs?: bigint
 }
 
 export const CdnRootPointer: MessageType<CdnRootPointer> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'cdn.CdnRootPointer',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'checkpoint', kind: 'message', T: () => SOCheckpoint },
-      { no: 3, name: 'config_chain_hash', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 4,
-        name: 'config_chain_seqno',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 5,
-        name: 'packs',
-        kind: 'message',
-        T: () => PackfileEntry,
-        repeated: true,
-      },
-      { no: 6, name: 'created_at_ms', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CdnRootPointer>(
+    'cdn.CdnRootPointer',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'checkpoint', 11, 0, SOCheckpoint.codec],
+      [3, 'config_chain_hash', 12],
+      [4, 'config_chain_seqno', 4],
+      [5, 'packs', 11, 1, PackfileEntry.codec],
+      [6, 'created_at_ms', 3],
+    ],
+  )

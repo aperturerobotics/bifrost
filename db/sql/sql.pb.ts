@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * SqlValue represents a SQL value. If no field in the oneof is set, the value is NULL.
@@ -17,82 +15,20 @@ export interface SqlValue {
    * @generated from oneof sql.SqlValue.value
    */
   value?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * IntValue is a signed integer value.
-         *
-         * @generated from field: int64 int_value = 1;
-         */
-        value: bigint
-        case: 'intValue'
-      }
-    | {
-        /**
-         * FloatValue is a double-precision floating point value.
-         *
-         * @generated from field: double float_value = 2;
-         */
-        value: number
-        case: 'floatValue'
-      }
-    | {
-        /**
-         * StrValue is a string value.
-         *
-         * @generated from field: string str_value = 3;
-         */
-        value: string
-        case: 'strValue'
-      }
-    | {
-        /**
-         * BlobValue is a byte string value.
-         *
-         * @generated from field: bytes blob_value = 4;
-         */
-        value: Uint8Array
-        case: 'blobValue'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: bigint; case: 'intValue' }
+    | { value: number; case: 'floatValue' }
+    | { value: string; case: 'strValue' }
+    | { value: Uint8Array; case: 'blobValue' }
 }
 
 export const SqlValue: MessageType<SqlValue> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.SqlValue',
-    fields: [
-      {
-        no: 1,
-        name: 'int_value',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-        oneof: 'value',
-      },
-      {
-        no: 2,
-        name: 'float_value',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-        oneof: 'value',
-      },
-      {
-        no: 3,
-        name: 'str_value',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'value',
-      },
-      {
-        no: 4,
-        name: 'blob_value',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        oneof: 'value',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlValue>('sql.SqlValue', () => [
+    [1, 'int_value', 3, 0, 0, 'value'],
+    [2, 'float_value', 1, 0, 0, 'value'],
+    [3, 'str_value', 9, 0, 0, 'value'],
+    [4, 'blob_value', 12, 0, 0, 'value'],
+  ])
 
 /**
  * Row contains SQL values in column order.
@@ -102,18 +38,14 @@ export const SqlValue: MessageType<SqlValue> =
 export interface Row {
   /**
    * Values is the row value list.
-   *
-   * @generated from field: repeated sql.SqlValue values = 1;
    */
   values?: SqlValue[]
 }
 
-export const Row: MessageType<Row> = /* @__PURE__ */ createMessageType({
-  typeName: 'sql.Row',
-  fields: [
-    { no: 1, name: 'values', kind: 'message', T: SqlValue, repeated: true },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Row: MessageType<Row> = /* @__PURE__ */ createMessageType<Row>(
+  'sql.Row',
+  () => [[1, 'values', 11, 1, SqlValue.codec]],
+)
 
 /**
  * ColumnSchema describes one result column.
@@ -123,31 +55,19 @@ export const Row: MessageType<Row> = /* @__PURE__ */ createMessageType({
 export interface ColumnSchema {
   /**
    * Name is the column name.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * DatabaseTypeName is the database-specific type name, if known.
-   *
-   * @generated from field: string database_type_name = 2;
    */
   databaseTypeName?: string
 }
 
 export const ColumnSchema: MessageType<ColumnSchema> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.ColumnSchema',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'database_type_name',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ColumnSchema>('sql.ColumnSchema', () => [
+    [1, 'name', 9],
+    [2, 'database_type_name', 9],
+  ])
 
 /**
  * RowBatch contains a batch of query rows.
@@ -157,16 +77,11 @@ export const ColumnSchema: MessageType<ColumnSchema> =
 export interface RowBatch {
   /**
    * Rows is the batch of rows.
-   *
-   * @generated from field: repeated sql.Row rows = 1;
    */
   rows?: Row[]
 }
 
 export const RowBatch: MessageType<RowBatch> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.RowBatch',
-    fields: [
-      { no: 1, name: 'rows', kind: 'message', T: Row, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RowBatch>('sql.RowBatch', () => [
+    [1, 'rows', 11, 1, Row.codec],
+  ])

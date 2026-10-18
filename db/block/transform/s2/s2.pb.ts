@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the s2 transform.
@@ -16,23 +14,17 @@ export interface Config {
   /**
    * Better uses the "better" s2 mode.
    * This is slightly slower.
-   *
-   * @generated from field: bool better = 1;
    */
   better?: boolean
   /**
    * Best uses the "best" s2 mode.
    * This is very much slower than better.
-   *
-   * @generated from field: bool best = 2;
    */
   best?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'transform.s2.Config',
-  fields: [
-    { no: 1, name: 'better', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 2, name: 'best', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('transform.s2.Config', () => [
+    [1, 'better', 8],
+    [2, 'best', 8],
+  ])

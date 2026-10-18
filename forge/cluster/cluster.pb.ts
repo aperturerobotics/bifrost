@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Cluster associates a set of Worker with a list of Jobs.
@@ -28,27 +26,21 @@ export interface Cluster {
    * Name is the cluster name.
    * Should be user-readable: like "my-cluster-1"
    * Must be a valid DNS label as defined in RFC 1123.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * PeerId is the identifier of the peer controlling the Cluster.
    * This peer runs the high-level cluster scheduler.
    * Cannot be empty.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
 }
 
-export const Cluster: MessageType<Cluster> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.cluster.Cluster',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Cluster: MessageType<Cluster> =
+  /* @__PURE__ */ createMessageType<Cluster>('forge.cluster.Cluster', () => [
+    [1, 'name', 9],
+    [2, 'peer_id', 9],
+  ])
 
 /**
  * ClusterCreateOp creates a new Cluster.
@@ -58,35 +50,29 @@ export const Cluster: MessageType<Cluster> = /* @__PURE__ */ createMessageType({
 export interface ClusterCreateOp {
   /**
    * ClusterKey is the object key for the new Cluster.
-   *
-   * @generated from field: string cluster_key = 1;
    */
   clusterKey?: string
   /**
    * Name is the name to create.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * PeerId is the identifier of the peer controlling the Cluster.
    * This peer runs the high-level cluster scheduler.
    * Cannot be empty.
-   *
-   * @generated from field: string peer_id = 3;
    */
   peerId?: string
 }
 
 export const ClusterCreateOp: MessageType<ClusterCreateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.cluster.ClusterCreateOp',
-    fields: [
-      { no: 1, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClusterCreateOp>(
+    'forge.cluster.ClusterCreateOp',
+    () => [
+      [1, 'cluster_key', 9],
+      [2, 'name', 9],
+      [3, 'peer_id', 9],
+    ],
+  )
 
 /**
  * ClusterAssignPeerOp sets the peer_id for the Cluster controller.
@@ -97,27 +83,23 @@ export const ClusterCreateOp: MessageType<ClusterCreateOp> =
 export interface ClusterAssignPeerOp {
   /**
    * ClusterKey is the object key for the Cluster.
-   *
-   * @generated from field: string cluster_key = 1;
    */
   clusterKey?: string
   /**
    * PeerId is the updated peer id for the cluster.
    * Cannot be empty.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
 }
 
 export const ClusterAssignPeerOp: MessageType<ClusterAssignPeerOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.cluster.ClusterAssignPeerOp',
-    fields: [
-      { no: 1, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClusterAssignPeerOp>(
+    'forge.cluster.ClusterAssignPeerOp',
+    () => [
+      [1, 'cluster_key', 9],
+      [2, 'peer_id', 9],
+    ],
+  )
 
 /**
  * ClusterAssignJobOp assigns a Job to a Cluster.
@@ -127,26 +109,22 @@ export const ClusterAssignPeerOp: MessageType<ClusterAssignPeerOp> =
 export interface ClusterAssignJobOp {
   /**
    * ClusterKey is the object key for the Cluster.
-   *
-   * @generated from field: string cluster_key = 1;
    */
   clusterKey?: string
   /**
    * JobKey is the object key for the Job.
-   *
-   * @generated from field: string job_key = 2;
    */
   jobKey?: string
 }
 
 export const ClusterAssignJobOp: MessageType<ClusterAssignJobOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.cluster.ClusterAssignJobOp',
-    fields: [
-      { no: 1, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'job_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClusterAssignJobOp>(
+    'forge.cluster.ClusterAssignJobOp',
+    () => [
+      [1, 'cluster_key', 9],
+      [2, 'job_key', 9],
+    ],
+  )
 
 /**
  * ClusterAssignWorkerOp assigns a Worker to a Cluster.
@@ -156,26 +134,22 @@ export const ClusterAssignJobOp: MessageType<ClusterAssignJobOp> =
 export interface ClusterAssignWorkerOp {
   /**
    * ClusterKey is the object key for the Cluster.
-   *
-   * @generated from field: string cluster_key = 1;
    */
   clusterKey?: string
   /**
    * WorkerKey is the object key for the Worker.
-   *
-   * @generated from field: string worker_key = 2;
    */
   workerKey?: string
 }
 
 export const ClusterAssignWorkerOp: MessageType<ClusterAssignWorkerOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.cluster.ClusterAssignWorkerOp',
-    fields: [
-      { no: 1, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'worker_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClusterAssignWorkerOp>(
+    'forge.cluster.ClusterAssignWorkerOp',
+    () => [
+      [1, 'cluster_key', 9],
+      [2, 'worker_key', 9],
+    ],
+  )
 
 /**
  * ClusterStartJobOp transitions a assigned Job from PENDING to RUNNING.
@@ -185,26 +159,22 @@ export const ClusterAssignWorkerOp: MessageType<ClusterAssignWorkerOp> =
 export interface ClusterStartJobOp {
   /**
    * ClusterKey is the object key for the Cluster.
-   *
-   * @generated from field: string cluster_key = 1;
    */
   clusterKey?: string
   /**
    * JobKey is the object key for the Job.
-   *
-   * @generated from field: string job_key = 2;
    */
   jobKey?: string
 }
 
 export const ClusterStartJobOp: MessageType<ClusterStartJobOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.cluster.ClusterStartJobOp',
-    fields: [
-      { no: 1, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'job_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClusterStartJobOp>(
+    'forge.cluster.ClusterStartJobOp',
+    () => [
+      [1, 'cluster_key', 9],
+      [2, 'job_key', 9],
+    ],
+  )
 
 /**
  * ClusterAssignTaskOp sets the peer_id for a Task to the Cluster peer ID.
@@ -215,33 +185,27 @@ export const ClusterStartJobOp: MessageType<ClusterStartJobOp> =
 export interface ClusterAssignTaskOp {
   /**
    * ClusterKey is the object key for the Cluster.
-   *
-   * @generated from field: string cluster_key = 1;
    */
   clusterKey?: string
   /**
    * JobKey is the object key for the Job.
-   *
-   * @generated from field: string job_key = 2;
    */
   jobKey?: string
   /**
    * TaskKey is the object key for the Task.
-   *
-   * @generated from field: string task_key = 3;
    */
   taskKey?: string
 }
 
 export const ClusterAssignTaskOp: MessageType<ClusterAssignTaskOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.cluster.ClusterAssignTaskOp',
-    fields: [
-      { no: 1, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'job_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'task_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClusterAssignTaskOp>(
+    'forge.cluster.ClusterAssignTaskOp',
+    () => [
+      [1, 'cluster_key', 9],
+      [2, 'job_key', 9],
+      [3, 'task_key', 9],
+    ],
+  )
 
 /**
  * ClusterCompleteJobOp transitions a assigned Job from RUNNING to COMPLETE.
@@ -255,23 +219,19 @@ export const ClusterAssignTaskOp: MessageType<ClusterAssignTaskOp> =
 export interface ClusterCompleteJobOp {
   /**
    * ClusterKey is the object key for the Cluster.
-   *
-   * @generated from field: string cluster_key = 1;
    */
   clusterKey?: string
   /**
    * JobKey is the object key for the Job.
-   *
-   * @generated from field: string job_key = 2;
    */
   jobKey?: string
 }
 
 export const ClusterCompleteJobOp: MessageType<ClusterCompleteJobOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.cluster.ClusterCompleteJobOp',
-    fields: [
-      { no: 1, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'job_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClusterCompleteJobOp>(
+    'forge.cluster.ClusterCompleteJobOp',
+    () => [
+      [1, 'cluster_key', 9],
+      [2, 'job_key', 9],
+    ],
+  )

@@ -3,13 +3,8 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * PackfileEntry describes a single packfile in the manifest.
@@ -19,32 +14,22 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface PackfileEntry {
   /**
    * Id is the v1 packfile identifier.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * BloomFilter is the serialized bloom filter for the packfile.
-   *
-   * @generated from field: bytes bloom_filter = 2;
    */
   bloomFilter?: Uint8Array
   /**
    * BlockCount is the number of blocks in the packfile.
-   *
-   * @generated from field: uint64 block_count = 3;
    */
   blockCount?: bigint
   /**
    * SizeBytes is the size of the packfile in bytes.
-   *
-   * @generated from field: uint64 size_bytes = 4;
    */
   sizeBytes?: bigint
   /**
    * CreatedAt is the time the packfile was created.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 5;
    */
   createdAt?: Date
   /**
@@ -53,30 +38,22 @@ export interface PackfileEntry {
    * bloom layouts add new versions, not mutations of v1. Required on every
    * entry; cloud rejects pushes whose advertised version is not in its
    * accepted-versions allowlist.
-   *
-   * @generated from field: uint32 bloom_format_version = 6;
    */
   bloomFormatVersion?: number
   /**
    * Sequence is the monotonic cursor anchor the cloud catalog assigns when
    * it commits the pack or marks it as trash. Pull cursors advance over
    * sequence > since. Local entries not yet pushed carry 0.
-   *
-   * @generated from field: uint64 sequence = 7;
    */
   sequence?: bigint
   /**
    * SupersededBy is the replacement packfile ID; empty when the row is
    * current or was retired from the trash without a replacement.
-   *
-   * @generated from field: string superseded_by = 8;
    */
   supersededBy?: string
   /**
    * SupersededAt is the time supersession or retirement was recorded; absent
    * when the row is current.
-   *
-   * @generated from field: google.protobuf.Timestamp superseded_at = 9;
    */
   supersededAt?: Date
   /**
@@ -84,33 +61,26 @@ export interface PackfileEntry {
    * when the pack is not trash. A trash pack stays readable, but new uploads
    * do not deduplicate against it, and a reclaim pass retires it once
    * TrashAge has passed.
-   *
-   * @generated from field: google.protobuf.Timestamp trashed_at = 10;
    */
   trashedAt?: Date
 }
 
 export const PackfileEntry: MessageType<PackfileEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.PackfileEntry',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'bloom_filter', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'block_count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'size_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'created_at', kind: 'message', T: () => Timestamp },
-      {
-        no: 6,
-        name: 'bloom_format_version',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 7, name: 'sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 8, name: 'superseded_by', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'superseded_at', kind: 'message', T: () => Timestamp },
-      { no: 10, name: 'trashed_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PackfileEntry>(
+    'packfile.PackfileEntry',
+    () => [
+      [1, 'id', 9],
+      [2, 'bloom_filter', 12],
+      [3, 'block_count', 4],
+      [4, 'size_bytes', 4],
+      [5, 'created_at', 11, 0, Timestamp.codec],
+      [6, 'bloom_format_version', 13],
+      [7, 'sequence', 4],
+      [8, 'superseded_by', 9],
+      [9, 'superseded_at', 11, 0, Timestamp.codec],
+      [10, 'trashed_at', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * PackReplacementEvent describes one atomic replacement sequence.
@@ -120,45 +90,27 @@ export const PackfileEntry: MessageType<PackfileEntry> =
 export interface PackReplacementEvent {
   /**
    * Sequence is the monotonic cursor anchor assigned to the replacement event.
-   *
-   * @generated from field: uint64 sequence = 1;
    */
   sequence?: bigint
   /**
    * ReplacedPackIds is the set of packs removed from the active manifest.
-   *
-   * @generated from field: repeated string replaced_pack_ids = 2;
    */
   replacedPackIds?: string[]
   /**
    * ReplacementPackIds is the set of packs added by the same replacement.
-   *
-   * @generated from field: repeated string replacement_pack_ids = 3;
    */
   replacementPackIds?: string[]
 }
 
 export const PackReplacementEvent: MessageType<PackReplacementEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.PackReplacementEvent',
-    fields: [
-      { no: 1, name: 'sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 2,
-        name: 'replaced_pack_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'replacement_pack_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PackReplacementEvent>(
+    'packfile.PackReplacementEvent',
+    () => [
+      [1, 'sequence', 4],
+      [2, 'replaced_pack_ids', 9, 1],
+      [3, 'replacement_pack_ids', 9, 1],
+    ],
+  )
 
 /**
  * PullResponse is one page of a block store catalog pull. A page holds every
@@ -170,63 +122,41 @@ export const PackReplacementEvent: MessageType<PackReplacementEvent> =
 export interface PullResponse {
   /**
    * Entries is the list of packfile entries.
-   *
-   * @generated from field: repeated packfile.PackfileEntry entries = 1;
    */
   entries?: PackfileEntry[]
   /**
    * ReplacementEvents is the list of atomic replacement events.
-   *
-   * @generated from field: repeated packfile.PackReplacementEvent replacement_events = 2;
    */
   replacementEvents?: PackReplacementEvent[]
   /**
    * LatestSequence is the current monotonic sequence head for the block store,
    * even when Entries and ReplacementEvents are empty for an up-to-date pull.
-   *
-   * @generated from field: uint64 latest_sequence = 3;
    */
   latestSequence?: bigint
   /**
    * More is set when entries or events after this page remain below
    * LatestSequence.
-   *
-   * @generated from field: bool more = 4;
    */
   more?: boolean
   /**
    * Restart is set when the server no longer holds the history after the
    * requested cursor. The page then starts a full pull from sequence zero,
    * and the reader drops every pulled pack the full pull does not list.
-   *
-   * @generated from field: bool restart = 5;
    */
   restart?: boolean
 }
 
 export const PullResponse: MessageType<PullResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.PullResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'message',
-        T: PackfileEntry,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'replacement_events',
-        kind: 'message',
-        T: PackReplacementEvent,
-        repeated: true,
-      },
-      { no: 3, name: 'latest_sequence', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'more', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'restart', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PullResponse>(
+    'packfile.PullResponse',
+    () => [
+      [1, 'entries', 11, 1, PackfileEntry.codec],
+      [2, 'replacement_events', 11, 1, PackReplacementEvent.codec],
+      [3, 'latest_sequence', 4],
+      [4, 'more', 8],
+      [5, 'restart', 8],
+    ],
+  )
 
 /**
  * PushRequest describes a packfile a client uploads to a block store. The
@@ -239,73 +169,45 @@ export const PullResponse: MessageType<PullResponse> =
 export interface PushRequest {
   /**
    * PackId is the packfile identifier.
-   *
-   * @generated from field: string pack_id = 1;
    */
   packId?: string
   /**
    * BlockCount is the number of blocks in the packfile.
-   *
-   * @generated from field: uint64 block_count = 2;
    */
   blockCount?: bigint
   /**
    * BloomFilter is the serialized bloom filter for the packfile.
-   *
-   * @generated from field: bytes bloom_filter = 3;
    */
   bloomFilter?: Uint8Array
   /**
    * BloomFormatVersion is the encoding version of the bloom_filter bytes.
-   *
-   * @generated from field: uint32 bloom_format_version = 4;
    */
   bloomFormatVersion?: number
   /**
    * SizeBytes is the size of the packfile in bytes.
-   *
-   * @generated from field: uint64 size_bytes = 5;
    */
   sizeBytes?: bigint
   /**
    * Sha256 is the SHA-256 digest of the packfile bytes.
-   *
-   * @generated from field: bytes sha256 = 6;
    */
   sha256?: Uint8Array
   /**
    * ReplacesPackIds are committed packfiles the packfile supersedes
    * atomically when it commits. Empty for an ordinary push.
-   *
-   * @generated from field: repeated string replaces_pack_ids = 7;
    */
   replacesPackIds?: string[]
 }
 
 export const PushRequest: MessageType<PushRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.PushRequest',
-    fields: [
-      { no: 1, name: 'pack_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'block_count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'bloom_filter', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 4,
-        name: 'bloom_format_version',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 5, name: 'size_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 6, name: 'sha256', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 7,
-        name: 'replaces_pack_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PushRequest>('packfile.PushRequest', () => [
+    [1, 'pack_id', 9],
+    [2, 'block_count', 4],
+    [3, 'bloom_filter', 12],
+    [4, 'bloom_format_version', 13],
+    [5, 'size_bytes', 4],
+    [6, 'sha256', 12],
+    [7, 'replaces_pack_ids', 9, 1],
+  ])
 
 /**
  * PushUpload authorizes one upload of a packfile's bytes straight to storage.
@@ -315,41 +217,26 @@ export const PushRequest: MessageType<PushRequest> =
 export interface PushUpload {
   /**
    * Url is the signed URL the client sends the packfile bytes to with PUT.
-   *
-   * @generated from field: string url = 1;
    */
   url?: string
   /**
    * Headers are the request headers the upload sends with exactly these
    * values. Storage refuses an upload that omits or changes one.
-   *
-   * @generated from field: map<string, string> headers = 2;
    */
   headers?: { [key: string]: string }
   /**
    * ExpiresAt is when the URL stops admitting the upload and the server
    * forgets the uncommitted push.
-   *
-   * @generated from field: google.protobuf.Timestamp expires_at = 3;
    */
   expiresAt?: Date
 }
 
 export const PushUpload: MessageType<PushUpload> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.PushUpload',
-    fields: [
-      { no: 1, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'headers',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-      { no: 3, name: 'expires_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PushUpload>('packfile.PushUpload', () => [
+    [1, 'url', 9],
+    [2, 'headers', 9, 584],
+    [3, 'expires_at', 11, 0, Timestamp.codec],
+  ])
 
 /**
  * PushResponse is the response to a push or commit request.
@@ -359,41 +246,33 @@ export const PushUpload: MessageType<PushUpload> =
 export interface PushResponse {
   /**
    * PackId is the packfile identifier.
-   *
-   * @generated from field: string pack_id = 1;
    */
   packId?: string
   /**
    * AlreadyExists indicates the packfile already existed.
-   *
-   * @generated from field: bool already_exists = 2;
    */
   alreadyExists?: boolean
   /**
    * SizeBytes is the size of the packfile in bytes.
-   *
-   * @generated from field: uint64 size_bytes = 3;
    */
   sizeBytes?: bigint
   /**
    * Upload is set when the client must upload the bytes and then commit the
    * push, and unset when the catalog holds the packfile.
-   *
-   * @generated from field: packfile.PushUpload upload = 4;
    */
   upload?: PushUpload
 }
 
 export const PushResponse: MessageType<PushResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.PushResponse',
-    fields: [
-      { no: 1, name: 'pack_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'already_exists', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'size_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'upload', kind: 'message', T: PushUpload },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PushResponse>(
+    'packfile.PushResponse',
+    () => [
+      [1, 'pack_id', 9],
+      [2, 'already_exists', 8],
+      [3, 'size_bytes', 4],
+      [4, 'upload', 11, 0, PushUpload.codec],
+    ],
+  )
 
 /**
  * ReadRequest asks for read URLs of packfiles in one block store.
@@ -403,25 +282,14 @@ export const PushResponse: MessageType<PushResponse> =
 export interface ReadRequest {
   /**
    * PackIds are the packfiles to read. Each must be in the store's catalog.
-   *
-   * @generated from field: repeated string pack_ids = 1;
    */
   packIds?: string[]
 }
 
 export const ReadRequest: MessageType<ReadRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.ReadRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'pack_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReadRequest>('packfile.ReadRequest', () => [
+    [1, 'pack_ids', 9, 1],
+  ])
 
 /**
  * ReadGrant authorizes reads of one packfile's bytes until it expires.
@@ -431,34 +299,25 @@ export const ReadRequest: MessageType<ReadRequest> =
 export interface ReadGrant {
   /**
    * PackId is the packfile identifier.
-   *
-   * @generated from field: string pack_id = 1;
    */
   packId?: string
   /**
    * Url is the opaque URL the client reads the packfile from with GET and
    * Range requests. It sends no other credentials.
-   *
-   * @generated from field: string url = 2;
    */
   url?: string
   /**
    * ExpiresAt is when the URL stops admitting reads.
-   *
-   * @generated from field: google.protobuf.Timestamp expires_at = 3;
    */
   expiresAt?: Date
 }
 
 export const ReadGrant: MessageType<ReadGrant> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.ReadGrant',
-    fields: [
-      { no: 1, name: 'pack_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'expires_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReadGrant>('packfile.ReadGrant', () => [
+    [1, 'pack_id', 9],
+    [2, 'url', 9],
+    [3, 'expires_at', 11, 0, Timestamp.codec],
+  ])
 
 /**
  * TrashRequest marks packs as trash and retires trash packs in one block
@@ -469,39 +328,23 @@ export const ReadGrant: MessageType<ReadGrant> =
 export interface TrashRequest {
   /**
    * TrashPackIds are current packs to mark as trash.
-   *
-   * @generated from field: repeated string trash_pack_ids = 1;
    */
   trashPackIds?: string[]
   /**
    * RetirePackIds are trash packs, marked at least TrashAge ago, to remove
    * from the catalog without a replacement.
-   *
-   * @generated from field: repeated string retire_pack_ids = 2;
    */
   retirePackIds?: string[]
 }
 
 export const TrashRequest: MessageType<TrashRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.TrashRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'trash_pack_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'retire_pack_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TrashRequest>(
+    'packfile.TrashRequest',
+    () => [
+      [1, 'trash_pack_ids', 9, 1],
+      [2, 'retire_pack_ids', 9, 1],
+    ],
+  )
 
 /**
  * TrashResponse acknowledges a trash request.
@@ -511,9 +354,9 @@ export const TrashRequest: MessageType<TrashRequest> =
 export interface TrashResponse {}
 
 export const TrashResponse: MessageType<TrashResponse> =
-  /* @__PURE__ */ createEmptyMessageType<TrashResponse>(
+  /* @__PURE__ */ createMessageType<TrashResponse>(
     'packfile.TrashResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -524,16 +367,12 @@ export const TrashResponse: MessageType<TrashResponse> =
 export interface ReadResponse {
   /**
    * Grants holds one grant per requested packfile, in request order.
-   *
-   * @generated from field: repeated packfile.ReadGrant grants = 1;
    */
   grants?: ReadGrant[]
 }
 
 export const ReadResponse: MessageType<ReadResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.ReadResponse',
-    fields: [
-      { no: 1, name: 'grants', kind: 'message', T: ReadGrant, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReadResponse>(
+    'packfile.ReadResponse',
+    () => [[1, 'grants', 11, 1, ReadGrant.codec]],
+  )

@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * GetAdminJsonRequest is the request for GetAdminJson.
@@ -19,19 +14,15 @@ export interface GetAdminJsonRequest {
   /**
    * Path is the administration route below /api/admin, with its query string,
    * such as "accounts?limit=50".
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
 }
 
 export const GetAdminJsonRequest: MessageType<GetAdminJsonRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.GetAdminJsonRequest',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetAdminJsonRequest>(
+    's4wave.session.GetAdminJsonRequest',
+    () => [[1, 'path', 9]],
+  )
 
 /**
  * GetAdminJsonResponse is the response for GetAdminJson.
@@ -41,19 +32,15 @@ export const GetAdminJsonRequest: MessageType<GetAdminJsonRequest> =
 export interface GetAdminJsonResponse {
   /**
    * Body is the route's JSON response body.
-   *
-   * @generated from field: string body = 1;
    */
   body?: string
 }
 
 export const GetAdminJsonResponse: MessageType<GetAdminJsonResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.GetAdminJsonResponse',
-    fields: [
-      { no: 1, name: 'body', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetAdminJsonResponse>(
+    's4wave.session.GetAdminJsonResponse',
+    () => [[1, 'body', 9]],
+  )
 
 /**
  * MountSharedObjectSelfEnrollmentRequest is the request for MountSharedObjectSelfEnrollment.
@@ -63,9 +50,9 @@ export const GetAdminJsonResponse: MessageType<GetAdminJsonResponse> =
 export interface MountSharedObjectSelfEnrollmentRequest {}
 
 export const MountSharedObjectSelfEnrollmentRequest: MessageType<MountSharedObjectSelfEnrollmentRequest> =
-  /* @__PURE__ */ createEmptyMessageType<MountSharedObjectSelfEnrollmentRequest>(
+  /* @__PURE__ */ createMessageType<MountSharedObjectSelfEnrollmentRequest>(
     's4wave.session.MountSharedObjectSelfEnrollmentRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -76,16 +63,12 @@ export const MountSharedObjectSelfEnrollmentRequest: MessageType<MountSharedObje
 export interface MountSharedObjectSelfEnrollmentResponse {
   /**
    * ResourceId is the mounted shared-object self-enrollment resource id.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const MountSharedObjectSelfEnrollmentResponse: MessageType<MountSharedObjectSelfEnrollmentResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.MountSharedObjectSelfEnrollmentResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MountSharedObjectSelfEnrollmentResponse>(
+    's4wave.session.MountSharedObjectSelfEnrollmentResponse',
+    () => [[1, 'resource_id', 13]],
+  )

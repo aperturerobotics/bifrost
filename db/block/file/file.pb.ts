@@ -2,58 +2,10 @@
 // @generated from file github.com/s4wave/spacewave/db/block/file/file.proto (package file, syntax proto3)
 /* eslint-disable */
 
-import { BlockRef } from '../block.pb.js'
+import { Blob } from '../blob/blob.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { Blob } from '../blob/blob.pb.js'
-
-/**
- * Range contains a chunk of a file.
- * Ranges are sorted by start, then nonce (ascending).
- *
- * @generated from message file.Range
- */
-export interface Range {
-  /**
-   * Nonce is the incrementing nonce of the range.
-   * Ranges with a higher nonce overwrite lower nonce.
-   *
-   * @generated from field: uint64 nonce = 1;
-   */
-  nonce?: bigint
-  /**
-   * Start contains the starting index of the range.
-   *
-   * @generated from field: uint64 start = 2;
-   */
-  start?: bigint
-  /**
-   * Length contains the len of data in the range.
-   * Start + length = end index + 1.
-   *
-   * @generated from field: uint64 length = 3;
-   */
-  length?: bigint
-  /**
-   * Ref contains the blob ref.
-   * If the ref is empty, the range represents a hole (zeros).
-   *
-   * @generated from field: block.BlockRef ref = 4;
-   */
-  ref?: BlockRef
-}
-
-export const Range: MessageType<Range> = /* @__PURE__ */ createMessageType({
-  typeName: 'file.Range',
-  fields: [
-    { no: 1, name: 'nonce', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 2, name: 'start', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 3, name: 'length', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 4, name: 'ref', kind: 'message', T: () => BlockRef },
-  ] satisfies readonly PartialFieldInfo[],
-})
+import { BlockRef } from '../block.pb.js'
 
 /**
  * File defines a pattern for storing a block-addressed file.
@@ -70,40 +22,68 @@ export const Range: MessageType<Range> = /* @__PURE__ */ createMessageType({
 export interface File {
   /**
    * TotalSize is the total size of the file.
-   *
-   * @generated from field: uint64 total_size = 1;
    */
   totalSize?: bigint
   /**
    * RootBlob, if set, contains the entire file in a blob.
    * Used when there is a single Range of data starting at index 0.
    * If unset and len(ranges) == 0, the file is empty (all zeros).
-   *
-   * @generated from field: blob.Blob root_blob = 2;
    */
   rootBlob?: Blob
   /**
    * RangeNonce is the next range nonce id to use.
-   *
-   * @generated from field: uint64 range_nonce = 3;
    */
   rangeNonce?: bigint
   /**
    * Ranges contains file data ranges.
    * Files are sparse when created.
    * Ranges may overlap.
-   *
-   * @generated from field: repeated file.Range ranges = 4;
    */
   ranges?: Range[]
 }
 
-export const File: MessageType<File> = /* @__PURE__ */ createMessageType({
-  typeName: 'file.File',
-  fields: [
-    { no: 1, name: 'total_size', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 2, name: 'root_blob', kind: 'message', T: () => Blob },
-    { no: 3, name: 'range_nonce', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 4, name: 'ranges', kind: 'message', T: Range, repeated: true },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const File: MessageType<File> = /* @__PURE__ */ createMessageType<File>(
+  'file.File',
+  () => [
+    [1, 'total_size', 4],
+    [2, 'root_blob', 11, 0, Blob.codec],
+    [3, 'range_nonce', 4],
+    [4, 'ranges', 11, 1, Range.codec],
+  ],
+)
+
+/**
+ * Range contains a chunk of a file.
+ * Ranges are sorted by start, then nonce (ascending).
+ *
+ * @generated from message file.Range
+ */
+export interface Range {
+  /**
+   * Nonce is the incrementing nonce of the range.
+   * Ranges with a higher nonce overwrite lower nonce.
+   */
+  nonce?: bigint
+  /**
+   * Start contains the starting index of the range.
+   */
+  start?: bigint
+  /**
+   * Length contains the len of data in the range.
+   * Start + length = end index + 1.
+   */
+  length?: bigint
+  /**
+   * Ref contains the blob ref.
+   * If the ref is empty, the range represents a hole (zeros).
+   */
+  ref?: BlockRef
+}
+
+export const Range: MessageType<Range> =
+  /* @__PURE__ */ createMessageType<Range>('file.Range', () => [
+    [1, 'nonce', 4],
+    [2, 'start', 4],
+    [3, 'length', 4],
+    [4, 'ref', 11, 0, BlockRef.codec],
+  ])

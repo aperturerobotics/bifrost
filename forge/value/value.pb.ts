@@ -3,12 +3,10 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
+import { BlockRef } from '@go/github.com/s4wave/spacewave/db/block/block.pb.js'
 import { ObjectRef } from '@go/github.com/s4wave/spacewave/db/bucket/bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { BlockRef } from '@go/github.com/s4wave/spacewave/db/block/block.pb.js'
 
 /**
  * ValueType is the set of possible value types.
@@ -18,93 +16,34 @@ import { BlockRef } from '@go/github.com/s4wave/spacewave/db/block/block.pb.js'
 export enum ValueType {
   /**
    * ValueType_UNKNOWN is the unknown value type.
-   *
-   * @generated from enum value: ValueType_UNKNOWN = 0;
    */
   ValueType_UNKNOWN = 0,
 
   /**
    * ValueType_BLOCK_REF is a block reference in the same bucket.
-   *
-   * @generated from enum value: ValueType_BLOCK_REF = 1;
    */
   ValueType_BLOCK_REF = 1,
 
   /**
    * ValueType_BUCKET_REF is a cross-bucket block reference w/ transform config.
-   *
-   * @generated from enum value: ValueType_BUCKET_REF = 2;
    */
   ValueType_BUCKET_REF = 2,
 
   /**
    * ValueType_WORLD_OBJECT_SNAPSHOT is a snapshot of a WorldObject state.
-   *
-   * @generated from enum value: ValueType_WORLD_OBJECT_SNAPSHOT = 3;
    */
   ValueType_WORLD_OBJECT_SNAPSHOT = 3,
 }
 
 export const ValueType_Enum = /* @__PURE__ */ createEnumType(
   'forge.value.ValueType',
-  ValueType,
+  [
+    [0, 'ValueType_UNKNOWN'],
+    [1, 'ValueType_BLOCK_REF'],
+    [2, 'ValueType_BUCKET_REF'],
+    [3, 'ValueType_WORLD_OBJECT_SNAPSHOT'],
+  ],
 )
-
-/**
- * WorldObjectSnapshot is a snapshot of a WorldObject state.
- *
- * @generated from message forge.value.WorldObjectSnapshot
- */
-export interface WorldObjectSnapshot {
-  /**
-   * Key is the unique Object key.
-   *
-   * @generated from field: string key = 1;
-   */
-  key?: string
-  /**
-   * RootRef is the block ref to the root of the object structure.
-   * Note: Object type is not stored. Type data is stored in the Graph, inline, or not at all.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
-   */
-  rootRef?: ObjectRef
-  /**
-   * Rev is the rev nonce of the object.
-   * Incremented when a transaction is applied to the object.
-   * Incremented when root_ref is changed (SetRootRef).
-   * Incremented when adding or removing a graph quad referencing Object.
-   *
-   * @generated from field: uint64 rev = 3;
-   */
-  rev?: bigint
-  /**
-   * ObjectType is the object type determined by the world_types system.
-   * May be empty if the object has no <type> defined.
-   *
-   * @generated from field: string object_type = 4;
-   */
-  objectType?: string
-  /**
-   * ObjectParent is the object key of the parent of this object.
-   * May be empty if the object has no <parent> defined.
-   *
-   * @generated from field: string object_parent = 5;
-   */
-  objectParent?: string
-}
-
-export const WorldObjectSnapshot: MessageType<WorldObjectSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.value.WorldObjectSnapshot',
-    fields: [
-      { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-      { no: 3, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'object_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'object_parent', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Value contains a input/output value.
@@ -115,56 +54,39 @@ export interface Value {
   /**
    * Name is the unique name of the value in the parent set.
    * Note: for in-line values, this may be empty.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * ValueType is the type of value.
    * 0: indicates empty value.
-   *
-   * @generated from field: forge.value.ValueType value_type = 2;
    */
   valueType?: ValueType
   /**
    * BlockRef is the value for the block ref type.
    * ValueType: BLOCK_REF
-   *
-   * @generated from field: block.BlockRef block_ref = 3;
    */
   blockRef?: BlockRef
   /**
    * BucketRef is a cross-bucket block reference w/ transform config.
    * Note: the target block DAG may be copied into other buckets.
    * ValueType: BUCKET_REF
-   *
-   * @generated from field: bucket.ObjectRef bucket_ref = 4;
    */
   bucketRef?: ObjectRef
   /**
    * WorldObjectSnapshot is the snapshot of the world object.
    * ValueType: WORLD_OBJECT_SNAPSHOT.
-   *
-   * @generated from field: forge.value.WorldObjectSnapshot world_object_snapshot = 5;
    */
   worldObjectSnapshot?: WorldObjectSnapshot
 }
 
-export const Value: MessageType<Value> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.value.Value',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'value_type', kind: 'enum', T: ValueType_Enum },
-    { no: 3, name: 'block_ref', kind: 'message', T: () => BlockRef },
-    { no: 4, name: 'bucket_ref', kind: 'message', T: () => ObjectRef },
-    {
-      no: 5,
-      name: 'world_object_snapshot',
-      kind: 'message',
-      T: WorldObjectSnapshot,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Value: MessageType<Value> =
+  /* @__PURE__ */ createMessageType<Value>('forge.value.Value', () => [
+    [1, 'name', 9],
+    [2, 'value_type', 14, 0, ValueType_Enum],
+    [3, 'block_ref', 11, 0, BlockRef.codec],
+    [4, 'bucket_ref', 11, 0, ObjectRef.codec],
+    [5, 'world_object_snapshot', 11, 0, WorldObjectSnapshot.codec],
+  ])
 
 /**
  * Result is information about a step in COMPLETE state.
@@ -174,29 +96,67 @@ export const Value: MessageType<Value> = /* @__PURE__ */ createMessageType({
 export interface Result {
   /**
    * Success indicates the pass succeeded, if false, it failed.
-   *
-   * @generated from field: bool success = 1;
    */
   success?: boolean
   /**
    * FailError contains the error if the pass failed.
-   *
-   * @generated from field: string fail_error = 2;
    */
   failError?: string
   /**
    * Canceled is set if the step was canceled.
-   *
-   * @generated from field: bool canceled = 3;
    */
   canceled?: boolean
 }
 
-export const Result: MessageType<Result> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.value.Result',
-  fields: [
-    { no: 1, name: 'success', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 2, name: 'fail_error', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'canceled', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Result: MessageType<Result> =
+  /* @__PURE__ */ createMessageType<Result>('forge.value.Result', () => [
+    [1, 'success', 8],
+    [2, 'fail_error', 9],
+    [3, 'canceled', 8],
+  ])
+
+/**
+ * WorldObjectSnapshot is a snapshot of a WorldObject state.
+ *
+ * @generated from message forge.value.WorldObjectSnapshot
+ */
+export interface WorldObjectSnapshot {
+  /**
+   * Key is the unique Object key.
+   */
+  key?: string
+  /**
+   * RootRef is the block ref to the root of the object structure.
+   * Note: Object type is not stored. Type data is stored in the Graph, inline, or not at all.
+   */
+  rootRef?: ObjectRef
+  /**
+   * Rev is the rev nonce of the object.
+   * Incremented when a transaction is applied to the object.
+   * Incremented when root_ref is changed (SetRootRef).
+   * Incremented when adding or removing a graph quad referencing Object.
+   */
+  rev?: bigint
+  /**
+   * ObjectType is the object type determined by the world_types system.
+   * May be empty if the object has no <type> defined.
+   */
+  objectType?: string
+  /**
+   * ObjectParent is the object key of the parent of this object.
+   * May be empty if the object has no <parent> defined.
+   */
+  objectParent?: string
+}
+
+export const WorldObjectSnapshot: MessageType<WorldObjectSnapshot> =
+  /* @__PURE__ */ createMessageType<WorldObjectSnapshot>(
+    'forge.value.WorldObjectSnapshot',
+    () => [
+      [1, 'key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+      [3, 'rev', 4],
+      [4, 'object_type', 9],
+      [5, 'object_parent', 9],
+    ],
+  )

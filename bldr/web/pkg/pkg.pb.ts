@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * WebPkgInfo is information about a WebPkg.
@@ -16,27 +14,20 @@ export interface WebPkgInfo {
   /**
    * Id is the web package identifier.
    * Usually matches the npm package name.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * AssetBasePath is the immutable plugin asset URL prefix, ending in a slash.
    * Empty serves files directly, as for development and bundled runtime packages.
-   *
-   * @generated from field: string asset_base_path = 2;
    */
   assetBasePath?: string
 }
 
 export const WebPkgInfo: MessageType<WebPkgInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.pkg.WebPkgInfo',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'asset_base_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebPkgInfo>('web.pkg.WebPkgInfo', () => [
+    [1, 'id', 9],
+    [2, 'asset_base_path', 9],
+  ])
 
 /**
  * WebPkgRef contains information about references to a web pkg.
@@ -46,50 +37,27 @@ export const WebPkgInfo: MessageType<WebPkgInfo> =
 export interface WebPkgRef {
   /**
    * WebPkgId is the web pkg identifier.
-   *
-   * @generated from field: string web_pkg_id = 1;
    */
   webPkgId?: string
   /**
    * WebPkgRoot is the path to the web pkg root dir relative to project root.
-   *
-   * @generated from field: string web_pkg_root = 2;
    */
   webPkgRoot?: string
   /**
    * Imports is the list of paths that were imported from the web pkg.
-   *
-   * @generated from field: repeated string imports = 3;
    */
   imports?: string[]
   /**
    * CrossRefs is the list of other web pkgs that this pkg imports.
    * NOTE: this is not filled unless ResolveWebPkgRefsEsbuild is called.
-   *
-   * @generated from field: repeated string cross_refs = 4;
    */
   crossRefs?: string[]
 }
 
 export const WebPkgRef: MessageType<WebPkgRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.pkg.WebPkgRef',
-    fields: [
-      { no: 1, name: 'web_pkg_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'web_pkg_root', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'imports',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'cross_refs',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebPkgRef>('web.pkg.WebPkgRef', () => [
+    [1, 'web_pkg_id', 9],
+    [2, 'web_pkg_root', 9],
+    [3, 'imports', 9, 1],
+    [4, 'cross_refs', 9, 1],
+  ])

@@ -9,8 +9,6 @@ import {
 } from '../flowgraph.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
 
 /**
@@ -22,52 +20,32 @@ export interface NodeType {
   /**
    * TypeId is the node type's stable identifier.
    * It is a slash-separated path such as "flowgraph/stream-echo"; core node type IDs are bare.
-   *
-   * @generated from field: string type_id = 1;
    */
   typeId?: string
   /**
    * DisplayName is the name shown for the node type.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
   /**
    * Ports declares the endpoints offered by new nodes.
-   *
-   * @generated from field: repeated s4wave.flowgraph.FlowgraphPort ports = 3;
    */
   ports?: FlowgraphPort[]
   /**
    * ConfigIds lists every controller config the compiler may emit.
-   *
-   * @generated from field: repeated string config_ids = 4;
    */
   configIds?: string[]
 }
 
 export const NodeType: MessageType<NodeType> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.registry.NodeType',
-    fields: [
-      { no: 1, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'ports',
-        kind: 'message',
-        T: () => FlowgraphPort,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'config_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<NodeType>(
+    's4wave.flowgraph.registry.NodeType',
+    () => [
+      [1, 'type_id', 9],
+      [2, 'display_name', 9],
+      [3, 'ports', 11, 1, FlowgraphPort.codec],
+      [4, 'config_ids', 9, 1],
+    ],
+  )
 
 /**
  * RegisterNodeTypeRequest grants a compiler attached by this Resource client.
@@ -77,31 +55,22 @@ export const NodeType: MessageType<NodeType> =
 export interface RegisterNodeTypeRequest {
   /**
    * NodeType describes the compiler's node type.
-   *
-   * @generated from field: s4wave.flowgraph.registry.NodeType node_type = 1;
    */
   nodeType?: NodeType
   /**
    * HandlerResourceId is the caller-attached NodeTypeResourceService capability.
-   *
-   * @generated from field: uint32 handler_resource_id = 2;
    */
   handlerResourceId?: number
 }
 
 export const RegisterNodeTypeRequest: MessageType<RegisterNodeTypeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.registry.RegisterNodeTypeRequest',
-    fields: [
-      { no: 1, name: 'node_type', kind: 'message', T: NodeType },
-      {
-        no: 2,
-        name: 'handler_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterNodeTypeRequest>(
+    's4wave.flowgraph.registry.RegisterNodeTypeRequest',
+    () => [
+      [1, 'node_type', 11, 0, NodeType.codec],
+      [2, 'handler_resource_id', 13],
+    ],
+  )
 
 /**
  * RegisterNodeTypeResponse retains one node type registration.
@@ -111,65 +80,15 @@ export const RegisterNodeTypeRequest: MessageType<RegisterNodeTypeRequest> =
 export interface RegisterNodeTypeResponse {
   /**
    * ResourceId releases the registration when the caller releases this Resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const RegisterNodeTypeResponse: MessageType<RegisterNodeTypeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.registry.RegisterNodeTypeResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * PlacedConnection adds remote Device identity to an authored edge.
- *
- * @generated from message s4wave.flowgraph.registry.PlacedConnection
- */
-export interface PlacedConnection {
-  /**
-   * Id is the graph-local connection ID.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Connection contains the authored edge.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphConnection connection = 2;
-   */
-  connection?: FlowgraphConnection
-  /**
-   * RemoteDevicePeerId is the peer running the other end.
-   *
-   * @generated from field: string remote_device_peer_id = 3;
-   */
-  remoteDevicePeerId?: string
-}
-
-export const PlacedConnection: MessageType<PlacedConnection> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.registry.PlacedConnection',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'connection',
-        kind: 'message',
-        T: () => FlowgraphConnection,
-      },
-      {
-        no: 3,
-        name: 'remote_device_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterNodeTypeResponse>(
+    's4wave.flowgraph.registry.RegisterNodeTypeResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * CompileRequest carries the placement context across the plugin boundary.
@@ -179,53 +98,67 @@ export const PlacedConnection: MessageType<PlacedConnection> =
 export interface CompileRequest {
   /**
    * FlowgraphKey is the containing Flowgraph's object key.
-   *
-   * @generated from field: string flowgraph_key = 1;
    */
   flowgraphKey?: string
   /**
    * NodeId is the graph-local node ID.
-   *
-   * @generated from field: string node_id = 2;
    */
   nodeId?: string
   /**
    * Node contains the authored settings and ports.
-   *
-   * @generated from field: s4wave.flowgraph.FlowgraphNode node = 3;
    */
   node?: FlowgraphNode
   /**
    * DevicePeerId is the peer that will run the compiled controllers.
-   *
-   * @generated from field: string device_peer_id = 4;
    */
   devicePeerId?: string
   /**
    * Connections contains the edges ending at this node.
-   *
-   * @generated from field: repeated s4wave.flowgraph.registry.PlacedConnection connections = 5;
    */
   connections?: PlacedConnection[]
 }
 
 export const CompileRequest: MessageType<CompileRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.registry.CompileRequest',
-    fields: [
-      { no: 1, name: 'flowgraph_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'node_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'node', kind: 'message', T: () => FlowgraphNode },
-      { no: 4, name: 'device_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'connections',
-        kind: 'message',
-        T: PlacedConnection,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CompileRequest>(
+    's4wave.flowgraph.registry.CompileRequest',
+    () => [
+      [1, 'flowgraph_key', 9],
+      [2, 'node_id', 9],
+      [3, 'node', 11, 0, FlowgraphNode.codec],
+      [4, 'device_peer_id', 9],
+      [5, 'connections', 11, 1, PlacedConnection.codec],
+    ],
+  )
+
+/**
+ * PlacedConnection adds remote Device identity to an authored edge.
+ *
+ * @generated from message s4wave.flowgraph.registry.PlacedConnection
+ */
+export interface PlacedConnection {
+  /**
+   * Id is the graph-local connection ID.
+   */
+  id?: string
+  /**
+   * Connection contains the authored edge.
+   */
+  connection?: FlowgraphConnection
+  /**
+   * RemoteDevicePeerId is the peer running the other end.
+   */
+  remoteDevicePeerId?: string
+}
+
+export const PlacedConnection: MessageType<PlacedConnection> =
+  /* @__PURE__ */ createMessageType<PlacedConnection>(
+    's4wave.flowgraph.registry.PlacedConnection',
+    () => [
+      [1, 'id', 9],
+      [2, 'connection', 11, 0, FlowgraphConnection.codec],
+      [3, 'remote_device_peer_id', 9],
+    ],
+  )
 
 /**
  * CompileResponse contains configs encoded by ControllerBus's config codec.
@@ -235,22 +168,12 @@ export const CompileRequest: MessageType<CompileRequest> =
 export interface CompileResponse {
   /**
    * Entries contains configs by node-local entry name. The Device ignores Rev.
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> entries = 1;
    */
   entries?: { [key: string]: ControllerConfig }
 }
 
 export const CompileResponse: MessageType<CompileResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.flowgraph.registry.CompileResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: () => ControllerConfig },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CompileResponse>(
+    's4wave.flowgraph.registry.CompileResponse',
+    () => [[1, 'entries', 11, 584, ControllerConfig.codec]],
+  )

@@ -5,8 +5,6 @@
 import { Config as Config$1 } from '../config.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the shared plugin runtime of one Space.
@@ -17,28 +15,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * Space configures the plugin/space controller inside the runtime.
-   *
-   * @generated from field: plugin.space.Config space = 1;
    */
   space?: Config$1
   /**
    * AppPluginIds declares plugins supplied by this application on the parent bus.
-   *
-   * @generated from field: repeated string app_plugin_ids = 2;
    */
   appPluginIds?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'plugin.space.runtime.Config',
-  fields: [
-    { no: 1, name: 'space', kind: 'message', T: () => Config$1 },
-    {
-      no: 2,
-      name: 'app_plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'plugin.space.runtime.Config',
+    () => [
+      [1, 'space', 11, 0, Config$1.codec],
+      [2, 'app_plugin_ids', 9, 1],
+    ],
+  )

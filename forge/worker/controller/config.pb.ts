@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the Worker controller configuration.
@@ -15,15 +13,11 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * EngineId is the world engine id.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
    * ObjectKey is the Worker object to attach to.
    * If not exists, waits for it to exist.
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
   /**
@@ -31,25 +25,19 @@ export interface Config {
    * PeerId must match one of the Keypair attached to the Worker.
    * Looks up the private key via GetPeerWithID on the bus.
    * If unset, uses GetPeerWithID and DeriveKeypair with all Worker keys.
-   *
-   * @generated from field: string peer_id = 3;
    */
   peerId?: string
   /**
    * AssignSelf sets the AssignSelf option on the task controller.
    * indicates we want to run executions on this worker.
-   *
-   * @generated from field: bool assign_self = 4;
    */
   assignSelf?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'worker.controller.Config',
-  fields: [
-    { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'assign_self', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('worker.controller.Config', () => [
+    [1, 'engine_id', 9],
+    [2, 'object_key', 9],
+    [3, 'peer_id', 9],
+    [4, 'assign_self', 8],
+  ])

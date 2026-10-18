@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import { WebViewHandlersConfig } from '../view/handler/handler.pb.js'
 
@@ -18,30 +16,27 @@ import { WebViewHandlersConfig } from '../view/handler/handler.pb.js'
 export enum DesktopPresenceState {
   /**
    * DESKTOP_PRESENCE_STATE_UNKNOWN is not a valid watch result.
-   *
-   * @generated from enum value: DESKTOP_PRESENCE_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * DESKTOP_PRESENCE_STATE_ACTIVE means the selected shell generation is running.
-   *
-   * @generated from enum value: DESKTOP_PRESENCE_STATE_ACTIVE = 1;
    */
   ACTIVE = 1,
 
   /**
    * DESKTOP_PRESENCE_STATE_ENDED means the selected shell generation has ended.
-   *
-   * @generated from enum value: DESKTOP_PRESENCE_STATE_ENDED = 2;
    */
   ENDED = 2,
 }
 
 export const DesktopPresenceState_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.plugin.DesktopPresenceState',
-  DesktopPresenceState,
-  'DESKTOP_PRESENCE_STATE_',
+  [
+    [0, 'DESKTOP_PRESENCE_STATE_UNKNOWN'],
+    [1, 'DESKTOP_PRESENCE_STATE_ACTIVE'],
+    [2, 'DESKTOP_PRESENCE_STATE_ENDED'],
+  ],
 )
 
 /**
@@ -52,27 +47,23 @@ export const DesktopPresenceState_Enum = /* @__PURE__ */ createEnumType(
 export interface OpenOrFocusDesktopRequest {
   /**
    * Route is an optional in-app route; empty opens or focuses the main window.
-   *
-   * @generated from field: string route = 1;
    */
   route?: string
   /**
    * InstalledApp is the application bundle that requested the desktop.
    * Desktop app updates replace this bundle; empty when not launched from one.
-   *
-   * @generated from field: string installed_app = 2;
    */
   installedApp?: string
 }
 
 export const OpenOrFocusDesktopRequest: MessageType<OpenOrFocusDesktopRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.OpenOrFocusDesktopRequest',
-    fields: [
-      { no: 1, name: 'route', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'installed_app', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenOrFocusDesktopRequest>(
+    'bldr.web.plugin.OpenOrFocusDesktopRequest',
+    () => [
+      [1, 'route', 9],
+      [2, 'installed_app', 9],
+    ],
+  )
 
 /**
  * OpenOrFocusDesktopResponse acknowledges Electron main's open or focus operation.
@@ -82,19 +73,15 @@ export const OpenOrFocusDesktopRequest: MessageType<OpenOrFocusDesktopRequest> =
 export interface OpenOrFocusDesktopResponse {
   /**
    * Generation identifies the acknowledged shell lifetime within this plugin controller.
-   *
-   * @generated from field: uint64 generation = 1;
    */
   generation?: bigint
 }
 
 export const OpenOrFocusDesktopResponse: MessageType<OpenOrFocusDesktopResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.OpenOrFocusDesktopResponse',
-    fields: [
-      { no: 1, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenOrFocusDesktopResponse>(
+    'bldr.web.plugin.OpenOrFocusDesktopResponse',
+    () => [[1, 'generation', 4]],
+  )
 
 /**
  * WatchDesktopPresenceRequest identifies the shell lifetime to observe.
@@ -104,19 +91,15 @@ export const OpenOrFocusDesktopResponse: MessageType<OpenOrFocusDesktopResponse>
 export interface WatchDesktopPresenceRequest {
   /**
    * Generation is the value returned by OpenOrFocusDesktop.
-   *
-   * @generated from field: uint64 generation = 1;
    */
   generation?: bigint
 }
 
 export const WatchDesktopPresenceRequest: MessageType<WatchDesktopPresenceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.WatchDesktopPresenceRequest',
-    fields: [
-      { no: 1, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchDesktopPresenceRequest>(
+    'bldr.web.plugin.WatchDesktopPresenceRequest',
+    () => [[1, 'generation', 4]],
+  )
 
 /**
  * WatchDesktopPresenceResponse reports the selected generation's current state.
@@ -126,26 +109,22 @@ export const WatchDesktopPresenceRequest: MessageType<WatchDesktopPresenceReques
 export interface WatchDesktopPresenceResponse {
   /**
    * State first reports active or ended, then reports ended when an active shell exits.
-   *
-   * @generated from field: bldr.web.plugin.DesktopPresenceState state = 1;
    */
   state?: DesktopPresenceState
   /**
    * Error describes a failed shell exit; empty on a normal end or while active.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const WatchDesktopPresenceResponse: MessageType<WatchDesktopPresenceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.WatchDesktopPresenceResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'enum', T: DesktopPresenceState_Enum },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchDesktopPresenceResponse>(
+    'bldr.web.plugin.WatchDesktopPresenceResponse',
+    () => [
+      [1, 'state', 14, 0, DesktopPresenceState_Enum],
+      [2, 'error', 9],
+    ],
+  )
 
 /**
  * HandleWebViewViaPluginRequest is a request to handle web views via a plugin RPC.
@@ -155,27 +134,23 @@ export const WatchDesktopPresenceResponse: MessageType<WatchDesktopPresenceRespo
 export interface HandleWebViewViaPluginRequest {
   /**
    * HandlePluginId is the plugin the web plugin should send WebViews to.
-   *
-   * @generated from field: string handle_plugin_id = 1;
    */
   handlePluginId?: string
   /**
    * WebViewIdRe is the regex of web view IDs to handle with handlePluginId.
    * If empty, will forward any.
-   *
-   * @generated from field: string web_view_id_re = 2;
    */
   webViewIdRe?: string
 }
 
 export const HandleWebViewViaPluginRequest: MessageType<HandleWebViewViaPluginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleWebViewViaPluginRequest',
-    fields: [
-      { no: 1, name: 'handle_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'web_view_id_re', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebViewViaPluginRequest>(
+    'bldr.web.plugin.HandleWebViewViaPluginRequest',
+    () => [
+      [1, 'handle_plugin_id', 9],
+      [2, 'web_view_id_re', 9],
+    ],
+  )
 
 /**
  * HandleWebViewViaPluginResponse is the response to HandleWebViewViaPlugin.
@@ -187,34 +162,15 @@ export interface HandleWebViewViaPluginResponse {
    * @generated from oneof bldr.web.plugin.HandleWebViewViaPluginResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Ready indicates the service to forward rpcs has been started.
-         *
-         * @generated from field: bool ready = 1;
-         */
-        value: boolean
-        case: 'ready'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: boolean; case: 'ready' }
 }
 
 export const HandleWebViewViaPluginResponse: MessageType<HandleWebViewViaPluginResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleWebViewViaPluginResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'ready',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebViewViaPluginResponse>(
+    'bldr.web.plugin.HandleWebViewViaPluginResponse',
+    () => [[1, 'ready', 8, 0, 0, 'body']],
+  )
 
 /**
  * HandleWebPkgViaPluginRequest is a request to handle web pkgs via a plugin RPC.
@@ -224,57 +180,37 @@ export const HandleWebViewViaPluginResponse: MessageType<HandleWebViewViaPluginR
 export interface HandleWebPkgViaPluginRequest {
   /**
    * HandlePluginId is the plugin the web plugin should send WebViews to.
-   *
-   * @generated from field: string handle_plugin_id = 1;
    */
   handlePluginId?: string
   /**
    * WebPkgIdRe is a regex string to match web pkgs IDs.
    * Set to '.*' or empty to match all web pkgs ids.
-   *
-   * @generated from field: string web_pkg_id_re = 2;
    */
   webPkgIdRe?: string
   /**
    * WebPkgIdPrefixes is a list of web pkg id prefixes to match.
    * If the value is in this list, overrides web_pkg_id_re.
    * Set to '.*' or empty to match all web pkgs ids.
-   *
-   * @generated from field: repeated string web_pkg_id_prefixes = 3;
    */
   webPkgIdPrefixes?: string[]
   /**
    * WebPkgIdList is a list of web pkg IDs to resolve.
    * If the value is in this list, overrides web_pkg_id_re and web_pkg_id_prefixes.
    * Ignored if empty.
-   *
-   * @generated from field: repeated string web_pkg_id_list = 4;
    */
   webPkgIdList?: string[]
 }
 
 export const HandleWebPkgViaPluginRequest: MessageType<HandleWebPkgViaPluginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleWebPkgViaPluginRequest',
-    fields: [
-      { no: 1, name: 'handle_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'web_pkg_id_re', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'web_pkg_id_prefixes',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'web_pkg_id_list',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebPkgViaPluginRequest>(
+    'bldr.web.plugin.HandleWebPkgViaPluginRequest',
+    () => [
+      [1, 'handle_plugin_id', 9],
+      [2, 'web_pkg_id_re', 9],
+      [3, 'web_pkg_id_prefixes', 9, 1],
+      [4, 'web_pkg_id_list', 9, 1],
+    ],
+  )
 
 /**
  * HandleWebPkgViaPluginResponse is the response to HandleWebPkgViaPlugin.
@@ -286,34 +222,15 @@ export interface HandleWebPkgViaPluginResponse {
    * @generated from oneof bldr.web.plugin.HandleWebPkgViaPluginResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Ready indicates the service to forward rpcs has been started.
-         *
-         * @generated from field: bool ready = 1;
-         */
-        value: boolean
-        case: 'ready'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: boolean; case: 'ready' }
 }
 
 export const HandleWebPkgViaPluginResponse: MessageType<HandleWebPkgViaPluginResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleWebPkgViaPluginResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'ready',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebPkgViaPluginResponse>(
+    'bldr.web.plugin.HandleWebPkgViaPluginResponse',
+    () => [[1, 'ready', 8, 0, 0, 'body']],
+  )
 
 /**
  * HandleRpcViaPluginRequest is a request to handle web views via a plugin RPC.
@@ -323,43 +240,35 @@ export const HandleWebPkgViaPluginResponse: MessageType<HandleWebPkgViaPluginRes
 export interface HandleRpcViaPluginRequest {
   /**
    * HandlePluginId is the plugin the web plugin should send Rpcs to.
-   *
-   * @generated from field: string handle_plugin_id = 1;
    */
   handlePluginId?: string
   /**
    * ServiceIdRe is the regex of service IDs to forward.
    * If empty, will forward any.
-   *
-   * @generated from field: string service_id_re = 2;
    */
   serviceIdRe?: string
   /**
    * ServerIdRe is the regex of server IDs to forward for.
    * If empty, will forward any.
-   *
-   * @generated from field: string server_id_re = 3;
    */
   serverIdRe?: string
   /**
    * Backoff is the backoff config for calling the RPC service.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff backoff = 4;
    */
   backoff?: Backoff
 }
 
 export const HandleRpcViaPluginRequest: MessageType<HandleRpcViaPluginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleRpcViaPluginRequest',
-    fields: [
-      { no: 1, name: 'handle_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'service_id_re', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'server_id_re', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'backoff', kind: 'message', T: () => Backoff },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleRpcViaPluginRequest>(
+    'bldr.web.plugin.HandleRpcViaPluginRequest',
+    () => [
+      [1, 'handle_plugin_id', 9],
+      [2, 'service_id_re', 9],
+      [3, 'server_id_re', 9],
+      [4, 'backoff', 11, 0, Backoff.codec],
+    ],
+  )
 
 /**
  * HandleRpcViaPluginResponse is the response to HandleRpcViaPlugin.
@@ -371,34 +280,15 @@ export interface HandleRpcViaPluginResponse {
    * @generated from oneof bldr.web.plugin.HandleRpcViaPluginResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Ready indicates the service to forward rpcs has been started.
-         *
-         * @generated from field: bool ready = 1;
-         */
-        value: boolean
-        case: 'ready'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: boolean; case: 'ready' }
 }
 
 export const HandleRpcViaPluginResponse: MessageType<HandleRpcViaPluginResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleRpcViaPluginResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'ready',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleRpcViaPluginResponse>(
+    'bldr.web.plugin.HandleRpcViaPluginResponse',
+    () => [[1, 'ready', 8, 0, 0, 'body']],
+  )
 
 /**
  * HandleWebViewViaHandlersRequest is a request to configure web view handlers.
@@ -408,24 +298,15 @@ export const HandleRpcViaPluginResponse: MessageType<HandleRpcViaPluginResponse>
 export interface HandleWebViewViaHandlersRequest {
   /**
    * Config is the web view handlers configuration.
-   *
-   * @generated from field: web.view.handler.WebViewHandlersConfig config = 1;
    */
   config?: WebViewHandlersConfig
 }
 
 export const HandleWebViewViaHandlersRequest: MessageType<HandleWebViewViaHandlersRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleWebViewViaHandlersRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'config',
-        kind: 'message',
-        T: () => WebViewHandlersConfig,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebViewViaHandlersRequest>(
+    'bldr.web.plugin.HandleWebViewViaHandlersRequest',
+    () => [[1, 'config', 11, 0, WebViewHandlersConfig.codec]],
+  )
 
 /**
  * HandleWebViewViaHandlersResponse is the response to HandleWebViewViaHandlers.
@@ -437,34 +318,15 @@ export interface HandleWebViewViaHandlersResponse {
    * @generated from oneof bldr.web.plugin.HandleWebViewViaHandlersResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Ready indicates the handlers have been configured.
-         *
-         * @generated from field: bool ready = 1;
-         */
-        value: boolean
-        case: 'ready'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: boolean; case: 'ready' }
 }
 
 export const HandleWebViewViaHandlersResponse: MessageType<HandleWebViewViaHandlersResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleWebViewViaHandlersResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'ready',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebViewViaHandlersResponse>(
+    'bldr.web.plugin.HandleWebViewViaHandlersResponse',
+    () => [[1, 'ready', 8, 0, 0, 'body']],
+  )
 
 /**
  * HandleWebPkgsViaPluginAssetsRequest is a request to serve web pkgs via a plugin assets fs.
@@ -474,40 +336,28 @@ export const HandleWebViewViaHandlersResponse: MessageType<HandleWebViewViaHandl
 export interface HandleWebPkgsViaPluginAssetsRequest {
   /**
    * HandlePluginId is the plugin the web plugin should use for serving assets.
-   *
-   * @generated from field: string handle_plugin_id = 1;
    */
   handlePluginId?: string
   /**
    * WebPkgsPath is the sub-directory of the plugin assets fs to look up the web pkgs root.
-   *
-   * @generated from field: string web_pkgs_path = 2;
    */
   webPkgsPath?: string
   /**
    * WebPkgIdList is a list of web pkg IDs to resolve with the plugin assets fs.
    * Must be at least one web pkg listed.
-   *
-   * @generated from field: repeated string web_pkg_id_list = 3;
    */
   webPkgIdList?: string[]
 }
 
 export const HandleWebPkgsViaPluginAssetsRequest: MessageType<HandleWebPkgsViaPluginAssetsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleWebPkgsViaPluginAssetsRequest',
-    fields: [
-      { no: 1, name: 'handle_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'web_pkgs_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'web_pkg_id_list',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebPkgsViaPluginAssetsRequest>(
+    'bldr.web.plugin.HandleWebPkgsViaPluginAssetsRequest',
+    () => [
+      [1, 'handle_plugin_id', 9],
+      [2, 'web_pkgs_path', 9],
+      [3, 'web_pkg_id_list', 9, 1],
+    ],
+  )
 
 /**
  * HandleWebPkgsViaPluginAssetsResponse is the response to HandleWebPkgsViaPluginAssets.
@@ -519,31 +369,12 @@ export interface HandleWebPkgsViaPluginAssetsResponse {
    * @generated from oneof bldr.web.plugin.HandleWebPkgsViaPluginAssetsResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Ready indicates the service has been configured.
-         *
-         * @generated from field: bool ready = 1;
-         */
-        value: boolean
-        case: 'ready'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: boolean; case: 'ready' }
 }
 
 export const HandleWebPkgsViaPluginAssetsResponse: MessageType<HandleWebPkgsViaPluginAssetsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.HandleWebPkgsViaPluginAssetsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'ready',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleWebPkgsViaPluginAssetsResponse>(
+    'bldr.web.plugin.HandleWebPkgsViaPluginAssetsResponse',
+    () => [[1, 'ready', 8, 0, 0, 'body']],
+  )

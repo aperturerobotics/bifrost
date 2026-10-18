@@ -8,7 +8,7 @@
         "@aptre/flex-layout": "^0.6.4",
         "@aptre/it-ws": "^1.1.2",
         "@aptre/pragmasevka": "^1.0.5",
-        "@aptre/protobuf-es-lite": "1.1.5",
+        "@aptre/protobuf-es-lite": "1.2.1",
         "@aptre/v86": "^0.6.10",
         "@fontsource-variable/manrope": "^5.3.0",
         "@fontsource/commit-mono": "^5.3.0",
@@ -71,7 +71,7 @@
         "react-window": "^2.3.0",
         "shiki": "^4.4.3",
         "sonner": "^2.0.7",
-        "starpc": "0.52.2",
+        "starpc": "0.52.3",
         "superjson": "^2.2.6",
         "three": "0.186.1",
         "uint8arraylist": "^3.0.2",
@@ -82,7 +82,7 @@
         "zod": "4.6.5",
       },
       "devDependencies": {
-        "@aptre/common": "0.35.4",
+        "@aptre/common": "0.36.0",
         "@google/design.md": "^0.4.0",
         "@playwright/test": "^1.62.1",
         "@shadcn/lint": "0.2.0",
@@ -121,11 +121,11 @@
     "orga@4.7.1": "patches/orga@4.7.1.patch",
   },
   "overrides": {
-    "@aptre/protobuf-es-lite": "1.1.5",
+    "@aptre/protobuf-es-lite": "1.2.1",
     "quickjs-wasi-reactor": "0.15.1",
   },
   "packages": {
-    "@aptre/common": ["@aptre/common@0.35.4", "", { "dependencies": { "@aptre/protobuf-es-lite": "1.1.1", "starpc": "^0.52.0", "vitest": "^5.0.0" } }, "sha512-2ZDLliS83cmsS9ZOKZVzLdIAjODE+H+KMjBoOt474qk8Y61hJO+Zbrp6xKBj2bxU+ev9jyowDHleFQGtDIfWOQ=="],
+    "@aptre/common": ["@aptre/common@0.36.0", "", { "dependencies": { "@aptre/protobuf-es-lite": "1.2.1", "starpc": "^0.52.3", "vitest": "^5.0.0" } }, "sha512-y+g4jKEeavOQLS0hLYw2VUalZxlbmPPtiYPsq0sSOOG1QcEaOkA8MF2249Qkx4AwT1lTgRjqPxhK9JZQFJuneg=="],
 
     "@aptre/flex-layout": ["@aptre/flex-layout@0.6.4", "", { "peerDependencies": { "react": "^19.2.5", "react-dom": "^19.2.5" } }, "sha512-ROKbbJSoDGv1wbLcQq6VryPtWsqZBIF3R2z5q9hRpBjdltC7/71i2e4erpKqn2gTFckZrjuXssIHTdHMs60/Ag=="],
 
@@ -133,7 +133,7 @@
 
     "@aptre/pragmasevka": ["@aptre/pragmasevka@1.0.5", "", {}, "sha512-0yda2y0w/tUDH0RBESMIsKylV+nur7rXvW9AKptGhn/JTWrxdYF543KV1Sqbs63eY5p3oDB4/Ah1tFfFz0ILxA=="],
 
-    "@aptre/protobuf-es-lite": ["@aptre/protobuf-es-lite@1.1.5", "", { "dependencies": { "@typescript/vfs": "^1.5.0", "lz-string": "^1.5.0", "typescript": "5.9.3" }, "bin": { "protoc-gen-es-lite": "bin/protoc-gen-es-lite" } }, "sha512-DtpJq7hiE8ry3pL9Ljo4cg/MXMk3d94QH+wBBLEYm6/bNQat1Voy+h7ysaPyF8iESpbJcltZqfooFpun6fIpHQ=="],
+    "@aptre/protobuf-es-lite": ["@aptre/protobuf-es-lite@1.2.1", "", { "dependencies": { "@typescript/vfs": "^1.5.0", "lz-string": "^1.5.0", "typescript": "5.9.3" }, "bin": { "protoc-gen-es-lite": "bin/protoc-gen-es-lite" } }, "sha512-SUF+wSjHX9eZn/akpkViUN+zmKI+K9aRYN4FnHg+vuyOGJHB3BGPTXm9RS8j1sPE9hKBDUF7lWdCpG5RKhuY2Q=="],
 
     "@aptre/v86": ["@aptre/v86@0.6.10", "", {}, "sha512-Y9D2Rue3lZjKIWORCNjjDq/J3EvPMZe4XxdhIruNXMLaHpV6pBkfkwJJVgqnCChrdWPC4+0fiZMO0ZLEGplLUQ=="],
 
@@ -1563,7 +1563,7 @@
 
     "stackback": ["stackback@0.0.2", "", {}, "sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw=="],
 
-    "starpc": ["starpc@0.52.2", "", { "dependencies": { "@aptre/it-ws": "^1.1.2", "@aptre/protobuf-es-lite": "1.1.1", "@aptre/yamux": "^1.0.3", "event-iterator": "^2.0.0", "isomorphic-ws": "^5.0.0", "it-first": "^3.0.11", "it-pipe": "^3.0.1", "it-pushable": "^3.2.3", "it-stream-types": "^2.0.4", "uint8arraylist": "^3.0.0", "ws": "^8.20.0" }, "bin": { "protoc-gen-es-starpc": "cmd/protoc-gen-es-starpc/protoc-gen-es-starpc" } }, "sha512-OC7qqMZqhJh8iLIVSc8Bij6jAz8OKSgwuxa2aywCT+OEkQeoNn/rhO4B7KaNlpAeGZxo9birN5hNSL74BUWSfw=="],
+    "starpc": ["starpc@0.52.3", "", { "dependencies": { "@aptre/it-ws": "^1.1.2", "@aptre/protobuf-es-lite": "1.2.1", "@aptre/yamux": "^1.0.3", "event-iterator": "^2.0.0", "isomorphic-ws": "^5.0.0", "it-first": "^3.0.11", "it-pipe": "^3.0.1", "it-pushable": "^3.2.3", "it-stream-types": "^2.0.4", "uint8arraylist": "^3.0.0", "ws": "^8.20.0" }, "bin": { "protoc-gen-es-starpc": "cmd/protoc-gen-es-starpc/protoc-gen-es-starpc" } }, "sha512-/LzLOwfRYaq83lRqB0CReoQPLdKKlteLFZuDpCergRRg2KaLRPxBauc+TtsWu+oBHH8pSmsoLGcU8lLHWI4maQ=="],
 
     "std-env": ["std-env@4.2.0", "", {}, "sha512-oCUKSupKTHX53EyjDtuZQ64pjLJ6yYCtpmEw0goYxtjG9KpbRe8KAsl2tBUGU9DyMcJ0RwJ8GqJAFzMXcXW1Rw=="],
 

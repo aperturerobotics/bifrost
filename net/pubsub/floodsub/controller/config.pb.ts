@@ -5,7 +5,6 @@
 import { Config as Config$1 } from '../floodsub.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the floodsub controller config.
@@ -15,15 +14,12 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * FloodsubConfig are pubsub provider specific configuration variables.
-   *
-   * @generated from field: floodsub.Config floodsub_config = 1;
    */
   floodsubConfig?: Config$1
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'floodsub.controller.Config',
-  fields: [
-    { no: 1, name: 'floodsub_config', kind: 'message', T: () => Config$1 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'floodsub.controller.Config',
+    () => [[1, 'floodsub_config', 11, 0, Config$1.codec]],
+  )

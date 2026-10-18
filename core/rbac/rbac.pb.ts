@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * RbacScope defines the scope level for role bindings.
@@ -14,32 +12,18 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
  * @generated from enum rbac.RbacScope
  */
 export enum RbacScope {
-  /**
-   * @generated from enum value: RBAC_SCOPE_UNKNOWN = 0;
-   */
   UNKNOWN = 0,
-
-  /**
-   * @generated from enum value: RBAC_SCOPE_PLATFORM = 1;
-   */
   PLATFORM = 1,
-
-  /**
-   * @generated from enum value: RBAC_SCOPE_ORGANIZATION = 2;
-   */
   ORGANIZATION = 2,
-
-  /**
-   * @generated from enum value: RBAC_SCOPE_RESOURCE = 3;
-   */
   RESOURCE = 3,
 }
 
-export const RbacScope_Enum = /* @__PURE__ */ createEnumType(
-  'rbac.RbacScope',
-  RbacScope,
-  'RBAC_SCOPE_',
-)
+export const RbacScope_Enum = /* @__PURE__ */ createEnumType('rbac.RbacScope', [
+  [0, 'RBAC_SCOPE_UNKNOWN'],
+  [1, 'RBAC_SCOPE_PLATFORM'],
+  [2, 'RBAC_SCOPE_ORGANIZATION'],
+  [3, 'RBAC_SCOPE_RESOURCE'],
+])
 
 /**
  * RbacRule defines a permission rule granting verbs on a resource type.
@@ -49,32 +33,19 @@ export const RbacScope_Enum = /* @__PURE__ */ createEnumType(
 export interface RbacRule {
   /**
    * resource_type is the type of resource this rule applies to.
-   *
-   * @generated from field: string resource_type = 1;
    */
   resourceType?: string
   /**
    * verbs is the list of allowed verbs (or "*" for all).
-   *
-   * @generated from field: repeated string verbs = 2;
    */
   verbs?: string[]
 }
 
 export const RbacRule: MessageType<RbacRule> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'rbac.RbacRule',
-    fields: [
-      { no: 1, name: 'resource_type', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'verbs',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacRule>('rbac.RbacRule', () => [
+    [1, 'resource_type', 9],
+    [2, 'verbs', 9, 1],
+  ])
 
 /**
  * RbacRole defines a named collection of permission rules.
@@ -84,40 +55,29 @@ export const RbacRule: MessageType<RbacRule> =
 export interface RbacRole {
   /**
    * id is the unique identifier for this role.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * display_name is the human-readable name.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
   /**
    * rules is the list of permission rules in this role.
-   *
-   * @generated from field: repeated rbac.RbacRule rules = 3;
    */
   rules?: RbacRule[]
   /**
    * builtin indicates this role is system-defined.
-   *
-   * @generated from field: bool builtin = 4;
    */
   builtin?: boolean
 }
 
 export const RbacRole: MessageType<RbacRole> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'rbac.RbacRole',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'rules', kind: 'message', T: RbacRule, repeated: true },
-      { no: 4, name: 'builtin', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacRole>('rbac.RbacRole', () => [
+    [1, 'id', 9],
+    [2, 'display_name', 9],
+    [3, 'rules', 11, 1, RbacRule.codec],
+    [4, 'builtin', 8],
+  ])
 
 /**
  * RbacRoleBinding binds a role to a subject within a scope.
@@ -127,54 +87,42 @@ export const RbacRole: MessageType<RbacRole> =
 export interface RbacRoleBinding {
   /**
    * id is the unique identifier for this binding.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * role_id is the role being bound.
-   *
-   * @generated from field: string role_id = 2;
    */
   roleId?: string
   /**
    * subject_id is the account receiving the role.
-   *
-   * @generated from field: string subject_id = 3;
    */
   subjectId?: string
   /**
    * scope is the scope level of this binding.
-   *
-   * @generated from field: rbac.RbacScope scope = 4;
    */
   scope?: RbacScope
   /**
    * scope_id is the target ID for org/resource scope (empty for platform).
-   *
-   * @generated from field: string scope_id = 5;
    */
   scopeId?: string
   /**
    * created_at is the creation timestamp in milliseconds.
-   *
-   * @generated from field: int64 created_at = 6;
    */
   createdAt?: bigint
 }
 
 export const RbacRoleBinding: MessageType<RbacRoleBinding> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'rbac.RbacRoleBinding',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'role_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'subject_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'scope', kind: 'enum', T: RbacScope_Enum },
-      { no: 5, name: 'scope_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'created_at', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacRoleBinding>(
+    'rbac.RbacRoleBinding',
+    () => [
+      [1, 'id', 9],
+      [2, 'role_id', 9],
+      [3, 'subject_id', 9],
+      [4, 'scope', 14, 0, RbacScope_Enum],
+      [5, 'scope_id', 9],
+      [6, 'created_at', 3],
+    ],
+  )
 
 /**
  * RbacConfig contains a set of roles and bindings.
@@ -184,29 +132,16 @@ export const RbacRoleBinding: MessageType<RbacRoleBinding> =
 export interface RbacConfig {
   /**
    * roles is the list of roles.
-   *
-   * @generated from field: repeated rbac.RbacRole roles = 1;
    */
   roles?: RbacRole[]
   /**
    * bindings is the list of role bindings.
-   *
-   * @generated from field: repeated rbac.RbacRoleBinding bindings = 2;
    */
   bindings?: RbacRoleBinding[]
 }
 
 export const RbacConfig: MessageType<RbacConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'rbac.RbacConfig',
-    fields: [
-      { no: 1, name: 'roles', kind: 'message', T: RbacRole, repeated: true },
-      {
-        no: 2,
-        name: 'bindings',
-        kind: 'message',
-        T: RbacRoleBinding,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RbacConfig>('rbac.RbacConfig', () => [
+    [1, 'roles', 11, 1, RbacRole.codec],
+    [2, 'bindings', 11, 1, RbacRoleBinding.codec],
+  ])

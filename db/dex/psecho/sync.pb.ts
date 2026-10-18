@@ -5,7 +5,6 @@
 import { BlockTransfer } from '../session/session.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * SyncMessage wraps a BlockTransfer for psecho sync streams.
@@ -15,16 +14,11 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface SyncMessage {
   /**
    * Transfer is the block transfer payload.
-   *
-   * @generated from field: dex.session.BlockTransfer transfer = 1;
    */
   transfer?: BlockTransfer
 }
 
 export const SyncMessage: MessageType<SyncMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'psecho.SyncMessage',
-    fields: [
-      { no: 1, name: 'transfer', kind: 'message', T: () => BlockTransfer },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SyncMessage>('psecho.SyncMessage', () => [
+    [1, 'transfer', 11, 0, BlockTransfer.codec],
+  ])

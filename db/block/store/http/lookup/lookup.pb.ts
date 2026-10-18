@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the http block lookup controller.
@@ -16,8 +14,6 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BucketId is the bucket id to serve lookups for.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
   /**
@@ -30,30 +26,25 @@ export interface Config {
    *  - POST /block/put
    *  - DELETE /block/rm
    * Must be set and a valid http or https url.
-   *
-   * @generated from field: string url = 2;
    */
   url?: string
   /**
    * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 3;
    */
   skipNotFound?: boolean
   /**
    * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 4;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.http.lookup.Config',
-  fields: [
-    { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'block.store.http.lookup.Config',
+    () => [
+      [1, 'bucket_id', 9],
+      [2, 'url', 9],
+      [3, 'skip_not_found', 8],
+      [4, 'verbose', 8],
+    ],
+  )

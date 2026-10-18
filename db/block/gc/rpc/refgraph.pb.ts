@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * RefEdge is a subject-to-object ownership edge.
@@ -18,25 +13,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface RefEdge {
   /**
    * Subject is the source node IRI.
-   *
-   * @generated from field: string subject = 1;
    */
   subject?: string
   /**
    * Object is the target node IRI.
-   *
-   * @generated from field: string object = 2;
    */
   object?: string
 }
 
-export const RefEdge: MessageType<RefEdge> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.gc.rpc.RefEdge',
-  fields: [
-    { no: 1, name: 'subject', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'object', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const RefEdge: MessageType<RefEdge> =
+  /* @__PURE__ */ createMessageType<RefEdge>('block.gc.rpc.RefEdge', () => [
+    [1, 'subject', 9],
+    [2, 'object', 9],
+  ])
 
 /**
  * ApplyRefBatchRequest carries one bounded ownership transition.
@@ -46,26 +35,22 @@ export const RefEdge: MessageType<RefEdge> = /* @__PURE__ */ createMessageType({
 export interface ApplyRefBatchRequest {
   /**
    * Adds are applied before removes.
-   *
-   * @generated from field: repeated block.gc.rpc.RefEdge adds = 1;
    */
   adds?: RefEdge[]
   /**
    * Removes are exact edges; missing edges are no-ops.
-   *
-   * @generated from field: repeated block.gc.rpc.RefEdge removes = 2;
    */
   removes?: RefEdge[]
 }
 
 export const ApplyRefBatchRequest: MessageType<ApplyRefBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.ApplyRefBatchRequest',
-    fields: [
-      { no: 1, name: 'adds', kind: 'message', T: RefEdge, repeated: true },
-      { no: 2, name: 'removes', kind: 'message', T: RefEdge, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyRefBatchRequest>(
+    'block.gc.rpc.ApplyRefBatchRequest',
+    () => [
+      [1, 'adds', 11, 1, RefEdge.codec],
+      [2, 'removes', 11, 1, RefEdge.codec],
+    ],
+  )
 
 /**
  * ApplyRefBatchResponse reports an owner transition result.
@@ -75,52 +60,32 @@ export const ApplyRefBatchRequest: MessageType<ApplyRefBatchRequest> =
 export interface ApplyRefBatchResponse {
   /**
    * Error is any error applying the transition.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
   /**
    * HasRemainder reports whether the owner supplied an uncommitted suffix.
-   *
-   * @generated from field: bool has_remainder = 2;
    */
   hasRemainder?: boolean
   /**
    * RemainderAdds is the uncommitted suffix of adds.
-   *
-   * @generated from field: repeated block.gc.rpc.RefEdge remainder_adds = 3;
    */
   remainderAdds?: RefEdge[]
   /**
    * RemainderRemoves is the uncommitted suffix of removes.
-   *
-   * @generated from field: repeated block.gc.rpc.RefEdge remainder_removes = 4;
    */
   remainderRemoves?: RefEdge[]
 }
 
 export const ApplyRefBatchResponse: MessageType<ApplyRefBatchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.ApplyRefBatchResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'has_remainder', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'remainder_adds',
-        kind: 'message',
-        T: RefEdge,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'remainder_removes',
-        kind: 'message',
-        T: RefEdge,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyRefBatchResponse>(
+    'block.gc.rpc.ApplyRefBatchResponse',
+    () => [
+      [1, 'error', 9],
+      [2, 'has_remainder', 8],
+      [3, 'remainder_adds', 11, 1, RefEdge.codec],
+      [4, 'remainder_removes', 11, 1, RefEdge.codec],
+    ],
+  )
 
 /**
  * AddRefRequest is a request to add a gc/ref edge.
@@ -130,26 +95,22 @@ export const ApplyRefBatchResponse: MessageType<ApplyRefBatchResponse> =
 export interface AddRefRequest {
   /**
    * Subject is the source node IRI.
-   *
-   * @generated from field: string subject = 1;
    */
   subject?: string
   /**
    * Object is the target node IRI.
-   *
-   * @generated from field: string object = 2;
    */
   object?: string
 }
 
 export const AddRefRequest: MessageType<AddRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.AddRefRequest',
-    fields: [
-      { no: 1, name: 'subject', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddRefRequest>(
+    'block.gc.rpc.AddRefRequest',
+    () => [
+      [1, 'subject', 9],
+      [2, 'object', 9],
+    ],
+  )
 
 /**
  * AddRefResponse is the response to adding a gc/ref edge.
@@ -159,19 +120,15 @@ export const AddRefRequest: MessageType<AddRefRequest> =
 export interface AddRefResponse {
   /**
    * Error is any error adding the ref.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
 }
 
 export const AddRefResponse: MessageType<AddRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.AddRefResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddRefResponse>(
+    'block.gc.rpc.AddRefResponse',
+    () => [[1, 'error', 9]],
+  )
 
 /**
  * RemoveRefRequest is a request to remove a gc/ref edge.
@@ -181,26 +138,22 @@ export const AddRefResponse: MessageType<AddRefResponse> =
 export interface RemoveRefRequest {
   /**
    * Subject is the source node IRI.
-   *
-   * @generated from field: string subject = 1;
    */
   subject?: string
   /**
    * Object is the target node IRI.
-   *
-   * @generated from field: string object = 2;
    */
   object?: string
 }
 
 export const RemoveRefRequest: MessageType<RemoveRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.RemoveRefRequest',
-    fields: [
-      { no: 1, name: 'subject', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveRefRequest>(
+    'block.gc.rpc.RemoveRefRequest',
+    () => [
+      [1, 'subject', 9],
+      [2, 'object', 9],
+    ],
+  )
 
 /**
  * RemoveRefResponse is the response to removing a gc/ref edge.
@@ -210,19 +163,15 @@ export const RemoveRefRequest: MessageType<RemoveRefRequest> =
 export interface RemoveRefResponse {
   /**
    * Error is any error removing the ref.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
 }
 
 export const RemoveRefResponse: MessageType<RemoveRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.RemoveRefResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveRefResponse>(
+    'block.gc.rpc.RemoveRefResponse',
+    () => [[1, 'error', 9]],
+  )
 
 /**
  * RemoveNodeRefsRequest is a request to remove all outgoing refs for a node.
@@ -232,27 +181,23 @@ export const RemoveRefResponse: MessageType<RemoveRefResponse> =
 export interface RemoveNodeRefsRequest {
   /**
    * Node is the node IRI.
-   *
-   * @generated from field: string node = 1;
    */
   node?: string
   /**
    * MarkOrphaned controls whether targets with no remaining incoming
    * refs get an unreferenced edge.
-   *
-   * @generated from field: bool mark_orphaned = 2;
    */
   markOrphaned?: boolean
 }
 
 export const RemoveNodeRefsRequest: MessageType<RemoveNodeRefsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.RemoveNodeRefsRequest',
-    fields: [
-      { no: 1, name: 'node', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'mark_orphaned', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveNodeRefsRequest>(
+    'block.gc.rpc.RemoveNodeRefsRequest',
+    () => [
+      [1, 'node', 9],
+      [2, 'mark_orphaned', 8],
+    ],
+  )
 
 /**
  * RemoveNodeRefsResponse is the response to removing all outgoing refs.
@@ -262,32 +207,22 @@ export const RemoveNodeRefsRequest: MessageType<RemoveNodeRefsRequest> =
 export interface RemoveNodeRefsResponse {
   /**
    * Targets is the list of target IRIs that had edges removed.
-   *
-   * @generated from field: repeated string targets = 1;
    */
   targets?: string[]
   /**
    * Error is any error removing the refs.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const RemoveNodeRefsResponse: MessageType<RemoveNodeRefsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.RemoveNodeRefsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'targets',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveNodeRefsResponse>(
+    'block.gc.rpc.RemoveNodeRefsResponse',
+    () => [
+      [1, 'targets', 9, 1],
+      [2, 'error', 9],
+    ],
+  )
 
 /**
  * HasIncomingRefsRequest is a request to check for incoming refs.
@@ -297,19 +232,15 @@ export const RemoveNodeRefsResponse: MessageType<RemoveNodeRefsResponse> =
 export interface HasIncomingRefsRequest {
   /**
    * Node is the node IRI to check.
-   *
-   * @generated from field: string node = 1;
    */
   node?: string
 }
 
 export const HasIncomingRefsRequest: MessageType<HasIncomingRefsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.HasIncomingRefsRequest',
-    fields: [
-      { no: 1, name: 'node', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HasIncomingRefsRequest>(
+    'block.gc.rpc.HasIncomingRefsRequest',
+    () => [[1, 'node', 9]],
+  )
 
 /**
  * HasIncomingRefsResponse is the response to checking for incoming refs.
@@ -319,26 +250,22 @@ export const HasIncomingRefsRequest: MessageType<HasIncomingRefsRequest> =
 export interface HasIncomingRefsResponse {
   /**
    * HasRefs indicates if the node has incoming gc/ref edges.
-   *
-   * @generated from field: bool has_refs = 1;
    */
   hasRefs?: boolean
   /**
    * Error is any error checking refs.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const HasIncomingRefsResponse: MessageType<HasIncomingRefsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.HasIncomingRefsResponse',
-    fields: [
-      { no: 1, name: 'has_refs', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HasIncomingRefsResponse>(
+    'block.gc.rpc.HasIncomingRefsResponse',
+    () => [
+      [1, 'has_refs', 8],
+      [2, 'error', 9],
+    ],
+  )
 
 /**
  * GetOutgoingRefsRequest is a request to get outgoing refs.
@@ -348,19 +275,15 @@ export const HasIncomingRefsResponse: MessageType<HasIncomingRefsResponse> =
 export interface GetOutgoingRefsRequest {
   /**
    * Node is the node IRI.
-   *
-   * @generated from field: string node = 1;
    */
   node?: string
 }
 
 export const GetOutgoingRefsRequest: MessageType<GetOutgoingRefsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.GetOutgoingRefsRequest',
-    fields: [
-      { no: 1, name: 'node', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetOutgoingRefsRequest>(
+    'block.gc.rpc.GetOutgoingRefsRequest',
+    () => [[1, 'node', 9]],
+  )
 
 /**
  * GetOutgoingRefsResponse is the response to getting outgoing refs.
@@ -370,32 +293,22 @@ export const GetOutgoingRefsRequest: MessageType<GetOutgoingRefsRequest> =
 export interface GetOutgoingRefsResponse {
   /**
    * Targets is the list of target IRIs.
-   *
-   * @generated from field: repeated string targets = 1;
    */
   targets?: string[]
   /**
    * Error is any error getting refs.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const GetOutgoingRefsResponse: MessageType<GetOutgoingRefsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.GetOutgoingRefsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'targets',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetOutgoingRefsResponse>(
+    'block.gc.rpc.GetOutgoingRefsResponse',
+    () => [
+      [1, 'targets', 9, 1],
+      [2, 'error', 9],
+    ],
+  )
 
 /**
  * GetIncomingRefsRequest is a request to get incoming refs.
@@ -405,19 +318,15 @@ export const GetOutgoingRefsResponse: MessageType<GetOutgoingRefsResponse> =
 export interface GetIncomingRefsRequest {
   /**
    * Node is the node IRI.
-   *
-   * @generated from field: string node = 1;
    */
   node?: string
 }
 
 export const GetIncomingRefsRequest: MessageType<GetIncomingRefsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.GetIncomingRefsRequest',
-    fields: [
-      { no: 1, name: 'node', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetIncomingRefsRequest>(
+    'block.gc.rpc.GetIncomingRefsRequest',
+    () => [[1, 'node', 9]],
+  )
 
 /**
  * GetIncomingRefsResponse is the response to getting incoming refs.
@@ -427,32 +336,22 @@ export const GetIncomingRefsRequest: MessageType<GetIncomingRefsRequest> =
 export interface GetIncomingRefsResponse {
   /**
    * Sources is the list of source IRIs.
-   *
-   * @generated from field: repeated string sources = 1;
    */
   sources?: string[]
   /**
    * Error is any error getting refs.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const GetIncomingRefsResponse: MessageType<GetIncomingRefsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.GetIncomingRefsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'sources',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetIncomingRefsResponse>(
+    'block.gc.rpc.GetIncomingRefsResponse',
+    () => [
+      [1, 'sources', 9, 1],
+      [2, 'error', 9],
+    ],
+  )
 
 /**
  * GetUnreferencedNodesRequest is a request to get unreferenced nodes.
@@ -462,9 +361,9 @@ export const GetIncomingRefsResponse: MessageType<GetIncomingRefsResponse> =
 export interface GetUnreferencedNodesRequest {}
 
 export const GetUnreferencedNodesRequest: MessageType<GetUnreferencedNodesRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetUnreferencedNodesRequest>(
+  /* @__PURE__ */ createMessageType<GetUnreferencedNodesRequest>(
     'block.gc.rpc.GetUnreferencedNodesRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -475,29 +374,19 @@ export const GetUnreferencedNodesRequest: MessageType<GetUnreferencedNodesReques
 export interface GetUnreferencedNodesResponse {
   /**
    * Nodes is the list of unreferenced node IRIs.
-   *
-   * @generated from field: repeated string nodes = 1;
    */
   nodes?: string[]
   /**
    * Error is any error getting unreferenced nodes.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const GetUnreferencedNodesResponse: MessageType<GetUnreferencedNodesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.gc.rpc.GetUnreferencedNodesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'nodes',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetUnreferencedNodesResponse>(
+    'block.gc.rpc.GetUnreferencedNodesResponse',
+    () => [
+      [1, 'nodes', 9, 1],
+      [2, 'error', 9],
+    ],
+  )

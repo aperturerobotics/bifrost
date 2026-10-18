@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the plugin assets fetch controller.
@@ -18,32 +16,24 @@ export interface Config {
    * ServePath is the path prefix to serve the FS.
    * This path is stripped from the UnixFS path lookups.
    * If empty, defaults to /.
-   *
-   * @generated from field: string serve_path = 1;
    */
   servePath?: string
   /**
    * FsPath is the subdirectory of the FS to serve at serve_path.
    * Chroots the filesystem to this path.
    * If empty, defaults to the root directory.
-   *
-   * @generated from field: string fs_path = 2;
    */
   fsPath?: string
   /**
    * PluginId is the plugin assets unixfs to look up.
    * If unset, uses the current plugin, assuming we are running in a plugin.
-   *
-   * @generated from field: string plugin_id = 3;
    */
   pluginId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'plugin.assets.http.Config',
-  fields: [
-    { no: 1, name: 'serve_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'fs_path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('plugin.assets.http.Config', () => [
+    [1, 'serve_path', 9],
+    [2, 'fs_path', 9],
+    [3, 'plugin_id', 9],
+  ])

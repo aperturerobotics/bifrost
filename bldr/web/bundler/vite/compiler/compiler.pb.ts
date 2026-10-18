@@ -3,11 +3,9 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
+import { WebPkgRefConfig } from '../../bundler.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { WebPkgRefConfig } from '../../bundler.pb.js'
 import { WebPkgRef } from '../../../pkg/pkg.pb.js'
 import { ViteOutputMeta } from '../vite.pb.js'
 
@@ -19,143 +17,28 @@ import { ViteOutputMeta } from '../vite.pb.js'
 export enum InputFileKind {
   /**
    * InputFileKind_UNKNOWN is the default kind.
-   *
-   * @generated from enum value: InputFileKind_UNKNOWN = 0;
    */
   InputFileKind_UNKNOWN = 0,
 
   /**
    * InputFileKind_VITE is an input consumed by vite.
-   *
-   * @generated from enum value: InputFileKind_VITE = 1;
    */
   InputFileKind_VITE = 1,
 
   /**
    * InputFileKind_WEB_PKG is a third party bundled npm package.
-   *
-   * @generated from enum value: InputFileKind_WEB_PKG = 2;
    */
   InputFileKind_WEB_PKG = 2,
 }
 
 export const InputFileKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.bundler.vite.compiler.InputFileKind',
-  InputFileKind,
+  [
+    [0, 'InputFileKind_UNKNOWN'],
+    [1, 'InputFileKind_VITE'],
+    [2, 'InputFileKind_WEB_PKG'],
+  ],
 )
-
-/**
- * ViteBundleEntrypoint defines a single entrypoint for Vite to build.
- *
- * @generated from message bldr.web.bundler.vite.compiler.ViteBundleEntrypoint
- */
-export interface ViteBundleEntrypoint {
-  /**
-   * InputPath is the path to the entrypoint file relative to the code root.
-   *
-   * @generated from field: string input_path = 1;
-   */
-  inputPath?: string
-}
-
-export const ViteBundleEntrypoint: MessageType<ViteBundleEntrypoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.compiler.ViteBundleEntrypoint',
-    fields: [
-      { no: 1, name: 'input_path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ViteBundleMeta is information about an vite bundle.
- *
- * @generated from message bldr.web.bundler.vite.compiler.ViteBundleMeta
- */
-export interface ViteBundleMeta {
-  /**
-   * Id is the identifier of the bundle.
-   * Optional: defaults to "default"
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Entrypoints is the list of entrypoints to pass to vite.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.compiler.ViteBundleEntrypoint entrypoints = 2;
-   */
-  entrypoints?: ViteBundleEntrypoint[]
-  /**
-   * PublicPath overrides the default public URL path prefix for assets.
-   * If empty, defaults to /.
-   *
-   * @generated from field: string public_path = 3;
-   */
-  publicPath?: string
-  /**
-   * ViteConfigPaths are the paths to Vite configuration files to use.
-   *
-   * @generated from field: repeated string vite_config_paths = 4;
-   */
-  viteConfigPaths?: string[]
-  /**
-   * DisableProjectConfig disables searching for the vite.config.ts in the project root.
-   *
-   * @generated from field: bool disable_project_config = 5;
-   */
-  disableProjectConfig?: boolean
-  /**
-   * ExternalPkgs is a list of imported node packages to treat as external.
-   * These won't be bundled or included and are assumed to be available in the target environment.
-   *
-   * @generated from field: repeated string external_pkgs = 6;
-   */
-  externalPkgs?: string[]
-  /**
-   * BundleWebPkgs includes shared web packages in the bundle instead of importing
-   * browser-owned modules. Workers have no document import map.
-   *
-   * @generated from field: bool bundle_web_pkgs = 7;
-   */
-  bundleWebPkgs?: boolean
-}
-
-export const ViteBundleMeta: MessageType<ViteBundleMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.compiler.ViteBundleMeta',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'entrypoints',
-        kind: 'message',
-        T: ViteBundleEntrypoint,
-        repeated: true,
-      },
-      { no: 3, name: 'public_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'vite_config_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'disable_project_config',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      {
-        no: 6,
-        name: 'external_pkgs',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 7, name: 'bundle_web_pkgs', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Config configures the vite plugin compiler controller.
@@ -165,8 +48,6 @@ export const ViteBundleMeta: MessageType<ViteBundleMeta> =
 export interface Config {
   /**
    * Bundles is the list of vite bundles to compile.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.compiler.ViteBundleMeta bundles = 1;
    */
   bundles?: ViteBundleMeta[]
   /**
@@ -184,27 +65,19 @@ export interface Config {
    * They will also be available at /b/pkg: e.g. /b/pkg/@my/npm-package/foo/bar/index.js
    *
    * Note: only files & entrypoints imported by at least one js file will be included.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 2;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
    * ViteConfigPaths is a list of paths to Vite configuration files to use.
    * Config files passed by bldr:vite directives can override these values.
-   *
-   * @generated from field: repeated string vite_config_paths = 3;
    */
   viteConfigPaths?: string[]
   /**
    * DisableProjectConfig disables searching for the vite.config.ts in the project root.
-   *
-   * @generated from field: bool disable_project_config = 4;
    */
   disableProjectConfig?: boolean
   /**
    * BuildTypes contains a mapping of BuildType to Config override.
-   *
-   * @generated from field: map<string, bldr.web.bundler.vite.compiler.Config> build_types = 5;
    */
   buildTypes?: { [key: string]: Config }
   /**
@@ -212,58 +85,22 @@ export interface Config {
    * Keys are platform IDs (e.g., "desktop", "js", "none", "desktop/linux/amd64").
    * Both base platform IDs and full platform IDs are checked: a build for
    * "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
-   *
-   * @generated from field: map<string, bldr.web.bundler.vite.compiler.Config> platform_types = 6;
    */
   platformTypes?: { [key: string]: Config }
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.web.bundler.vite.compiler.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'bundles',
-      kind: 'message',
-      T: ViteBundleMeta,
-      repeated: true,
-    },
-    {
-      no: 2,
-      name: 'web_pkgs',
-      kind: 'message',
-      T: () => WebPkgRefConfig,
-      repeated: true,
-    },
-    {
-      no: 3,
-      name: 'vite_config_paths',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 4,
-      name: 'disable_project_config',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    {
-      no: 5,
-      name: 'build_types',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => Config },
-    },
-    {
-      no: 6,
-      name: 'platform_types',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => Config },
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.web.bundler.vite.compiler.Config',
+    () => [
+      [1, 'bundles', 11, 1, ViteBundleMeta.codec],
+      [2, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [3, 'vite_config_paths', 9, 1],
+      [4, 'disable_project_config', 8],
+      [5, 'build_types', 11, 584, Config.codec],
+      [6, 'platform_types', 11, 584, Config.codec],
+    ],
+  )
 
 /**
  * PreBuildHookResult is the output of a pre-build hook.
@@ -274,19 +111,15 @@ export interface PreBuildHookResult {
   /**
    * Config is the configuration for the plugin build step.
    * Merged with the existing configuration.
-   *
-   * @generated from field: bldr.web.bundler.vite.compiler.Config config = 1;
    */
   config?: Config
 }
 
 export const PreBuildHookResult: MessageType<PreBuildHookResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.compiler.PreBuildHookResult',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PreBuildHookResult>(
+    'bldr.web.bundler.vite.compiler.PreBuildHookResult',
+    () => [[1, 'config', 11, 0, Config.codec]],
+  )
 
 /**
  * InputFileMeta is metadata attached to an input manifest file.
@@ -296,19 +129,15 @@ export const PreBuildHookResult: MessageType<PreBuildHookResult> =
 export interface InputFileMeta {
   /**
    * Kind is the input file kind.
-   *
-   * @generated from field: bldr.web.bundler.vite.compiler.InputFileKind kind = 1;
    */
   kind?: InputFileKind
 }
 
 export const InputFileMeta: MessageType<InputFileMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.compiler.InputFileMeta',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: InputFileKind_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InputFileMeta>(
+    'bldr.web.bundler.vite.compiler.InputFileMeta',
+    () => [[1, 'kind', 14, 0, InputFileKind_Enum]],
+  )
 
 /**
  * InputManifestMeta is metadata attached to the input manifest.
@@ -318,86 +147,111 @@ export const InputFileMeta: MessageType<InputFileMeta> =
 export interface InputManifestMeta {
   /**
    * WebPkgRefs contains the list of web pkg references.
-   *
-   * @generated from field: repeated web.pkg.WebPkgRef web_pkg_refs = 1;
    */
   webPkgRefs?: WebPkgRef[]
   /**
    * WebPkgs is the list of web pkgs that we separate from the bundle.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 2;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
    * ViteConfigPaths are the paths to Vite configuration files to use for all vite bundles.
-   *
-   * @generated from field: repeated string vite_config_paths = 3;
    */
   viteConfigPaths?: string[]
   /**
    * ViteDisableProjectConfig disables searching for the vite.config.ts in the project root.
-   *
-   * @generated from field: bool vite_disable_project_config = 4;
    */
   viteDisableProjectConfig?: boolean
   /**
    * ViteBundles is the list of vite bundles with entrypoint configs.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.compiler.ViteBundleMeta vite_bundles = 5;
    */
   viteBundles?: ViteBundleMeta[]
   /**
    * ViteOutputs contains a list of files written by vite.
-   *
-   * @generated from field: repeated bldr.web.bundler.vite.ViteOutputMeta vite_outputs = 6;
    */
   viteOutputs?: ViteOutputMeta[]
 }
 
 export const InputManifestMeta: MessageType<InputManifestMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.vite.compiler.InputManifestMeta',
-    fields: [
-      {
-        no: 1,
-        name: 'web_pkg_refs',
-        kind: 'message',
-        T: () => WebPkgRef,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'web_pkgs',
-        kind: 'message',
-        T: () => WebPkgRefConfig,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'vite_config_paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'vite_disable_project_config',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      {
-        no: 5,
-        name: 'vite_bundles',
-        kind: 'message',
-        T: ViteBundleMeta,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'vite_outputs',
-        kind: 'message',
-        T: () => ViteOutputMeta,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InputManifestMeta>(
+    'bldr.web.bundler.vite.compiler.InputManifestMeta',
+    () => [
+      [1, 'web_pkg_refs', 11, 1, WebPkgRef.codec],
+      [2, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [3, 'vite_config_paths', 9, 1],
+      [4, 'vite_disable_project_config', 8],
+      [5, 'vite_bundles', 11, 1, ViteBundleMeta.codec],
+      [6, 'vite_outputs', 11, 1, ViteOutputMeta.codec],
+    ],
+  )
+
+/**
+ * ViteBundleMeta is information about an vite bundle.
+ *
+ * @generated from message bldr.web.bundler.vite.compiler.ViteBundleMeta
+ */
+export interface ViteBundleMeta {
+  /**
+   * Id is the identifier of the bundle.
+   * Optional: defaults to "default"
+   */
+  id?: string
+  /**
+   * Entrypoints is the list of entrypoints to pass to vite.
+   */
+  entrypoints?: ViteBundleEntrypoint[]
+  /**
+   * PublicPath overrides the default public URL path prefix for assets.
+   * If empty, defaults to /.
+   */
+  publicPath?: string
+  /**
+   * ViteConfigPaths are the paths to Vite configuration files to use.
+   */
+  viteConfigPaths?: string[]
+  /**
+   * DisableProjectConfig disables searching for the vite.config.ts in the project root.
+   */
+  disableProjectConfig?: boolean
+  /**
+   * ExternalPkgs is a list of imported node packages to treat as external.
+   * These won't be bundled or included and are assumed to be available in the target environment.
+   */
+  externalPkgs?: string[]
+  /**
+   * BundleWebPkgs includes shared web packages in the bundle instead of importing
+   * browser-owned modules. Workers have no document import map.
+   */
+  bundleWebPkgs?: boolean
+}
+
+export const ViteBundleMeta: MessageType<ViteBundleMeta> =
+  /* @__PURE__ */ createMessageType<ViteBundleMeta>(
+    'bldr.web.bundler.vite.compiler.ViteBundleMeta',
+    () => [
+      [1, 'id', 9],
+      [2, 'entrypoints', 11, 1, ViteBundleEntrypoint.codec],
+      [3, 'public_path', 9],
+      [4, 'vite_config_paths', 9, 1],
+      [5, 'disable_project_config', 8],
+      [6, 'external_pkgs', 9, 1],
+      [7, 'bundle_web_pkgs', 8],
+    ],
+  )
+
+/**
+ * ViteBundleEntrypoint defines a single entrypoint for Vite to build.
+ *
+ * @generated from message bldr.web.bundler.vite.compiler.ViteBundleEntrypoint
+ */
+export interface ViteBundleEntrypoint {
+  /**
+   * InputPath is the path to the entrypoint file relative to the code root.
+   */
+  inputPath?: string
+}
+
+export const ViteBundleEntrypoint: MessageType<ViteBundleEntrypoint> =
+  /* @__PURE__ */ createMessageType<ViteBundleEntrypoint>(
+    'bldr.web.bundler.vite.compiler.ViteBundleEntrypoint',
+    () => [[1, 'input_path', 9]],
+  )

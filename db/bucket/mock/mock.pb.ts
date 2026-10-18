@@ -5,7 +5,6 @@
 import { ObjectRef } from '../bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Root is the root of the mock structure.
@@ -15,15 +14,11 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Root {
   /**
    * ExamplePtr is an example reference to a block mock Root.
-   *
-   * @generated from field: bucket.ObjectRef example_ptr = 1;
    */
   examplePtr?: ObjectRef
 }
 
-export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType({
-  typeName: 'bucket.mock.Root',
-  fields: [
-    { no: 1, name: 'example_ptr', kind: 'message', T: () => ObjectRef },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType<Root>(
+  'bucket.mock.Root',
+  () => [[1, 'example_ptr', 11, 0, ObjectRef.codec]],
+)

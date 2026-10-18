@@ -2,59 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/db/bucket/setup/config.proto (package bucket.setup, syntax proto3)
 /* eslint-disable */
 
-import { Config as Config$1 } from '../bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * ApplyBucketConfig is the configuration for applying a bucket config.
- *
- * @generated from message bucket.setup.ApplyBucketConfig
- */
-export interface ApplyBucketConfig {
-  /**
-   * Config is the bucket config.
-   *
-   * @generated from field: bucket.Config config = 1;
-   */
-  config?: Config$1
-  /**
-   * VolumeIdRe is a regex string to match volume IDs.
-   * Set to '.*' to match all volumes.
-   * If empty: updates only volumes that already have the config.
-   * If VolumeIDList is set, it will override this field.
-   * Cannot be specified if VolumeIDList is set.
-   *
-   * @generated from field: string volume_id_re = 2;
-   */
-  volumeIdRe?: string
-  /**
-   * VolumeIdList is a list of volume IDs to match.
-   * If the value is in this list, overrides volume_id_re.
-   * ignored if empty.
-   *
-   * @generated from field: repeated string volume_id_list = 3;
-   */
-  volumeIdList?: string[]
-}
-
-export const ApplyBucketConfig: MessageType<ApplyBucketConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.setup.ApplyBucketConfig',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: () => Config$1 },
-      { no: 2, name: 'volume_id_re', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'volume_id_list',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import { Config as Config$1 } from '../bucket.pb.js'
 
 /**
  * Config is the setup configuration.
@@ -66,21 +16,47 @@ export interface Config {
    * ApplyBucketConfigs is a list of bucket configurations to apply.
    * Note: does not apply if existing config has a higher rev number.
    * Optional.
-   *
-   * @generated from field: repeated bucket.setup.ApplyBucketConfig apply_bucket_configs = 1;
    */
   applyBucketConfigs?: ApplyBucketConfig[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bucket.setup.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'apply_bucket_configs',
-      kind: 'message',
-      T: ApplyBucketConfig,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('bucket.setup.Config', () => [
+    [1, 'apply_bucket_configs', 11, 1, ApplyBucketConfig.codec],
+  ])
+
+/**
+ * ApplyBucketConfig is the configuration for applying a bucket config.
+ *
+ * @generated from message bucket.setup.ApplyBucketConfig
+ */
+export interface ApplyBucketConfig {
+  /**
+   * Config is the bucket config.
+   */
+  config?: Config$1
+  /**
+   * VolumeIdRe is a regex string to match volume IDs.
+   * Set to '.*' to match all volumes.
+   * If empty: updates only volumes that already have the config.
+   * If VolumeIDList is set, it will override this field.
+   * Cannot be specified if VolumeIDList is set.
+   */
+  volumeIdRe?: string
+  /**
+   * VolumeIdList is a list of volume IDs to match.
+   * If the value is in this list, overrides volume_id_re.
+   * ignored if empty.
+   */
+  volumeIdList?: string[]
+}
+
+export const ApplyBucketConfig: MessageType<ApplyBucketConfig> =
+  /* @__PURE__ */ createMessageType<ApplyBucketConfig>(
+    'bucket.setup.ApplyBucketConfig',
+    () => [
+      [1, 'config', 11, 0, Config$1.codec],
+      [2, 'volume_id_re', 9],
+      [3, 'volume_id_list', 9, 1],
+    ],
+  )

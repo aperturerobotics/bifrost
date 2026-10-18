@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * MockObjectOp is a mock object operation.
@@ -15,19 +13,15 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface MockObjectOp {
   /**
    * NextMsg sets the next message on the mock object.
-   *
-   * @generated from field: string next_msg = 1;
    */
   nextMsg?: string
 }
 
 export const MockObjectOp: MessageType<MockObjectOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.mock.MockObjectOp',
-    fields: [
-      { no: 1, name: 'next_msg', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MockObjectOp>(
+    'world.mock.MockObjectOp',
+    () => [[1, 'next_msg', 9]],
+  )
 
 /**
  * MockWorldOp is a mock world operation.
@@ -37,23 +31,19 @@ export const MockObjectOp: MessageType<MockObjectOp> =
 export interface MockWorldOp {
   /**
    * ObjectKey is the object key to apply to.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * NextMsg sets the next message on the mock object.
-   *
-   * @generated from field: string next_msg = 2;
    */
   nextMsg?: string
 }
 
 export const MockWorldOp: MessageType<MockWorldOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.mock.MockWorldOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'next_msg', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MockWorldOp>(
+    'world.mock.MockWorldOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'next_msg', 9],
+    ],
+  )

@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * QuitPolicy configures how native desktop runtimes should behave on user quit.
@@ -16,30 +14,27 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum QuitPolicy {
   /**
    * QUIT_POLICY_UNSPECIFIED lets the compiler pick the default for the build.
-   *
-   * @generated from enum value: QUIT_POLICY_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * QUIT_POLICY_RESTART keeps the host restart-friendly after user quit.
-   *
-   * @generated from enum value: QUIT_POLICY_RESTART = 1;
    */
   RESTART = 1,
 
   /**
    * QUIT_POLICY_EXIT exits cleanly without restart after user quit.
-   *
-   * @generated from enum value: QUIT_POLICY_EXIT = 2;
    */
   EXIT = 2,
 }
 
 export const QuitPolicy_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.plugin.compiler.QuitPolicy',
-  QuitPolicy,
-  'QUIT_POLICY_',
+  [
+    [0, 'QUIT_POLICY_UNSPECIFIED'],
+    [1, 'QUIT_POLICY_RESTART'],
+    [2, 'QUIT_POLICY_EXIT'],
+  ],
 )
 
 /**
@@ -52,135 +47,28 @@ export const QuitPolicy_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopPresencePolicy {
   /**
    * DESKTOP_PRESENCE_POLICY_UNSPECIFIED preserves the renderer default.
-   *
-   * @generated from enum value: DESKTOP_PRESENCE_POLICY_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_PRESENCE_POLICY_WINDOW_LIFETIME exits when the window lifetime ends.
-   *
-   * @generated from enum value: DESKTOP_PRESENCE_POLICY_WINDOW_LIFETIME = 1;
    */
   WINDOW_LIFETIME = 1,
 
   /**
    * DESKTOP_PRESENCE_POLICY_TRAY_BACKGROUND keeps a tray-backed runtime alive.
-   *
-   * @generated from enum value: DESKTOP_PRESENCE_POLICY_TRAY_BACKGROUND = 2;
    */
   TRAY_BACKGROUND = 2,
 }
 
 export const DesktopPresencePolicy_Enum = /* @__PURE__ */ createEnumType(
   'bldr.web.plugin.compiler.DesktopPresencePolicy',
-  DesktopPresencePolicy,
-  'DESKTOP_PRESENCE_POLICY_',
+  [
+    [0, 'DESKTOP_PRESENCE_POLICY_UNSPECIFIED'],
+    [1, 'DESKTOP_PRESENCE_POLICY_WINDOW_LIFETIME'],
+    [2, 'DESKTOP_PRESENCE_POLICY_TRAY_BACKGROUND'],
+  ],
 )
-
-/**
- * NativeAppConfig configures branding for native app renderers.
- *
- * @generated from message bldr.web.plugin.compiler.NativeAppConfig
- */
-export interface NativeAppConfig {
-  /**
-   * AppName is the display name of the application.
-   *
-   * @generated from field: string app_name = 1;
-   */
-  appName?: string
-  /**
-   * WindowTitle overrides the default window title.
-   *
-   * @generated from field: string window_title = 2;
-   */
-  windowTitle?: string
-  /**
-   * WindowWidth is the default window width in pixels.
-   *
-   * @generated from field: uint32 window_width = 3;
-   */
-  windowWidth?: number
-  /**
-   * WindowHeight is the default window height in pixels.
-   *
-   * @generated from field: uint32 window_height = 4;
-   */
-  windowHeight?: number
-  /**
-   * DevTools controls whether DevTools open automatically.
-   *
-   * @generated from field: bool dev_tools = 5;
-   */
-  devTools?: boolean
-  /**
-   * ThemeSource overrides the native theme ("dark", "light", "system").
-   *
-   * @generated from field: string theme_source = 6;
-   */
-  themeSource?: string
-  /**
-   * IconPath is the path to the application icon PNG (relative to project root).
-   * Used for dev-mode branding of the extracted Electron binary.
-   *
-   * @generated from field: string icon_path = 7;
-   */
-  iconPath?: string
-  /**
-   * QuitPolicy configures whether user quit should restart or exit.
-   *
-   * @generated from field: bldr.web.plugin.compiler.QuitPolicy quit_policy = 8;
-   */
-  quitPolicy?: QuitPolicy
-  /**
-   * DesktopPresencePolicy configures last-window-close desktop presence.
-   *
-   * @generated from field: bldr.web.plugin.compiler.DesktopPresencePolicy desktop_presence_policy = 9;
-   */
-  desktopPresencePolicy?: DesktopPresencePolicy
-  /**
-   * TrayIconPath is the path to the tray icon (relative to project root).
-   *
-   * @generated from field: string tray_icon_path = 10;
-   */
-  trayIconPath?: string
-  /**
-   * MacosTemplateTrayIconPath is the path to a macOS template tray icon
-   * (relative to project root).
-   *
-   * @generated from field: string macos_template_tray_icon_path = 11;
-   */
-  macosTemplateTrayIconPath?: string
-}
-
-export const NativeAppConfig: MessageType<NativeAppConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.plugin.compiler.NativeAppConfig',
-    fields: [
-      { no: 1, name: 'app_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'window_title', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'window_width', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'window_height', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'dev_tools', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'theme_source', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'icon_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'quit_policy', kind: 'enum', T: QuitPolicy_Enum },
-      {
-        no: 9,
-        name: 'desktop_presence_policy',
-        kind: 'enum',
-        T: DesktopPresencePolicy_Enum,
-      },
-      { no: 10, name: 'tray_icon_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 11,
-        name: 'macos_template_tray_icon_path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Config configures the web plugin builder.
@@ -190,8 +78,6 @@ export const NativeAppConfig: MessageType<NativeAppConfig> =
 export interface Config {
   /**
    * ProjectId overrides the project id set in the project config.
-   *
-   * @generated from field: string project_id = 1;
    */
   projectId?: string
   /**
@@ -199,8 +85,6 @@ export interface Config {
    * If the build mode is dev and this is set, uses delve to run the plugin.
    * Ignored if build mode is not dev or build platform is not "desktop".
    * Special value: "wait" - waits for plugin entrypoint to be run manually.
-   *
-   * @generated from field: string delve_addr = 2;
    */
   delveAddr?: string
   /**
@@ -208,24 +92,93 @@ export interface Config {
    * If unset, defaults to the version in package.json.
    * If not found, defaults to electron@latest.
    * Ignored if build platform is not "desktop".
-   *
-   * @generated from field: string electron_pkg = 3;
    */
   electronPkg?: string
   /**
    * NativeApp configures branding for native app renderers.
-   *
-   * @generated from field: bldr.web.plugin.compiler.NativeAppConfig native_app = 4;
    */
   nativeApp?: NativeAppConfig
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.web.plugin.compiler.Config',
-  fields: [
-    { no: 1, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'delve_addr', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'electron_pkg', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'native_app', kind: 'message', T: NativeAppConfig },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.web.plugin.compiler.Config',
+    () => [
+      [1, 'project_id', 9],
+      [2, 'delve_addr', 9],
+      [3, 'electron_pkg', 9],
+      [4, 'native_app', 11, 0, NativeAppConfig.codec],
+    ],
+  )
+
+/**
+ * NativeAppConfig configures branding for native app renderers.
+ *
+ * @generated from message bldr.web.plugin.compiler.NativeAppConfig
+ */
+export interface NativeAppConfig {
+  /**
+   * AppName is the display name of the application.
+   */
+  appName?: string
+  /**
+   * WindowTitle overrides the default window title.
+   */
+  windowTitle?: string
+  /**
+   * WindowWidth is the default window width in pixels.
+   */
+  windowWidth?: number
+  /**
+   * WindowHeight is the default window height in pixels.
+   */
+  windowHeight?: number
+  /**
+   * DevTools controls whether DevTools open automatically.
+   */
+  devTools?: boolean
+  /**
+   * ThemeSource overrides the native theme ("dark", "light", "system").
+   */
+  themeSource?: string
+  /**
+   * IconPath is the path to the application icon PNG (relative to project root).
+   * Used for dev-mode branding of the extracted Electron binary.
+   */
+  iconPath?: string
+  /**
+   * QuitPolicy configures whether user quit should restart or exit.
+   */
+  quitPolicy?: QuitPolicy
+  /**
+   * DesktopPresencePolicy configures last-window-close desktop presence.
+   */
+  desktopPresencePolicy?: DesktopPresencePolicy
+  /**
+   * TrayIconPath is the path to the tray icon (relative to project root).
+   */
+  trayIconPath?: string
+  /**
+   * MacosTemplateTrayIconPath is the path to a macOS template tray icon
+   * (relative to project root).
+   */
+  macosTemplateTrayIconPath?: string
+}
+
+export const NativeAppConfig: MessageType<NativeAppConfig> =
+  /* @__PURE__ */ createMessageType<NativeAppConfig>(
+    'bldr.web.plugin.compiler.NativeAppConfig',
+    () => [
+      [1, 'app_name', 9],
+      [2, 'window_title', 9],
+      [3, 'window_width', 13],
+      [4, 'window_height', 13],
+      [5, 'dev_tools', 8],
+      [6, 'theme_source', 9],
+      [7, 'icon_path', 9],
+      [8, 'quit_policy', 14, 0, QuitPolicy_Enum],
+      [9, 'desktop_presence_policy', 14, 0, DesktopPresencePolicy_Enum],
+      [10, 'tray_icon_path', 9],
+      [11, 'macos_template_tray_icon_path', 9],
+    ],
+  )

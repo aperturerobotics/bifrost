@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * EsbuildBundleEntrypoint configures a entrypoint to build into the bundle with esbuild.
@@ -15,36 +13,30 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface EsbuildBundleEntrypoint {
   /**
    * InputPath is the relative path to the entrypoint from the project root.
-   *
-   * @generated from field: string input_path = 1;
    */
   inputPath?: string
   /**
    * OutputPath is the relative path to the output from the dist fs root.
    * Optional. If unset, will be inferred from InputPath.
-   *
-   * @generated from field: string output_path = 2;
    */
   outputPath?: string
   /**
    * EntrypointId is the entrypoint identifier.
    * Used to identify the entrypoint in the InputManifestMeta.
    * Optional, can be empty.
-   *
-   * @generated from field: string entrypoint_id = 3;
    */
   entrypointId?: string
 }
 
 export const EsbuildBundleEntrypoint: MessageType<EsbuildBundleEntrypoint> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.esbuild.EsbuildBundleEntrypoint',
-    fields: [
-      { no: 1, name: 'input_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'output_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'entrypoint_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EsbuildBundleEntrypoint>(
+    'bldr.web.bundler.esbuild.EsbuildBundleEntrypoint',
+    () => [
+      [1, 'input_path', 9],
+      [2, 'output_path', 9],
+      [3, 'entrypoint_id', 9],
+    ],
+  )
 
 /**
  * EsbuildOutputMeta is information about an esbuild output.
@@ -54,48 +46,38 @@ export const EsbuildBundleEntrypoint: MessageType<EsbuildBundleEntrypoint> =
 export interface EsbuildOutputMeta {
   /**
    * Path is the path to the file within the output dir.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
   /**
    * Length is the size of the file in bytes.
-   *
-   * @generated from field: uint32 length = 2;
    */
   length?: number
   /**
    * CssBundlePath is the path to the css bundle within the output dir.
    * May be empty.
-   *
-   * @generated from field: string css_bundle_path = 3;
    */
   cssBundlePath?: string
   /**
    * EntrypointPath is the entrypoint that produced this output file.
    * May be empty.
-   *
-   * @generated from field: string entrypoint_path = 4;
    */
   entrypointPath?: string
   /**
    * EntrypointId is the entrypoint identifier.
    * Set in the EsbuildBundleEntrypoint.
    * Optional, can be empty.
-   *
-   * @generated from field: string entrypoint_id = 5;
    */
   entrypointId?: string
 }
 
 export const EsbuildOutputMeta: MessageType<EsbuildOutputMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.web.bundler.esbuild.EsbuildOutputMeta',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'length', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'css_bundle_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'entrypoint_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'entrypoint_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EsbuildOutputMeta>(
+    'bldr.web.bundler.esbuild.EsbuildOutputMeta',
+    () => [
+      [1, 'path', 9],
+      [2, 'length', 13],
+      [3, 'css_bundle_path', 9],
+      [4, 'entrypoint_path', 9],
+      [5, 'entrypoint_id', 9],
+    ],
+  )

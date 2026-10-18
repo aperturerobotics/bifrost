@@ -2,39 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/db/volume/rpc/client/config.proto (package volume.rpc.client, syntax proto3)
 /* eslint-disable */
 
+import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
-
-/**
- * VolumeAliases is a list of volume aliases.
- *
- * @generated from message volume.rpc.client.VolumeAliases
- */
-export interface VolumeAliases {
-  /**
-   * From is a list of volume IDs to alias.
-   *
-   * @generated from field: repeated string from = 1;
-   */
-  from?: string[]
-}
-
-export const VolumeAliases: MessageType<VolumeAliases> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.client.VolumeAliases',
-    fields: [
-      {
-        no: 1,
-        name: 'from',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Config configures the rpc volume client.
@@ -48,8 +18,6 @@ export interface Config {
    * Must resolve to the AccessVolumes service.
    * Usually: rpc.volume.AccessVolumes
    * Cannot be empty.
-   *
-   * @generated from field: string service_id = 1;
    */
   serviceId?: string
   /**
@@ -58,35 +26,25 @@ export interface Config {
    * Matched volume IDs may not necessarily exist on the remote.
    * Set to empty or '.*' to match all volumes.
    * If volume_id_list is set, it can override this value.
-   *
-   * @generated from field: string volume_id_re = 2;
    */
   volumeIdRe?: string
   /**
    * VolumeIdList returns a specific list of volumes to match.
    * If empty, uses the VolumeIDRe field instead.
-   *
-   * @generated from field: repeated string volume_id_list = 3;
    */
   volumeIdList?: string[]
   /**
    * LoadOnStartup loads the volume_id_list on startup.
-   *
-   * @generated from field: bool load_on_startup = 8;
    */
   loadOnStartup?: boolean
   /**
    * ClientId is the client id to use.
    * May be empty.
-   *
-   * @generated from field: string client_id = 4;
    */
   clientId?: string
   /**
    * ReleaseDelay is a delay duration to wait before releasing a unreferenced volume.
    * If empty string, defaults to 1s (1 second).
-   *
-   * @generated from field: string release_delay = 5;
    */
   releaseDelay?: string
   /**
@@ -94,40 +52,40 @@ export interface Config {
    * Key = the destination volume ID.
    * Value = contains source volume IDs to match.
    * Volume IDs listed here will be proxied regardless of the regex or list set above.
-   *
-   * @generated from field: map<string, volume.rpc.client.VolumeAliases> volume_aliases = 6;
    */
   volumeAliases?: { [key: string]: VolumeAliases }
   /**
    * Backoff controls retry backoff for the volume rpc client.
-   *
-   * @generated from field: backoff.Backoff backoff = 7;
    */
   backoff?: Backoff
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'volume.rpc.client.Config',
-  fields: [
-    { no: 1, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'volume_id_re', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'volume_id_list',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 8, name: 'load_on_startup', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'client_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'release_delay', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 6,
-      name: 'volume_aliases',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: VolumeAliases },
-    },
-    { no: 7, name: 'backoff', kind: 'message', T: () => Backoff },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('volume.rpc.client.Config', () => [
+    [1, 'service_id', 9],
+    [2, 'volume_id_re', 9],
+    [3, 'volume_id_list', 9, 1],
+    [4, 'client_id', 9],
+    [5, 'release_delay', 9],
+    [6, 'volume_aliases', 11, 584, VolumeAliases.codec],
+    [7, 'backoff', 11, 0, Backoff.codec],
+    [8, 'load_on_startup', 8],
+  ])
+
+/**
+ * VolumeAliases is a list of volume aliases.
+ *
+ * @generated from message volume.rpc.client.VolumeAliases
+ */
+export interface VolumeAliases {
+  /**
+   * From is a list of volume IDs to alias.
+   */
+  from?: string[]
+}
+
+export const VolumeAliases: MessageType<VolumeAliases> =
+  /* @__PURE__ */ createMessageType<VolumeAliases>(
+    'volume.rpc.client.VolumeAliases',
+    () => [[1, 'from', 9, 1]],
+  )

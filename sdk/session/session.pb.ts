@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import type { SessionLockMode } from '../../core/session/session.pb.js'
 import {
   SessionListEntry,
@@ -60,29 +55,27 @@ import {
 export enum SyncStatusState {
   /**
    * SyncStatusState_SYNCED means no sync work or sync error is known.
-   *
-   * @generated from enum value: SyncStatusState_SYNCED = 0;
    */
   SyncStatusState_SYNCED = 0,
 
   /**
    * SyncStatusState_ACTIVE means upload or download sync work is active.
-   *
-   * @generated from enum value: SyncStatusState_ACTIVE = 1;
    */
   SyncStatusState_ACTIVE = 1,
 
   /**
    * SyncStatusState_ERROR means sync is blocked by the last recorded error.
-   *
-   * @generated from enum value: SyncStatusState_ERROR = 2;
    */
   SyncStatusState_ERROR = 2,
 }
 
 export const SyncStatusState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.session.SyncStatusState',
-  SyncStatusState,
+  [
+    [0, 'SyncStatusState_SYNCED'],
+    [1, 'SyncStatusState_ACTIVE'],
+    [2, 'SyncStatusState_ERROR'],
+  ],
 )
 
 /**
@@ -93,36 +86,33 @@ export const SyncStatusState_Enum = /* @__PURE__ */ createEnumType(
 export enum SyncActivityDirection {
   /**
    * SyncActivityDirection_NONE means no active transfer direction is known.
-   *
-   * @generated from enum value: SyncActivityDirection_NONE = 0;
    */
   SyncActivityDirection_NONE = 0,
 
   /**
    * SyncActivityDirection_UPLOAD means upload work is active.
-   *
-   * @generated from enum value: SyncActivityDirection_UPLOAD = 1;
    */
   SyncActivityDirection_UPLOAD = 1,
 
   /**
    * SyncActivityDirection_DOWNLOAD means download work is active.
-   *
-   * @generated from enum value: SyncActivityDirection_DOWNLOAD = 2;
    */
   SyncActivityDirection_DOWNLOAD = 2,
 
   /**
    * SyncActivityDirection_UPLOAD_DOWNLOAD means upload and download work are active.
-   *
-   * @generated from enum value: SyncActivityDirection_UPLOAD_DOWNLOAD = 3;
    */
   SyncActivityDirection_UPLOAD_DOWNLOAD = 3,
 }
 
 export const SyncActivityDirection_Enum = /* @__PURE__ */ createEnumType(
   's4wave.session.SyncActivityDirection',
-  SyncActivityDirection,
+  [
+    [0, 'SyncActivityDirection_NONE'],
+    [1, 'SyncActivityDirection_UPLOAD'],
+    [2, 'SyncActivityDirection_DOWNLOAD'],
+    [3, 'SyncActivityDirection_UPLOAD_DOWNLOAD'],
+  ],
 )
 
 /**
@@ -133,43 +123,39 @@ export const SyncActivityDirection_Enum = /* @__PURE__ */ createEnumType(
 export enum SyncTransportState {
   /**
    * SyncTransportState_UNKNOWN means transport availability has not been reported.
-   *
-   * @generated from enum value: SyncTransportState_UNKNOWN = 0;
    */
   SyncTransportState_UNKNOWN = 0,
 
   /**
    * SyncTransportState_UNAVAILABLE means no cloud transport is configured.
-   *
-   * @generated from enum value: SyncTransportState_UNAVAILABLE = 1;
    */
   SyncTransportState_UNAVAILABLE = 1,
 
   /**
    * SyncTransportState_CONNECTING means cloud transport is connecting.
-   *
-   * @generated from enum value: SyncTransportState_CONNECTING = 2;
    */
   SyncTransportState_CONNECTING = 2,
 
   /**
    * SyncTransportState_ONLINE means cloud transport is online.
-   *
-   * @generated from enum value: SyncTransportState_ONLINE = 3;
    */
   SyncTransportState_ONLINE = 3,
 
   /**
    * SyncTransportState_ERROR means cloud transport is in an error state.
-   *
-   * @generated from enum value: SyncTransportState_ERROR = 4;
    */
   SyncTransportState_ERROR = 4,
 }
 
 export const SyncTransportState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.session.SyncTransportState',
-  SyncTransportState,
+  [
+    [0, 'SyncTransportState_UNKNOWN'],
+    [1, 'SyncTransportState_UNAVAILABLE'],
+    [2, 'SyncTransportState_CONNECTING'],
+    [3, 'SyncTransportState_ONLINE'],
+    [4, 'SyncTransportState_ERROR'],
+  ],
 )
 
 /**
@@ -180,64 +166,57 @@ export const SyncTransportState_Enum = /* @__PURE__ */ createEnumType(
 export enum SyncP2PState {
   /**
    * SyncP2PState_UNKNOWN means p2p state has not been reported.
-   *
-   * @generated from enum value: SyncP2PState_UNKNOWN = 0;
    */
   SyncP2PState_UNKNOWN = 0,
 
   /**
    * SyncP2PState_NO_PEERS means p2p is ready but has no connected peers.
-   *
-   * @generated from enum value: SyncP2PState_NO_PEERS = 1;
    */
   SyncP2PState_NO_PEERS = 1,
 
   /**
    * SyncP2PState_IDLE means p2p peers are present with no active work.
-   *
-   * @generated from enum value: SyncP2PState_IDLE = 2;
    */
   SyncP2PState_IDLE = 2,
 
   /**
    * SyncP2PState_ACTIVE means p2p lifecycle activity is active.
-   *
-   * @generated from enum value: SyncP2PState_ACTIVE = 3;
    */
   SyncP2PState_ACTIVE = 3,
 
   /**
    * SyncP2PState_ERROR means p2p lifecycle state has an error.
-   *
-   * @generated from enum value: SyncP2PState_ERROR = 4;
    */
   SyncP2PState_ERROR = 4,
 
   /**
    * SyncP2PState_DISABLED means direct P2P is disabled by Session policy.
-   *
-   * @generated from enum value: SyncP2PState_DISABLED = 5;
    */
   SyncP2PState_DISABLED = 5,
 
   /**
    * SyncP2PState_STARTING means direct P2P mechanics are starting.
-   *
-   * @generated from enum value: SyncP2PState_STARTING = 6;
    */
   SyncP2PState_STARTING = 6,
 
   /**
    * SyncP2PState_FALLBACK_NO_PEER means a previously linked peer is absent.
-   *
-   * @generated from enum value: SyncP2PState_FALLBACK_NO_PEER = 7;
    */
   SyncP2PState_FALLBACK_NO_PEER = 7,
 }
 
 export const SyncP2PState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.session.SyncP2PState',
-  SyncP2PState,
+  [
+    [0, 'SyncP2PState_UNKNOWN'],
+    [1, 'SyncP2PState_NO_PEERS'],
+    [2, 'SyncP2PState_IDLE'],
+    [3, 'SyncP2PState_ACTIVE'],
+    [4, 'SyncP2PState_ERROR'],
+    [5, 'SyncP2PState_DISABLED'],
+    [6, 'SyncP2PState_STARTING'],
+    [7, 'SyncP2PState_FALLBACK_NO_PEER'],
+  ],
 )
 
 /**
@@ -248,36 +227,33 @@ export const SyncP2PState_Enum = /* @__PURE__ */ createEnumType(
 export enum SyncBlockSource {
   /**
    * SyncBlockSource_UNKNOWN means no source has been observed.
-   *
-   * @generated from enum value: SyncBlockSource_UNKNOWN = 0;
    */
   SyncBlockSource_UNKNOWN = 0,
 
   /**
    * SyncBlockSource_CACHE means the local upper cache satisfied the read.
-   *
-   * @generated from enum value: SyncBlockSource_CACHE = 1;
    */
   SyncBlockSource_CACHE = 1,
 
   /**
    * SyncBlockSource_DIRECT means demand-driven DEX satisfied the read.
-   *
-   * @generated from enum value: SyncBlockSource_DIRECT = 2;
    */
   SyncBlockSource_DIRECT = 2,
 
   /**
    * SyncBlockSource_CLOUD means the Cloud packfile baseline satisfied the read.
-   *
-   * @generated from enum value: SyncBlockSource_CLOUD = 3;
    */
   SyncBlockSource_CLOUD = 3,
 }
 
 export const SyncBlockSource_Enum = /* @__PURE__ */ createEnumType(
   's4wave.session.SyncBlockSource',
-  SyncBlockSource,
+  [
+    [0, 'SyncBlockSource_UNKNOWN'],
+    [1, 'SyncBlockSource_CACHE'],
+    [2, 'SyncBlockSource_DIRECT'],
+    [3, 'SyncBlockSource_CLOUD'],
+  ],
 )
 
 /**
@@ -288,115 +264,101 @@ export const SyncBlockSource_Enum = /* @__PURE__ */ createEnumType(
 export enum PairingStatus {
   /**
    * PairingStatus_IDLE means no pairing is in progress.
-   *
-   * @generated from enum value: PairingStatus_IDLE = 0;
    */
   PairingStatus_IDLE = 0,
 
   /**
    * PairingStatus_CODE_GENERATED means a pairing code was created and posted.
-   *
-   * @generated from enum value: PairingStatus_CODE_GENERATED = 1;
    */
   PairingStatus_CODE_GENERATED = 1,
 
   /**
    * PairingStatus_WAITING_FOR_PEER means the code was resolved and waiting for link.
-   *
-   * @generated from enum value: PairingStatus_WAITING_FOR_PEER = 2;
    */
   PairingStatus_WAITING_FOR_PEER = 2,
 
   /**
    * PairingStatus_PEER_CONNECTED means bifrost link established with remote peer.
-   *
-   * @generated from enum value: PairingStatus_PEER_CONNECTED = 3;
    */
   PairingStatus_PEER_CONNECTED = 3,
 
   /**
    * PairingStatus_VERIFYING_EMOJI means SAS emoji verification is in progress.
-   *
-   * @generated from enum value: PairingStatus_VERIFYING_EMOJI = 4;
    */
   PairingStatus_VERIFYING_EMOJI = 4,
 
   /**
    * PairingStatus_VERIFIED means SAS verification succeeded.
-   *
-   * @generated from enum value: PairingStatus_VERIFIED = 5;
    */
   PairingStatus_VERIFIED = 5,
 
   /**
    * PairingStatus_FAILED means the pairing flow failed.
-   *
-   * @generated from enum value: PairingStatus_FAILED = 6;
    */
   PairingStatus_FAILED = 6,
 
   /**
    * PairingStatus_SIGNALING_FAILED means the signaling connection failed.
-   *
-   * @generated from enum value: PairingStatus_SIGNALING_FAILED = 7;
    */
   PairingStatus_SIGNALING_FAILED = 7,
 
   /**
    * PairingStatus_CONNECTION_TIMEOUT means the peer connection timed out.
-   *
-   * @generated from enum value: PairingStatus_CONNECTION_TIMEOUT = 8;
    */
   PairingStatus_CONNECTION_TIMEOUT = 8,
 
   /**
    * PairingStatus_WAITING_FOR_REMOTE_CONFIRM means local user confirmed SAS
    * match and is waiting for the remote device to confirm.
-   *
-   * @generated from enum value: PairingStatus_WAITING_FOR_REMOTE_CONFIRM = 9;
    */
   PairingStatus_WAITING_FOR_REMOTE_CONFIRM = 9,
 
   /**
    * PairingStatus_BOTH_CONFIRMED means both devices confirmed the SAS match.
-   *
-   * @generated from enum value: PairingStatus_BOTH_CONFIRMED = 10;
    */
   PairingStatus_BOTH_CONFIRMED = 10,
 
   /**
    * PairingStatus_PAIRING_REJECTED means one side rejected the SAS match.
-   *
-   * @generated from enum value: PairingStatus_PAIRING_REJECTED = 11;
    */
   PairingStatus_PAIRING_REJECTED = 11,
 
   /**
    * PairingStatus_CONFIRMATION_TIMEOUT means remote confirmation was not
    * received within the timeout period.
-   *
-   * @generated from enum value: PairingStatus_CONFIRMATION_TIMEOUT = 12;
    */
   PairingStatus_CONFIRMATION_TIMEOUT = 12,
 
   /**
    * PairingStatus_ENROLLING means both clients approved and account access is being persisted.
-   *
-   * @generated from enum value: PairingStatus_ENROLLING = 13;
    */
   PairingStatus_ENROLLING = 13,
 
   /**
    * PairingStatus_SELECTING_ACCOUNT waits for the receiving client's account choice.
-   *
-   * @generated from enum value: PairingStatus_SELECTING_ACCOUNT = 14;
    */
   PairingStatus_SELECTING_ACCOUNT = 14,
 }
 
 export const PairingStatus_Enum = /* @__PURE__ */ createEnumType(
   's4wave.session.PairingStatus',
-  PairingStatus,
+  [
+    [0, 'PairingStatus_IDLE'],
+    [1, 'PairingStatus_CODE_GENERATED'],
+    [2, 'PairingStatus_WAITING_FOR_PEER'],
+    [3, 'PairingStatus_PEER_CONNECTED'],
+    [4, 'PairingStatus_VERIFYING_EMOJI'],
+    [5, 'PairingStatus_VERIFIED'],
+    [6, 'PairingStatus_FAILED'],
+    [7, 'PairingStatus_SIGNALING_FAILED'],
+    [8, 'PairingStatus_CONNECTION_TIMEOUT'],
+    [9, 'PairingStatus_WAITING_FOR_REMOTE_CONFIRM'],
+    [10, 'PairingStatus_BOTH_CONFIRMED'],
+    [11, 'PairingStatus_PAIRING_REJECTED'],
+    [12, 'PairingStatus_CONFIRMATION_TIMEOUT'],
+    [13, 'PairingStatus_ENROLLING'],
+    [14, 'PairingStatus_SELECTING_ACCOUNT'],
+  ],
 )
 
 /**
@@ -407,47 +369,43 @@ export const PairingStatus_Enum = /* @__PURE__ */ createEnumType(
 export enum JoinSpaceViaInviteResult {
   /**
    * JoinSpaceViaInviteResult_UNSPECIFIED means the join outcome was not set.
-   *
-   * @generated from enum value: JoinSpaceViaInviteResult_UNSPECIFIED = 0;
    */
   JoinSpaceViaInviteResult_UNSPECIFIED = 0,
 
   /**
    * JoinSpaceViaInviteResult_ACCEPTED means the invite was accepted and the
    * shared object was joined immediately.
-   *
-   * @generated from enum value: JoinSpaceViaInviteResult_ACCEPTED = 1;
    */
   JoinSpaceViaInviteResult_ACCEPTED = 1,
 
   /**
    * JoinSpaceViaInviteResult_PENDING_OWNER_APPROVAL means the invite request is
    * waiting for owner-side mailbox processing.
-   *
-   * @generated from enum value: JoinSpaceViaInviteResult_PENDING_OWNER_APPROVAL = 2;
    */
   JoinSpaceViaInviteResult_PENDING_OWNER_APPROVAL = 2,
 
   /**
    * JoinSpaceViaInviteResult_REJECTED means the invite request was denied or is
    * otherwise not eligible to join.
-   *
-   * @generated from enum value: JoinSpaceViaInviteResult_REJECTED = 3;
    */
   JoinSpaceViaInviteResult_REJECTED = 3,
 
   /**
    * JoinSpaceViaInviteResult_OWNER_MUST_BE_ONLINE means this invite path
    * requires a live direct owner session and no owner was reachable.
-   *
-   * @generated from enum value: JoinSpaceViaInviteResult_OWNER_MUST_BE_ONLINE = 4;
    */
   JoinSpaceViaInviteResult_OWNER_MUST_BE_ONLINE = 4,
 }
 
 export const JoinSpaceViaInviteResult_Enum = /* @__PURE__ */ createEnumType(
   's4wave.session.JoinSpaceViaInviteResult',
-  JoinSpaceViaInviteResult,
+  [
+    [0, 'JoinSpaceViaInviteResult_UNSPECIFIED'],
+    [1, 'JoinSpaceViaInviteResult_ACCEPTED'],
+    [2, 'JoinSpaceViaInviteResult_PENDING_OWNER_APPROVAL'],
+    [3, 'JoinSpaceViaInviteResult_REJECTED'],
+    [4, 'JoinSpaceViaInviteResult_OWNER_MUST_BE_ONLINE'],
+  ],
 )
 
 /**
@@ -458,37 +416,34 @@ export const JoinSpaceViaInviteResult_Enum = /* @__PURE__ */ createEnumType(
 export enum MoveSpaceStoragePhase {
   /**
    * MoveSpaceStoragePhase_UNKNOWN is the zero value.
-   *
-   * @generated from enum value: MoveSpaceStoragePhase_UNKNOWN = 0;
    */
   MoveSpaceStoragePhase_UNKNOWN = 0,
 
   /**
    * MoveSpaceStoragePhase_FETCH copies blocks held only by the old backend
    * into the account's own storage.
-   *
-   * @generated from enum value: MoveSpaceStoragePhase_FETCH = 1;
    */
   MoveSpaceStoragePhase_FETCH = 1,
 
   /**
    * MoveSpaceStoragePhase_UPLOAD waits for the new backend to hold every block.
-   *
-   * @generated from enum value: MoveSpaceStoragePhase_UPLOAD = 2;
    */
   MoveSpaceStoragePhase_UPLOAD = 2,
 
   /**
    * MoveSpaceStoragePhase_DONE reports the completed move.
-   *
-   * @generated from enum value: MoveSpaceStoragePhase_DONE = 3;
    */
   MoveSpaceStoragePhase_DONE = 3,
 }
 
 export const MoveSpaceStoragePhase_Enum = /* @__PURE__ */ createEnumType(
   's4wave.session.MoveSpaceStoragePhase',
-  MoveSpaceStoragePhase,
+  [
+    [0, 'MoveSpaceStoragePhase_UNKNOWN'],
+    [1, 'MoveSpaceStoragePhase_FETCH'],
+    [2, 'MoveSpaceStoragePhase_UPLOAD'],
+    [3, 'MoveSpaceStoragePhase_DONE'],
+  ],
 )
 
 /**
@@ -499,9 +454,52 @@ export const MoveSpaceStoragePhase_Enum = /* @__PURE__ */ createEnumType(
 export interface GetSessionInfoRequest {}
 
 export const GetSessionInfoRequest: MessageType<GetSessionInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetSessionInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetSessionInfoRequest>(
     's4wave.session.GetSessionInfoRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * GetSessionInfoResponse is the response type for GetSessionInfo.
+ *
+ * @generated from message s4wave.session.GetSessionInfoResponse
+ */
+export interface GetSessionInfoResponse {
+  /**
+   * SessionRef is the session reference.
+   */
+  sessionRef?: SessionRef
+  /**
+   * PeerId is the session peer id.
+   */
+  peerId?: string
+  /**
+   * CryptoInfo contains the session's cryptographic identity info.
+   */
+  cryptoInfo?: SessionCryptoInfo
+  /**
+   * Username is the verified Spacewave Cloud username of the session's account.
+   * Empty for sessions of other providers.
+   */
+  username?: string
+  /**
+   * SigningPeerId is the peer that signs the session's Space operations and
+   * messages. It equals peer_id except for a local account, whose volume peer
+   * signs for every Session of the account.
+   */
+  signingPeerId?: string
+}
+
+export const GetSessionInfoResponse: MessageType<GetSessionInfoResponse> =
+  /* @__PURE__ */ createMessageType<GetSessionInfoResponse>(
+    's4wave.session.GetSessionInfoResponse',
+    () => [
+      [1, 'session_ref', 11, 0, SessionRef.codec],
+      [2, 'peer_id', 9],
+      [3, 'crypto_info', 11, 0, SessionCryptoInfo.codec],
+      [4, 'username', 9],
+      [5, 'signing_peer_id', 9],
+    ],
   )
 
 /**
@@ -512,110 +510,37 @@ export const GetSessionInfoRequest: MessageType<GetSessionInfoRequest> =
 export interface SessionCryptoInfo {
   /**
    * KeyType is the session key type (e.g. "Ed25519").
-   *
-   * @generated from field: string key_type = 1;
    */
   keyType?: string
   /**
    * PublicKeyBase58 is the session public key encoded as base58.
-   *
-   * @generated from field: string public_key_base58 = 2;
    */
   publicKeyBase58?: string
   /**
    * SpaceCount is the number of spaces in the session.
-   *
-   * @generated from field: uint32 space_count = 3;
    */
   spaceCount?: number
   /**
    * TotalStorageBytes is the aggregate storage size across all spaces.
-   *
-   * @generated from field: uint64 total_storage_bytes = 4;
    */
   totalStorageBytes?: bigint
   /**
    * PublicKeyPem is the session public key in PEM format.
-   *
-   * @generated from field: string public_key_pem = 5;
    */
   publicKeyPem?: string
 }
 
 export const SessionCryptoInfo: MessageType<SessionCryptoInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SessionCryptoInfo',
-    fields: [
-      { no: 1, name: 'key_type', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'public_key_base58',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'space_count', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 4,
-        name: 'total_storage_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 5, name: 'public_key_pem', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * GetSessionInfoResponse is the response type for GetSessionInfo.
- *
- * @generated from message s4wave.session.GetSessionInfoResponse
- */
-export interface GetSessionInfoResponse {
-  /**
-   * SessionRef is the session reference.
-   *
-   * @generated from field: session.SessionRef session_ref = 1;
-   */
-  sessionRef?: SessionRef
-  /**
-   * PeerId is the session peer id.
-   *
-   * @generated from field: string peer_id = 2;
-   */
-  peerId?: string
-  /**
-   * CryptoInfo contains the session's cryptographic identity info.
-   *
-   * @generated from field: s4wave.session.SessionCryptoInfo crypto_info = 3;
-   */
-  cryptoInfo?: SessionCryptoInfo
-  /**
-   * Username is the verified Spacewave Cloud username of the session's account.
-   * Empty for sessions of other providers.
-   *
-   * @generated from field: string username = 4;
-   */
-  username?: string
-  /**
-   * SigningPeerId is the peer that signs the session's Space operations and
-   * messages. It equals peer_id except for a local account, whose volume peer
-   * signs for every Session of the account.
-   *
-   * @generated from field: string signing_peer_id = 5;
-   */
-  signingPeerId?: string
-}
-
-export const GetSessionInfoResponse: MessageType<GetSessionInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.GetSessionInfoResponse',
-    fields: [
-      { no: 1, name: 'session_ref', kind: 'message', T: () => SessionRef },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'crypto_info', kind: 'message', T: SessionCryptoInfo },
-      { no: 4, name: 'username', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'signing_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SessionCryptoInfo>(
+    's4wave.session.SessionCryptoInfo',
+    () => [
+      [1, 'key_type', 9],
+      [2, 'public_key_base58', 9],
+      [3, 'space_count', 13],
+      [4, 'total_storage_bytes', 4],
+      [5, 'public_key_pem', 9],
+    ],
+  )
 
 /**
  * WatchResourcesListRequest is the request type for WatchResourcesList.
@@ -625,24 +550,15 @@ export const GetSessionInfoResponse: MessageType<GetSessionInfoResponse> =
 export interface WatchResourcesListRequest {
   /**
    * IncludeIndexObjectTypes enables durable Space index ObjectType projection.
-   *
-   * @generated from field: bool include_index_object_types = 1;
    */
   includeIndexObjectTypes?: boolean
 }
 
 export const WatchResourcesListRequest: MessageType<WatchResourcesListRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchResourcesListRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'include_index_object_types',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchResourcesListRequest>(
+    's4wave.session.WatchResourcesListRequest',
+    () => [[1, 'include_index_object_types', 8]],
+  )
 
 /**
  * WatchResourcesListResponse is the response type for WatchResourcesList.
@@ -652,25 +568,15 @@ export const WatchResourcesListRequest: MessageType<WatchResourcesListRequest> =
 export interface WatchResourcesListResponse {
   /**
    * SpacesList is the snapshot of the full spaces list.
-   *
-   * @generated from field: repeated space.SpaceSoListEntry spaces_list = 1;
    */
   spacesList?: SpaceSoListEntry[]
 }
 
 export const WatchResourcesListResponse: MessageType<WatchResourcesListResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchResourcesListResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'spaces_list',
-        kind: 'message',
-        T: () => SpaceSoListEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchResourcesListResponse>(
+    's4wave.session.WatchResourcesListResponse',
+    () => [[1, 'spaces_list', 11, 1, SpaceSoListEntry.codec]],
+  )
 
 /**
  * CreateSpaceRequest is the request type for CreateSpace.
@@ -680,125 +586,39 @@ export const WatchResourcesListResponse: MessageType<WatchResourcesListResponse>
 export interface CreateSpaceRequest {
   /**
    * SpaceName is the human readable name for the new space.
-   *
-   * @generated from field: string space_name = 1;
    */
   spaceName?: string
   /**
    * OwnerType is the owner principal type ("account" or "organization").
-   *
-   * @generated from field: string owner_type = 2;
    */
   ownerType?: string
   /**
    * OwnerId is the owner principal id (account id or organization id).
-   *
-   * @generated from field: string owner_id = 3;
    */
   ownerId?: string
   /**
    * StorageBackendId places the Space's blocks on a storage backend.
    * Empty uses the account's default storage backend.
-   *
-   * @generated from field: string storage_backend_id = 4;
    */
   storageBackendId?: string
   /**
    * AccountStorage places the Space's blocks on the account's own storage,
    * overriding the default storage backend.
-   *
-   * @generated from field: bool account_storage = 5;
    */
   accountStorage?: boolean
 }
 
 export const CreateSpaceRequest: MessageType<CreateSpaceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.CreateSpaceRequest',
-    fields: [
-      { no: 1, name: 'space_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'owner_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'owner_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 5, name: 'account_storage', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * MountSharedObjectResponse is the response type for MountSharedObject.
- *
- * @generated from message s4wave.session.MountSharedObjectResponse
- */
-export interface MountSharedObjectResponse {
-  /**
-   * Health explains a failed mount; no resource is allocated when set.
-   *
-   * @generated from field: sobject.SharedObjectHealth health = 8;
-   */
-  health?: SharedObjectHealth
-  /**
-   * ResourceId is the ID of the mounted shared object resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
-   */
-  resourceId?: number
-  /**
-   * SharedObjectMeta is the metadata for the SharedObject.
-   * Contains the body type and body metadata.
-   *
-   * @generated from field: sobject.SharedObjectMeta shared_object_meta = 2;
-   */
-  sharedObjectMeta?: SharedObjectMeta
-  /**
-   * PeerId is the peer id of our local participant for the shared object.
-   *
-   * @generated from field: string peer_id = 3;
-   */
-  peerId?: string
-  /**
-   * SharedObjectId is the id of the shared object.
-   *
-   * @generated from field: string shared_object_id = 4;
-   */
-  sharedObjectId?: string
-  /**
-   * BlockStoreId is the id of the block store used for the shared object.
-   *
-   * @generated from field: string block_store_id = 5;
-   */
-  blockStoreId?: string
-  /**
-   * HashType is the hash type preferred by the block store used for the shared object.
-   * The zero value (0) indicates any.
-   *
-   * @generated from field: hash.HashType hash_type = 6;
-   */
-  hashType?: HashType
-}
-
-export const MountSharedObjectResponse: MessageType<MountSharedObjectResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.MountSharedObjectResponse',
-    fields: [
-      { no: 8, name: 'health', kind: 'message', T: () => SharedObjectHealth },
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 2,
-        name: 'shared_object_meta',
-        kind: 'message',
-        T: () => SharedObjectMeta,
-      },
-      { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'hash_type', kind: 'enum', T: HashType_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateSpaceRequest>(
+    's4wave.session.CreateSpaceRequest',
+    () => [
+      [1, 'space_name', 9],
+      [2, 'owner_type', 9],
+      [3, 'owner_id', 9],
+      [4, 'storage_backend_id', 9],
+      [5, 'account_storage', 8],
+    ],
+  )
 
 /**
  * CreateSpaceResponse is the response type for CreateSpace.
@@ -808,74 +628,39 @@ export const MountSharedObjectResponse: MessageType<MountSharedObjectResponse> =
 export interface CreateSpaceResponse {
   /**
    * SharedObjectRef is the reference to the created SharedObject.
-   *
-   * @generated from field: sobject.SharedObjectRef shared_object_ref = 1;
    */
   sharedObjectRef?: SharedObjectRef
   /**
    * SharedObjectMeta is the metadata for the created SharedObject.
-   *
-   * @generated from field: sobject.SharedObjectMeta shared_object_meta = 2;
    */
   sharedObjectMeta?: SharedObjectMeta
   /**
    * MountedSharedObject is the mounted SharedObject resource created as part of
    * space initialization. Callers may use it instead of immediately remounting
    * the same SharedObject by id.
-   *
-   * @generated from field: s4wave.session.MountSharedObjectResponse mounted_shared_object = 3;
    */
   mountedSharedObject?: MountSharedObjectResponse
   /**
    * SharedObjectBodyResourceId is the resource id of the mounted Space body.
-   *
-   * @generated from field: uint32 shared_object_body_resource_id = 4;
    */
   sharedObjectBodyResourceId?: number
   /**
    * SpaceWorldResourceId is the resource id of the mounted Space world engine.
-   *
-   * @generated from field: uint32 space_world_resource_id = 5;
    */
   spaceWorldResourceId?: number
 }
 
 export const CreateSpaceResponse: MessageType<CreateSpaceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.CreateSpaceResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'shared_object_ref',
-        kind: 'message',
-        T: () => SharedObjectRef,
-      },
-      {
-        no: 2,
-        name: 'shared_object_meta',
-        kind: 'message',
-        T: () => SharedObjectMeta,
-      },
-      {
-        no: 3,
-        name: 'mounted_shared_object',
-        kind: 'message',
-        T: MountSharedObjectResponse,
-      },
-      {
-        no: 4,
-        name: 'shared_object_body_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 5,
-        name: 'space_world_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateSpaceResponse>(
+    's4wave.session.CreateSpaceResponse',
+    () => [
+      [1, 'shared_object_ref', 11, 0, SharedObjectRef.codec],
+      [2, 'shared_object_meta', 11, 0, SharedObjectMeta.codec],
+      [3, 'mounted_shared_object', 11, 0, MountSharedObjectResponse.codec],
+      [4, 'shared_object_body_resource_id', 13],
+      [5, 'space_world_resource_id', 13],
+    ],
+  )
 
 /**
  * DeleteSpaceRequest is the request type for DeleteSpace.
@@ -885,19 +670,15 @@ export const CreateSpaceResponse: MessageType<CreateSpaceResponse> =
 export interface DeleteSpaceRequest {
   /**
    * SharedObjectId is the id of the shared object (space) to delete.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
 }
 
 export const DeleteSpaceRequest: MessageType<DeleteSpaceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.DeleteSpaceRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteSpaceRequest>(
+    's4wave.session.DeleteSpaceRequest',
+    () => [[1, 'shared_object_id', 9]],
+  )
 
 /**
  * DeleteSpaceResponse is the response type for DeleteSpace.
@@ -907,9 +688,9 @@ export const DeleteSpaceRequest: MessageType<DeleteSpaceRequest> =
 export interface DeleteSpaceResponse {}
 
 export const DeleteSpaceResponse: MessageType<DeleteSpaceResponse> =
-  /* @__PURE__ */ createEmptyMessageType<DeleteSpaceResponse>(
+  /* @__PURE__ */ createMessageType<DeleteSpaceResponse>(
     's4wave.session.DeleteSpaceResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -920,33 +701,24 @@ export const DeleteSpaceResponse: MessageType<DeleteSpaceResponse> =
 export interface LeaveSpaceRequest {
   /**
    * SharedObjectId identifies the external shared object whose native grants are relinquished.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * SuccessorPeerId names the participant promoted to owner when the leaving
    * account hosts the Space and others remain. Empty selects the remaining
    * participant with the highest role, then the earliest admitted.
-   *
-   * @generated from field: string successor_peer_id = 2;
    */
   successorPeerId?: string
 }
 
 export const LeaveSpaceRequest: MessageType<LeaveSpaceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.LeaveSpaceRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'successor_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LeaveSpaceRequest>(
+    's4wave.session.LeaveSpaceRequest',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'successor_peer_id', 9],
+    ],
+  )
 
 /**
  * LeaveSpaceResponse acknowledges the owner's committed removal and local revocation.
@@ -956,9 +728,9 @@ export const LeaveSpaceRequest: MessageType<LeaveSpaceRequest> =
 export interface LeaveSpaceResponse {}
 
 export const LeaveSpaceResponse: MessageType<LeaveSpaceResponse> =
-  /* @__PURE__ */ createEmptyMessageType<LeaveSpaceResponse>(
+  /* @__PURE__ */ createMessageType<LeaveSpaceResponse>(
     's4wave.session.LeaveSpaceResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -969,26 +741,22 @@ export const LeaveSpaceResponse: MessageType<LeaveSpaceResponse> =
 export interface RenameSpaceRequest {
   /**
    * SharedObjectId is the id of the shared object (space) to rename.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * DisplayName is the new human-readable display name.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
 }
 
 export const RenameSpaceRequest: MessageType<RenameSpaceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.RenameSpaceRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RenameSpaceRequest>(
+    's4wave.session.RenameSpaceRequest',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'display_name', 9],
+    ],
+  )
 
 /**
  * RenameSpaceResponse is the response type for RenameSpace.
@@ -998,9 +766,9 @@ export const RenameSpaceRequest: MessageType<RenameSpaceRequest> =
 export interface RenameSpaceResponse {}
 
 export const RenameSpaceResponse: MessageType<RenameSpaceResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RenameSpaceResponse>(
+  /* @__PURE__ */ createMessageType<RenameSpaceResponse>(
     's4wave.session.RenameSpaceResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1011,19 +779,67 @@ export const RenameSpaceResponse: MessageType<RenameSpaceResponse> =
 export interface MountSharedObjectRequest {
   /**
    * SharedObjectId is the id of the shared object to mount.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
 }
 
 export const MountSharedObjectRequest: MessageType<MountSharedObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.MountSharedObjectRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MountSharedObjectRequest>(
+    's4wave.session.MountSharedObjectRequest',
+    () => [[1, 'shared_object_id', 9]],
+  )
+
+/**
+ * MountSharedObjectResponse is the response type for MountSharedObject.
+ *
+ * @generated from message s4wave.session.MountSharedObjectResponse
+ */
+export interface MountSharedObjectResponse {
+  /**
+   * Health explains a failed mount; no resource is allocated when set.
+   */
+  health?: SharedObjectHealth
+  /**
+   * ResourceId is the ID of the mounted shared object resource.
+   */
+  resourceId?: number
+  /**
+   * SharedObjectMeta is the metadata for the SharedObject.
+   * Contains the body type and body metadata.
+   */
+  sharedObjectMeta?: SharedObjectMeta
+  /**
+   * PeerId is the peer id of our local participant for the shared object.
+   */
+  peerId?: string
+  /**
+   * SharedObjectId is the id of the shared object.
+   */
+  sharedObjectId?: string
+  /**
+   * BlockStoreId is the id of the block store used for the shared object.
+   */
+  blockStoreId?: string
+  /**
+   * HashType is the hash type preferred by the block store used for the shared object.
+   * The zero value (0) indicates any.
+   */
+  hashType?: HashType
+}
+
+export const MountSharedObjectResponse: MessageType<MountSharedObjectResponse> =
+  /* @__PURE__ */ createMessageType<MountSharedObjectResponse>(
+    's4wave.session.MountSharedObjectResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'shared_object_meta', 11, 0, SharedObjectMeta.codec],
+      [3, 'peer_id', 9],
+      [4, 'shared_object_id', 9],
+      [5, 'block_store_id', 9],
+      [6, 'hash_type', 14, 0, HashType_Enum],
+      [8, 'health', 11, 0, SharedObjectHealth.codec],
+    ],
+  )
 
 /**
  * WatchSharedObjectHealthRequest is the request type for WatchSharedObjectHealth.
@@ -1033,19 +849,15 @@ export const MountSharedObjectRequest: MessageType<MountSharedObjectRequest> =
 export interface WatchSharedObjectHealthRequest {
   /**
    * SharedObjectId is the id of the shared object to watch.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
 }
 
 export const WatchSharedObjectHealthRequest: MessageType<WatchSharedObjectHealthRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchSharedObjectHealthRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchSharedObjectHealthRequest>(
+    's4wave.session.WatchSharedObjectHealthRequest',
+    () => [[1, 'shared_object_id', 9]],
+  )
 
 /**
  * WatchSharedObjectHealthResponse is the response type for WatchSharedObjectHealth.
@@ -1055,19 +867,15 @@ export const WatchSharedObjectHealthRequest: MessageType<WatchSharedObjectHealth
 export interface WatchSharedObjectHealthResponse {
   /**
    * Health is the current SharedObject health snapshot.
-   *
-   * @generated from field: sobject.SharedObjectHealth health = 1;
    */
   health?: SharedObjectHealth
 }
 
 export const WatchSharedObjectHealthResponse: MessageType<WatchSharedObjectHealthResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchSharedObjectHealthResponse',
-    fields: [
-      { no: 1, name: 'health', kind: 'message', T: () => SharedObjectHealth },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchSharedObjectHealthResponse>(
+    's4wave.session.WatchSharedObjectHealthResponse',
+    () => [[1, 'health', 11, 0, SharedObjectHealth.codec]],
+  )
 
 /**
  * WatchSyncStatusRequest is the request type for WatchSyncStatus.
@@ -1077,9 +885,9 @@ export const WatchSharedObjectHealthResponse: MessageType<WatchSharedObjectHealt
 export interface WatchSyncStatusRequest {}
 
 export const WatchSyncStatusRequest: MessageType<WatchSyncStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSyncStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchSyncStatusRequest>(
     's4wave.session.WatchSyncStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1090,9 +898,9 @@ export const WatchSyncStatusRequest: MessageType<WatchSyncStatusRequest> =
 export interface WatchStorageStatsRequest {}
 
 export const WatchStorageStatsRequest: MessageType<WatchStorageStatsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchStorageStatsRequest>(
+  /* @__PURE__ */ createMessageType<WatchStorageStatsRequest>(
     's4wave.session.WatchStorageStatsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1103,159 +911,52 @@ export const WatchStorageStatsRequest: MessageType<WatchStorageStatsRequest> =
 export interface SyncBlockStoreStatus {
   /**
    * BlockStoreId is the mounted block store identifier.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * DirectHitCount counts reads satisfied by demand-driven direct lookup.
-   *
-   * @generated from field: uint64 direct_hit_count = 2;
    */
   directHitCount?: bigint
   /**
    * CloudHitCount counts reads satisfied by the Cloud lower store.
-   *
-   * @generated from field: uint64 cloud_hit_count = 3;
    */
   cloudHitCount?: bigint
   /**
    * CacheHitCount counts reads satisfied by the local upper cache.
-   *
-   * @generated from field: uint64 cache_hit_count = 4;
    */
   cacheHitCount?: bigint
   /**
    * LastSource is the latest observed source for this block store.
-   *
-   * @generated from field: s4wave.session.SyncBlockSource last_source = 5;
    */
   lastSource?: SyncBlockSource
   /**
    * AcceptedCheckpointHeight is the height of the latest accepted SharedObject checkpoint observed for this block store.
-   *
-   * @generated from field: uint64 accepted_checkpoint_height = 6;
    */
   acceptedCheckpointHeight?: bigint
   /**
    * CloudRemoteSequence is the latest Cloud block-store sequence observed locally.
-   *
-   * @generated from field: uint64 cloud_remote_sequence = 7;
    */
   cloudRemoteSequence?: bigint
   /**
    * SharedObjectId identifies the SharedObject that supplied AcceptedCheckpointHeight.
-   *
-   * @generated from field: string shared_object_id = 8;
    */
   sharedObjectId?: string
 }
 
 export const SyncBlockStoreStatus: MessageType<SyncBlockStoreStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SyncBlockStoreStatus',
-    fields: [
-      { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'direct_hit_count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'cloud_hit_count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'cache_hit_count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'last_source', kind: 'enum', T: SyncBlockSource_Enum },
-      {
-        no: 6,
-        name: 'accepted_checkpoint_height',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 7,
-        name: 'cloud_remote_sequence',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 8, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SyncLocalCopyStatus describes the local copy of one Space's current head.
- * Completion is recorded only after every reachable block is stored durably.
- *
- * @generated from message s4wave.session.SyncLocalCopyStatus
- */
-export interface SyncLocalCopyStatus {
-  /**
-   * @generated from field: string shared_object_id = 1;
-   */
-  sharedObjectId?: string
-  /**
-   * @generated from field: string display_name = 2;
-   */
-  displayName?: string
-  /**
-   * @generated from field: uint64 blocks = 3;
-   */
-  blocks?: bigint
-  /**
-   * @generated from field: uint64 bytes = 4;
-   */
-  bytes?: bigint
-  /**
-   * @generated from field: bool complete = 5;
-   */
-  complete?: boolean
-  /**
-   * @generated from field: string error = 6;
-   */
-  error?: string
-}
-
-export const SyncLocalCopyStatus: MessageType<SyncLocalCopyStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SyncLocalCopyStatus',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'blocks', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'complete', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SyncPeerTransferStatus reports one peer's traffic on the active transport.
- *
- * @generated from message s4wave.session.SyncPeerTransferStatus
- */
-export interface SyncPeerTransferStatus {
-  /**
-   * @generated from field: string peer_id = 1;
-   */
-  peerId?: string
-  /**
-   * @generated from field: uint64 uploaded_bytes = 2;
-   */
-  uploadedBytes?: bigint
-  /**
-   * @generated from field: uint64 downloaded_bytes = 3;
-   */
-  downloadedBytes?: bigint
-  /**
-   * @generated from field: bool connected = 4;
-   */
-  connected?: boolean
-}
-
-export const SyncPeerTransferStatus: MessageType<SyncPeerTransferStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SyncPeerTransferStatus',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'uploaded_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'downloaded_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'connected', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SyncBlockStoreStatus>(
+    's4wave.session.SyncBlockStoreStatus',
+    () => [
+      [1, 'block_store_id', 9],
+      [2, 'direct_hit_count', 4],
+      [3, 'cloud_hit_count', 4],
+      [4, 'cache_hit_count', 4],
+      [5, 'last_source', 14, 0, SyncBlockSource_Enum],
+      [6, 'accepted_checkpoint_height', 4],
+      [7, 'cloud_remote_sequence', 4],
+      [8, 'shared_object_id', 9],
+    ],
+  )
 
 /**
  * WatchSyncStatusResponse is the response type for WatchSyncStatus.
@@ -1265,713 +966,368 @@ export const SyncPeerTransferStatus: MessageType<SyncPeerTransferStatus> =
 export interface WatchSyncStatusResponse {
   /**
    * State is the aggregate sync state.
-   *
-   * @generated from field: s4wave.session.SyncStatusState state = 1;
    */
   state?: SyncStatusState
   /**
    * Direction is the active transfer direction, when any.
-   *
-   * @generated from field: s4wave.session.SyncActivityDirection direction = 2;
    */
   direction?: SyncActivityDirection
   /**
    * TransportState is the cloud transport state.
-   *
-   * @generated from field: s4wave.session.SyncTransportState transport_state = 3;
    */
   transportState?: SyncTransportState
   /**
    * P2PState is the p2p lifecycle state.
-   *
-   * @generated from field: s4wave.session.SyncP2PState p2p_state = 4;
    */
   p2pState?: SyncP2PState
   /**
    * PendingUploadBytes is the approximate upload backlog in bytes.
-   *
-   * @generated from field: uint64 pending_upload_bytes = 5;
    */
   pendingUploadBytes?: bigint
   /**
    * PendingDownloadBytes is the approximate download backlog in bytes.
-   *
-   * @generated from field: uint64 pending_download_bytes = 6;
    */
   pendingDownloadBytes?: bigint
   /**
    * PendingUploadCount is the approximate number of pending upload items.
-   *
-   * @generated from field: uint32 pending_upload_count = 7;
    */
   pendingUploadCount?: number
   /**
    * PendingDownloadCount is the approximate number of pending download items.
-   *
-   * @generated from field: uint32 pending_download_count = 8;
    */
   pendingDownloadCount?: number
   /**
    * UploadBytesPerSecond is the approximate current upload rate.
-   *
-   * @generated from field: uint64 upload_bytes_per_second = 9;
    */
   uploadBytesPerSecond?: bigint
   /**
    * DownloadBytesPerSecond is the approximate current download rate.
-   *
-   * @generated from field: uint64 download_bytes_per_second = 10;
    */
   downloadBytesPerSecond?: bigint
   /**
    * ActiveUploadBytes is the approximate byte size of upload work in flight.
-   *
-   * @generated from field: uint64 active_upload_bytes = 52;
    */
   activeUploadBytes?: bigint
   /**
    * ActiveUploadTransferredBytes is the approximate in-flight upload bytes sent.
-   *
-   * @generated from field: uint64 active_upload_transferred_bytes = 53;
    */
   activeUploadTransferredBytes?: bigint
   /**
    * InFlightUploadCount is the number of active upload requests.
-   *
-   * @generated from field: uint32 in_flight_upload_count = 54;
    */
   inFlightUploadCount?: number
   /**
    * ActiveStoreCount is the number of stores currently contributing activity.
-   *
-   * @generated from field: uint32 active_store_count = 11;
    */
   activeStoreCount?: number
   /**
    * ActivePeerCount is the number of connected p2p peers.
-   *
-   * @generated from field: uint32 active_peer_count = 12;
    */
   activePeerCount?: number
   /**
    * LastError is the latest sync or transport error message, if any.
-   *
-   * @generated from field: string last_error = 13;
    */
   lastError?: string
   /**
    * LastActivityAt is the latest sync activity timestamp, if known.
-   *
-   * @generated from field: google.protobuf.Timestamp last_activity_at = 14;
    */
   lastActivityAt?: Date
   /**
    * PackRangeRequestCount is the number of completed packfile range requests.
-   *
-   * @generated from field: uint64 pack_range_request_count = 15;
    */
   packRangeRequestCount?: bigint
   /**
    * PackRangeResponseBytes is the number of bytes returned by packfile range responses.
-   *
-   * @generated from field: uint64 pack_range_response_bytes = 16;
    */
   packRangeResponseBytes?: bigint
   /**
    * PackFullResponseFallbackCount is the number of range requests served by full responses.
-   *
-   * @generated from field: uint64 pack_full_response_fallback_count = 17;
    */
   packFullResponseFallbackCount?: bigint
   /**
    * PackFullResponseFallbackBytes is the number of discarded prefix bytes from full responses.
-   *
-   * @generated from field: uint64 pack_full_response_fallback_bytes = 18;
    */
   packFullResponseFallbackBytes?: bigint
   /**
    * PackLastFullResponseFallbackBytes is the latest full-response prefix discard.
-   *
-   * @generated from field: uint64 pack_last_full_response_fallback_bytes = 19;
    */
   packLastFullResponseFallbackBytes?: bigint
   /**
    * PackManifestEntries is the number of packfile manifest entries.
-   *
-   * @generated from field: uint32 pack_manifest_entries = 20;
    */
   packManifestEntries?: number
   /**
    * PackBlockCountTotal is the sum of manifest entry block counts.
-   *
-   * @generated from field: uint64 pack_block_count_total = 21;
    */
   packBlockCountTotal?: bigint
   /**
    * PackBlockCountMin is the smallest manifest entry block count.
-   *
-   * @generated from field: uint64 pack_block_count_min = 22;
    */
   packBlockCountMin?: bigint
   /**
    * PackBlockCountMax is the largest manifest entry block count.
-   *
-   * @generated from field: uint64 pack_block_count_max = 23;
    */
   packBlockCountMax?: bigint
   /**
    * PackSizeBytesTotal is the sum of manifest entry pack sizes.
-   *
-   * @generated from field: uint64 pack_size_bytes_total = 24;
    */
   packSizeBytesTotal?: bigint
   /**
    * PackSizeBytesMin is the smallest manifest entry pack size.
-   *
-   * @generated from field: uint64 pack_size_bytes_min = 25;
    */
   packSizeBytesMin?: bigint
   /**
    * PackSizeBytesMax is the largest manifest entry pack size.
-   *
-   * @generated from field: uint64 pack_size_bytes_max = 26;
    */
   packSizeBytesMax?: bigint
   /**
    * PackBloomFilterCount is the number of entries with valid bloom metadata.
-   *
-   * @generated from field: uint32 pack_bloom_filter_count = 27;
    */
   packBloomFilterCount?: number
   /**
    * PackBloomMissingCount is the number of entries missing bloom metadata.
-   *
-   * @generated from field: uint32 pack_bloom_missing_count = 28;
    */
   packBloomMissingCount?: number
   /**
    * PackBloomInvalidCount is the number of entries with malformed bloom metadata.
-   *
-   * @generated from field: uint32 pack_bloom_invalid_count = 29;
    */
   packBloomInvalidCount?: number
   /**
    * PackBloomMaxFalsePositiveRate is the highest estimated bloom false-positive rate.
-   *
-   * @generated from field: double pack_bloom_max_false_positive_rate = 31;
    */
   packBloomMaxFalsePositiveRate?: number
   /**
    * PackBloomRiskPackCount is the number of packs above the bloom false-positive target.
-   *
-   * @generated from field: uint32 pack_bloom_risk_pack_count = 32;
    */
   packBloomRiskPackCount?: number
   /**
    * PackLookupCount is the number of pack lookups.
-   *
-   * @generated from field: uint64 pack_lookup_count = 33;
    */
   packLookupCount?: bigint
   /**
    * PackCandidatePacks is the total number of manifest candidates selected by lookups.
-   *
-   * @generated from field: uint64 pack_candidate_packs = 34;
    */
   packCandidatePacks?: bigint
   /**
    * PackOpenedPacks is the total number of candidate packs opened by lookups.
-   *
-   * @generated from field: uint64 pack_opened_packs = 35;
    */
   packOpenedPacks?: bigint
   /**
    * PackNegativePacks is the total number of opened candidates that missed.
-   *
-   * @generated from field: uint64 pack_negative_packs = 36;
    */
   packNegativePacks?: bigint
   /**
    * PackTargetHits is the total number of lookups that found the target block.
-   *
-   * @generated from field: uint64 pack_target_hits = 37;
    */
   packTargetHits?: bigint
   /**
    * PackLastCandidatePacks is the candidate count from the latest lookup.
-   *
-   * @generated from field: uint32 pack_last_candidate_packs = 38;
    */
   packLastCandidatePacks?: number
   /**
    * PackLastOpenedPacks is the opened pack count from the latest lookup.
-   *
-   * @generated from field: uint32 pack_last_opened_packs = 39;
    */
   packLastOpenedPacks?: number
   /**
    * PackLastNegativePacks is the negative pack count from the latest lookup.
-   *
-   * @generated from field: uint32 pack_last_negative_packs = 40;
    */
   packLastNegativePacks?: number
   /**
    * PackLastTargetHit is true when the latest lookup found its target.
-   *
-   * @generated from field: bool pack_last_target_hit = 41;
    */
   packLastTargetHit?: boolean
   /**
    * PackIndexCacheHits is the number of pack index cache hits.
-   *
-   * @generated from field: uint64 pack_index_cache_hits = 42;
    */
   packIndexCacheHits?: bigint
   /**
    * PackIndexCacheMisses is the number of pack index cache misses.
-   *
-   * @generated from field: uint64 pack_index_cache_misses = 43;
    */
   packIndexCacheMisses?: bigint
   /**
    * PackIndexCacheReadErrors is the number of pack index cache read errors.
-   *
-   * @generated from field: uint64 pack_index_cache_read_errors = 44;
    */
   packIndexCacheReadErrors?: bigint
   /**
    * PackIndexCacheWriteErrors is the number of pack index cache write errors.
-   *
-   * @generated from field: uint64 pack_index_cache_write_errors = 45;
    */
   packIndexCacheWriteErrors?: bigint
   /**
    * PackRemoteIndexLoads is the number of remote pack index loads.
-   *
-   * @generated from field: uint64 pack_remote_index_loads = 46;
    */
   packRemoteIndexLoads?: bigint
   /**
    * PackRemoteIndexBytes is the number of remote pack index bytes fetched.
-   *
-   * @generated from field: uint64 pack_remote_index_bytes = 47;
    */
   packRemoteIndexBytes?: bigint
   /**
    * PackLastRemoteIndexBytes is the latest remote pack index load byte count.
-   *
-   * @generated from field: uint64 pack_last_remote_index_bytes = 48;
    */
   packLastRemoteIndexBytes?: bigint
   /**
    * PackIndexTailFetchCount is the number of completed index-tail range fetches.
-   *
-   * @generated from field: uint64 pack_index_tail_fetch_count = 49;
    */
   packIndexTailFetchCount?: bigint
   /**
    * PackIndexTailFetchBytes is the number of requested index-tail range bytes.
-   *
-   * @generated from field: uint64 pack_index_tail_fetch_bytes = 50;
    */
   packIndexTailFetchBytes?: bigint
   /**
    * PackIndexTailResponseBytes is the number of bytes returned by index-tail range responses.
-   *
-   * @generated from field: uint64 pack_index_tail_response_bytes = 51;
    */
   packIndexTailResponseBytes?: bigint
   /**
    * DirectP2PDisabled is the configured Session-local direct transport policy.
    * The zero value preserves direct P2P for existing Sessions.
-   *
-   * @generated from field: bool direct_p2p_disabled = 55;
    */
   directP2pDisabled?: boolean
   /**
    * BlockStores contains owner-observed mechanics keyed by mounted block store.
-   *
-   * @generated from field: repeated s4wave.session.SyncBlockStoreStatus block_stores = 56;
    */
   blockStores?: SyncBlockStoreStatus[]
   /**
    * local_account selects account-replica status instead of cloud queues.
-   *
-   * @generated from field: bool local_account = 57;
    */
   localAccount?: boolean
   /**
    * local_copies reports durable availability for each accepted Space head.
-   *
-   * @generated from field: repeated s4wave.session.SyncLocalCopyStatus local_copies = 58;
    */
   localCopies?: SyncLocalCopyStatus[]
   /**
    * peer_upload_bytes and peer_download_bytes count actual block payload traffic.
-   *
-   * @generated from field: uint64 peer_upload_bytes = 59;
    */
   peerUploadBytes?: bigint
-  /**
-   * @generated from field: uint64 peer_download_bytes = 60;
-   */
   peerDownloadBytes?: bigint
   /**
    * peers breaks the payload totals down by authenticated Session peer.
-   *
-   * @generated from field: repeated s4wave.session.SyncPeerTransferStatus peers = 61;
    */
   peers?: SyncPeerTransferStatus[]
   /**
    * UploadError is the latest upload failure of a store whose uploads are
    * still pending, empty while pending uploads succeed. Unlike LastError, it
    * ignores download and transport errors.
-   *
-   * @generated from field: string upload_error = 62;
    */
   uploadError?: string
 }
 
 export const WatchSyncStatusResponse: MessageType<WatchSyncStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchSyncStatusResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'enum', T: SyncStatusState_Enum },
-      { no: 2, name: 'direction', kind: 'enum', T: SyncActivityDirection_Enum },
-      {
-        no: 3,
-        name: 'transport_state',
-        kind: 'enum',
-        T: SyncTransportState_Enum,
-      },
-      { no: 4, name: 'p2p_state', kind: 'enum', T: SyncP2PState_Enum },
-      {
-        no: 5,
-        name: 'pending_upload_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 6,
-        name: 'pending_download_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 7,
-        name: 'pending_upload_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 8,
-        name: 'pending_download_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 9,
-        name: 'upload_bytes_per_second',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 10,
-        name: 'download_bytes_per_second',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 52,
-        name: 'active_upload_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 53,
-        name: 'active_upload_transferred_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 54,
-        name: 'in_flight_upload_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 11,
-        name: 'active_store_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 12,
-        name: 'active_peer_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 13, name: 'last_error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 14, name: 'last_activity_at', kind: 'message', T: () => Timestamp },
-      {
-        no: 15,
-        name: 'pack_range_request_count',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 16,
-        name: 'pack_range_response_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 17,
-        name: 'pack_full_response_fallback_count',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 18,
-        name: 'pack_full_response_fallback_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 19,
-        name: 'pack_last_full_response_fallback_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 20,
-        name: 'pack_manifest_entries',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 21,
-        name: 'pack_block_count_total',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 22,
-        name: 'pack_block_count_min',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 23,
-        name: 'pack_block_count_max',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 24,
-        name: 'pack_size_bytes_total',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 25,
-        name: 'pack_size_bytes_min',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 26,
-        name: 'pack_size_bytes_max',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 27,
-        name: 'pack_bloom_filter_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 28,
-        name: 'pack_bloom_missing_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 29,
-        name: 'pack_bloom_invalid_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 31,
-        name: 'pack_bloom_max_false_positive_rate',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-      },
-      {
-        no: 32,
-        name: 'pack_bloom_risk_pack_count',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 33,
-        name: 'pack_lookup_count',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 34,
-        name: 'pack_candidate_packs',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 35,
-        name: 'pack_opened_packs',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 36,
-        name: 'pack_negative_packs',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 37,
-        name: 'pack_target_hits',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 38,
-        name: 'pack_last_candidate_packs',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 39,
-        name: 'pack_last_opened_packs',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 40,
-        name: 'pack_last_negative_packs',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 41,
-        name: 'pack_last_target_hit',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      {
-        no: 42,
-        name: 'pack_index_cache_hits',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 43,
-        name: 'pack_index_cache_misses',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 44,
-        name: 'pack_index_cache_read_errors',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 45,
-        name: 'pack_index_cache_write_errors',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 46,
-        name: 'pack_remote_index_loads',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 47,
-        name: 'pack_remote_index_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 48,
-        name: 'pack_last_remote_index_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 49,
-        name: 'pack_index_tail_fetch_count',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 50,
-        name: 'pack_index_tail_fetch_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 51,
-        name: 'pack_index_tail_response_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 55,
-        name: 'direct_p2p_disabled',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      {
-        no: 56,
-        name: 'block_stores',
-        kind: 'message',
-        T: SyncBlockStoreStatus,
-        repeated: true,
-      },
-      { no: 57, name: 'local_account', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 58,
-        name: 'local_copies',
-        kind: 'message',
-        T: SyncLocalCopyStatus,
-        repeated: true,
-      },
-      {
-        no: 59,
-        name: 'peer_upload_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 60,
-        name: 'peer_download_bytes',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 61,
-        name: 'peers',
-        kind: 'message',
-        T: SyncPeerTransferStatus,
-        repeated: true,
-      },
-      { no: 62, name: 'upload_error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchSyncStatusResponse>(
+    's4wave.session.WatchSyncStatusResponse',
+    () => [
+      [1, 'state', 14, 0, SyncStatusState_Enum],
+      [2, 'direction', 14, 0, SyncActivityDirection_Enum],
+      [3, 'transport_state', 14, 0, SyncTransportState_Enum],
+      [4, 'p2p_state', 14, 0, SyncP2PState_Enum],
+      [5, 'pending_upload_bytes', 4],
+      [6, 'pending_download_bytes', 4],
+      [7, 'pending_upload_count', 13],
+      [8, 'pending_download_count', 13],
+      [9, 'upload_bytes_per_second', 4],
+      [10, 'download_bytes_per_second', 4],
+      [11, 'active_store_count', 13],
+      [12, 'active_peer_count', 13],
+      [13, 'last_error', 9],
+      [14, 'last_activity_at', 11, 0, Timestamp.codec],
+      [15, 'pack_range_request_count', 4],
+      [16, 'pack_range_response_bytes', 4],
+      [17, 'pack_full_response_fallback_count', 4],
+      [18, 'pack_full_response_fallback_bytes', 4],
+      [19, 'pack_last_full_response_fallback_bytes', 4],
+      [20, 'pack_manifest_entries', 13],
+      [21, 'pack_block_count_total', 4],
+      [22, 'pack_block_count_min', 4],
+      [23, 'pack_block_count_max', 4],
+      [24, 'pack_size_bytes_total', 4],
+      [25, 'pack_size_bytes_min', 4],
+      [26, 'pack_size_bytes_max', 4],
+      [27, 'pack_bloom_filter_count', 13],
+      [28, 'pack_bloom_missing_count', 13],
+      [29, 'pack_bloom_invalid_count', 13],
+      [31, 'pack_bloom_max_false_positive_rate', 1],
+      [32, 'pack_bloom_risk_pack_count', 13],
+      [33, 'pack_lookup_count', 4],
+      [34, 'pack_candidate_packs', 4],
+      [35, 'pack_opened_packs', 4],
+      [36, 'pack_negative_packs', 4],
+      [37, 'pack_target_hits', 4],
+      [38, 'pack_last_candidate_packs', 13],
+      [39, 'pack_last_opened_packs', 13],
+      [40, 'pack_last_negative_packs', 13],
+      [41, 'pack_last_target_hit', 8],
+      [42, 'pack_index_cache_hits', 4],
+      [43, 'pack_index_cache_misses', 4],
+      [44, 'pack_index_cache_read_errors', 4],
+      [45, 'pack_index_cache_write_errors', 4],
+      [46, 'pack_remote_index_loads', 4],
+      [47, 'pack_remote_index_bytes', 4],
+      [48, 'pack_last_remote_index_bytes', 4],
+      [49, 'pack_index_tail_fetch_count', 4],
+      [50, 'pack_index_tail_fetch_bytes', 4],
+      [51, 'pack_index_tail_response_bytes', 4],
+      [52, 'active_upload_bytes', 4],
+      [53, 'active_upload_transferred_bytes', 4],
+      [54, 'in_flight_upload_count', 13],
+      [55, 'direct_p2p_disabled', 8],
+      [56, 'block_stores', 11, 1, SyncBlockStoreStatus.codec],
+      [57, 'local_account', 8],
+      [58, 'local_copies', 11, 1, SyncLocalCopyStatus.codec],
+      [59, 'peer_upload_bytes', 4],
+      [60, 'peer_download_bytes', 4],
+      [61, 'peers', 11, 1, SyncPeerTransferStatus.codec],
+      [62, 'upload_error', 9],
+    ],
+  )
+
+/**
+ * SyncPeerTransferStatus reports one peer's traffic on the active transport.
+ *
+ * @generated from message s4wave.session.SyncPeerTransferStatus
+ */
+export interface SyncPeerTransferStatus {
+  peerId?: string
+  uploadedBytes?: bigint
+  downloadedBytes?: bigint
+  connected?: boolean
+}
+
+export const SyncPeerTransferStatus: MessageType<SyncPeerTransferStatus> =
+  /* @__PURE__ */ createMessageType<SyncPeerTransferStatus>(
+    's4wave.session.SyncPeerTransferStatus',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'uploaded_bytes', 4],
+      [3, 'downloaded_bytes', 4],
+      [4, 'connected', 8],
+    ],
+  )
+
+/**
+ * SyncLocalCopyStatus describes the local copy of one Space's current head.
+ * Completion is recorded only after every reachable block is stored durably.
+ *
+ * @generated from message s4wave.session.SyncLocalCopyStatus
+ */
+export interface SyncLocalCopyStatus {
+  sharedObjectId?: string
+  displayName?: string
+  blocks?: bigint
+  bytes?: bigint
+  complete?: boolean
+  error?: string
+}
+
+export const SyncLocalCopyStatus: MessageType<SyncLocalCopyStatus> =
+  /* @__PURE__ */ createMessageType<SyncLocalCopyStatus>(
+    's4wave.session.SyncLocalCopyStatus',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'display_name', 9],
+      [3, 'blocks', 4],
+      [4, 'bytes', 4],
+      [5, 'complete', 8],
+      [6, 'error', 9],
+    ],
+  )
 
 /**
  * WatchStorageStatsResponse is the response type for WatchStorageStats.
@@ -1981,33 +1337,27 @@ export const WatchSyncStatusResponse: MessageType<WatchSyncStatusResponse> =
 export interface WatchStorageStatsResponse {
   /**
    * Supported indicates whether the provider can report storage stats.
-   *
-   * @generated from field: bool supported = 1;
    */
   supported?: boolean
   /**
    * TotalBytes is the total bytes stored by the session provider.
-   *
-   * @generated from field: uint64 total_bytes = 2;
    */
   totalBytes?: bigint
   /**
    * BlockCount is the number of stored blocks reported by the session provider.
-   *
-   * @generated from field: uint64 block_count = 3;
    */
   blockCount?: bigint
 }
 
 export const WatchStorageStatsResponse: MessageType<WatchStorageStatsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchStorageStatsResponse',
-    fields: [
-      { no: 1, name: 'supported', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'total_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'block_count', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchStorageStatsResponse>(
+    's4wave.session.WatchStorageStatsResponse',
+    () => [
+      [1, 'supported', 8],
+      [2, 'total_bytes', 4],
+      [3, 'block_count', 4],
+    ],
+  )
 
 /**
  * WatchLockStateRequest is the request type for WatchLockState.
@@ -2017,9 +1367,9 @@ export const WatchStorageStatsResponse: MessageType<WatchStorageStatsResponse> =
 export interface WatchLockStateRequest {}
 
 export const WatchLockStateRequest: MessageType<WatchLockStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchLockStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchLockStateRequest>(
     's4wave.session.WatchLockStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2030,26 +1380,22 @@ export const WatchLockStateRequest: MessageType<WatchLockStateRequest> =
 export interface WatchLockStateResponse {
   /**
    * Mode is the current lock mode.
-   *
-   * @generated from field: session.SessionLockMode mode = 1;
    */
   mode?: SessionLockMode
   /**
    * Locked is true if the session is currently locked (PIN mode and not yet unlocked).
-   *
-   * @generated from field: bool locked = 2;
    */
   locked?: boolean
 }
 
 export const WatchLockStateResponse: MessageType<WatchLockStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchLockStateResponse',
-    fields: [
-      { no: 1, name: 'mode', kind: 'enum', T: SessionLockMode_Enum },
-      { no: 2, name: 'locked', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchLockStateResponse>(
+    's4wave.session.WatchLockStateResponse',
+    () => [
+      [1, 'mode', 14, 0, SessionLockMode_Enum],
+      [2, 'locked', 8],
+    ],
+  )
 
 /**
  * SetLockModeRequest is the request type for SetLockMode.
@@ -2059,26 +1405,22 @@ export const WatchLockStateResponse: MessageType<WatchLockStateResponse> =
 export interface SetLockModeRequest {
   /**
    * Mode is the desired lock mode.
-   *
-   * @generated from field: session.SessionLockMode mode = 1;
    */
   mode?: SessionLockMode
   /**
    * Pin is required when mode is PIN_ENCRYPTED.
-   *
-   * @generated from field: bytes pin = 2;
    */
   pin?: Uint8Array
 }
 
 export const SetLockModeRequest: MessageType<SetLockModeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SetLockModeRequest',
-    fields: [
-      { no: 1, name: 'mode', kind: 'enum', T: SessionLockMode_Enum },
-      { no: 2, name: 'pin', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetLockModeRequest>(
+    's4wave.session.SetLockModeRequest',
+    () => [
+      [1, 'mode', 14, 0, SessionLockMode_Enum],
+      [2, 'pin', 12],
+    ],
+  )
 
 /**
  * SetLockModeResponse is the response type for SetLockMode.
@@ -2088,9 +1430,9 @@ export const SetLockModeRequest: MessageType<SetLockModeRequest> =
 export interface SetLockModeResponse {}
 
 export const SetLockModeResponse: MessageType<SetLockModeResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetLockModeResponse>(
+  /* @__PURE__ */ createMessageType<SetLockModeResponse>(
     's4wave.session.SetLockModeResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2101,19 +1443,15 @@ export const SetLockModeResponse: MessageType<SetLockModeResponse> =
 export interface SetDirectP2PEnabledRequest {
   /**
    * Enabled controls whether direct Session transport mechanics may run.
-   *
-   * @generated from field: bool enabled = 1;
    */
   enabled?: boolean
 }
 
 export const SetDirectP2PEnabledRequest: MessageType<SetDirectP2PEnabledRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SetDirectP2PEnabledRequest',
-    fields: [
-      { no: 1, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetDirectP2PEnabledRequest>(
+    's4wave.session.SetDirectP2PEnabledRequest',
+    () => [[1, 'enabled', 8]],
+  )
 
 /**
  * SetDirectP2PEnabledResponse acknowledges the persisted policy update.
@@ -2123,9 +1461,9 @@ export const SetDirectP2PEnabledRequest: MessageType<SetDirectP2PEnabledRequest>
 export interface SetDirectP2PEnabledResponse {}
 
 export const SetDirectP2PEnabledResponse: MessageType<SetDirectP2PEnabledResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetDirectP2PEnabledResponse>(
+  /* @__PURE__ */ createMessageType<SetDirectP2PEnabledResponse>(
     's4wave.session.SetDirectP2PEnabledResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2136,41 +1474,33 @@ export const SetDirectP2PEnabledResponse: MessageType<SetDirectP2PEnabledRespons
 export interface SetBackgroundPluginRequest {
   /**
    * SpaceId is the shared object ID of the Space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * PluginId is the manifest ID of the plugin.
-   *
-   * @generated from field: string plugin_id = 2;
    */
   pluginId?: string
   /**
    * Enabled confirms the plugin to run in the background, or withdraws it.
-   *
-   * @generated from field: bool enabled = 3;
    */
   enabled?: boolean
   /**
    * Suspended keeps an enabled confirmation while the plugin does not run in
    * the background. Clearing it resumes the plugin.
-   *
-   * @generated from field: bool suspended = 4;
    */
   suspended?: boolean
 }
 
 export const SetBackgroundPluginRequest: MessageType<SetBackgroundPluginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SetBackgroundPluginRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'suspended', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetBackgroundPluginRequest>(
+    's4wave.session.SetBackgroundPluginRequest',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'plugin_id', 9],
+      [3, 'enabled', 8],
+      [4, 'suspended', 8],
+    ],
+  )
 
 /**
  * SetBackgroundPluginResponse acknowledges the persisted confirmation.
@@ -2180,9 +1510,9 @@ export const SetBackgroundPluginRequest: MessageType<SetBackgroundPluginRequest>
 export interface SetBackgroundPluginResponse {}
 
 export const SetBackgroundPluginResponse: MessageType<SetBackgroundPluginResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetBackgroundPluginResponse>(
+  /* @__PURE__ */ createMessageType<SetBackgroundPluginResponse>(
     's4wave.session.SetBackgroundPluginResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2193,19 +1523,15 @@ export const SetBackgroundPluginResponse: MessageType<SetBackgroundPluginRespons
 export interface UnlockSessionRequest {
   /**
    * Pin is the PIN to unlock the session.
-   *
-   * @generated from field: bytes pin = 1;
    */
   pin?: Uint8Array
 }
 
 export const UnlockSessionRequest: MessageType<UnlockSessionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.UnlockSessionRequest',
-    fields: [
-      { no: 1, name: 'pin', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnlockSessionRequest>(
+    's4wave.session.UnlockSessionRequest',
+    () => [[1, 'pin', 12]],
+  )
 
 /**
  * UnlockSessionResponse is the response type for UnlockSession.
@@ -2215,9 +1541,9 @@ export const UnlockSessionRequest: MessageType<UnlockSessionRequest> =
 export interface UnlockSessionResponse {}
 
 export const UnlockSessionResponse: MessageType<UnlockSessionResponse> =
-  /* @__PURE__ */ createEmptyMessageType<UnlockSessionResponse>(
+  /* @__PURE__ */ createMessageType<UnlockSessionResponse>(
     's4wave.session.UnlockSessionResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2228,9 +1554,9 @@ export const UnlockSessionResponse: MessageType<UnlockSessionResponse> =
 export interface LockSessionRequest {}
 
 export const LockSessionRequest: MessageType<LockSessionRequest> =
-  /* @__PURE__ */ createEmptyMessageType<LockSessionRequest>(
+  /* @__PURE__ */ createMessageType<LockSessionRequest>(
     's4wave.session.LockSessionRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2241,9 +1567,9 @@ export const LockSessionRequest: MessageType<LockSessionRequest> =
 export interface LockSessionResponse {}
 
 export const LockSessionResponse: MessageType<LockSessionResponse> =
-  /* @__PURE__ */ createEmptyMessageType<LockSessionResponse>(
+  /* @__PURE__ */ createMessageType<LockSessionResponse>(
     's4wave.session.LockSessionResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2254,9 +1580,9 @@ export const LockSessionResponse: MessageType<LockSessionResponse> =
 export interface GeneratePairingCodeRequest {}
 
 export const GeneratePairingCodeRequest: MessageType<GeneratePairingCodeRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GeneratePairingCodeRequest>(
+  /* @__PURE__ */ createMessageType<GeneratePairingCodeRequest>(
     's4wave.session.GeneratePairingCodeRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2267,19 +1593,15 @@ export const GeneratePairingCodeRequest: MessageType<GeneratePairingCodeRequest>
 export interface GeneratePairingCodeResponse {
   /**
    * Code is the 8-char alphanumeric pairing code.
-   *
-   * @generated from field: string code = 1;
    */
   code?: string
 }
 
 export const GeneratePairingCodeResponse: MessageType<GeneratePairingCodeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.GeneratePairingCodeResponse',
-    fields: [
-      { no: 1, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GeneratePairingCodeResponse>(
+    's4wave.session.GeneratePairingCodeResponse',
+    () => [[1, 'code', 9]],
+  )
 
 /**
  * CompletePairingRequest is the request for CompletePairing.
@@ -2289,49 +1611,36 @@ export const GeneratePairingCodeResponse: MessageType<GeneratePairingCodeRespons
 export interface CompletePairingRequest {
   /**
    * Code is the 8-char pairing code from the other device.
-   *
-   * @generated from field: string code = 1;
    */
   code?: string
   /**
    * OfferCurrentAccount includes this selected Session's account in the choice.
    * Home leaves this false so its temporary transport account is not offered.
-   *
-   * @generated from field: bool offer_current_account = 2;
    */
   offerCurrentAccount?: boolean
   /**
    * RemotePeerId is the base58 peer ID the page already resolved from Code.
    * When set, CompletePairing links to that peer without resolving Code again,
    * because the relay consumes a code on its first resolution.
-   *
-   * @generated from field: string remote_peer_id = 3;
    */
   remotePeerId?: string
   /**
    * Label names this client on the other device's approval screen and in its
    * Session list. Empty uses the machine name.
-   *
-   * @generated from field: string label = 4;
    */
   label?: string
 }
 
 export const CompletePairingRequest: MessageType<CompletePairingRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.CompletePairingRequest',
-    fields: [
-      { no: 1, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'offer_current_account',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 3, name: 'remote_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CompletePairingRequest>(
+    's4wave.session.CompletePairingRequest',
+    () => [
+      [1, 'code', 9],
+      [2, 'offer_current_account', 8],
+      [3, 'remote_peer_id', 9],
+      [4, 'label', 9],
+    ],
+  )
 
 /**
  * SelectPairingAccountRequest selects the proposed relationship between the accounts.
@@ -2341,19 +1650,15 @@ export const CompletePairingRequest: MessageType<CompletePairingRequest> =
 export interface SelectPairingAccountRequest {
   /**
    * Outcome identifies the sign-in direction or merge destination.
-   *
-   * @generated from field: pairing.AccountOutcome outcome = 1;
    */
   outcome?: AccountOutcome
 }
 
 export const SelectPairingAccountRequest: MessageType<SelectPairingAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SelectPairingAccountRequest',
-    fields: [
-      { no: 1, name: 'outcome', kind: 'enum', T: AccountOutcome_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SelectPairingAccountRequest>(
+    's4wave.session.SelectPairingAccountRequest',
+    () => [[1, 'outcome', 14, 0, AccountOutcome_Enum]],
+  )
 
 /**
  * SelectPairingAccountResponse acknowledges an immutable account proposal.
@@ -2363,9 +1668,9 @@ export const SelectPairingAccountRequest: MessageType<SelectPairingAccountReques
 export interface SelectPairingAccountResponse {}
 
 export const SelectPairingAccountResponse: MessageType<SelectPairingAccountResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SelectPairingAccountResponse>(
+  /* @__PURE__ */ createMessageType<SelectPairingAccountResponse>(
     's4wave.session.SelectPairingAccountResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2376,19 +1681,15 @@ export const SelectPairingAccountResponse: MessageType<SelectPairingAccountRespo
 export interface CompletePairingResponse {
   /**
    * RemotePeerId is the base58 peer ID of the linked device.
-   *
-   * @generated from field: string remote_peer_id = 1;
    */
   remotePeerId?: string
 }
 
 export const CompletePairingResponse: MessageType<CompletePairingResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.CompletePairingResponse',
-    fields: [
-      { no: 1, name: 'remote_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CompletePairingResponse>(
+    's4wave.session.CompletePairingResponse',
+    () => [[1, 'remote_peer_id', 9]],
+  )
 
 /**
  * GetSASEmojiRequest is the request for GetSASEmoji.
@@ -2398,19 +1699,15 @@ export const CompletePairingResponse: MessageType<CompletePairingResponse> =
 export interface GetSASEmojiRequest {
   /**
    * RemotePeerId is the base58 peer ID of the remote device.
-   *
-   * @generated from field: string remote_peer_id = 1;
    */
   remotePeerId?: string
 }
 
 export const GetSASEmojiRequest: MessageType<GetSASEmojiRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.GetSASEmojiRequest',
-    fields: [
-      { no: 1, name: 'remote_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSASEmojiRequest>(
+    's4wave.session.GetSASEmojiRequest',
+    () => [[1, 'remote_peer_id', 9]],
+  )
 
 /**
  * GetSASEmojiResponse is the response for GetSASEmoji.
@@ -2420,25 +1717,15 @@ export const GetSASEmojiRequest: MessageType<GetSASEmojiRequest> =
 export interface GetSASEmojiResponse {
   /**
    * Emoji is the 6-emoji verification sequence.
-   *
-   * @generated from field: repeated string emoji = 1;
    */
   emoji?: string[]
 }
 
 export const GetSASEmojiResponse: MessageType<GetSASEmojiResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.GetSASEmojiResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'emoji',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSASEmojiResponse>(
+    's4wave.session.GetSASEmojiResponse',
+    () => [[1, 'emoji', 9, 1]],
+  )
 
 /**
  * ConfirmSASMatchRequest is the request for ConfirmSASMatch.
@@ -2448,19 +1735,15 @@ export const GetSASEmojiResponse: MessageType<GetSASEmojiResponse> =
 export interface ConfirmSASMatchRequest {
   /**
    * Confirmed is true if the user confirms the emoji match, false to reject.
-   *
-   * @generated from field: bool confirmed = 1;
    */
   confirmed?: boolean
 }
 
 export const ConfirmSASMatchRequest: MessageType<ConfirmSASMatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ConfirmSASMatchRequest',
-    fields: [
-      { no: 1, name: 'confirmed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfirmSASMatchRequest>(
+    's4wave.session.ConfirmSASMatchRequest',
+    () => [[1, 'confirmed', 8]],
+  )
 
 /**
  * ConfirmSASMatchResponse is the response for ConfirmSASMatch.
@@ -2470,9 +1753,9 @@ export const ConfirmSASMatchRequest: MessageType<ConfirmSASMatchRequest> =
 export interface ConfirmSASMatchResponse {}
 
 export const ConfirmSASMatchResponse: MessageType<ConfirmSASMatchResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ConfirmSASMatchResponse>(
+  /* @__PURE__ */ createMessageType<ConfirmSASMatchResponse>(
     's4wave.session.ConfirmSASMatchResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2483,26 +1766,22 @@ export const ConfirmSASMatchResponse: MessageType<ConfirmSASMatchResponse> =
 export interface ConfirmPairingRequest {
   /**
    * RemotePeerId is the base58 peer ID of the verified remote device.
-   *
-   * @generated from field: string remote_peer_id = 1;
    */
   remotePeerId?: string
   /**
    * DisplayName is an optional display name for the paired device.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
 }
 
 export const ConfirmPairingRequest: MessageType<ConfirmPairingRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ConfirmPairingRequest',
-    fields: [
-      { no: 1, name: 'remote_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfirmPairingRequest>(
+    's4wave.session.ConfirmPairingRequest',
+    () => [
+      [1, 'remote_peer_id', 9],
+      [2, 'display_name', 9],
+    ],
+  )
 
 /**
  * ConfirmPairingResponse is the response for ConfirmPairing.
@@ -2512,24 +1791,15 @@ export const ConfirmPairingRequest: MessageType<ConfirmPairingRequest> =
 export interface ConfirmPairingResponse {
   /**
    * SessionListEntry is the durable receiving Session, absent on the offering client.
-   *
-   * @generated from field: session.SessionListEntry session_list_entry = 1;
    */
   sessionListEntry?: SessionListEntry
 }
 
 export const ConfirmPairingResponse: MessageType<ConfirmPairingResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ConfirmPairingResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'session_list_entry',
-        kind: 'message',
-        T: () => SessionListEntry,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ConfirmPairingResponse>(
+    's4wave.session.ConfirmPairingResponse',
+    () => [[1, 'session_list_entry', 11, 0, SessionListEntry.codec]],
+  )
 
 /**
  * DeleteAccountRequest is the request type for DeleteAccount.
@@ -2539,19 +1809,15 @@ export const ConfirmPairingResponse: MessageType<ConfirmPairingResponse> =
 export interface DeleteAccountRequest {
   /**
    * SessionIdx is the session index to delete.
-   *
-   * @generated from field: uint32 session_idx = 1;
    */
   sessionIdx?: number
 }
 
 export const DeleteAccountRequest: MessageType<DeleteAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.DeleteAccountRequest',
-    fields: [
-      { no: 1, name: 'session_idx', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteAccountRequest>(
+    's4wave.session.DeleteAccountRequest',
+    () => [[1, 'session_idx', 13]],
+  )
 
 /**
  * DeleteAccountResponse is the response type for DeleteAccount.
@@ -2561,9 +1827,9 @@ export const DeleteAccountRequest: MessageType<DeleteAccountRequest> =
 export interface DeleteAccountResponse {}
 
 export const DeleteAccountResponse: MessageType<DeleteAccountResponse> =
-  /* @__PURE__ */ createEmptyMessageType<DeleteAccountResponse>(
+  /* @__PURE__ */ createMessageType<DeleteAccountResponse>(
     's4wave.session.DeleteAccountResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2575,19 +1841,15 @@ export interface AccessSessionStateAtomRequest {
   /**
    * StoreId is the identifier for the state store.
    * If empty, uses the default "ui-state" store.
-   *
-   * @generated from field: string store_id = 1;
    */
   storeId?: string
 }
 
 export const AccessSessionStateAtomRequest: MessageType<AccessSessionStateAtomRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AccessSessionStateAtomRequest',
-    fields: [
-      { no: 1, name: 'store_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessSessionStateAtomRequest>(
+    's4wave.session.AccessSessionStateAtomRequest',
+    () => [[1, 'store_id', 9]],
+  )
 
 /**
  * AccessSessionStateAtomResponse is the response for AccessStateAtom.
@@ -2597,19 +1859,15 @@ export const AccessSessionStateAtomRequest: MessageType<AccessSessionStateAtomRe
 export interface AccessSessionStateAtomResponse {
   /**
    * ResourceId is the ID of the state atom resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessSessionStateAtomResponse: MessageType<AccessSessionStateAtomResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AccessSessionStateAtomResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessSessionStateAtomResponse>(
+    's4wave.session.AccessSessionStateAtomResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * AccessPeerTransportRequest is the request for AccessPeerTransport.
@@ -2621,40 +1879,28 @@ export interface AccessPeerTransportRequest {
    * UdpListenAddr starts a UDP transport listening on this host:port. Only
    * active sessions of the account may link through it. Empty listens on an
    * ephemeral port when udp_peer_addrs is set, and starts no UDP otherwise.
-   *
-   * @generated from field: string udp_listen_addr = 1;
    */
   udpListenAddr?: string
   /**
    * UdpPeerAddrs maps remote session peer IDs to the host:port they listen on.
-   *
-   * @generated from field: map<string, string> udp_peer_addrs = 2;
    */
   udpPeerAddrs?: { [key: string]: string }
   /**
    * ServeResources serves this daemon's Resource service to account sessions
    * that open the remote resource protocol.
-   *
-   * @generated from field: bool serve_resources = 3;
    */
   serveResources?: boolean
 }
 
 export const AccessPeerTransportRequest: MessageType<AccessPeerTransportRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AccessPeerTransportRequest',
-    fields: [
-      { no: 1, name: 'udp_listen_addr', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'udp_peer_addrs',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-      { no: 3, name: 'serve_resources', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessPeerTransportRequest>(
+    's4wave.session.AccessPeerTransportRequest',
+    () => [
+      [1, 'udp_listen_addr', 9],
+      [2, 'udp_peer_addrs', 9, 584],
+      [3, 'serve_resources', 8],
+    ],
+  )
 
 /**
  * AccessPeerTransportResponse is the response for AccessPeerTransport.
@@ -2664,33 +1910,27 @@ export const AccessPeerTransportRequest: MessageType<AccessPeerTransportRequest>
 export interface AccessPeerTransportResponse {
   /**
    * ResourceId is the mounted account's Bifrost StreamService resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * PeerId is the authenticated local account session peer.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * UdpAddr is the bound UDP address when a UDP transport started.
-   *
-   * @generated from field: string udp_addr = 3;
    */
   udpAddr?: string
 }
 
 export const AccessPeerTransportResponse: MessageType<AccessPeerTransportResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AccessPeerTransportResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'udp_addr', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessPeerTransportResponse>(
+    's4wave.session.AccessPeerTransportResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'peer_id', 9],
+      [3, 'udp_addr', 9],
+    ],
+  )
 
 /**
  * WatchSessionStateAtomsRequest is the request for WatchStateAtoms.
@@ -2700,9 +1940,9 @@ export const AccessPeerTransportResponse: MessageType<AccessPeerTransportRespons
 export interface WatchSessionStateAtomsRequest {}
 
 export const WatchSessionStateAtomsRequest: MessageType<WatchSessionStateAtomsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSessionStateAtomsRequest>(
+  /* @__PURE__ */ createMessageType<WatchSessionStateAtomsRequest>(
     's4wave.session.WatchSessionStateAtomsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2713,32 +1953,22 @@ export const WatchSessionStateAtomsRequest: MessageType<WatchSessionStateAtomsRe
 export interface WatchSessionStateAtomsResponse {
   /**
    * StoreIds is the current list of known session state atom store ids.
-   *
-   * @generated from field: repeated string store_ids = 1;
    */
   storeIds?: string[]
   /**
    * StoreCount is the total number of known session state atom stores.
-   *
-   * @generated from field: uint32 store_count = 2;
    */
   storeCount?: number
 }
 
 export const WatchSessionStateAtomsResponse: MessageType<WatchSessionStateAtomsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchSessionStateAtomsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'store_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'store_count', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchSessionStateAtomsResponse>(
+    's4wave.session.WatchSessionStateAtomsResponse',
+    () => [
+      [1, 'store_ids', 9, 1],
+      [2, 'store_count', 13],
+    ],
+  )
 
 /**
  * GetTransferInventoryRequest is the request for GetTransferInventory.
@@ -2748,19 +1978,15 @@ export const WatchSessionStateAtomsResponse: MessageType<WatchSessionStateAtomsR
 export interface GetTransferInventoryRequest {
   /**
    * SessionIndex is the session index to inventory.
-   *
-   * @generated from field: uint32 session_index = 1;
    */
   sessionIndex?: number
 }
 
 export const GetTransferInventoryRequest: MessageType<GetTransferInventoryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.GetTransferInventoryRequest',
-    fields: [
-      { no: 1, name: 'session_index', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetTransferInventoryRequest>(
+    's4wave.session.GetTransferInventoryRequest',
+    () => [[1, 'session_index', 13]],
+  )
 
 /**
  * GetTransferInventoryResponse is the response for GetTransferInventory.
@@ -2770,25 +1996,15 @@ export const GetTransferInventoryRequest: MessageType<GetTransferInventoryReques
 export interface GetTransferInventoryResponse {
   /**
    * Spaces is the list of spaces available for transfer.
-   *
-   * @generated from field: repeated space.SpaceSoListEntry spaces = 1;
    */
   spaces?: SpaceSoListEntry[]
 }
 
 export const GetTransferInventoryResponse: MessageType<GetTransferInventoryResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.GetTransferInventoryResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'spaces',
-        kind: 'message',
-        T: () => SpaceSoListEntry,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetTransferInventoryResponse>(
+    's4wave.session.GetTransferInventoryResponse',
+    () => [[1, 'spaces', 11, 1, SpaceSoListEntry.codec]],
+  )
 
 /**
  * StartTransferRequest is the request for StartTransfer.
@@ -2798,57 +2014,33 @@ export const GetTransferInventoryResponse: MessageType<GetTransferInventoryRespo
 export interface StartTransferRequest {
   /**
    * SourceSessionIndex is the source session index.
-   *
-   * @generated from field: uint32 source_session_index = 1;
    */
   sourceSessionIndex?: number
   /**
    * TargetSessionIndex is the target session index.
-   *
-   * @generated from field: uint32 target_session_index = 2;
    */
   targetSessionIndex?: number
   /**
    * Mode is the transfer mode.
-   *
-   * @generated from field: provider.transfer.TransferMode mode = 3;
    */
   mode?: TransferMode
   /**
    * SpaceIds is the optional list of space IDs to transfer.
    * If empty, all spaces are transferred.
-   *
-   * @generated from field: repeated string space_ids = 4;
    */
   spaceIds?: string[]
 }
 
 export const StartTransferRequest: MessageType<StartTransferRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.StartTransferRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'source_session_index',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 2,
-        name: 'target_session_index',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 3, name: 'mode', kind: 'enum', T: TransferMode_Enum },
-      {
-        no: 4,
-        name: 'space_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StartTransferRequest>(
+    's4wave.session.StartTransferRequest',
+    () => [
+      [1, 'source_session_index', 13],
+      [2, 'target_session_index', 13],
+      [3, 'mode', 14, 0, TransferMode_Enum],
+      [4, 'space_ids', 9, 1],
+    ],
+  )
 
 /**
  * StartTransferResponse is the response for StartTransfer.
@@ -2858,9 +2050,9 @@ export const StartTransferRequest: MessageType<StartTransferRequest> =
 export interface StartTransferResponse {}
 
 export const StartTransferResponse: MessageType<StartTransferResponse> =
-  /* @__PURE__ */ createEmptyMessageType<StartTransferResponse>(
+  /* @__PURE__ */ createMessageType<StartTransferResponse>(
     's4wave.session.StartTransferResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2871,9 +2063,9 @@ export const StartTransferResponse: MessageType<StartTransferResponse> =
 export interface WatchTransferProgressRequest {}
 
 export const WatchTransferProgressRequest: MessageType<WatchTransferProgressRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchTransferProgressRequest>(
+  /* @__PURE__ */ createMessageType<WatchTransferProgressRequest>(
     's4wave.session.WatchTransferProgressRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2884,19 +2076,15 @@ export const WatchTransferProgressRequest: MessageType<WatchTransferProgressRequ
 export interface WatchTransferProgressResponse {
   /**
    * State is the current transfer state.
-   *
-   * @generated from field: provider.transfer.TransferState state = 1;
    */
   state?: TransferState
 }
 
 export const WatchTransferProgressResponse: MessageType<WatchTransferProgressResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchTransferProgressResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: () => TransferState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchTransferProgressResponse>(
+    's4wave.session.WatchTransferProgressResponse',
+    () => [[1, 'state', 11, 0, TransferState.codec]],
+  )
 
 /**
  * CancelTransferRequest is the request for CancelTransfer.
@@ -2906,9 +2094,9 @@ export const WatchTransferProgressResponse: MessageType<WatchTransferProgressRes
 export interface CancelTransferRequest {}
 
 export const CancelTransferRequest: MessageType<CancelTransferRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CancelTransferRequest>(
+  /* @__PURE__ */ createMessageType<CancelTransferRequest>(
     's4wave.session.CancelTransferRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2919,9 +2107,9 @@ export const CancelTransferRequest: MessageType<CancelTransferRequest> =
 export interface CancelTransferResponse {}
 
 export const CancelTransferResponse: MessageType<CancelTransferResponse> =
-  /* @__PURE__ */ createEmptyMessageType<CancelTransferResponse>(
+  /* @__PURE__ */ createMessageType<CancelTransferResponse>(
     's4wave.session.CancelTransferResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -2932,9 +2120,9 @@ export const CancelTransferResponse: MessageType<CancelTransferResponse> =
 export interface WatchPairedDevicesRequest {}
 
 export const WatchPairedDevicesRequest: MessageType<WatchPairedDevicesRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchPairedDevicesRequest>(
+  /* @__PURE__ */ createMessageType<WatchPairedDevicesRequest>(
     's4wave.session.WatchPairedDevicesRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -2945,39 +2133,23 @@ export const WatchPairedDevicesRequest: MessageType<WatchPairedDevicesRequest> =
 export interface WatchPairedDevicesResponse {
   /**
    * PairedDevices is the current list of paired devices.
-   *
-   * @generated from field: repeated account.settings.PairedDevice paired_devices = 1;
    */
   pairedDevices?: PairedDevice[]
   /**
    * OnlinePeerIds contains the base58 peer IDs of paired devices that
    * currently have an active bifrost link via the session transport.
-   *
-   * @generated from field: repeated string online_peer_ids = 2;
    */
   onlinePeerIds?: string[]
 }
 
 export const WatchPairedDevicesResponse: MessageType<WatchPairedDevicesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchPairedDevicesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'paired_devices',
-        kind: 'message',
-        T: () => PairedDevice,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'online_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchPairedDevicesResponse>(
+    's4wave.session.WatchPairedDevicesResponse',
+    () => [
+      [1, 'paired_devices', 11, 1, PairedDevice.codec],
+      [2, 'online_peer_ids', 9, 1],
+    ],
+  )
 
 /**
  * UnlinkDeviceRequest is the request for UnlinkDevice.
@@ -2987,19 +2159,15 @@ export const WatchPairedDevicesResponse: MessageType<WatchPairedDevicesResponse>
 export interface UnlinkDeviceRequest {
   /**
    * PeerId is the base58 peer ID of the device to unlink.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
 }
 
 export const UnlinkDeviceRequest: MessageType<UnlinkDeviceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.UnlinkDeviceRequest',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnlinkDeviceRequest>(
+    's4wave.session.UnlinkDeviceRequest',
+    () => [[1, 'peer_id', 9]],
+  )
 
 /**
  * UnlinkDeviceResponse is the response for UnlinkDevice.
@@ -3009,9 +2177,9 @@ export const UnlinkDeviceRequest: MessageType<UnlinkDeviceRequest> =
 export interface UnlinkDeviceResponse {}
 
 export const UnlinkDeviceResponse: MessageType<UnlinkDeviceResponse> =
-  /* @__PURE__ */ createEmptyMessageType<UnlinkDeviceResponse>(
+  /* @__PURE__ */ createMessageType<UnlinkDeviceResponse>(
     's4wave.session.UnlinkDeviceResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -3022,9 +2190,9 @@ export const UnlinkDeviceResponse: MessageType<UnlinkDeviceResponse> =
 export interface WatchPairingStatusRequest {}
 
 export const WatchPairingStatusRequest: MessageType<WatchPairingStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchPairingStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchPairingStatusRequest>(
     's4wave.session.WatchPairingStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3035,98 +2203,70 @@ export const WatchPairingStatusRequest: MessageType<WatchPairingStatusRequest> =
 export interface WatchPairingStatusResponse {
   /**
    * Status is the current pairing status.
-   *
-   * @generated from field: s4wave.session.PairingStatus status = 1;
    */
   status?: PairingStatus
   /**
    * RemotePeerId is the base58 peer ID of the remote device (set after code resolved).
-   *
-   * @generated from field: string remote_peer_id = 2;
    */
   remotePeerId?: string
   /**
    * Code is the pairing code (set after code generated).
-   *
-   * @generated from field: string code = 3;
    */
   code?: string
   /**
    * Emoji is the SAS emoji sequence (set during verification).
-   *
-   * @generated from field: repeated string emoji = 4;
    */
   emoji?: string[]
   /**
    * ErrorMessage describes what went wrong (set when status is FAILED).
-   *
-   * @generated from field: string error_message = 5;
    */
   errorMessage?: string
   /**
    * AccountId is the existing account selected for enrollment.
-   *
-   * @generated from field: string account_id = 6;
    */
   accountId?: string
   /**
    * Receiving indicates this client is adding the selected account.
-   *
-   * @generated from field: bool receiving = 7;
    */
   receiving?: boolean
   /**
    * AccountName is the offered account's display name.
-   *
-   * @generated from field: string account_name = 8;
    */
   accountName?: string
   /**
    * Choice identifies both selected accounts and the proposed outcome before approval.
-   *
-   * @generated from field: pairing.AccountChoice choice = 9;
    */
   choice?: AccountChoice
   /**
    * RemoteLabel is the name the other device gave itself (set during
    * verification).
-   *
-   * @generated from field: string remote_label = 10;
    */
   remoteLabel?: string
   /**
    * SessionPeerId is the base58 peer ID of the receiving Session the approval
    * enrolls (set during verification). It differs from RemotePeerId, which
    * names the pairing link.
-   *
-   * @generated from field: string session_peer_id = 11;
    */
   sessionPeerId?: string
 }
 
 export const WatchPairingStatusResponse: MessageType<WatchPairingStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchPairingStatusResponse',
-    fields: [
-      { no: 1, name: 'status', kind: 'enum', T: PairingStatus_Enum },
-      { no: 2, name: 'remote_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'code', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'emoji',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 5, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'receiving', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'account_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'choice', kind: 'message', T: () => AccountChoice },
-      { no: 10, name: 'remote_label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 11, name: 'session_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchPairingStatusResponse>(
+    's4wave.session.WatchPairingStatusResponse',
+    () => [
+      [1, 'status', 14, 0, PairingStatus_Enum],
+      [2, 'remote_peer_id', 9],
+      [3, 'code', 9],
+      [4, 'emoji', 9, 1],
+      [5, 'error_message', 9],
+      [6, 'account_id', 9],
+      [7, 'receiving', 8],
+      [8, 'account_name', 9],
+      [9, 'choice', 11, 0, AccountChoice.codec],
+      [10, 'remote_label', 9],
+      [11, 'session_peer_id', 9],
+    ],
+  )
 
 /**
  * CreateSpaceInviteRequest is the request for CreateSpaceInvite.
@@ -3136,70 +2276,51 @@ export const WatchPairingStatusResponse: MessageType<WatchPairingStatusResponse>
 export interface CreateSpaceInviteRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * Role is the participant role granted on acceptance.
-   *
-   * @generated from field: sobject.SOParticipantRole role = 2;
    */
   role?: SOParticipantRole
   /**
    * TargetPeerId is the optional peer ID of the intended invitee (b58).
    * Empty means open invite (anyone with the token can join).
-   *
-   * @generated from field: string target_peer_id = 3;
    */
   targetPeerId?: string
   /**
    * MaxUses is the maximum number of times the invite can be used.
    * 0 means unlimited.
-   *
-   * @generated from field: uint32 max_uses = 4;
    */
   maxUses?: number
   /**
    * ExpiresAt is the time after which the invite is invalid.
    * Unset means no expiry.
-   *
-   * @generated from field: google.protobuf.Timestamp expires_at = 5;
    */
   expiresAt?: Date
   /**
    * ApprovalRequired queues redemptions the invite does not otherwise admit
    * as join requests.
-   *
-   * @generated from field: bool approval_required = 6;
    */
   approvalRequired?: boolean
   /**
    * ParticipantOf admits participants of the named Spaces.
-   *
-   * @generated from field: sobject.SOInviteParticipation participant_of = 7;
    */
   participantOf?: SOInviteParticipation
 }
 
 export const CreateSpaceInviteRequest: MessageType<CreateSpaceInviteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.CreateSpaceInviteRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'role', kind: 'enum', T: SOParticipantRole_Enum },
-      { no: 3, name: 'target_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'max_uses', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'expires_at', kind: 'message', T: () => Timestamp },
-      { no: 6, name: 'approval_required', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 7,
-        name: 'participant_of',
-        kind: 'message',
-        T: () => SOInviteParticipation,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateSpaceInviteRequest>(
+    's4wave.session.CreateSpaceInviteRequest',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'role', 14, 0, SOParticipantRole_Enum],
+      [3, 'target_peer_id', 9],
+      [4, 'max_uses', 13],
+      [5, 'expires_at', 11, 0, Timestamp.codec],
+      [6, 'approval_required', 8],
+      [7, 'participant_of', 11, 0, SOInviteParticipation.codec],
+    ],
+  )
 
 /**
  * CreateSpaceInviteResponse is the response for CreateSpaceInvite.
@@ -3210,32 +2331,23 @@ export interface CreateSpaceInviteResponse {
   /**
    * InviteMessage is the signed invite message for out-of-band distribution.
    * Contains the raw token (not stored on-chain).
-   *
-   * @generated from field: sobject.SOInviteMessage invite_message = 1;
    */
   inviteMessage?: SOInviteMessage
   /**
    * ShortCode is an optional short code registered with the cloud.
    * Present for spacewave sessions, empty for local sessions.
-   *
-   * @generated from field: string short_code = 2;
    */
   shortCode?: string
 }
 
 export const CreateSpaceInviteResponse: MessageType<CreateSpaceInviteResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.CreateSpaceInviteResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'invite_message',
-        kind: 'message',
-        T: () => SOInviteMessage,
-      },
-      { no: 2, name: 'short_code', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateSpaceInviteResponse>(
+    's4wave.session.CreateSpaceInviteResponse',
+    () => [
+      [1, 'invite_message', 11, 0, SOInviteMessage.codec],
+      [2, 'short_code', 9],
+    ],
+  )
 
 /**
  * ListSpaceInvitesRequest is the request for ListSpaceInvites.
@@ -3245,19 +2357,15 @@ export const CreateSpaceInviteResponse: MessageType<CreateSpaceInviteResponse> =
 export interface ListSpaceInvitesRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
 }
 
 export const ListSpaceInvitesRequest: MessageType<ListSpaceInvitesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ListSpaceInvitesRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListSpaceInvitesRequest>(
+    's4wave.session.ListSpaceInvitesRequest',
+    () => [[1, 'space_id', 9]],
+  )
 
 /**
  * ListSpaceInvitesResponse is the response for ListSpaceInvites.
@@ -3267,25 +2375,15 @@ export const ListSpaceInvitesRequest: MessageType<ListSpaceInvitesRequest> =
 export interface ListSpaceInvitesResponse {
   /**
    * Invites is the list of invites on the space.
-   *
-   * @generated from field: repeated sobject.SOInvite invites = 1;
    */
   invites?: SOInvite[]
 }
 
 export const ListSpaceInvitesResponse: MessageType<ListSpaceInvitesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ListSpaceInvitesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'invites',
-        kind: 'message',
-        T: () => SOInvite,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListSpaceInvitesResponse>(
+    's4wave.session.ListSpaceInvitesResponse',
+    () => [[1, 'invites', 11, 1, SOInvite.codec]],
+  )
 
 /**
  * ListSpaceParticipantsRequest is the request for ListSpaceParticipants.
@@ -3295,19 +2393,15 @@ export const ListSpaceInvitesResponse: MessageType<ListSpaceInvitesResponse> =
 export interface ListSpaceParticipantsRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
 }
 
 export const ListSpaceParticipantsRequest: MessageType<ListSpaceParticipantsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ListSpaceParticipantsRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListSpaceParticipantsRequest>(
+    's4wave.session.ListSpaceParticipantsRequest',
+    () => [[1, 'space_id', 9]],
+  )
 
 /**
  * ListSpaceParticipantsResponse is the response for ListSpaceParticipants.
@@ -3317,25 +2411,15 @@ export const ListSpaceParticipantsRequest: MessageType<ListSpaceParticipantsRequ
 export interface ListSpaceParticipantsResponse {
   /**
    * Participants is the list of participants on the space.
-   *
-   * @generated from field: repeated sobject.SOParticipantConfig participants = 1;
    */
   participants?: SOParticipantConfig[]
 }
 
 export const ListSpaceParticipantsResponse: MessageType<ListSpaceParticipantsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ListSpaceParticipantsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'participants',
-        kind: 'message',
-        T: () => SOParticipantConfig,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListSpaceParticipantsResponse>(
+    's4wave.session.ListSpaceParticipantsResponse',
+    () => [[1, 'participants', 11, 1, SOParticipantConfig.codec]],
+  )
 
 /**
  * RemoveSpaceParticipantsRequest removes one native audience set atomically.
@@ -3345,32 +2429,22 @@ export const ListSpaceParticipantsResponse: MessageType<ListSpaceParticipantsRes
 export interface RemoveSpaceParticipantsRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * PeerIds are the participant peer IDs to remove in one configuration change.
-   *
-   * @generated from field: repeated string peer_ids = 2;
    */
   peerIds?: string[]
 }
 
 export const RemoveSpaceParticipantsRequest: MessageType<RemoveSpaceParticipantsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.RemoveSpaceParticipantsRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveSpaceParticipantsRequest>(
+    's4wave.session.RemoveSpaceParticipantsRequest',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'peer_ids', 9, 1],
+    ],
+  )
 
 /**
  * RemoveSpaceParticipantsResponse reports the participant grants that existed.
@@ -3380,33 +2454,23 @@ export const RemoveSpaceParticipantsRequest: MessageType<RemoveSpaceParticipants
 export interface RemoveSpaceParticipantsResponse {
   /**
    * RemovedPeerIds are the participant peer IDs that were present and removed.
-   *
-   * @generated from field: repeated string removed_peer_ids = 1;
    */
   removedPeerIds?: string[]
   /**
    * AwaitingGroup is true when the viewer agreed to the removal under group
    * control, and it applies once the group decides it.
-   *
-   * @generated from field: bool awaiting_group = 2;
    */
   awaitingGroup?: boolean
 }
 
 export const RemoveSpaceParticipantsResponse: MessageType<RemoveSpaceParticipantsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.RemoveSpaceParticipantsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'removed_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 2, name: 'awaiting_group', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveSpaceParticipantsResponse>(
+    's4wave.session.RemoveSpaceParticipantsResponse',
+    () => [
+      [1, 'removed_peer_ids', 9, 1],
+      [2, 'awaiting_group', 8],
+    ],
+  )
 
 /**
  * RevokeSpaceInviteRequest is the request for RevokeSpaceInvite.
@@ -3416,26 +2480,22 @@ export const RemoveSpaceParticipantsResponse: MessageType<RemoveSpaceParticipant
 export interface RevokeSpaceInviteRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * InviteId is the invite to revoke.
-   *
-   * @generated from field: string invite_id = 2;
    */
   inviteId?: string
 }
 
 export const RevokeSpaceInviteRequest: MessageType<RevokeSpaceInviteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.RevokeSpaceInviteRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'invite_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RevokeSpaceInviteRequest>(
+    's4wave.session.RevokeSpaceInviteRequest',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'invite_id', 9],
+    ],
+  )
 
 /**
  * RevokeSpaceInviteResponse is the response for RevokeSpaceInvite.
@@ -3445,9 +2505,9 @@ export const RevokeSpaceInviteRequest: MessageType<RevokeSpaceInviteRequest> =
 export interface RevokeSpaceInviteResponse {}
 
 export const RevokeSpaceInviteResponse: MessageType<RevokeSpaceInviteResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RevokeSpaceInviteResponse>(
+  /* @__PURE__ */ createMessageType<RevokeSpaceInviteResponse>(
     's4wave.session.RevokeSpaceInviteResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -3458,33 +2518,27 @@ export const RevokeSpaceInviteResponse: MessageType<RevokeSpaceInviteResponse> =
 export interface ResolveSpaceJoinRequestRequest {
   /**
    * SpaceId is the shared object ULID for the space.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * PeerId is the requesting peer (b58).
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * Grant issues the requester a personal invite; false refuses the request.
-   *
-   * @generated from field: bool grant = 3;
    */
   grant?: boolean
 }
 
 export const ResolveSpaceJoinRequestRequest: MessageType<ResolveSpaceJoinRequestRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ResolveSpaceJoinRequestRequest',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'grant', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResolveSpaceJoinRequestRequest>(
+    's4wave.session.ResolveSpaceJoinRequestRequest',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'peer_id', 9],
+      [3, 'grant', 8],
+    ],
+  )
 
 /**
  * ResolveSpaceJoinRequestResponse is the response for ResolveSpaceJoinRequest.
@@ -3495,24 +2549,15 @@ export interface ResolveSpaceJoinRequestResponse {
   /**
    * InviteMessage is the granted personal invite for delivery to the
    * requester. Empty when the request was refused.
-   *
-   * @generated from field: sobject.SOInviteMessage invite_message = 1;
    */
   inviteMessage?: SOInviteMessage
 }
 
 export const ResolveSpaceJoinRequestResponse: MessageType<ResolveSpaceJoinRequestResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.ResolveSpaceJoinRequestResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'invite_message',
-        kind: 'message',
-        T: () => SOInviteMessage,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResolveSpaceJoinRequestResponse>(
+    's4wave.session.ResolveSpaceJoinRequestResponse',
+    () => [[1, 'invite_message', 11, 0, SOInviteMessage.codec]],
+  )
 
 /**
  * WithdrawSpaceJoinRequestRequest is the request for WithdrawSpaceJoinRequest.
@@ -3522,24 +2567,15 @@ export const ResolveSpaceJoinRequestResponse: MessageType<ResolveSpaceJoinReques
 export interface WithdrawSpaceJoinRequestRequest {
   /**
    * InviteMessage is the invite whose redemption is waiting for approval.
-   *
-   * @generated from field: sobject.SOInviteMessage invite_message = 1;
    */
   inviteMessage?: SOInviteMessage
 }
 
 export const WithdrawSpaceJoinRequestRequest: MessageType<WithdrawSpaceJoinRequestRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WithdrawSpaceJoinRequestRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'invite_message',
-        kind: 'message',
-        T: () => SOInviteMessage,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WithdrawSpaceJoinRequestRequest>(
+    's4wave.session.WithdrawSpaceJoinRequestRequest',
+    () => [[1, 'invite_message', 11, 0, SOInviteMessage.codec]],
+  )
 
 /**
  * WithdrawSpaceJoinRequestResponse is the response for WithdrawSpaceJoinRequest.
@@ -3549,9 +2585,9 @@ export const WithdrawSpaceJoinRequestRequest: MessageType<WithdrawSpaceJoinReque
 export interface WithdrawSpaceJoinRequestResponse {}
 
 export const WithdrawSpaceJoinRequestResponse: MessageType<WithdrawSpaceJoinRequestResponse> =
-  /* @__PURE__ */ createEmptyMessageType<WithdrawSpaceJoinRequestResponse>(
+  /* @__PURE__ */ createMessageType<WithdrawSpaceJoinRequestResponse>(
     's4wave.session.WithdrawSpaceJoinRequestResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -3562,38 +2598,24 @@ export const WithdrawSpaceJoinRequestResponse: MessageType<WithdrawSpaceJoinRequ
 export interface JoinSpaceViaInviteRequest {
   /**
    * InviteMessage is the out-of-band SOInviteMessage from the space owner.
-   *
-   * @generated from field: sobject.SOInviteMessage invite_message = 1;
    */
   inviteMessage?: SOInviteMessage
   /**
    * TargetedInvitationEnvelope is the optional serialized
    * provider.spacewave.api.TargetedInvitationEnvelope proof for
    * username-addressed invites.
-   *
-   * @generated from field: bytes targeted_invitation_envelope = 2;
    */
   targetedInvitationEnvelope?: Uint8Array
 }
 
 export const JoinSpaceViaInviteRequest: MessageType<JoinSpaceViaInviteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.JoinSpaceViaInviteRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'invite_message',
-        kind: 'message',
-        T: () => SOInviteMessage,
-      },
-      {
-        no: 2,
-        name: 'targeted_invitation_envelope',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<JoinSpaceViaInviteRequest>(
+    's4wave.session.JoinSpaceViaInviteRequest',
+    () => [
+      [1, 'invite_message', 11, 0, SOInviteMessage.codec],
+      [2, 'targeted_invitation_envelope', 12],
+    ],
+  )
 
 /**
  * JoinSpaceViaInviteResponse is the response for JoinSpaceViaInvite.
@@ -3603,26 +2625,22 @@ export const JoinSpaceViaInviteRequest: MessageType<JoinSpaceViaInviteRequest> =
 export interface JoinSpaceViaInviteResponse {
   /**
    * SharedObjectId is the invited space ID when known.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * Result describes whether the join completed immediately or only submitted.
-   *
-   * @generated from field: s4wave.session.JoinSpaceViaInviteResult result = 2;
    */
   result?: JoinSpaceViaInviteResult
 }
 
 export const JoinSpaceViaInviteResponse: MessageType<JoinSpaceViaInviteResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.JoinSpaceViaInviteResponse',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'result', kind: 'enum', T: JoinSpaceViaInviteResult_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<JoinSpaceViaInviteResponse>(
+    's4wave.session.JoinSpaceViaInviteResponse',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'result', 14, 0, JoinSpaceViaInviteResult_Enum],
+    ],
+  )
 
 /**
  * GetTransferStatusRequest is the request for GetTransferStatus.
@@ -3632,9 +2650,9 @@ export const JoinSpaceViaInviteResponse: MessageType<JoinSpaceViaInviteResponse>
 export interface GetTransferStatusRequest {}
 
 export const GetTransferStatusRequest: MessageType<GetTransferStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetTransferStatusRequest>(
+  /* @__PURE__ */ createMessageType<GetTransferStatusRequest>(
     's4wave.session.GetTransferStatusRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3645,33 +2663,27 @@ export const GetTransferStatusRequest: MessageType<GetTransferStatusRequest> =
 export interface GetTransferStatusResponse {
   /**
    * Active is true if a transfer is currently running in memory.
-   *
-   * @generated from field: bool active = 1;
    */
   active?: boolean
   /**
    * HasCheckpoint is true if a checkpoint exists from an interrupted transfer.
-   *
-   * @generated from field: bool has_checkpoint = 2;
    */
   hasCheckpoint?: boolean
   /**
    * State is the transfer state (from active transfer or checkpoint).
-   *
-   * @generated from field: provider.transfer.TransferState state = 3;
    */
   state?: TransferState
 }
 
 export const GetTransferStatusResponse: MessageType<GetTransferStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.GetTransferStatusResponse',
-    fields: [
-      { no: 1, name: 'active', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'has_checkpoint', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'state', kind: 'message', T: () => TransferState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetTransferStatusResponse>(
+    's4wave.session.GetTransferStatusResponse',
+    () => [
+      [1, 'active', 8],
+      [2, 'has_checkpoint', 8],
+      [3, 'state', 11, 0, TransferState.codec],
+    ],
+  )
 
 /**
  * LocalPairingOffer is the SDP offer for no-cloud device pairing.
@@ -3684,26 +2696,22 @@ export const GetTransferStatusResponse: MessageType<GetTransferStatusResponse> =
 export interface LocalPairingOffer {
   /**
    * Sdp is the complete SDP offer string (with ICE candidates gathered).
-   *
-   * @generated from field: string sdp = 1;
    */
   sdp?: string
   /**
    * PeerId is the base58 peer ID of the offerer.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
 }
 
 export const LocalPairingOffer: MessageType<LocalPairingOffer> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.LocalPairingOffer',
-    fields: [
-      { no: 1, name: 'sdp', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LocalPairingOffer>(
+    's4wave.session.LocalPairingOffer',
+    () => [
+      [1, 'sdp', 9],
+      [2, 'peer_id', 9],
+    ],
+  )
 
 /**
  * LocalPairingAnswer is the SDP answer for no-cloud device pairing.
@@ -3714,26 +2722,22 @@ export const LocalPairingOffer: MessageType<LocalPairingOffer> =
 export interface LocalPairingAnswer {
   /**
    * Sdp is the complete SDP answer string (with ICE candidates gathered).
-   *
-   * @generated from field: string sdp = 1;
    */
   sdp?: string
   /**
    * PeerId is the base58 peer ID of the answerer.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
 }
 
 export const LocalPairingAnswer: MessageType<LocalPairingAnswer> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.LocalPairingAnswer',
-    fields: [
-      { no: 1, name: 'sdp', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LocalPairingAnswer>(
+    's4wave.session.LocalPairingAnswer',
+    () => [
+      [1, 'sdp', 9],
+      [2, 'peer_id', 9],
+    ],
+  )
 
 /**
  * CreateLocalPairingOfferRequest is the request for CreateLocalPairingOffer.
@@ -3743,9 +2747,9 @@ export const LocalPairingAnswer: MessageType<LocalPairingAnswer> =
 export interface CreateLocalPairingOfferRequest {}
 
 export const CreateLocalPairingOfferRequest: MessageType<CreateLocalPairingOfferRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CreateLocalPairingOfferRequest>(
+  /* @__PURE__ */ createMessageType<CreateLocalPairingOfferRequest>(
     's4wave.session.CreateLocalPairingOfferRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3756,19 +2760,15 @@ export const CreateLocalPairingOfferRequest: MessageType<CreateLocalPairingOffer
 export interface CreateLocalPairingOfferResponse {
   /**
    * OfferPayload is the compressed, base58-encoded offer string.
-   *
-   * @generated from field: string offer_payload = 1;
    */
   offerPayload?: string
 }
 
 export const CreateLocalPairingOfferResponse: MessageType<CreateLocalPairingOfferResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.CreateLocalPairingOfferResponse',
-    fields: [
-      { no: 1, name: 'offer_payload', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateLocalPairingOfferResponse>(
+    's4wave.session.CreateLocalPairingOfferResponse',
+    () => [[1, 'offer_payload', 9]],
+  )
 
 /**
  * AcceptLocalPairingOfferRequest is the request for AcceptLocalPairingOffer.
@@ -3778,31 +2778,22 @@ export const CreateLocalPairingOfferResponse: MessageType<CreateLocalPairingOffe
 export interface AcceptLocalPairingOfferRequest {
   /**
    * OfferPayload is the compressed, base58-encoded offer string from the offerer.
-   *
-   * @generated from field: string offer_payload = 1;
    */
   offerPayload?: string
   /**
    * OfferCurrentAccount includes this selected Session's account in the choice.
-   *
-   * @generated from field: bool offer_current_account = 2;
    */
   offerCurrentAccount?: boolean
 }
 
 export const AcceptLocalPairingOfferRequest: MessageType<AcceptLocalPairingOfferRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AcceptLocalPairingOfferRequest',
-    fields: [
-      { no: 1, name: 'offer_payload', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'offer_current_account',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptLocalPairingOfferRequest>(
+    's4wave.session.AcceptLocalPairingOfferRequest',
+    () => [
+      [1, 'offer_payload', 9],
+      [2, 'offer_current_account', 8],
+    ],
+  )
 
 /**
  * AcceptLocalPairingOfferResponse is the response for AcceptLocalPairingOffer.
@@ -3812,19 +2803,15 @@ export const AcceptLocalPairingOfferRequest: MessageType<AcceptLocalPairingOffer
 export interface AcceptLocalPairingOfferResponse {
   /**
    * AnswerPayload is the compressed, base58-encoded answer string.
-   *
-   * @generated from field: string answer_payload = 1;
    */
   answerPayload?: string
 }
 
 export const AcceptLocalPairingOfferResponse: MessageType<AcceptLocalPairingOfferResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AcceptLocalPairingOfferResponse',
-    fields: [
-      { no: 1, name: 'answer_payload', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptLocalPairingOfferResponse>(
+    's4wave.session.AcceptLocalPairingOfferResponse',
+    () => [[1, 'answer_payload', 9]],
+  )
 
 /**
  * AcceptLocalPairingAnswerRequest is the request for AcceptLocalPairingAnswer.
@@ -3834,19 +2821,15 @@ export const AcceptLocalPairingOfferResponse: MessageType<AcceptLocalPairingOffe
 export interface AcceptLocalPairingAnswerRequest {
   /**
    * AnswerPayload is the compressed, base58-encoded answer string from the answerer.
-   *
-   * @generated from field: string answer_payload = 1;
    */
   answerPayload?: string
 }
 
 export const AcceptLocalPairingAnswerRequest: MessageType<AcceptLocalPairingAnswerRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AcceptLocalPairingAnswerRequest',
-    fields: [
-      { no: 1, name: 'answer_payload', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptLocalPairingAnswerRequest>(
+    's4wave.session.AcceptLocalPairingAnswerRequest',
+    () => [[1, 'answer_payload', 9]],
+  )
 
 /**
  * AcceptLocalPairingAnswerResponse is the response for AcceptLocalPairingAnswer.
@@ -3856,19 +2839,15 @@ export const AcceptLocalPairingAnswerRequest: MessageType<AcceptLocalPairingAnsw
 export interface AcceptLocalPairingAnswerResponse {
   /**
    * RemotePeerId is the base58 peer ID of the remote device.
-   *
-   * @generated from field: string remote_peer_id = 1;
    */
   remotePeerId?: string
 }
 
 export const AcceptLocalPairingAnswerResponse: MessageType<AcceptLocalPairingAnswerResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AcceptLocalPairingAnswerResponse',
-    fields: [
-      { no: 1, name: 'remote_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcceptLocalPairingAnswerResponse>(
+    's4wave.session.AcceptLocalPairingAnswerResponse',
+    () => [[1, 'remote_peer_id', 9]],
+  )
 
 /**
  * EnsureDeveloperSpaceRequest is the request for EnsureDeveloperSpace.
@@ -3878,9 +2857,9 @@ export const AcceptLocalPairingAnswerResponse: MessageType<AcceptLocalPairingAns
 export interface EnsureDeveloperSpaceRequest {}
 
 export const EnsureDeveloperSpaceRequest: MessageType<EnsureDeveloperSpaceRequest> =
-  /* @__PURE__ */ createEmptyMessageType<EnsureDeveloperSpaceRequest>(
+  /* @__PURE__ */ createMessageType<EnsureDeveloperSpaceRequest>(
     's4wave.session.EnsureDeveloperSpaceRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -3891,19 +2870,15 @@ export const EnsureDeveloperSpaceRequest: MessageType<EnsureDeveloperSpaceReques
 export interface EnsureDeveloperSpaceResponse {
   /**
    * SharedObjectId identifies the account's developer Space.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
 }
 
 export const EnsureDeveloperSpaceResponse: MessageType<EnsureDeveloperSpaceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.EnsureDeveloperSpaceResponse',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnsureDeveloperSpaceResponse>(
+    's4wave.session.EnsureDeveloperSpaceResponse',
+    () => [[1, 'shared_object_id', 9]],
+  )
 
 /**
  * WatchStorageBackendsRequest is the request for WatchStorageBackends.
@@ -3913,9 +2888,60 @@ export const EnsureDeveloperSpaceResponse: MessageType<EnsureDeveloperSpaceRespo
 export interface WatchStorageBackendsRequest {}
 
 export const WatchStorageBackendsRequest: MessageType<WatchStorageBackendsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchStorageBackendsRequest>(
+  /* @__PURE__ */ createMessageType<WatchStorageBackendsRequest>(
     's4wave.session.WatchStorageBackendsRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * WatchStorageBackendsResponse is the current set of storage backends.
+ *
+ * @generated from message s4wave.session.WatchStorageBackendsResponse
+ */
+export interface WatchStorageBackendsResponse {
+  /**
+   * StorageBackends lists each backend with the Spaces placed on it.
+   */
+  storageBackends?: StorageBackendInfo[]
+  /**
+   * DefaultStorageBackendId identifies the backend new Spaces use.
+   * Empty means the account's own storage.
+   */
+  defaultStorageBackendId?: string
+}
+
+export const WatchStorageBackendsResponse: MessageType<WatchStorageBackendsResponse> =
+  /* @__PURE__ */ createMessageType<WatchStorageBackendsResponse>(
+    's4wave.session.WatchStorageBackendsResponse',
+    () => [
+      [1, 'storage_backends', 11, 1, StorageBackendInfo.codec],
+      [2, 'default_storage_backend_id', 9],
+    ],
+  )
+
+/**
+ * StorageBackendInfo is a storage backend with the Spaces placed on it.
+ *
+ * @generated from message s4wave.session.StorageBackendInfo
+ */
+export interface StorageBackendInfo {
+  /**
+   * Backend is the backend record. Its credential is redacted Secret metadata.
+   */
+  backend?: StorageBackend
+  /**
+   * PlacedSpaces lists the Spaces whose blocks the backend holds.
+   */
+  placedSpaces?: PlacedSpace[]
+}
+
+export const StorageBackendInfo: MessageType<StorageBackendInfo> =
+  /* @__PURE__ */ createMessageType<StorageBackendInfo>(
+    's4wave.session.StorageBackendInfo',
+    () => [
+      [1, 'backend', 11, 0, StorageBackend.codec],
+      [2, 'placed_spaces', 11, 1, PlacedSpace.codec],
+    ],
   )
 
 /**
@@ -3926,102 +2952,22 @@ export const WatchStorageBackendsRequest: MessageType<WatchStorageBackendsReques
 export interface PlacedSpace {
   /**
    * SpaceId is the Space's SharedObject id.
-   *
-   * @generated from field: string space_id = 1;
    */
   spaceId?: string
   /**
    * Name is the Space's display name, empty when unknown.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
 }
 
 export const PlacedSpace: MessageType<PlacedSpace> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.PlacedSpace',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * StorageBackendInfo is a storage backend with the Spaces placed on it.
- *
- * @generated from message s4wave.session.StorageBackendInfo
- */
-export interface StorageBackendInfo {
-  /**
-   * Backend is the backend record. Its credential is redacted Secret metadata.
-   *
-   * @generated from field: account.settings.StorageBackend backend = 1;
-   */
-  backend?: StorageBackend
-  /**
-   * PlacedSpaces lists the Spaces whose blocks the backend holds.
-   *
-   * @generated from field: repeated s4wave.session.PlacedSpace placed_spaces = 2;
-   */
-  placedSpaces?: PlacedSpace[]
-}
-
-export const StorageBackendInfo: MessageType<StorageBackendInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.StorageBackendInfo',
-    fields: [
-      { no: 1, name: 'backend', kind: 'message', T: () => StorageBackend },
-      {
-        no: 2,
-        name: 'placed_spaces',
-        kind: 'message',
-        T: PlacedSpace,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WatchStorageBackendsResponse is the current set of storage backends.
- *
- * @generated from message s4wave.session.WatchStorageBackendsResponse
- */
-export interface WatchStorageBackendsResponse {
-  /**
-   * StorageBackends lists each backend with the Spaces placed on it.
-   *
-   * @generated from field: repeated s4wave.session.StorageBackendInfo storage_backends = 1;
-   */
-  storageBackends?: StorageBackendInfo[]
-  /**
-   * DefaultStorageBackendId identifies the backend new Spaces use.
-   * Empty means the account's own storage.
-   *
-   * @generated from field: string default_storage_backend_id = 2;
-   */
-  defaultStorageBackendId?: string
-}
-
-export const WatchStorageBackendsResponse: MessageType<WatchStorageBackendsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchStorageBackendsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'storage_backends',
-        kind: 'message',
-        T: StorageBackendInfo,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'default_storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PlacedSpace>(
+    's4wave.session.PlacedSpace',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'name', 9],
+    ],
+  )
 
 /**
  * CheckStorageBackendRequest is the request for CheckStorageBackend.
@@ -4031,38 +2977,27 @@ export const WatchStorageBackendsResponse: MessageType<WatchStorageBackendsRespo
 export interface CheckStorageBackendRequest {
   /**
    * StorageBackendId checks a saved backend with its stored credentials.
-   *
-   * @generated from field: string storage_backend_id = 1;
    */
   storageBackendId?: string
   /**
    * S3 is an unsaved bucket to check when StorageBackendId is empty.
-   *
-   * @generated from field: account.settings.S3Location s3 = 2;
    */
   s3?: S3Location
   /**
    * Credentials are the access keys for S3.
-   *
-   * @generated from field: block.store.s3.Credentials credentials = 3;
    */
   credentials?: Credentials
 }
 
 export const CheckStorageBackendRequest: MessageType<CheckStorageBackendRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.CheckStorageBackendRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 's3', kind: 'message', T: () => S3Location },
-      { no: 3, name: 'credentials', kind: 'message', T: () => Credentials },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CheckStorageBackendRequest>(
+    's4wave.session.CheckStorageBackendRequest',
+    () => [
+      [1, 'storage_backend_id', 9],
+      [2, 's3', 11, 0, S3Location.codec],
+      [3, 'credentials', 11, 0, Credentials.codec],
+    ],
+  )
 
 /**
  * CheckStorageBackendResponse is the response for CheckStorageBackend.
@@ -4072,19 +3007,15 @@ export const CheckStorageBackendRequest: MessageType<CheckStorageBackendRequest>
 export interface CheckStorageBackendResponse {
   /**
    * Result is the classified check result.
-   *
-   * @generated from field: block.store.s3.CheckResult result = 1;
    */
   result?: CheckResult
 }
 
 export const CheckStorageBackendResponse: MessageType<CheckStorageBackendResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.CheckStorageBackendResponse',
-    fields: [
-      { no: 1, name: 'result', kind: 'message', T: () => CheckResult },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CheckStorageBackendResponse>(
+    's4wave.session.CheckStorageBackendResponse',
+    () => [[1, 'result', 11, 0, CheckResult.codec]],
+  )
 
 /**
  * AddStorageBackendRequest is the request for AddStorageBackend.
@@ -4094,40 +3025,32 @@ export const CheckStorageBackendResponse: MessageType<CheckStorageBackendRespons
 export interface AddStorageBackendRequest {
   /**
    * DisplayName is the backend name, unique within the account.
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
   /**
    * S3 locates the bucket.
-   *
-   * @generated from field: account.settings.S3Location s3 = 2;
    */
   s3?: S3Location
   /**
    * Credentials are the access keys, stored in the backend's Secret.
-   *
-   * @generated from field: block.store.s3.Credentials credentials = 3;
    */
   credentials?: Credentials
   /**
    * SetDefault makes the new backend the default for new Spaces.
-   *
-   * @generated from field: bool set_default = 4;
    */
   setDefault?: boolean
 }
 
 export const AddStorageBackendRequest: MessageType<AddStorageBackendRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AddStorageBackendRequest',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 's3', kind: 'message', T: () => S3Location },
-      { no: 3, name: 'credentials', kind: 'message', T: () => Credentials },
-      { no: 4, name: 'set_default', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddStorageBackendRequest>(
+    's4wave.session.AddStorageBackendRequest',
+    () => [
+      [1, 'display_name', 9],
+      [2, 's3', 11, 0, S3Location.codec],
+      [3, 'credentials', 11, 0, Credentials.codec],
+      [4, 'set_default', 8],
+    ],
+  )
 
 /**
  * AddStorageBackendResponse is the response for AddStorageBackend.
@@ -4138,31 +3061,22 @@ export interface AddStorageBackendResponse {
   /**
    * StorageBackendId identifies the saved backend.
    * Empty when the check failed and nothing was saved.
-   *
-   * @generated from field: string storage_backend_id = 1;
    */
   storageBackendId?: string
   /**
    * Check is the connectivity check that ran before saving.
-   *
-   * @generated from field: block.store.s3.CheckResult check = 2;
    */
   check?: CheckResult
 }
 
 export const AddStorageBackendResponse: MessageType<AddStorageBackendResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.AddStorageBackendResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'check', kind: 'message', T: () => CheckResult },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddStorageBackendResponse>(
+    's4wave.session.AddStorageBackendResponse',
+    () => [
+      [1, 'storage_backend_id', 9],
+      [2, 'check', 11, 0, CheckResult.codec],
+    ],
+  )
 
 /**
  * RemoveStorageBackendRequest is the request for RemoveStorageBackend.
@@ -4172,24 +3086,15 @@ export const AddStorageBackendResponse: MessageType<AddStorageBackendResponse> =
 export interface RemoveStorageBackendRequest {
   /**
    * StorageBackendId identifies the backend to remove.
-   *
-   * @generated from field: string storage_backend_id = 1;
    */
   storageBackendId?: string
 }
 
 export const RemoveStorageBackendRequest: MessageType<RemoveStorageBackendRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.RemoveStorageBackendRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveStorageBackendRequest>(
+    's4wave.session.RemoveStorageBackendRequest',
+    () => [[1, 'storage_backend_id', 9]],
+  )
 
 /**
  * RemoveStorageBackendResponse is the response for RemoveStorageBackend.
@@ -4199,9 +3104,9 @@ export const RemoveStorageBackendRequest: MessageType<RemoveStorageBackendReques
 export interface RemoveStorageBackendResponse {}
 
 export const RemoveStorageBackendResponse: MessageType<RemoveStorageBackendResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RemoveStorageBackendResponse>(
+  /* @__PURE__ */ createMessageType<RemoveStorageBackendResponse>(
     's4wave.session.RemoveStorageBackendResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -4213,24 +3118,15 @@ export interface SetDefaultStorageBackendRequest {
   /**
    * StorageBackendId identifies the new default.
    * Empty returns new Spaces to the account's own storage.
-   *
-   * @generated from field: string storage_backend_id = 1;
    */
   storageBackendId?: string
 }
 
 export const SetDefaultStorageBackendRequest: MessageType<SetDefaultStorageBackendRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SetDefaultStorageBackendRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetDefaultStorageBackendRequest>(
+    's4wave.session.SetDefaultStorageBackendRequest',
+    () => [[1, 'storage_backend_id', 9]],
+  )
 
 /**
  * SetDefaultStorageBackendResponse is the response for SetDefaultStorageBackend.
@@ -4240,9 +3136,9 @@ export const SetDefaultStorageBackendRequest: MessageType<SetDefaultStorageBacke
 export interface SetDefaultStorageBackendResponse {}
 
 export const SetDefaultStorageBackendResponse: MessageType<SetDefaultStorageBackendResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetDefaultStorageBackendResponse>(
+  /* @__PURE__ */ createMessageType<SetDefaultStorageBackendResponse>(
     's4wave.session.SetDefaultStorageBackendResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -4253,32 +3149,23 @@ export const SetDefaultStorageBackendResponse: MessageType<SetDefaultStorageBack
 export interface SetStorageBackendPricingRequest {
   /**
    * StorageBackendId identifies the backend.
-   *
-   * @generated from field: string storage_backend_id = 1;
    */
   storageBackendId?: string
   /**
    * Pricing is the new price list.
    * Empty returns to the published prices of the endpoint's service.
-   *
-   * @generated from field: block.store.s3.Pricing pricing = 2;
    */
   pricing?: Pricing
 }
 
 export const SetStorageBackendPricingRequest: MessageType<SetStorageBackendPricingRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.SetStorageBackendPricingRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'pricing', kind: 'message', T: () => Pricing },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetStorageBackendPricingRequest>(
+    's4wave.session.SetStorageBackendPricingRequest',
+    () => [
+      [1, 'storage_backend_id', 9],
+      [2, 'pricing', 11, 0, Pricing.codec],
+    ],
+  )
 
 /**
  * SetStorageBackendPricingResponse is the response for SetStorageBackendPricing.
@@ -4288,9 +3175,9 @@ export const SetStorageBackendPricingRequest: MessageType<SetStorageBackendPrici
 export interface SetStorageBackendPricingResponse {}
 
 export const SetStorageBackendPricingResponse: MessageType<SetStorageBackendPricingResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetStorageBackendPricingResponse>(
+  /* @__PURE__ */ createMessageType<SetStorageBackendPricingResponse>(
     's4wave.session.SetStorageBackendPricingResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -4301,19 +3188,15 @@ export const SetStorageBackendPricingResponse: MessageType<SetStorageBackendPric
 export interface WatchSpaceStorageRequest {
   /**
    * SharedObjectId is the Space's SharedObject id.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
 }
 
 export const WatchSpaceStorageRequest: MessageType<WatchSpaceStorageRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchSpaceStorageRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchSpaceStorageRequest>(
+    's4wave.session.WatchSpaceStorageRequest',
+    () => [[1, 'shared_object_id', 9]],
+  )
 
 /**
  * WatchSpaceStorageResponse is where a Space's blocks are stored.
@@ -4324,58 +3207,38 @@ export interface WatchSpaceStorageResponse {
   /**
    * StorageBackendId is the backend holding the blocks, empty when the
    * account's own storage holds them.
-   *
-   * @generated from field: string storage_backend_id = 1;
    */
   storageBackendId?: string
   /**
    * StorageBackendName is the backend's display name.
-   *
-   * @generated from field: string storage_backend_name = 2;
    */
   storageBackendName?: string
   /**
    * PendingBlocks is the number of blocks written locally and not yet
    * uploaded to the backend.
-   *
-   * @generated from field: int64 pending_blocks = 3;
    */
   pendingBlocks?: bigint
   /**
    * PendingBytes is the size of the pending blocks.
-   *
-   * @generated from field: int64 pending_bytes = 4;
    */
   pendingBytes?: bigint
   /**
    * UploadError describes the last upload failure, empty while uploads succeed.
-   *
-   * @generated from field: string upload_error = 5;
    */
   uploadError?: string
 }
 
 export const WatchSpaceStorageResponse: MessageType<WatchSpaceStorageResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.WatchSpaceStorageResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 2,
-        name: 'storage_backend_name',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'pending_blocks', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 4, name: 'pending_bytes', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 5, name: 'upload_error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchSpaceStorageResponse>(
+    's4wave.session.WatchSpaceStorageResponse',
+    () => [
+      [1, 'storage_backend_id', 9],
+      [2, 'storage_backend_name', 9],
+      [3, 'pending_blocks', 3],
+      [4, 'pending_bytes', 3],
+      [5, 'upload_error', 9],
+    ],
+  )
 
 /**
  * MoveSpaceStorageRequest is the request for MoveSpaceStorage.
@@ -4385,32 +3248,23 @@ export const WatchSpaceStorageResponse: MessageType<WatchSpaceStorageResponse> =
 export interface MoveSpaceStorageRequest {
   /**
    * SharedObjectId is the Space's SharedObject id.
-   *
-   * @generated from field: string shared_object_id = 1;
    */
   sharedObjectId?: string
   /**
    * StorageBackendId identifies the destination backend.
    * Empty moves the blocks to the account's own storage.
-   *
-   * @generated from field: string storage_backend_id = 2;
    */
   storageBackendId?: string
 }
 
 export const MoveSpaceStorageRequest: MessageType<MoveSpaceStorageRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.MoveSpaceStorageRequest',
-    fields: [
-      { no: 1, name: 'shared_object_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'storage_backend_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MoveSpaceStorageRequest>(
+    's4wave.session.MoveSpaceStorageRequest',
+    () => [
+      [1, 'shared_object_id', 9],
+      [2, 'storage_backend_id', 9],
+    ],
+  )
 
 /**
  * MoveSpaceStorageResponse is the progress of a storage move.
@@ -4420,52 +3274,40 @@ export const MoveSpaceStorageRequest: MessageType<MoveSpaceStorageRequest> =
 export interface MoveSpaceStorageResponse {
   /**
    * Phase is the current step.
-   *
-   * @generated from field: s4wave.session.MoveSpaceStoragePhase phase = 1;
    */
   phase?: MoveSpaceStoragePhase
   /**
    * BlocksFetched is the number of blocks checked during the fetch phase.
-   *
-   * @generated from field: int64 blocks_fetched = 2;
    */
   blocksFetched?: bigint
   /**
    * BlocksTotal is the number of blocks the fetch phase checks.
-   *
-   * @generated from field: int64 blocks_total = 3;
    */
   blocksTotal?: bigint
   /**
    * PendingBlocks is the number of blocks not yet uploaded during the
    * upload phase.
-   *
-   * @generated from field: int64 pending_blocks = 4;
    */
   pendingBlocks?: bigint
   /**
    * PendingBytes is the size of the pending blocks.
-   *
-   * @generated from field: int64 pending_bytes = 5;
    */
   pendingBytes?: bigint
   /**
    * UploadError describes the last upload failure, empty while uploads succeed.
-   *
-   * @generated from field: string upload_error = 6;
    */
   uploadError?: string
 }
 
 export const MoveSpaceStorageResponse: MessageType<MoveSpaceStorageResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.session.MoveSpaceStorageResponse',
-    fields: [
-      { no: 1, name: 'phase', kind: 'enum', T: MoveSpaceStoragePhase_Enum },
-      { no: 2, name: 'blocks_fetched', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 3, name: 'blocks_total', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 4, name: 'pending_blocks', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 5, name: 'pending_bytes', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 6, name: 'upload_error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MoveSpaceStorageResponse>(
+    's4wave.session.MoveSpaceStorageResponse',
+    () => [
+      [1, 'phase', 14, 0, MoveSpaceStoragePhase_Enum],
+      [2, 'blocks_fetched', 3],
+      [3, 'blocks_total', 3],
+      [4, 'pending_blocks', 3],
+      [5, 'pending_bytes', 3],
+      [6, 'upload_error', 9],
+    ],
+  )

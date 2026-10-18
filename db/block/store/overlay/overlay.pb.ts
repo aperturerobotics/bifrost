@@ -6,8 +6,6 @@ import type { OverlayMode } from '../../block.pb.js'
 import { OverlayMode_Enum, PutOpts } from '../../block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the overlay block store controller.
@@ -17,95 +15,57 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BlockStoreId is the block store id to use on the bus.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * LowerBlockStoreId is the identifier of the "lower" block store.
-   *
-   * @generated from field: string lower_block_store_id = 2;
    */
   lowerBlockStoreId?: string
   /**
    * UpperBlockStoreId is the identifier of the "upper" block store.
-   *
-   * @generated from field: string upper_block_store_id = 3;
    */
   upperBlockStoreId?: string
   /**
    * OverlayMode indicates the mode to use for the block store.
-   *
-   * @generated from field: block.OverlayMode overlay_mode = 4;
    */
   overlayMode?: OverlayMode
   /**
    * WritebackTimeoutDur is the timeout for writing back blocks.
    * If overlay_mode does not enable writeback, this is N/A.
    * Example: 30s
-   *
-   * @generated from field: string writeback_timeout_dur = 5;
    */
   writebackTimeoutDur?: string
   /**
    * WritebackPutOpts are the base put options for writing back blocks.
    * If overlay_mode does not enable writeback, this is N/A.
-   *
-   * @generated from field: block.PutOpts writeback_put_opts = 6;
    */
   writebackPutOpts?: PutOpts
   /**
    * BucketIds is a list of bucket ids to serve LookupBlockFromNetwork directives.
-   *
-   * @generated from field: repeated string bucket_ids = 7;
    */
   bucketIds?: string[]
   /**
    * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 8;
    */
   skipNotFound?: boolean
   /**
    * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 9;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.overlay.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'lower_block_store_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 3,
-      name: 'upper_block_store_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 4, name: 'overlay_mode', kind: 'enum', T: OverlayMode_Enum },
-    {
-      no: 5,
-      name: 'writeback_timeout_dur',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 6, name: 'writeback_put_opts', kind: 'message', T: () => PutOpts },
-    {
-      no: 7,
-      name: 'bucket_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 8, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 9, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'block.store.overlay.Config',
+    () => [
+      [1, 'block_store_id', 9],
+      [2, 'lower_block_store_id', 9],
+      [3, 'upper_block_store_id', 9],
+      [4, 'overlay_mode', 14, 0, OverlayMode_Enum],
+      [5, 'writeback_timeout_dur', 9],
+      [6, 'writeback_put_opts', 11, 0, PutOpts.codec],
+      [7, 'bucket_ids', 9, 1],
+      [8, 'skip_not_found', 8],
+      [9, 'verbose', 8],
+    ],
+  )

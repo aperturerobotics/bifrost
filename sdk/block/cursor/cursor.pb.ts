@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { BlockRef } from '../../../db/block/block.pb.js'
 
 /**
@@ -19,9 +14,9 @@ import { BlockRef } from '../../../db/block/block.pb.js'
 export interface FetchRequest {}
 
 export const FetchRequest: MessageType<FetchRequest> =
-  /* @__PURE__ */ createEmptyMessageType<FetchRequest>(
+  /* @__PURE__ */ createMessageType<FetchRequest>(
     's4wave.block.cursor.FetchRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -32,26 +27,22 @@ export const FetchRequest: MessageType<FetchRequest> =
 export interface FetchResponse {
   /**
    * Data is the raw block data.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * Found indicates if the block was found.
-   *
-   * @generated from field: bool found = 2;
    */
   found?: boolean
 }
 
 export const FetchResponse: MessageType<FetchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.FetchResponse',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchResponse>(
+    's4wave.block.cursor.FetchResponse',
+    () => [
+      [1, 'data', 12],
+      [2, 'found', 8],
+    ],
+  )
 
 /**
  * SetBlockRequest is the request type for SetBlock.
@@ -61,34 +52,28 @@ export const FetchResponse: MessageType<FetchResponse> =
 export interface SetBlockRequest {
   /**
    * Data is the marshaled block data.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * MarkDirty marks the block as dirty for persistence.
-   *
-   * @generated from field: bool mark_dirty = 2;
    */
   markDirty?: boolean
   /**
    * BlockType is the block type identifier.
    * Format: "github.com/s4wave/spacewave/db/block/mock.Root"
-   *
-   * @generated from field: string block_type = 3;
    */
   blockType?: string
 }
 
 export const SetBlockRequest: MessageType<SetBlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.SetBlockRequest',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'mark_dirty', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'block_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetBlockRequest>(
+    's4wave.block.cursor.SetBlockRequest',
+    () => [
+      [1, 'data', 12],
+      [2, 'mark_dirty', 8],
+      [3, 'block_type', 9],
+    ],
+  )
 
 /**
  * SetBlockResponse is the response type for SetBlock.
@@ -98,9 +83,9 @@ export const SetBlockRequest: MessageType<SetBlockRequest> =
 export interface SetBlockResponse {}
 
 export const SetBlockResponse: MessageType<SetBlockResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetBlockResponse>(
+  /* @__PURE__ */ createMessageType<SetBlockResponse>(
     's4wave.block.cursor.SetBlockResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -111,27 +96,23 @@ export const SetBlockResponse: MessageType<SetBlockResponse> =
 export interface FollowRefRequest {
   /**
    * RefId is the reference field ID to follow.
-   *
-   * @generated from field: uint32 ref_id = 1;
    */
   refId?: number
   /**
    * BlkRef is the optional block reference to follow.
    * If not provided, will follow the ref stored at RefId.
-   *
-   * @generated from field: block.BlockRef blk_ref = 2;
    */
   blkRef?: BlockRef
 }
 
 export const FollowRefRequest: MessageType<FollowRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.FollowRefRequest',
-    fields: [
-      { no: 1, name: 'ref_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'blk_ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FollowRefRequest>(
+    's4wave.block.cursor.FollowRefRequest',
+    () => [
+      [1, 'ref_id', 13],
+      [2, 'blk_ref', 11, 0, BlockRef.codec],
+    ],
+  )
 
 /**
  * FollowRefResponse is the response type for FollowRef.
@@ -141,19 +122,15 @@ export const FollowRefRequest: MessageType<FollowRefRequest> =
 export interface FollowRefResponse {
   /**
    * ResourceId is the ID of the new BlockCursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const FollowRefResponse: MessageType<FollowRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.FollowRefResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FollowRefResponse>(
+    's4wave.block.cursor.FollowRefResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * GetRefRequest is the request type for GetRef.
@@ -163,9 +140,9 @@ export const FollowRefResponse: MessageType<FollowRefResponse> =
 export interface GetRefRequest {}
 
 export const GetRefRequest: MessageType<GetRefRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetRefRequest>(
+  /* @__PURE__ */ createMessageType<GetRefRequest>(
     's4wave.block.cursor.GetRefRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -176,19 +153,15 @@ export const GetRefRequest: MessageType<GetRefRequest> =
 export interface GetRefResponse {
   /**
    * Ref is the current block reference.
-   *
-   * @generated from field: block.BlockRef ref = 1;
    */
   ref?: BlockRef
 }
 
 export const GetRefResponse: MessageType<GetRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.GetRefResponse',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetRefResponse>(
+    's4wave.block.cursor.GetRefResponse',
+    () => [[1, 'ref', 11, 0, BlockRef.codec]],
+  )
 
 /**
  * IsDirtyRequest is the request type for IsDirty.
@@ -198,9 +171,9 @@ export const GetRefResponse: MessageType<GetRefResponse> =
 export interface IsDirtyRequest {}
 
 export const IsDirtyRequest: MessageType<IsDirtyRequest> =
-  /* @__PURE__ */ createEmptyMessageType<IsDirtyRequest>(
+  /* @__PURE__ */ createMessageType<IsDirtyRequest>(
     's4wave.block.cursor.IsDirtyRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -211,19 +184,15 @@ export const IsDirtyRequest: MessageType<IsDirtyRequest> =
 export interface IsDirtyResponse {
   /**
    * Dirty indicates if the cursor has uncommitted changes.
-   *
-   * @generated from field: bool dirty = 1;
    */
   dirty?: boolean
 }
 
 export const IsDirtyResponse: MessageType<IsDirtyResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.IsDirtyResponse',
-    fields: [
-      { no: 1, name: 'dirty', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IsDirtyResponse>(
+    's4wave.block.cursor.IsDirtyResponse',
+    () => [[1, 'dirty', 8]],
+  )
 
 /**
  * MarkDirtyRequest is the request type for MarkDirty.
@@ -233,9 +202,9 @@ export const IsDirtyResponse: MessageType<IsDirtyResponse> =
 export interface MarkDirtyRequest {}
 
 export const MarkDirtyRequest: MessageType<MarkDirtyRequest> =
-  /* @__PURE__ */ createEmptyMessageType<MarkDirtyRequest>(
+  /* @__PURE__ */ createMessageType<MarkDirtyRequest>(
     's4wave.block.cursor.MarkDirtyRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -246,9 +215,9 @@ export const MarkDirtyRequest: MessageType<MarkDirtyRequest> =
 export interface MarkDirtyResponse {}
 
 export const MarkDirtyResponse: MessageType<MarkDirtyResponse> =
-  /* @__PURE__ */ createEmptyMessageType<MarkDirtyResponse>(
+  /* @__PURE__ */ createMessageType<MarkDirtyResponse>(
     's4wave.block.cursor.MarkDirtyResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -259,9 +228,9 @@ export const MarkDirtyResponse: MessageType<MarkDirtyResponse> =
 export interface GetBlockRequest {}
 
 export const GetBlockRequest: MessageType<GetBlockRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetBlockRequest>(
+  /* @__PURE__ */ createMessageType<GetBlockRequest>(
     's4wave.block.cursor.GetBlockRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -272,26 +241,22 @@ export const GetBlockRequest: MessageType<GetBlockRequest> =
 export interface GetBlockResponse {
   /**
    * Data is the raw block data.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * IsSubBlock indicates if this is a sub-block.
-   *
-   * @generated from field: bool is_sub_block = 2;
    */
   isSubBlock?: boolean
 }
 
 export const GetBlockResponse: MessageType<GetBlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.GetBlockResponse',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'is_sub_block', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetBlockResponse>(
+    's4wave.block.cursor.GetBlockResponse',
+    () => [
+      [1, 'data', 12],
+      [2, 'is_sub_block', 8],
+    ],
+  )
 
 /**
  * UnmarshalRequest is the request type for Unmarshal.
@@ -302,19 +267,15 @@ export interface UnmarshalRequest {
   /**
    * BlockType is the optional block type identifier for server-side decode.
    * Empty preserves the legacy raw-byte fetch behavior.
-   *
-   * @generated from field: string block_type = 1;
    */
   blockType?: string
 }
 
 export const UnmarshalRequest: MessageType<UnmarshalRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.UnmarshalRequest',
-    fields: [
-      { no: 1, name: 'block_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnmarshalRequest>(
+    's4wave.block.cursor.UnmarshalRequest',
+    () => [[1, 'block_type', 9]],
+  )
 
 /**
  * UnmarshalResponse is the response type for Unmarshal.
@@ -324,26 +285,22 @@ export const UnmarshalRequest: MessageType<UnmarshalRequest> =
 export interface UnmarshalResponse {
   /**
    * Data is the unmarshaled block data.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * Found indicates if the block was found.
-   *
-   * @generated from field: bool found = 2;
    */
   found?: boolean
 }
 
 export const UnmarshalResponse: MessageType<UnmarshalResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.UnmarshalResponse',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UnmarshalResponse>(
+    's4wave.block.cursor.UnmarshalResponse',
+    () => [
+      [1, 'data', 12],
+      [2, 'found', 8],
+    ],
+  )
 
 /**
  * IsSubBlockRequest is the request type for IsSubBlock.
@@ -353,9 +310,9 @@ export const UnmarshalResponse: MessageType<UnmarshalResponse> =
 export interface IsSubBlockRequest {}
 
 export const IsSubBlockRequest: MessageType<IsSubBlockRequest> =
-  /* @__PURE__ */ createEmptyMessageType<IsSubBlockRequest>(
+  /* @__PURE__ */ createMessageType<IsSubBlockRequest>(
     's4wave.block.cursor.IsSubBlockRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -366,19 +323,15 @@ export const IsSubBlockRequest: MessageType<IsSubBlockRequest> =
 export interface IsSubBlockResponse {
   /**
    * IsSubBlock indicates if the cursor is at a sub-block position.
-   *
-   * @generated from field: bool is_sub_block = 1;
    */
   isSubBlock?: boolean
 }
 
 export const IsSubBlockResponse: MessageType<IsSubBlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.IsSubBlockResponse',
-    fields: [
-      { no: 1, name: 'is_sub_block', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<IsSubBlockResponse>(
+    's4wave.block.cursor.IsSubBlockResponse',
+    () => [[1, 'is_sub_block', 8]],
+  )
 
 /**
  * FollowSubBlockRequest is the request type for FollowSubBlock.
@@ -388,19 +341,15 @@ export const IsSubBlockResponse: MessageType<IsSubBlockResponse> =
 export interface FollowSubBlockRequest {
   /**
    * RefId is the sub-block field ID to follow.
-   *
-   * @generated from field: uint32 ref_id = 1;
    */
   refId?: number
 }
 
 export const FollowSubBlockRequest: MessageType<FollowSubBlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.FollowSubBlockRequest',
-    fields: [
-      { no: 1, name: 'ref_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FollowSubBlockRequest>(
+    's4wave.block.cursor.FollowSubBlockRequest',
+    () => [[1, 'ref_id', 13]],
+  )
 
 /**
  * FollowSubBlockResponse is the response type for FollowSubBlock.
@@ -410,19 +359,15 @@ export const FollowSubBlockRequest: MessageType<FollowSubBlockRequest> =
 export interface FollowSubBlockResponse {
   /**
    * ResourceId is the ID of the new BlockCursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const FollowSubBlockResponse: MessageType<FollowSubBlockResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.FollowSubBlockResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FollowSubBlockResponse>(
+    's4wave.block.cursor.FollowSubBlockResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * SetAsSubBlockRequest is the request type for SetAsSubBlock.
@@ -432,31 +377,22 @@ export const FollowSubBlockResponse: MessageType<FollowSubBlockResponse> =
 export interface SetAsSubBlockRequest {
   /**
    * RefId is the field ID to set as a sub-block.
-   *
-   * @generated from field: uint32 ref_id = 1;
    */
   refId?: number
   /**
    * ParentResourceId is the resource ID of the parent cursor.
-   *
-   * @generated from field: uint32 parent_resource_id = 2;
    */
   parentResourceId?: number
 }
 
 export const SetAsSubBlockRequest: MessageType<SetAsSubBlockRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.SetAsSubBlockRequest',
-    fields: [
-      { no: 1, name: 'ref_id', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 2,
-        name: 'parent_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetAsSubBlockRequest>(
+    's4wave.block.cursor.SetAsSubBlockRequest',
+    () => [
+      [1, 'ref_id', 13],
+      [2, 'parent_resource_id', 13],
+    ],
+  )
 
 /**
  * SetAsSubBlockResponse is the response type for SetAsSubBlock.
@@ -466,9 +402,9 @@ export const SetAsSubBlockRequest: MessageType<SetAsSubBlockRequest> =
 export interface SetAsSubBlockResponse {}
 
 export const SetAsSubBlockResponse: MessageType<SetAsSubBlockResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetAsSubBlockResponse>(
+  /* @__PURE__ */ createMessageType<SetAsSubBlockResponse>(
     's4wave.block.cursor.SetAsSubBlockResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -479,19 +415,15 @@ export const SetAsSubBlockResponse: MessageType<SetAsSubBlockResponse> =
 export interface ClearRefRequest {
   /**
    * RefId is the reference field ID to clear.
-   *
-   * @generated from field: uint32 ref_id = 1;
    */
   refId?: number
 }
 
 export const ClearRefRequest: MessageType<ClearRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.ClearRefRequest',
-    fields: [
-      { no: 1, name: 'ref_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ClearRefRequest>(
+    's4wave.block.cursor.ClearRefRequest',
+    () => [[1, 'ref_id', 13]],
+  )
 
 /**
  * ClearRefResponse is the response type for ClearRef.
@@ -501,9 +433,9 @@ export const ClearRefRequest: MessageType<ClearRefRequest> =
 export interface ClearRefResponse {}
 
 export const ClearRefResponse: MessageType<ClearRefResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ClearRefResponse>(
+  /* @__PURE__ */ createMessageType<ClearRefResponse>(
     's4wave.block.cursor.ClearRefResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -514,9 +446,9 @@ export const ClearRefResponse: MessageType<ClearRefResponse> =
 export interface ClearAllRefsRequest {}
 
 export const ClearAllRefsRequest: MessageType<ClearAllRefsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ClearAllRefsRequest>(
+  /* @__PURE__ */ createMessageType<ClearAllRefsRequest>(
     's4wave.block.cursor.ClearAllRefsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -527,9 +459,9 @@ export const ClearAllRefsRequest: MessageType<ClearAllRefsRequest> =
 export interface ClearAllRefsResponse {}
 
 export const ClearAllRefsResponse: MessageType<ClearAllRefsResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ClearAllRefsResponse>(
+  /* @__PURE__ */ createMessageType<ClearAllRefsResponse>(
     's4wave.block.cursor.ClearAllRefsResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -540,31 +472,22 @@ export const ClearAllRefsResponse: MessageType<ClearAllRefsResponse> =
 export interface SetRefRequest {
   /**
    * RefId is the reference field ID to set.
-   *
-   * @generated from field: uint32 ref_id = 1;
    */
   refId?: number
   /**
    * TargetResourceId is the resource ID of the target cursor.
-   *
-   * @generated from field: uint32 target_resource_id = 2;
    */
   targetResourceId?: number
 }
 
 export const SetRefRequest: MessageType<SetRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.SetRefRequest',
-    fields: [
-      { no: 1, name: 'ref_id', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 2,
-        name: 'target_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetRefRequest>(
+    's4wave.block.cursor.SetRefRequest',
+    () => [
+      [1, 'ref_id', 13],
+      [2, 'target_resource_id', 13],
+    ],
+  )
 
 /**
  * SetRefResponse is the response type for SetRef.
@@ -574,9 +497,9 @@ export const SetRefRequest: MessageType<SetRefRequest> =
 export interface SetRefResponse {}
 
 export const SetRefResponse: MessageType<SetRefResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetRefResponse>(
+  /* @__PURE__ */ createMessageType<SetRefResponse>(
     's4wave.block.cursor.SetRefResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -587,19 +510,15 @@ export const SetRefResponse: MessageType<SetRefResponse> =
 export interface GetExistingRefRequest {
   /**
    * RefId is the reference field ID to check.
-   *
-   * @generated from field: uint32 ref_id = 1;
    */
   refId?: number
 }
 
 export const GetExistingRefRequest: MessageType<GetExistingRefRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.GetExistingRefRequest',
-    fields: [
-      { no: 1, name: 'ref_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetExistingRefRequest>(
+    's4wave.block.cursor.GetExistingRefRequest',
+    () => [[1, 'ref_id', 13]],
+  )
 
 /**
  * GetExistingRefResponse is the response type for GetExistingRef.
@@ -610,19 +529,15 @@ export interface GetExistingRefResponse {
   /**
    * ResourceId is the ID of the existing BlockCursor resource.
    * Zero if the reference has not been traversed.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const GetExistingRefResponse: MessageType<GetExistingRefResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.GetExistingRefResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetExistingRefResponse>(
+    's4wave.block.cursor.GetExistingRefResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * GetAllRefsRequest is the request type for GetAllRefs.
@@ -632,19 +547,15 @@ export const GetExistingRefResponse: MessageType<GetExistingRefResponse> =
 export interface GetAllRefsRequest {
   /**
    * ExistingOnly returns only references that have already been traversed.
-   *
-   * @generated from field: bool existing_only = 1;
    */
   existingOnly?: boolean
 }
 
 export const GetAllRefsRequest: MessageType<GetAllRefsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.GetAllRefsRequest',
-    fields: [
-      { no: 1, name: 'existing_only', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetAllRefsRequest>(
+    's4wave.block.cursor.GetAllRefsRequest',
+    () => [[1, 'existing_only', 8]],
+  )
 
 /**
  * GetAllRefsResponse is the response type for GetAllRefs.
@@ -654,25 +565,15 @@ export const GetAllRefsRequest: MessageType<GetAllRefsRequest> =
 export interface GetAllRefsResponse {
   /**
    * Refs maps reference field IDs to BlockCursor resource IDs.
-   *
-   * @generated from field: map<uint32, uint32> refs = 1;
    */
   refs?: { [key: number]: number }
 }
 
 export const GetAllRefsResponse: MessageType<GetAllRefsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.GetAllRefsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'refs',
-        kind: 'map',
-        K: ScalarType.UINT32,
-        V: { kind: 'scalar', T: ScalarType.UINT32 },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetAllRefsResponse>(
+    's4wave.block.cursor.GetAllRefsResponse',
+    () => [[1, 'refs', 13, 840]],
+  )
 
 /**
  * DetachRequest is the request type for Detach.
@@ -682,19 +583,15 @@ export const GetAllRefsResponse: MessageType<GetAllRefsResponse> =
 export interface DetachRequest {
   /**
    * KeepRefs adds the new location as a parent of all previously referenced blocks.
-   *
-   * @generated from field: bool keep_refs = 1;
    */
   keepRefs?: boolean
 }
 
 export const DetachRequest: MessageType<DetachRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.DetachRequest',
-    fields: [
-      { no: 1, name: 'keep_refs', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DetachRequest>(
+    's4wave.block.cursor.DetachRequest',
+    () => [[1, 'keep_refs', 8]],
+  )
 
 /**
  * DetachResponse is the response type for Detach.
@@ -704,19 +601,15 @@ export const DetachRequest: MessageType<DetachRequest> =
 export interface DetachResponse {
   /**
    * ResourceId is the ID of the new detached BlockCursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const DetachResponse: MessageType<DetachResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.DetachResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DetachResponse>(
+    's4wave.block.cursor.DetachResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * DetachTransactionRequest is the request type for DetachTransaction.
@@ -726,9 +619,9 @@ export const DetachResponse: MessageType<DetachResponse> =
 export interface DetachTransactionRequest {}
 
 export const DetachTransactionRequest: MessageType<DetachTransactionRequest> =
-  /* @__PURE__ */ createEmptyMessageType<DetachTransactionRequest>(
+  /* @__PURE__ */ createMessageType<DetachTransactionRequest>(
     's4wave.block.cursor.DetachTransactionRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -739,19 +632,15 @@ export const DetachTransactionRequest: MessageType<DetachTransactionRequest> =
 export interface DetachTransactionResponse {
   /**
    * ResourceId is the ID of the new detached BlockCursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const DetachTransactionResponse: MessageType<DetachTransactionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.DetachTransactionResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DetachTransactionResponse>(
+    's4wave.block.cursor.DetachTransactionResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * DetachRecursiveRequest is the request type for DetachRecursive.
@@ -761,33 +650,27 @@ export const DetachTransactionResponse: MessageType<DetachTransactionResponse> =
 export interface DetachRecursiveRequest {
   /**
    * DetachTx creates a new detached transaction.
-   *
-   * @generated from field: bool detach_tx = 1;
    */
   detachTx?: boolean
   /**
    * CloneBlocks clones the block objects.
-   *
-   * @generated from field: bool clone_blocks = 2;
    */
   cloneBlocks?: boolean
   /**
    * MarkDirty marks all positions as dirty.
-   *
-   * @generated from field: bool mark_dirty = 3;
    */
   markDirty?: boolean
 }
 
 export const DetachRecursiveRequest: MessageType<DetachRecursiveRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.DetachRecursiveRequest',
-    fields: [
-      { no: 1, name: 'detach_tx', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'clone_blocks', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'mark_dirty', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DetachRecursiveRequest>(
+    's4wave.block.cursor.DetachRecursiveRequest',
+    () => [
+      [1, 'detach_tx', 8],
+      [2, 'clone_blocks', 8],
+      [3, 'mark_dirty', 8],
+    ],
+  )
 
 /**
  * DetachRecursiveResponse is the response type for DetachRecursive.
@@ -797,19 +680,15 @@ export const DetachRecursiveRequest: MessageType<DetachRecursiveRequest> =
 export interface DetachRecursiveResponse {
   /**
    * ResourceId is the ID of the new detached BlockCursor resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const DetachRecursiveResponse: MessageType<DetachRecursiveResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.DetachRecursiveResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DetachRecursiveResponse>(
+    's4wave.block.cursor.DetachRecursiveResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * ParentsRequest is the request type for Parents.
@@ -819,9 +698,9 @@ export const DetachRecursiveResponse: MessageType<DetachRecursiveResponse> =
 export interface ParentsRequest {}
 
 export const ParentsRequest: MessageType<ParentsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ParentsRequest>(
+  /* @__PURE__ */ createMessageType<ParentsRequest>(
     's4wave.block.cursor.ParentsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -832,22 +711,12 @@ export const ParentsRequest: MessageType<ParentsRequest> =
 export interface ParentsResponse {
   /**
    * ParentResourceIds are the resource IDs of parent cursors.
-   *
-   * @generated from field: repeated uint32 parent_resource_ids = 1;
    */
   parentResourceIds?: number[]
 }
 
 export const ParentsResponse: MessageType<ParentsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.block.cursor.ParentsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'parent_resource_ids',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ParentsResponse>(
+    's4wave.block.cursor.ParentsResponse',
+    () => [[1, 'parent_resource_ids', 13, 3]],
+  )

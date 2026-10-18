@@ -10,8 +10,6 @@ import {
 } from './canvas.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * CanvasStorage is the root block of a Canvas state DAG.
@@ -21,62 +19,34 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface CanvasStorage {
   /**
    * Nodes stores Canvas nodes. Key: UTF-8 node ID. Value: block.BlockRef to CanvasNode.
-   *
-   * @generated from field: kvtx.block.KeyValueStore nodes = 1;
    */
   nodes?: KeyValueStore
   /**
    * Edges contains user-drawn visual edges.
-   *
-   * @generated from field: repeated s4wave.canvas.CanvasEdge edges = 2;
    */
   edges?: CanvasEdge[]
   /**
    * StrokeTreeRef identifies the freeform stroke tree.
-   *
-   * @generated from field: bytes stroke_tree_ref = 3;
    */
   strokeTreeRef?: Uint8Array
   /**
    * HiddenGraphLinks contains canvas-scoped hidden world graph links.
-   *
-   * @generated from field: repeated s4wave.canvas.HiddenGraphLink hidden_graph_links = 4;
    */
   hiddenGraphLinks?: HiddenGraphLink[]
   /**
    * LayoutMetadata contains projection layout metadata keyed by canvas node ID.
-   *
-   * @generated from field: map<string, s4wave.canvas.CanvasLayoutMetadata> layout_metadata = 5;
    */
   layoutMetadata?: { [key: string]: CanvasLayoutMetadata }
 }
 
 export const CanvasStorage: MessageType<CanvasStorage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.canvas.CanvasStorage',
-    fields: [
-      { no: 1, name: 'nodes', kind: 'message', T: () => KeyValueStore },
-      {
-        no: 2,
-        name: 'edges',
-        kind: 'message',
-        T: () => CanvasEdge,
-        repeated: true,
-      },
-      { no: 3, name: 'stroke_tree_ref', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 4,
-        name: 'hidden_graph_links',
-        kind: 'message',
-        T: () => HiddenGraphLink,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'layout_metadata',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'message', T: () => CanvasLayoutMetadata },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CanvasStorage>(
+    's4wave.canvas.CanvasStorage',
+    () => [
+      [1, 'nodes', 11, 0, KeyValueStore.codec],
+      [2, 'edges', 11, 1, CanvasEdge.codec],
+      [3, 'stroke_tree_ref', 12],
+      [4, 'hidden_graph_links', 11, 1, HiddenGraphLink.codec],
+      [5, 'layout_metadata', 11, 584, CanvasLayoutMetadata.codec],
+    ],
+  )

@@ -6,8 +6,6 @@ import { DomainInfo } from '../domain.pb.js'
 import { Entity } from '../../identity.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the static identity provider config.
@@ -19,48 +17,30 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * DomainInfo is the identity domain information object.
-   *
-   * @generated from field: identity.domain.DomainInfo domain_info = 1;
    */
   domainInfo?: DomainInfo
   /**
    * Entities is the set of entities to make available on the domain.
-   *
-   * @generated from field: repeated identity.Entity entities = 2;
    */
   entities?: Entity[]
   /**
    * SilentNotFound indicates not found will not satistfy the lookup.
-   *
-   * @generated from field: bool silent_not_found = 3;
    */
   silentNotFound?: boolean
   /**
    * ResolveSelectIdentityDomain indicates this domain should resolve any
    * SelectIdentityDomain directive with its own domain info.
-   *
-   * @generated from field: bool resolve_select_identity_domain = 4;
    */
   resolveSelectIdentityDomain?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'identity.domain.static.Config',
-  fields: [
-    { no: 1, name: 'domain_info', kind: 'message', T: () => DomainInfo },
-    {
-      no: 2,
-      name: 'entities',
-      kind: 'message',
-      T: () => Entity,
-      repeated: true,
-    },
-    { no: 3, name: 'silent_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 4,
-      name: 'resolve_select_identity_domain',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'identity.domain.static.Config',
+    () => [
+      [1, 'domain_info', 11, 0, DomainInfo.codec],
+      [2, 'entities', 11, 1, Entity.codec],
+      [3, 'silent_not_found', 8],
+      [4, 'resolve_select_identity_domain', 8],
+    ],
+  )

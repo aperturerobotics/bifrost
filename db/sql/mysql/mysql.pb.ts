@@ -2,43 +2,11 @@
 // @generated from file github.com/s4wave/spacewave/db/sql/mysql/mysql.proto (package mysql, syntax proto3)
 /* eslint-disable */
 
-import { BlockRef } from '../../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { BlockRef } from '../../block/block.pb.js'
 import { KeyValueStore } from '../../kvtx/block/kvtx.pb.js'
 import { Blob } from '../../block/blob/blob.pb.js'
-
-/**
- * RootDb contains the root definition of a database.
- *
- * @generated from message mysql.RootDb
- */
-export interface RootDb {
-  /**
-   * Name is the unique name of the database.
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-  /**
-   * Ref is the block reference to the database root.
-   * If empty, the database is empty.
-   * Type: DatabaseRoot.
-   *
-   * @generated from field: block.BlockRef ref = 2;
-   */
-  ref?: BlockRef
-}
-
-export const RootDb: MessageType<RootDb> = /* @__PURE__ */ createMessageType({
-  typeName: 'mysql.RootDb',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'ref', kind: 'message', T: () => BlockRef },
-  ] satisfies readonly PartialFieldInfo[],
-})
 
 /**
  * Root is the root object of the mysql database.
@@ -48,48 +16,38 @@ export const RootDb: MessageType<RootDb> = /* @__PURE__ */ createMessageType({
 export interface Root {
   /**
    * Databases contains the root set of databases, sorted by name.
-   *
-   * @generated from field: repeated mysql.RootDb databases = 1;
    */
   databases?: RootDb[]
 }
 
-export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType({
-  typeName: 'mysql.Root',
-  fields: [
-    { no: 1, name: 'databases', kind: 'message', T: RootDb, repeated: true },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType<Root>(
+  'mysql.Root',
+  () => [[1, 'databases', 11, 1, RootDb.codec]],
+)
 
 /**
- * DatabaseRootTable contains the reference to the TableRoot.
+ * RootDb contains the root definition of a database.
  *
- * @generated from message mysql.DatabaseRootTable
+ * @generated from message mysql.RootDb
  */
-export interface DatabaseRootTable {
+export interface RootDb {
   /**
-   * Name is the unique name of the table.
-   *
-   * @generated from field: string name = 1;
+   * Name is the unique name of the database.
    */
   name?: string
   /**
-   * Ref is the block reference to the table root.
-   * Type: TableRoot.
-   *
-   * @generated from field: block.BlockRef ref = 2;
+   * Ref is the block reference to the database root.
+   * If empty, the database is empty.
+   * Type: DatabaseRoot.
    */
   ref?: BlockRef
 }
 
-export const DatabaseRootTable: MessageType<DatabaseRootTable> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.DatabaseRootTable',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const RootDb: MessageType<RootDb> =
+  /* @__PURE__ */ createMessageType<RootDb>('mysql.RootDb', () => [
+    [1, 'name', 9],
+    [2, 'ref', 11, 0, BlockRef.codec],
+  ])
 
 /**
  * DatabaseRoot is the root object of the database.
@@ -99,158 +57,162 @@ export const DatabaseRootTable: MessageType<DatabaseRootTable> =
 export interface DatabaseRoot {
   /**
    * Tables contains the table list sorted by name.
-   *
-   * @generated from field: repeated mysql.DatabaseRootTable tables = 1;
    */
   tables?: DatabaseRootTable[]
 }
 
 export const DatabaseRoot: MessageType<DatabaseRoot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.DatabaseRoot',
-    fields: [
-      {
-        no: 1,
-        name: 'tables',
-        kind: 'message',
-        T: DatabaseRootTable,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DatabaseRoot>('mysql.DatabaseRoot', () => [
+    [1, 'tables', 11, 1, DatabaseRootTable.codec],
+  ])
 
 /**
- * TableSchemaColumn is the definition of a column for a table schema.
+ * DatabaseRootTable contains the reference to the TableRoot.
  *
- * @generated from message mysql.TableSchemaColumn
+ * @generated from message mysql.DatabaseRootTable
  */
-export interface TableSchemaColumn {
+export interface DatabaseRootTable {
   /**
-   * Name is the name of the column.
-   *
-   * @generated from field: string name = 1;
+   * Name is the unique name of the table.
    */
   name?: string
   /**
-   * ColumnType is the data type of the column.
-   *
-   * @generated from field: string column_type = 2;
+   * Ref is the block reference to the table root.
+   * Type: TableRoot.
    */
-  columnType?: string
+  ref?: BlockRef
+}
+
+export const DatabaseRootTable: MessageType<DatabaseRootTable> =
+  /* @__PURE__ */ createMessageType<DatabaseRootTable>(
+    'mysql.DatabaseRootTable',
+    () => [
+      [1, 'name', 9],
+      [2, 'ref', 11, 0, BlockRef.codec],
+    ],
+  )
+
+/**
+ * TableRoot is the root object of the table.
+ *
+ * @generated from message mysql.TableRoot
+ */
+export interface TableRoot {
   /**
-   * DefaultValueExpr is the default value expression, encoded to a string.
-   *
-   * @generated from field: string default_value_expr = 3;
+   * TableSchema is the table schema.
    */
-  defaultValueExpr?: string
+  tableSchema?: TableSchema
   /**
-   * AutoIncrement is true if the column auto-increments.
-   *
-   * @generated from field: bool auto_increment = 4;
+   * PrimaryKeyOrdinals is the PkOrdinals field of PrimaryKeySchema.
    */
-  autoIncrement?: boolean
+  primaryKeyOrdinals?: number[]
   /**
-   * Nullable is true if the column can contain NULL values, or false otherwise.
-   *
-   * @generated from field: bool nullable = 5;
+   * TablePartitions contains the set of table partitions.
    */
-  nullable?: boolean
+  tablePartitions?: TablePartitionRoot[]
   /**
-   * Source is the name of the table this column came from.
-   *
-   * @generated from field: string source = 6;
+   * RowNonce distinguishes duplicate rows in tables without a primary key.
    */
-  source?: string
+  rowNonce?: bigint
   /**
-   * PrimaryKey is true if the column is part of the primary key for its table.
-   *
-   * @generated from field: bool primary_key = 7;
+   * AutoIncrVal is the auto increment value, if necessary.
+   * Typically contains an integer or float.
+   * Empty if auto_incr_index is zero.
    */
-  primaryKey?: boolean
+  autoIncrVal?: TableColumn
   /**
-   * Comment contains the string comment for this column.
-   *
-   * @generated from field: string comment = 8;
+   * CollationId is the method ID of the method used to control sorting.
+   */
+  collationId?: number
+  /**
+   * Comment is an additional comment on the table.
    */
   comment?: string
   /**
-   * Extra contains any additional information to put in the `extra` column under `information_schema.columns`.
-   *
-   * @generated from field: string extra = 9;
+   * Indexes contains secondary index definitions and their stored trees.
    */
-  extra?: string
+  indexes?: TableIndex[]
   /**
-   * GeneratedExpr is the generated column expression, encoded to a string.
-   * Empty unless the column is generated; a generated column has no default.
-   *
-   * @generated from field: string generated_expr = 10;
+   * KeyFormat is the version of the row and index key encoding.
+   * Tables are readable only when it equals the current format.
    */
-  generatedExpr?: string
-  /**
-   * OnUpdateExpr is the ON UPDATE expression, stored unparenthesized.
-   *
-   * @generated from field: string on_update_expr = 11;
-   */
-  onUpdateExpr?: string
-  /**
-   * Virtual is true if the generated column is computed on read.
-   *
-   * @generated from field: bool virtual = 12;
-   */
-  virtual?: boolean
+  keyFormat?: number
 }
 
-export const TableSchemaColumn: MessageType<TableSchemaColumn> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.TableSchemaColumn',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'column_type', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'default_value_expr',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'auto_increment', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'nullable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'source', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'primary_key', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'comment', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'extra', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'generated_expr', kind: 'scalar', T: ScalarType.STRING },
-      { no: 11, name: 'on_update_expr', kind: 'scalar', T: ScalarType.STRING },
-      { no: 12, name: 'virtual', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const TableRoot: MessageType<TableRoot> =
+  /* @__PURE__ */ createMessageType<TableRoot>('mysql.TableRoot', () => [
+    [1, 'table_schema', 11, 0, TableSchema.codec],
+    [2, 'table_partitions', 11, 1, TablePartitionRoot.codec],
+    [3, 'row_nonce', 4],
+    [4, 'auto_incr_val', 11, 0, TableColumn.codec],
+    [5, 'primary_key_ordinals', 5, 3],
+    [6, 'collation_id', 13],
+    [7, 'comment', 9],
+    [8, 'indexes', 11, 1, TableIndex.codec],
+    [9, 'key_format', 13],
+  ])
 
 /**
- * TableSchema is the schema for a table.
+ * TableIndex is a secondary table index definition.
  *
- * @generated from message mysql.TableSchema
+ * @generated from message mysql.TableIndex
  */
-export interface TableSchema {
+export interface TableIndex {
   /**
-   * Columns is the list of columns in the table, sorted by name.
-   *
-   * @generated from field: repeated mysql.TableSchemaColumn columns = 1;
+   * Name is the unique name of the index.
    */
-  columns?: TableSchemaColumn[]
+  name?: string
+  /**
+   * Columns is the ordered set of columns in the index.
+   */
+  columns?: TableIndexColumn[]
+  /**
+   * Unique indicates that indexed values must be unique.
+   */
+  unique?: boolean
+  /**
+   * Comment contains the index comment.
+   */
+  comment?: string
+  /**
+   * KeyValue maps encoded index columns to encoded primary row keys.
+   */
+  keyValue?: KeyValueStore
 }
 
-export const TableSchema: MessageType<TableSchema> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.TableSchema',
-    fields: [
-      {
-        no: 1,
-        name: 'columns',
-        kind: 'message',
-        T: TableSchemaColumn,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const TableIndex: MessageType<TableIndex> =
+  /* @__PURE__ */ createMessageType<TableIndex>('mysql.TableIndex', () => [
+    [1, 'name', 9],
+    [2, 'columns', 11, 1, TableIndexColumn.codec],
+    [3, 'unique', 8],
+    [4, 'comment', 9],
+    [5, 'key_value', 11, 0, KeyValueStore.codec],
+  ])
+
+/**
+ * TableIndexColumn is a column in a TableIndex.
+ *
+ * @generated from message mysql.TableIndexColumn
+ */
+export interface TableIndexColumn {
+  /**
+   * Name is the indexed column name.
+   */
+  name?: string
+  /**
+   * Length is the optional prefix length. Zero means full length.
+   */
+  length?: bigint
+}
+
+export const TableIndexColumn: MessageType<TableIndexColumn> =
+  /* @__PURE__ */ createMessageType<TableIndexColumn>(
+    'mysql.TableIndexColumn',
+    () => [
+      [1, 'name', 9],
+      [2, 'length', 3],
+    ],
+  )
 
 /**
  * TablePartitionRoot contains the root of a table partition.
@@ -262,48 +224,32 @@ export interface TablePartitionRoot {
    * RowKeyValue is the key/value tree of objects.
    * Key: encoded primary key, or encoded row and nonce for keyless tables.
    * Value: cid.BlockRef -> Object
-   *
-   * @generated from field: kvtx.block.KeyValueStore row_key_value = 1;
    */
   rowKeyValue?: KeyValueStore
 }
 
 export const TablePartitionRoot: MessageType<TablePartitionRoot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.TablePartitionRoot',
-    fields: [
-      { no: 1, name: 'row_key_value', kind: 'message', T: () => KeyValueStore },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TablePartitionRoot>(
+    'mysql.TablePartitionRoot',
+    () => [[1, 'row_key_value', 11, 0, KeyValueStore.codec]],
+  )
 
 /**
- * TableTimestamp is a timestamp-like SQL value.
+ * TableRow is a row in a table.
  *
- * @generated from message mysql.TableTimestamp
+ * @generated from message mysql.TableRow
  */
-export interface TableTimestamp {
+export interface TableRow {
   /**
-   * UnixSeconds is seconds since Unix epoch.
-   *
-   * @generated from field: int64 unix_seconds = 1;
+   * Columns contains the set of columns.
    */
-  unixSeconds?: bigint
-  /**
-   * Nanos is the nanosecond offset within UnixSeconds.
-   *
-   * @generated from field: int32 nanos = 2;
-   */
-  nanos?: number
+  columns?: TableColumn[]
 }
 
-export const TableTimestamp: MessageType<TableTimestamp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.TableTimestamp',
-    fields: [
-      { no: 1, name: 'unix_seconds', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 2, name: 'nanos', kind: 'scalar', T: ScalarType.INT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const TableRow: MessageType<TableRow> =
+  /* @__PURE__ */ createMessageType<TableRow>('mysql.TableRow', () => [
+    [1, 'columns', 11, 1, TableColumn.codec],
+  ])
 
 /**
  * TableColumn is an entry in a table row.
@@ -317,371 +263,145 @@ export interface TableColumn {
    * @generated from oneof mysql.TableColumn.value
    */
   value?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * BoolValue is a boolean SQL value.
-         *
-         * @generated from field: bool bool_value = 2;
-         */
-        value: boolean
-        case: 'boolValue'
-      }
-    | {
-        /**
-         * IntValue is a signed integer SQL value.
-         *
-         * @generated from field: int64 int_value = 3;
-         */
-        value: bigint
-        case: 'intValue'
-      }
-    | {
-        /**
-         * UintValue is an unsigned integer SQL value.
-         *
-         * @generated from field: uint64 uint_value = 4;
-         */
-        value: bigint
-        case: 'uintValue'
-      }
-    | {
-        /**
-         * FloatValue is a floating-point SQL value.
-         *
-         * @generated from field: double float_value = 5;
-         */
-        value: number
-        case: 'floatValue'
-      }
-    | {
-        /**
-         * StringBlob is a string SQL value encoded as UTF-8 bytes.
-         *
-         * @generated from field: blob.Blob string_blob = 6;
-         */
-        value: Blob
-        case: 'stringBlob'
-      }
-    | {
-        /**
-         * BytesBlob is a binary SQL value.
-         *
-         * @generated from field: blob.Blob bytes_blob = 7;
-         */
-        value: Blob
-        case: 'bytesBlob'
-      }
-    | {
-        /**
-         * JsonBlob is a JSON SQL value encoded as UTF-8 text.
-         *
-         * @generated from field: blob.Blob json_blob = 8;
-         */
-        value: Blob
-        case: 'jsonBlob'
-      }
-    | {
-        /**
-         * TimestampValue is a timestamp, datetime, or date SQL value.
-         *
-         * @generated from field: mysql.TableTimestamp timestamp_value = 9;
-         */
-        value: TableTimestamp
-        case: 'timestampValue'
-      }
-    | {
-        /**
-         * TimespanMicros is a TIME SQL value in microseconds.
-         *
-         * @generated from field: int64 timespan_micros = 10;
-         */
-        value: bigint
-        case: 'timespanMicros'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: boolean; case: 'boolValue' }
+    | { value: bigint; case: 'intValue' }
+    | { value: bigint; case: 'uintValue' }
+    | { value: number; case: 'floatValue' }
+    | { value: Blob; case: 'stringBlob' }
+    | { value: Blob; case: 'bytesBlob' }
+    | { value: Blob; case: 'jsonBlob' }
+    | { value: TableTimestamp; case: 'timestampValue' }
+    | { value: bigint; case: 'timespanMicros' }
 }
 
 export const TableColumn: MessageType<TableColumn> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.TableColumn',
-    fields: [
-      {
-        no: 2,
-        name: 'bool_value',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'value',
-      },
-      {
-        no: 3,
-        name: 'int_value',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-        oneof: 'value',
-      },
-      {
-        no: 4,
-        name: 'uint_value',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-        oneof: 'value',
-      },
-      {
-        no: 5,
-        name: 'float_value',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-        oneof: 'value',
-      },
-      {
-        no: 6,
-        name: 'string_blob',
-        kind: 'message',
-        T: () => Blob,
-        oneof: 'value',
-      },
-      {
-        no: 7,
-        name: 'bytes_blob',
-        kind: 'message',
-        T: () => Blob,
-        oneof: 'value',
-      },
-      {
-        no: 8,
-        name: 'json_blob',
-        kind: 'message',
-        T: () => Blob,
-        oneof: 'value',
-      },
-      {
-        no: 9,
-        name: 'timestamp_value',
-        kind: 'message',
-        T: TableTimestamp,
-        oneof: 'value',
-      },
-      {
-        no: 10,
-        name: 'timespan_micros',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-        oneof: 'value',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TableColumn>('mysql.TableColumn', () => [
+    [2, 'bool_value', 8, 0, 0, 'value'],
+    [3, 'int_value', 3, 0, 0, 'value'],
+    [4, 'uint_value', 4, 0, 0, 'value'],
+    [5, 'float_value', 1, 0, 0, 'value'],
+    [6, 'string_blob', 11, 0, Blob.codec, 'value'],
+    [7, 'bytes_blob', 11, 0, Blob.codec, 'value'],
+    [8, 'json_blob', 11, 0, Blob.codec, 'value'],
+    [9, 'timestamp_value', 11, 0, TableTimestamp.codec, 'value'],
+    [10, 'timespan_micros', 3, 0, 0, 'value'],
+  ])
 
 /**
- * TableIndexColumn is a column in a TableIndex.
+ * TableTimestamp is a timestamp-like SQL value.
  *
- * @generated from message mysql.TableIndexColumn
+ * @generated from message mysql.TableTimestamp
  */
-export interface TableIndexColumn {
+export interface TableTimestamp {
   /**
-   * Name is the indexed column name.
-   *
-   * @generated from field: string name = 1;
+   * UnixSeconds is seconds since Unix epoch.
+   */
+  unixSeconds?: bigint
+  /**
+   * Nanos is the nanosecond offset within UnixSeconds.
+   */
+  nanos?: number
+}
+
+export const TableTimestamp: MessageType<TableTimestamp> =
+  /* @__PURE__ */ createMessageType<TableTimestamp>(
+    'mysql.TableTimestamp',
+    () => [
+      [1, 'unix_seconds', 3],
+      [2, 'nanos', 5],
+    ],
+  )
+
+/**
+ * TableSchema is the schema for a table.
+ *
+ * @generated from message mysql.TableSchema
+ */
+export interface TableSchema {
+  /**
+   * Columns is the list of columns in the table, sorted by name.
+   */
+  columns?: TableSchemaColumn[]
+}
+
+export const TableSchema: MessageType<TableSchema> =
+  /* @__PURE__ */ createMessageType<TableSchema>('mysql.TableSchema', () => [
+    [1, 'columns', 11, 1, TableSchemaColumn.codec],
+  ])
+
+/**
+ * TableSchemaColumn is the definition of a column for a table schema.
+ *
+ * @generated from message mysql.TableSchemaColumn
+ */
+export interface TableSchemaColumn {
+  /**
+   * Name is the name of the column.
    */
   name?: string
   /**
-   * Length is the optional prefix length. Zero means full length.
-   *
-   * @generated from field: int64 length = 2;
+   * ColumnType is the data type of the column.
    */
-  length?: bigint
-}
-
-export const TableIndexColumn: MessageType<TableIndexColumn> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.TableIndexColumn',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'length', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TableIndex is a secondary table index definition.
- *
- * @generated from message mysql.TableIndex
- */
-export interface TableIndex {
+  columnType?: string
   /**
-   * Name is the unique name of the index.
-   *
-   * @generated from field: string name = 1;
+   * DefaultValueExpr is the default value expression, encoded to a string.
    */
-  name?: string
+  defaultValueExpr?: string
   /**
-   * Columns is the ordered set of columns in the index.
-   *
-   * @generated from field: repeated mysql.TableIndexColumn columns = 2;
+   * AutoIncrement is true if the column auto-increments.
    */
-  columns?: TableIndexColumn[]
+  autoIncrement?: boolean
   /**
-   * Unique indicates that indexed values must be unique.
-   *
-   * @generated from field: bool unique = 3;
+   * Nullable is true if the column can contain NULL values, or false otherwise.
    */
-  unique?: boolean
+  nullable?: boolean
   /**
-   * Comment contains the index comment.
-   *
-   * @generated from field: string comment = 4;
+   * Source is the name of the table this column came from.
+   */
+  source?: string
+  /**
+   * PrimaryKey is true if the column is part of the primary key for its table.
+   */
+  primaryKey?: boolean
+  /**
+   * Comment contains the string comment for this column.
    */
   comment?: string
   /**
-   * KeyValue maps encoded index columns to encoded primary row keys.
-   *
-   * @generated from field: kvtx.block.KeyValueStore key_value = 5;
+   * Extra contains any additional information to put in the `extra` column under `information_schema.columns`.
    */
-  keyValue?: KeyValueStore
+  extra?: string
+  /**
+   * GeneratedExpr is the generated column expression, encoded to a string.
+   * Empty unless the column is generated; a generated column has no default.
+   */
+  generatedExpr?: string
+  /**
+   * OnUpdateExpr is the ON UPDATE expression, stored unparenthesized.
+   */
+  onUpdateExpr?: string
+  /**
+   * Virtual is true if the generated column is computed on read.
+   */
+  virtual?: boolean
 }
 
-export const TableIndex: MessageType<TableIndex> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.TableIndex',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'columns',
-        kind: 'message',
-        T: TableIndexColumn,
-        repeated: true,
-      },
-      { no: 3, name: 'unique', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'comment', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'key_value', kind: 'message', T: () => KeyValueStore },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TableRoot is the root object of the table.
- *
- * @generated from message mysql.TableRoot
- */
-export interface TableRoot {
-  /**
-   * TableSchema is the table schema.
-   *
-   * @generated from field: mysql.TableSchema table_schema = 1;
-   */
-  tableSchema?: TableSchema
-  /**
-   * PrimaryKeyOrdinals is the PkOrdinals field of PrimaryKeySchema.
-   *
-   * @generated from field: repeated int32 primary_key_ordinals = 5;
-   */
-  primaryKeyOrdinals?: number[]
-  /**
-   * TablePartitions contains the set of table partitions.
-   *
-   * @generated from field: repeated mysql.TablePartitionRoot table_partitions = 2;
-   */
-  tablePartitions?: TablePartitionRoot[]
-  /**
-   * RowNonce distinguishes duplicate rows in tables without a primary key.
-   *
-   * @generated from field: uint64 row_nonce = 3;
-   */
-  rowNonce?: bigint
-  /**
-   * AutoIncrVal is the auto increment value, if necessary.
-   * Typically contains an integer or float.
-   * Empty if auto_incr_index is zero.
-   *
-   * @generated from field: mysql.TableColumn auto_incr_val = 4;
-   */
-  autoIncrVal?: TableColumn
-  /**
-   * CollationId is the method ID of the method used to control sorting.
-   *
-   * @generated from field: uint32 collation_id = 6;
-   */
-  collationId?: number
-  /**
-   * Comment is an additional comment on the table.
-   *
-   * @generated from field: string comment = 7;
-   */
-  comment?: string
-  /**
-   * Indexes contains secondary index definitions and their stored trees.
-   *
-   * @generated from field: repeated mysql.TableIndex indexes = 8;
-   */
-  indexes?: TableIndex[]
-  /**
-   * KeyFormat is the version of the row and index key encoding.
-   * Tables are readable only when it equals the current format.
-   *
-   * @generated from field: uint32 key_format = 9;
-   */
-  keyFormat?: number
-}
-
-export const TableRoot: MessageType<TableRoot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.TableRoot',
-    fields: [
-      { no: 1, name: 'table_schema', kind: 'message', T: TableSchema },
-      {
-        no: 5,
-        name: 'primary_key_ordinals',
-        kind: 'scalar',
-        T: ScalarType.INT32,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'table_partitions',
-        kind: 'message',
-        T: TablePartitionRoot,
-        repeated: true,
-      },
-      { no: 3, name: 'row_nonce', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'auto_incr_val', kind: 'message', T: TableColumn },
-      { no: 6, name: 'collation_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'comment', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 8,
-        name: 'indexes',
-        kind: 'message',
-        T: TableIndex,
-        repeated: true,
-      },
-      { no: 9, name: 'key_format', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TableRow is a row in a table.
- *
- * @generated from message mysql.TableRow
- */
-export interface TableRow {
-  /**
-   * Columns contains the set of columns.
-   *
-   * @generated from field: repeated mysql.TableColumn columns = 1;
-   */
-  columns?: TableColumn[]
-}
-
-export const TableRow: MessageType<TableRow> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'mysql.TableRow',
-    fields: [
-      {
-        no: 1,
-        name: 'columns',
-        kind: 'message',
-        T: TableColumn,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const TableSchemaColumn: MessageType<TableSchemaColumn> =
+  /* @__PURE__ */ createMessageType<TableSchemaColumn>(
+    'mysql.TableSchemaColumn',
+    () => [
+      [1, 'name', 9],
+      [2, 'column_type', 9],
+      [3, 'default_value_expr', 9],
+      [4, 'auto_increment', 8],
+      [5, 'nullable', 8],
+      [6, 'source', 9],
+      [7, 'primary_key', 8],
+      [8, 'comment', 9],
+      [9, 'extra', 9],
+      [10, 'generated_expr', 9],
+      [11, 'on_update_expr', 9],
+      [12, 'virtual', 8],
+    ],
+  )

@@ -5,8 +5,6 @@
 import { ObjectRef } from '../../../../db/bucket/bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * SqlSchemaSetRootOp advances a sql/schema world object's root.
@@ -16,23 +14,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface SqlSchemaSetRootOp {
   /**
    * ObjectKey is the sql/schema object key to update.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RootRef is the committed schema root reference.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
    */
   rootRef?: ObjectRef
 }
 
 export const SqlSchemaSetRootOp: MessageType<SqlSchemaSetRootOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.schema.world.SqlSchemaSetRootOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlSchemaSetRootOp>(
+    's4wave.sql.schema.world.SqlSchemaSetRootOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+    ],
+  )

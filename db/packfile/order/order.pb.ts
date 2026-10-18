@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { BlockRef } from '../../block/block.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
@@ -18,30 +16,27 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export enum AccessOrderFilesystem {
   /**
    * ACCESS_ORDER_FILESYSTEM_UNKNOWN indicates the filesystem was not recorded.
-   *
-   * @generated from enum value: ACCESS_ORDER_FILESYSTEM_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * ACCESS_ORDER_FILESYSTEM_DIST identifies the manifest distribution filesystem.
-   *
-   * @generated from enum value: ACCESS_ORDER_FILESYSTEM_DIST = 1;
    */
   DIST = 1,
 
   /**
    * ACCESS_ORDER_FILESYSTEM_ASSETS identifies the manifest assets filesystem.
-   *
-   * @generated from enum value: ACCESS_ORDER_FILESYSTEM_ASSETS = 2;
    */
   ASSETS = 2,
 }
 
 export const AccessOrderFilesystem_Enum = /* @__PURE__ */ createEnumType(
   'packfile.order.AccessOrderFilesystem',
-  AccessOrderFilesystem,
-  'ACCESS_ORDER_FILESYSTEM_',
+  [
+    [0, 'ACCESS_ORDER_FILESYSTEM_UNKNOWN'],
+    [1, 'ACCESS_ORDER_FILESYSTEM_DIST'],
+    [2, 'ACCESS_ORDER_FILESYSTEM_ASSETS'],
+  ],
 )
 
 /**
@@ -52,37 +47,33 @@ export const AccessOrderFilesystem_Enum = /* @__PURE__ */ createEnumType(
 export enum AccessOrderReason {
   /**
    * ACCESS_ORDER_REASON_UNKNOWN indicates no reason was recorded.
-   *
-   * @generated from enum value: ACCESS_ORDER_REASON_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * ACCESS_ORDER_REASON_ENTRYPOINT identifies the startup entrypoint file.
-   *
-   * @generated from enum value: ACCESS_ORDER_REASON_ENTRYPOINT = 1;
    */
   ENTRYPOINT = 1,
 
   /**
    * ACCESS_ORDER_REASON_DYNAMIC_IMPORT identifies a dynamic import edge.
-   *
-   * @generated from enum value: ACCESS_ORDER_REASON_DYNAMIC_IMPORT = 2;
    */
   DYNAMIC_IMPORT = 2,
 
   /**
    * ACCESS_ORDER_REASON_ASSET identifies an asset file access.
-   *
-   * @generated from enum value: ACCESS_ORDER_REASON_ASSET = 3;
    */
   ASSET = 3,
 }
 
 export const AccessOrderReason_Enum = /* @__PURE__ */ createEnumType(
   'packfile.order.AccessOrderReason',
-  AccessOrderReason,
-  'ACCESS_ORDER_REASON_',
+  [
+    [0, 'ACCESS_ORDER_REASON_UNKNOWN'],
+    [1, 'ACCESS_ORDER_REASON_ENTRYPOINT'],
+    [2, 'ACCESS_ORDER_REASON_DYNAMIC_IMPORT'],
+    [3, 'ACCESS_ORDER_REASON_ASSET'],
+  ],
 )
 
 /**
@@ -93,26 +84,22 @@ export const AccessOrderReason_Enum = /* @__PURE__ */ createEnumType(
 export interface AccessOrderMetadata {
   /**
    * Key is the metadata key.
-   *
-   * @generated from field: string key = 1;
    */
   key?: string
   /**
    * Value is the metadata value.
-   *
-   * @generated from field: string value = 2;
    */
   value?: string
 }
 
 export const AccessOrderMetadata: MessageType<AccessOrderMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.order.AccessOrderMetadata',
-    fields: [
-      { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'value', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessOrderMetadata>(
+    'packfile.order.AccessOrderMetadata',
+    () => [
+      [1, 'key', 9],
+      [2, 'value', 9],
+    ],
+  )
 
 /**
  * AccessOrderEntry stores one observed file access.
@@ -122,72 +109,47 @@ export const AccessOrderMetadata: MessageType<AccessOrderMetadata> =
 export interface AccessOrderEntry {
   /**
    * Ordinal is the first observed access index for this entry.
-   *
-   * @generated from field: uint64 ordinal = 1;
    */
   ordinal?: bigint
   /**
    * Filesystem is the manifest filesystem containing path.
-   *
-   * @generated from field: packfile.order.AccessOrderFilesystem filesystem = 2;
    */
   filesystem?: AccessOrderFilesystem
   /**
    * Path is the slash-separated path inside the manifest filesystem.
-   *
-   * @generated from field: string path = 3;
    */
   path?: string
   /**
    * Reason identifies why the access was recorded.
-   *
-   * @generated from field: packfile.order.AccessOrderReason reason = 4;
    */
   reason?: AccessOrderReason
   /**
    * ReasonDetail stores an entrypoint path, import specifier, or other label.
-   *
-   * @generated from field: string reason_detail = 5;
    */
   reasonDetail?: string
   /**
    * AccessCount is the number of times this path was observed.
-   *
-   * @generated from field: uint64 access_count = 6;
    */
   accessCount?: bigint
   /**
    * ResolvedRefs are optional block refs resolved when the record was written.
-   *
-   * @generated from field: repeated block.BlockRef resolved_refs = 7;
    */
   resolvedRefs?: BlockRef[]
 }
 
 export const AccessOrderEntry: MessageType<AccessOrderEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.order.AccessOrderEntry',
-    fields: [
-      { no: 1, name: 'ordinal', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 2,
-        name: 'filesystem',
-        kind: 'enum',
-        T: AccessOrderFilesystem_Enum,
-      },
-      { no: 3, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'reason', kind: 'enum', T: AccessOrderReason_Enum },
-      { no: 5, name: 'reason_detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'access_count', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 7,
-        name: 'resolved_refs',
-        kind: 'message',
-        T: () => BlockRef,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessOrderEntry>(
+    'packfile.order.AccessOrderEntry',
+    () => [
+      [1, 'ordinal', 4],
+      [2, 'filesystem', 14, 0, AccessOrderFilesystem_Enum],
+      [3, 'path', 9],
+      [4, 'reason', 14, 0, AccessOrderReason_Enum],
+      [5, 'reason_detail', 9],
+      [6, 'access_count', 4],
+      [7, 'resolved_refs', 11, 1, BlockRef.codec],
+    ],
+  )
 
 /**
  * AccessOrderRecord stores profile-guided manifest startup file access order.
@@ -197,84 +159,54 @@ export const AccessOrderEntry: MessageType<AccessOrderEntry> =
 export interface AccessOrderRecord {
   /**
    * ManifestId is the manifest id the profile was recorded for.
-   *
-   * @generated from field: string manifest_id = 1;
    */
   manifestId?: string
   /**
    * PlatformId is the manifest platform id the profile was recorded for.
-   *
-   * @generated from field: string platform_id = 2;
    */
   platformId?: string
   /**
    * BuildType is the manifest build type the profile was recorded for.
-   *
-   * @generated from field: string build_type = 3;
    */
   buildType?: string
   /**
    * ManifestRootRef is the manifest root ref the profile was recorded against.
-   *
-   * @generated from field: block.BlockRef manifest_root_ref = 4;
    */
   manifestRootRef?: BlockRef
   /**
    * ManifestRev is the manifest revision the profile was recorded against.
-   *
-   * @generated from field: uint64 manifest_rev = 5;
    */
   manifestRev?: bigint
   /**
    * GenerationId identifies the profiling run or build input that wrote this record.
-   *
-   * @generated from field: string generation_id = 6;
    */
   generationId?: string
   /**
    * GeneratedAt is when this record was written.
-   *
-   * @generated from field: google.protobuf.Timestamp generated_at = 7;
    */
   generatedAt?: Date
   /**
    * Entries are ordered file accesses observed during startup profiling.
-   *
-   * @generated from field: repeated packfile.order.AccessOrderEntry entries = 8;
    */
   entries?: AccessOrderEntry[]
   /**
    * BuildMetadata stores optional build metadata attached by the profiling run.
-   *
-   * @generated from field: repeated packfile.order.AccessOrderMetadata build_metadata = 9;
    */
   buildMetadata?: AccessOrderMetadata[]
 }
 
 export const AccessOrderRecord: MessageType<AccessOrderRecord> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'packfile.order.AccessOrderRecord',
-    fields: [
-      { no: 1, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'build_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'manifest_root_ref', kind: 'message', T: () => BlockRef },
-      { no: 5, name: 'manifest_rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 6, name: 'generation_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'generated_at', kind: 'message', T: () => Timestamp },
-      {
-        no: 8,
-        name: 'entries',
-        kind: 'message',
-        T: AccessOrderEntry,
-        repeated: true,
-      },
-      {
-        no: 9,
-        name: 'build_metadata',
-        kind: 'message',
-        T: AccessOrderMetadata,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessOrderRecord>(
+    'packfile.order.AccessOrderRecord',
+    () => [
+      [1, 'manifest_id', 9],
+      [2, 'platform_id', 9],
+      [3, 'build_type', 9],
+      [4, 'manifest_root_ref', 11, 0, BlockRef.codec],
+      [5, 'manifest_rev', 4],
+      [6, 'generation_id', 9],
+      [7, 'generated_at', 11, 0, Timestamp.codec],
+      [8, 'entries', 11, 1, AccessOrderEntry.codec],
+      [9, 'build_metadata', 11, 1, AccessOrderMetadata.codec],
+    ],
+  )

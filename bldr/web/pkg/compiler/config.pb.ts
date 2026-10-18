@@ -6,8 +6,6 @@ import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/
 import { WebPkgRefConfig } from '../../bundler/bundler.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the web package builder.
@@ -19,24 +17,18 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * ProjectId overrides the project id set in the project config.
-   *
-   * @generated from field: string project_id = 1;
    */
   projectId?: string
   /**
    * WebPluginId sets the plugin id for the web plugin.
    * If set, the compiler automatically adds this controller to the config set:
    * - handle-web-pkgs: handle web pkg lookups for the webPkgIds
-   *
-   * @generated from field: string web_plugin_id = 11;
    */
   webPluginId?: string
   /**
    * ConfigSet is a ConfigSet to apply on plugin startup.
    * This ConfigSet is applied to the plugin bus.
    * This will be included in the plugin binary.
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> config_set = 2;
    */
   configSet?: { [key: string]: ControllerConfig }
   /**
@@ -44,8 +36,6 @@ export interface Config {
    * This ConfigSet is applied to the plugin host bus.
    * This will be included in the plugin binary.
    * Adds a config to configSet with ID bldr/plugin/host/configset
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> host_config_set = 3;
    */
   hostConfigSet?: { [key: string]: ControllerConfig }
   /**
@@ -63,8 +53,6 @@ export interface Config {
    * They will also be available at /b/pkg: e.g. /b/pkg/@my/npm-package/foo/bar/index.js
    *
    * Note: only files & entrypoints imported by at least one js file will be included.
-   *
-   * @generated from field: repeated bldr.web.bundler.WebPkgRefConfig web_pkgs = 5;
    */
   webPkgs?: WebPkgRefConfig[]
   /**
@@ -72,38 +60,19 @@ export interface Config {
    * If the build mode is dev and this is set, uses delve to run the plugin.
    * Ignored if build mode is not dev.
    * Special value: "wait" - waits for plugin entrypoint to be run manually.
-   *
-   * @generated from field: string delve_addr = 8;
    */
   delveAddr?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.web.pkg.compiler.Config',
-  fields: [
-    { no: 1, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 11, name: 'web_plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'config_set',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => ControllerConfig },
-    },
-    {
-      no: 3,
-      name: 'host_config_set',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => ControllerConfig },
-    },
-    {
-      no: 5,
-      name: 'web_pkgs',
-      kind: 'message',
-      T: () => WebPkgRefConfig,
-      repeated: true,
-    },
-    { no: 8, name: 'delve_addr', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'bldr.web.pkg.compiler.Config',
+    () => [
+      [1, 'project_id', 9],
+      [2, 'config_set', 11, 584, ControllerConfig.codec],
+      [3, 'host_config_set', 11, 584, ControllerConfig.codec],
+      [5, 'web_pkgs', 11, 1, WebPkgRefConfig.codec],
+      [8, 'delve_addr', 9],
+      [11, 'web_plugin_id', 9],
+    ],
+  )

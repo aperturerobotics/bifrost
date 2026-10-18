@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * DesktopCLIInstallStatus describes managed CLI install/update state.
@@ -19,71 +14,63 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum DesktopCLIInstallStatus {
   /**
    * DESKTOP_CLI_INSTALL_STATUS_UNSPECIFIED leaves state unset.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_STATUS_UNSPECIFIED = 0;
    */
   DESKTOP_CLI_INSTALL_STATUS_UNSPECIFIED = 0,
 
   /**
    * DESKTOP_CLI_INSTALL_STATUS_UNKNOWN indicates detection has not completed.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_STATUS_UNKNOWN = 1;
    */
   DESKTOP_CLI_INSTALL_STATUS_UNKNOWN = 1,
 
   /**
    * DESKTOP_CLI_INSTALL_STATUS_MISSING indicates no managed CLI was detected.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_STATUS_MISSING = 2;
    */
   DESKTOP_CLI_INSTALL_STATUS_MISSING = 2,
 
   /**
    * DESKTOP_CLI_INSTALL_STATUS_INSTALLED indicates the managed CLI is current.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_STATUS_INSTALLED = 3;
    */
   DESKTOP_CLI_INSTALL_STATUS_INSTALLED = 3,
 
   /**
    * DESKTOP_CLI_INSTALL_STATUS_UPDATE_AVAILABLE indicates a release CLI is newer.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_STATUS_UPDATE_AVAILABLE = 4;
    */
   DESKTOP_CLI_INSTALL_STATUS_UPDATE_AVAILABLE = 4,
 
   /**
    * DESKTOP_CLI_INSTALL_STATUS_CONFLICT indicates an unmanaged command is first on PATH.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_STATUS_CONFLICT = 5;
    */
   DESKTOP_CLI_INSTALL_STATUS_CONFLICT = 5,
 
   /**
    * DESKTOP_CLI_INSTALL_STATUS_ERROR indicates detection failed.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_STATUS_ERROR = 6;
    */
   DESKTOP_CLI_INSTALL_STATUS_ERROR = 6,
 
   /**
    * DESKTOP_CLI_INSTALL_STATUS_INSTALLING indicates a managed install is running.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_STATUS_INSTALLING = 7;
    */
   DESKTOP_CLI_INSTALL_STATUS_INSTALLING = 7,
 
   /**
    * DESKTOP_CLI_INSTALL_STATUS_UPDATING indicates a managed update is running.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_STATUS_UPDATING = 8;
    */
   DESKTOP_CLI_INSTALL_STATUS_UPDATING = 8,
 }
 
 export const DesktopCLIInstallStatus_Enum = /* @__PURE__ */ createEnumType(
   'electron.desktop_runtime.DesktopCLIInstallStatus',
-  DesktopCLIInstallStatus,
+  [
+    [0, 'DESKTOP_CLI_INSTALL_STATUS_UNSPECIFIED'],
+    [1, 'DESKTOP_CLI_INSTALL_STATUS_UNKNOWN'],
+    [2, 'DESKTOP_CLI_INSTALL_STATUS_MISSING'],
+    [3, 'DESKTOP_CLI_INSTALL_STATUS_INSTALLED'],
+    [4, 'DESKTOP_CLI_INSTALL_STATUS_UPDATE_AVAILABLE'],
+    [5, 'DESKTOP_CLI_INSTALL_STATUS_CONFLICT'],
+    [6, 'DESKTOP_CLI_INSTALL_STATUS_ERROR'],
+    [7, 'DESKTOP_CLI_INSTALL_STATUS_INSTALLING'],
+    [8, 'DESKTOP_CLI_INSTALL_STATUS_UPDATING'],
+  ],
 )
 
 /**
@@ -94,50 +81,45 @@ export const DesktopCLIInstallStatus_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopCLIInstallActionKind {
   /**
    * DESKTOP_CLI_INSTALL_ACTION_KIND_UNSPECIFIED leaves the action unset.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_ACTION_KIND_UNSPECIFIED = 0;
    */
   DESKTOP_CLI_INSTALL_ACTION_KIND_UNSPECIFIED = 0,
 
   /**
    * DESKTOP_CLI_INSTALL_ACTION_KIND_RECHECK reruns detection.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_ACTION_KIND_RECHECK = 1;
    */
   DESKTOP_CLI_INSTALL_ACTION_KIND_RECHECK = 1,
 
   /**
    * DESKTOP_CLI_INSTALL_ACTION_KIND_OPEN_SETTINGS opens CLI settings.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_ACTION_KIND_OPEN_SETTINGS = 2;
    */
   DESKTOP_CLI_INSTALL_ACTION_KIND_OPEN_SETTINGS = 2,
 
   /**
    * DESKTOP_CLI_INSTALL_ACTION_KIND_INSTALL installs a missing managed CLI.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_ACTION_KIND_INSTALL = 3;
    */
   DESKTOP_CLI_INSTALL_ACTION_KIND_INSTALL = 3,
 
   /**
    * DESKTOP_CLI_INSTALL_ACTION_KIND_UPDATE updates an existing managed CLI.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_ACTION_KIND_UPDATE = 4;
    */
   DESKTOP_CLI_INSTALL_ACTION_KIND_UPDATE = 4,
 
   /**
    * DESKTOP_CLI_INSTALL_ACTION_KIND_SELECT_TARGET selects an install target.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_ACTION_KIND_SELECT_TARGET = 5;
    */
   DESKTOP_CLI_INSTALL_ACTION_KIND_SELECT_TARGET = 5,
 }
 
 export const DesktopCLIInstallActionKind_Enum = /* @__PURE__ */ createEnumType(
   'electron.desktop_runtime.DesktopCLIInstallActionKind',
-  DesktopCLIInstallActionKind,
+  [
+    [0, 'DESKTOP_CLI_INSTALL_ACTION_KIND_UNSPECIFIED'],
+    [1, 'DESKTOP_CLI_INSTALL_ACTION_KIND_RECHECK'],
+    [2, 'DESKTOP_CLI_INSTALL_ACTION_KIND_OPEN_SETTINGS'],
+    [3, 'DESKTOP_CLI_INSTALL_ACTION_KIND_INSTALL'],
+    [4, 'DESKTOP_CLI_INSTALL_ACTION_KIND_UPDATE'],
+    [5, 'DESKTOP_CLI_INSTALL_ACTION_KIND_SELECT_TARGET'],
+  ],
 )
 
 /**
@@ -148,36 +130,26 @@ export const DesktopCLIInstallActionKind_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopCLIInstallTargetPathState {
   /**
    * DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_UNSPECIFIED leaves PATH evidence unset.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_UNSPECIFIED = 0;
    */
   DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_UNSPECIFIED = 0,
 
   /**
    * DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_UNKNOWN means process evidence is weak.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_UNKNOWN = 1;
    */
   DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_UNKNOWN = 1,
 
   /**
    * DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_ON_PATH means the target directory is on PATH.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_ON_PATH = 2;
    */
   DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_ON_PATH = 2,
 
   /**
    * DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_OFF_PATH means manual PATH remediation is needed.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_OFF_PATH = 3;
    */
   DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_OFF_PATH = 3,
 
   /**
    * DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_BLOCKED means policy rejects this target.
-   *
-   * @generated from enum value: DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_BLOCKED = 4;
    */
   DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_BLOCKED = 4,
 }
@@ -185,7 +157,13 @@ export enum DesktopCLIInstallTargetPathState {
 export const DesktopCLIInstallTargetPathState_Enum =
   /* @__PURE__ */ createEnumType(
     'electron.desktop_runtime.DesktopCLIInstallTargetPathState',
-    DesktopCLIInstallTargetPathState,
+    [
+      [0, 'DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_UNSPECIFIED'],
+      [1, 'DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_UNKNOWN'],
+      [2, 'DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_ON_PATH'],
+      [3, 'DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_OFF_PATH'],
+      [4, 'DESKTOP_CLI_INSTALL_TARGET_PATH_STATE_BLOCKED'],
+    ],
   )
 
 /**
@@ -196,58 +174,51 @@ export const DesktopCLIInstallTargetPathState_Enum =
 export enum DesktopRuntimeHealth {
   /**
    * DESKTOP_RUNTIME_HEALTH_UNSPECIFIED leaves the icon status unset.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_HEALTH_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_RUNTIME_HEALTH_STARTING indicates the runtime is starting.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_HEALTH_STARTING = 1;
    */
   STARTING = 1,
 
   /**
    * DESKTOP_RUNTIME_HEALTH_HEALTHY indicates the runtime is reachable.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_HEALTH_HEALTHY = 2;
    */
   HEALTHY = 2,
 
   /**
    * DESKTOP_RUNTIME_HEALTH_ACTIVE indicates useful background activity.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_HEALTH_ACTIVE = 3;
    */
   ACTIVE = 3,
 
   /**
    * DESKTOP_RUNTIME_HEALTH_NEEDS_ATTENTION indicates user action is needed.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_HEALTH_NEEDS_ATTENTION = 4;
    */
   NEEDS_ATTENTION = 4,
 
   /**
    * DESKTOP_RUNTIME_HEALTH_DISCONNECTED indicates the runtime is unreachable.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_HEALTH_DISCONNECTED = 5;
    */
   DISCONNECTED = 5,
 
   /**
    * DESKTOP_RUNTIME_HEALTH_QUITTING indicates explicit shutdown is running.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_HEALTH_QUITTING = 6;
    */
   QUITTING = 6,
 }
 
 export const DesktopRuntimeHealth_Enum = /* @__PURE__ */ createEnumType(
   'electron.desktop_runtime.DesktopRuntimeHealth',
-  DesktopRuntimeHealth,
-  'DESKTOP_RUNTIME_HEALTH_',
+  [
+    [0, 'DESKTOP_RUNTIME_HEALTH_UNSPECIFIED'],
+    [1, 'DESKTOP_RUNTIME_HEALTH_STARTING'],
+    [2, 'DESKTOP_RUNTIME_HEALTH_HEALTHY'],
+    [3, 'DESKTOP_RUNTIME_HEALTH_ACTIVE'],
+    [4, 'DESKTOP_RUNTIME_HEALTH_NEEDS_ATTENTION'],
+    [5, 'DESKTOP_RUNTIME_HEALTH_DISCONNECTED'],
+    [6, 'DESKTOP_RUNTIME_HEALTH_QUITTING'],
+  ],
 )
 
 /**
@@ -258,44 +229,39 @@ export const DesktopRuntimeHealth_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopRuntimeLifecycle {
   /**
    * DESKTOP_RUNTIME_LIFECYCLE_UNSPECIFIED leaves lifecycle state unset.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_LIFECYCLE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_RUNTIME_LIFECYCLE_STARTING indicates startup is in progress.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_LIFECYCLE_STARTING = 1;
    */
   STARTING = 1,
 
   /**
    * DESKTOP_RUNTIME_LIFECYCLE_RUNNING indicates the runtime is active.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_LIFECYCLE_RUNNING = 2;
    */
   RUNNING = 2,
 
   /**
    * DESKTOP_RUNTIME_LIFECYCLE_DISCONNECTED indicates the runtime is detached.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_LIFECYCLE_DISCONNECTED = 3;
    */
   DISCONNECTED = 3,
 
   /**
    * DESKTOP_RUNTIME_LIFECYCLE_QUITTING indicates explicit shutdown is running.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_LIFECYCLE_QUITTING = 4;
    */
   QUITTING = 4,
 }
 
 export const DesktopRuntimeLifecycle_Enum = /* @__PURE__ */ createEnumType(
   'electron.desktop_runtime.DesktopRuntimeLifecycle',
-  DesktopRuntimeLifecycle,
-  'DESKTOP_RUNTIME_LIFECYCLE_',
+  [
+    [0, 'DESKTOP_RUNTIME_LIFECYCLE_UNSPECIFIED'],
+    [1, 'DESKTOP_RUNTIME_LIFECYCLE_STARTING'],
+    [2, 'DESKTOP_RUNTIME_LIFECYCLE_RUNNING'],
+    [3, 'DESKTOP_RUNTIME_LIFECYCLE_DISCONNECTED'],
+    [4, 'DESKTOP_RUNTIME_LIFECYCLE_QUITTING'],
+  ],
 )
 
 /**
@@ -306,37 +272,33 @@ export const DesktopRuntimeLifecycle_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopRuntimeReachability {
   /**
    * DESKTOP_RUNTIME_REACHABILITY_UNSPECIFIED leaves reachability unset.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_REACHABILITY_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_RUNTIME_REACHABILITY_STARTING indicates binding is in progress.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_REACHABILITY_STARTING = 1;
    */
   STARTING = 1,
 
   /**
    * DESKTOP_RUNTIME_REACHABILITY_REACHABLE indicates the endpoint is reachable.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_REACHABILITY_REACHABLE = 2;
    */
   REACHABLE = 2,
 
   /**
    * DESKTOP_RUNTIME_REACHABILITY_UNREACHABLE indicates the endpoint failed.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_REACHABILITY_UNREACHABLE = 3;
    */
   UNREACHABLE = 3,
 }
 
 export const DesktopRuntimeReachability_Enum = /* @__PURE__ */ createEnumType(
   'electron.desktop_runtime.DesktopRuntimeReachability',
-  DesktopRuntimeReachability,
-  'DESKTOP_RUNTIME_REACHABILITY_',
+  [
+    [0, 'DESKTOP_RUNTIME_REACHABILITY_UNSPECIFIED'],
+    [1, 'DESKTOP_RUNTIME_REACHABILITY_STARTING'],
+    [2, 'DESKTOP_RUNTIME_REACHABILITY_REACHABLE'],
+    [3, 'DESKTOP_RUNTIME_REACHABILITY_UNREACHABLE'],
+  ],
 )
 
 /**
@@ -347,51 +309,45 @@ export const DesktopRuntimeReachability_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopRuntimeActivityState {
   /**
    * DESKTOP_RUNTIME_ACTIVITY_STATE_UNSPECIFIED leaves activity state unset.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTIVITY_STATE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_RUNTIME_ACTIVITY_STATE_IDLE indicates no active work.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTIVITY_STATE_IDLE = 1;
    */
   IDLE = 1,
 
   /**
    * DESKTOP_RUNTIME_ACTIVITY_STATE_RUNNING indicates work is active.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTIVITY_STATE_RUNNING = 2;
    */
   RUNNING = 2,
 
   /**
    * DESKTOP_RUNTIME_ACTIVITY_STATE_DONE indicates work completed.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTIVITY_STATE_DONE = 3;
    */
   DONE = 3,
 
   /**
    * DESKTOP_RUNTIME_ACTIVITY_STATE_ATTENTION indicates work needs attention.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTIVITY_STATE_ATTENTION = 4;
    */
   ATTENTION = 4,
 
   /**
    * DESKTOP_RUNTIME_ACTIVITY_STATE_ERROR indicates work failed.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTIVITY_STATE_ERROR = 5;
    */
   ERROR = 5,
 }
 
 export const DesktopRuntimeActivityState_Enum = /* @__PURE__ */ createEnumType(
   'electron.desktop_runtime.DesktopRuntimeActivityState',
-  DesktopRuntimeActivityState,
-  'DESKTOP_RUNTIME_ACTIVITY_STATE_',
+  [
+    [0, 'DESKTOP_RUNTIME_ACTIVITY_STATE_UNSPECIFIED'],
+    [1, 'DESKTOP_RUNTIME_ACTIVITY_STATE_IDLE'],
+    [2, 'DESKTOP_RUNTIME_ACTIVITY_STATE_RUNNING'],
+    [3, 'DESKTOP_RUNTIME_ACTIVITY_STATE_DONE'],
+    [4, 'DESKTOP_RUNTIME_ACTIVITY_STATE_ATTENTION'],
+    [5, 'DESKTOP_RUNTIME_ACTIVITY_STATE_ERROR'],
+  ],
 )
 
 /**
@@ -402,79 +358,69 @@ export const DesktopRuntimeActivityState_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopRuntimeAttentionKind {
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_UNSPECIFIED leaves attention kind unset.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_STARTING indicates startup status.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_STARTING = 1;
    */
   RUNTIME_STARTING = 1,
 
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_DISCONNECTED indicates runtime loss.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_DISCONNECTED = 2;
    */
   RUNTIME_DISCONNECTED = 2,
 
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_LISTENER_UNAVAILABLE indicates listener loss.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_LISTENER_UNAVAILABLE = 3;
    */
   LISTENER_UNAVAILABLE = 3,
 
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_AUTH_REQUIRED indicates session auth is needed.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_AUTH_REQUIRED = 4;
    */
   AUTH_REQUIRED = 4,
 
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_STEP_UP_REQUIRED indicates step-up auth is needed.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_STEP_UP_REQUIRED = 5;
    */
   STEP_UP_REQUIRED = 5,
 
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_SYNC_ERROR indicates sync or listener failure.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_SYNC_ERROR = 6;
    */
   SYNC_ERROR = 6,
 
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_UPDATE_READY indicates a native update is ready.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_UPDATE_READY = 7;
    */
   UPDATE_READY = 7,
 
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_RESTARTING indicates restart progress.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_RESTARTING = 8;
    */
   RUNTIME_RESTARTING = 8,
 
   /**
    * DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_QUITTING indicates shutdown progress.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_QUITTING = 9;
    */
   RUNTIME_QUITTING = 9,
 }
 
 export const DesktopRuntimeAttentionKind_Enum = /* @__PURE__ */ createEnumType(
   'electron.desktop_runtime.DesktopRuntimeAttentionKind',
-  DesktopRuntimeAttentionKind,
-  'DESKTOP_RUNTIME_ATTENTION_KIND_',
+  [
+    [0, 'DESKTOP_RUNTIME_ATTENTION_KIND_UNSPECIFIED'],
+    [1, 'DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_STARTING'],
+    [2, 'DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_DISCONNECTED'],
+    [3, 'DESKTOP_RUNTIME_ATTENTION_KIND_LISTENER_UNAVAILABLE'],
+    [4, 'DESKTOP_RUNTIME_ATTENTION_KIND_AUTH_REQUIRED'],
+    [5, 'DESKTOP_RUNTIME_ATTENTION_KIND_STEP_UP_REQUIRED'],
+    [6, 'DESKTOP_RUNTIME_ATTENTION_KIND_SYNC_ERROR'],
+    [7, 'DESKTOP_RUNTIME_ATTENTION_KIND_UPDATE_READY'],
+    [8, 'DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_RESTARTING'],
+    [9, 'DESKTOP_RUNTIME_ATTENTION_KIND_RUNTIME_QUITTING'],
+  ],
 )
 
 /**
@@ -485,37 +431,33 @@ export const DesktopRuntimeAttentionKind_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopRuntimeSeverity {
   /**
    * DESKTOP_RUNTIME_SEVERITY_UNSPECIFIED leaves severity unset.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_SEVERITY_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_RUNTIME_SEVERITY_INFO marks informational status.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_SEVERITY_INFO = 1;
    */
   INFO = 1,
 
   /**
    * DESKTOP_RUNTIME_SEVERITY_WARNING marks a recoverable warning.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_SEVERITY_WARNING = 2;
    */
   WARNING = 2,
 
   /**
    * DESKTOP_RUNTIME_SEVERITY_CRITICAL marks a blocking issue.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_SEVERITY_CRITICAL = 3;
    */
   CRITICAL = 3,
 }
 
 export const DesktopRuntimeSeverity_Enum = /* @__PURE__ */ createEnumType(
   'electron.desktop_runtime.DesktopRuntimeSeverity',
-  DesktopRuntimeSeverity,
-  'DESKTOP_RUNTIME_SEVERITY_',
+  [
+    [0, 'DESKTOP_RUNTIME_SEVERITY_UNSPECIFIED'],
+    [1, 'DESKTOP_RUNTIME_SEVERITY_INFO'],
+    [2, 'DESKTOP_RUNTIME_SEVERITY_WARNING'],
+    [3, 'DESKTOP_RUNTIME_SEVERITY_CRITICAL'],
+  ],
 )
 
 /**
@@ -526,434 +468,46 @@ export const DesktopRuntimeSeverity_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopRuntimeActionKind {
   /**
    * DESKTOP_RUNTIME_ACTION_KIND_UNSPECIFIED leaves action kind unset.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTION_KIND_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_RUNTIME_ACTION_KIND_OPEN_ROUTE opens or focuses an app route.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTION_KIND_OPEN_ROUTE = 1;
    */
   OPEN_ROUTE = 1,
 
   /**
    * DESKTOP_RUNTIME_ACTION_KIND_NEW_WINDOW opens an app route in a new window.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTION_KIND_NEW_WINDOW = 2;
    */
   NEW_WINDOW = 2,
 
   /**
    * DESKTOP_RUNTIME_ACTION_KIND_COPY_TEXT copies text to the native clipboard.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTION_KIND_COPY_TEXT = 3;
    */
   COPY_TEXT = 3,
 
   /**
    * DESKTOP_RUNTIME_ACTION_KIND_REVEAL_PATH reveals a local path.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTION_KIND_REVEAL_PATH = 4;
    */
   REVEAL_PATH = 4,
 
   /**
    * DESKTOP_RUNTIME_ACTION_KIND_QUIT requests explicit runtime quit.
-   *
-   * @generated from enum value: DESKTOP_RUNTIME_ACTION_KIND_QUIT = 5;
    */
   QUIT = 5,
 }
 
 export const DesktopRuntimeActionKind_Enum = /* @__PURE__ */ createEnumType(
   'electron.desktop_runtime.DesktopRuntimeActionKind',
-  DesktopRuntimeActionKind,
-  'DESKTOP_RUNTIME_ACTION_KIND_',
+  [
+    [0, 'DESKTOP_RUNTIME_ACTION_KIND_UNSPECIFIED'],
+    [1, 'DESKTOP_RUNTIME_ACTION_KIND_OPEN_ROUTE'],
+    [2, 'DESKTOP_RUNTIME_ACTION_KIND_NEW_WINDOW'],
+    [3, 'DESKTOP_RUNTIME_ACTION_KIND_COPY_TEXT'],
+    [4, 'DESKTOP_RUNTIME_ACTION_KIND_REVEAL_PATH'],
+    [5, 'DESKTOP_RUNTIME_ACTION_KIND_QUIT'],
+  ],
 )
-
-/**
- * DesktopRuntimeListenerStatus describes background listener and CLI state.
- *
- * @generated from message electron.desktop_runtime.DesktopRuntimeListenerStatus
- */
-export interface DesktopRuntimeListenerStatus {
-  /**
-   * Reachability describes whether the endpoint can be used.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeReachability reachability = 1;
-   */
-  reachability?: DesktopRuntimeReachability
-  /**
-   * Label is short display text for the listener.
-   *
-   * @generated from field: string label = 2;
-   */
-  label?: string
-  /**
-   * Detail is secondary display text for the listener.
-   *
-   * @generated from field: string detail = 3;
-   */
-  detail?: string
-  /**
-   * SocketPath is the local CLI socket path when known.
-   *
-   * @generated from field: string socket_path = 4;
-   */
-  socketPath?: string
-  /**
-   * ConnectedClients is the number of active CLI clients when known.
-   *
-   * @generated from field: uint32 connected_clients = 5;
-   */
-  connectedClients?: number
-}
-
-export const DesktopRuntimeListenerStatus: MessageType<DesktopRuntimeListenerStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopRuntimeListenerStatus',
-    fields: [
-      {
-        no: 1,
-        name: 'reachability',
-        kind: 'enum',
-        T: DesktopRuntimeReachability_Enum,
-      },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'socket_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'connected_clients',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DesktopRuntimeNavigationItem describes a bounded navigable status row.
- *
- * @generated from message electron.desktop_runtime.DesktopRuntimeNavigationItem
- */
-export interface DesktopRuntimeNavigationItem {
-  /**
-   * Id identifies the row within the projected state.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Label is primary display text.
-   *
-   * @generated from field: string label = 2;
-   */
-  label?: string
-  /**
-   * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 3;
-   */
-  detail?: string
-  /**
-   * Route is the app route to open when selected.
-   *
-   * @generated from field: string route = 4;
-   */
-  route?: string
-  /**
-   * Active is set when the row describes active foreground work.
-   *
-   * @generated from field: bool active = 5;
-   */
-  active?: boolean
-  /**
-   * StatusText is compact status text for the row.
-   *
-   * @generated from field: string status_text = 6;
-   */
-  statusText?: string
-}
-
-export const DesktopRuntimeNavigationItem: MessageType<DesktopRuntimeNavigationItem> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopRuntimeNavigationItem',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'route', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'active', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'status_text', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DesktopRuntimeActivityItem describes a bounded activity row.
- *
- * @generated from message electron.desktop_runtime.DesktopRuntimeActivityItem
- */
-export interface DesktopRuntimeActivityItem {
-  /**
-   * Id identifies the activity row.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Label is primary display text.
-   *
-   * @generated from field: string label = 2;
-   */
-  label?: string
-  /**
-   * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 3;
-   */
-  detail?: string
-  /**
-   * State describes the current activity state.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeActivityState state = 4;
-   */
-  state?: DesktopRuntimeActivityState
-  /**
-   * UpdatedAtUnixMs records the latest activity update time.
-   *
-   * @generated from field: int64 updated_at_unix_ms = 5;
-   */
-  updatedAtUnixMs?: bigint
-}
-
-export const DesktopRuntimeActivityItem: MessageType<DesktopRuntimeActivityItem> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopRuntimeActivityItem',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'state',
-        kind: 'enum',
-        T: DesktopRuntimeActivityState_Enum,
-      },
-      {
-        no: 5,
-        name: 'updated_at_unix_ms',
-        kind: 'scalar',
-        T: ScalarType.INT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DesktopRuntimeUpdateStatus describes native runtime update state.
- *
- * @generated from message electron.desktop_runtime.DesktopRuntimeUpdateStatus
- */
-export interface DesktopRuntimeUpdateStatus {
-  /**
-   * Ready is set when a native update is ready to apply.
-   *
-   * @generated from field: bool ready = 1;
-   */
-  ready?: boolean
-  /**
-   * Version is the available version when known.
-   *
-   * @generated from field: string version = 2;
-   */
-  version?: string
-  /**
-   * Label is primary display text.
-   *
-   * @generated from field: string label = 3;
-   */
-  label?: string
-  /**
-   * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 4;
-   */
-  detail?: string
-}
-
-export const DesktopRuntimeUpdateStatus: MessageType<DesktopRuntimeUpdateStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopRuntimeUpdateStatus',
-    fields: [
-      { no: 1, name: 'ready', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DesktopRuntimeAttentionItem describes a user-actionable attention row.
- *
- * @generated from message electron.desktop_runtime.DesktopRuntimeAttentionItem
- */
-export interface DesktopRuntimeAttentionItem {
-  /**
-   * Kind describes the attention category.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeAttentionKind kind = 1;
-   */
-  kind?: DesktopRuntimeAttentionKind
-  /**
-   * Severity describes the attention urgency.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeSeverity severity = 2;
-   */
-  severity?: DesktopRuntimeSeverity
-  /**
-   * Label is primary display text.
-   *
-   * @generated from field: string label = 3;
-   */
-  label?: string
-  /**
-   * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 4;
-   */
-  detail?: string
-  /**
-   * Route is the app route that can resolve the item when available.
-   *
-   * @generated from field: string route = 5;
-   */
-  route?: string
-}
-
-export const DesktopRuntimeAttentionItem: MessageType<DesktopRuntimeAttentionItem> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopRuntimeAttentionItem',
-    fields: [
-      {
-        no: 1,
-        name: 'kind',
-        kind: 'enum',
-        T: DesktopRuntimeAttentionKind_Enum,
-      },
-      { no: 2, name: 'severity', kind: 'enum', T: DesktopRuntimeSeverity_Enum },
-      { no: 3, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'route', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DesktopRuntimeActionItem describes an explicit command row.
- *
- * @generated from message electron.desktop_runtime.DesktopRuntimeActionItem
- */
-export interface DesktopRuntimeActionItem {
-  /**
-   * Id identifies the action row.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Kind describes the command category.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeActionKind kind = 2;
-   */
-  kind?: DesktopRuntimeActionKind
-  /**
-   * Label is primary display text.
-   *
-   * @generated from field: string label = 3;
-   */
-  label?: string
-  /**
-   * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 4;
-   */
-  detail?: string
-  /**
-   * Route is the app route used by route-opening actions.
-   *
-   * @generated from field: string route = 5;
-   */
-  route?: string
-  /**
-   * Value is action-specific text such as a copy value or filesystem path.
-   *
-   * @generated from field: string value = 6;
-   */
-  value?: string
-  /**
-   * Enabled indicates whether the command can run.
-   *
-   * @generated from field: bool enabled = 7;
-   */
-  enabled?: boolean
-}
-
-export const DesktopRuntimeActionItem: MessageType<DesktopRuntimeActionItem> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopRuntimeActionItem',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'kind', kind: 'enum', T: DesktopRuntimeActionKind_Enum },
-      { no: 3, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'route', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'value', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DesktopRuntimeCLIInstallSummary is compact CLI install state for tray readback.
- *
- * @generated from message electron.desktop_runtime.DesktopRuntimeCLIInstallSummary
- */
-export interface DesktopRuntimeCLIInstallSummary {
-  /**
-   * Status mirrors the desktop CLI install child resource status.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopCLIInstallStatus status = 1;
-   */
-  status?: DesktopCLIInstallStatus
-  /**
-   * Label is primary display text.
-   *
-   * @generated from field: string label = 2;
-   */
-  label?: string
-  /**
-   * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 3;
-   */
-  detail?: string
-  /**
-   * Route opens the settings surface that owns install/update actions.
-   *
-   * @generated from field: string route = 4;
-   */
-  route?: string
-}
-
-export const DesktopRuntimeCLIInstallSummary: MessageType<DesktopRuntimeCLIInstallSummary> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopRuntimeCLIInstallSummary',
-    fields: [
-      { no: 1, name: 'status', kind: 'enum', T: DesktopCLIInstallStatus_Enum },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'route', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * DesktopRuntimeState describes Electron main desktop-shell state.
@@ -963,153 +517,77 @@ export const DesktopRuntimeCLIInstallSummary: MessageType<DesktopRuntimeCLIInsta
 export interface DesktopRuntimeState {
   /**
    * MainWindowOpen is set when the main app window exists.
-   *
-   * @generated from field: bool main_window_open = 1;
    */
   mainWindowOpen?: boolean
   /**
    * Quitting is set after explicit user quit begins.
-   *
-   * @generated from field: bool quitting = 2;
    */
   quitting?: boolean
   /**
    * StatusText is short display text for native status surfaces.
-   *
-   * @generated from field: string status_text = 3;
    */
   statusText?: string
   /**
    * Health summarizes the status icon state.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeHealth health = 4;
    */
   health?: DesktopRuntimeHealth
   /**
    * Lifecycle describes the native runtime process lifecycle.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeLifecycle lifecycle = 5;
    */
   lifecycle?: DesktopRuntimeLifecycle
   /**
    * Listener describes background listener and CLI reachability.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeListenerStatus listener = 6;
    */
   listener?: DesktopRuntimeListenerStatus
   /**
    * Sessions contains bounded session rows for native status surfaces.
-   *
-   * @generated from field: repeated electron.desktop_runtime.DesktopRuntimeNavigationItem sessions = 7;
    */
   sessions?: DesktopRuntimeNavigationItem[]
   /**
    * Spaces contains bounded Space rows for native status surfaces.
-   *
-   * @generated from field: repeated electron.desktop_runtime.DesktopRuntimeNavigationItem spaces = 8;
    */
   spaces?: DesktopRuntimeNavigationItem[]
   /**
    * Activity contains bounded recent activity rows.
-   *
-   * @generated from field: repeated electron.desktop_runtime.DesktopRuntimeActivityItem activity = 9;
    */
   activity?: DesktopRuntimeActivityItem[]
   /**
    * Update describes native runtime update readiness.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeUpdateStatus update = 10;
    */
   update?: DesktopRuntimeUpdateStatus
   /**
    * AttentionItems contains user-actionable attention rows.
-   *
-   * @generated from field: repeated electron.desktop_runtime.DesktopRuntimeAttentionItem attention_items = 11;
    */
   attentionItems?: DesktopRuntimeAttentionItem[]
   /**
    * Actions contains bounded explicit command rows.
-   *
-   * @generated from field: repeated electron.desktop_runtime.DesktopRuntimeActionItem actions = 12;
    */
   actions?: DesktopRuntimeActionItem[]
   /**
    * CliInstall contains compact desktop-managed CLI install status for tray surfaces.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeCLIInstallSummary cli_install = 13;
    */
   cliInstall?: DesktopRuntimeCLIInstallSummary
 }
 
 export const DesktopRuntimeState: MessageType<DesktopRuntimeState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopRuntimeState',
-    fields: [
-      { no: 1, name: 'main_window_open', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'quitting', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'status_text', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'health', kind: 'enum', T: DesktopRuntimeHealth_Enum },
-      {
-        no: 5,
-        name: 'lifecycle',
-        kind: 'enum',
-        T: DesktopRuntimeLifecycle_Enum,
-      },
-      {
-        no: 6,
-        name: 'listener',
-        kind: 'message',
-        T: DesktopRuntimeListenerStatus,
-      },
-      {
-        no: 7,
-        name: 'sessions',
-        kind: 'message',
-        T: DesktopRuntimeNavigationItem,
-        repeated: true,
-      },
-      {
-        no: 8,
-        name: 'spaces',
-        kind: 'message',
-        T: DesktopRuntimeNavigationItem,
-        repeated: true,
-      },
-      {
-        no: 9,
-        name: 'activity',
-        kind: 'message',
-        T: DesktopRuntimeActivityItem,
-        repeated: true,
-      },
-      {
-        no: 10,
-        name: 'update',
-        kind: 'message',
-        T: DesktopRuntimeUpdateStatus,
-      },
-      {
-        no: 11,
-        name: 'attention_items',
-        kind: 'message',
-        T: DesktopRuntimeAttentionItem,
-        repeated: true,
-      },
-      {
-        no: 12,
-        name: 'actions',
-        kind: 'message',
-        T: DesktopRuntimeActionItem,
-        repeated: true,
-      },
-      {
-        no: 13,
-        name: 'cli_install',
-        kind: 'message',
-        T: DesktopRuntimeCLIInstallSummary,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopRuntimeState>(
+    'electron.desktop_runtime.DesktopRuntimeState',
+    () => [
+      [1, 'main_window_open', 8],
+      [2, 'quitting', 8],
+      [3, 'status_text', 9],
+      [4, 'health', 14, 0, DesktopRuntimeHealth_Enum],
+      [5, 'lifecycle', 14, 0, DesktopRuntimeLifecycle_Enum],
+      [6, 'listener', 11, 0, DesktopRuntimeListenerStatus.codec],
+      [7, 'sessions', 11, 1, DesktopRuntimeNavigationItem.codec],
+      [8, 'spaces', 11, 1, DesktopRuntimeNavigationItem.codec],
+      [9, 'activity', 11, 1, DesktopRuntimeActivityItem.codec],
+      [10, 'update', 11, 0, DesktopRuntimeUpdateStatus.codec],
+      [11, 'attention_items', 11, 1, DesktopRuntimeAttentionItem.codec],
+      [12, 'actions', 11, 1, DesktopRuntimeActionItem.codec],
+      [13, 'cli_install', 11, 0, DesktopRuntimeCLIInstallSummary.codec],
+    ],
+  )
 
 /**
  * DesktopCLIEntrypointIdentity describes a detected or available CLI entrypoint.
@@ -1119,61 +597,47 @@ export const DesktopRuntimeState: MessageType<DesktopRuntimeState> =
 export interface DesktopCLIEntrypointIdentity {
   /**
    * Path is the local command path when known.
-   *
-   * @generated from field: string path = 1;
    */
   path?: string
   /**
    * ProjectId is the Spacewave project id reported by version JSON.
-   *
-   * @generated from field: string project_id = 2;
    */
   projectId?: string
   /**
    * EntrypointRole is managed role identity such as cli or standalone.
-   *
-   * @generated from field: string entrypoint_role = 3;
    */
   entrypointRole?: string
   /**
    * ChannelKey is the release channel reported by the entrypoint.
-   *
-   * @generated from field: string channel_key = 4;
    */
   channelKey?: string
   /**
    * ManifestId is the selected Manifest id.
-   *
-   * @generated from field: string manifest_id = 5;
    */
   manifestId?: string
   /**
    * ManifestRev is the selected Manifest revision.
-   *
-   * @generated from field: uint64 manifest_rev = 6;
    */
   manifestRev?: bigint
   /**
    * PlatformId is the native platform id.
-   *
-   * @generated from field: string platform_id = 7;
    */
   platformId?: string
 }
 
 export const DesktopCLIEntrypointIdentity: MessageType<DesktopCLIEntrypointIdentity> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopCLIEntrypointIdentity',
-    fields: [
-      { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'entrypoint_role', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'channel_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'manifest_rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 7, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopCLIEntrypointIdentity>(
+    'electron.desktop_runtime.DesktopCLIEntrypointIdentity',
+    () => [
+      [1, 'path', 9],
+      [2, 'project_id', 9],
+      [3, 'entrypoint_role', 9],
+      [4, 'channel_key', 9],
+      [5, 'manifest_id', 9],
+      [6, 'manifest_rev', 4],
+      [7, 'platform_id', 9],
+    ],
+  )
 
 /**
  * DesktopCLIInstallTarget describes one user-level install target candidate.
@@ -1183,80 +647,57 @@ export const DesktopCLIEntrypointIdentity: MessageType<DesktopCLIEntrypointIdent
 export interface DesktopCLIInstallTarget {
   /**
    * Id identifies the target within the desktop CLI install resource.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Label is primary display text.
-   *
-   * @generated from field: string label = 2;
    */
   label?: string
   /**
    * Path is the filesystem path for the command.
-   *
-   * @generated from field: string path = 3;
    */
   path?: string
   /**
    * Writable indicates detection believes the target can be written.
-   *
-   * @generated from field: bool writable = 4;
    */
   writable?: boolean
   /**
    * Selected indicates the default target.
-   *
-   * @generated from field: bool selected = 5;
    */
   selected?: boolean
   /**
    * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 6;
    */
   detail?: string
   /**
    * Generation is the state generation this target was built from.
-   *
-   * @generated from field: uint64 generation = 7;
    */
   generation?: bigint
   /**
    * PathState describes whether process PATH evidence reaches this target.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopCLIInstallTargetPathState path_state = 8;
    */
   pathState?: DesktopCLIInstallTargetPathState
   /**
    * BlockedReason explains why target policy rejected this target.
-   *
-   * @generated from field: string blocked_reason = 9;
    */
   blockedReason?: string
 }
 
 export const DesktopCLIInstallTarget: MessageType<DesktopCLIInstallTarget> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopCLIInstallTarget',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'writable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'selected', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 8,
-        name: 'path_state',
-        kind: 'enum',
-        T: DesktopCLIInstallTargetPathState_Enum,
-      },
-      { no: 9, name: 'blocked_reason', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopCLIInstallTarget>(
+    'electron.desktop_runtime.DesktopCLIInstallTarget',
+    () => [
+      [1, 'id', 9],
+      [2, 'label', 9],
+      [3, 'path', 9],
+      [4, 'writable', 8],
+      [5, 'selected', 8],
+      [6, 'detail', 9],
+      [7, 'generation', 4],
+      [8, 'path_state', 14, 0, DesktopCLIInstallTargetPathState_Enum],
+      [9, 'blocked_reason', 9],
+    ],
+  )
 
 /**
  * DesktopCLIInstallActionItem describes one generation-bound user action.
@@ -1266,66 +707,47 @@ export const DesktopCLIInstallTarget: MessageType<DesktopCLIInstallTarget> =
 export interface DesktopCLIInstallActionItem {
   /**
    * Id identifies the action within the current state generation.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Kind is the action type.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopCLIInstallActionKind kind = 2;
    */
   kind?: DesktopCLIInstallActionKind
   /**
    * Label is primary display text.
-   *
-   * @generated from field: string label = 3;
    */
   label?: string
   /**
    * Enabled indicates the action can be invoked.
-   *
-   * @generated from field: bool enabled = 4;
    */
   enabled?: boolean
   /**
    * TargetId identifies the target affected by the action when applicable.
-   *
-   * @generated from field: string target_id = 5;
    */
   targetId?: string
   /**
    * Generation is the state generation this action was built from.
-   *
-   * @generated from field: uint64 generation = 6;
    */
   generation?: bigint
   /**
    * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 7;
    */
   detail?: string
 }
 
 export const DesktopCLIInstallActionItem: MessageType<DesktopCLIInstallActionItem> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopCLIInstallActionItem',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'kind',
-        kind: 'enum',
-        T: DesktopCLIInstallActionKind_Enum,
-      },
-      { no: 3, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'target_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 7, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopCLIInstallActionItem>(
+    'electron.desktop_runtime.DesktopCLIInstallActionItem',
+    () => [
+      [1, 'id', 9],
+      [2, 'kind', 14, 0, DesktopCLIInstallActionKind_Enum],
+      [3, 'label', 9],
+      [4, 'enabled', 8],
+      [5, 'target_id', 9],
+      [6, 'generation', 4],
+      [7, 'detail', 9],
+    ],
+  )
 
 /**
  * DesktopCLIInstallState describes desktop-managed CLI install state.
@@ -1335,116 +757,352 @@ export const DesktopCLIInstallActionItem: MessageType<DesktopCLIInstallActionIte
 export interface DesktopCLIInstallState {
   /**
    * Status is the collapsed install/update state.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopCLIInstallStatus status = 1;
    */
   status?: DesktopCLIInstallStatus
   /**
    * Label is primary display text.
-   *
-   * @generated from field: string label = 2;
    */
   label?: string
   /**
    * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 3;
    */
   detail?: string
   /**
    * Installed is the detected local CLI identity.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopCLIEntrypointIdentity installed = 4;
    */
   installed?: DesktopCLIEntrypointIdentity
   /**
    * Available is the release-world CLI identity selected for install/update.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopCLIEntrypointIdentity available = 5;
    */
   available?: DesktopCLIEntrypointIdentity
   /**
    * Targets contains user-level install target candidates.
-   *
-   * @generated from field: repeated electron.desktop_runtime.DesktopCLIInstallTarget targets = 6;
    */
   targets?: DesktopCLIInstallTarget[]
   /**
    * ConflictPath is the conflicting command path when status is CONFLICT.
-   *
-   * @generated from field: string conflict_path = 7;
    */
   conflictPath?: string
   /**
    * ErrorMessage is the latest detection error.
-   *
-   * @generated from field: string error_message = 8;
    */
   errorMessage?: string
   /**
    * Generation increments every time detection state changes.
-   *
-   * @generated from field: uint64 generation = 9;
    */
   generation?: bigint
   /**
    * SelectedTargetId identifies the target selected by the resource owner.
-   *
-   * @generated from field: string selected_target_id = 10;
    */
   selectedTargetId?: string
   /**
    * Actions contains generation-bound resource actions.
-   *
-   * @generated from field: repeated electron.desktop_runtime.DesktopCLIInstallActionItem actions = 11;
    */
   actions?: DesktopCLIInstallActionItem[]
 }
 
 export const DesktopCLIInstallState: MessageType<DesktopCLIInstallState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.DesktopCLIInstallState',
-    fields: [
-      { no: 1, name: 'status', kind: 'enum', T: DesktopCLIInstallStatus_Enum },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'installed',
-        kind: 'message',
-        T: DesktopCLIEntrypointIdentity,
-      },
-      {
-        no: 5,
-        name: 'available',
-        kind: 'message',
-        T: DesktopCLIEntrypointIdentity,
-      },
-      {
-        no: 6,
-        name: 'targets',
-        kind: 'message',
-        T: DesktopCLIInstallTarget,
-        repeated: true,
-      },
-      { no: 7, name: 'conflict_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 10,
-        name: 'selected_target_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 11,
-        name: 'actions',
-        kind: 'message',
-        T: DesktopCLIInstallActionItem,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopCLIInstallState>(
+    'electron.desktop_runtime.DesktopCLIInstallState',
+    () => [
+      [1, 'status', 14, 0, DesktopCLIInstallStatus_Enum],
+      [2, 'label', 9],
+      [3, 'detail', 9],
+      [4, 'installed', 11, 0, DesktopCLIEntrypointIdentity.codec],
+      [5, 'available', 11, 0, DesktopCLIEntrypointIdentity.codec],
+      [6, 'targets', 11, 1, DesktopCLIInstallTarget.codec],
+      [7, 'conflict_path', 9],
+      [8, 'error_message', 9],
+      [9, 'generation', 4],
+      [10, 'selected_target_id', 9],
+      [11, 'actions', 11, 1, DesktopCLIInstallActionItem.codec],
+    ],
+  )
+
+/**
+ * DesktopRuntimeListenerStatus describes background listener and CLI state.
+ *
+ * @generated from message electron.desktop_runtime.DesktopRuntimeListenerStatus
+ */
+export interface DesktopRuntimeListenerStatus {
+  /**
+   * Reachability describes whether the endpoint can be used.
+   */
+  reachability?: DesktopRuntimeReachability
+  /**
+   * Label is short display text for the listener.
+   */
+  label?: string
+  /**
+   * Detail is secondary display text for the listener.
+   */
+  detail?: string
+  /**
+   * SocketPath is the local CLI socket path when known.
+   */
+  socketPath?: string
+  /**
+   * ConnectedClients is the number of active CLI clients when known.
+   */
+  connectedClients?: number
+}
+
+export const DesktopRuntimeListenerStatus: MessageType<DesktopRuntimeListenerStatus> =
+  /* @__PURE__ */ createMessageType<DesktopRuntimeListenerStatus>(
+    'electron.desktop_runtime.DesktopRuntimeListenerStatus',
+    () => [
+      [1, 'reachability', 14, 0, DesktopRuntimeReachability_Enum],
+      [2, 'label', 9],
+      [3, 'detail', 9],
+      [4, 'socket_path', 9],
+      [5, 'connected_clients', 13],
+    ],
+  )
+
+/**
+ * DesktopRuntimeNavigationItem describes a bounded navigable status row.
+ *
+ * @generated from message electron.desktop_runtime.DesktopRuntimeNavigationItem
+ */
+export interface DesktopRuntimeNavigationItem {
+  /**
+   * Id identifies the row within the projected state.
+   */
+  id?: string
+  /**
+   * Label is primary display text.
+   */
+  label?: string
+  /**
+   * Detail is secondary display text.
+   */
+  detail?: string
+  /**
+   * Route is the app route to open when selected.
+   */
+  route?: string
+  /**
+   * Active is set when the row describes active foreground work.
+   */
+  active?: boolean
+  /**
+   * StatusText is compact status text for the row.
+   */
+  statusText?: string
+}
+
+export const DesktopRuntimeNavigationItem: MessageType<DesktopRuntimeNavigationItem> =
+  /* @__PURE__ */ createMessageType<DesktopRuntimeNavigationItem>(
+    'electron.desktop_runtime.DesktopRuntimeNavigationItem',
+    () => [
+      [1, 'id', 9],
+      [2, 'label', 9],
+      [3, 'detail', 9],
+      [4, 'route', 9],
+      [5, 'active', 8],
+      [6, 'status_text', 9],
+    ],
+  )
+
+/**
+ * DesktopRuntimeActivityItem describes a bounded activity row.
+ *
+ * @generated from message electron.desktop_runtime.DesktopRuntimeActivityItem
+ */
+export interface DesktopRuntimeActivityItem {
+  /**
+   * Id identifies the activity row.
+   */
+  id?: string
+  /**
+   * Label is primary display text.
+   */
+  label?: string
+  /**
+   * Detail is secondary display text.
+   */
+  detail?: string
+  /**
+   * State describes the current activity state.
+   */
+  state?: DesktopRuntimeActivityState
+  /**
+   * UpdatedAtUnixMs records the latest activity update time.
+   */
+  updatedAtUnixMs?: bigint
+}
+
+export const DesktopRuntimeActivityItem: MessageType<DesktopRuntimeActivityItem> =
+  /* @__PURE__ */ createMessageType<DesktopRuntimeActivityItem>(
+    'electron.desktop_runtime.DesktopRuntimeActivityItem',
+    () => [
+      [1, 'id', 9],
+      [2, 'label', 9],
+      [3, 'detail', 9],
+      [4, 'state', 14, 0, DesktopRuntimeActivityState_Enum],
+      [5, 'updated_at_unix_ms', 3],
+    ],
+  )
+
+/**
+ * DesktopRuntimeUpdateStatus describes native runtime update state.
+ *
+ * @generated from message electron.desktop_runtime.DesktopRuntimeUpdateStatus
+ */
+export interface DesktopRuntimeUpdateStatus {
+  /**
+   * Ready is set when a native update is ready to apply.
+   */
+  ready?: boolean
+  /**
+   * Version is the available version when known.
+   */
+  version?: string
+  /**
+   * Label is primary display text.
+   */
+  label?: string
+  /**
+   * Detail is secondary display text.
+   */
+  detail?: string
+}
+
+export const DesktopRuntimeUpdateStatus: MessageType<DesktopRuntimeUpdateStatus> =
+  /* @__PURE__ */ createMessageType<DesktopRuntimeUpdateStatus>(
+    'electron.desktop_runtime.DesktopRuntimeUpdateStatus',
+    () => [
+      [1, 'ready', 8],
+      [2, 'version', 9],
+      [3, 'label', 9],
+      [4, 'detail', 9],
+    ],
+  )
+
+/**
+ * DesktopRuntimeCLIInstallSummary is compact CLI install state for tray readback.
+ *
+ * @generated from message electron.desktop_runtime.DesktopRuntimeCLIInstallSummary
+ */
+export interface DesktopRuntimeCLIInstallSummary {
+  /**
+   * Status mirrors the desktop CLI install child resource status.
+   */
+  status?: DesktopCLIInstallStatus
+  /**
+   * Label is primary display text.
+   */
+  label?: string
+  /**
+   * Detail is secondary display text.
+   */
+  detail?: string
+  /**
+   * Route opens the settings surface that owns install/update actions.
+   */
+  route?: string
+}
+
+export const DesktopRuntimeCLIInstallSummary: MessageType<DesktopRuntimeCLIInstallSummary> =
+  /* @__PURE__ */ createMessageType<DesktopRuntimeCLIInstallSummary>(
+    'electron.desktop_runtime.DesktopRuntimeCLIInstallSummary',
+    () => [
+      [1, 'status', 14, 0, DesktopCLIInstallStatus_Enum],
+      [2, 'label', 9],
+      [3, 'detail', 9],
+      [4, 'route', 9],
+    ],
+  )
+
+/**
+ * DesktopRuntimeAttentionItem describes a user-actionable attention row.
+ *
+ * @generated from message electron.desktop_runtime.DesktopRuntimeAttentionItem
+ */
+export interface DesktopRuntimeAttentionItem {
+  /**
+   * Kind describes the attention category.
+   */
+  kind?: DesktopRuntimeAttentionKind
+  /**
+   * Severity describes the attention urgency.
+   */
+  severity?: DesktopRuntimeSeverity
+  /**
+   * Label is primary display text.
+   */
+  label?: string
+  /**
+   * Detail is secondary display text.
+   */
+  detail?: string
+  /**
+   * Route is the app route that can resolve the item when available.
+   */
+  route?: string
+}
+
+export const DesktopRuntimeAttentionItem: MessageType<DesktopRuntimeAttentionItem> =
+  /* @__PURE__ */ createMessageType<DesktopRuntimeAttentionItem>(
+    'electron.desktop_runtime.DesktopRuntimeAttentionItem',
+    () => [
+      [1, 'kind', 14, 0, DesktopRuntimeAttentionKind_Enum],
+      [2, 'severity', 14, 0, DesktopRuntimeSeverity_Enum],
+      [3, 'label', 9],
+      [4, 'detail', 9],
+      [5, 'route', 9],
+    ],
+  )
+
+/**
+ * DesktopRuntimeActionItem describes an explicit command row.
+ *
+ * @generated from message electron.desktop_runtime.DesktopRuntimeActionItem
+ */
+export interface DesktopRuntimeActionItem {
+  /**
+   * Id identifies the action row.
+   */
+  id?: string
+  /**
+   * Kind describes the command category.
+   */
+  kind?: DesktopRuntimeActionKind
+  /**
+   * Label is primary display text.
+   */
+  label?: string
+  /**
+   * Detail is secondary display text.
+   */
+  detail?: string
+  /**
+   * Route is the app route used by route-opening actions.
+   */
+  route?: string
+  /**
+   * Value is action-specific text such as a copy value or filesystem path.
+   */
+  value?: string
+  /**
+   * Enabled indicates whether the command can run.
+   */
+  enabled?: boolean
+}
+
+export const DesktopRuntimeActionItem: MessageType<DesktopRuntimeActionItem> =
+  /* @__PURE__ */ createMessageType<DesktopRuntimeActionItem>(
+    'electron.desktop_runtime.DesktopRuntimeActionItem',
+    () => [
+      [1, 'id', 9],
+      [2, 'kind', 14, 0, DesktopRuntimeActionKind_Enum],
+      [3, 'label', 9],
+      [4, 'detail', 9],
+      [5, 'route', 9],
+      [6, 'value', 9],
+      [7, 'enabled', 8],
+    ],
+  )
 
 /**
  * WatchDesktopStateRequest is the request for WatchDesktopState.
@@ -1454,9 +1112,9 @@ export const DesktopCLIInstallState: MessageType<DesktopCLIInstallState> =
 export interface WatchDesktopStateRequest {}
 
 export const WatchDesktopStateRequest: MessageType<WatchDesktopStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchDesktopStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchDesktopStateRequest>(
     'electron.desktop_runtime.WatchDesktopStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1467,19 +1125,15 @@ export const WatchDesktopStateRequest: MessageType<WatchDesktopStateRequest> =
 export interface WatchDesktopStateResponse {
   /**
    * State is the current desktop runtime state.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeState state = 1;
    */
   state?: DesktopRuntimeState
 }
 
 export const WatchDesktopStateResponse: MessageType<WatchDesktopStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.WatchDesktopStateResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: DesktopRuntimeState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchDesktopStateResponse>(
+    'electron.desktop_runtime.WatchDesktopStateResponse',
+    () => [[1, 'state', 11, 0, DesktopRuntimeState.codec]],
+  )
 
 /**
  * SetDesktopStateRequest is the request for SetDesktopState.
@@ -1489,19 +1143,15 @@ export const WatchDesktopStateResponse: MessageType<WatchDesktopStateResponse> =
 export interface SetDesktopStateRequest {
   /**
    * State is the projected desktop runtime state.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopRuntimeState state = 1;
    */
   state?: DesktopRuntimeState
 }
 
 export const SetDesktopStateRequest: MessageType<SetDesktopStateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.SetDesktopStateRequest',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: DesktopRuntimeState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetDesktopStateRequest>(
+    'electron.desktop_runtime.SetDesktopStateRequest',
+    () => [[1, 'state', 11, 0, DesktopRuntimeState.codec]],
+  )
 
 /**
  * SetDesktopStateResponse is the response for SetDesktopState.
@@ -1511,9 +1161,9 @@ export const SetDesktopStateRequest: MessageType<SetDesktopStateRequest> =
 export interface SetDesktopStateResponse {}
 
 export const SetDesktopStateResponse: MessageType<SetDesktopStateResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetDesktopStateResponse>(
+  /* @__PURE__ */ createMessageType<SetDesktopStateResponse>(
     'electron.desktop_runtime.SetDesktopStateResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1524,27 +1174,23 @@ export const SetDesktopStateResponse: MessageType<SetDesktopStateResponse> =
 export interface OpenOrFocusMainWindowRequest {
   /**
    * Route is the app route to open after focusing the singleton window.
-   *
-   * @generated from field: string route = 1;
    */
   route?: string
   /**
    * InstalledApp is the application bundle that requested the desktop.
    * Desktop app updates replace this bundle; empty keeps the last one.
-   *
-   * @generated from field: string installed_app = 2;
    */
   installedApp?: string
 }
 
 export const OpenOrFocusMainWindowRequest: MessageType<OpenOrFocusMainWindowRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.OpenOrFocusMainWindowRequest',
-    fields: [
-      { no: 1, name: 'route', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'installed_app', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenOrFocusMainWindowRequest>(
+    'electron.desktop_runtime.OpenOrFocusMainWindowRequest',
+    () => [
+      [1, 'route', 9],
+      [2, 'installed_app', 9],
+    ],
+  )
 
 /**
  * OpenOrFocusMainWindowResponse is the response for OpenOrFocusMainWindow.
@@ -1554,9 +1200,9 @@ export const OpenOrFocusMainWindowRequest: MessageType<OpenOrFocusMainWindowRequ
 export interface OpenOrFocusMainWindowResponse {}
 
 export const OpenOrFocusMainWindowResponse: MessageType<OpenOrFocusMainWindowResponse> =
-  /* @__PURE__ */ createEmptyMessageType<OpenOrFocusMainWindowResponse>(
+  /* @__PURE__ */ createMessageType<OpenOrFocusMainWindowResponse>(
     'electron.desktop_runtime.OpenOrFocusMainWindowResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1567,9 +1213,9 @@ export const OpenOrFocusMainWindowResponse: MessageType<OpenOrFocusMainWindowRes
 export interface QuitDesktopRuntimeRequest {}
 
 export const QuitDesktopRuntimeRequest: MessageType<QuitDesktopRuntimeRequest> =
-  /* @__PURE__ */ createEmptyMessageType<QuitDesktopRuntimeRequest>(
+  /* @__PURE__ */ createMessageType<QuitDesktopRuntimeRequest>(
     'electron.desktop_runtime.QuitDesktopRuntimeRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1580,9 +1226,9 @@ export const QuitDesktopRuntimeRequest: MessageType<QuitDesktopRuntimeRequest> =
 export interface QuitDesktopRuntimeResponse {}
 
 export const QuitDesktopRuntimeResponse: MessageType<QuitDesktopRuntimeResponse> =
-  /* @__PURE__ */ createEmptyMessageType<QuitDesktopRuntimeResponse>(
+  /* @__PURE__ */ createMessageType<QuitDesktopRuntimeResponse>(
     'electron.desktop_runtime.QuitDesktopRuntimeResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1593,9 +1239,9 @@ export const QuitDesktopRuntimeResponse: MessageType<QuitDesktopRuntimeResponse>
 export interface WatchCLIInstallStateRequest {}
 
 export const WatchCLIInstallStateRequest: MessageType<WatchCLIInstallStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchCLIInstallStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchCLIInstallStateRequest>(
     'electron.desktop_runtime.WatchCLIInstallStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1606,42 +1252,32 @@ export const WatchCLIInstallStateRequest: MessageType<WatchCLIInstallStateReques
 export interface WatchCLIInstallStateResponse {
   /**
    * State is the current CLI install state.
-   *
-   * @generated from field: electron.desktop_runtime.DesktopCLIInstallState state = 1;
    */
   state?: DesktopCLIInstallState
 }
 
 export const WatchCLIInstallStateResponse: MessageType<WatchCLIInstallStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.WatchCLIInstallStateResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: DesktopCLIInstallState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchCLIInstallStateResponse>(
+    'electron.desktop_runtime.WatchCLIInstallStateResponse',
+    () => [[1, 'state', 11, 0, DesktopCLIInstallState.codec]],
+  )
 
 /**
  * @generated from message electron.desktop_runtime.InvokeCLIInstallActionRequest
  */
 export interface InvokeCLIInstallActionRequest {
-  /**
-   * @generated from field: string action_id = 1;
-   */
   actionId?: string
-  /**
-   * @generated from field: uint64 generation = 2;
-   */
   generation?: bigint
 }
 
 export const InvokeCLIInstallActionRequest: MessageType<InvokeCLIInstallActionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'electron.desktop_runtime.InvokeCLIInstallActionRequest',
-    fields: [
-      { no: 1, name: 'action_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InvokeCLIInstallActionRequest>(
+    'electron.desktop_runtime.InvokeCLIInstallActionRequest',
+    () => [
+      [1, 'action_id', 9],
+      [2, 'generation', 4],
+    ],
+  )
 
 /**
  * @generated from message electron.desktop_runtime.InvokeCLIInstallActionResponse
@@ -1649,7 +1285,7 @@ export const InvokeCLIInstallActionRequest: MessageType<InvokeCLIInstallActionRe
 export interface InvokeCLIInstallActionResponse {}
 
 export const InvokeCLIInstallActionResponse: MessageType<InvokeCLIInstallActionResponse> =
-  /* @__PURE__ */ createEmptyMessageType<InvokeCLIInstallActionResponse>(
+  /* @__PURE__ */ createMessageType<InvokeCLIInstallActionResponse>(
     'electron.desktop_runtime.InvokeCLIInstallActionResponse',
-    true,
+    () => [],
   )

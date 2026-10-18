@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * SolicitProtocolRequest is the directive request for protocol solicitation.
@@ -15,43 +13,35 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface SolicitProtocolRequest {
   /**
    * ProtocolId is the protocol ID to solicit.
-   *
-   * @generated from field: string protocol_id = 1;
    */
   protocolId?: string
   /**
    * Context is opaque context bytes for the solicitation.
    * Different contexts produce different hashes (no match).
-   *
-   * @generated from field: bytes context = 2;
    */
   context?: Uint8Array
   /**
    * PeerId constrains solicitation to a specific peer.
    * If empty, solicits on all active links.
-   *
-   * @generated from field: string peer_id = 3;
    */
   peerId?: string
   /**
    * TransportId constrains solicitation to a specific transport.
    * If 0, solicits on all transports.
-   *
-   * @generated from field: uint64 transport_id = 4;
    */
   transportId?: bigint
 }
 
 export const SolicitProtocolRequest: MessageType<SolicitProtocolRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'link.solicit.SolicitProtocolRequest',
-    fields: [
-      { no: 1, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'context', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'transport_id', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SolicitProtocolRequest>(
+    'link.solicit.SolicitProtocolRequest',
+    () => [
+      [1, 'protocol_id', 9],
+      [2, 'context', 12],
+      [3, 'peer_id', 9],
+      [4, 'transport_id', 4],
+    ],
+  )
 
 /**
  * SolicitationOffer binds a stable protocol hash to one directive incarnation.
@@ -61,26 +51,22 @@ export const SolicitProtocolRequest: MessageType<SolicitProtocolRequest> =
 export interface SolicitationOffer {
   /**
    * ProtocolHash identifies the solicited protocol and context for this link.
-   *
-   * @generated from field: bytes protocol_hash = 1;
    */
   protocolHash?: Uint8Array
   /**
    * Incarnation identifies the continuous lifetime of one solicitation offer.
-   *
-   * @generated from field: bytes incarnation = 2;
    */
   incarnation?: Uint8Array
 }
 
 export const SolicitationOffer: MessageType<SolicitationOffer> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'link.solicit.SolicitationOffer',
-    fields: [
-      { no: 1, name: 'protocol_hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'incarnation', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SolicitationOffer>(
+    'link.solicit.SolicitationOffer',
+    () => [
+      [1, 'protocol_hash', 12],
+      [2, 'incarnation', 12],
+    ],
+  )
 
 /**
  * SolicitationExchange is sent on the control stream.
@@ -93,66 +79,34 @@ export interface SolicitationExchange {
    * ProtocolHashes contains sorted BLAKE3 hashes.
    * Each hash is 32 bytes.
    * Max 256 entries.
-   *
-   * @generated from field: repeated bytes protocol_hashes = 1;
    */
   protocolHashes?: Uint8Array[]
   /**
    * Offers binds each protocol hash to its current directive incarnation.
-   *
-   * @generated from field: repeated link.solicit.SolicitationOffer offers = 2;
    */
   offers?: SolicitationOffer[]
   /**
    * SupportsOfferIncarnations indicates that Offers governs match lifetimes.
-   *
-   * @generated from field: bool supports_offer_incarnations = 3;
    */
   supportsOfferIncarnations?: boolean
   /**
    * Generation identifies this side's current offer set.
-   *
-   * @generated from field: uint64 generation = 4;
    */
   generation?: bigint
   /**
    * AcknowledgedGeneration is the latest remote generation this side observed.
-   *
-   * @generated from field: uint64 acknowledged_generation = 5;
    */
   acknowledgedGeneration?: bigint
 }
 
 export const SolicitationExchange: MessageType<SolicitationExchange> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'link.solicit.SolicitationExchange',
-    fields: [
-      {
-        no: 1,
-        name: 'protocol_hashes',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'offers',
-        kind: 'message',
-        T: SolicitationOffer,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'supports_offer_incarnations',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      { no: 4, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 5,
-        name: 'acknowledged_generation',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SolicitationExchange>(
+    'link.solicit.SolicitationExchange',
+    () => [
+      [1, 'protocol_hashes', 12, 1],
+      [2, 'offers', 11, 1, SolicitationOffer.codec],
+      [3, 'supports_offer_incarnations', 8],
+      [4, 'generation', 4],
+      [5, 'acknowledged_generation', 4],
+    ],
+  )

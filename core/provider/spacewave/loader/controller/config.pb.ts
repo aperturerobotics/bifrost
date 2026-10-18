@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the loader controller.
@@ -24,15 +22,11 @@ export interface Config {
    * ProjectId is the project identifier used to locate the
    * platform-appropriate storage root for the helper's pipesock endpoint.
    * Defaults to "spacewave" when empty.
-   *
-   * @generated from field: string project_id = 1;
    */
   projectId?: string
   /**
    * HelperBinaryName overrides the helper binary lookup name. Defaults to
    * "spacewave-helper" (".exe" on Windows).
-   *
-   * @generated from field: string helper_binary_name = 2;
    */
   helperBinaryName?: string
   /**
@@ -40,31 +34,22 @@ export interface Config {
    * observed to drive the loading progress bar. When all listed plugins
    * become running, the helper is dismissed. When empty, defaults to the
    * stock Spacewave set (spacewave-core, spacewave-web, spacewave-app, web).
-   *
-   * @generated from field: repeated string watch_plugin_ids = 3;
    */
   watchPluginIds?: string[]
   /**
    * IconPath is an optional path to a platform icon file. When empty, the
    * helper window renders without an app icon.
-   *
-   * @generated from field: string icon_path = 4;
    */
   iconPath?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'spacewave.loader.controller.Config',
-  fields: [
-    { no: 1, name: 'project_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'helper_binary_name', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 3,
-      name: 'watch_plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 4, name: 'icon_path', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'spacewave.loader.controller.Config',
+    () => [
+      [1, 'project_id', 9],
+      [2, 'helper_binary_name', 9],
+      [3, 'watch_plugin_ids', 9, 1],
+      [4, 'icon_path', 9],
+    ],
+  )

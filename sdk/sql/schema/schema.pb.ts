@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Schema is a standalone SQL schema world object.
@@ -18,44 +13,29 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Schema {
   /**
    * SchemaName is the schema name inside the target sql/db.
-   *
-   * @generated from field: string schema_name = 1;
    */
   schemaName?: string
   /**
    * TargetDbObjectKey is the sql/db object this schema belongs to.
-   *
-   * @generated from field: string target_db_object_key = 2;
    */
   targetDbObjectKey?: string
   /**
    * DisplayName is an optional user-facing label.
-   *
-   * @generated from field: string display_name = 3;
    */
   displayName?: string
   /**
    * Description is optional user-facing metadata.
-   *
-   * @generated from field: string description = 4;
    */
   description?: string
 }
 
-export const Schema: MessageType<Schema> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.sql.schema.Schema',
-  fields: [
-    { no: 1, name: 'schema_name', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'target_db_object_key',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 3, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Schema: MessageType<Schema> =
+  /* @__PURE__ */ createMessageType<Schema>('s4wave.sql.schema.Schema', () => [
+    [1, 'schema_name', 9],
+    [2, 'target_db_object_key', 9],
+    [3, 'display_name', 9],
+    [4, 'description', 9],
+  ])
 
 /**
  * GetSchemaRequest is a request for schema metadata.
@@ -65,9 +45,9 @@ export const Schema: MessageType<Schema> = /* @__PURE__ */ createMessageType({
 export interface GetSchemaRequest {}
 
 export const GetSchemaRequest: MessageType<GetSchemaRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetSchemaRequest>(
+  /* @__PURE__ */ createMessageType<GetSchemaRequest>(
     's4wave.sql.schema.GetSchemaRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -78,19 +58,15 @@ export const GetSchemaRequest: MessageType<GetSchemaRequest> =
 export interface GetSchemaResponse {
   /**
    * Schema is the persisted schema block.
-   *
-   * @generated from field: s4wave.sql.schema.Schema schema = 1;
    */
   schema?: Schema
 }
 
 export const GetSchemaResponse: MessageType<GetSchemaResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.schema.GetSchemaResponse',
-    fields: [
-      { no: 1, name: 'schema', kind: 'message', T: Schema },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSchemaResponse>(
+    's4wave.sql.schema.GetSchemaResponse',
+    () => [[1, 'schema', 11, 0, Schema.codec]],
+  )
 
 /**
  * ListTablesRequest is a request for tables in the schema.
@@ -100,9 +76,27 @@ export const GetSchemaResponse: MessageType<GetSchemaResponse> =
 export interface ListTablesRequest {}
 
 export const ListTablesRequest: MessageType<ListTablesRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ListTablesRequest>(
+  /* @__PURE__ */ createMessageType<ListTablesRequest>(
     's4wave.sql.schema.ListTablesRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * ListTablesResponse contains tables in the schema.
+ *
+ * @generated from message s4wave.sql.schema.ListTablesResponse
+ */
+export interface ListTablesResponse {
+  /**
+   * Tables are the tables visible in the schema.
+   */
+  tables?: TableInfo[]
+}
+
+export const ListTablesResponse: MessageType<ListTablesResponse> =
+  /* @__PURE__ */ createMessageType<ListTablesResponse>(
+    's4wave.sql.schema.ListTablesResponse',
+    () => [[1, 'tables', 11, 1, TableInfo.codec]],
   )
 
 /**
@@ -113,38 +107,12 @@ export const ListTablesRequest: MessageType<ListTablesRequest> =
 export interface TableInfo {
   /**
    * Name is the table name.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
 }
 
 export const TableInfo: MessageType<TableInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.schema.TableInfo',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ListTablesResponse contains tables in the schema.
- *
- * @generated from message s4wave.sql.schema.ListTablesResponse
- */
-export interface ListTablesResponse {
-  /**
-   * Tables are the tables visible in the schema.
-   *
-   * @generated from field: repeated s4wave.sql.schema.TableInfo tables = 1;
-   */
-  tables?: TableInfo[]
-}
-
-export const ListTablesResponse: MessageType<ListTablesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.schema.ListTablesResponse',
-    fields: [
-      { no: 1, name: 'tables', kind: 'message', T: TableInfo, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TableInfo>(
+    's4wave.sql.schema.TableInfo',
+    () => [[1, 'name', 9]],
+  )

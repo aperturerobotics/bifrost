@@ -5,9 +5,7 @@
 import { CloneOpts } from '../../db/git/block/git.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * CreateGitRepoWizardOp creates a git repository from wizard configuration.
@@ -18,45 +16,35 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface CreateGitRepoWizardOp {
   /**
    * ObjectKey is the object key for the new git/repo.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the repository display name.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Clone indicates this is a clone operation (vs new empty repo).
-   *
-   * @generated from field: bool clone = 3;
    */
   clone?: boolean
   /**
    * CloneOpts contains the clone configuration (URL, ref, depth, etc).
    * Only used when clone is true.
-   *
-   * @generated from field: git.block.CloneOpts clone_opts = 4;
    */
   cloneOpts?: CloneOpts
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 5;
    */
   timestamp?: Date
 }
 
 export const CreateGitRepoWizardOp: MessageType<CreateGitRepoWizardOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.git.CreateGitRepoWizardOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'clone', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'clone_opts', kind: 'message', T: () => CloneOpts },
-      { no: 5, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateGitRepoWizardOp>(
+    's4wave.git.CreateGitRepoWizardOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'clone', 8],
+      [4, 'clone_opts', 11, 0, CloneOpts.codec],
+      [5, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

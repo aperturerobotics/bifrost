@@ -4,38 +4,7 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ColumnSchema, RowBatch, SqlValue } from '../sql.pb.js'
-
-/**
- * SqlTransactionInit initializes a SQL transaction.
- *
- * @generated from message sql.rpc.SqlTransactionInit
- */
-export interface SqlTransactionInit {
-  /**
-   * Write indicates if this should be a write transaction.
-   *
-   * @generated from field: bool write = 1;
-   */
-  write?: boolean
-  /**
-   * Dsn is the SQL database path/name.
-   *
-   * @generated from field: string dsn = 2;
-   */
-  dsn?: string
-}
-
-export const SqlTransactionInit: MessageType<SqlTransactionInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlTransactionInit',
-    fields: [
-      { no: 1, name: 'write', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'dsn', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * SqlTransactionRequest is a request in a SqlTransaction rpc.
@@ -49,131 +18,46 @@ export interface SqlTransactionRequest {
    * @generated from oneof sql.rpc.SqlTransactionRequest.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Init initializes the transaction.
-         *
-         * @generated from field: sql.rpc.SqlTransactionInit init = 1;
-         */
-        value: SqlTransactionInit
-        case: 'init'
-      }
-    | {
-        /**
-         * Commit commits the transaction.
-         *
-         * @generated from field: bool commit = 2;
-         */
-        value: boolean
-        case: 'commit'
-      }
-    | {
-        /**
-         * Discard discards the transaction.
-         *
-         * @generated from field: bool discard = 3;
-         */
-        value: boolean
-        case: 'discard'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: SqlTransactionInit; case: 'init' }
+    | { value: boolean; case: 'commit' }
+    | { value: boolean; case: 'discard' }
 }
 
 export const SqlTransactionRequest: MessageType<SqlTransactionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlTransactionRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'init',
-        kind: 'message',
-        T: SqlTransactionInit,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'commit',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'discard',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlTransactionRequest>(
+    'sql.rpc.SqlTransactionRequest',
+    () => [
+      [1, 'init', 11, 0, SqlTransactionInit.codec, 'body'],
+      [2, 'commit', 8, 0, 0, 'body'],
+      [3, 'discard', 8, 0, 0, 'body'],
+    ],
+  )
 
 /**
- * SqlTransactionAck contains transaction open status.
+ * SqlTransactionInit initializes a SQL transaction.
  *
- * @generated from message sql.rpc.SqlTransactionAck
+ * @generated from message sql.rpc.SqlTransactionInit
  */
-export interface SqlTransactionAck {
+export interface SqlTransactionInit {
   /**
-   * Error is any error opening the transaction.
-   *
-   * @generated from field: string error = 1;
+   * Write indicates if this should be a write transaction.
    */
-  error?: string
+  write?: boolean
   /**
-   * TransactionId is the identifier to use for the RpcStream.
-   *
-   * @generated from field: string transaction_id = 2;
+   * Dsn is the SQL database path/name.
    */
-  transactionId?: string
+  dsn?: string
 }
 
-export const SqlTransactionAck: MessageType<SqlTransactionAck> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlTransactionAck',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'transaction_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SqlTransactionComplete contains transaction completion status.
- *
- * @generated from message sql.rpc.SqlTransactionComplete
- */
-export interface SqlTransactionComplete {
-  /**
-   * Error is any error completing the transaction.
-   *
-   * @generated from field: string error = 1;
-   */
-  error?: string
-  /**
-   * Committed indicates the transaction committed.
-   *
-   * @generated from field: bool committed = 2;
-   */
-  committed?: boolean
-  /**
-   * Discarded indicates the transaction was discarded.
-   *
-   * @generated from field: bool discarded = 3;
-   */
-  discarded?: boolean
-}
-
-export const SqlTransactionComplete: MessageType<SqlTransactionComplete> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlTransactionComplete',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'committed', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'discarded', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SqlTransactionInit: MessageType<SqlTransactionInit> =
+  /* @__PURE__ */ createMessageType<SqlTransactionInit>(
+    'sql.rpc.SqlTransactionInit',
+    () => [
+      [1, 'write', 8],
+      [2, 'dsn', 9],
+    ],
+  )
 
 /**
  * SqlTransactionResponse is a response to the SqlTransaction rpc.
@@ -187,50 +71,74 @@ export interface SqlTransactionResponse {
    * @generated from oneof sql.rpc.SqlTransactionResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Ack acknowledges the transaction open.
-         *
-         * @generated from field: sql.rpc.SqlTransactionAck ack = 1;
-         */
-        value: SqlTransactionAck
-        case: 'ack'
-      }
-    | {
-        /**
-         * Complete contains transaction completion status.
-         *
-         * @generated from field: sql.rpc.SqlTransactionComplete complete = 2;
-         */
-        value: SqlTransactionComplete
-        case: 'complete'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: SqlTransactionAck; case: 'ack' }
+    | { value: SqlTransactionComplete; case: 'complete' }
 }
 
 export const SqlTransactionResponse: MessageType<SqlTransactionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlTransactionResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'ack',
-        kind: 'message',
-        T: SqlTransactionAck,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'complete',
-        kind: 'message',
-        T: SqlTransactionComplete,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlTransactionResponse>(
+    'sql.rpc.SqlTransactionResponse',
+    () => [
+      [1, 'ack', 11, 0, SqlTransactionAck.codec, 'body'],
+      [2, 'complete', 11, 0, SqlTransactionComplete.codec, 'body'],
+    ],
+  )
+
+/**
+ * SqlTransactionAck contains transaction open status.
+ *
+ * @generated from message sql.rpc.SqlTransactionAck
+ */
+export interface SqlTransactionAck {
+  /**
+   * Error is any error opening the transaction.
+   */
+  error?: string
+  /**
+   * TransactionId is the identifier to use for the RpcStream.
+   */
+  transactionId?: string
+}
+
+export const SqlTransactionAck: MessageType<SqlTransactionAck> =
+  /* @__PURE__ */ createMessageType<SqlTransactionAck>(
+    'sql.rpc.SqlTransactionAck',
+    () => [
+      [1, 'error', 9],
+      [2, 'transaction_id', 9],
+    ],
+  )
+
+/**
+ * SqlTransactionComplete contains transaction completion status.
+ *
+ * @generated from message sql.rpc.SqlTransactionComplete
+ */
+export interface SqlTransactionComplete {
+  /**
+   * Error is any error completing the transaction.
+   */
+  error?: string
+  /**
+   * Committed indicates the transaction committed.
+   */
+  committed?: boolean
+  /**
+   * Discarded indicates the transaction was discarded.
+   */
+  discarded?: boolean
+}
+
+export const SqlTransactionComplete: MessageType<SqlTransactionComplete> =
+  /* @__PURE__ */ createMessageType<SqlTransactionComplete>(
+    'sql.rpc.SqlTransactionComplete',
+    () => [
+      [1, 'error', 9],
+      [2, 'committed', 8],
+      [3, 'discarded', 8],
+    ],
+  )
 
 /**
  * SqlExecRequest is a SQL exec request.
@@ -240,32 +148,22 @@ export const SqlTransactionResponse: MessageType<SqlTransactionResponse> =
 export interface SqlExecRequest {
   /**
    * Query is the SQL statement.
-   *
-   * @generated from field: string query = 1;
    */
   query?: string
   /**
    * Args are positional bind arguments.
-   *
-   * @generated from field: repeated sql.SqlValue args = 2;
    */
   args?: SqlValue[]
 }
 
 export const SqlExecRequest: MessageType<SqlExecRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlExecRequest',
-    fields: [
-      { no: 1, name: 'query', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'args',
-        kind: 'message',
-        T: () => SqlValue,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlExecRequest>(
+    'sql.rpc.SqlExecRequest',
+    () => [
+      [1, 'query', 9],
+      [2, 'args', 11, 1, SqlValue.codec],
+    ],
+  )
 
 /**
  * SqlExecResponse is a SQL exec response.
@@ -275,68 +173,27 @@ export const SqlExecRequest: MessageType<SqlExecRequest> =
 export interface SqlExecResponse {
   /**
    * Error is any execution error.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
   /**
    * LastInsertId is the last insert id if known.
-   *
-   * @generated from field: int64 last_insert_id = 2;
    */
   lastInsertId?: bigint
   /**
    * RowsAffected is the row count if known.
-   *
-   * @generated from field: int64 rows_affected = 3;
    */
   rowsAffected?: bigint
 }
 
 export const SqlExecResponse: MessageType<SqlExecResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlExecResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'last_insert_id', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 3, name: 'rows_affected', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SqlQueryInit opens a query stream.
- *
- * @generated from message sql.rpc.SqlQueryInit
- */
-export interface SqlQueryInit {
-  /**
-   * Query is the SQL query.
-   *
-   * @generated from field: string query = 1;
-   */
-  query?: string
-  /**
-   * Args are positional bind arguments.
-   *
-   * @generated from field: repeated sql.SqlValue args = 2;
-   */
-  args?: SqlValue[]
-}
-
-export const SqlQueryInit: MessageType<SqlQueryInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlQueryInit',
-    fields: [
-      { no: 1, name: 'query', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'args',
-        kind: 'message',
-        T: () => SqlValue,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlExecResponse>(
+    'sql.rpc.SqlExecResponse',
+    () => [
+      [1, 'error', 9],
+      [2, 'last_insert_id', 3],
+      [3, 'rows_affected', 3],
+    ],
+  )
 
 /**
  * SqlQueryRequest controls a query stream.
@@ -350,88 +207,46 @@ export interface SqlQueryRequest {
    * @generated from oneof sql.rpc.SqlQueryRequest.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Init opens the query.
-         *
-         * @generated from field: sql.rpc.SqlQueryInit init = 1;
-         */
-        value: SqlQueryInit
-        case: 'init'
-      }
-    | {
-        /**
-         * Next requests up to this many rows. Zero means one row.
-         *
-         * @generated from field: uint32 next = 2;
-         */
-        value: number
-        case: 'next'
-      }
-    | {
-        /**
-         * Close closes the query.
-         *
-         * @generated from field: bool close = 3;
-         */
-        value: boolean
-        case: 'close'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: SqlQueryInit; case: 'init' }
+    | { value: number; case: 'next' }
+    | { value: boolean; case: 'close' }
 }
 
 export const SqlQueryRequest: MessageType<SqlQueryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlQueryRequest',
-    fields: [
-      { no: 1, name: 'init', kind: 'message', T: SqlQueryInit, oneof: 'body' },
-      {
-        no: 2,
-        name: 'next',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'close',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlQueryRequest>(
+    'sql.rpc.SqlQueryRequest',
+    () => [
+      [1, 'init', 11, 0, SqlQueryInit.codec, 'body'],
+      [2, 'next', 13, 0, 0, 'body'],
+      [3, 'close', 8, 0, 0, 'body'],
+    ],
+  )
 
 /**
- * SqlQueryAck contains query metadata.
+ * SqlQueryInit opens a query stream.
  *
- * @generated from message sql.rpc.SqlQueryAck
+ * @generated from message sql.rpc.SqlQueryInit
  */
-export interface SqlQueryAck {
+export interface SqlQueryInit {
   /**
-   * Columns describes result columns.
-   *
-   * @generated from field: repeated sql.ColumnSchema columns = 1;
+   * Query is the SQL query.
    */
-  columns?: ColumnSchema[]
+  query?: string
+  /**
+   * Args are positional bind arguments.
+   */
+  args?: SqlValue[]
 }
 
-export const SqlQueryAck: MessageType<SqlQueryAck> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlQueryAck',
-    fields: [
-      {
-        no: 1,
-        name: 'columns',
-        kind: 'message',
-        T: () => ColumnSchema,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const SqlQueryInit: MessageType<SqlQueryInit> =
+  /* @__PURE__ */ createMessageType<SqlQueryInit>(
+    'sql.rpc.SqlQueryInit',
+    () => [
+      [1, 'query', 9],
+      [2, 'args', 11, 1, SqlValue.codec],
+    ],
+  )
 
 /**
  * SqlQueryResponse is a query stream response.
@@ -445,73 +260,37 @@ export interface SqlQueryResponse {
    * @generated from oneof sql.rpc.SqlQueryResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Ack returns result columns.
-         *
-         * @generated from field: sql.rpc.SqlQueryAck ack = 1;
-         */
-        value: SqlQueryAck
-        case: 'ack'
-      }
-    | {
-        /**
-         * Batch returns query rows.
-         *
-         * @generated from field: sql.RowBatch batch = 2;
-         */
-        value: RowBatch
-        case: 'batch'
-      }
-    | {
-        /**
-         * ReqError reports a request error.
-         *
-         * @generated from field: string req_error = 3;
-         */
-        value: string
-        case: 'reqError'
-      }
-    | {
-        /**
-         * Closed acknowledges stream close or EOF.
-         *
-         * @generated from field: bool closed = 4;
-         */
-        value: boolean
-        case: 'closed'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: SqlQueryAck; case: 'ack' }
+    | { value: RowBatch; case: 'batch' }
+    | { value: string; case: 'reqError' }
+    | { value: boolean; case: 'closed' }
 }
 
 export const SqlQueryResponse: MessageType<SqlQueryResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sql.rpc.SqlQueryResponse',
-    fields: [
-      { no: 1, name: 'ack', kind: 'message', T: SqlQueryAck, oneof: 'body' },
-      {
-        no: 2,
-        name: 'batch',
-        kind: 'message',
-        T: () => RowBatch,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'req_error',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'closed',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlQueryResponse>(
+    'sql.rpc.SqlQueryResponse',
+    () => [
+      [1, 'ack', 11, 0, SqlQueryAck.codec, 'body'],
+      [2, 'batch', 11, 0, RowBatch.codec, 'body'],
+      [3, 'req_error', 9, 0, 0, 'body'],
+      [4, 'closed', 8, 0, 0, 'body'],
+    ],
+  )
+
+/**
+ * SqlQueryAck contains query metadata.
+ *
+ * @generated from message sql.rpc.SqlQueryAck
+ */
+export interface SqlQueryAck {
+  /**
+   * Columns describes result columns.
+   */
+  columns?: ColumnSchema[]
+}
+
+export const SqlQueryAck: MessageType<SqlQueryAck> =
+  /* @__PURE__ */ createMessageType<SqlQueryAck>('sql.rpc.SqlQueryAck', () => [
+    [1, 'columns', 11, 1, ColumnSchema.codec],
+  ])

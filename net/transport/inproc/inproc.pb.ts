@@ -6,8 +6,6 @@ import { Opts } from '../common/pconn/pconn.pb.js'
 import { DialerOpts } from '../common/dialer/dialer.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the configuration for the inproc testing transport.
@@ -18,42 +16,26 @@ export interface Config {
   /**
    * TransportPeerID sets the peer ID to attach the transport to.
    * If unset, attaches to any running peer with a private key.
-   *
-   * @generated from field: string transport_peer_id = 1;
    */
   transportPeerId?: string
   /**
    * PacketOpts are options to set on the packet connection.
-   *
-   * @generated from field: pconn.Opts packet_opts = 2;
    */
   packetOpts?: Opts
   /**
    * Dialers maps peer IDs to dialers.
-   *
-   * @generated from field: map<string, dialer.DialerOpts> dialers = 3;
    */
   dialers?: { [key: string]: DialerOpts }
   /**
    * Verbose enables verbose logging.
-   *
-   * @generated from field: bool verbose = 4;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'inproc.Config',
-  fields: [
-    { no: 1, name: 'transport_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'packet_opts', kind: 'message', T: () => Opts },
-    {
-      no: 3,
-      name: 'dialers',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => DialerOpts },
-    },
-    { no: 4, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('inproc.Config', () => [
+    [1, 'transport_peer_id', 9],
+    [2, 'packet_opts', 11, 0, Opts.codec],
+    [3, 'dialers', 11, 584, DialerOpts.codec],
+    [4, 'verbose', 8],
+  ])

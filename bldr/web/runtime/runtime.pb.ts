@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * WebRuntimeClientType is the set of client types for a WebRuntime.
@@ -19,36 +14,33 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum WebRuntimeClientType {
   /**
    * WebRuntimeClientType_UNKNOWN is the unknown type.
-   *
-   * @generated from enum value: WebRuntimeClientType_UNKNOWN = 0;
    */
   WebRuntimeClientType_UNKNOWN = 0,
 
   /**
    * WebRuntimeClientType_WEB_DOCUMENT is the WebDocument type.
-   *
-   * @generated from enum value: WebRuntimeClientType_WEB_DOCUMENT = 1;
    */
   WebRuntimeClientType_WEB_DOCUMENT = 1,
 
   /**
    * WebRuntimeClientType_SERVICE_WORKER is the ServiceWorker type.
-   *
-   * @generated from enum value: WebRuntimeClientType_SERVICE_WORKER = 2;
    */
   WebRuntimeClientType_SERVICE_WORKER = 2,
 
   /**
    * WebRuntimeClientType_WEB_WORKER is the WebWorker type.
-   *
-   * @generated from enum value: WebRuntimeClientType_WEB_WORKER = 3;
    */
   WebRuntimeClientType_WEB_WORKER = 3,
 }
 
 export const WebRuntimeClientType_Enum = /* @__PURE__ */ createEnumType(
   'web.runtime.WebRuntimeClientType',
-  WebRuntimeClientType,
+  [
+    [0, 'WebRuntimeClientType_UNKNOWN'],
+    [1, 'WebRuntimeClientType_WEB_DOCUMENT'],
+    [2, 'WebRuntimeClientType_SERVICE_WORKER'],
+    [3, 'WebRuntimeClientType_WEB_WORKER'],
+  ],
 )
 
 /**
@@ -59,30 +51,27 @@ export const WebRuntimeClientType_Enum = /* @__PURE__ */ createEnumType(
 export enum WebRenderer {
   /**
    * WEB_RENDERER_DEFAULT uses the default renderer (currently electron).
-   *
-   * @generated from enum value: WEB_RENDERER_DEFAULT = 0;
    */
   DEFAULT = 0,
 
   /**
    * WEB_RENDERER_ELECTRON uses Electron as the native runtime.
-   *
-   * @generated from enum value: WEB_RENDERER_ELECTRON = 1;
    */
   ELECTRON = 1,
 
   /**
    * WEB_RENDERER_SAUCER uses Saucer (C++ webview) as the native runtime.
-   *
-   * @generated from enum value: WEB_RENDERER_SAUCER = 2;
    */
   SAUCER = 2,
 }
 
 export const WebRenderer_Enum = /* @__PURE__ */ createEnumType(
   'web.runtime.WebRenderer',
-  WebRenderer,
-  'WEB_RENDERER_',
+  [
+    [0, 'WEB_RENDERER_DEFAULT'],
+    [1, 'WEB_RENDERER_ELECTRON'],
+    [2, 'WEB_RENDERER_SAUCER'],
+  ],
 )
 
 /**
@@ -97,19 +86,15 @@ export interface WebRuntimeHostInit {
    * WebRuntimeId is the identifier for the WebRuntime instance.
    *
    * must be set
-   *
-   * @generated from field: string web_runtime_id = 1;
    */
   webRuntimeId?: string
 }
 
 export const WebRuntimeHostInit: MessageType<WebRuntimeHostInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.runtime.WebRuntimeHostInit',
-    fields: [
-      { no: 1, name: 'web_runtime_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebRuntimeHostInit>(
+    'web.runtime.WebRuntimeHostInit',
+    () => [[1, 'web_runtime_id', 9]],
+  )
 
 /**
  * WatchWebRuntimeStatusRequest is the body of the WatchWebRuntimeStatus request.
@@ -119,9 +104,39 @@ export const WebRuntimeHostInit: MessageType<WebRuntimeHostInit> =
 export interface WatchWebRuntimeStatusRequest {}
 
 export const WatchWebRuntimeStatusRequest: MessageType<WatchWebRuntimeStatusRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchWebRuntimeStatusRequest>(
+  /* @__PURE__ */ createMessageType<WatchWebRuntimeStatusRequest>(
     'web.runtime.WatchWebRuntimeStatusRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * WebRuntimeStatus contains a snapshot of status for a Runtime instance.
+ *
+ * @generated from message web.runtime.WebRuntimeStatus
+ */
+export interface WebRuntimeStatus {
+  /**
+   * Snapshot indicates this is a full snapshot of the lists.
+   */
+  snapshot?: boolean
+  /**
+   * WebDocuments contains the list of web documents.
+   */
+  webDocuments?: WebDocumentStatus[]
+  /**
+   * Closed indicates the web runtime is closed.
+   */
+  closed?: boolean
+}
+
+export const WebRuntimeStatus: MessageType<WebRuntimeStatus> =
+  /* @__PURE__ */ createMessageType<WebRuntimeStatus>(
+    'web.runtime.WebRuntimeStatus',
+    () => [
+      [1, 'snapshot', 8],
+      [2, 'web_documents', 11, 1, WebDocumentStatus.codec],
+      [3, 'closed', 8],
+    ],
   )
 
 /**
@@ -132,76 +147,28 @@ export const WatchWebRuntimeStatusRequest: MessageType<WatchWebRuntimeStatusRequ
 export interface WebDocumentStatus {
   /**
    * Id is the unique identifier for the WebDocument.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Deleted indicates the document was just removed.
    * If set, all below fields are ignored.
-   *
-   * @generated from field: bool deleted = 2;
    */
   deleted?: boolean
   /**
    * Permanent indicates that this document cannot be closed.
-   *
-   * @generated from field: bool permanent = 3;
    */
   permanent?: boolean
 }
 
 export const WebDocumentStatus: MessageType<WebDocumentStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.runtime.WebDocumentStatus',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'deleted', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'permanent', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WebRuntimeStatus contains a snapshot of status for a Runtime instance.
- *
- * @generated from message web.runtime.WebRuntimeStatus
- */
-export interface WebRuntimeStatus {
-  /**
-   * Snapshot indicates this is a full snapshot of the lists.
-   *
-   * @generated from field: bool snapshot = 1;
-   */
-  snapshot?: boolean
-  /**
-   * WebDocuments contains the list of web documents.
-   *
-   * @generated from field: repeated web.runtime.WebDocumentStatus web_documents = 2;
-   */
-  webDocuments?: WebDocumentStatus[]
-  /**
-   * Closed indicates the web runtime is closed.
-   *
-   * @generated from field: bool closed = 3;
-   */
-  closed?: boolean
-}
-
-export const WebRuntimeStatus: MessageType<WebRuntimeStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.runtime.WebRuntimeStatus',
-    fields: [
-      { no: 1, name: 'snapshot', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 2,
-        name: 'web_documents',
-        kind: 'message',
-        T: WebDocumentStatus,
-        repeated: true,
-      },
-      { no: 3, name: 'closed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebDocumentStatus>(
+    'web.runtime.WebDocumentStatus',
+    () => [
+      [1, 'id', 9],
+      [2, 'deleted', 8],
+      [3, 'permanent', 8],
+    ],
+  )
 
 /**
  * CreateWebDocumentRequest is a request to create a new web view.
@@ -211,19 +178,15 @@ export const WebRuntimeStatus: MessageType<WebRuntimeStatus> =
 export interface CreateWebDocumentRequest {
   /**
    * id is the identifier for the new WebDocument.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
 }
 
 export const CreateWebDocumentRequest: MessageType<CreateWebDocumentRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.runtime.CreateWebDocumentRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWebDocumentRequest>(
+    'web.runtime.CreateWebDocumentRequest',
+    () => [[1, 'id', 9]],
+  )
 
 /**
  * CreateWebDocumentResponse is the response to the CreateWebDocument request.
@@ -234,19 +197,15 @@ export interface CreateWebDocumentResponse {
   /**
    * Created indicates the WebDocument was created.
    * If this is not set, assumes we cannot create WebDocuments.
-   *
-   * @generated from field: bool created = 1;
    */
   created?: boolean
 }
 
 export const CreateWebDocumentResponse: MessageType<CreateWebDocumentResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.runtime.CreateWebDocumentResponse',
-    fields: [
-      { no: 1, name: 'created', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateWebDocumentResponse>(
+    'web.runtime.CreateWebDocumentResponse',
+    () => [[1, 'created', 8]],
+  )
 
 /**
  * RemoveWebDocumentRequest is a request to remove a WebDocument.
@@ -256,19 +215,15 @@ export const CreateWebDocumentResponse: MessageType<CreateWebDocumentResponse> =
 export interface RemoveWebDocumentRequest {
   /**
    * Id is the identifier for the WebDocument.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
 }
 
 export const RemoveWebDocumentRequest: MessageType<RemoveWebDocumentRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.runtime.RemoveWebDocumentRequest',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveWebDocumentRequest>(
+    'web.runtime.RemoveWebDocumentRequest',
+    () => [[1, 'id', 9]],
+  )
 
 /**
  * RemoveWebDocumentResponse is the response to the RemoveWebDocument request.
@@ -279,19 +234,15 @@ export interface RemoveWebDocumentResponse {
   /**
    * Removed indicates the WebDocument was removed.
    * If this is not set, the document did not exist.
-   *
-   * @generated from field: bool removed = 1;
    */
   removed?: boolean
 }
 
 export const RemoveWebDocumentResponse: MessageType<RemoveWebDocumentResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.runtime.RemoveWebDocumentResponse',
-    fields: [
-      { no: 1, name: 'removed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveWebDocumentResponse>(
+    'web.runtime.RemoveWebDocumentResponse',
+    () => [[1, 'removed', 8]],
+  )
 
 /**
  * FlushIndexCacheRequest asks the WebRuntime to refresh the browser index cache.
@@ -301,9 +252,9 @@ export const RemoveWebDocumentResponse: MessageType<RemoveWebDocumentResponse> =
 export interface FlushIndexCacheRequest {}
 
 export const FlushIndexCacheRequest: MessageType<FlushIndexCacheRequest> =
-  /* @__PURE__ */ createEmptyMessageType<FlushIndexCacheRequest>(
+  /* @__PURE__ */ createMessageType<FlushIndexCacheRequest>(
     'web.runtime.FlushIndexCacheRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -314,9 +265,9 @@ export const FlushIndexCacheRequest: MessageType<FlushIndexCacheRequest> =
 export interface FlushIndexCacheResponse {}
 
 export const FlushIndexCacheResponse: MessageType<FlushIndexCacheResponse> =
-  /* @__PURE__ */ createEmptyMessageType<FlushIndexCacheResponse>(
+  /* @__PURE__ */ createMessageType<FlushIndexCacheResponse>(
     'web.runtime.FlushIndexCacheResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -329,58 +280,38 @@ export interface WebRuntimeClientInit {
    * RuntimeId is the shared identifier for the Go Runtime instance.
    *
    * must be set
-   *
-   * @generated from field: string web_runtime_id = 1;
    */
   webRuntimeId?: string
   /**
    * ClientUuid is the identifier of the client.
    *
    * must be set
-   *
-   * @generated from field: string client_uuid = 2;
    */
   clientUuid?: string
   /**
    * LogicalClientId is the stable routing identifier for the client.
    * If unset, the runtime falls back to client_uuid.
-   *
-   * @generated from field: string logical_client_id = 5;
    */
   logicalClientId?: string
   /**
    * ClientType is the type of the client.
-   *
-   * @generated from field: web.runtime.WebRuntimeClientType client_type = 3;
    */
   clientType?: WebRuntimeClientType
   /**
    * DisableWebLocks disables Web Locks API for disconnect detection.
    * Set when WebRuntime and WebDocument don't share the same lock namespace.
-   *
-   * @generated from field: bool disable_web_locks = 4;
    */
   disableWebLocks?: boolean
 }
 
 export const WebRuntimeClientInit: MessageType<WebRuntimeClientInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.runtime.WebRuntimeClientInit',
-    fields: [
-      { no: 1, name: 'web_runtime_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'client_uuid', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'logical_client_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 3,
-        name: 'client_type',
-        kind: 'enum',
-        T: WebRuntimeClientType_Enum,
-      },
-      { no: 4, name: 'disable_web_locks', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebRuntimeClientInit>(
+    'web.runtime.WebRuntimeClientInit',
+    () => [
+      [1, 'web_runtime_id', 9],
+      [2, 'client_uuid', 9],
+      [3, 'client_type', 14, 0, WebRuntimeClientType_Enum],
+      [4, 'disable_web_locks', 8],
+      [5, 'logical_client_id', 9],
+    ],
+  )

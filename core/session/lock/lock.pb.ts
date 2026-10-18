@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * LockConfig is the persisted PIN-lock key-derivation configuration stored
@@ -16,23 +14,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface LockConfig {
   /**
    * ScryptN is the scrypt cost factor exponent; the work factor is 2^N.
-   *
-   * @generated from field: uint32 scrypt_n = 1;
    */
   scryptN?: number
   /**
    * Salt is the random salt for PIN key derivation.
-   *
-   * @generated from field: bytes salt = 2;
    */
   salt?: Uint8Array
 }
 
 export const LockConfig: MessageType<LockConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'session.lock.LockConfig',
-    fields: [
-      { no: 1, name: 'scrypt_n', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'salt', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LockConfig>(
+    'session.lock.LockConfig',
+    () => [
+      [1, 'scrypt_n', 13],
+      [2, 'salt', 12],
+    ],
+  )

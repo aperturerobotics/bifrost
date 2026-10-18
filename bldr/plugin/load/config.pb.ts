@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures loading a plugin with the LoadPlugin directive.
@@ -15,29 +13,17 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * PluginId is the plugin to load.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * PluginIds is a list of plugins to load.
    * Appended to plugin_id.
-   *
-   * @generated from field: repeated string plugin_ids = 2;
    */
   pluginIds?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bldr.plugin.load.Config',
-  fields: [
-    { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('bldr.plugin.load.Config', () => [
+    [1, 'plugin_id', 9],
+    [2, 'plugin_ids', 9, 1],
+  ])

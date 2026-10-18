@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the accept controller.
@@ -16,44 +14,28 @@ export interface Config {
   /**
    * LocalPeerId is the peer ID to accept incoming connections with.
    * Can be empty to accept any peer.
-   *
-   * @generated from field: string local_peer_id = 1;
    */
   localPeerId?: string
   /**
    * RemotePeerIds are peer IDs to accept incoming connections from.
    * Can be empty to accept any remote peer IDs.
-   *
-   * @generated from field: repeated string remote_peer_ids = 2;
    */
   remotePeerIds?: string[]
   /**
    * ProtocolId is the protocol ID to accept.
-   *
-   * @generated from field: string protocol_id = 3;
    */
   protocolId?: string
   /**
    * TransportId constrains the transport ID to accept from.
    * Can be empty.
-   *
-   * @generated from field: uint64 transport_id = 4;
    */
   transportId?: bigint
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'stream.api.accept.Config',
-  fields: [
-    { no: 1, name: 'local_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'remote_peer_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 3, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'transport_id', kind: 'scalar', T: ScalarType.UINT64 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('stream.api.accept.Config', () => [
+    [1, 'local_peer_id', 9],
+    [2, 'remote_peer_ids', 9, 1],
+    [3, 'protocol_id', 9],
+    [4, 'transport_id', 4],
+  ])

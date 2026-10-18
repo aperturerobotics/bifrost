@@ -5,12 +5,7 @@
 import type { CommandSurface } from '../command.pb.js'
 import { Command, CommandSurface_Enum } from '../command.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * RegisterCommandRequest is the request for RegisterCommand.
@@ -20,39 +15,28 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface RegisterCommandRequest {
   /**
    * Command is the command metadata.
-   *
-   * @generated from field: s4wave.command.Command command = 1;
    */
   command?: Command
   /**
    * HandlerResourceId is the resource ID of the attached handler.
    * If 0, the command has no handler (display-only).
-   *
-   * @generated from field: uint32 handler_resource_id = 2;
    */
   handlerResourceId?: number
   /**
    * Surface identifies the command front door for this registration.
-   *
-   * @generated from field: s4wave.command.CommandSurface surface = 3;
    */
   surface?: CommandSurface
 }
 
 export const RegisterCommandRequest: MessageType<RegisterCommandRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.RegisterCommandRequest',
-    fields: [
-      { no: 1, name: 'command', kind: 'message', T: () => Command },
-      {
-        no: 2,
-        name: 'handler_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 3, name: 'surface', kind: 'enum', T: CommandSurface_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterCommandRequest>(
+    's4wave.command.registry.RegisterCommandRequest',
+    () => [
+      [1, 'command', 11, 0, Command.codec],
+      [2, 'handler_resource_id', 13],
+      [3, 'surface', 14, 0, CommandSurface_Enum],
+    ],
+  )
 
 /**
  * RegisterCommandResponse is the response for RegisterCommand.
@@ -62,19 +46,15 @@ export const RegisterCommandRequest: MessageType<RegisterCommandRequest> =
 export interface RegisterCommandResponse {
   /**
    * ResourceId is the registration resource. Releasing it unregisters the command.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const RegisterCommandResponse: MessageType<RegisterCommandResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.RegisterCommandResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterCommandResponse>(
+    's4wave.command.registry.RegisterCommandResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * SetActiveRequest is the request for SetActive.
@@ -84,26 +64,22 @@ export const RegisterCommandResponse: MessageType<RegisterCommandResponse> =
 export interface SetActiveRequest {
   /**
    * ResourceId is the command registration to update.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * Active is whether the registration is active.
-   *
-   * @generated from field: bool active = 2;
    */
   active?: boolean
 }
 
 export const SetActiveRequest: MessageType<SetActiveRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.SetActiveRequest',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'active', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetActiveRequest>(
+    's4wave.command.registry.SetActiveRequest',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'active', 8],
+    ],
+  )
 
 /**
  * SetActiveResponse is the response for SetActive.
@@ -113,9 +89,9 @@ export const SetActiveRequest: MessageType<SetActiveRequest> =
 export interface SetActiveResponse {}
 
 export const SetActiveResponse: MessageType<SetActiveResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetActiveResponse>(
+  /* @__PURE__ */ createMessageType<SetActiveResponse>(
     's4wave.command.registry.SetActiveResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -126,26 +102,22 @@ export const SetActiveResponse: MessageType<SetActiveResponse> =
 export interface SetEnabledRequest {
   /**
    * ResourceId is the command registration to update.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * Enabled is whether the registration is enabled.
-   *
-   * @generated from field: bool enabled = 2;
    */
   enabled?: boolean
 }
 
 export const SetEnabledRequest: MessageType<SetEnabledRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.SetEnabledRequest',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetEnabledRequest>(
+    's4wave.command.registry.SetEnabledRequest',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'enabled', 8],
+    ],
+  )
 
 /**
  * SetEnabledResponse is the response for SetEnabled.
@@ -155,9 +127,9 @@ export const SetEnabledRequest: MessageType<SetEnabledRequest> =
 export interface SetEnabledResponse {}
 
 export const SetEnabledResponse: MessageType<SetEnabledResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetEnabledResponse>(
+  /* @__PURE__ */ createMessageType<SetEnabledResponse>(
     's4wave.command.registry.SetEnabledResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -168,19 +140,15 @@ export const SetEnabledResponse: MessageType<SetEnabledResponse> =
 export interface WatchCommandsRequest {
   /**
    * Surface selects registrations for one command front door.
-   *
-   * @generated from field: s4wave.command.CommandSurface surface = 1;
    */
   surface?: CommandSurface
 }
 
 export const WatchCommandsRequest: MessageType<WatchCommandsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.WatchCommandsRequest',
-    fields: [
-      { no: 1, name: 'surface', kind: 'enum', T: CommandSurface_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchCommandsRequest>(
+    's4wave.command.registry.WatchCommandsRequest',
+    () => [[1, 'surface', 14, 0, CommandSurface_Enum]],
+  )
 
 /**
  * CommandState is a registered command instance with active and enabled state.
@@ -190,47 +158,37 @@ export const WatchCommandsRequest: MessageType<WatchCommandsRequest> =
 export interface CommandState {
   /**
    * ResourceId is the registration resource ID.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * Command is the command metadata.
-   *
-   * @generated from field: s4wave.command.Command command = 2;
    */
   command?: Command
   /**
    * Active is whether the registration is active.
-   *
-   * @generated from field: bool active = 3;
    */
   active?: boolean
   /**
    * Enabled is whether the registration is enabled.
-   *
-   * @generated from field: bool enabled = 4;
    */
   enabled?: boolean
   /**
    * Surface identifies the command front door for this registration.
-   *
-   * @generated from field: s4wave.command.CommandSurface surface = 5;
    */
   surface?: CommandSurface
 }
 
 export const CommandState: MessageType<CommandState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.CommandState',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'command', kind: 'message', T: () => Command },
-      { no: 3, name: 'active', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'surface', kind: 'enum', T: CommandSurface_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CommandState>(
+    's4wave.command.registry.CommandState',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'command', 11, 0, Command.codec],
+      [3, 'active', 8],
+      [4, 'enabled', 8],
+      [5, 'surface', 14, 0, CommandSurface_Enum],
+    ],
+  )
 
 /**
  * WatchCommandsResponse is the response for WatchCommands.
@@ -240,25 +198,15 @@ export const CommandState: MessageType<CommandState> =
 export interface WatchCommandsResponse {
   /**
    * Commands is the full registry of command registrations.
-   *
-   * @generated from field: repeated s4wave.command.registry.CommandState commands = 1;
    */
   commands?: CommandState[]
 }
 
 export const WatchCommandsResponse: MessageType<WatchCommandsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.WatchCommandsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'commands',
-        kind: 'message',
-        T: CommandState,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchCommandsResponse>(
+    's4wave.command.registry.WatchCommandsResponse',
+    () => [[1, 'commands', 11, 1, CommandState.codec]],
+  )
 
 /**
  * CommandSubItem is a sub-item returned for a command palette entry.
@@ -268,47 +216,37 @@ export const WatchCommandsResponse: MessageType<WatchCommandsResponse> =
 export interface CommandSubItem {
   /**
    * Id is the stable sub-item identifier.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * Label is the display label.
-   *
-   * @generated from field: string label = 2;
    */
   label?: string
   /**
    * Description is an optional longer description.
-   *
-   * @generated from field: string description = 3;
    */
   description?: string
   /**
    * IconName is an optional react-icons icon identifier (e.g., "LuLayoutGrid").
-   *
-   * @generated from field: string icon_name = 4;
    */
   iconName?: string
   /**
    * Experimental marks entries that require experimental creator visibility.
-   *
-   * @generated from field: bool experimental = 5;
    */
   experimental?: boolean
 }
 
 export const CommandSubItem: MessageType<CommandSubItem> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.CommandSubItem',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'icon_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'experimental', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CommandSubItem>(
+    's4wave.command.registry.CommandSubItem',
+    () => [
+      [1, 'id', 9],
+      [2, 'label', 9],
+      [3, 'description', 9],
+      [4, 'icon_name', 9],
+      [5, 'experimental', 8],
+    ],
+  )
 
 /**
  * GetSubItemsRequest is the request for GetSubItems.
@@ -318,33 +256,27 @@ export const CommandSubItem: MessageType<CommandSubItem> =
 export interface GetSubItemsRequest {
   /**
    * CommandId is the command to query.
-   *
-   * @generated from field: string command_id = 1;
    */
   commandId?: string
   /**
    * Query is the user-entered filter text.
-   *
-   * @generated from field: string query = 2;
    */
   query?: string
   /**
    * Surface selects the registration for one command front door.
-   *
-   * @generated from field: s4wave.command.CommandSurface surface = 3;
    */
   surface?: CommandSurface
 }
 
 export const GetSubItemsRequest: MessageType<GetSubItemsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.GetSubItemsRequest',
-    fields: [
-      { no: 1, name: 'command_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'query', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'surface', kind: 'enum', T: CommandSurface_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSubItemsRequest>(
+    's4wave.command.registry.GetSubItemsRequest',
+    () => [
+      [1, 'command_id', 9],
+      [2, 'query', 9],
+      [3, 'surface', 14, 0, CommandSurface_Enum],
+    ],
+  )
 
 /**
  * GetSubItemsResponse is the response for GetSubItems.
@@ -354,25 +286,15 @@ export const GetSubItemsRequest: MessageType<GetSubItemsRequest> =
 export interface GetSubItemsResponse {
   /**
    * Items is the sub-item list for the command.
-   *
-   * @generated from field: repeated s4wave.command.registry.CommandSubItem items = 1;
    */
   items?: CommandSubItem[]
 }
 
 export const GetSubItemsResponse: MessageType<GetSubItemsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.GetSubItemsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'items',
-        kind: 'message',
-        T: CommandSubItem,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSubItemsResponse>(
+    's4wave.command.registry.GetSubItemsResponse',
+    () => [[1, 'items', 11, 1, CommandSubItem.codec]],
+  )
 
 /**
  * InvokeCommandRequest is the request for InvokeCommand.
@@ -382,39 +304,27 @@ export const GetSubItemsResponse: MessageType<GetSubItemsResponse> =
 export interface InvokeCommandRequest {
   /**
    * CommandId is the command to invoke.
-   *
-   * @generated from field: string command_id = 1;
    */
   commandId?: string
   /**
    * Args is optional key-value arguments.
-   *
-   * @generated from field: map<string, string> args = 2;
    */
   args?: { [key: string]: string }
   /**
    * Surface selects the registration for one command front door.
-   *
-   * @generated from field: s4wave.command.CommandSurface surface = 3;
    */
   surface?: CommandSurface
 }
 
 export const InvokeCommandRequest: MessageType<InvokeCommandRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.InvokeCommandRequest',
-    fields: [
-      { no: 1, name: 'command_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'args',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-      { no: 3, name: 'surface', kind: 'enum', T: CommandSurface_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InvokeCommandRequest>(
+    's4wave.command.registry.InvokeCommandRequest',
+    () => [
+      [1, 'command_id', 9],
+      [2, 'args', 9, 584],
+      [3, 'surface', 14, 0, CommandSurface_Enum],
+    ],
+  )
 
 /**
  * InvokeCommandResponse is the response for InvokeCommand.
@@ -424,9 +334,9 @@ export const InvokeCommandRequest: MessageType<InvokeCommandRequest> =
 export interface InvokeCommandResponse {}
 
 export const InvokeCommandResponse: MessageType<InvokeCommandResponse> =
-  /* @__PURE__ */ createEmptyMessageType<InvokeCommandResponse>(
+  /* @__PURE__ */ createMessageType<InvokeCommandResponse>(
     's4wave.command.registry.InvokeCommandResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -437,32 +347,22 @@ export const InvokeCommandResponse: MessageType<InvokeCommandResponse> =
 export interface HandleCommandRequest {
   /**
    * CommandId is the invoked command.
-   *
-   * @generated from field: string command_id = 1;
    */
   commandId?: string
   /**
    * Args is the arguments passed by the invoker.
-   *
-   * @generated from field: map<string, string> args = 2;
    */
   args?: { [key: string]: string }
 }
 
 export const HandleCommandRequest: MessageType<HandleCommandRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.command.registry.HandleCommandRequest',
-    fields: [
-      { no: 1, name: 'command_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'args',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleCommandRequest>(
+    's4wave.command.registry.HandleCommandRequest',
+    () => [
+      [1, 'command_id', 9],
+      [2, 'args', 9, 584],
+    ],
+  )
 
 /**
  * HandleCommandResponse is the response for HandleCommand.
@@ -472,7 +372,7 @@ export const HandleCommandRequest: MessageType<HandleCommandRequest> =
 export interface HandleCommandResponse {}
 
 export const HandleCommandResponse: MessageType<HandleCommandResponse> =
-  /* @__PURE__ */ createEmptyMessageType<HandleCommandResponse>(
+  /* @__PURE__ */ createMessageType<HandleCommandResponse>(
     's4wave.command.registry.HandleCommandResponse',
-    true,
+    () => [],
   )

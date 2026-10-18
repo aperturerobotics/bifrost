@@ -12,42 +12,38 @@ import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 export enum DeleteMode {
   /**
    * DeleteMode_NONE does not delete files from the destination.
-   *
-   * @generated from enum value: DeleteMode_NONE = 0;
    */
   DeleteMode_NONE = 0,
 
   /**
    * DeleteMode_BEFORE scans & deletes files from the destination before writing
    * any new files or directories to the destination.
-   *
-   * @generated from enum value: DeleteMode_BEFORE = 1;
    */
   DeleteMode_BEFORE = 1,
 
   /**
    * DeleteMode_DURING scans & deletes files from the destination while writing.
-   *
-   * @generated from enum value: DeleteMode_DURING = 2;
    */
   DeleteMode_DURING = 2,
 
   /**
    * DeleteMode_AFTER scans & deletes files from the destination after writing.
-   *
-   * @generated from enum value: DeleteMode_AFTER = 3;
    */
   DeleteMode_AFTER = 3,
 
   /**
    * DeleteMode_ONLY scans & deletes files and skips writing any new data.
-   *
-   * @generated from enum value: DeleteMode_ONLY = 4;
    */
   DeleteMode_ONLY = 4,
 }
 
 export const DeleteMode_Enum = /* @__PURE__ */ createEnumType(
   'unixfs.sync.DeleteMode',
-  DeleteMode,
+  [
+    [0, 'DeleteMode_NONE'],
+    [1, 'DeleteMode_BEFORE'],
+    [2, 'DeleteMode_DURING'],
+    [3, 'DeleteMode_AFTER'],
+    [4, 'DeleteMode_ONLY'],
+  ],
 )

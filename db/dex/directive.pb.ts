@@ -5,8 +5,6 @@
 import { BlockRef } from '../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * LookupBlockFromNetworkRequest requests that Data-Exchange (DEX) find data.
@@ -16,23 +14,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface LookupBlockFromNetworkRequest {
   /**
    * BucketId is the associated bucket ID with the lookup.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
   /**
    * Ref is the reference.
-   *
-   * @generated from field: block.BlockRef ref = 2;
    */
   ref?: BlockRef
 }
 
 export const LookupBlockFromNetworkRequest: MessageType<LookupBlockFromNetworkRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'dex.LookupBlockFromNetworkRequest',
-    fields: [
-      { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupBlockFromNetworkRequest>(
+    'dex.LookupBlockFromNetworkRequest',
+    () => [
+      [1, 'bucket_id', 9],
+      [2, 'ref', 11, 0, BlockRef.codec],
+    ],
+  )

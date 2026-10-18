@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * WorldOpRegistration is a registered world op.
@@ -15,38 +13,27 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface WorldOpRegistration {
   /**
    * OperationTypeId is the operation type ID.
-   *
-   * @generated from field: string operation_type_id = 1;
    */
   operationTypeId?: string
   /**
    * RegistrationId is the server-assigned ID.
-   *
-   * @generated from field: uint32 registration_id = 2;
    */
   registrationId?: number
   /**
    * PluginId is the source plugin.
-   *
-   * @generated from field: string plugin_id = 3;
    */
   pluginId?: string
 }
 
 export const WorldOpRegistration: MessageType<WorldOpRegistration> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.WorldOpRegistration',
-    fields: [
-      {
-        no: 1,
-        name: 'operation_type_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'registration_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WorldOpRegistration>(
+    's4wave.worldop.registry.WorldOpRegistration',
+    () => [
+      [1, 'operation_type_id', 9],
+      [2, 'registration_id', 13],
+      [3, 'plugin_id', 9],
+    ],
+  )
 
 /**
  * RegisterWorldOpRequest is the request for RegisterWorldOp.
@@ -56,31 +43,22 @@ export const WorldOpRegistration: MessageType<WorldOpRegistration> =
 export interface RegisterWorldOpRequest {
   /**
    * OperationTypeId is the operation type ID to register.
-   *
-   * @generated from field: string operation_type_id = 1;
    */
   operationTypeId?: string
   /**
    * PluginId is the registering plugin's ID.
-   *
-   * @generated from field: string plugin_id = 2;
    */
   pluginId?: string
 }
 
 export const RegisterWorldOpRequest: MessageType<RegisterWorldOpRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.RegisterWorldOpRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'operation_type_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterWorldOpRequest>(
+    's4wave.worldop.registry.RegisterWorldOpRequest',
+    () => [
+      [1, 'operation_type_id', 9],
+      [2, 'plugin_id', 9],
+    ],
+  )
 
 /**
  * RegisterWorldOpResponse is the response for RegisterWorldOp.
@@ -90,19 +68,15 @@ export const RegisterWorldOpRequest: MessageType<RegisterWorldOpRequest> =
 export interface RegisterWorldOpResponse {
   /**
    * ResourceId is the registration resource. Releasing it unregisters the op.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const RegisterWorldOpResponse: MessageType<RegisterWorldOpResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.RegisterWorldOpResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterWorldOpResponse>(
+    's4wave.worldop.registry.RegisterWorldOpResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * WatchWorldOpsRequest is the request for WatchWorldOps.
@@ -112,19 +86,15 @@ export const RegisterWorldOpResponse: MessageType<RegisterWorldOpResponse> =
 export interface WatchWorldOpsRequest {
   /**
    * InstanceKey selects a logical installation; empty lists global registrations.
-   *
-   * @generated from field: string instance_key = 1;
    */
   instanceKey?: string
 }
 
 export const WatchWorldOpsRequest: MessageType<WatchWorldOpsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.WatchWorldOpsRequest',
-    fields: [
-      { no: 1, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchWorldOpsRequest>(
+    's4wave.worldop.registry.WatchWorldOpsRequest',
+    () => [[1, 'instance_key', 9]],
+  )
 
 /**
  * WatchWorldOpsResponse is the response for WatchWorldOps.
@@ -134,25 +104,15 @@ export const WatchWorldOpsRequest: MessageType<WatchWorldOpsRequest> =
 export interface WatchWorldOpsResponse {
   /**
    * Registrations is the current set of registered world ops.
-   *
-   * @generated from field: repeated s4wave.worldop.registry.WorldOpRegistration registrations = 1;
    */
   registrations?: WorldOpRegistration[]
 }
 
 export const WatchWorldOpsResponse: MessageType<WatchWorldOpsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.WatchWorldOpsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'registrations',
-        kind: 'message',
-        T: WorldOpRegistration,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchWorldOpsResponse>(
+    's4wave.worldop.registry.WatchWorldOpsResponse',
+    () => [[1, 'registrations', 11, 1, WorldOpRegistration.codec]],
+  )
 
 /**
  * ApplyWorldOpRequest is the request for ApplyWorldOp.
@@ -162,51 +122,33 @@ export const WatchWorldOpsResponse: MessageType<WatchWorldOpsResponse> =
 export interface ApplyWorldOpRequest {
   /**
    * OperationTypeId identifies the operation type.
-   *
-   * @generated from field: string operation_type_id = 1;
    */
   operationTypeId?: string
   /**
    * OpData is the serialized operation proto bytes.
-   *
-   * @generated from field: bytes op_data = 2;
    */
   opData?: Uint8Array
   /**
    * AttachedWorldStateResourceId gives WorldState access to the handler.
-   *
-   * @generated from field: uint32 attached_world_state_resource_id = 3;
    */
   attachedWorldStateResourceId?: number
   /**
    * Sender is the authenticated peer identity supplied by World execution, in base58.
    * It is separate from OpData and cannot be chosen by the operation payload.
-   *
-   * @generated from field: string sender = 4;
    */
   sender?: string
 }
 
 export const ApplyWorldOpRequest: MessageType<ApplyWorldOpRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.ApplyWorldOpRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'operation_type_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'op_data', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 3,
-        name: 'attached_world_state_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 4, name: 'sender', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyWorldOpRequest>(
+    's4wave.worldop.registry.ApplyWorldOpRequest',
+    () => [
+      [1, 'operation_type_id', 9],
+      [2, 'op_data', 12],
+      [3, 'attached_world_state_resource_id', 13],
+      [4, 'sender', 9],
+    ],
+  )
 
 /**
  * ApplyWorldOpResponse is the response for ApplyWorldOp.
@@ -216,38 +158,27 @@ export const ApplyWorldOpRequest: MessageType<ApplyWorldOpRequest> =
 export interface ApplyWorldOpResponse {
   /**
    * SystemError indicates a system error (vs user error).
-   *
-   * @generated from field: bool system_error = 1;
    */
   systemError?: boolean
   /**
    * RejectionCode is a stable application-defined rejection code.
-   *
-   * @generated from field: string rejection_code = 2;
    */
   rejectionCode?: string
   /**
    * RejectionMessage is the safe explanation of a rejected operation.
-   *
-   * @generated from field: string rejection_message = 3;
    */
   rejectionMessage?: string
 }
 
 export const ApplyWorldOpResponse: MessageType<ApplyWorldOpResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.ApplyWorldOpResponse',
-    fields: [
-      { no: 1, name: 'system_error', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'rejection_code', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'rejection_message',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyWorldOpResponse>(
+    's4wave.worldop.registry.ApplyWorldOpResponse',
+    () => [
+      [1, 'system_error', 8],
+      [2, 'rejection_code', 9],
+      [3, 'rejection_message', 9],
+    ],
+  )
 
 /**
  * ApplyWorldObjectOpRequest is the request for ApplyWorldObjectOp.
@@ -257,58 +188,38 @@ export const ApplyWorldOpResponse: MessageType<ApplyWorldOpResponse> =
 export interface ApplyWorldObjectOpRequest {
   /**
    * OperationTypeId identifies the operation type.
-   *
-   * @generated from field: string operation_type_id = 1;
    */
   operationTypeId?: string
   /**
    * OpData is the serialized operation proto bytes.
-   *
-   * @generated from field: bytes op_data = 2;
    */
   opData?: Uint8Array
   /**
    * ObjectKey is the target object key.
-   *
-   * @generated from field: string object_key = 3;
    */
   objectKey?: string
   /**
    * AttachedObjectStateResourceId gives ObjectState access to the handler.
-   *
-   * @generated from field: uint32 attached_object_state_resource_id = 4;
    */
   attachedObjectStateResourceId?: number
   /**
    * Sender is the authenticated peer identity supplied by World execution, in base58.
    * Historical replay uses the accepted sender recorded with the operation.
-   *
-   * @generated from field: string sender = 5;
    */
   sender?: string
 }
 
 export const ApplyWorldObjectOpRequest: MessageType<ApplyWorldObjectOpRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.ApplyWorldObjectOpRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'operation_type_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'op_data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 4,
-        name: 'attached_object_state_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 5, name: 'sender', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyWorldObjectOpRequest>(
+    's4wave.worldop.registry.ApplyWorldObjectOpRequest',
+    () => [
+      [1, 'operation_type_id', 9],
+      [2, 'op_data', 12],
+      [3, 'object_key', 9],
+      [4, 'attached_object_state_resource_id', 13],
+      [5, 'sender', 9],
+    ],
+  )
 
 /**
  * ApplyWorldObjectOpResponse is the response for ApplyWorldObjectOp.
@@ -318,38 +229,27 @@ export const ApplyWorldObjectOpRequest: MessageType<ApplyWorldObjectOpRequest> =
 export interface ApplyWorldObjectOpResponse {
   /**
    * SystemError indicates a system error (vs user error).
-   *
-   * @generated from field: bool system_error = 1;
    */
   systemError?: boolean
   /**
    * RejectionCode is a stable application-defined rejection code.
-   *
-   * @generated from field: string rejection_code = 2;
    */
   rejectionCode?: string
   /**
    * RejectionMessage is the safe explanation of a rejected operation.
-   *
-   * @generated from field: string rejection_message = 3;
    */
   rejectionMessage?: string
 }
 
 export const ApplyWorldObjectOpResponse: MessageType<ApplyWorldObjectOpResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.ApplyWorldObjectOpResponse',
-    fields: [
-      { no: 1, name: 'system_error', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'rejection_code', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'rejection_message',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyWorldObjectOpResponse>(
+    's4wave.worldop.registry.ApplyWorldObjectOpResponse',
+    () => [
+      [1, 'system_error', 8],
+      [2, 'rejection_code', 9],
+      [3, 'rejection_message', 9],
+    ],
+  )
 
 /**
  * ValidateOpRequest is the request for ValidateOp.
@@ -359,31 +259,22 @@ export const ApplyWorldObjectOpResponse: MessageType<ApplyWorldObjectOpResponse>
 export interface ValidateOpRequest {
   /**
    * OperationTypeId identifies the operation type.
-   *
-   * @generated from field: string operation_type_id = 1;
    */
   operationTypeId?: string
   /**
    * OpData is the serialized operation proto bytes.
-   *
-   * @generated from field: bytes op_data = 2;
    */
   opData?: Uint8Array
 }
 
 export const ValidateOpRequest: MessageType<ValidateOpRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.ValidateOpRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'operation_type_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'op_data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ValidateOpRequest>(
+    's4wave.worldop.registry.ValidateOpRequest',
+    () => [
+      [1, 'operation_type_id', 9],
+      [2, 'op_data', 12],
+    ],
+  )
 
 /**
  * ValidateOpResponse is the response for ValidateOp.
@@ -393,16 +284,12 @@ export const ValidateOpRequest: MessageType<ValidateOpRequest> =
 export interface ValidateOpResponse {
   /**
    * Error is the validation error message, empty if valid.
-   *
-   * @generated from field: string error = 1;
    */
   error?: string
 }
 
 export const ValidateOpResponse: MessageType<ValidateOpResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.worldop.registry.ValidateOpResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ValidateOpResponse>(
+    's4wave.worldop.registry.ValidateOpResponse',
+    () => [[1, 'error', 9]],
+  )

@@ -4,12 +4,7 @@
 
 import { SqlValue } from '../../../db/sql/sql.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Query is a standalone SQL query world object.
@@ -19,50 +14,29 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Query {
   /**
    * SqlText is the SQL text executed by Run.
-   *
-   * @generated from field: string sql_text = 1;
    */
   sqlText?: string
   /**
    * Parameters are positional SQL bind arguments.
-   *
-   * @generated from field: repeated sql.SqlValue parameters = 2;
    */
   parameters?: SqlValue[]
   /**
    * DialectHint records the SQL dialect expected by the author.
-   *
-   * @generated from field: string dialect_hint = 3;
    */
   dialectHint?: string
   /**
    * TargetDbObjectKey is the sql/db object this query runs against.
-   *
-   * @generated from field: string target_db_object_key = 4;
    */
   targetDbObjectKey?: string
 }
 
-export const Query: MessageType<Query> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.sql.query.Query',
-  fields: [
-    { no: 1, name: 'sql_text', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'parameters',
-      kind: 'message',
-      T: () => SqlValue,
-      repeated: true,
-    },
-    { no: 3, name: 'dialect_hint', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 4,
-      name: 'target_db_object_key',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Query: MessageType<Query> =
+  /* @__PURE__ */ createMessageType<Query>('s4wave.sql.query.Query', () => [
+    [1, 'sql_text', 9],
+    [2, 'parameters', 11, 1, SqlValue.codec],
+    [3, 'dialect_hint', 9],
+    [4, 'target_db_object_key', 9],
+  ])
 
 /**
  * InitializeQueryRequest contains the first query root values.
@@ -72,38 +46,27 @@ export const Query: MessageType<Query> = /* @__PURE__ */ createMessageType({
 export interface InitializeQueryRequest {
   /**
    * SqlText is the initial SQL text executed by Run.
-   *
-   * @generated from field: string sql_text = 1;
    */
   sqlText?: string
   /**
    * DialectHint records the SQL dialect expected by the author.
-   *
-   * @generated from field: string dialect_hint = 2;
    */
   dialectHint?: string
   /**
    * TargetDbObjectKey is the sql/db object this query runs against.
-   *
-   * @generated from field: string target_db_object_key = 3;
    */
   targetDbObjectKey?: string
 }
 
 export const InitializeQueryRequest: MessageType<InitializeQueryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.query.InitializeQueryRequest',
-    fields: [
-      { no: 1, name: 'sql_text', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'dialect_hint', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'target_db_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitializeQueryRequest>(
+    's4wave.sql.query.InitializeQueryRequest',
+    () => [
+      [1, 'sql_text', 9],
+      [2, 'dialect_hint', 9],
+      [3, 'target_db_object_key', 9],
+    ],
+  )
 
 /**
  * InitializeQueryResponse is returned after creating the first query root.
@@ -113,9 +76,9 @@ export const InitializeQueryRequest: MessageType<InitializeQueryRequest> =
 export interface InitializeQueryResponse {}
 
 export const InitializeQueryResponse: MessageType<InitializeQueryResponse> =
-  /* @__PURE__ */ createEmptyMessageType<InitializeQueryResponse>(
+  /* @__PURE__ */ createMessageType<InitializeQueryResponse>(
     's4wave.sql.query.InitializeQueryResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -126,9 +89,9 @@ export const InitializeQueryResponse: MessageType<InitializeQueryResponse> =
 export interface GetQueryTextRequest {}
 
 export const GetQueryTextRequest: MessageType<GetQueryTextRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetQueryTextRequest>(
+  /* @__PURE__ */ createMessageType<GetQueryTextRequest>(
     's4wave.sql.query.GetQueryTextRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -139,51 +102,32 @@ export const GetQueryTextRequest: MessageType<GetQueryTextRequest> =
 export interface GetQueryTextResponse {
   /**
    * SqlText is the SQL text executed by Run.
-   *
-   * @generated from field: string sql_text = 1;
    */
   sqlText?: string
   /**
    * DialectHint records the SQL dialect expected by the author.
-   *
-   * @generated from field: string dialect_hint = 2;
    */
   dialectHint?: string
   /**
    * TargetDbObjectKey is the sql/db object this query runs against.
-   *
-   * @generated from field: string target_db_object_key = 3;
    */
   targetDbObjectKey?: string
   /**
    * Parameters are positional SQL bind arguments.
-   *
-   * @generated from field: repeated sql.SqlValue parameters = 4;
    */
   parameters?: SqlValue[]
 }
 
 export const GetQueryTextResponse: MessageType<GetQueryTextResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.query.GetQueryTextResponse',
-    fields: [
-      { no: 1, name: 'sql_text', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'dialect_hint', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'target_db_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 4,
-        name: 'parameters',
-        kind: 'message',
-        T: () => SqlValue,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetQueryTextResponse>(
+    's4wave.sql.query.GetQueryTextResponse',
+    () => [
+      [1, 'sql_text', 9],
+      [2, 'dialect_hint', 9],
+      [3, 'target_db_object_key', 9],
+      [4, 'parameters', 11, 1, SqlValue.codec],
+    ],
+  )
 
 /**
  * SetQueryTextRequest updates query text and target metadata.
@@ -193,38 +137,27 @@ export const GetQueryTextResponse: MessageType<GetQueryTextResponse> =
 export interface SetQueryTextRequest {
   /**
    * SqlText is the SQL text executed by Run.
-   *
-   * @generated from field: string sql_text = 1;
    */
   sqlText?: string
   /**
    * DialectHint records the SQL dialect expected by the author.
-   *
-   * @generated from field: string dialect_hint = 2;
    */
   dialectHint?: string
   /**
    * TargetDbObjectKey is the sql/db object this query runs against.
-   *
-   * @generated from field: string target_db_object_key = 3;
    */
   targetDbObjectKey?: string
 }
 
 export const SetQueryTextRequest: MessageType<SetQueryTextRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.query.SetQueryTextRequest',
-    fields: [
-      { no: 1, name: 'sql_text', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'dialect_hint', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'target_db_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetQueryTextRequest>(
+    's4wave.sql.query.SetQueryTextRequest',
+    () => [
+      [1, 'sql_text', 9],
+      [2, 'dialect_hint', 9],
+      [3, 'target_db_object_key', 9],
+    ],
+  )
 
 /**
  * SetQueryTextResponse is returned after updating the query text.
@@ -234,9 +167,9 @@ export const SetQueryTextRequest: MessageType<SetQueryTextRequest> =
 export interface SetQueryTextResponse {}
 
 export const SetQueryTextResponse: MessageType<SetQueryTextResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetQueryTextResponse>(
+  /* @__PURE__ */ createMessageType<SetQueryTextResponse>(
     's4wave.sql.query.SetQueryTextResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -247,25 +180,15 @@ export const SetQueryTextResponse: MessageType<SetQueryTextResponse> =
 export interface SetParametersRequest {
   /**
    * Parameters are positional SQL bind arguments.
-   *
-   * @generated from field: repeated sql.SqlValue parameters = 1;
    */
   parameters?: SqlValue[]
 }
 
 export const SetParametersRequest: MessageType<SetParametersRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.query.SetParametersRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'parameters',
-        kind: 'message',
-        T: () => SqlValue,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetParametersRequest>(
+    's4wave.sql.query.SetParametersRequest',
+    () => [[1, 'parameters', 11, 1, SqlValue.codec]],
+  )
 
 /**
  * SetParametersResponse is returned after updating parameters.
@@ -275,9 +198,9 @@ export const SetParametersRequest: MessageType<SetParametersRequest> =
 export interface SetParametersResponse {}
 
 export const SetParametersResponse: MessageType<SetParametersResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetParametersResponse>(
+  /* @__PURE__ */ createMessageType<SetParametersResponse>(
     's4wave.sql.query.SetParametersResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -288,19 +211,15 @@ export const SetParametersResponse: MessageType<SetParametersResponse> =
 export interface RunQueryRequest {
   /**
    * MaxRows limits rows persisted in the result. Zero uses the default.
-   *
-   * @generated from field: uint32 max_rows = 1;
    */
   maxRows?: number
 }
 
 export const RunQueryRequest: MessageType<RunQueryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.query.RunQueryRequest',
-    fields: [
-      { no: 1, name: 'max_rows', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RunQueryRequest>(
+    's4wave.sql.query.RunQueryRequest',
+    () => [[1, 'max_rows', 13]],
+  )
 
 /**
  * RunQueryResponse identifies the created result object.
@@ -310,28 +229,19 @@ export const RunQueryRequest: MessageType<RunQueryRequest> =
 export interface RunQueryResponse {
   /**
    * ResultObjectKey is the new sql/query-result world object key.
-   *
-   * @generated from field: string result_object_key = 1;
    */
   resultObjectKey?: string
   /**
    * Error is set when SQL execution failed but a result object was created.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const RunQueryResponse: MessageType<RunQueryResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.query.RunQueryResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'result_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RunQueryResponse>(
+    's4wave.sql.query.RunQueryResponse',
+    () => [
+      [1, 'result_object_key', 9],
+      [2, 'error', 9],
+    ],
+  )

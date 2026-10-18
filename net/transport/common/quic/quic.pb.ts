@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * @generated from message transport.quic.Opts
@@ -15,8 +13,6 @@ export interface Opts {
    * MaxIdleTimeoutDur is the duration of idle after which conn is closed.
    *
    * Defaults to 10s.
-   *
-   * @generated from field: string max_idle_timeout_dur = 1;
    */
   maxIdleTimeoutDur?: string
   /**
@@ -24,15 +20,10 @@ export interface Opts {
    * streams that a peer is allowed to open.
    *
    * If unset or negative, defaults to 100000.
-   *
-   * @generated from field: int32 max_incoming_streams = 2;
    */
   maxIncomingStreams?: number
   /**
    * DisableKeepAlive disables the keep alive packets.
-   *
-   *
-   * @generated from field: bool disable_keep_alive = 3;
    */
   disableKeepAlive?: boolean
   /**
@@ -40,56 +31,33 @@ export interface Opts {
    *
    * If disable_keep_alive is set, this value is ignored.
    * If unset, sets keep-alive to half of MaxIdleTimeout.
-   *
-   * @generated from field: string keep_alive_dur = 7;
    */
   keepAliveDur?: string
   /**
    * DisableDatagrams disables the unreliable datagrams feature.
    * Both peers must support it for it to be enabled, regardless of this flag.
-   *
-   * @generated from field: bool disable_datagrams = 4;
    */
   disableDatagrams?: boolean
   /**
    * DisablePathMtuDiscovery disables sending packets to discover max packet size.
-   *
-   * @generated from field: bool disable_path_mtu_discovery = 5;
    */
   disablePathMtuDiscovery?: boolean
   /**
    * Verbose indicates to use verbose logging.
    * Note: this is VERY verbose, logs every packet sent.
-   *
-   * @generated from field: bool verbose = 6;
    */
   verbose?: boolean
 }
 
-export const Opts: MessageType<Opts> = /* @__PURE__ */ createMessageType({
-  typeName: 'transport.quic.Opts',
-  fields: [
-    {
-      no: 1,
-      name: 'max_idle_timeout_dur',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 2,
-      name: 'max_incoming_streams',
-      kind: 'scalar',
-      T: ScalarType.INT32,
-    },
-    { no: 3, name: 'disable_keep_alive', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 7, name: 'keep_alive_dur', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'disable_datagrams', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 5,
-      name: 'disable_path_mtu_discovery',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    { no: 6, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Opts: MessageType<Opts> = /* @__PURE__ */ createMessageType<Opts>(
+  'transport.quic.Opts',
+  () => [
+    [1, 'max_idle_timeout_dur', 9],
+    [2, 'max_incoming_streams', 5],
+    [3, 'disable_keep_alive', 8],
+    [4, 'disable_datagrams', 8],
+    [5, 'disable_path_mtu_discovery', 8],
+    [6, 'verbose', 8],
+    [7, 'keep_alive_dur', 9],
+  ],
+)

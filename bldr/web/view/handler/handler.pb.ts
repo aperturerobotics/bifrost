@@ -3,87 +3,9 @@
 /* eslint-disable */
 
 import { StringFilter } from '@go/github.com/aperturerobotics/util/filter/filter.pb.js'
-import { SetHtmlLinksRequest, SetRenderModeRequest } from '../view.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * WebViewHandlerConfig configures a web view handler.
- *
- * @generated from message web.view.handler.WebViewHandlerConfig
- */
-export interface WebViewHandlerConfig {
-  /**
-   * WebViewId filters by web view id (specific to this handler).
-   *
-   * @generated from field: filter.StringFilter web_view_id = 1;
-   */
-  webViewId?: StringFilter
-  /**
-   * WebViewParentId filters by web view parent id (specific to this handler).
-   *
-   * @generated from field: filter.StringFilter web_view_parent_id = 2;
-   */
-  webViewParentId?: StringFilter
-
-  /**
-   * Handler configuration.
-   *
-   * @generated from oneof web.view.handler.WebViewHandlerConfig.handler
-   */
-  handler?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * SetRenderModeHandler sets the render mode.
-         *
-         * @generated from field: web.view.SetRenderModeRequest set_render_mode = 3;
-         */
-        value: SetRenderModeRequest
-        case: 'setRenderMode'
-      }
-    | {
-        /**
-         * SetHtmlLinksHandler sets html links.
-         *
-         * @generated from field: web.view.SetHtmlLinksRequest set_html_links = 4;
-         */
-        value: SetHtmlLinksRequest
-        case: 'setHtmlLinks'
-      }
-}
-
-export const WebViewHandlerConfig: MessageType<WebViewHandlerConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.view.handler.WebViewHandlerConfig',
-    fields: [
-      { no: 1, name: 'web_view_id', kind: 'message', T: () => StringFilter },
-      {
-        no: 2,
-        name: 'web_view_parent_id',
-        kind: 'message',
-        T: () => StringFilter,
-      },
-      {
-        no: 3,
-        name: 'set_render_mode',
-        kind: 'message',
-        T: () => SetRenderModeRequest,
-        oneof: 'handler',
-      },
-      {
-        no: 4,
-        name: 'set_html_links',
-        kind: 'message',
-        T: () => SetHtmlLinksRequest,
-        oneof: 'handler',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import { SetHtmlLinksRequest, SetRenderModeRequest } from '../view.pb.js'
 
 /**
  * WebViewHandlersConfig is a configuration for web view handlers.
@@ -93,41 +15,60 @@ export const WebViewHandlerConfig: MessageType<WebViewHandlerConfig> =
 export interface WebViewHandlersConfig {
   /**
    * Handlers is the list of handler configurations to attach.
-   *
-   * @generated from field: repeated web.view.handler.WebViewHandlerConfig handlers = 1;
    */
   handlers?: WebViewHandlerConfig[]
   /**
    * WebViewId filters by web view id (applies to all handlers if set).
-   *
-   * @generated from field: filter.StringFilter web_view_id = 2;
    */
   webViewId?: StringFilter
   /**
    * WebViewParentId filters by web view parent id (applies to all handlers if set).
-   *
-   * @generated from field: filter.StringFilter web_view_parent_id = 3;
    */
   webViewParentId?: StringFilter
 }
 
 export const WebViewHandlersConfig: MessageType<WebViewHandlersConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.view.handler.WebViewHandlersConfig',
-    fields: [
-      {
-        no: 1,
-        name: 'handlers',
-        kind: 'message',
-        T: WebViewHandlerConfig,
-        repeated: true,
-      },
-      { no: 2, name: 'web_view_id', kind: 'message', T: () => StringFilter },
-      {
-        no: 3,
-        name: 'web_view_parent_id',
-        kind: 'message',
-        T: () => StringFilter,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WebViewHandlersConfig>(
+    'web.view.handler.WebViewHandlersConfig',
+    () => [
+      [1, 'handlers', 11, 1, WebViewHandlerConfig.codec],
+      [2, 'web_view_id', 11, 0, StringFilter.codec],
+      [3, 'web_view_parent_id', 11, 0, StringFilter.codec],
+    ],
+  )
+
+/**
+ * WebViewHandlerConfig configures a web view handler.
+ *
+ * @generated from message web.view.handler.WebViewHandlerConfig
+ */
+export interface WebViewHandlerConfig {
+  /**
+   * WebViewId filters by web view id (specific to this handler).
+   */
+  webViewId?: StringFilter
+  /**
+   * WebViewParentId filters by web view parent id (specific to this handler).
+   */
+  webViewParentId?: StringFilter
+  /**
+   * Handler configuration.
+   *
+   * @generated from oneof web.view.handler.WebViewHandlerConfig.handler
+   */
+  handler?:
+    | { value?: undefined; case: undefined }
+    | { value: SetRenderModeRequest; case: 'setRenderMode' }
+    | { value: SetHtmlLinksRequest; case: 'setHtmlLinks' }
+}
+
+export const WebViewHandlerConfig: MessageType<WebViewHandlerConfig> =
+  /* @__PURE__ */ createMessageType<WebViewHandlerConfig>(
+    'web.view.handler.WebViewHandlerConfig',
+    () => [
+      [1, 'web_view_id', 11, 0, StringFilter.codec],
+      [2, 'web_view_parent_id', 11, 0, StringFilter.codec],
+      [3, 'set_render_mode', 11, 0, SetRenderModeRequest.codec, 'handler'],
+      [4, 'set_html_links', 11, 0, SetHtmlLinksRequest.codec, 'handler'],
+    ],
+  )

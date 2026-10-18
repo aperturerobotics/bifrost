@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * GetCacheSeedReasonsRequest is the request for GetCacheSeedReasons.
@@ -18,9 +13,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface GetCacheSeedReasonsRequest {}
 
 export const GetCacheSeedReasonsRequest: MessageType<GetCacheSeedReasonsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetCacheSeedReasonsRequest>(
+  /* @__PURE__ */ createMessageType<GetCacheSeedReasonsRequest>(
     'provider.spacewave.cacheseed.GetCacheSeedReasonsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -32,31 +27,25 @@ export interface CacheSeedEntry {
   /**
    * TimestampMs is the unix timestamp in milliseconds when the request was
    * recorded (at dispatch time, not completion).
-   *
-   * @generated from field: int64 timestamp_ms = 1;
    */
   timestampMs?: bigint
   /**
    * Reason is the X-Alpha-Seed-Reason header value. Empty when the request
    * was not tagged.
-   *
-   * @generated from field: string reason = 2;
    */
   reason?: string
   /**
    * Path is the URL path of the request.
-   *
-   * @generated from field: string path = 3;
    */
   path?: string
 }
 
 export const CacheSeedEntry: MessageType<CacheSeedEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.cacheseed.CacheSeedEntry',
-    fields: [
-      { no: 1, name: 'timestamp_ms', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 2, name: 'reason', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CacheSeedEntry>(
+    'provider.spacewave.cacheseed.CacheSeedEntry',
+    () => [
+      [1, 'timestamp_ms', 3],
+      [2, 'reason', 9],
+      [3, 'path', 9],
+    ],
+  )

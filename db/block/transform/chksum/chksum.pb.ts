@@ -5,7 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ChksumType is the checksum type enum.
@@ -15,22 +14,21 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ChksumType {
   /**
    * ChksumType_UNKNOWN defaults to CRC64.
-   *
-   * @generated from enum value: ChksumType_UNKNOWN = 0;
    */
   ChksumType_UNKNOWN = 0,
 
   /**
    * ChksumType_CRC32 performs a appended 4 byte crc32 against the data.
-   *
-   * @generated from enum value: ChksumType_CRC32 = 1;
    */
   ChksumType_CRC32 = 1,
 }
 
 export const ChksumType_Enum = /* @__PURE__ */ createEnumType(
   'transform.chksum.ChksumType',
-  ChksumType,
+  [
+    [0, 'ChksumType_UNKNOWN'],
+    [1, 'ChksumType_CRC32'],
+  ],
 )
 
 /**
@@ -41,15 +39,11 @@ export const ChksumType_Enum = /* @__PURE__ */ createEnumType(
 export interface Config {
   /**
    * ChksumType is the type of chksum to use.
-   *
-   * @generated from field: transform.chksum.ChksumType chksum_type = 1;
    */
   chksumType?: ChksumType
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'transform.chksum.Config',
-  fields: [
-    { no: 1, name: 'chksum_type', kind: 'enum', T: ChksumType_Enum },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('transform.chksum.Config', () => [
+    [1, 'chksum_type', 14, 0, ChksumType_Enum],
+  ])

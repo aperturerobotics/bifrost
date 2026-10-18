@@ -2,62 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/bldr/plugin/host/scheduler/config.proto (package plugin.host.scheduler, syntax proto3)
 /* eslint-disable */
 
+import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { Backoff } from '@go/github.com/aperturerobotics/util/backoff/backoff.pb.js'
-
-/**
- * PlatformSelectionPolicy restricts one plugin host platform by plugin ID.
- *
- * @generated from message plugin.host.scheduler.PlatformSelectionPolicy
- */
-export interface PlatformSelectionPolicy {
-  /**
-   * PlatformId is the plugin host platform ID to restrict, such as
-   * "web/js/wasm".
-   *
-   * @generated from field: string platform_id = 1;
-   */
-  platformId?: string
-  /**
-   * AllowedPluginIds are the only plugin IDs that may select PlatformId when
-   * nonempty.
-   *
-   * @generated from field: repeated string allowed_plugin_ids = 2;
-   */
-  allowedPluginIds?: string[]
-  /**
-   * DeniedPluginIds are the plugin IDs that cannot select PlatformId. This
-   * leaves unlisted and externally supplied plugins eligible.
-   *
-   * @generated from field: repeated string denied_plugin_ids = 3;
-   */
-  deniedPluginIds?: string[]
-}
-
-export const PlatformSelectionPolicy: MessageType<PlatformSelectionPolicy> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'plugin.host.scheduler.PlatformSelectionPolicy',
-    fields: [
-      { no: 1, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'allowed_plugin_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'denied_plugin_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * Config is the plugin host scheduler controller configuration.
@@ -71,8 +18,6 @@ export const PlatformSelectionPolicy: MessageType<PlatformSelectionPolicy> =
 export interface Config {
   /**
    * EngineId is the world engine id to attach to.
-   *
-   * @generated from field: string engine_id = 1;
    */
   engineId?: string
   /**
@@ -80,34 +25,24 @@ export interface Config {
    * If not exists, waits for it to exist.
    *
    * Searches for <manifest> links from this object.
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
   /**
    * PeerId is the peer ID to use for world transactions.
-   *
-   * @generated from field: string peer_id = 3;
    */
   peerId?: string
   /**
    * VolumeId is the identifier of the volume on the plugin host bus.
    * This volume is available for the plugin to use via the volume proxy.
-   *
-   * @generated from field: string volume_id = 4;
    */
   volumeId?: string
   /**
    * WatchFetchManifest will watch the FetchManifest directive while a plugin is running.
-   *
-   * @generated from field: bool watch_fetch_manifest = 5;
    */
   watchFetchManifest?: boolean
   /**
    * DisableStoreManifest disables storing manifests fetched with FetchManifest.
    * This is used if we are watching the same world as the FetchManifest resolver.
-   *
-   * @generated from field: bool disable_store_manifest = 6;
    */
   disableStoreManifest?: boolean
   /**
@@ -118,51 +53,37 @@ export interface Config {
    * Note: the concurrency is limited by the number of blocks that we have seen
    * so far. Fetches blocks, then the references those blocks reference. We only
    * know about the blocks on the frontier of the blocks fetched so far.
-   *
-   * @generated from field: uint32 fetch_concurrency = 7;
    */
   fetchConcurrency?: number
   /**
    * FetchBackoff is the backoff config for fetching plugin manifests.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff fetch_backoff = 8;
    */
   fetchBackoff?: Backoff
   /**
    * ExecBackoff is the backoff config for executing plugin manifests.
    * If unset, defaults to reasonable defaults.
-   *
-   * @generated from field: backoff.Backoff exec_backoff = 9;
    */
   execBackoff?: Backoff
   /**
    * DisableCopyManifest disables copying manifests to the plugin host world bucket.
    * This is used if the manifest bucket is always accessible and locally cached.
    * If unset, we will copy manifests to the same bucket as the plugin host world.
-   *
-   * @generated from field: bool disable_copy_manifest = 10;
    */
   disableCopyManifest?: boolean
   /**
    * Verbose enables verbose logging for world ops (slower).
-   *
-   * @generated from field: bool verbose = 11;
    */
   verbose?: boolean
   /**
    * PlatformSelectionPolicies restrict selected platform IDs by plugin ID. If
    * empty, every discovered plugin host platform is selectable for every
    * plugin.
-   *
-   * @generated from field: repeated plugin.host.scheduler.PlatformSelectionPolicy platform_selection_policies = 12;
    */
   platformSelectionPolicies?: PlatformSelectionPolicy[]
   /**
    * NoCopyBucketIds lists source buckets that remain authoritative without a
    * full-DAG copy.
-   *
-   * @generated from field: repeated string no_copy_bucket_ids = 13;
    */
   noCopyBucketIds?: string[]
   /**
@@ -170,8 +91,6 @@ export interface Config {
    * resolve to. Empty retains the unscoped Dist behavior. A non-empty key also
    * marks a Space's scheduler, which serves each plugin a view of the volume
    * limited to its own Space and plugin.
-   *
-   * @generated from field: string instance_key = 14;
    */
   instanceKey?: string
   /**
@@ -179,22 +98,16 @@ export interface Config {
    * may take to complete initial capability registration before its startup
    * wait budget is reported as exhausted. Execution retries remain unbounded.
    * If unset or zero, defaults to 60s. Negative values are rejected.
-   *
-   * @generated from field: string startup_wait_budget_dur = 15;
    */
   startupWaitBudgetDur?: string
   /**
    * MaterializerPluginId is the plugin ID to route manifest materialization
    * through. If empty, the scheduler materializes manifests directly.
-   *
-   * @generated from field: string materializer_plugin_id = 16;
    */
   materializerPluginId?: string
   /**
    * UpdateGuardPluginIds require a successful UpdateGuard.Prepare call on the
    * running generation before a different executable replaces it.
-   *
-   * @generated from field: repeated string update_guard_plugin_ids = 17;
    */
   updateGuardPluginIds?: string[]
   /**
@@ -202,30 +115,22 @@ export interface Config {
    * instance volumes allocate through. Empty keeps the host default storage.
    * Top-level plugins leave this unset; instance-scoped runtimes set it to
    * route the instance's volumes through host-owned storage.
-   *
-   * @generated from field: string host_storage_id = 18;
    */
   hostStorageId?: string
   /**
    * ExternalPluginIds lists plugins another controller on the bus supplies.
    * The scheduler leaves their LoadPlugin directives to that controller.
-   *
-   * @generated from field: repeated string external_plugin_ids = 19;
    */
   externalPluginIds?: string[]
   /**
    * HostExportPluginIds lists plugins that may execute plugins on this
    * scheduler's plugin hosts through the HostExport service.
-   *
-   * @generated from field: repeated string host_export_plugin_ids = 20;
    */
   hostExportPluginIds?: string[]
   /**
    * PluginIds limits the scheduler to these plugins. It leaves the LoadPlugin
    * directives and plugin RPC lookups of every other plugin to the rest of the
    * bus. Empty schedules every plugin not in ExternalPluginIds.
-   *
-   * @generated from field: repeated string plugin_ids = 21;
    */
   pluginIds?: string[]
   /**
@@ -234,97 +139,68 @@ export interface Config {
    * so startup runs the announced release instead of replacing a cached one.
    * Requires WatchFetchManifest and FetchManifest resolvers that mark idle,
    * including while their source is unreachable.
-   *
-   * @generated from field: bool await_fetch_manifest = 22;
    */
   awaitFetchManifest?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'plugin.host.scheduler.Config',
-  fields: [
-    { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'watch_fetch_manifest', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 6,
-      name: 'disable_store_manifest',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    { no: 7, name: 'fetch_concurrency', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 8, name: 'fetch_backoff', kind: 'message', T: () => Backoff },
-    { no: 9, name: 'exec_backoff', kind: 'message', T: () => Backoff },
-    {
-      no: 10,
-      name: 'disable_copy_manifest',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    { no: 11, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 12,
-      name: 'platform_selection_policies',
-      kind: 'message',
-      T: PlatformSelectionPolicy,
-      repeated: true,
-    },
-    {
-      no: 13,
-      name: 'no_copy_bucket_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 14, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 15,
-      name: 'startup_wait_budget_dur',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 16,
-      name: 'materializer_plugin_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 17,
-      name: 'update_guard_plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 18, name: 'host_storage_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 19,
-      name: 'external_plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 20,
-      name: 'host_export_plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 21,
-      name: 'plugin_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    {
-      no: 22,
-      name: 'await_fetch_manifest',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'plugin.host.scheduler.Config',
+    () => [
+      [1, 'engine_id', 9],
+      [2, 'object_key', 9],
+      [3, 'peer_id', 9],
+      [4, 'volume_id', 9],
+      [5, 'watch_fetch_manifest', 8],
+      [6, 'disable_store_manifest', 8],
+      [7, 'fetch_concurrency', 13],
+      [8, 'fetch_backoff', 11, 0, Backoff.codec],
+      [9, 'exec_backoff', 11, 0, Backoff.codec],
+      [10, 'disable_copy_manifest', 8],
+      [11, 'verbose', 8],
+      [12, 'platform_selection_policies', 11, 1, PlatformSelectionPolicy.codec],
+      [13, 'no_copy_bucket_ids', 9, 1],
+      [14, 'instance_key', 9],
+      [15, 'startup_wait_budget_dur', 9],
+      [16, 'materializer_plugin_id', 9],
+      [17, 'update_guard_plugin_ids', 9, 1],
+      [18, 'host_storage_id', 9],
+      [19, 'external_plugin_ids', 9, 1],
+      [20, 'host_export_plugin_ids', 9, 1],
+      [21, 'plugin_ids', 9, 1],
+      [22, 'await_fetch_manifest', 8],
+    ],
+  )
+
+/**
+ * PlatformSelectionPolicy restricts one plugin host platform by plugin ID.
+ *
+ * @generated from message plugin.host.scheduler.PlatformSelectionPolicy
+ */
+export interface PlatformSelectionPolicy {
+  /**
+   * PlatformId is the plugin host platform ID to restrict, such as
+   * "web/js/wasm".
+   */
+  platformId?: string
+  /**
+   * AllowedPluginIds are the only plugin IDs that may select PlatformId when
+   * nonempty.
+   */
+  allowedPluginIds?: string[]
+  /**
+   * DeniedPluginIds are the plugin IDs that cannot select PlatformId. This
+   * leaves unlisted and externally supplied plugins eligible.
+   */
+  deniedPluginIds?: string[]
+}
+
+export const PlatformSelectionPolicy: MessageType<PlatformSelectionPolicy> =
+  /* @__PURE__ */ createMessageType<PlatformSelectionPolicy>(
+    'plugin.host.scheduler.PlatformSelectionPolicy',
+    () => [
+      [1, 'platform_id', 9],
+      [2, 'allowed_plugin_ids', 9, 1],
+      [3, 'denied_plugin_ids', 9, 1],
+    ],
+  )

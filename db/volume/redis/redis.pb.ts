@@ -8,8 +8,6 @@ import { Config as Config$2 } from '../controller/controller.pb.js'
 import { Config as Config$3 } from '../../store/kvtx/kvtx.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the redis volume controller config.
@@ -20,14 +18,10 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * Client configures the redis client.
-   *
-   * @generated from field: store.kvtx.redis.ClientConfig client = 1;
    */
   client?: ClientConfig
   /**
    * KvKeyOpts are key/value options.
-   *
-   * @generated from field: store.kvkey.Config kv_key_opts = 2;
    */
   kvKeyOpts?: Config$1
   /**
@@ -35,8 +29,6 @@ export interface Config {
    * one is not already present. Setting this to false will cause the system to
    * create a new private key if one is not present in the store at startup. If
    * no key is in the store at startup and this is true, returns an error.
-   *
-   * @generated from field: bool no_generate_key = 3;
    */
   noGenerateKey?: boolean
   /**
@@ -45,39 +37,29 @@ export interface Config {
    * identity if there is no key present in the store already.
    *
    * Has no effect if the store has a peer private key.
-   *
-   * @generated from field: bool no_write_key = 7;
    */
   noWriteKey?: boolean
   /**
    * Verbose indicates we should log every operation.
-   *
-   * @generated from field: bool verbose = 4;
    */
   verbose?: boolean
   /**
    * VolumeConfig is the volume controller config.
-   *
-   * @generated from field: volume.controller.Config volume_config = 5;
    */
   volumeConfig?: Config$2
   /**
    * StoreConfig is the store configuration for kvtx.
-   *
-   * @generated from field: store.kvtx.Config store_config = 6;
    */
   storeConfig?: Config$3
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'volume.redis.Config',
-  fields: [
-    { no: 1, name: 'client', kind: 'message', T: () => ClientConfig },
-    { no: 2, name: 'kv_key_opts', kind: 'message', T: () => Config$1 },
-    { no: 3, name: 'no_generate_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 7, name: 'no_write_key', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 4, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'volume_config', kind: 'message', T: () => Config$2 },
-    { no: 6, name: 'store_config', kind: 'message', T: () => Config$3 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('volume.redis.Config', () => [
+    [1, 'client', 11, 0, ClientConfig.codec],
+    [2, 'kv_key_opts', 11, 0, Config$1.codec],
+    [3, 'no_generate_key', 8],
+    [4, 'verbose', 8],
+    [5, 'volume_config', 11, 0, Config$2.codec],
+    [6, 'store_config', 11, 0, Config$3.codec],
+    [7, 'no_write_key', 8],
+  ])

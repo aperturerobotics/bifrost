@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { StorageStats, VolumeInfo } from '../volume.pb.js'
 import { ObjectRef } from '../../bucket/bucket.pb.js'
 
@@ -20,19 +15,15 @@ import { ObjectRef } from '../../bucket/bucket.pb.js'
 export interface WatchVolumeInfoRequest {
   /**
    * VolumeId is the volume id to watch.
-   *
-   * @generated from field: string volume_id = 1;
    */
   volumeId?: string
 }
 
 export const WatchVolumeInfoRequest: MessageType<WatchVolumeInfoRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.WatchVolumeInfoRequest',
-    fields: [
-      { no: 1, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchVolumeInfoRequest>(
+    'volume.rpc.WatchVolumeInfoRequest',
+    () => [[1, 'volume_id', 9]],
+  )
 
 /**
  * WatchVolumeInfoResponse is a state snapshot of the volume info.
@@ -42,26 +33,22 @@ export const WatchVolumeInfoRequest: MessageType<WatchVolumeInfoRequest> =
 export interface WatchVolumeInfoResponse {
   /**
    * NotFound is set of the volume info is empty (not found).
-   *
-   * @generated from field: bool not_found = 1;
    */
   notFound?: boolean
   /**
    * VolumeInfo contains the located volume information.
-   *
-   * @generated from field: volume.VolumeInfo volume_info = 2;
    */
   volumeInfo?: VolumeInfo
 }
 
 export const WatchVolumeInfoResponse: MessageType<WatchVolumeInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.WatchVolumeInfoResponse',
-    fields: [
-      { no: 1, name: 'not_found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'volume_info', kind: 'message', T: () => VolumeInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchVolumeInfoResponse>(
+    'volume.rpc.WatchVolumeInfoResponse',
+    () => [
+      [1, 'not_found', 8],
+      [2, 'volume_info', 11, 0, VolumeInfo.codec],
+    ],
+  )
 
 /**
  * GetVolumeInfoRequest is a request to get volume information.
@@ -71,9 +58,9 @@ export const WatchVolumeInfoResponse: MessageType<WatchVolumeInfoResponse> =
 export interface GetVolumeInfoRequest {}
 
 export const GetVolumeInfoRequest: MessageType<GetVolumeInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetVolumeInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetVolumeInfoRequest>(
     'volume.rpc.GetVolumeInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -84,19 +71,15 @@ export const GetVolumeInfoRequest: MessageType<GetVolumeInfoRequest> =
 export interface GetVolumeInfoResponse {
   /**
    * VolumeInfo is the volume information object.
-   *
-   * @generated from field: volume.VolumeInfo volume_info = 1;
    */
   volumeInfo?: VolumeInfo
 }
 
 export const GetVolumeInfoResponse: MessageType<GetVolumeInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.GetVolumeInfoResponse',
-    fields: [
-      { no: 1, name: 'volume_info', kind: 'message', T: () => VolumeInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetVolumeInfoResponse>(
+    'volume.rpc.GetVolumeInfoResponse',
+    () => [[1, 'volume_info', 11, 0, VolumeInfo.codec]],
+  )
 
 /**
  * CoordinatorScope identifies a coordinated ObjectStore or exclusion subject inside a Volume.
@@ -106,40 +89,32 @@ export const GetVolumeInfoResponse: MessageType<GetVolumeInfoResponse> =
 export interface CoordinatorScope {
   /**
    * VolumeId is the owning Volume id.
-   *
-   * @generated from field: string volume_id = 1;
    */
   volumeId?: string
   /**
    * ObjectStoreId is the ObjectStore id inside the Volume.
-   *
-   * @generated from field: string object_store_id = 2;
    */
   objectStoreId?: string
   /**
    * ParticipantId identifies the process or handle performing the operation.
-   *
-   * @generated from field: string participant_id = 3;
    */
   participantId?: string
   /**
    * Key names a caller-chosen exclusion subject inside the Volume.
-   *
-   * @generated from field: string key = 4;
    */
   key?: string
 }
 
 export const CoordinatorScope: MessageType<CoordinatorScope> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.CoordinatorScope',
-    fields: [
-      { no: 1, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'participant_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CoordinatorScope>(
+    'volume.rpc.CoordinatorScope',
+    () => [
+      [1, 'volume_id', 9],
+      [2, 'object_store_id', 9],
+      [3, 'participant_id', 9],
+      [4, 'key', 9],
+    ],
+  )
 
 /**
  * CoordinatorCapability describes direct coordination support for a scoped ObjectStore.
@@ -149,68 +124,52 @@ export const CoordinatorScope: MessageType<CoordinatorScope> =
 export interface CoordinatorCapability {
   /**
    * Supported is true when direct coordination is available.
-   *
-   * @generated from field: bool supported = 1;
    */
   supported?: boolean
   /**
    * Backend identifies the backend that would coordinate the scope.
-   *
-   * @generated from field: string backend = 2;
    */
   backend?: string
   /**
    * VolumeId is the owning Volume id.
-   *
-   * @generated from field: string volume_id = 3;
    */
   volumeId?: string
   /**
    * ObjectStoreId is the ObjectStore id inside the Volume.
-   *
-   * @generated from field: string object_store_id = 4;
    */
   objectStoreId?: string
   /**
    * Generation is the latest durable generation observed by the coordinator.
-   *
-   * @generated from field: uint64 generation = 5;
    */
   generation?: bigint
   /**
    * FallbackReason explains why Supported is false.
-   *
-   * @generated from field: string fallback_reason = 6;
    */
   fallbackReason?: string
   /**
    * Generations is true when the scope carries durable generation fencing.
-   *
-   * @generated from field: bool generations = 7;
    */
   generations?: boolean
   /**
    * DetectsLoss is true when involuntary lease loss is reported.
-   *
-   * @generated from field: bool detects_loss = 8;
    */
   detectsLoss?: boolean
 }
 
 export const CoordinatorCapability: MessageType<CoordinatorCapability> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.CoordinatorCapability',
-    fields: [
-      { no: 1, name: 'supported', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'backend', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 6, name: 'fallback_reason', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'generations', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 8, name: 'detects_loss', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CoordinatorCapability>(
+    'volume.rpc.CoordinatorCapability',
+    () => [
+      [1, 'supported', 8],
+      [2, 'backend', 9],
+      [3, 'volume_id', 9],
+      [4, 'object_store_id', 9],
+      [5, 'generation', 4],
+      [6, 'fallback_reason', 9],
+      [7, 'generations', 8],
+      [8, 'detects_loss', 8],
+    ],
+  )
 
 /**
  * CoordinatorEvent reports a coordination state change for a scoped ObjectStore.
@@ -220,80 +179,57 @@ export const CoordinatorCapability: MessageType<CoordinatorCapability> =
 export interface CoordinatorEvent {
   /**
    * ProcessId identifies the process that produced or requested the event.
-   *
-   * @generated from field: string process_id = 1;
    */
   processId?: string
   /**
    * VolumeId is the owning Volume id.
-   *
-   * @generated from field: string volume_id = 2;
    */
   volumeId?: string
   /**
    * ObjectStoreId is the ObjectStore id inside the Volume.
-   *
-   * @generated from field: string object_store_id = 3;
    */
   objectStoreId?: string
   /**
    * Generation is the durable generation associated with this event.
-   *
-   * @generated from field: uint64 generation = 4;
    */
   generation?: bigint
   /**
    * WantLock is true when another participant is waiting for the write lease.
-   *
-   * @generated from field: bool want_lock = 5;
    */
   wantLock?: boolean
   /**
    * Unlocked is true when a participant released the write lease.
-   *
-   * @generated from field: bool unlocked = 6;
    */
   unlocked?: boolean
   /**
    * RootChanged carries the accepted root after a commit.
-   *
-   * @generated from field: bucket.ObjectRef root_changed = 7;
    */
   rootChanged?: ObjectRef
   /**
    * KeyPrefixChanged carries a key prefix invalidated by a commit.
-   *
-   * @generated from field: bytes key_prefix_changed = 8;
    */
   keyPrefixChanged?: Uint8Array
   /**
    * FallbackReason carries a visible fallback reason when direct coordination fails.
-   *
-   * @generated from field: string fallback_reason = 9;
    */
   fallbackReason?: string
 }
 
 export const CoordinatorEvent: MessageType<CoordinatorEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.CoordinatorEvent',
-    fields: [
-      { no: 1, name: 'process_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'want_lock', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'unlocked', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'root_changed', kind: 'message', T: () => ObjectRef },
-      {
-        no: 8,
-        name: 'key_prefix_changed',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-      { no: 9, name: 'fallback_reason', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CoordinatorEvent>(
+    'volume.rpc.CoordinatorEvent',
+    () => [
+      [1, 'process_id', 9],
+      [2, 'volume_id', 9],
+      [3, 'object_store_id', 9],
+      [4, 'generation', 4],
+      [5, 'want_lock', 8],
+      [6, 'unlocked', 8],
+      [7, 'root_changed', 11, 0, ObjectRef.codec],
+      [8, 'key_prefix_changed', 12],
+      [9, 'fallback_reason', 9],
+    ],
+  )
 
 /**
  * CoordinatorSnapshot captures the current durable coordination state.
@@ -303,40 +239,32 @@ export const CoordinatorEvent: MessageType<CoordinatorEvent> =
 export interface CoordinatorSnapshot {
   /**
    * VolumeId is the owning Volume id.
-   *
-   * @generated from field: string volume_id = 1;
    */
   volumeId?: string
   /**
    * ObjectStoreId is the ObjectStore id inside the Volume.
-   *
-   * @generated from field: string object_store_id = 2;
    */
   objectStoreId?: string
   /**
    * Generation is the latest durable generation.
-   *
-   * @generated from field: uint64 generation = 3;
    */
   generation?: bigint
   /**
    * Root is the latest durable ObjectStore root.
-   *
-   * @generated from field: bucket.ObjectRef root = 4;
    */
   root?: ObjectRef
 }
 
 export const CoordinatorSnapshot: MessageType<CoordinatorSnapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.CoordinatorSnapshot',
-    fields: [
-      { no: 1, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object_store_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'generation', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'root', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CoordinatorSnapshot>(
+    'volume.rpc.CoordinatorSnapshot',
+    () => [
+      [1, 'volume_id', 9],
+      [2, 'object_store_id', 9],
+      [3, 'generation', 4],
+      [4, 'root', 11, 0, ObjectRef.codec],
+    ],
+  )
 
 /**
  * GetCoordinatorCapabilityRequest is a request to get direct coordination support.
@@ -346,19 +274,15 @@ export const CoordinatorSnapshot: MessageType<CoordinatorSnapshot> =
 export interface GetCoordinatorCapabilityRequest {
   /**
    * Scope identifies the coordinated ObjectStore.
-   *
-   * @generated from field: volume.rpc.CoordinatorScope scope = 1;
    */
   scope?: CoordinatorScope
 }
 
 export const GetCoordinatorCapabilityRequest: MessageType<GetCoordinatorCapabilityRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.GetCoordinatorCapabilityRequest',
-    fields: [
-      { no: 1, name: 'scope', kind: 'message', T: CoordinatorScope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetCoordinatorCapabilityRequest>(
+    'volume.rpc.GetCoordinatorCapabilityRequest',
+    () => [[1, 'scope', 11, 0, CoordinatorScope.codec]],
+  )
 
 /**
  * GetCoordinatorCapabilityResponse is the response to coordinator capability negotiation.
@@ -368,19 +292,15 @@ export const GetCoordinatorCapabilityRequest: MessageType<GetCoordinatorCapabili
 export interface GetCoordinatorCapabilityResponse {
   /**
    * Capability contains the direct coordination support report.
-   *
-   * @generated from field: volume.rpc.CoordinatorCapability capability = 1;
    */
   capability?: CoordinatorCapability
 }
 
 export const GetCoordinatorCapabilityResponse: MessageType<GetCoordinatorCapabilityResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.GetCoordinatorCapabilityResponse',
-    fields: [
-      { no: 1, name: 'capability', kind: 'message', T: CoordinatorCapability },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetCoordinatorCapabilityResponse>(
+    'volume.rpc.GetCoordinatorCapabilityResponse',
+    () => [[1, 'capability', 11, 0, CoordinatorCapability.codec]],
+  )
 
 /**
  * WatchCoordinatorEventsRequest is a request to stream coordination events.
@@ -390,26 +310,22 @@ export const GetCoordinatorCapabilityResponse: MessageType<GetCoordinatorCapabil
 export interface WatchCoordinatorEventsRequest {
   /**
    * Scope identifies the coordinated ObjectStore.
-   *
-   * @generated from field: volume.rpc.CoordinatorScope scope = 1;
    */
   scope?: CoordinatorScope
   /**
    * AfterGeneration skips events at or before this generation.
-   *
-   * @generated from field: uint64 after_generation = 2;
    */
   afterGeneration?: bigint
 }
 
 export const WatchCoordinatorEventsRequest: MessageType<WatchCoordinatorEventsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.WatchCoordinatorEventsRequest',
-    fields: [
-      { no: 1, name: 'scope', kind: 'message', T: CoordinatorScope },
-      { no: 2, name: 'after_generation', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchCoordinatorEventsRequest>(
+    'volume.rpc.WatchCoordinatorEventsRequest',
+    () => [
+      [1, 'scope', 11, 0, CoordinatorScope.codec],
+      [2, 'after_generation', 4],
+    ],
+  )
 
 /**
  * WatchCoordinatorEventsResponse is a streamed coordination event response.
@@ -419,19 +335,15 @@ export const WatchCoordinatorEventsRequest: MessageType<WatchCoordinatorEventsRe
 export interface WatchCoordinatorEventsResponse {
   /**
    * Event contains the coordination event.
-   *
-   * @generated from field: volume.rpc.CoordinatorEvent event = 1;
    */
   event?: CoordinatorEvent
 }
 
 export const WatchCoordinatorEventsResponse: MessageType<WatchCoordinatorEventsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.WatchCoordinatorEventsResponse',
-    fields: [
-      { no: 1, name: 'event', kind: 'message', T: CoordinatorEvent },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchCoordinatorEventsResponse>(
+    'volume.rpc.WatchCoordinatorEventsResponse',
+    () => [[1, 'event', 11, 0, CoordinatorEvent.codec]],
+  )
 
 /**
  * GetCoordinatorSnapshotRequest is a request to get a coordinator snapshot.
@@ -441,19 +353,15 @@ export const WatchCoordinatorEventsResponse: MessageType<WatchCoordinatorEventsR
 export interface GetCoordinatorSnapshotRequest {
   /**
    * Scope identifies the coordinated ObjectStore.
-   *
-   * @generated from field: volume.rpc.CoordinatorScope scope = 1;
    */
   scope?: CoordinatorScope
 }
 
 export const GetCoordinatorSnapshotRequest: MessageType<GetCoordinatorSnapshotRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.GetCoordinatorSnapshotRequest',
-    fields: [
-      { no: 1, name: 'scope', kind: 'message', T: CoordinatorScope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetCoordinatorSnapshotRequest>(
+    'volume.rpc.GetCoordinatorSnapshotRequest',
+    () => [[1, 'scope', 11, 0, CoordinatorScope.codec]],
+  )
 
 /**
  * GetCoordinatorSnapshotResponse is a coordinator snapshot response.
@@ -463,19 +371,15 @@ export const GetCoordinatorSnapshotRequest: MessageType<GetCoordinatorSnapshotRe
 export interface GetCoordinatorSnapshotResponse {
   /**
    * Snapshot is the current durable coordinator state.
-   *
-   * @generated from field: volume.rpc.CoordinatorSnapshot snapshot = 1;
    */
   snapshot?: CoordinatorSnapshot
 }
 
 export const GetCoordinatorSnapshotResponse: MessageType<GetCoordinatorSnapshotResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.GetCoordinatorSnapshotResponse',
-    fields: [
-      { no: 1, name: 'snapshot', kind: 'message', T: CoordinatorSnapshot },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetCoordinatorSnapshotResponse>(
+    'volume.rpc.GetCoordinatorSnapshotResponse',
+    () => [[1, 'snapshot', 11, 0, CoordinatorSnapshot.codec]],
+  )
 
 /**
  * TryAcquireCoordinatorWriteLeaseRequest is a non-blocking lease request.
@@ -485,19 +389,15 @@ export const GetCoordinatorSnapshotResponse: MessageType<GetCoordinatorSnapshotR
 export interface TryAcquireCoordinatorWriteLeaseRequest {
   /**
    * Scope identifies the coordinated ObjectStore.
-   *
-   * @generated from field: volume.rpc.CoordinatorScope scope = 1;
    */
   scope?: CoordinatorScope
 }
 
 export const TryAcquireCoordinatorWriteLeaseRequest: MessageType<TryAcquireCoordinatorWriteLeaseRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.TryAcquireCoordinatorWriteLeaseRequest',
-    fields: [
-      { no: 1, name: 'scope', kind: 'message', T: CoordinatorScope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TryAcquireCoordinatorWriteLeaseRequest>(
+    'volume.rpc.TryAcquireCoordinatorWriteLeaseRequest',
+    () => [[1, 'scope', 11, 0, CoordinatorScope.codec]],
+  )
 
 /**
  * WaitAcquireCoordinatorWriteLeaseRequest is a blocking lease request.
@@ -507,19 +407,15 @@ export const TryAcquireCoordinatorWriteLeaseRequest: MessageType<TryAcquireCoord
 export interface WaitAcquireCoordinatorWriteLeaseRequest {
   /**
    * Scope identifies the coordinated ObjectStore.
-   *
-   * @generated from field: volume.rpc.CoordinatorScope scope = 1;
    */
   scope?: CoordinatorScope
 }
 
 export const WaitAcquireCoordinatorWriteLeaseRequest: MessageType<WaitAcquireCoordinatorWriteLeaseRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.WaitAcquireCoordinatorWriteLeaseRequest',
-    fields: [
-      { no: 1, name: 'scope', kind: 'message', T: CoordinatorScope },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WaitAcquireCoordinatorWriteLeaseRequest>(
+    'volume.rpc.WaitAcquireCoordinatorWriteLeaseRequest',
+    () => [[1, 'scope', 11, 0, CoordinatorScope.codec]],
+  )
 
 /**
  * AcquireCoordinatorWriteLeaseResponse is returned by lease acquisition.
@@ -529,26 +425,22 @@ export const WaitAcquireCoordinatorWriteLeaseRequest: MessageType<WaitAcquireCoo
 export interface AcquireCoordinatorWriteLeaseResponse {
   /**
    * LeaseId identifies the remote lease for later lease operations.
-   *
-   * @generated from field: string lease_id = 1;
    */
   leaseId?: string
   /**
    * Acquired is false when a try-acquire request found the lease busy.
-   *
-   * @generated from field: bool acquired = 2;
    */
   acquired?: boolean
 }
 
 export const AcquireCoordinatorWriteLeaseResponse: MessageType<AcquireCoordinatorWriteLeaseResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.AcquireCoordinatorWriteLeaseResponse',
-    fields: [
-      { no: 1, name: 'lease_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'acquired', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AcquireCoordinatorWriteLeaseResponse>(
+    'volume.rpc.AcquireCoordinatorWriteLeaseResponse',
+    () => [
+      [1, 'lease_id', 9],
+      [2, 'acquired', 8],
+    ],
+  )
 
 /**
  * CoordinatorWriteLeaseRequest identifies a held remote write lease.
@@ -558,19 +450,15 @@ export const AcquireCoordinatorWriteLeaseResponse: MessageType<AcquireCoordinato
 export interface CoordinatorWriteLeaseRequest {
   /**
    * LeaseId identifies the remote lease.
-   *
-   * @generated from field: string lease_id = 1;
    */
   leaseId?: string
 }
 
 export const CoordinatorWriteLeaseRequest: MessageType<CoordinatorWriteLeaseRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.CoordinatorWriteLeaseRequest',
-    fields: [
-      { no: 1, name: 'lease_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CoordinatorWriteLeaseRequest>(
+    'volume.rpc.CoordinatorWriteLeaseRequest',
+    () => [[1, 'lease_id', 9]],
+  )
 
 /**
  * CoordinatorWriteLeaseSnapshotResponse returns a lease operation snapshot.
@@ -580,19 +468,15 @@ export const CoordinatorWriteLeaseRequest: MessageType<CoordinatorWriteLeaseRequ
 export interface CoordinatorWriteLeaseSnapshotResponse {
   /**
    * Snapshot is the current durable coordinator state.
-   *
-   * @generated from field: volume.rpc.CoordinatorSnapshot snapshot = 1;
    */
   snapshot?: CoordinatorSnapshot
 }
 
 export const CoordinatorWriteLeaseSnapshotResponse: MessageType<CoordinatorWriteLeaseSnapshotResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.CoordinatorWriteLeaseSnapshotResponse',
-    fields: [
-      { no: 1, name: 'snapshot', kind: 'message', T: CoordinatorSnapshot },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CoordinatorWriteLeaseSnapshotResponse>(
+    'volume.rpc.CoordinatorWriteLeaseSnapshotResponse',
+    () => [[1, 'snapshot', 11, 0, CoordinatorSnapshot.codec]],
+  )
 
 /**
  * PublishCoordinatorWriteLeaseRequest publishes through a held remote lease.
@@ -602,26 +486,22 @@ export const CoordinatorWriteLeaseSnapshotResponse: MessageType<CoordinatorWrite
 export interface PublishCoordinatorWriteLeaseRequest {
   /**
    * LeaseId identifies the remote lease.
-   *
-   * @generated from field: string lease_id = 1;
    */
   leaseId?: string
   /**
    * Event is the accepted coordination event.
-   *
-   * @generated from field: volume.rpc.CoordinatorEvent event = 2;
    */
   event?: CoordinatorEvent
 }
 
 export const PublishCoordinatorWriteLeaseRequest: MessageType<PublishCoordinatorWriteLeaseRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.PublishCoordinatorWriteLeaseRequest',
-    fields: [
-      { no: 1, name: 'lease_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'event', kind: 'message', T: CoordinatorEvent },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PublishCoordinatorWriteLeaseRequest>(
+    'volume.rpc.PublishCoordinatorWriteLeaseRequest',
+    () => [
+      [1, 'lease_id', 9],
+      [2, 'event', 11, 0, CoordinatorEvent.codec],
+    ],
+  )
 
 /**
  * ReleaseCoordinatorWriteLeaseResponse is returned after releasing a lease.
@@ -631,9 +511,9 @@ export const PublishCoordinatorWriteLeaseRequest: MessageType<PublishCoordinator
 export interface ReleaseCoordinatorWriteLeaseResponse {}
 
 export const ReleaseCoordinatorWriteLeaseResponse: MessageType<ReleaseCoordinatorWriteLeaseResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ReleaseCoordinatorWriteLeaseResponse>(
+  /* @__PURE__ */ createMessageType<ReleaseCoordinatorWriteLeaseResponse>(
     'volume.rpc.ReleaseCoordinatorWriteLeaseResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -644,9 +524,9 @@ export const ReleaseCoordinatorWriteLeaseResponse: MessageType<ReleaseCoordinato
 export interface GetPeerPrivRequest {}
 
 export const GetPeerPrivRequest: MessageType<GetPeerPrivRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetPeerPrivRequest>(
+  /* @__PURE__ */ createMessageType<GetPeerPrivRequest>(
     'volume.rpc.GetPeerPrivRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -657,19 +537,15 @@ export const GetPeerPrivRequest: MessageType<GetPeerPrivRequest> =
 export interface GetPeerPrivResponse {
   /**
    * PrivKey is the private key.
-   *
-   * @generated from field: string priv_key = 1;
    */
   privKey?: string
 }
 
 export const GetPeerPrivResponse: MessageType<GetPeerPrivResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.GetPeerPrivResponse',
-    fields: [
-      { no: 1, name: 'priv_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetPeerPrivResponse>(
+    'volume.rpc.GetPeerPrivResponse',
+    () => [[1, 'priv_key', 9]],
+  )
 
 /**
  * GetStorageStatsRequest is a request to get storage usage statistics.
@@ -679,9 +555,9 @@ export const GetPeerPrivResponse: MessageType<GetPeerPrivResponse> =
 export interface GetStorageStatsRequest {}
 
 export const GetStorageStatsRequest: MessageType<GetStorageStatsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetStorageStatsRequest>(
+  /* @__PURE__ */ createMessageType<GetStorageStatsRequest>(
     'volume.rpc.GetStorageStatsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -692,16 +568,12 @@ export const GetStorageStatsRequest: MessageType<GetStorageStatsRequest> =
 export interface GetStorageStatsResponse {
   /**
    * StorageStats contains the storage usage statistics.
-   *
-   * @generated from field: volume.StorageStats storage_stats = 1;
    */
   storageStats?: StorageStats
 }
 
 export const GetStorageStatsResponse: MessageType<GetStorageStatsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.rpc.GetStorageStatsResponse',
-    fields: [
-      { no: 1, name: 'storage_stats', kind: 'message', T: () => StorageStats },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetStorageStatsResponse>(
+    'volume.rpc.GetStorageStatsResponse',
+    () => [[1, 'storage_stats', 11, 0, StorageStats.codec]],
+  )

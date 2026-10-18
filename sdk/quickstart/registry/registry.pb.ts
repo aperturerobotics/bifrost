@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * QuickstartRegistration is a plugin-registered Quickstart.
@@ -15,103 +13,73 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface QuickstartRegistration {
   /**
    * QuickstartId is the app-visible quickstart identifier.
-   *
-   * @generated from field: string quickstart_id = 1;
    */
   quickstartId?: string
   /**
    * RegistrationId is the server-assigned ID for this registration.
-   *
-   * @generated from field: uint32 registration_id = 2;
    */
   registrationId?: number
   /**
    * PluginId is the registering plugin's ID.
-   *
-   * @generated from field: string plugin_id = 3;
    */
   pluginId?: string
   /**
    * Name is the human-readable name shown in the UI.
-   *
-   * @generated from field: string name = 4;
    */
   name?: string
   /**
    * Description is the short UI description.
-   *
-   * @generated from field: string description = 5;
    */
   description?: string
   /**
    * Category groups the Quickstart in app inventories.
-   *
-   * @generated from field: string category = 6;
    */
   category?: string
   /**
    * IconName is the symbolic icon name used by the app.
-   *
-   * @generated from field: string icon_name = 7;
    */
   iconName?: string
   /**
    * Hidden keeps the Quickstart out of visible app inventories.
-   *
-   * @generated from field: bool hidden = 8;
    */
   hidden?: boolean
   /**
    * Experimental shows the Quickstart only when experimental creators are visible.
-   *
-   * @generated from field: bool experimental = 9;
    */
   experimental?: boolean
   /**
    * SpaceName is the default Space name created for this Quickstart.
-   *
-   * @generated from field: string space_name = 10;
    */
   spaceName?: string
   /**
    * RequiredPluginIds are Space plugin manifest IDs this Quickstart declares.
-   *
-   * @generated from field: repeated string required_plugin_ids = 11;
    */
   requiredPluginIds?: string[]
   /**
    * ManifestRoot pins a prepared plugin generation's seed implementation.
    * The registry sets it from the registration scope, never from the caller.
-   *
-   * @generated from field: string manifest_root = 12;
    */
   manifestRoot?: string
 }
 
 export const QuickstartRegistration: MessageType<QuickstartRegistration> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.QuickstartRegistration',
-    fields: [
-      { no: 1, name: 'quickstart_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'registration_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'category', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'icon_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'hidden', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 9, name: 'experimental', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 10, name: 'space_name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 11,
-        name: 'required_plugin_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 12, name: 'manifest_root', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<QuickstartRegistration>(
+    's4wave.quickstart.registry.QuickstartRegistration',
+    () => [
+      [1, 'quickstart_id', 9],
+      [2, 'registration_id', 13],
+      [3, 'plugin_id', 9],
+      [4, 'name', 9],
+      [5, 'description', 9],
+      [6, 'category', 9],
+      [7, 'icon_name', 9],
+      [8, 'hidden', 8],
+      [9, 'experimental', 8],
+      [10, 'space_name', 9],
+      [11, 'required_plugin_ids', 9, 1],
+      [12, 'manifest_root', 9],
+    ],
+  )
 
 /**
  * RegisterQuickstartRequest is the request for RegisterQuickstart.
@@ -121,24 +89,15 @@ export const QuickstartRegistration: MessageType<QuickstartRegistration> =
 export interface RegisterQuickstartRequest {
   /**
    * Registration is the Quickstart registration to add.
-   *
-   * @generated from field: s4wave.quickstart.registry.QuickstartRegistration registration = 1;
    */
   registration?: QuickstartRegistration
 }
 
 export const RegisterQuickstartRequest: MessageType<RegisterQuickstartRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.RegisterQuickstartRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'registration',
-        kind: 'message',
-        T: QuickstartRegistration,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterQuickstartRequest>(
+    's4wave.quickstart.registry.RegisterQuickstartRequest',
+    () => [[1, 'registration', 11, 0, QuickstartRegistration.codec]],
+  )
 
 /**
  * RegisterQuickstartResponse is the response for RegisterQuickstart.
@@ -148,19 +107,15 @@ export const RegisterQuickstartRequest: MessageType<RegisterQuickstartRequest> =
 export interface RegisterQuickstartResponse {
   /**
    * ResourceId is the registration resource. Releasing it unregisters the Quickstart.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const RegisterQuickstartResponse: MessageType<RegisterQuickstartResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.RegisterQuickstartResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterQuickstartResponse>(
+    's4wave.quickstart.registry.RegisterQuickstartResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * ListQuickstartsRequest is the request for ListQuickstarts.
@@ -170,19 +125,15 @@ export const RegisterQuickstartResponse: MessageType<RegisterQuickstartResponse>
 export interface ListQuickstartsRequest {
   /**
    * InstanceKey selects a logical installation; empty lists global registrations.
-   *
-   * @generated from field: string instance_key = 1;
    */
   instanceKey?: string
 }
 
 export const ListQuickstartsRequest: MessageType<ListQuickstartsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.ListQuickstartsRequest',
-    fields: [
-      { no: 1, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListQuickstartsRequest>(
+    's4wave.quickstart.registry.ListQuickstartsRequest',
+    () => [[1, 'instance_key', 9]],
+  )
 
 /**
  * ListQuickstartsResponse is the response for ListQuickstarts.
@@ -192,25 +143,15 @@ export const ListQuickstartsRequest: MessageType<ListQuickstartsRequest> =
 export interface ListQuickstartsResponse {
   /**
    * Registrations is the current set of registered Quickstarts.
-   *
-   * @generated from field: repeated s4wave.quickstart.registry.QuickstartRegistration registrations = 1;
    */
   registrations?: QuickstartRegistration[]
 }
 
 export const ListQuickstartsResponse: MessageType<ListQuickstartsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.ListQuickstartsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'registrations',
-        kind: 'message',
-        T: QuickstartRegistration,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListQuickstartsResponse>(
+    's4wave.quickstart.registry.ListQuickstartsResponse',
+    () => [[1, 'registrations', 11, 1, QuickstartRegistration.codec]],
+  )
 
 /**
  * WatchQuickstartsRequest is the request for WatchQuickstarts.
@@ -220,19 +161,15 @@ export const ListQuickstartsResponse: MessageType<ListQuickstartsResponse> =
 export interface WatchQuickstartsRequest {
   /**
    * InstanceKey selects a logical installation; empty lists global registrations.
-   *
-   * @generated from field: string instance_key = 1;
    */
   instanceKey?: string
 }
 
 export const WatchQuickstartsRequest: MessageType<WatchQuickstartsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.WatchQuickstartsRequest',
-    fields: [
-      { no: 1, name: 'instance_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchQuickstartsRequest>(
+    's4wave.quickstart.registry.WatchQuickstartsRequest',
+    () => [[1, 'instance_key', 9]],
+  )
 
 /**
  * WatchQuickstartsResponse is the response for WatchQuickstarts.
@@ -242,25 +179,15 @@ export const WatchQuickstartsRequest: MessageType<WatchQuickstartsRequest> =
 export interface WatchQuickstartsResponse {
   /**
    * Registrations is the current set of registered Quickstarts.
-   *
-   * @generated from field: repeated s4wave.quickstart.registry.QuickstartRegistration registrations = 1;
    */
   registrations?: QuickstartRegistration[]
 }
 
 export const WatchQuickstartsResponse: MessageType<WatchQuickstartsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.WatchQuickstartsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'registrations',
-        kind: 'message',
-        T: QuickstartRegistration,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchQuickstartsResponse>(
+    's4wave.quickstart.registry.WatchQuickstartsResponse',
+    () => [[1, 'registrations', 11, 1, QuickstartRegistration.codec]],
+  )
 
 /**
  * ExecuteQuickstartRequest asks the registry to run a registered Quickstart.
@@ -270,31 +197,22 @@ export const WatchQuickstartsResponse: MessageType<WatchQuickstartsResponse> =
 export interface ExecuteQuickstartRequest {
   /**
    * QuickstartId is the registered Quickstart identifier to execute.
-   *
-   * @generated from field: string quickstart_id = 1;
    */
   quickstartId?: string
   /**
    * SpaceResourceId is the mounted Space resource to seed.
-   *
-   * @generated from field: uint32 space_resource_id = 2;
    */
   spaceResourceId?: number
 }
 
 export const ExecuteQuickstartRequest: MessageType<ExecuteQuickstartRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.ExecuteQuickstartRequest',
-    fields: [
-      { no: 1, name: 'quickstart_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'space_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ExecuteQuickstartRequest>(
+    's4wave.quickstart.registry.ExecuteQuickstartRequest',
+    () => [
+      [1, 'quickstart_id', 9],
+      [2, 'space_resource_id', 13],
+    ],
+  )
 
 /**
  * ExecuteQuickstartResponse contains routing hints returned by the seed handler.
@@ -304,32 +222,22 @@ export const ExecuteQuickstartRequest: MessageType<ExecuteQuickstartRequest> =
 export interface ExecuteQuickstartResponse {
   /**
    * IndexPath is the Space index path the app should open after seeding.
-   *
-   * @generated from field: string index_path = 1;
    */
   indexPath?: string
   /**
    * PluginIds are additional Space plugin ids required by the seeded Space.
-   *
-   * @generated from field: repeated string plugin_ids = 2;
    */
   pluginIds?: string[]
 }
 
 export const ExecuteQuickstartResponse: MessageType<ExecuteQuickstartResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.ExecuteQuickstartResponse',
-    fields: [
-      { no: 1, name: 'index_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'plugin_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ExecuteQuickstartResponse>(
+    's4wave.quickstart.registry.ExecuteQuickstartResponse',
+    () => [
+      [1, 'index_path', 9],
+      [2, 'plugin_ids', 9, 1],
+    ],
+  )
 
 /**
  * SeedQuickstartRequest is sent to the registering plugin's seed handler.
@@ -339,31 +247,22 @@ export const ExecuteQuickstartResponse: MessageType<ExecuteQuickstartResponse> =
 export interface SeedQuickstartRequest {
   /**
    * QuickstartId is the registered Quickstart identifier to seed.
-   *
-   * @generated from field: string quickstart_id = 1;
    */
   quickstartId?: string
   /**
    * AttachedEngineResourceId is an attached world Engine resource for the target Space.
-   *
-   * @generated from field: uint32 attached_engine_resource_id = 2;
    */
   attachedEngineResourceId?: number
 }
 
 export const SeedQuickstartRequest: MessageType<SeedQuickstartRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.SeedQuickstartRequest',
-    fields: [
-      { no: 1, name: 'quickstart_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'attached_engine_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SeedQuickstartRequest>(
+    's4wave.quickstart.registry.SeedQuickstartRequest',
+    () => [
+      [1, 'quickstart_id', 9],
+      [2, 'attached_engine_resource_id', 13],
+    ],
+  )
 
 /**
  * SeedQuickstartResponse contains routing hints returned by the plugin.
@@ -373,29 +272,19 @@ export const SeedQuickstartRequest: MessageType<SeedQuickstartRequest> =
 export interface SeedQuickstartResponse {
   /**
    * IndexPath is the Space index path the app should open after seeding.
-   *
-   * @generated from field: string index_path = 1;
    */
   indexPath?: string
   /**
    * PluginIds are additional Space plugin ids required by the seeded Space.
-   *
-   * @generated from field: repeated string plugin_ids = 2;
    */
   pluginIds?: string[]
 }
 
 export const SeedQuickstartResponse: MessageType<SeedQuickstartResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.quickstart.registry.SeedQuickstartResponse',
-    fields: [
-      { no: 1, name: 'index_path', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'plugin_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SeedQuickstartResponse>(
+    's4wave.quickstart.registry.SeedQuickstartResponse',
+    () => [
+      [1, 'index_path', 9],
+      [2, 'plugin_ids', 9, 1],
+    ],
+  )

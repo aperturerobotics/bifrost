@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the relay controller.
@@ -16,39 +14,29 @@ export interface Config {
   /**
    * PeerId is the peer ID to listen for incoming streams.
    * Can be empty to accept any.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * ProtocolId is the protocol ID to filter incoming streams.
    * Cannot be empty.
-   *
-   * @generated from field: string protocol_id = 2;
    */
   protocolId?: string
   /**
    * TargetPeerId is the destination peer ID to relay to.
    * Cannot be empty.
-   *
-   * @generated from field: string target_peer_id = 3;
    */
   targetPeerId?: string
   /**
    * TargetProtocolId is the destination protocol ID to relay to.
    * If unset, uses protocol_id.
-   *
-   * @generated from field: string target_protocol_id = 4;
    */
   targetProtocolId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'stream.relay.Config',
-  fields: [
-    { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'target_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'target_protocol_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('stream.relay.Config', () => [
+    [1, 'peer_id', 9],
+    [2, 'protocol_id', 9],
+    [3, 'target_peer_id', 9],
+    [4, 'target_protocol_id', 9],
+  ])

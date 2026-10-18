@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * TxType indicates the kind of transaction.
@@ -14,16 +12,12 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
  * @generated from enum cluster.tx.TxType
  */
 export enum TxType {
-  /**
-   * @generated from enum value: TxType_INVALID = 0;
-   */
   TxType_INVALID = 0,
 }
 
-export const TxType_Enum = /* @__PURE__ */ createEnumType(
-  'cluster.tx.TxType',
-  TxType,
-)
+export const TxType_Enum = /* @__PURE__ */ createEnumType('cluster.tx.TxType', [
+  [0, 'TxType_INVALID'],
+])
 
 /**
  * Tx is the on-the-wire representation of a transaction.
@@ -33,23 +27,19 @@ export const TxType_Enum = /* @__PURE__ */ createEnumType(
 export interface Tx {
   /**
    * TxType is the kind of transaction this is.
-   *
-   * @generated from field: cluster.tx.TxType tx_type = 1;
    */
   txType?: TxType
   /**
    * ClusterObjectKey is the Cluster object ID this is associated with.
    * The Cluster object must already exist.
-   *
-   * @generated from field: string cluster_object_key = 2;
    */
   clusterObjectKey?: string
 }
 
-export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType({
-  typeName: 'cluster.tx.Tx',
-  fields: [
-    { no: 1, name: 'tx_type', kind: 'enum', T: TxType_Enum },
-    { no: 2, name: 'cluster_object_key', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType<Tx>(
+  'cluster.tx.Tx',
+  () => [
+    [1, 'tx_type', 14, 0, TxType_Enum],
+    [2, 'cluster_object_key', 9],
+  ],
+)

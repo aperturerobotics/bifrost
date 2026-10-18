@@ -5,8 +5,6 @@
 import { BitSet } from '../bitset/bitset.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * BloomFilter contains a bloom filter in a Block.
@@ -20,30 +18,21 @@ export interface BloomFilter {
    * K is the number of hash functions.
    * Max: 10.
    * Min: 1.
-   *
-   * @generated from field: uint32 k = 1;
    */
   k?: number
   /**
    * M is the length (capacity) of the bloom filter.
-   *
-   * @generated from field: uint32 m = 2;
    */
   m?: number
   /**
    * BitSet is the underlying bitset.
-   *
-   * @generated from field: bitset.BitSet bit_set = 3;
    */
   bitSet?: BitSet
 }
 
 export const BloomFilter: MessageType<BloomFilter> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bloom.BloomFilter',
-    fields: [
-      { no: 1, name: 'k', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'm', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'bit_set', kind: 'message', T: () => BitSet },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BloomFilter>('bloom.BloomFilter', () => [
+    [1, 'k', 13],
+    [2, 'm', 13],
+    [3, 'bit_set', 11, 0, BitSet.codec],
+  ])

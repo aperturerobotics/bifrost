@@ -5,8 +5,6 @@
 import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures a controller to apply a configset to the plugin host.
@@ -16,21 +14,12 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * ConfigSet is the config set to apply to the plugin host.
-   *
-   * @generated from field: map<string, configset.proto.ControllerConfig> config_set = 1;
    */
   configSet?: { [key: string]: ControllerConfig }
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'plugin.host.configset.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'config_set',
-      kind: 'map',
-      K: ScalarType.STRING,
-      V: { kind: 'message', T: () => ControllerConfig },
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'plugin.host.configset.Config',
+    () => [[1, 'config_set', 11, 584, ControllerConfig.codec]],
+  )

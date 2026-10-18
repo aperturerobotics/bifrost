@@ -5,7 +5,6 @@
 import { Config as Config$1 } from '@go/github.com/aperturerobotics/controllerbus/bus/api/api.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the API.
@@ -15,15 +14,11 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BusConfig configures the bus api.
-   *
-   * @generated from field: bus.api.Config bus_config = 1;
    */
   busConfig?: Config$1
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bifrost.api.Config',
-  fields: [
-    { no: 1, name: 'bus_config', kind: 'message', T: () => Config$1 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('bifrost.api.Config', () => [
+    [1, 'bus_config', 11, 0, Config$1.codec],
+  ])

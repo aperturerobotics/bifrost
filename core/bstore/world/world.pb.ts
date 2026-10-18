@@ -5,8 +5,6 @@
 import { BlockStoreRef } from '../bstore.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * BlockStoreState contains a BlockStore reference.
@@ -16,19 +14,15 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 export interface BlockStoreState {
   /**
    * Ref is the block store ref on the provider.
-   *
-   * @generated from field: bstore.BlockStoreRef ref = 1;
    */
   ref?: BlockStoreRef
 }
 
 export const BlockStoreState: MessageType<BlockStoreState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bstore.world.BlockStoreState',
-    fields: [
-      { no: 1, name: 'ref', kind: 'message', T: () => BlockStoreRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BlockStoreState>(
+    'bstore.world.BlockStoreState',
+    () => [[1, 'ref', 11, 0, BlockStoreRef.codec]],
+  )
 
 /**
  * UpdateBlockStoreStateOp is an world operation to update a BlockStoreState.
@@ -39,23 +33,19 @@ export interface UpdateBlockStoreStateOp {
   /**
    * UpdatedState is the updated local block store state.
    * The object key is derived from the block store ref.
-   *
-   * @generated from field: bstore.world.BlockStoreState updated_state = 1;
    */
   updatedState?: BlockStoreState
   /**
    * IfNotExists prevents overwriting an existing state if it exists.
-   *
-   * @generated from field: bool if_not_exists = 2;
    */
   ifNotExists?: boolean
 }
 
 export const UpdateBlockStoreStateOp: MessageType<UpdateBlockStoreStateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bstore.world.UpdateBlockStoreStateOp',
-    fields: [
-      { no: 1, name: 'updated_state', kind: 'message', T: BlockStoreState },
-      { no: 2, name: 'if_not_exists', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<UpdateBlockStoreStateOp>(
+    'bstore.world.UpdateBlockStoreStateOp',
+    () => [
+      [1, 'updated_state', 11, 0, BlockStoreState.codec],
+      [2, 'if_not_exists', 8],
+    ],
+  )

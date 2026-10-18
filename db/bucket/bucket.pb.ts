@@ -2,14 +2,64 @@
 // @generated from file github.com/s4wave/spacewave/db/bucket/bucket.proto (package bucket, syntax proto3)
 /* eslint-disable */
 
-import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
+import { BlockRef, PutOpts } from '../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { BlockRef, PutOpts } from '../block/block.pb.js'
+import { ControllerConfig } from '@go/github.com/aperturerobotics/controllerbus/controller/configset/proto/configset.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 import { Config as Config$1 } from '../block/transform/transform.pb.js'
+
+/**
+ * Config is a bucket configuration object.
+ *
+ * @generated from message bucket.Config
+ */
+export interface Config {
+  /**
+   * Id is the bucket identifier.
+   */
+  id?: string
+  /**
+   * Rev is the configuration rev.
+   * increment by 1 on modification
+   */
+  rev?: number
+  /**
+   * PutOpts are the default put options for the bucket.
+   */
+  putOpts?: PutOpts
+  /**
+   * Lookup controls the lookup confiuration.
+   *
+   * TODO: block size limit?
+   */
+  lookup?: LookupConfig
+}
+
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('bucket.Config', () => [
+    [1, 'id', 9],
+    [2, 'rev', 13],
+    [4, 'put_opts', 11, 0, PutOpts.codec],
+    [5, 'lookup', 11, 0, LookupConfig.codec],
+  ])
+
+/**
+ * BucketInfo is general information about a bucket.
+ *
+ * @generated from message bucket.BucketInfo
+ */
+export interface BucketInfo {
+  /**
+   * Config contains the current latest bucket configuration.
+   */
+  config?: Config
+}
+
+export const BucketInfo: MessageType<BucketInfo> =
+  /* @__PURE__ */ createMessageType<BucketInfo>('bucket.BucketInfo', () => [
+    [1, 'config', 11, 0, Config.codec],
+  ])
 
 /**
  * LookupConfig configures the bucket behavior across multiple volumes.
@@ -20,95 +70,21 @@ export interface LookupConfig {
   /**
    * Disble indicates we should not service cross-volume calls against this
    * bucket.
-   *
-   * @generated from field: bool disable = 1;
    */
   disable?: boolean
   /**
    * Controller contains the lookup controller configuration.
    * If unset, will default to the node-default lookup controller.
    * If disabled, this field will be ignored.
-   *
-   * @generated from field: configset.proto.ControllerConfig controller = 2;
    */
   controller?: ControllerConfig
 }
 
 export const LookupConfig: MessageType<LookupConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.LookupConfig',
-    fields: [
-      { no: 1, name: 'disable', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'controller', kind: 'message', T: () => ControllerConfig },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Config is a bucket configuration object.
- *
- * @generated from message bucket.Config
- */
-export interface Config {
-  /**
-   * Id is the bucket identifier.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Rev is the configuration rev.
-   * increment by 1 on modification
-   *
-   * @generated from field: uint32 rev = 2;
-   */
-  rev?: number
-  /**
-   * PutOpts are the default put options for the bucket.
-   *
-   * @generated from field: block.PutOpts put_opts = 4;
-   */
-  putOpts?: PutOpts
-  /**
-   * Lookup controls the lookup confiuration.
-   *
-   * TODO: block size limit?
-   *
-   * @generated from field: bucket.LookupConfig lookup = 5;
-   */
-  lookup?: LookupConfig
-}
-
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'bucket.Config',
-  fields: [
-    { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'rev', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 4, name: 'put_opts', kind: 'message', T: () => PutOpts },
-    { no: 5, name: 'lookup', kind: 'message', T: LookupConfig },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * BucketInfo is general information about a bucket.
- *
- * @generated from message bucket.BucketInfo
- */
-export interface BucketInfo {
-  /**
-   * Config contains the current latest bucket configuration.
-   *
-   * @generated from field: bucket.Config config = 1;
-   */
-  config?: Config
-}
-
-export const BucketInfo: MessageType<BucketInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.BucketInfo',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupConfig>('bucket.LookupConfig', () => [
+    [1, 'disable', 8],
+    [2, 'controller', 11, 0, ControllerConfig.codec],
+  ])
 
 /**
  * ApplyBucketConfigResult is the result of the ApplyBucketConfig directive.
@@ -118,62 +94,48 @@ export const BucketInfo: MessageType<BucketInfo> =
 export interface ApplyBucketConfigResult {
   /**
    * VolumeId is the volume ID for this apply event.
-   *
-   * @generated from field: string volume_id = 1;
    */
   volumeId?: string
   /**
    * BucketId returns the bucket ID for this apply event.
-   *
-   * @generated from field: string bucket_id = 2;
    */
   bucketId?: string
   /**
    * BucketConf returns the bucket configuration applied.
-   *
-   * @generated from field: bucket.Config bucket_conf = 3;
    */
   bucketConf?: Config
   /**
    * OldBucketConf returns the previous bucket configuration.
-   *
-   * @generated from field: bucket.Config old_bucket_conf = 4;
    */
   oldBucketConf?: Config
   /**
    * Timestamp returns the timestamp of the event.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 5;
    */
   timestamp?: Date
   /**
    * Updated indicates if the value was updated.
-   *
-   * @generated from field: bool updated = 6;
    */
   updated?: boolean
   /**
    * Error contains any error applying the value.
    * Note: all other values might be empty if this is set.
-   *
-   * @generated from field: string error = 7;
    */
   error?: string
 }
 
 export const ApplyBucketConfigResult: MessageType<ApplyBucketConfigResult> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.ApplyBucketConfigResult',
-    fields: [
-      { no: 1, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'bucket_conf', kind: 'message', T: Config },
-      { no: 4, name: 'old_bucket_conf', kind: 'message', T: Config },
-      { no: 5, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 6, name: 'updated', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 7, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyBucketConfigResult>(
+    'bucket.ApplyBucketConfigResult',
+    () => [
+      [1, 'volume_id', 9],
+      [2, 'bucket_id', 9],
+      [3, 'bucket_conf', 11, 0, Config.codec],
+      [4, 'old_bucket_conf', 11, 0, Config.codec],
+      [5, 'timestamp', 11, 0, Timestamp.codec],
+      [6, 'updated', 8],
+      [7, 'error', 9],
+    ],
+  )
 
 /**
  * ObjectRef is a reference that may contain a transformation config reference
@@ -186,43 +148,32 @@ export const ApplyBucketConfigResult: MessageType<ApplyBucketConfigResult> =
 export interface ObjectRef {
   /**
    * RootRef is the root block ref.
-   *
-   * @generated from field: block.BlockRef root_ref = 1;
    */
   rootRef?: BlockRef
   /**
    * BucketId is the bucket id, if switching buckets.
    * May be empty to indicate same bucket.
-   *
-   * @generated from field: string bucket_id = 2;
    */
   bucketId?: string
   /**
    * TransformConfRef is the transformation configuration block ref.
    * Must be encoded with the same transformation config as the parent.
    * May be empty to indicate same conf as parent.
-   *
-   * @generated from field: block.BlockRef transform_conf_ref = 3;
    */
   transformConfRef?: BlockRef
   /**
    * TransformConf is an in-line transform configuration.
-   *
-   * @generated from field: block.transform.Config transform_conf = 4;
    */
   transformConf?: Config$1
 }
 
 export const ObjectRef: MessageType<ObjectRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.ObjectRef',
-    fields: [
-      { no: 1, name: 'root_ref', kind: 'message', T: () => BlockRef },
-      { no: 2, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'transform_conf_ref', kind: 'message', T: () => BlockRef },
-      { no: 4, name: 'transform_conf', kind: 'message', T: () => Config$1 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectRef>('bucket.ObjectRef', () => [
+    [1, 'root_ref', 11, 0, BlockRef.codec],
+    [2, 'bucket_id', 9],
+    [3, 'transform_conf_ref', 11, 0, BlockRef.codec],
+    [4, 'transform_conf', 11, 0, Config$1.codec],
+  ])
 
 /**
  * BucketOpArgs are common arguments for a bucket operation.
@@ -232,24 +183,17 @@ export const ObjectRef: MessageType<ObjectRef> =
 export interface BucketOpArgs {
   /**
    * BucketId is the bucket ID to operate on.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
   /**
    * VolumeId is the volume ID to operate on.
    * If empty, will use the lookup controller.
-   *
-   * @generated from field: string volume_id = 2;
    */
   volumeId?: string
 }
 
 export const BucketOpArgs: MessageType<BucketOpArgs> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bucket.BucketOpArgs',
-    fields: [
-      { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BucketOpArgs>('bucket.BucketOpArgs', () => [
+    [1, 'bucket_id', 9],
+    [2, 'volume_id', 9],
+  ])

@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ErrorCode identifies stable application failure classes.
@@ -16,92 +14,81 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ErrorCode {
   /**
    * ERROR_CODE_UNSPECIFIED is not a valid failure.
-   *
-   * @generated from enum value: ERROR_CODE_UNSPECIFIED = 0;
    */
   ERROR_CODE_UNSPECIFIED = 0,
 
   /**
    * VALIDATION rejects a value that does not satisfy the contract.
-   *
-   * @generated from enum value: VALIDATION = 1;
    */
   VALIDATION = 1,
 
   /**
    * AUTHENTICATION requires a new valid principal.
-   *
-   * @generated from enum value: AUTHENTICATION = 2;
    */
   AUTHENTICATION = 2,
 
   /**
    * DENIED rejects an operation forbidden by collection policy.
-   *
-   * @generated from enum value: DENIED = 3;
    */
   DENIED = 3,
 
   /**
    * MISSING_COLLECTION identifies an undeclared collection.
-   *
-   * @generated from enum value: MISSING_COLLECTION = 4;
    */
   MISSING_COLLECTION = 4,
 
   /**
    * SCHEMA_MISMATCH rejects incompatible wire, application, or stored versions.
-   *
-   * @generated from enum value: SCHEMA_MISMATCH = 5;
    */
   SCHEMA_MISMATCH = 5,
 
   /**
    * QUERY_LIMIT rejects an oversized complete snapshot or record.
-   *
-   * @generated from enum value: QUERY_LIMIT = 6;
    */
   QUERY_LIMIT = 6,
 
   /**
    * CONFLICT rejects a request ID reused with different input.
-   *
-   * @generated from enum value: CONFLICT = 7;
    */
   CONFLICT = 7,
 
   /**
    * UNAVAILABLE identifies a disconnected or canceled operation.
-   *
-   * @generated from enum value: UNAVAILABLE = 8;
    */
   UNAVAILABLE = 8,
 
   /**
    * UNCERTAIN requires retrying the same request ID and input.
-   *
-   * @generated from enum value: UNCERTAIN = 9;
    */
   UNCERTAIN = 9,
 
   /**
    * STORAGE reports failure without exposing internal storage details.
-   *
-   * @generated from enum value: STORAGE = 10;
    */
   STORAGE = 10,
 
   /**
    * CLOSED identifies a released handle or stopped server.
-   *
-   * @generated from enum value: CLOSED = 11;
    */
   CLOSED = 11,
 }
 
 export const ErrorCode_Enum = /* @__PURE__ */ createEnumType(
   'sdk.sync.ErrorCode',
-  ErrorCode,
+  [
+    [0, 'ERROR_CODE_UNSPECIFIED'],
+    [1, 'VALIDATION'],
+    [2, 'AUTHENTICATION'],
+    [3, 'DENIED'],
+    [4, 'MISSING_COLLECTION'],
+    [5, 'SCHEMA_MISMATCH'],
+    [6, 'QUERY_LIMIT'],
+    [7, 'CONFLICT'],
+    [8, 'UNAVAILABLE'],
+    [9, 'UNCERTAIN'],
+    [10, 'STORAGE'],
+    [11, 'CLOSED'],
+  ],
 )
 
 /**
@@ -112,32 +99,24 @@ export const ErrorCode_Enum = /* @__PURE__ */ createEnumType(
 export interface Failure {
   /**
    * Code is the stable failure class.
-   *
-   * @generated from field: sdk.sync.ErrorCode code = 1;
    */
   code?: ErrorCode
   /**
    * Message explains the action the application can take.
-   *
-   * @generated from field: string message = 2;
    */
   message?: string
   /**
    * RequestId identifies an uncertain mutation for explicit recovery.
-   *
-   * @generated from field: string request_id = 3;
    */
   requestId?: string
 }
 
-export const Failure: MessageType<Failure> = /* @__PURE__ */ createMessageType({
-  typeName: 'sdk.sync.Failure',
-  fields: [
-    { no: 1, name: 'code', kind: 'enum', T: ErrorCode_Enum },
-    { no: 2, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'request_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Failure: MessageType<Failure> =
+  /* @__PURE__ */ createMessageType<Failure>('sdk.sync.Failure', () => [
+    [1, 'code', 14, 0, ErrorCode_Enum],
+    [2, 'message', 9],
+    [3, 'request_id', 9],
+  ])
 
 /**
  * HandshakeRequest supplies compatibility and authentication in the first RPC.
@@ -147,45 +126,32 @@ export const Failure: MessageType<Failure> = /* @__PURE__ */ createMessageType({
 export interface HandshakeRequest {
   /**
    * WireVersion selects the package-owned protocol version.
-   *
-   * @generated from field: uint32 wire_version = 1;
    */
   wireVersion?: number
   /**
    * ApplicationId identifies the declared application contract.
-   *
-   * @generated from field: string application_id = 2;
    */
   applicationId?: string
   /**
    * ApplicationVersion selects its explicit schema version.
-   *
-   * @generated from field: uint32 application_version = 3;
    */
   applicationVersion?: number
   /**
    * Token is supplied to the server authentication callback and never retained.
-   *
-   * @generated from field: string token = 4;
    */
   token?: string
 }
 
 export const HandshakeRequest: MessageType<HandshakeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.HandshakeRequest',
-    fields: [
-      { no: 1, name: 'wire_version', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'application_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'application_version',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      { no: 4, name: 'token', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandshakeRequest>(
+    'sdk.sync.HandshakeRequest',
+    () => [
+      [1, 'wire_version', 13],
+      [2, 'application_id', 9],
+      [3, 'application_version', 13],
+      [4, 'token', 9],
+    ],
+  )
 
 /**
  * HandshakeResponse confirms admission or reports a safe failure.
@@ -195,19 +161,15 @@ export const HandshakeRequest: MessageType<HandshakeRequest> =
 export interface HandshakeResponse {
   /**
    * Error is set when admission fails.
-   *
-   * @generated from field: sdk.sync.Failure error = 1;
    */
   error?: Failure
 }
 
 export const HandshakeResponse: MessageType<HandshakeResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.HandshakeResponse',
-    fields: [
-      { no: 1, name: 'error', kind: 'message', T: Failure },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandshakeResponse>(
+    'sdk.sync.HandshakeResponse',
+    () => [[1, 'error', 11, 0, Failure.codec]],
+  )
 
 /**
  * OpenCollectionRequest selects a declared collection before prefix filtering.
@@ -217,19 +179,15 @@ export const HandshakeResponse: MessageType<HandshakeResponse> =
 export interface OpenCollectionRequest {
   /**
    * Name identifies the collection in the application schema.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
 }
 
 export const OpenCollectionRequest: MessageType<OpenCollectionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.OpenCollectionRequest',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenCollectionRequest>(
+    'sdk.sync.OpenCollectionRequest',
+    () => [[1, 'name', 9]],
+  )
 
 /**
  * OpenCollectionResponse grants one connection-owned collection Resource.
@@ -239,26 +197,22 @@ export const OpenCollectionRequest: MessageType<OpenCollectionRequest> =
 export interface OpenCollectionResponse {
   /**
    * ResourceId exposes only the Collection service.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * Error is set when the collection cannot be opened.
-   *
-   * @generated from field: sdk.sync.Failure error = 2;
    */
   error?: Failure
 }
 
 export const OpenCollectionResponse: MessageType<OpenCollectionResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.OpenCollectionResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'error', kind: 'message', T: Failure },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenCollectionResponse>(
+    'sdk.sync.OpenCollectionResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'error', 11, 0, Failure.codec],
+    ],
+  )
 
 /**
  * GetRequest selects one UTF-8 record key.
@@ -268,19 +222,14 @@ export const OpenCollectionResponse: MessageType<OpenCollectionResponse> =
 export interface GetRequest {
   /**
    * Key identifies the record within the bound collection.
-   *
-   * @generated from field: string key = 1;
    */
   key?: string
 }
 
 export const GetRequest: MessageType<GetRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.GetRequest',
-    fields: [
-      { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetRequest>('sdk.sync.GetRequest', () => [
+    [1, 'key', 9],
+  ])
 
 /**
  * GetResponse distinguishes absence from a present JSON value.
@@ -290,33 +239,24 @@ export const GetRequest: MessageType<GetRequest> =
 export interface GetResponse {
   /**
    * Found is true even when Data encodes JSON null.
-   *
-   * @generated from field: bool found = 1;
    */
   found?: boolean
   /**
    * Data contains canonical JSON for a present record.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * Error is set when the read fails.
-   *
-   * @generated from field: sdk.sync.Failure error = 3;
    */
   error?: Failure
 }
 
 export const GetResponse: MessageType<GetResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.GetResponse',
-    fields: [
-      { no: 1, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'error', kind: 'message', T: Failure },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetResponse>('sdk.sync.GetResponse', () => [
+    [1, 'found', 8],
+    [2, 'data', 12],
+    [3, 'error', 11, 0, Failure.codec],
+  ])
 
 /**
  * QueryRequest selects a key prefix in the bound collection.
@@ -326,19 +266,15 @@ export const GetResponse: MessageType<GetResponse> =
 export interface QueryRequest {
   /**
    * Prefix is empty to select the complete collection.
-   *
-   * @generated from field: string prefix = 1;
    */
   prefix?: string
 }
 
 export const QueryRequest: MessageType<QueryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.QueryRequest',
-    fields: [
-      { no: 1, name: 'prefix', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<QueryRequest>(
+    'sdk.sync.QueryRequest',
+    () => [[1, 'prefix', 9]],
+  )
 
 /**
  * RecordEntry contains one complete record in a snapshot.
@@ -348,26 +284,19 @@ export const QueryRequest: MessageType<QueryRequest> =
 export interface RecordEntry {
   /**
    * Key identifies the record within the collection.
-   *
-   * @generated from field: string key = 1;
    */
   key?: string
   /**
    * Data contains its canonical JSON value.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
 }
 
 export const RecordEntry: MessageType<RecordEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.RecordEntry',
-    fields: [
-      { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RecordEntry>('sdk.sync.RecordEntry', () => [
+    [1, 'key', 9],
+    [2, 'data', 12],
+  ])
 
 /**
  * Snapshot replaces the prior view and never represents a partial result.
@@ -377,32 +306,19 @@ export const RecordEntry: MessageType<RecordEntry> =
 export interface Snapshot {
   /**
    * Entries are ordered by their UTF-8 key bytes.
-   *
-   * @generated from field: repeated sdk.sync.RecordEntry entries = 1;
    */
   entries?: RecordEntry[]
   /**
    * Error terminates this subscription or scan without affecting other handles.
-   *
-   * @generated from field: sdk.sync.Failure error = 2;
    */
   error?: Failure
 }
 
 export const Snapshot: MessageType<Snapshot> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.Snapshot',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'message',
-        T: RecordEntry,
-        repeated: true,
-      },
-      { no: 2, name: 'error', kind: 'message', T: Failure },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Snapshot>('sdk.sync.Snapshot', () => [
+    [1, 'entries', 11, 1, RecordEntry.codec],
+    [2, 'error', 11, 0, Failure.codec],
+  ])
 
 /**
  * PutRequest contains a stable retry identity and unvalidated JSON input.
@@ -412,33 +328,24 @@ export const Snapshot: MessageType<Snapshot> =
 export interface PutRequest {
   /**
    * Key identifies the record within the collection.
-   *
-   * @generated from field: string key = 1;
    */
   key?: string
   /**
    * Data is JSON input validated before storage.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * RequestId must remain unchanged when retrying this input.
-   *
-   * @generated from field: string request_id = 3;
    */
   requestId?: string
 }
 
 export const PutRequest: MessageType<PutRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.PutRequest',
-    fields: [
-      { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'request_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<PutRequest>('sdk.sync.PutRequest', () => [
+    [1, 'key', 9],
+    [2, 'data', 12],
+    [3, 'request_id', 9],
+  ])
 
 /**
  * DeleteRequest identifies a removal and its stable retry identity.
@@ -448,26 +355,22 @@ export const PutRequest: MessageType<PutRequest> =
 export interface DeleteRequest {
   /**
    * Key identifies the record within the collection.
-   *
-   * @generated from field: string key = 1;
    */
   key?: string
   /**
    * RequestId must remain unchanged when retrying this removal.
-   *
-   * @generated from field: string request_id = 2;
    */
   requestId?: string
 }
 
 export const DeleteRequest: MessageType<DeleteRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.DeleteRequest',
-    fields: [
-      { no: 1, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'request_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DeleteRequest>(
+    'sdk.sync.DeleteRequest',
+    () => [
+      [1, 'key', 9],
+      [2, 'request_id', 9],
+    ],
+  )
 
 /**
  * Acceptance acknowledges a durable write or reports its failure.
@@ -477,19 +380,14 @@ export const DeleteRequest: MessageType<DeleteRequest> =
 export interface Acceptance {
   /**
    * Error is absent only after the receipt and change are durably fenced.
-   *
-   * @generated from field: sdk.sync.Failure error = 1;
    */
   error?: Failure
 }
 
 export const Acceptance: MessageType<Acceptance> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.Acceptance',
-    fields: [
-      { no: 1, name: 'error', kind: 'message', T: Failure },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Acceptance>('sdk.sync.Acceptance', () => [
+    [1, 'error', 11, 0, Failure.codec],
+  ])
 
 /**
  * MutationRequest invokes a declared server handler with a stable retry ID.
@@ -499,33 +397,27 @@ export const Acceptance: MessageType<Acceptance> =
 export interface MutationRequest {
   /**
    * Name identifies the mutation in the shared contract.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Input contains its JSON input before server validation.
-   *
-   * @generated from field: bytes input = 2;
    */
   input?: Uint8Array
   /**
    * RequestId must remain unchanged when retrying this invocation.
-   *
-   * @generated from field: string request_id = 3;
    */
   requestId?: string
 }
 
 export const MutationRequest: MessageType<MutationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.MutationRequest',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'input', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'request_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MutationRequest>(
+    'sdk.sync.MutationRequest',
+    () => [
+      [1, 'name', 9],
+      [2, 'input', 12],
+      [3, 'request_id', 9],
+    ],
+  )
 
 /**
  * MutationResponse contains the validated durable result or a safe failure.
@@ -535,23 +427,19 @@ export const MutationRequest: MessageType<MutationRequest> =
 export interface MutationResponse {
   /**
    * Result contains the accepted JSON output, including JSON null.
-   *
-   * @generated from field: bytes result = 1;
    */
   result?: Uint8Array
   /**
    * Error is set when acceptance or its outcome could not be confirmed.
-   *
-   * @generated from field: sdk.sync.Failure error = 2;
    */
   error?: Failure
 }
 
 export const MutationResponse: MessageType<MutationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'sdk.sync.MutationResponse',
-    fields: [
-      { no: 1, name: 'result', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'error', kind: 'message', T: Failure },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MutationResponse>(
+    'sdk.sync.MutationResponse',
+    () => [
+      [1, 'result', 12],
+      [2, 'error', 11, 0, Failure.codec],
+    ],
+  )

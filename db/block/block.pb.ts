@@ -10,8 +10,6 @@ import {
 } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * StoreFeature is a bitmask of native block store capabilities.
@@ -23,22 +21,16 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 export enum StoreFeature {
   /**
    * STORE_FEATURE_UNKNOWN indicates no native capabilities are reported.
-   *
-   * @generated from enum value: STORE_FEATURE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * STORE_FEATURE_NATIVE_BATCH_PUT means PutBlockBatch is implemented natively.
-   *
-   * @generated from enum value: STORE_FEATURE_NATIVE_BATCH_PUT = 1;
    */
   NATIVE_BATCH_PUT = 1,
 
   /**
    * STORE_FEATURE_NATIVE_BATCH_EXISTS means GetBlockExistsBatch is implemented natively.
-   *
-   * @generated from enum value: STORE_FEATURE_NATIVE_BATCH_EXISTS = 2;
    */
   NATIVE_BATCH_EXISTS = 2,
 
@@ -47,16 +39,18 @@ export enum StoreFeature {
    * pending buffer, so the world block engine must not wrap it in a
    * BufferedStore. Volume.Sync remains the durability barrier for
    * volume-backed stores.
-   *
-   * @generated from enum value: STORE_FEATURE_SELF_BUFFERED = 32;
    */
   SELF_BUFFERED = 32,
 }
 
 export const StoreFeature_Enum = /* @__PURE__ */ createEnumType(
   'block.StoreFeature',
-  StoreFeature,
-  'STORE_FEATURE_',
+  [
+    [0, 'STORE_FEATURE_UNKNOWN'],
+    [1, 'STORE_FEATURE_NATIVE_BATCH_PUT'],
+    [2, 'STORE_FEATURE_NATIVE_BATCH_EXISTS'],
+    [32, 'STORE_FEATURE_SELF_BUFFERED'],
+  ],
 )
 
 /**
@@ -71,8 +65,6 @@ export enum OverlayMode {
    * writes go to the upper store only.
    * removes go to the upper store only.
    * the lower store is not used.
-   *
-   * @generated from enum value: UPPER_ONLY = 0;
    */
   UPPER_ONLY = 0,
 
@@ -82,8 +74,6 @@ export enum OverlayMode {
    * writes go to the lower store only.
    * removes go to the lower store only.
    * the upper store is not used.
-   *
-   * @generated from enum value: LOWER_ONLY = 1;
    */
   LOWER_ONLY = 1,
 
@@ -93,8 +83,6 @@ export enum OverlayMode {
    * writes go to both stores.
    * removes go to both stores.
    * reads from lower are written back to upper.
-   *
-   * @generated from enum value: UPPER_CACHE = 2;
    */
   UPPER_CACHE = 2,
 
@@ -104,8 +92,6 @@ export enum OverlayMode {
    * writes go to both stores.
    * removes go to both stores.
    * reads from upper are written back to lower.
-   *
-   * @generated from enum value: LOWER_CACHE = 3;
    */
   LOWER_CACHE = 3,
 
@@ -115,8 +101,6 @@ export enum OverlayMode {
    * writes go to the lower store only.
    * removes go to the lower store only.
    * reads from lower are not written back to upper.
-   *
-   * @generated from enum value: UPPER_READ_CACHE = 4;
    */
   UPPER_READ_CACHE = 4,
 
@@ -126,8 +110,6 @@ export enum OverlayMode {
    * writes go to the upper store only.
    * removes go to both stores.
    * reads from upper are not written back to lower.
-   *
-   * @generated from enum value: LOWER_READ_CACHE = 5;
    */
   LOWER_READ_CACHE = 5,
 
@@ -137,8 +119,6 @@ export enum OverlayMode {
    * writes go to the upper store only.
    * removes go to both stores.
    * reads from lower are not written back to upper.
-   *
-   * @generated from enum value: UPPER_WRITE_CACHE = 6;
    */
   UPPER_WRITE_CACHE = 6,
 
@@ -148,8 +128,6 @@ export enum OverlayMode {
    * writes go to the lower store only.
    * removes go to both stores.
    * reads from upper are not written back to lower.
-   *
-   * @generated from enum value: LOWER_WRITE_CACHE = 7;
    */
   LOWER_WRITE_CACHE = 7,
 
@@ -161,15 +139,23 @@ export enum OverlayMode {
    * writes go to the upper store only.
    * removes go to the upper store only (lower lifecycle is external, e.g.
    * packfile garbage collection / repack).
-   *
-   * @generated from enum value: UPPER_READBACK_CACHE = 8;
    */
   UPPER_READBACK_CACHE = 8,
 }
 
 export const OverlayMode_Enum = /* @__PURE__ */ createEnumType(
   'block.OverlayMode',
-  OverlayMode,
+  [
+    [0, 'UPPER_ONLY'],
+    [1, 'LOWER_ONLY'],
+    [2, 'UPPER_CACHE'],
+    [3, 'LOWER_CACHE'],
+    [4, 'UPPER_READ_CACHE'],
+    [5, 'LOWER_READ_CACHE'],
+    [6, 'UPPER_WRITE_CACHE'],
+    [7, 'LOWER_WRITE_CACHE'],
+    [8, 'UPPER_READBACK_CACHE'],
+  ],
 )
 
 /**
@@ -182,19 +168,14 @@ export const OverlayMode_Enum = /* @__PURE__ */ createEnumType(
 export interface BlockRef {
   /**
    * Hash is the hash of the object.
-   *
-   * @generated from field: hash.Hash hash = 1;
    */
   hash?: Hash
 }
 
 export const BlockRef: MessageType<BlockRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.BlockRef',
-    fields: [
-      { no: 1, name: 'hash', kind: 'message', T: () => Hash },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BlockRef>('block.BlockRef', () => [
+    [1, 'hash', 11, 0, Hash.codec],
+  ])
 
 /**
  * BlockObject is a block's bytes with its outgoing refs, as stored by
@@ -205,62 +186,19 @@ export const BlockRef: MessageType<BlockRef> =
 export interface BlockObject {
   /**
    * Data is the encoded block.
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * Refs are the block's outgoing refs. Empty means a leaf.
-   *
-   * @generated from field: repeated block.BlockRef refs = 2;
    */
   refs?: BlockRef[]
 }
 
 export const BlockObject: MessageType<BlockObject> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.BlockObject',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'refs', kind: 'message', T: BlockRef, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * Access is the first read of one block.
- *
- * @generated from message block.Access
- */
-export interface Access {
-  /**
-   * Ref is the block read.
-   *
-   * @generated from field: block.BlockRef ref = 1;
-   */
-  ref?: BlockRef
-  /**
-   * Size is the stored size of the block in bytes.
-   *
-   * @generated from field: uint32 size = 2;
-   */
-  size?: number
-  /**
-   * ElapsedUs is the time from the start of the log to the read, in
-   * microseconds.
-   *
-   * @generated from field: uint64 elapsed_us = 3;
-   */
-  elapsedUs?: bigint
-}
-
-export const Access: MessageType<Access> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.Access',
-  fields: [
-    { no: 1, name: 'ref', kind: 'message', T: BlockRef },
-    { no: 2, name: 'size', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 3, name: 'elapsed_us', kind: 'scalar', T: ScalarType.UINT64 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+  /* @__PURE__ */ createMessageType<BlockObject>('block.BlockObject', () => [
+    [1, 'data', 12],
+    [2, 'refs', 11, 1, BlockRef.codec],
+  ])
 
 /**
  * AccessLog lists the blocks an operation read, once each, in the order of
@@ -271,19 +209,42 @@ export const Access: MessageType<Access> = /* @__PURE__ */ createMessageType({
 export interface AccessLog {
   /**
    * Accesses are the first reads of each block.
-   *
-   * @generated from field: repeated block.Access accesses = 1;
    */
   accesses?: Access[]
 }
 
 export const AccessLog: MessageType<AccessLog> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'block.AccessLog',
-    fields: [
-      { no: 1, name: 'accesses', kind: 'message', T: Access, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessLog>('block.AccessLog', () => [
+    [1, 'accesses', 11, 1, Access.codec],
+  ])
+
+/**
+ * Access is the first read of one block.
+ *
+ * @generated from message block.Access
+ */
+export interface Access {
+  /**
+   * Ref is the block read.
+   */
+  ref?: BlockRef
+  /**
+   * Size is the stored size of the block in bytes.
+   */
+  size?: number
+  /**
+   * ElapsedUs is the time from the start of the log to the read, in
+   * microseconds.
+   */
+  elapsedUs?: bigint
+}
+
+export const Access: MessageType<Access> =
+  /* @__PURE__ */ createMessageType<Access>('block.Access', () => [
+    [1, 'ref', 11, 0, BlockRef.codec],
+    [2, 'size', 13],
+    [3, 'elapsed_us', 4],
+  ])
 
 /**
  * PutOpts are options that can be passed to PutBlock.
@@ -294,8 +255,6 @@ export interface PutOpts {
   /**
    * HashType is the hash type to use.
    * If unset (0 value) will use default for the store.
-   *
-   * @generated from field: hash.HashType hash_type = 1;
    */
   hashType?: HashType
   /**
@@ -304,16 +263,12 @@ export interface PutOpts {
    *
    * If the generated BlockRef does not match, the storage operation is aborted
    * and returns block.ErrBlockRefMismatch.
-   *
-   * @generated from field: block.BlockRef force_block_ref = 2;
    */
   forceBlockRef?: BlockRef
   /**
    * Refs are outgoing block references recorded with this write.
    * GC-aware stores consume these refs as part of the put. Stores that do not
    * participate in GC ignore this field.
-   *
-   * @generated from field: repeated block.BlockRef refs = 3;
    */
   refs?: BlockRef[]
   /**
@@ -322,8 +277,6 @@ export interface PutOpts {
    * read-through path without waiting for durability. When true, PutBlock
    * enqueues the write, then calls the store Sync barrier so this write and all
    * prior buffered writes for the store are durable before return.
-   *
-   * @generated from field: bool sync = 4;
    */
   sync?: boolean
   /**
@@ -331,19 +284,15 @@ export interface PutOpts {
    * store records its outgoing refs but gives it no owner: a new block is
    * staged as a garbage candidate, and an existing block keeps its edges. The
    * copy then lives only while a retained root reaches it.
-   *
-   * @generated from field: bool cache_fill = 5;
    */
   cacheFill?: boolean
 }
 
-export const PutOpts: MessageType<PutOpts> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.PutOpts',
-  fields: [
-    { no: 1, name: 'hash_type', kind: 'enum', T: HashType_Enum },
-    { no: 2, name: 'force_block_ref', kind: 'message', T: BlockRef },
-    { no: 3, name: 'refs', kind: 'message', T: BlockRef, repeated: true },
-    { no: 4, name: 'sync', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'cache_fill', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const PutOpts: MessageType<PutOpts> =
+  /* @__PURE__ */ createMessageType<PutOpts>('block.PutOpts', () => [
+    [1, 'hash_type', 14, 0, HashType_Enum],
+    [2, 'force_block_ref', 11, 0, BlockRef.codec],
+    [3, 'refs', 11, 1, BlockRef.codec],
+    [4, 'sync', 8],
+    [5, 'cache_fill', 8],
+  ])

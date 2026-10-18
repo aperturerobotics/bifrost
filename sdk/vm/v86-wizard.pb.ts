@@ -2,45 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/sdk/vm/v86-wizard.proto (package s4wave.vm, syntax proto3)
 /* eslint-disable */
 
-import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * Source identifies how the wizard resolves the V86Image input.
- *
- * @generated from enum s4wave.vm.V86WizardConfig.Source
- */
-export enum V86WizardConfig_Source {
-  /**
-   * Source_SOURCE_UNSPECIFIED leaves the image source unset.
-   *
-   * @generated from enum value: SOURCE_UNSPECIFIED = 0;
-   */
-  SOURCE_UNSPECIFIED = 0,
-
-  /**
-   * Source_EXISTING_IN_SPACE uses an existing V86Image from the Space.
-   *
-   * @generated from enum value: EXISTING_IN_SPACE = 1;
-   */
-  EXISTING_IN_SPACE = 1,
-
-  /**
-   * Source_LINK_FROM_CDN links a V86Image that reads its assets from a CDN
-   * source object.
-   *
-   * @generated from enum value: LINK_FROM_CDN = 2;
-   */
-  LINK_FROM_CDN = 2,
-}
-
-export const V86WizardConfig_Source_Enum = /* @__PURE__ */ createEnumType(
-  's4wave.vm.V86WizardConfig.Source',
-  V86WizardConfig_Source,
-)
+import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 
 /**
  * V86WizardConfig contains persistent wizard config for v86 VM creation.
@@ -50,70 +14,81 @@ export const V86WizardConfig_Source_Enum = /* @__PURE__ */ createEnumType(
 export interface V86WizardConfig {
   /**
    * Name is the display name for the final VmV86.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * MemoryMb is the VM memory size in megabytes.
-   *
-   * @generated from field: uint32 memory_mb = 2;
    */
   memoryMb?: number
   /**
    * VgaMemoryMb is the VGA memory size in megabytes.
-   *
-   * @generated from field: uint32 vga_memory_mb = 3;
    */
   vgaMemoryMb?: number
   /**
    * Networking enables network support.
-   *
-   * @generated from field: bool networking = 4;
    */
   networking?: boolean
   /**
    * ImageObjectKey is the target V86Image object key for finalize.
-   *
-   * @generated from field: string image_object_key = 5;
    */
   imageObjectKey?: string
   /**
    * Source selects where the V86Image comes from.
-   *
-   * @generated from field: s4wave.vm.V86WizardConfig.Source source = 6;
    */
   source?: V86WizardConfig_Source
   /**
    * CdnSourceObjectKey is the CDN V86Image object key for copy-from-CDN mode.
-   *
-   * @generated from field: string cdn_source_object_key = 7;
    */
   cdnSourceObjectKey?: string
   /**
    * CdnId identifies which CDN to use. Empty means the default CDN.
-   *
-   * @generated from field: string cdn_id = 8;
    */
   cdnId?: string
 }
 
 export const V86WizardConfig: MessageType<V86WizardConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.V86WizardConfig',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'memory_mb', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'vga_memory_mb', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'networking', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'image_object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'source', kind: 'enum', T: V86WizardConfig_Source_Enum },
-      {
-        no: 7,
-        name: 'cdn_source_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 8, name: 'cdn_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<V86WizardConfig>(
+    's4wave.vm.V86WizardConfig',
+    () => [
+      [1, 'name', 9],
+      [2, 'memory_mb', 13],
+      [3, 'vga_memory_mb', 13],
+      [4, 'networking', 8],
+      [5, 'image_object_key', 9],
+      [6, 'source', 14, 0, V86WizardConfig_Source_Enum],
+      [7, 'cdn_source_object_key', 9],
+      [8, 'cdn_id', 9],
+    ],
+  )
+
+/**
+ * Source identifies how the wizard resolves the V86Image input.
+ *
+ * @generated from enum s4wave.vm.V86WizardConfig.Source
+ */
+export enum V86WizardConfig_Source {
+  /**
+   * Source_SOURCE_UNSPECIFIED leaves the image source unset.
+   */
+  SOURCE_UNSPECIFIED = 0,
+
+  /**
+   * Source_EXISTING_IN_SPACE uses an existing V86Image from the Space.
+   */
+  EXISTING_IN_SPACE = 1,
+
+  /**
+   * Source_LINK_FROM_CDN links a V86Image that reads its assets from a CDN
+   * source object.
+   */
+  LINK_FROM_CDN = 2,
+}
+
+export const V86WizardConfig_Source_Enum = /* @__PURE__ */ createEnumType(
+  's4wave.vm.V86WizardConfig.Source',
+  [
+    [0, 'SOURCE_UNSPECIFIED'],
+    [1, 'EXISTING_IN_SPACE'],
+    [2, 'LINK_FROM_CDN'],
+  ],
+)

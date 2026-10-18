@@ -6,8 +6,6 @@ import type { HashType } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.
 import { HashType_Enum } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the block store rpc controller.
@@ -20,95 +18,61 @@ export interface Config {
   /**
    * BlockStoreId is the block store id to match on the bus.
    * Combined with block_store_ids if also set.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * BlockStoreIds is a list of the block store id to use on the bus.
    * Combined with block_store_id if also set.
-   *
-   * @generated from field: repeated string block_store_ids = 2;
    */
   blockStoreIds?: string[]
   /**
    * ServiceId is the service id to lookup with LookupRpcClient.
    * Cannot be empty.
-   *
-   * @generated from field: string service_id = 3;
    */
   serviceId?: string
   /**
    * ClientId is the client id to use with LookupRpcClient.
    * Can be empty.
-   *
-   * @generated from field: string client_id = 4;
    */
   clientId?: string
   /**
    * ReadOnly disables writing to the rpc store.
-   *
-   * @generated from field: bool read_only = 5;
    */
   readOnly?: boolean
   /**
    * ForceHashType forces writing the given hash type to the store.
    * If unset, accepts any hash type.
-   *
-   * @generated from field: hash.HashType force_hash_type = 6;
    */
   forceHashType?: HashType
   /**
    * BucketIds is a list of bucket ids to serve LookupBlockFromNetwork directives.
-   *
-   * @generated from field: repeated string bucket_ids = 7;
    */
   bucketIds?: string[]
   /**
    * LookupOnStart creates the LookupRpcClient directive on startup.
    * If false, waits until at least one directive references it.
-   *
-   * @generated from field: bool lookup_on_start = 8;
    */
   lookupOnStart?: boolean
   /**
    * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 9;
    */
   skipNotFound?: boolean
   /**
    * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 10;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.rpc.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 2,
-      name: 'block_store_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 3, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'client_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'read_only', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 6, name: 'force_hash_type', kind: 'enum', T: HashType_Enum },
-    {
-      no: 7,
-      name: 'bucket_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 8, name: 'lookup_on_start', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 9, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 10, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('block.store.rpc.Config', () => [
+    [1, 'block_store_id', 9],
+    [2, 'block_store_ids', 9, 1],
+    [3, 'service_id', 9],
+    [4, 'client_id', 9],
+    [5, 'read_only', 8],
+    [6, 'force_hash_type', 14, 0, HashType_Enum],
+    [7, 'bucket_ids', 9, 1],
+    [8, 'lookup_on_start', 8],
+    [9, 'skip_not_found', 8],
+    [10, 'verbose', 8],
+  ])

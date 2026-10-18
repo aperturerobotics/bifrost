@@ -4,152 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * FetchRequestInfo contains all information about the request excluding the body.
- *
- * @generated from message web.fetch.FetchRequestInfo
- */
-export interface FetchRequestInfo {
-  /**
-   * Method is the request method.
-   * i.e. "GET"
-   *
-   * @generated from field: string method = 1;
-   */
-  method?: string
-  /**
-   * Url is the request url.
-   *
-   * @generated from field: string url = 2;
-   */
-  url?: string
-  /**
-   * Headers is the map of request header key/value pairs.
-   *
-   * @generated from field: map<string, string> headers = 3;
-   */
-  headers?: { [key: string]: string }
-  /**
-   * HasBody indicates there will be follow up Data packets.
-   *
-   * @generated from field: bool has_body = 4;
-   */
-  hasBody?: boolean
-  /**
-   * ClientId is the identifier of the client that sent the request.
-   *
-   * @generated from field: string client_id = 5;
-   */
-  clientId?: string
-  /**
-   * Destination is the kind of resource requested.
-   *
-   * "audio" | "audioworklet" | "document" | "embed" | "font" | "frame" |
-   * "iframe" | "image" | "manifest" | "object" | "paintworklet" | "report" |
-   * "script" | "sharedworker" | "style" | "track" | "video" | "worker" | "xslt"
-   *
-   * @generated from field: string destination = 6;
-   */
-  destination?: string
-  /**
-   * Integrity contains a cryptographic hash of the resource being fetched.
-   *
-   * optional
-   *
-   * @generated from field: string integrity = 7;
-   */
-  integrity?: string
-  /**
-   * Mode is the request mode, indicating if CORS should be allowed or not.
-   *
-   * "cors" | "navigate" | "no-cors" | "same-origin"
-   * defaults to "cors"
-   *
-   * @generated from field: string mode = 8;
-   */
-  mode?: string
-  /**
-   * Redirect indicates the redirect policy for the request.
-   *
-   * "error" | "follow" | "manual"
-   * defaults to "follow"
-   *
-   * @generated from field: string redirect = 9;
-   */
-  redirect?: string
-  /**
-   * Referrer is the request referrer.
-   *
-   * @generated from field: string referrer = 10;
-   */
-  referrer?: string
-  /**
-   * ReferrerPolicy is the request referrer policy.
-   *
-   * "" | "no-referrer" | "no-referrer-when-downgrade" | "origin" |
-   * "origin-when-cross-origin" | "same-origin" | "strict-origin" |
-   * "strict-origin-when-cross-origin" | "unsafe-url"
-   *
-   * @generated from field: string referrer_policy = 11;
-   */
-  referrerPolicy?: string
-}
-
-export const FetchRequestInfo: MessageType<FetchRequestInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.fetch.FetchRequestInfo',
-    fields: [
-      { no: 1, name: 'method', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'url', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'headers',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-      { no: 4, name: 'has_body', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'client_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'destination', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'integrity', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'mode', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'redirect', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'referrer', kind: 'scalar', T: ScalarType.STRING },
-      { no: 11, name: 'referrer_policy', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * FetchRequestData contains a streaming request data packet.
- *
- * @generated from message web.fetch.FetchRequestData
- */
-export interface FetchRequestData {
-  /**
-   * Data is the request data chunk.
-   *
-   * @generated from field: bytes data = 1;
-   */
-  data?: Uint8Array
-  /**
-   * Done indicates the stream is closed after data.
-   *
-   * @generated from field: bool done = 2;
-   */
-  done?: boolean
-}
-
-export const FetchRequestData: MessageType<FetchRequestData> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.fetch.FetchRequestData',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'done', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * FetchRequest is the message to initialize a Fetch request.
@@ -163,143 +17,131 @@ export interface FetchRequest {
    * @generated from oneof web.fetch.FetchRequest.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * FetchRequestInfo contains the headers and other request info.
-         *
-         * @generated from field: web.fetch.FetchRequestInfo request_info = 1;
-         */
-        value: FetchRequestInfo
-        case: 'requestInfo'
-      }
-    | {
-        /**
-         * FetchRequestData contains a request data packet.
-         *
-         * @generated from field: web.fetch.FetchRequestData request_data = 2;
-         */
-        value: FetchRequestData
-        case: 'requestData'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: FetchRequestInfo; case: 'requestInfo' }
+    | { value: FetchRequestData; case: 'requestData' }
 }
 
 export const FetchRequest: MessageType<FetchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.fetch.FetchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'request_info',
-        kind: 'message',
-        T: FetchRequestInfo,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'request_data',
-        kind: 'message',
-        T: FetchRequestData,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchRequest>(
+    'web.fetch.FetchRequest',
+    () => [
+      [1, 'request_info', 11, 0, FetchRequestInfo.codec, 'body'],
+      [2, 'request_data', 11, 0, FetchRequestData.codec, 'body'],
+    ],
+  )
 
 /**
- * ResponseInfo contains information about the response.
+ * FetchRequestInfo contains all information about the request excluding the body.
  *
- * @generated from message web.fetch.ResponseInfo
+ * @generated from message web.fetch.FetchRequestInfo
  */
-export interface ResponseInfo {
+export interface FetchRequestInfo {
   /**
-   * Headers is the map of response header key/value pairs.
-   *
-   * @generated from field: map<string, string> headers = 1;
+   * Method is the request method.
+   * i.e. "GET"
+   */
+  method?: string
+  /**
+   * Url is the request url.
+   */
+  url?: string
+  /**
+   * Headers is the map of request header key/value pairs.
    */
   headers?: { [key: string]: string }
   /**
-   * Ok indicates if the response was ok.
-   *
-   * @generated from field: bool ok = 2;
+   * HasBody indicates there will be follow up Data packets.
    */
-  ok?: boolean
+  hasBody?: boolean
   /**
-   * Redirected indicates if the request was redirected
-   *
-   * @generated from field: bool redirected = 3;
+   * ClientId is the identifier of the client that sent the request.
    */
-  redirected?: boolean
+  clientId?: string
   /**
-   * Status is the HTTP status code.
+   * Destination is the kind of resource requested.
    *
-   * @generated from field: uint32 status = 4;
+   * "audio" | "audioworklet" | "document" | "embed" | "font" | "frame" |
+   * "iframe" | "image" | "manifest" | "object" | "paintworklet" | "report" |
+   * "script" | "sharedworker" | "style" | "track" | "video" | "worker" | "xslt"
    */
-  status?: number
+  destination?: string
   /**
-   * StatusText is the HTTP status text.
+   * Integrity contains a cryptographic hash of the resource being fetched.
    *
-   * @generated from field: string status_text = 5;
+   * optional
    */
-  statusText?: string
+  integrity?: string
   /**
-   * ResponseType is the type of response.
-   * "basic" | "cors" | "default" | "error" | "opaque" | "opaqueredirect"
+   * Mode is the request mode, indicating if CORS should be allowed or not.
    *
-   * @generated from field: string response_type = 6;
+   * "cors" | "navigate" | "no-cors" | "same-origin"
+   * defaults to "cors"
    */
-  responseType?: string
+  mode?: string
+  /**
+   * Redirect indicates the redirect policy for the request.
+   *
+   * "error" | "follow" | "manual"
+   * defaults to "follow"
+   */
+  redirect?: string
+  /**
+   * Referrer is the request referrer.
+   */
+  referrer?: string
+  /**
+   * ReferrerPolicy is the request referrer policy.
+   *
+   * "" | "no-referrer" | "no-referrer-when-downgrade" | "origin" |
+   * "origin-when-cross-origin" | "same-origin" | "strict-origin" |
+   * "strict-origin-when-cross-origin" | "unsafe-url"
+   */
+  referrerPolicy?: string
 }
 
-export const ResponseInfo: MessageType<ResponseInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.fetch.ResponseInfo',
-    fields: [
-      {
-        no: 1,
-        name: 'headers',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-      { no: 2, name: 'ok', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'redirected', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'status', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'status_text', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'response_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const FetchRequestInfo: MessageType<FetchRequestInfo> =
+  /* @__PURE__ */ createMessageType<FetchRequestInfo>(
+    'web.fetch.FetchRequestInfo',
+    () => [
+      [1, 'method', 9],
+      [2, 'url', 9],
+      [3, 'headers', 9, 584],
+      [4, 'has_body', 8],
+      [5, 'client_id', 9],
+      [6, 'destination', 9],
+      [7, 'integrity', 9],
+      [8, 'mode', 9],
+      [9, 'redirect', 9],
+      [10, 'referrer', 9],
+      [11, 'referrer_policy', 9],
+    ],
+  )
 
 /**
- * ResponseData contains a streaming response data packet.
+ * FetchRequestData contains a streaming request data packet.
  *
- * @generated from message web.fetch.ResponseData
+ * @generated from message web.fetch.FetchRequestData
  */
-export interface ResponseData {
+export interface FetchRequestData {
   /**
-   * Data is the response data chunk.
-   *
-   * @generated from field: bytes data = 1;
+   * Data is the request data chunk.
    */
   data?: Uint8Array
   /**
    * Done indicates the stream is closed after data.
-   *
-   * @generated from field: bool done = 2;
    */
   done?: boolean
 }
 
-export const ResponseData: MessageType<ResponseData> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.fetch.ResponseData',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'done', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const FetchRequestData: MessageType<FetchRequestData> =
+  /* @__PURE__ */ createMessageType<FetchRequestData>(
+    'web.fetch.FetchRequestData',
+    () => [
+      [1, 'data', 12],
+      [2, 'done', 8],
+    ],
+  )
 
 /**
  * FetchResponse is a message in a Fetch response stream.
@@ -314,47 +156,87 @@ export interface FetchResponse {
    * @generated from oneof web.fetch.FetchResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * ResponseInfo contains the headers and other response info.
-         *
-         * @generated from field: web.fetch.ResponseInfo response_info = 1;
-         */
-        value: ResponseInfo
-        case: 'responseInfo'
-      }
-    | {
-        /**
-         * ResponseData contains a response data packet.
-         *
-         * @generated from field: web.fetch.ResponseData response_data = 2;
-         */
-        value: ResponseData
-        case: 'responseData'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: ResponseInfo; case: 'responseInfo' }
+    | { value: ResponseData; case: 'responseData' }
 }
 
 export const FetchResponse: MessageType<FetchResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'web.fetch.FetchResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'response_info',
-        kind: 'message',
-        T: ResponseInfo,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'response_data',
-        kind: 'message',
-        T: ResponseData,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchResponse>(
+    'web.fetch.FetchResponse',
+    () => [
+      [1, 'response_info', 11, 0, ResponseInfo.codec, 'body'],
+      [2, 'response_data', 11, 0, ResponseData.codec, 'body'],
+    ],
+  )
+
+/**
+ * ResponseInfo contains information about the response.
+ *
+ * @generated from message web.fetch.ResponseInfo
+ */
+export interface ResponseInfo {
+  /**
+   * Headers is the map of response header key/value pairs.
+   */
+  headers?: { [key: string]: string }
+  /**
+   * Ok indicates if the response was ok.
+   */
+  ok?: boolean
+  /**
+   * Redirected indicates if the request was redirected
+   */
+  redirected?: boolean
+  /**
+   * Status is the HTTP status code.
+   */
+  status?: number
+  /**
+   * StatusText is the HTTP status text.
+   */
+  statusText?: string
+  /**
+   * ResponseType is the type of response.
+   * "basic" | "cors" | "default" | "error" | "opaque" | "opaqueredirect"
+   */
+  responseType?: string
+}
+
+export const ResponseInfo: MessageType<ResponseInfo> =
+  /* @__PURE__ */ createMessageType<ResponseInfo>(
+    'web.fetch.ResponseInfo',
+    () => [
+      [1, 'headers', 9, 584],
+      [2, 'ok', 8],
+      [3, 'redirected', 8],
+      [4, 'status', 13],
+      [5, 'status_text', 9],
+      [6, 'response_type', 9],
+    ],
+  )
+
+/**
+ * ResponseData contains a streaming response data packet.
+ *
+ * @generated from message web.fetch.ResponseData
+ */
+export interface ResponseData {
+  /**
+   * Data is the response data chunk.
+   */
+  data?: Uint8Array
+  /**
+   * Done indicates the stream is closed after data.
+   */
+  done?: boolean
+}
+
+export const ResponseData: MessageType<ResponseData> =
+  /* @__PURE__ */ createMessageType<ResponseData>(
+    'web.fetch.ResponseData',
+    () => [
+      [1, 'data', 12],
+      [2, 'done', 8],
+    ],
+  )

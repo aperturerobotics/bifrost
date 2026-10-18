@@ -8,8 +8,6 @@ import { Config as Config$3 } from '@go/github.com/s4wave/spacewave/db/daemon/ap
 import { Config as Config$4 } from '../api.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the GRPC API.
@@ -19,71 +17,54 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * ListenAddr is the address to listen on for connections.
-   *
-   * @generated from field: string listen_addr = 1;
    */
   listenAddr?: string
   /**
    * DisableBifrostApi disables the bifrost api.
-   *
-   * @generated from field: bool disable_bifrost_api = 2;
    */
   disableBifrostApi?: boolean
   /**
    * BifrostApiConfig are bifrost api config options.
-   *
-   * @generated from field: bifrost.api.Config bifrost_api_config = 3;
    */
   bifrostApiConfig?: Config$1
   /**
    * DisableBusApi disables the bus api.
-   *
-   * @generated from field: bool disable_bus_api = 4;
    */
   disableBusApi?: boolean
   /**
    * BusApiConfig are controller-bus bus api config options.
-   *
-   * @generated from field: bus.api.Config bus_api_config = 5;
    */
   busApiConfig?: Config$2
   /**
    * DisableHydraApi disables the hydra api.
-   *
-   * @generated from field: bool disable_hydra_api = 7;
    */
   disableHydraApi?: boolean
   /**
    * HydraApiConfig are hydra api options.
-   *
-   * @generated from field: hydra.api.Config hydra_api_config = 6;
    */
   hydraApiConfig?: Config$3
   /**
    * DisableForgeApi disables the forge api.
-   *
-   * @generated from field: bool disable_forge_api = 8;
    */
   disableForgeApi?: boolean
   /**
    * ForgeApiConfig are forge api options.
-   *
-   * @generated from field: forge.api.Config forge_api_config = 9;
    */
   forgeApiConfig?: Config$4
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.api.controller.Config',
-  fields: [
-    { no: 1, name: 'listen_addr', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'disable_bifrost_api', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 3, name: 'bifrost_api_config', kind: 'message', T: () => Config$1 },
-    { no: 4, name: 'disable_bus_api', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 5, name: 'bus_api_config', kind: 'message', T: () => Config$2 },
-    { no: 7, name: 'disable_hydra_api', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 6, name: 'hydra_api_config', kind: 'message', T: () => Config$3 },
-    { no: 8, name: 'disable_forge_api', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 9, name: 'forge_api_config', kind: 'message', T: () => Config$4 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'forge.api.controller.Config',
+    () => [
+      [1, 'listen_addr', 9],
+      [2, 'disable_bifrost_api', 8],
+      [3, 'bifrost_api_config', 11, 0, Config$1.codec],
+      [4, 'disable_bus_api', 8],
+      [5, 'bus_api_config', 11, 0, Config$2.codec],
+      [6, 'hydra_api_config', 11, 0, Config$3.codec],
+      [7, 'disable_hydra_api', 8],
+      [8, 'disable_forge_api', 8],
+      [9, 'forge_api_config', 11, 0, Config$4.codec],
+    ],
+  )

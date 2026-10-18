@@ -3,13 +3,8 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { ProviderInfo } from '../../core/provider/provider.pb.js'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * GetProviderInfoRequest is the request type for GetProviderInfo.
@@ -19,9 +14,9 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 export interface GetProviderInfoRequest {}
 
 export const GetProviderInfoRequest: MessageType<GetProviderInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetProviderInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetProviderInfoRequest>(
     's4wave.provider.GetProviderInfoRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -32,19 +27,15 @@ export const GetProviderInfoRequest: MessageType<GetProviderInfoRequest> =
 export interface GetProviderInfoResponse {
   /**
    * ProviderInfo contains the provider information.
-   *
-   * @generated from field: provider.ProviderInfo provider_info = 1;
    */
   providerInfo?: ProviderInfo
 }
 
 export const GetProviderInfoResponse: MessageType<GetProviderInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.GetProviderInfoResponse',
-    fields: [
-      { no: 1, name: 'provider_info', kind: 'message', T: () => ProviderInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetProviderInfoResponse>(
+    's4wave.provider.GetProviderInfoResponse',
+    () => [[1, 'provider_info', 11, 0, ProviderInfo.codec]],
+  )
 
 /**
  * AccessProviderAccountRequest is the request type for AccessProviderAccount.
@@ -54,19 +45,15 @@ export const GetProviderInfoResponse: MessageType<GetProviderInfoResponse> =
 export interface AccessProviderAccountRequest {
   /**
    * AccountId is the provider account ID to access.
-   *
-   * @generated from field: string account_id = 1;
    */
   accountId?: string
 }
 
 export const AccessProviderAccountRequest: MessageType<AccessProviderAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.AccessProviderAccountRequest',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessProviderAccountRequest>(
+    's4wave.provider.AccessProviderAccountRequest',
+    () => [[1, 'account_id', 9]],
+  )
 
 /**
  * AccessProviderAccountResponse is the response type for AccessProviderAccount.
@@ -76,16 +63,12 @@ export const AccessProviderAccountRequest: MessageType<AccessProviderAccountRequ
 export interface AccessProviderAccountResponse {
   /**
    * ResourceId is the ID of the mounted account resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessProviderAccountResponse: MessageType<AccessProviderAccountResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.provider.AccessProviderAccountResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessProviderAccountResponse>(
+    's4wave.provider.AccessProviderAccountResponse',
+    () => [[1, 'resource_id', 13]],
+  )

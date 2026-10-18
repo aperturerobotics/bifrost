@@ -6,8 +6,6 @@ import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import { ProviderResourceRef } from '../provider/provider.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * SessionType identifies the type of session.
@@ -17,45 +15,40 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 export enum SessionType {
   /**
    * SESSION_TYPE_UNKNOWN is the default unknown session type.
-   *
-   * @generated from enum value: SESSION_TYPE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * SESSION_TYPE_USER is a human user session.
-   *
-   * @generated from enum value: SESSION_TYPE_USER = 1;
    */
   USER = 1,
 
   /**
    * SESSION_TYPE_APP is a third-party application session.
-   *
-   * @generated from enum value: SESSION_TYPE_APP = 2;
    */
   APP = 2,
 
   /**
    * SESSION_TYPE_DEVICE is a linked device session.
-   *
-   * @generated from enum value: SESSION_TYPE_DEVICE = 3;
    */
   DEVICE = 3,
 
   /**
    * SESSION_TYPE_SERVICE is an automated service session, such as a release
    * pipeline, on an account with no entity keypair.
-   *
-   * @generated from enum value: SESSION_TYPE_SERVICE = 4;
    */
   SERVICE = 4,
 }
 
 export const SessionType_Enum = /* @__PURE__ */ createEnumType(
   'session.SessionType',
-  SessionType,
-  'SESSION_TYPE_',
+  [
+    [0, 'SESSION_TYPE_UNKNOWN'],
+    [1, 'SESSION_TYPE_USER'],
+    [2, 'SESSION_TYPE_APP'],
+    [3, 'SESSION_TYPE_DEVICE'],
+    [4, 'SESSION_TYPE_SERVICE'],
+  ],
 )
 
 /**
@@ -66,23 +59,21 @@ export const SessionType_Enum = /* @__PURE__ */ createEnumType(
 export enum SessionLockMode {
   /**
    * SESSION_LOCK_MODE_AUTO_UNLOCK is encrypted with volume-derived key.
-   *
-   * @generated from enum value: SESSION_LOCK_MODE_AUTO_UNLOCK = 0;
    */
   AUTO_UNLOCK = 0,
 
   /**
    * SESSION_LOCK_MODE_PIN_ENCRYPTED is encrypted with PIN-derived key.
-   *
-   * @generated from enum value: SESSION_LOCK_MODE_PIN_ENCRYPTED = 1;
    */
   PIN_ENCRYPTED = 1,
 }
 
 export const SessionLockMode_Enum = /* @__PURE__ */ createEnumType(
   'session.SessionLockMode',
-  SessionLockMode,
-  'SESSION_LOCK_MODE_',
+  [
+    [0, 'SESSION_LOCK_MODE_AUTO_UNLOCK'],
+    [1, 'SESSION_LOCK_MODE_PIN_ENCRYPTED'],
+  ],
 )
 
 /**
@@ -93,30 +84,27 @@ export const SessionLockMode_Enum = /* @__PURE__ */ createEnumType(
 export enum SessionRecoveryState {
   /**
    * SESSION_RECOVERY_STATE_UNKNOWN means the reset path has not been inspected.
-   *
-   * @generated from enum value: SESSION_RECOVERY_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * SESSION_RECOVERY_STATE_AVAILABLE means ResetSession can recover without the current PIN.
-   *
-   * @generated from enum value: SESSION_RECOVERY_STATE_AVAILABLE = 1;
    */
   AVAILABLE = 1,
 
   /**
    * SESSION_RECOVERY_STATE_UNAVAILABLE means the current PIN is the only unlock method.
-   *
-   * @generated from enum value: SESSION_RECOVERY_STATE_UNAVAILABLE = 2;
    */
   UNAVAILABLE = 2,
 }
 
 export const SessionRecoveryState_Enum = /* @__PURE__ */ createEnumType(
   'session.SessionRecoveryState',
-  SessionRecoveryState,
-  'SESSION_RECOVERY_STATE_',
+  [
+    [0, 'SESSION_RECOVERY_STATE_UNKNOWN'],
+    [1, 'SESSION_RECOVERY_STATE_AVAILABLE'],
+    [2, 'SESSION_RECOVERY_STATE_UNAVAILABLE'],
+  ],
 )
 
 /**
@@ -130,24 +118,14 @@ export interface SessionRef {
    * Contains the session ID, provider ID and provider account ID.
    * The session ID is the ID for this particular session.
    * The provider account ID is the ID for this user account.
-   *
-   * @generated from field: provider.ProviderResourceRef provider_resource_ref = 1;
    */
   providerResourceRef?: ProviderResourceRef
 }
 
 export const SessionRef: MessageType<SessionRef> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'session.SessionRef',
-    fields: [
-      {
-        no: 1,
-        name: 'provider_resource_ref',
-        kind: 'message',
-        T: () => ProviderResourceRef,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SessionRef>('session.SessionRef', () => [
+    [1, 'provider_resource_ref', 11, 0, ProviderResourceRef.codec],
+  ])
 
 /**
  * SessionListEntry is an entry in the local session list.
@@ -158,64 +136,22 @@ export interface SessionListEntry {
   /**
    * SessionIndex is the index of the session.
    * The session is accessible at /u/{session-index}/...
-   *
-   * @generated from field: uint32 session_index = 1;
    */
   sessionIndex?: number
   /**
    * SessionRef is the reference to the session.
-   *
-   * @generated from field: session.SessionRef session_ref = 2;
    */
   sessionRef?: SessionRef
 }
 
 export const SessionListEntry: MessageType<SessionListEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'session.SessionListEntry',
-    fields: [
-      { no: 1, name: 'session_index', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'session_ref', kind: 'message', T: SessionRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BackgroundPlugin is a user's confirmation that one plugin of one Space may
- * run in the background.
- *
- * @generated from message session.BackgroundPlugin
- */
-export interface BackgroundPlugin {
-  /**
-   * SpaceId is the shared object ID of the Space.
-   *
-   * @generated from field: string space_id = 1;
-   */
-  spaceId?: string
-  /**
-   * PluginId is the manifest ID of the plugin.
-   *
-   * @generated from field: string plugin_id = 2;
-   */
-  pluginId?: string
-  /**
-   * Suspended keeps the confirmation while the plugin does not run in the
-   * background.
-   *
-   * @generated from field: bool suspended = 3;
-   */
-  suspended?: boolean
-}
-
-export const BackgroundPlugin: MessageType<BackgroundPlugin> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'session.BackgroundPlugin',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'suspended', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SessionListEntry>(
+    'session.SessionListEntry',
+    () => [
+      [1, 'session_index', 13],
+      [2, 'session_ref', 11, 0, SessionRef.codec],
+    ],
+  )
 
 /**
  * SessionMetadata contains display and pre-mount lock information for a session.
@@ -226,121 +162,105 @@ export const BackgroundPlugin: MessageType<BackgroundPlugin> =
 export interface SessionMetadata {
   /**
    * DisplayName is the display name for the session (username/entity_id).
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
   /**
    * ProviderDisplayName is the display name of the provider.
-   *
-   * @generated from field: string provider_display_name = 2;
    */
   providerDisplayName?: string
   /**
    * ProviderAccountId is the provider account identifier.
-   *
-   * @generated from field: string provider_account_id = 3;
    */
   providerAccountId?: string
   /**
    * LockMode is set at registration and updated by SetLockMode.
    * Used as a pre-mount hint to show the PIN overlay before the session mounts.
    * The authoritative lock state comes from WatchLockState on the mounted session.
-   *
-   * @generated from field: session.SessionLockMode lock_mode = 4;
    */
   lockMode?: SessionLockMode
   /**
    * CreatedAt is the creation timestamp in milliseconds since epoch.
-   *
-   * @generated from field: int64 created_at = 5;
    */
   createdAt?: bigint
   /**
    * CloudAccountId is the cloud account ULID for free local sessions.
    * Set when a local session is created with a cloud identity.
-   *
-   * @generated from field: string cloud_account_id = 7;
    */
   cloudAccountId?: string
   /**
    * CloudEntityId is the cloud username for free local sessions.
-   *
-   * @generated from field: string cloud_entity_id = 8;
    */
   cloudEntityId?: string
   /**
    * ProviderId is the provider type identifier (e.g. "spacewave", "local").
-   *
-   * @generated from field: string provider_id = 10;
    */
   providerId?: string
   /**
    * RecoveryState reports whether the PIN reset path can recover this session.
-   *
-   * @generated from field: session.SessionRecoveryState recovery_state = 11;
    */
   recoveryState?: SessionRecoveryState
   /**
    * DirectP2PDisabled opts this Session out of direct peer transport.
    * The zero value preserves direct P2P for existing Session metadata.
-   *
-   * @generated from field: bool direct_p2p_disabled = 12;
    */
   directP2pDisabled?: boolean
   /**
    * BackgroundPlugins lists the plugins the user confirmed to run in the
    * background, sorted by Space and plugin ID. The Session keeps each listed
    * Space's plugins running while the Session runs.
-   *
-   * @generated from field: repeated session.BackgroundPlugin background_plugins = 13;
    */
   backgroundPlugins?: BackgroundPlugin[]
 }
 
 export const SessionMetadata: MessageType<SessionMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'session.SessionMetadata',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'provider_display_name',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 3,
-        name: 'provider_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'lock_mode', kind: 'enum', T: SessionLockMode_Enum },
-      { no: 5, name: 'created_at', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 7, name: 'cloud_account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'cloud_entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 11,
-        name: 'recovery_state',
-        kind: 'enum',
-        T: SessionRecoveryState_Enum,
-      },
-      {
-        no: 12,
-        name: 'direct_p2p_disabled',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-      {
-        no: 13,
-        name: 'background_plugins',
-        kind: 'message',
-        T: BackgroundPlugin,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SessionMetadata>(
+    'session.SessionMetadata',
+    () => [
+      [1, 'display_name', 9],
+      [2, 'provider_display_name', 9],
+      [3, 'provider_account_id', 9],
+      [4, 'lock_mode', 14, 0, SessionLockMode_Enum],
+      [5, 'created_at', 3],
+      [7, 'cloud_account_id', 9],
+      [8, 'cloud_entity_id', 9],
+      [10, 'provider_id', 9],
+      [11, 'recovery_state', 14, 0, SessionRecoveryState_Enum],
+      [12, 'direct_p2p_disabled', 8],
+      [13, 'background_plugins', 11, 1, BackgroundPlugin.codec],
+    ],
+  )
+
+/**
+ * BackgroundPlugin is a user's confirmation that one plugin of one Space may
+ * run in the background.
+ *
+ * @generated from message session.BackgroundPlugin
+ */
+export interface BackgroundPlugin {
+  /**
+   * SpaceId is the shared object ID of the Space.
+   */
+  spaceId?: string
+  /**
+   * PluginId is the manifest ID of the plugin.
+   */
+  pluginId?: string
+  /**
+   * Suspended keeps the confirmation while the plugin does not run in the
+   * background.
+   */
+  suspended?: boolean
+}
+
+export const BackgroundPlugin: MessageType<BackgroundPlugin> =
+  /* @__PURE__ */ createMessageType<BackgroundPlugin>(
+    'session.BackgroundPlugin',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'plugin_id', 9],
+      [3, 'suspended', 8],
+    ],
+  )
 
 /**
  * EntityKeypair is a keypair associated with an entity for authentication.
@@ -350,33 +270,27 @@ export const SessionMetadata: MessageType<SessionMetadata> =
 export interface EntityKeypair {
   /**
    * PeerId is the peer ID associated with this keypair.
-   *
-   * @generated from field: string peer_id = 1;
    */
   peerId?: string
   /**
    * AuthMethod is the authentication method.
-   *
-   * @generated from field: string auth_method = 2;
    */
   authMethod?: string
   /**
    * AuthParams is optional authentication parameters.
-   *
-   * @generated from field: bytes auth_params = 3;
    */
   authParams?: Uint8Array
 }
 
 export const EntityKeypair: MessageType<EntityKeypair> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'session.EntityKeypair',
-    fields: [
-      { no: 1, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'auth_method', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'auth_params', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EntityKeypair>(
+    'session.EntityKeypair',
+    () => [
+      [1, 'peer_id', 9],
+      [2, 'auth_method', 9],
+      [3, 'auth_params', 12],
+    ],
+  )
 
 /**
  * EntityCredential is a credential for deriving an entity private key.
@@ -390,47 +304,16 @@ export interface EntityCredential {
    * @generated from oneof session.EntityCredential.credential
    */
   credential?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Password derives the entity key via triplesec(username, password).
-         *
-         * @generated from field: string password = 1;
-         */
-        value: string
-        case: 'password'
-      }
-    | {
-        /**
-         * PemPrivateKey is the entity private key in PEM format.
-         *
-         * @generated from field: bytes pem_private_key = 2;
-         */
-        value: Uint8Array
-        case: 'pemPrivateKey'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: string; case: 'password' }
+    | { value: Uint8Array; case: 'pemPrivateKey' }
 }
 
 export const EntityCredential: MessageType<EntityCredential> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'session.EntityCredential',
-    fields: [
-      {
-        no: 1,
-        name: 'password',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        oneof: 'credential',
-      },
-      {
-        no: 2,
-        name: 'pem_private_key',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        oneof: 'credential',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EntityCredential>(
+    'session.EntityCredential',
+    () => [
+      [1, 'password', 9, 0, 0, 'credential'],
+      [2, 'pem_private_key', 12, 0, 0, 'credential'],
+    ],
+  )

@@ -5,8 +5,6 @@
 import { Opts as Opts$1 } from '../quic/quic.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Opts are extra options for the conn.
@@ -16,21 +14,15 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Opts {
   /**
    * Quic are the quic protocol options.
-   *
-   * @generated from field: transport.quic.Opts quic = 1;
    */
   quic?: Opts$1
   /**
    * Verbose turns on verbose debug logging.
-   *
-   * @generated from field: bool verbose = 2;
    */
   verbose?: boolean
   /**
    * Mtu sets the maximum size for a single packet.
    * Defaults to 65000.
-   *
-   * @generated from field: uint32 mtu = 3;
    */
   mtu?: number
   /**
@@ -38,18 +30,16 @@ export interface Opts {
    *
    * Total memory cap is mtu * bufSize.
    * Defaults to 10.
-   *
-   * @generated from field: uint32 buf_size = 4;
    */
   bufSize?: number
 }
 
-export const Opts: MessageType<Opts> = /* @__PURE__ */ createMessageType({
-  typeName: 'conn.Opts',
-  fields: [
-    { no: 1, name: 'quic', kind: 'message', T: () => Opts$1 },
-    { no: 2, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 3, name: 'mtu', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 4, name: 'buf_size', kind: 'scalar', T: ScalarType.UINT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Opts: MessageType<Opts> = /* @__PURE__ */ createMessageType<Opts>(
+  'conn.Opts',
+  () => [
+    [1, 'quic', 11, 0, Opts$1.codec],
+    [2, 'verbose', 8],
+    [3, 'mtu', 13],
+    [4, 'buf_size', 13],
+  ],
+)

@@ -4,14 +4,8 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Validation } from '../../bldr/project/validate/validate.pb.js'
-import { StepConfig } from '../../db/block/transform/transform.pb.js'
 import { SpaceSettings } from '../../core/space/world/world.pb.js'
 import type {
   SOConfigChangeType,
@@ -25,6 +19,7 @@ import {
   SOParticipantRole_Enum,
 } from '../../core/sobject/sobject.pb.js'
 import { MailboxEntryInfo } from '../provider/spacewave/spacewave.pb.js'
+import { StepConfig } from '../../db/block/transform/transform.pb.js'
 import { Secret, SecretPayload } from '../secret/secret.pb.js'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
@@ -36,30 +31,28 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export enum SpaceControl {
   /**
    * SpaceControl_UNKNOWN leaves the control unset.
-   *
-   * @generated from enum value: SpaceControl_UNKNOWN = 0;
    */
   SpaceControl_UNKNOWN = 0,
 
   /**
    * SpaceControl_OWNER means an owner changes members and settings alone.
-   *
-   * @generated from enum value: SpaceControl_OWNER = 1;
    */
   SpaceControl_OWNER = 1,
 
   /**
    * SpaceControl_GROUP means a change needs voters with more than two thirds
    * of the voting weight. No one decides alone, including owners.
-   *
-   * @generated from enum value: SpaceControl_GROUP = 2;
    */
   SpaceControl_GROUP = 2,
 }
 
 export const SpaceControl_Enum = /* @__PURE__ */ createEnumType(
   's4wave.space.SpaceControl',
-  SpaceControl,
+  [
+    [0, 'SpaceControl_UNKNOWN'],
+    [1, 'SpaceControl_OWNER'],
+    [2, 'SpaceControl_GROUP'],
+  ],
 )
 
 /**
@@ -70,46 +63,42 @@ export const SpaceControl_Enum = /* @__PURE__ */ createEnumType(
 export enum SpaceSequencer {
   /**
    * SpaceSequencer_UNKNOWN leaves the sequencer unset.
-   *
-   * @generated from enum value: SpaceSequencer_UNKNOWN = 0;
    */
   SpaceSequencer_UNKNOWN = 0,
 
   /**
    * SpaceSequencer_MERGE means no one orders the edits: every device keeps
    * working and the edits combine.
-   *
-   * @generated from enum value: SpaceSequencer_MERGE = 1;
    */
   SpaceSequencer_MERGE = 1,
 
   /**
    * SpaceSequencer_PROVIDER means the provider's cloud orders the edits.
-   *
-   * @generated from enum value: SpaceSequencer_PROVIDER = 2;
    */
   SpaceSequencer_PROVIDER = 2,
 
   /**
    * SpaceSequencer_THIS_DEVICE means this device orders the edits as the
    * main device.
-   *
-   * @generated from enum value: SpaceSequencer_THIS_DEVICE = 3;
    */
   SpaceSequencer_THIS_DEVICE = 3,
 
   /**
    * SpaceSequencer_OTHER_DEVICE means another member device orders the edits
    * as the main device.
-   *
-   * @generated from enum value: SpaceSequencer_OTHER_DEVICE = 4;
    */
   SpaceSequencer_OTHER_DEVICE = 4,
 }
 
 export const SpaceSequencer_Enum = /* @__PURE__ */ createEnumType(
   's4wave.space.SpaceSequencer',
-  SpaceSequencer,
+  [
+    [0, 'SpaceSequencer_UNKNOWN'],
+    [1, 'SpaceSequencer_MERGE'],
+    [2, 'SpaceSequencer_PROVIDER'],
+    [3, 'SpaceSequencer_THIS_DEVICE'],
+    [4, 'SpaceSequencer_OTHER_DEVICE'],
+  ],
 )
 
 /**
@@ -120,64 +109,57 @@ export const SpaceSequencer_Enum = /* @__PURE__ */ createEnumType(
 export enum SpacePluginLifecycleState {
   /**
    * SpacePluginLifecycleState_UNKNOWN leaves lifecycle state unset.
-   *
-   * @generated from enum value: SpacePluginLifecycleState_UNKNOWN = 0;
    */
   SpacePluginLifecycleState_UNKNOWN = 0,
 
   /**
    * SpacePluginLifecycleState_CONFIGURED means the plugin is configured in Space settings.
-   *
-   * @generated from enum value: SpacePluginLifecycleState_CONFIGURED = 1;
    */
   SpacePluginLifecycleState_CONFIGURED = 1,
 
   /**
    * SpacePluginLifecycleState_LOADING means the plugin runtime has been requested.
-   *
-   * @generated from enum value: SpacePluginLifecycleState_LOADING = 2;
    */
   SpacePluginLifecycleState_LOADING = 2,
 
   /**
    * SpacePluginLifecycleState_LOADED means the plugin runtime is running.
-   *
-   * @generated from enum value: SpacePluginLifecycleState_LOADED = 3;
    */
   SpacePluginLifecycleState_LOADED = 3,
 
   /**
    * SpacePluginLifecycleState_FAILED means the latest runtime attempt failed.
-   *
-   * @generated from enum value: SpacePluginLifecycleState_FAILED = 4;
    */
   SpacePluginLifecycleState_FAILED = 4,
 
   /**
    * SpacePluginLifecycleState_RETRYING means a failed plugin is being requested again.
-   *
-   * @generated from enum value: SpacePluginLifecycleState_RETRYING = 5;
    */
   SpacePluginLifecycleState_RETRYING = 5,
 
   /**
    * SpacePluginLifecycleState_REMOVED is used by app-side transition views after removal.
-   *
-   * @generated from enum value: SpacePluginLifecycleState_REMOVED = 6;
    */
   SpacePluginLifecycleState_REMOVED = 6,
 
   /**
    * SpacePluginLifecycleState_UPGRADED is used by app-side transition views after upgrade.
-   *
-   * @generated from enum value: SpacePluginLifecycleState_UPGRADED = 7;
    */
   SpacePluginLifecycleState_UPGRADED = 7,
 }
 
 export const SpacePluginLifecycleState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.space.SpacePluginLifecycleState',
-  SpacePluginLifecycleState,
+  [
+    [0, 'SpacePluginLifecycleState_UNKNOWN'],
+    [1, 'SpacePluginLifecycleState_CONFIGURED'],
+    [2, 'SpacePluginLifecycleState_LOADING'],
+    [3, 'SpacePluginLifecycleState_LOADED'],
+    [4, 'SpacePluginLifecycleState_FAILED'],
+    [5, 'SpacePluginLifecycleState_RETRYING'],
+    [6, 'SpacePluginLifecycleState_REMOVED'],
+    [7, 'SpacePluginLifecycleState_UPGRADED'],
+  ],
 )
 
 /**
@@ -188,84 +170,66 @@ export const SpacePluginLifecycleState_Enum = /* @__PURE__ */ createEnumType(
 export interface BuildSpacePluginRequest {
   /**
    * SourceKey is a UnixFS directory containing a Bldr project.
-   *
-   * @generated from field: string source_key = 1;
    */
   sourceKey?: string
   /**
    * DeviceKey identifies a Device with a selectable Forge worker capability.
-   *
-   * @generated from field: string device_key = 2;
    */
   deviceKey?: string
   /**
    * ManifestId selects the plugin manifest in the project.
-   *
-   * @generated from field: string manifest_id = 3;
    */
   manifestId?: string
   /**
    * ConfigPath is relative to the source directory; empty selects bldr.yaml.
    * A plugin repository source must leave it empty.
-   *
-   * @generated from field: string config_path = 4;
    */
   configPath?: string
   /**
    * ClusterKey is the Forge Cluster that receives the build Job. It must
    * contain the Device's Worker. If empty, the Worker must belong to one Cluster.
    * Ignored by OpenPluginFrontend.
-   *
-   * @generated from field: string cluster_key = 5;
    */
   clusterKey?: string
   /**
    * PlatformId selects the platform to build: js or the Device's native
    * platform. If empty, the Device's native platform is built.
    * Ignored by OpenPluginFrontend.
-   *
-   * @generated from field: string platform_id = 6;
    */
   platformId?: string
   /**
    * MilliCpu is the CPU the build requests from the Worker in milli-cores.
    * Ignored by OpenPluginFrontend.
-   *
-   * @generated from field: uint64 milli_cpu = 7;
    */
   milliCpu?: bigint
   /**
    * MemoryBytes is the memory the build requests from the Worker in bytes.
    * Ignored by OpenPluginFrontend.
-   *
-   * @generated from field: uint64 memory_bytes = 8;
    */
   memoryBytes?: bigint
   /**
    * Commit is the reviewed commit of a plugin repository source. The build is
    * refused unless the repository's worktree still has it checked out and it
    * passes validation. Required for a plugin repository source.
-   *
-   * @generated from field: string commit = 9;
    */
   commit?: string
 }
 
 export const BuildSpacePluginRequest: MessageType<BuildSpacePluginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.BuildSpacePluginRequest',
-    fields: [
-      { no: 1, name: 'source_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'device_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'config_path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'milli_cpu', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 8, name: 'memory_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 9, name: 'commit', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildSpacePluginRequest>(
+    's4wave.space.BuildSpacePluginRequest',
+    () => [
+      [1, 'source_key', 9],
+      [2, 'device_key', 9],
+      [3, 'manifest_id', 9],
+      [4, 'config_path', 9],
+      [5, 'cluster_key', 9],
+      [6, 'platform_id', 9],
+      [7, 'milli_cpu', 4],
+      [8, 'memory_bytes', 4],
+      [9, 'commit', 9],
+    ],
+  )
 
 /**
  * BuildSpacePluginResponse identifies the durable queued build.
@@ -275,26 +239,22 @@ export const BuildSpacePluginRequest: MessageType<BuildSpacePluginRequest> =
 export interface BuildSpacePluginResponse {
   /**
    * JobKey identifies the Forge Job with the build Task, logs, and results.
-   *
-   * @generated from field: string job_key = 1;
    */
   jobKey?: string
   /**
    * TaskKey identifies the Job's build Task.
-   *
-   * @generated from field: string task_key = 2;
    */
   taskKey?: string
 }
 
 export const BuildSpacePluginResponse: MessageType<BuildSpacePluginResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.BuildSpacePluginResponse',
-    fields: [
-      { no: 1, name: 'job_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'task_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BuildSpacePluginResponse>(
+    's4wave.space.BuildSpacePluginResponse',
+    () => [
+      [1, 'job_key', 9],
+      [2, 'task_key', 9],
+    ],
+  )
 
 /**
  * FetchPluginRepositoryRequest selects a GitHub repository and a device to fetch it.
@@ -304,34 +264,28 @@ export const BuildSpacePluginResponse: MessageType<BuildSpacePluginResponse> =
 export interface FetchPluginRepositoryRequest {
   /**
    * Repository is the GitHub owner/repo, or its https://github.com URL.
-   *
-   * @generated from field: string repository = 1;
    */
   repository?: string
   /**
    * DeviceKey identifies a Device with a selectable Forge worker capability.
-   *
-   * @generated from field: string device_key = 2;
    */
   deviceKey?: string
   /**
    * ClusterKey is the Forge Cluster that receives the Job. It must contain the
    * Device's Worker. If empty, the Worker must belong to one Cluster.
-   *
-   * @generated from field: string cluster_key = 3;
    */
   clusterKey?: string
 }
 
 export const FetchPluginRepositoryRequest: MessageType<FetchPluginRepositoryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.FetchPluginRepositoryRequest',
-    fields: [
-      { no: 1, name: 'repository', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'device_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'cluster_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchPluginRepositoryRequest>(
+    's4wave.space.FetchPluginRepositoryRequest',
+    () => [
+      [1, 'repository', 9],
+      [2, 'device_key', 9],
+      [3, 'cluster_key', 9],
+    ],
+  )
 
 /**
  * FetchPluginRepositoryResponse identifies the Job that fetches the repository.
@@ -341,26 +295,22 @@ export const FetchPluginRepositoryRequest: MessageType<FetchPluginRepositoryRequ
 export interface FetchPluginRepositoryResponse {
   /**
    * JobKey identifies the Forge Job that clones or fetches the repository.
-   *
-   * @generated from field: string job_key = 1;
    */
   jobKey?: string
   /**
    * TaskKey identifies the Job's fetch Task.
-   *
-   * @generated from field: string task_key = 2;
    */
   taskKey?: string
 }
 
 export const FetchPluginRepositoryResponse: MessageType<FetchPluginRepositoryResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.FetchPluginRepositoryResponse',
-    fields: [
-      { no: 1, name: 'job_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'task_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<FetchPluginRepositoryResponse>(
+    's4wave.space.FetchPluginRepositoryResponse',
+    () => [
+      [1, 'job_key', 9],
+      [2, 'task_key', 9],
+    ],
+  )
 
 /**
  * ValidatePluginRepositoryRequest selects a fetched plugin repository.
@@ -370,19 +320,15 @@ export const FetchPluginRepositoryResponse: MessageType<FetchPluginRepositoryRes
 export interface ValidatePluginRepositoryRequest {
   /**
    * Repository is the GitHub owner/repo, or its https://github.com URL.
-   *
-   * @generated from field: string repository = 1;
    */
   repository?: string
 }
 
 export const ValidatePluginRepositoryRequest: MessageType<ValidatePluginRepositoryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.ValidatePluginRepositoryRequest',
-    fields: [
-      { no: 1, name: 'repository', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ValidatePluginRepositoryRequest>(
+    's4wave.space.ValidatePluginRepositoryRequest',
+    () => [[1, 'repository', 9]],
+  )
 
 /**
  * ValidatePluginRepositoryResponse is the validation of the checked-out commit.
@@ -392,33 +338,27 @@ export const ValidatePluginRepositoryRequest: MessageType<ValidatePluginReposito
 export interface ValidatePluginRepositoryResponse {
   /**
    * Commit is the commit the repository's worktree has checked out.
-   *
-   * @generated from field: string commit = 1;
    */
   commit?: string
   /**
    * SourceKey is the repository's UnixFS directory to build.
-   *
-   * @generated from field: string source_key = 2;
    */
   sourceKey?: string
   /**
    * Validation is what the repository declares and why it may not build.
-   *
-   * @generated from field: bldr.project.validate.Validation validation = 3;
    */
   validation?: Validation
 }
 
 export const ValidatePluginRepositoryResponse: MessageType<ValidatePluginRepositoryResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.ValidatePluginRepositoryResponse',
-    fields: [
-      { no: 1, name: 'commit', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'source_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'validation', kind: 'message', T: () => Validation },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ValidatePluginRepositoryResponse>(
+    's4wave.space.ValidatePluginRepositoryResponse',
+    () => [
+      [1, 'commit', 9],
+      [2, 'source_key', 9],
+      [3, 'validation', 11, 0, Validation.codec],
+    ],
+  )
 
 /**
  * OpenPluginFrontendResponse identifies the authoring attachment and its logs.
@@ -428,26 +368,22 @@ export const ValidatePluginRepositoryResponse: MessageType<ValidatePluginReposit
 export interface OpenPluginFrontendResponse {
   /**
    * ResourceId owns the compiler connection and its Forge execution.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
   /**
    * ExecutionKey identifies the Forge Execution with startup and failure logs.
-   *
-   * @generated from field: string execution_key = 2;
    */
   executionKey?: string
 }
 
 export const OpenPluginFrontendResponse: MessageType<OpenPluginFrontendResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.OpenPluginFrontendResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'execution_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<OpenPluginFrontendResponse>(
+    's4wave.space.OpenPluginFrontendResponse',
+    () => [
+      [1, 'resource_id', 13],
+      [2, 'execution_key', 9],
+    ],
+  )
 
 /**
  * WatchSpaceStateRequest is a request to watch the Workspace state.
@@ -457,9 +393,274 @@ export const OpenPluginFrontendResponse: MessageType<OpenPluginFrontendResponse>
 export interface WatchSpaceStateRequest {}
 
 export const WatchSpaceStateRequest: MessageType<WatchSpaceStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSpaceStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchSpaceStateRequest>(
     's4wave.space.WatchSpaceStateRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * SpaceState contains the state for the Space for display.
+ *
+ * @generated from message s4wave.space.SpaceState
+ */
+export interface SpaceState {
+  /**
+   * Ready indicates the state is ready, false for loading.
+   */
+  ready?: boolean
+  /**
+   * Settings is the space settings object, if it exists.
+   */
+  settings?: SpaceSettings
+  /**
+   * TransformInfo contains the space's encryption and compression config.
+   */
+  transformInfo?: TransformInfo
+  /**
+   * EngineId is the host World binding used for Space-local plugin discovery.
+   * It is an address, not an authority grant.
+   */
+  engineId?: string
+}
+
+export const SpaceState: MessageType<SpaceState> =
+  /* @__PURE__ */ createMessageType<SpaceState>(
+    's4wave.space.SpaceState',
+    () => [
+      [1, 'ready', 8],
+      [3, 'settings', 11, 0, SpaceSettings.codec],
+      [4, 'transform_info', 11, 0, TransformInfo.codec],
+      [5, 'engine_id', 9],
+    ],
+  )
+
+/**
+ * WatchSpaceSharingStateRequest is the request to watch sharing state.
+ *
+ * @generated from message s4wave.space.WatchSpaceSharingStateRequest
+ */
+export interface WatchSpaceSharingStateRequest {}
+
+export const WatchSpaceSharingStateRequest: MessageType<WatchSpaceSharingStateRequest> =
+  /* @__PURE__ */ createMessageType<WatchSpaceSharingStateRequest>(
+    's4wave.space.WatchSpaceSharingStateRequest',
+    () => [],
+  )
+
+/**
+ * SpaceParticipantInfo is one app-facing participant presentation row.
+ *
+ * @generated from message s4wave.space.SpaceParticipantInfo
+ */
+export interface SpaceParticipantInfo {
+  /**
+   * AccountId is the stable cloud account identifier when present.
+   */
+  accountId?: string
+  /**
+   * EntityId is the provider-attested username / entity identifier when known.
+   */
+  entityId?: string
+  /**
+   * PeerIds is the list of grouped participant session peers.
+   */
+  peerIds?: string[]
+  /**
+   * Role is the strongest participant role across the grouped peers.
+   */
+  role?: SOParticipantRole
+  /**
+   * IsSelf is true when one of the grouped peers is the current viewer.
+   */
+  isSelf?: boolean
+}
+
+export const SpaceParticipantInfo: MessageType<SpaceParticipantInfo> =
+  /* @__PURE__ */ createMessageType<SpaceParticipantInfo>(
+    's4wave.space.SpaceParticipantInfo',
+    () => [
+      [1, 'account_id', 9],
+      [2, 'entity_id', 9],
+      [3, 'peer_ids', 9, 1],
+      [4, 'role', 14, 0, SOParticipantRole_Enum],
+      [5, 'is_self', 8],
+    ],
+  )
+
+/**
+ * SpaceSharingState contains the sharing snapshot for a space.
+ *
+ * @generated from message s4wave.space.SpaceSharingState
+ */
+export interface SpaceSharingState {
+  /**
+   * Participants is the list of participants on the space.
+   */
+  participants?: SOParticipantConfig[]
+  /**
+   * Invites is the list of invites on the space.
+   */
+  invites?: SOInvite[]
+  /**
+   * MailboxEntries is the list of mailbox metadata entries for the space.
+   */
+  mailboxEntries?: MailboxEntryInfo[]
+  /**
+   * ViewerRole is the current viewer's effective participant role for the space.
+   */
+  viewerRole?: SOParticipantRole
+  /**
+   * CanManage is true when the current viewer can manage sharing state.
+   */
+  canManage?: boolean
+  /**
+   * ParticipantInfo is the app-facing participant presentation list.
+   */
+  participantInfo?: SpaceParticipantInfo[]
+  /**
+   * ConfigChainHash identifies the latest verified participant configuration.
+   */
+  configChainHash?: Uint8Array
+  /**
+   * ConfigChainSeqno is the sequence number of the latest participant configuration.
+   */
+  configChainSeqno?: bigint
+  /**
+   * ViewerPeerId identifies the authenticated mounted shared-object participant peer.
+   */
+  viewerPeerId?: string
+  /**
+   * DeparturePending is true while the head ownership transfer carries a
+   * departure its successor has not committed. Roles change when it commits.
+   */
+  departurePending?: boolean
+  /**
+   * JoinRequests are the join requests this host holds for an owner to grant
+   * or refuse.
+   */
+  joinRequests?: SOJoinRequest[]
+  /**
+   * Sequencer is who orders the Space's edits.
+   */
+  sequencer?: SpaceSequencer
+  /**
+   * SequencerPeerId is the peer ID of the appointed sequencer, empty under
+   * Merge.
+   */
+  sequencerPeerId?: string
+  /**
+   * SequencerChoices are the sequencers an owner can appoint on this device.
+   */
+  sequencerChoices?: SpaceSequencer[]
+  /**
+   * Control is who controls the Space.
+   */
+  control?: SpaceControl
+  /**
+   * CanVote is true when the viewer votes on the group's changes.
+   */
+  canVote?: boolean
+  /**
+   * CanSetControl is true when the viewer can change who controls the Space:
+   * an owner under owner control, or a voter under group control.
+   */
+  canSetControl?: boolean
+  /**
+   * TotalWeight is the voting weight of every voter under group control.
+   */
+  totalWeight?: bigint
+  /**
+   * QuorumWeight is the voting weight a change needs under group control:
+   * more than two thirds of TotalWeight.
+   */
+  quorumWeight?: bigint
+  /**
+   * GroupChanges are the changes voters agree to that the group has not
+   * decided, by most voting weight.
+   */
+  groupChanges?: SpaceGroupChange[]
+}
+
+export const SpaceSharingState: MessageType<SpaceSharingState> =
+  /* @__PURE__ */ createMessageType<SpaceSharingState>(
+    's4wave.space.SpaceSharingState',
+    () => [
+      [1, 'participants', 11, 1, SOParticipantConfig.codec],
+      [2, 'invites', 11, 1, SOInvite.codec],
+      [3, 'mailbox_entries', 11, 1, MailboxEntryInfo.codec],
+      [4, 'viewer_role', 14, 0, SOParticipantRole_Enum],
+      [5, 'can_manage', 8],
+      [6, 'participant_info', 11, 1, SpaceParticipantInfo.codec],
+      [7, 'config_chain_hash', 12],
+      [8, 'config_chain_seqno', 4],
+      [9, 'viewer_peer_id', 9],
+      [10, 'departure_pending', 8],
+      [11, 'join_requests', 11, 1, SOJoinRequest.codec],
+      [12, 'sequencer', 14, 0, SpaceSequencer_Enum],
+      [13, 'sequencer_peer_id', 9],
+      [14, 'sequencer_choices', 14, 3, SpaceSequencer_Enum],
+      [15, 'control', 14, 0, SpaceControl_Enum],
+      [16, 'can_vote', 8],
+      [17, 'can_set_control', 8],
+      [18, 'total_weight', 4],
+      [19, 'quorum_weight', 4],
+      [20, 'group_changes', 11, 1, SpaceGroupChange.codec],
+    ],
+  )
+
+/**
+ * SpaceGroupChange is a change voters agree to that the group has not decided.
+ *
+ * @generated from message s4wave.space.SpaceGroupChange
+ */
+export interface SpaceGroupChange {
+  /**
+   * Hash identifies the change for ApproveSpaceChange.
+   */
+  hash?: Uint8Array
+  /**
+   * ChangeType is the kind of change.
+   */
+  changeType?: SOConfigChangeType
+  /**
+   * AddedPeerIds are the peers the change admits.
+   */
+  addedPeerIds?: string[]
+  /**
+   * RemovedPeerIds are the peers the change removes.
+   */
+  removedPeerIds?: string[]
+  /**
+   * Control is who controls the Space after the change.
+   */
+  control?: SpaceControl
+  /**
+   * Sequencer is who orders the Space's edits after the change.
+   */
+  sequencer?: SpaceSequencer
+  /**
+   * Weight is the voting weight of the voters that agree.
+   */
+  weight?: bigint
+  /**
+   * ViewerAgreed is true when the viewer agrees.
+   */
+  viewerAgreed?: boolean
+}
+
+export const SpaceGroupChange: MessageType<SpaceGroupChange> =
+  /* @__PURE__ */ createMessageType<SpaceGroupChange>(
+    's4wave.space.SpaceGroupChange',
+    () => [
+      [1, 'hash', 12],
+      [2, 'change_type', 14, 0, SOConfigChangeType_Enum],
+      [3, 'added_peer_ids', 9, 1],
+      [4, 'removed_peer_ids', 9, 1],
+      [5, 'control', 14, 0, SpaceControl_Enum],
+      [6, 'sequencer', 14, 0, SpaceSequencer_Enum],
+      [7, 'weight', 4],
+      [8, 'viewer_agreed', 8],
+    ],
   )
 
 /**
@@ -471,448 +672,27 @@ export const WatchSpaceStateRequest: MessageType<WatchSpaceStateRequest> =
 export interface TransformInfo {
   /**
    * Steps is the list of transform steps with sensitive fields redacted.
-   *
-   * @generated from field: repeated block.transform.StepConfig steps = 1;
    */
   steps?: StepConfig[]
   /**
    * GrantCount is the number of participants with active grants.
-   *
-   * @generated from field: uint32 grant_count = 2;
    */
   grantCount?: number
   /**
    * StorageBytes is the total storage size in bytes from the volume.
-   *
-   * @generated from field: uint64 storage_bytes = 3;
    */
   storageBytes?: bigint
 }
 
 export const TransformInfo: MessageType<TransformInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.TransformInfo',
-    fields: [
-      {
-        no: 1,
-        name: 'steps',
-        kind: 'message',
-        T: () => StepConfig,
-        repeated: true,
-      },
-      { no: 2, name: 'grant_count', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'storage_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SpaceState contains the state for the Space for display.
- *
- * @generated from message s4wave.space.SpaceState
- */
-export interface SpaceState {
-  /**
-   * Ready indicates the state is ready, false for loading.
-   *
-   * @generated from field: bool ready = 1;
-   */
-  ready?: boolean
-  /**
-   * Settings is the space settings object, if it exists.
-   *
-   * @generated from field: space.world.SpaceSettings settings = 3;
-   */
-  settings?: SpaceSettings
-  /**
-   * TransformInfo contains the space's encryption and compression config.
-   *
-   * @generated from field: s4wave.space.TransformInfo transform_info = 4;
-   */
-  transformInfo?: TransformInfo
-  /**
-   * EngineId is the host World binding used for Space-local plugin discovery.
-   * It is an address, not an authority grant.
-   *
-   * @generated from field: string engine_id = 5;
-   */
-  engineId?: string
-}
-
-export const SpaceState: MessageType<SpaceState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SpaceState',
-    fields: [
-      { no: 1, name: 'ready', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'settings', kind: 'message', T: () => SpaceSettings },
-      { no: 4, name: 'transform_info', kind: 'message', T: TransformInfo },
-      { no: 5, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * WatchSpaceSharingStateRequest is the request to watch sharing state.
- *
- * @generated from message s4wave.space.WatchSpaceSharingStateRequest
- */
-export interface WatchSpaceSharingStateRequest {}
-
-export const WatchSpaceSharingStateRequest: MessageType<WatchSpaceSharingStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSpaceSharingStateRequest>(
-    's4wave.space.WatchSpaceSharingStateRequest',
-    true,
+  /* @__PURE__ */ createMessageType<TransformInfo>(
+    's4wave.space.TransformInfo',
+    () => [
+      [1, 'steps', 11, 1, StepConfig.codec],
+      [2, 'grant_count', 13],
+      [3, 'storage_bytes', 4],
+    ],
   )
-
-/**
- * SpaceParticipantInfo is one app-facing participant presentation row.
- *
- * @generated from message s4wave.space.SpaceParticipantInfo
- */
-export interface SpaceParticipantInfo {
-  /**
-   * AccountId is the stable cloud account identifier when present.
-   *
-   * @generated from field: string account_id = 1;
-   */
-  accountId?: string
-  /**
-   * EntityId is the provider-attested username / entity identifier when known.
-   *
-   * @generated from field: string entity_id = 2;
-   */
-  entityId?: string
-  /**
-   * PeerIds is the list of grouped participant session peers.
-   *
-   * @generated from field: repeated string peer_ids = 3;
-   */
-  peerIds?: string[]
-  /**
-   * Role is the strongest participant role across the grouped peers.
-   *
-   * @generated from field: sobject.SOParticipantRole role = 4;
-   */
-  role?: SOParticipantRole
-  /**
-   * IsSelf is true when one of the grouped peers is the current viewer.
-   *
-   * @generated from field: bool is_self = 5;
-   */
-  isSelf?: boolean
-}
-
-export const SpaceParticipantInfo: MessageType<SpaceParticipantInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SpaceParticipantInfo',
-    fields: [
-      { no: 1, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 4, name: 'role', kind: 'enum', T: SOParticipantRole_Enum },
-      { no: 5, name: 'is_self', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SpaceGroupChange is a change voters agree to that the group has not decided.
- *
- * @generated from message s4wave.space.SpaceGroupChange
- */
-export interface SpaceGroupChange {
-  /**
-   * Hash identifies the change for ApproveSpaceChange.
-   *
-   * @generated from field: bytes hash = 1;
-   */
-  hash?: Uint8Array
-  /**
-   * ChangeType is the kind of change.
-   *
-   * @generated from field: sobject.SOConfigChangeType change_type = 2;
-   */
-  changeType?: SOConfigChangeType
-  /**
-   * AddedPeerIds are the peers the change admits.
-   *
-   * @generated from field: repeated string added_peer_ids = 3;
-   */
-  addedPeerIds?: string[]
-  /**
-   * RemovedPeerIds are the peers the change removes.
-   *
-   * @generated from field: repeated string removed_peer_ids = 4;
-   */
-  removedPeerIds?: string[]
-  /**
-   * Control is who controls the Space after the change.
-   *
-   * @generated from field: s4wave.space.SpaceControl control = 5;
-   */
-  control?: SpaceControl
-  /**
-   * Sequencer is who orders the Space's edits after the change.
-   *
-   * @generated from field: s4wave.space.SpaceSequencer sequencer = 6;
-   */
-  sequencer?: SpaceSequencer
-  /**
-   * Weight is the voting weight of the voters that agree.
-   *
-   * @generated from field: uint64 weight = 7;
-   */
-  weight?: bigint
-  /**
-   * ViewerAgreed is true when the viewer agrees.
-   *
-   * @generated from field: bool viewer_agreed = 8;
-   */
-  viewerAgreed?: boolean
-}
-
-export const SpaceGroupChange: MessageType<SpaceGroupChange> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SpaceGroupChange',
-    fields: [
-      { no: 1, name: 'hash', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'change_type', kind: 'enum', T: SOConfigChangeType_Enum },
-      {
-        no: 3,
-        name: 'added_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'removed_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 5, name: 'control', kind: 'enum', T: SpaceControl_Enum },
-      { no: 6, name: 'sequencer', kind: 'enum', T: SpaceSequencer_Enum },
-      { no: 7, name: 'weight', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 8, name: 'viewer_agreed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SpaceSharingState contains the sharing snapshot for a space.
- *
- * @generated from message s4wave.space.SpaceSharingState
- */
-export interface SpaceSharingState {
-  /**
-   * Participants is the list of participants on the space.
-   *
-   * @generated from field: repeated sobject.SOParticipantConfig participants = 1;
-   */
-  participants?: SOParticipantConfig[]
-  /**
-   * Invites is the list of invites on the space.
-   *
-   * @generated from field: repeated sobject.SOInvite invites = 2;
-   */
-  invites?: SOInvite[]
-  /**
-   * MailboxEntries is the list of mailbox metadata entries for the space.
-   *
-   * @generated from field: repeated s4wave.provider.spacewave.MailboxEntryInfo mailbox_entries = 3;
-   */
-  mailboxEntries?: MailboxEntryInfo[]
-  /**
-   * ViewerRole is the current viewer's effective participant role for the space.
-   *
-   * @generated from field: sobject.SOParticipantRole viewer_role = 4;
-   */
-  viewerRole?: SOParticipantRole
-  /**
-   * CanManage is true when the current viewer can manage sharing state.
-   *
-   * @generated from field: bool can_manage = 5;
-   */
-  canManage?: boolean
-  /**
-   * ParticipantInfo is the app-facing participant presentation list.
-   *
-   * @generated from field: repeated s4wave.space.SpaceParticipantInfo participant_info = 6;
-   */
-  participantInfo?: SpaceParticipantInfo[]
-  /**
-   * ConfigChainHash identifies the latest verified participant configuration.
-   *
-   * @generated from field: bytes config_chain_hash = 7;
-   */
-  configChainHash?: Uint8Array
-  /**
-   * ConfigChainSeqno is the sequence number of the latest participant configuration.
-   *
-   * @generated from field: uint64 config_chain_seqno = 8;
-   */
-  configChainSeqno?: bigint
-  /**
-   * ViewerPeerId identifies the authenticated mounted shared-object participant peer.
-   *
-   * @generated from field: string viewer_peer_id = 9;
-   */
-  viewerPeerId?: string
-  /**
-   * DeparturePending is true while the head ownership transfer carries a
-   * departure its successor has not committed. Roles change when it commits.
-   *
-   * @generated from field: bool departure_pending = 10;
-   */
-  departurePending?: boolean
-  /**
-   * JoinRequests are the join requests this host holds for an owner to grant
-   * or refuse.
-   *
-   * @generated from field: repeated sobject.SOJoinRequest join_requests = 11;
-   */
-  joinRequests?: SOJoinRequest[]
-  /**
-   * Sequencer is who orders the Space's edits.
-   *
-   * @generated from field: s4wave.space.SpaceSequencer sequencer = 12;
-   */
-  sequencer?: SpaceSequencer
-  /**
-   * SequencerPeerId is the peer ID of the appointed sequencer, empty under
-   * Merge.
-   *
-   * @generated from field: string sequencer_peer_id = 13;
-   */
-  sequencerPeerId?: string
-  /**
-   * SequencerChoices are the sequencers an owner can appoint on this device.
-   *
-   * @generated from field: repeated s4wave.space.SpaceSequencer sequencer_choices = 14;
-   */
-  sequencerChoices?: SpaceSequencer[]
-  /**
-   * Control is who controls the Space.
-   *
-   * @generated from field: s4wave.space.SpaceControl control = 15;
-   */
-  control?: SpaceControl
-  /**
-   * CanVote is true when the viewer votes on the group's changes.
-   *
-   * @generated from field: bool can_vote = 16;
-   */
-  canVote?: boolean
-  /**
-   * CanSetControl is true when the viewer can change who controls the Space:
-   * an owner under owner control, or a voter under group control.
-   *
-   * @generated from field: bool can_set_control = 17;
-   */
-  canSetControl?: boolean
-  /**
-   * TotalWeight is the voting weight of every voter under group control.
-   *
-   * @generated from field: uint64 total_weight = 18;
-   */
-  totalWeight?: bigint
-  /**
-   * QuorumWeight is the voting weight a change needs under group control:
-   * more than two thirds of TotalWeight.
-   *
-   * @generated from field: uint64 quorum_weight = 19;
-   */
-  quorumWeight?: bigint
-  /**
-   * GroupChanges are the changes voters agree to that the group has not
-   * decided, by most voting weight.
-   *
-   * @generated from field: repeated s4wave.space.SpaceGroupChange group_changes = 20;
-   */
-  groupChanges?: SpaceGroupChange[]
-}
-
-export const SpaceSharingState: MessageType<SpaceSharingState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SpaceSharingState',
-    fields: [
-      {
-        no: 1,
-        name: 'participants',
-        kind: 'message',
-        T: () => SOParticipantConfig,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'invites',
-        kind: 'message',
-        T: () => SOInvite,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'mailbox_entries',
-        kind: 'message',
-        T: () => MailboxEntryInfo,
-        repeated: true,
-      },
-      { no: 4, name: 'viewer_role', kind: 'enum', T: SOParticipantRole_Enum },
-      { no: 5, name: 'can_manage', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 6,
-        name: 'participant_info',
-        kind: 'message',
-        T: SpaceParticipantInfo,
-        repeated: true,
-      },
-      { no: 7, name: 'config_chain_hash', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 8,
-        name: 'config_chain_seqno',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      { no: 9, name: 'viewer_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'departure_pending', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 11,
-        name: 'join_requests',
-        kind: 'message',
-        T: () => SOJoinRequest,
-        repeated: true,
-      },
-      { no: 12, name: 'sequencer', kind: 'enum', T: SpaceSequencer_Enum },
-      {
-        no: 13,
-        name: 'sequencer_peer_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 14,
-        name: 'sequencer_choices',
-        kind: 'enum',
-        T: SpaceSequencer_Enum,
-        repeated: true,
-      },
-      { no: 15, name: 'control', kind: 'enum', T: SpaceControl_Enum },
-      { no: 16, name: 'can_vote', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 17, name: 'can_set_control', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 18, name: 'total_weight', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 19, name: 'quorum_weight', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 20,
-        name: 'group_changes',
-        kind: 'message',
-        T: SpaceGroupChange,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * AccessWorldRequest is a request to access the World associated with the space.
@@ -922,9 +702,9 @@ export const SpaceSharingState: MessageType<SpaceSharingState> =
 export interface AccessWorldRequest {}
 
 export const AccessWorldRequest: MessageType<AccessWorldRequest> =
-  /* @__PURE__ */ createEmptyMessageType<AccessWorldRequest>(
+  /* @__PURE__ */ createMessageType<AccessWorldRequest>(
     's4wave.space.AccessWorldRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -935,19 +715,15 @@ export const AccessWorldRequest: MessageType<AccessWorldRequest> =
 export interface AccessWorldResponse {
   /**
    * ResourceId is the resource ID for the World resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const AccessWorldResponse: MessageType<AccessWorldResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.AccessWorldResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccessWorldResponse>(
+    's4wave.space.AccessWorldResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * MountSpaceContentsRequest is a request to mount the space contents.
@@ -957,9 +733,9 @@ export const AccessWorldResponse: MessageType<AccessWorldResponse> =
 export interface MountSpaceContentsRequest {}
 
 export const MountSpaceContentsRequest: MessageType<MountSpaceContentsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<MountSpaceContentsRequest>(
+  /* @__PURE__ */ createMessageType<MountSpaceContentsRequest>(
     's4wave.space.MountSpaceContentsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -970,19 +746,15 @@ export const MountSpaceContentsRequest: MessageType<MountSpaceContentsRequest> =
 export interface MountSpaceContentsResponse {
   /**
    * ResourceId is the resource ID for the SpaceContents resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const MountSpaceContentsResponse: MessageType<MountSpaceContentsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.MountSpaceContentsResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<MountSpaceContentsResponse>(
+    's4wave.space.MountSpaceContentsResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * CreateSecretRequest creates a Secret object and nested SharedObject payload.
@@ -992,71 +764,47 @@ export const MountSpaceContentsResponse: MessageType<MountSpaceContentsResponse>
 export interface CreateSecretRequest {
   /**
    * ObjectKey is the parent Secret object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * DisplayName is the human-readable Secret name.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
   /**
    * Kind is the semantic Secret kind.
-   *
-   * @generated from field: string kind = 3;
    */
   kind?: string
   /**
    * ContentType is the Secret payload MIME type.
-   *
-   * @generated from field: string content_type = 4;
    */
   contentType?: string
   /**
    * Value is the raw payload stored inside the nested SharedObject.
-   *
-   * @generated from field: bytes value = 5;
    */
   value?: Uint8Array
   /**
    * ReaderPublicKeyPem optionally grants read access to this peer key.
-   *
-   * @generated from field: bytes reader_public_key_pem = 6;
    */
   readerPublicKeyPem?: Uint8Array
   /**
    * ParticipantRole grants the supplied key read or write access. UNKNOWN defaults to READER.
-   *
-   * @generated from field: sobject.SOParticipantRole participant_role = 7;
    */
   participantRole?: SOParticipantRole
 }
 
 export const CreateSecretRequest: MessageType<CreateSecretRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.CreateSecretRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'kind', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'content_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'value', kind: 'scalar', T: ScalarType.BYTES },
-      {
-        no: 6,
-        name: 'reader_public_key_pem',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-      },
-      {
-        no: 7,
-        name: 'participant_role',
-        kind: 'enum',
-        T: SOParticipantRole_Enum,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateSecretRequest>(
+    's4wave.space.CreateSecretRequest',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'display_name', 9],
+      [3, 'kind', 9],
+      [4, 'content_type', 9],
+      [5, 'value', 12],
+      [6, 'reader_public_key_pem', 12],
+      [7, 'participant_role', 14, 0, SOParticipantRole_Enum],
+    ],
+  )
 
 /**
  * CreateSecretResponse returns the redacted Secret parent metadata.
@@ -1066,19 +814,15 @@ export const CreateSecretRequest: MessageType<CreateSecretRequest> =
 export interface CreateSecretResponse {
   /**
    * Secret is the created parent Secret object metadata.
-   *
-   * @generated from field: s4wave.secret.Secret secret = 1;
    */
   secret?: Secret
 }
 
 export const CreateSecretResponse: MessageType<CreateSecretResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.CreateSecretResponse',
-    fields: [
-      { no: 1, name: 'secret', kind: 'message', T: () => Secret },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateSecretResponse>(
+    's4wave.space.CreateSecretResponse',
+    () => [[1, 'secret', 11, 0, Secret.codec]],
+  )
 
 /**
  * WriteSecretPayloadRequest replaces an existing Secret's encrypted payload.
@@ -1088,40 +832,32 @@ export const CreateSecretResponse: MessageType<CreateSecretResponse> =
 export interface WriteSecretPayloadRequest {
   /**
    * ObjectKey identifies the parent Secret whose grants remain unchanged.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * ExpectedKind prevents writing credentials into a Secret of another kind.
-   *
-   * @generated from field: string expected_kind = 2;
    */
   expectedKind?: string
   /**
    * Value is the new payload, kept inside the nested SharedObject.
-   *
-   * @generated from field: bytes value = 3;
    */
   value?: Uint8Array
   /**
    * ContentType describes Value's encoding.
-   *
-   * @generated from field: string content_type = 4;
    */
   contentType?: string
 }
 
 export const WriteSecretPayloadRequest: MessageType<WriteSecretPayloadRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.WriteSecretPayloadRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'expected_kind', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'value', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 4, name: 'content_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WriteSecretPayloadRequest>(
+    's4wave.space.WriteSecretPayloadRequest',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'expected_kind', 9],
+      [3, 'value', 12],
+      [4, 'content_type', 9],
+    ],
+  )
 
 /**
  * WriteSecretPayloadResponse acknowledges durable nested payload storage.
@@ -1131,9 +867,9 @@ export const WriteSecretPayloadRequest: MessageType<WriteSecretPayloadRequest> =
 export interface WriteSecretPayloadResponse {}
 
 export const WriteSecretPayloadResponse: MessageType<WriteSecretPayloadResponse> =
-  /* @__PURE__ */ createEmptyMessageType<WriteSecretPayloadResponse>(
+  /* @__PURE__ */ createMessageType<WriteSecretPayloadResponse>(
     's4wave.space.WriteSecretPayloadResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1144,26 +880,22 @@ export const WriteSecretPayloadResponse: MessageType<WriteSecretPayloadResponse>
 export interface ReadSecretPayloadRequest {
   /**
    * ObjectKey is the parent Secret object key.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * ExpectedKind rejects the read if the Secret kind has drifted.
-   *
-   * @generated from field: string expected_kind = 2;
    */
   expectedKind?: string
 }
 
 export const ReadSecretPayloadRequest: MessageType<ReadSecretPayloadRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.ReadSecretPayloadRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'expected_kind', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReadSecretPayloadRequest>(
+    's4wave.space.ReadSecretPayloadRequest',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'expected_kind', 9],
+    ],
+  )
 
 /**
  * ReadSecretPayloadResponse returns Secret metadata and payload bytes.
@@ -1173,26 +905,22 @@ export const ReadSecretPayloadRequest: MessageType<ReadSecretPayloadRequest> =
 export interface ReadSecretPayloadResponse {
   /**
    * Secret is the redacted parent Secret object metadata.
-   *
-   * @generated from field: s4wave.secret.Secret secret = 1;
    */
   secret?: Secret
   /**
    * Payload is the nested SharedObject payload readable by the mounted session.
-   *
-   * @generated from field: s4wave.secret.SecretPayload payload = 2;
    */
   payload?: SecretPayload
 }
 
 export const ReadSecretPayloadResponse: MessageType<ReadSecretPayloadResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.ReadSecretPayloadResponse',
-    fields: [
-      { no: 1, name: 'secret', kind: 'message', T: () => Secret },
-      { no: 2, name: 'payload', kind: 'message', T: () => SecretPayload },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReadSecretPayloadResponse>(
+    's4wave.space.ReadSecretPayloadResponse',
+    () => [
+      [1, 'secret', 11, 0, Secret.codec],
+      [2, 'payload', 11, 0, SecretPayload.codec],
+    ],
+  )
 
 /**
  * WatchSpaceContentsStateRequest is a request to watch the space contents state.
@@ -1202,9 +930,9 @@ export const ReadSecretPayloadResponse: MessageType<ReadSecretPayloadResponse> =
 export interface WatchSpaceContentsStateRequest {}
 
 export const WatchSpaceContentsStateRequest: MessageType<WatchSpaceContentsStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSpaceContentsStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchSpaceContentsStateRequest>(
     's4wave.space.WatchSpaceContentsStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1216,37 +944,23 @@ export const WatchSpaceContentsStateRequest: MessageType<WatchSpaceContentsState
 export interface BindAttachedRpcServiceRequest {
   /**
    * AttachedResourceId identifies a Resource attached by this caller.
-   *
-   * @generated from field: uint32 attached_resource_id = 1;
    */
   attachedResourceId?: number
   /**
    * ServiceIdPrefix is a slash-terminated private prefix of at most 256 UTF-8
    * bytes.
-   *
-   * @generated from field: string service_id_prefix = 2;
    */
   serviceIdPrefix?: string
 }
 
 export const BindAttachedRpcServiceRequest: MessageType<BindAttachedRpcServiceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.BindAttachedRpcServiceRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'attached_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-      {
-        no: 2,
-        name: 'service_id_prefix',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BindAttachedRpcServiceRequest>(
+    's4wave.space.BindAttachedRpcServiceRequest',
+    () => [
+      [1, 'attached_resource_id', 13],
+      [2, 'service_id_prefix', 9],
+    ],
+  )
 
 /**
  * BindAttachedRpcServiceResponse confirms the attached service is callable.
@@ -1256,9 +970,88 @@ export const BindAttachedRpcServiceRequest: MessageType<BindAttachedRpcServiceRe
 export interface BindAttachedRpcServiceResponse {}
 
 export const BindAttachedRpcServiceResponse: MessageType<BindAttachedRpcServiceResponse> =
-  /* @__PURE__ */ createEmptyMessageType<BindAttachedRpcServiceResponse>(
+  /* @__PURE__ */ createMessageType<BindAttachedRpcServiceResponse>(
     's4wave.space.BindAttachedRpcServiceResponse',
-    true,
+    () => [],
+  )
+
+/**
+ * SpaceContentsState contains plugin status for the space.
+ *
+ * @generated from message s4wave.space.SpaceContentsState
+ */
+export interface SpaceContentsState {
+  /**
+   * Ready indicates the state is ready.
+   */
+  ready?: boolean
+  /**
+   * Plugins is the list of plugin statuses.
+   */
+  plugins?: SpacePluginStatus[]
+  /**
+   * ProcessBindings is the list of process binding states.
+   */
+  processBindings?: ProcessBindingInfo[]
+  /**
+   * AvailablePlugins is the catalog of plugins installable into the space,
+   * enumerated from the manifests stored in the Space World. The app derives
+   * installed state by intersecting these with the plugins list.
+   */
+  availablePlugins?: AvailablePlugin[]
+  /**
+   * RequestedPluginIds lists, in sorted order, the plugins something in the
+   * space is waiting to load that the space does not list. A load such as a
+   * Forge Execution for one of them waits until the plugin is added.
+   */
+  requestedPluginIds?: string[]
+}
+
+export const SpaceContentsState: MessageType<SpaceContentsState> =
+  /* @__PURE__ */ createMessageType<SpaceContentsState>(
+    's4wave.space.SpaceContentsState',
+    () => [
+      [1, 'ready', 8],
+      [2, 'plugins', 11, 1, SpacePluginStatus.codec],
+      [3, 'process_bindings', 11, 1, ProcessBindingInfo.codec],
+      [4, 'available_plugins', 11, 1, AvailablePlugin.codec],
+      [5, 'requested_plugin_ids', 9, 1],
+    ],
+  )
+
+/**
+ * AvailablePlugin is one catalog entry the space can install by manifest ID.
+ *
+ * @generated from message s4wave.space.AvailablePlugin
+ */
+export interface AvailablePlugin {
+  /**
+   * PluginId is the manifest ID to add to SpaceSettings.plugin_ids to install.
+   */
+  pluginId?: string
+  /**
+   * Description is the manifest metadata description, if any.
+   */
+  description?: string
+  /**
+   * Revision is the highest manifest revision available for the plugin.
+   */
+  revision?: string
+  /**
+   * Background reports that the plugin can run in the background.
+   */
+  background?: boolean
+}
+
+export const AvailablePlugin: MessageType<AvailablePlugin> =
+  /* @__PURE__ */ createMessageType<AvailablePlugin>(
+    's4wave.space.AvailablePlugin',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'description', 9],
+      [3, 'revision', 9],
+      [4, 'background', 8],
+    ],
   )
 
 /**
@@ -1269,226 +1062,48 @@ export const BindAttachedRpcServiceResponse: MessageType<BindAttachedRpcServiceR
 export interface SpacePluginStatus {
   /**
    * PluginId is the manifest ID of the plugin.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * Loaded indicates whether the plugin is currently running. Kept for older
    * consumers; State is the app-facing lifecycle owner.
-   *
-   * @generated from field: bool loaded = 3;
    */
   loaded?: boolean
   /**
    * Description is a short description from the plugin manifest metadata.
-   *
-   * @generated from field: string description = 4;
    */
   description?: string
   /**
    * State is the app-facing lifecycle projection.
-   *
-   * @generated from field: s4wave.space.SpacePluginLifecycleState state = 5;
    */
   state?: SpacePluginLifecycleState
   /**
    * Detail is a short scheduler-owned lifecycle explanation.
-   *
-   * @generated from field: string detail = 6;
    */
   detail?: string
   /**
    * RetryCount is reserved for future scheduler retry projection.
-   *
-   * @generated from field: uint32 retry_count = 7;
    */
   retryCount?: number
   /**
    * Revision is reserved for future manifest-version projection.
-   *
-   * @generated from field: string revision = 8;
    */
   revision?: string
 }
 
 export const SpacePluginStatus: MessageType<SpacePluginStatus> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SpacePluginStatus',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'loaded', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'state', kind: 'enum', T: SpacePluginLifecycleState_Enum },
-      { no: 6, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'retry_count', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 8, name: 'revision', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ProcessBindingInfo contains info about a single process binding.
- *
- * @generated from message s4wave.space.ProcessBindingInfo
- */
-export interface ProcessBindingInfo {
-  /**
-   * ObjectKey is the world object key.
-   *
-   * @generated from field: string object_key = 1;
-   */
-  objectKey?: string
-  /**
-   * TypeId is the ObjectType type ID.
-   *
-   * @generated from field: string type_id = 2;
-   */
-  typeId?: string
-  /**
-   * Approved indicates whether the binding is approved.
-   *
-   * @generated from field: bool approved = 3;
-   */
-  approved?: boolean
-  /**
-   * DecidedAt is the time the binding state was last changed.
-   *
-   * @generated from field: google.protobuf.Timestamp decided_at = 4;
-   */
-  decidedAt?: Date
-}
-
-export const ProcessBindingInfo: MessageType<ProcessBindingInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.ProcessBindingInfo',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'approved', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'decided_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * AvailablePlugin is one catalog entry the space can install by manifest ID.
- *
- * @generated from message s4wave.space.AvailablePlugin
- */
-export interface AvailablePlugin {
-  /**
-   * PluginId is the manifest ID to add to SpaceSettings.plugin_ids to install.
-   *
-   * @generated from field: string plugin_id = 1;
-   */
-  pluginId?: string
-  /**
-   * Description is the manifest metadata description, if any.
-   *
-   * @generated from field: string description = 2;
-   */
-  description?: string
-  /**
-   * Revision is the highest manifest revision available for the plugin.
-   *
-   * @generated from field: string revision = 3;
-   */
-  revision?: string
-  /**
-   * Background reports that the plugin can run in the background.
-   *
-   * @generated from field: bool background = 4;
-   */
-  background?: boolean
-}
-
-export const AvailablePlugin: MessageType<AvailablePlugin> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.AvailablePlugin',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'revision', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'background', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * SpaceContentsState contains plugin status for the space.
- *
- * @generated from message s4wave.space.SpaceContentsState
- */
-export interface SpaceContentsState {
-  /**
-   * Ready indicates the state is ready.
-   *
-   * @generated from field: bool ready = 1;
-   */
-  ready?: boolean
-  /**
-   * Plugins is the list of plugin statuses.
-   *
-   * @generated from field: repeated s4wave.space.SpacePluginStatus plugins = 2;
-   */
-  plugins?: SpacePluginStatus[]
-  /**
-   * ProcessBindings is the list of process binding states.
-   *
-   * @generated from field: repeated s4wave.space.ProcessBindingInfo process_bindings = 3;
-   */
-  processBindings?: ProcessBindingInfo[]
-  /**
-   * AvailablePlugins is the catalog of plugins installable into the space,
-   * enumerated from the manifests stored in the Space World. The app derives
-   * installed state by intersecting these with the plugins list.
-   *
-   * @generated from field: repeated s4wave.space.AvailablePlugin available_plugins = 4;
-   */
-  availablePlugins?: AvailablePlugin[]
-  /**
-   * RequestedPluginIds lists, in sorted order, the plugins something in the
-   * space is waiting to load that the space does not list. A load such as a
-   * Forge Execution for one of them waits until the plugin is added.
-   *
-   * @generated from field: repeated string requested_plugin_ids = 5;
-   */
-  requestedPluginIds?: string[]
-}
-
-export const SpaceContentsState: MessageType<SpaceContentsState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SpaceContentsState',
-    fields: [
-      { no: 1, name: 'ready', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 2,
-        name: 'plugins',
-        kind: 'message',
-        T: SpacePluginStatus,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'process_bindings',
-        kind: 'message',
-        T: ProcessBindingInfo,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'available_plugins',
-        kind: 'message',
-        T: AvailablePlugin,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'requested_plugin_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpacePluginStatus>(
+    's4wave.space.SpacePluginStatus',
+    () => [
+      [1, 'plugin_id', 9],
+      [3, 'loaded', 8],
+      [4, 'description', 9],
+      [5, 'state', 14, 0, SpacePluginLifecycleState_Enum],
+      [6, 'detail', 9],
+      [7, 'retry_count', 13],
+      [8, 'revision', 9],
+    ],
+  )
 
 /**
  * AddSpacePluginRequest is a request to add a plugin to the space settings.
@@ -1498,27 +1113,23 @@ export const SpaceContentsState: MessageType<SpaceContentsState> =
 export interface AddSpacePluginRequest {
   /**
    * PluginId is the manifest ID of the plugin to add.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
   /**
    * ManifestKey selects an immutable manifest artifact in this Space.
    * Empty preserves an existing pin or follows the configured catalog for a new plugin.
-   *
-   * @generated from field: string manifest_key = 2;
    */
   manifestKey?: string
 }
 
 export const AddSpacePluginRequest: MessageType<AddSpacePluginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.AddSpacePluginRequest',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'manifest_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddSpacePluginRequest>(
+    's4wave.space.AddSpacePluginRequest',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'manifest_key', 9],
+    ],
+  )
 
 /**
  * AddSpacePluginResponse is the response for AddSpacePlugin.
@@ -1528,9 +1139,9 @@ export const AddSpacePluginRequest: MessageType<AddSpacePluginRequest> =
 export interface AddSpacePluginResponse {}
 
 export const AddSpacePluginResponse: MessageType<AddSpacePluginResponse> =
-  /* @__PURE__ */ createEmptyMessageType<AddSpacePluginResponse>(
+  /* @__PURE__ */ createMessageType<AddSpacePluginResponse>(
     's4wave.space.AddSpacePluginResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1541,19 +1152,15 @@ export const AddSpacePluginResponse: MessageType<AddSpacePluginResponse> =
 export interface RemoveSpacePluginRequest {
   /**
    * PluginId is the manifest ID of the plugin to remove.
-   *
-   * @generated from field: string plugin_id = 1;
    */
   pluginId?: string
 }
 
 export const RemoveSpacePluginRequest: MessageType<RemoveSpacePluginRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.RemoveSpacePluginRequest',
-    fields: [
-      { no: 1, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveSpacePluginRequest>(
+    's4wave.space.RemoveSpacePluginRequest',
+    () => [[1, 'plugin_id', 9]],
+  )
 
 /**
  * RemoveSpacePluginResponse is the response for RemoveSpacePlugin.
@@ -1563,9 +1170,9 @@ export const RemoveSpacePluginRequest: MessageType<RemoveSpacePluginRequest> =
 export interface RemoveSpacePluginResponse {}
 
 export const RemoveSpacePluginResponse: MessageType<RemoveSpacePluginResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RemoveSpacePluginResponse>(
+  /* @__PURE__ */ createMessageType<RemoveSpacePluginResponse>(
     's4wave.space.RemoveSpacePluginResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1577,19 +1184,15 @@ export interface SetSpaceSequencerRequest {
   /**
    * Sequencer is MERGE, PROVIDER or THIS_DEVICE. THIS_DEVICE also replaces a
    * lost main device, continuing the order this device holds.
-   *
-   * @generated from field: s4wave.space.SpaceSequencer sequencer = 1;
    */
   sequencer?: SpaceSequencer
 }
 
 export const SetSpaceSequencerRequest: MessageType<SetSpaceSequencerRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SetSpaceSequencerRequest',
-    fields: [
-      { no: 1, name: 'sequencer', kind: 'enum', T: SpaceSequencer_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpaceSequencerRequest>(
+    's4wave.space.SetSpaceSequencerRequest',
+    () => [[1, 'sequencer', 14, 0, SpaceSequencer_Enum]],
+  )
 
 /**
  * SetSpaceSequencerResponse reports whether the sequencer changed.
@@ -1599,27 +1202,23 @@ export const SetSpaceSequencerRequest: MessageType<SetSpaceSequencerRequest> =
 export interface SetSpaceSequencerResponse {
   /**
    * Changed is false when the chosen sequencer already ordered the edits.
-   *
-   * @generated from field: bool changed = 1;
    */
   changed?: boolean
   /**
    * AwaitingGroup is true when the viewer agreed to the change under group
    * control, and it applies once the group decides it.
-   *
-   * @generated from field: bool awaiting_group = 2;
    */
   awaitingGroup?: boolean
 }
 
 export const SetSpaceSequencerResponse: MessageType<SetSpaceSequencerResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SetSpaceSequencerResponse',
-    fields: [
-      { no: 1, name: 'changed', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'awaiting_group', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpaceSequencerResponse>(
+    's4wave.space.SetSpaceSequencerResponse',
+    () => [
+      [1, 'changed', 8],
+      [2, 'awaiting_group', 8],
+    ],
+  )
 
 /**
  * SetSpaceRosterRequest lists the writers to drop from the trimming roster.
@@ -1630,25 +1229,15 @@ export interface SetSpaceRosterRequest {
   /**
    * DroppedPeerIds are the writers to drop. Every other writer is on the
    * roster; an empty list returns every dropped writer to it.
-   *
-   * @generated from field: repeated string dropped_peer_ids = 1;
    */
   droppedPeerIds?: string[]
 }
 
 export const SetSpaceRosterRequest: MessageType<SetSpaceRosterRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SetSpaceRosterRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'dropped_peer_ids',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpaceRosterRequest>(
+    's4wave.space.SetSpaceRosterRequest',
+    () => [[1, 'dropped_peer_ids', 9, 1]],
+  )
 
 /**
  * SetSpaceRosterResponse reports whether the roster changed.
@@ -1658,27 +1247,23 @@ export const SetSpaceRosterRequest: MessageType<SetSpaceRosterRequest> =
 export interface SetSpaceRosterResponse {
   /**
    * Changed is false when the roster already dropped exactly those writers.
-   *
-   * @generated from field: bool changed = 1;
    */
   changed?: boolean
   /**
    * AwaitingGroup is true when the viewer agreed to the change under group
    * control, and it applies once the group decides it.
-   *
-   * @generated from field: bool awaiting_group = 2;
    */
   awaitingGroup?: boolean
 }
 
 export const SetSpaceRosterResponse: MessageType<SetSpaceRosterResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SetSpaceRosterResponse',
-    fields: [
-      { no: 1, name: 'changed', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'awaiting_group', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpaceRosterResponse>(
+    's4wave.space.SetSpaceRosterResponse',
+    () => [
+      [1, 'changed', 8],
+      [2, 'awaiting_group', 8],
+    ],
+  )
 
 /**
  * SetSpaceBackfillRequest chooses this device's backfill of the World.
@@ -1688,19 +1273,15 @@ export const SetSpaceRosterResponse: MessageType<SetSpaceRosterResponse> =
 export interface SetSpaceBackfillRequest {
   /**
    * Backfill copies the whole World into the local store when set.
-   *
-   * @generated from field: bool backfill = 1;
    */
   backfill?: boolean
 }
 
 export const SetSpaceBackfillRequest: MessageType<SetSpaceBackfillRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SetSpaceBackfillRequest',
-    fields: [
-      { no: 1, name: 'backfill', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpaceBackfillRequest>(
+    's4wave.space.SetSpaceBackfillRequest',
+    () => [[1, 'backfill', 8]],
+  )
 
 /**
  * SetSpaceBackfillResponse is the response to SetSpaceBackfill.
@@ -1710,9 +1291,9 @@ export const SetSpaceBackfillRequest: MessageType<SetSpaceBackfillRequest> =
 export interface SetSpaceBackfillResponse {}
 
 export const SetSpaceBackfillResponse: MessageType<SetSpaceBackfillResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetSpaceBackfillResponse>(
+  /* @__PURE__ */ createMessageType<SetSpaceBackfillResponse>(
     's4wave.space.SetSpaceBackfillResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1723,9 +1304,9 @@ export const SetSpaceBackfillResponse: MessageType<SetSpaceBackfillResponse> =
 export interface WatchSpaceBackfillRequest {}
 
 export const WatchSpaceBackfillRequest: MessageType<WatchSpaceBackfillRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchSpaceBackfillRequest>(
+  /* @__PURE__ */ createMessageType<WatchSpaceBackfillRequest>(
     's4wave.space.WatchSpaceBackfillRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1736,19 +1317,15 @@ export const WatchSpaceBackfillRequest: MessageType<WatchSpaceBackfillRequest> =
 export interface SpaceBackfillState {
   /**
    * Backfill is set when this device copies the whole World locally.
-   *
-   * @generated from field: bool backfill = 1;
    */
   backfill?: boolean
 }
 
 export const SpaceBackfillState: MessageType<SpaceBackfillState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SpaceBackfillState',
-    fields: [
-      { no: 1, name: 'backfill', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceBackfillState>(
+    's4wave.space.SpaceBackfillState',
+    () => [[1, 'backfill', 8]],
+  )
 
 /**
  * SetSpaceControlRequest chooses who controls the Space.
@@ -1758,19 +1335,15 @@ export const SpaceBackfillState: MessageType<SpaceBackfillState> =
 export interface SetSpaceControlRequest {
   /**
    * Control is OWNER or GROUP.
-   *
-   * @generated from field: s4wave.space.SpaceControl control = 1;
    */
   control?: SpaceControl
 }
 
 export const SetSpaceControlRequest: MessageType<SetSpaceControlRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SetSpaceControlRequest',
-    fields: [
-      { no: 1, name: 'control', kind: 'enum', T: SpaceControl_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpaceControlRequest>(
+    's4wave.space.SetSpaceControlRequest',
+    () => [[1, 'control', 14, 0, SpaceControl_Enum]],
+  )
 
 /**
  * SetSpaceControlResponse reports how the change proceeds.
@@ -1781,19 +1354,15 @@ export interface SetSpaceControlResponse {
   /**
    * AwaitingGroup is true when the viewer agreed to the change under group
    * control, and it applies once the group decides it.
-   *
-   * @generated from field: bool awaiting_group = 1;
    */
   awaitingGroup?: boolean
 }
 
 export const SetSpaceControlResponse: MessageType<SetSpaceControlResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SetSpaceControlResponse',
-    fields: [
-      { no: 1, name: 'awaiting_group', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetSpaceControlResponse>(
+    's4wave.space.SetSpaceControlResponse',
+    () => [[1, 'awaiting_group', 8]],
+  )
 
 /**
  * ApproveSpaceChangeRequest agrees to a change the group has not decided.
@@ -1803,19 +1372,15 @@ export const SetSpaceControlResponse: MessageType<SetSpaceControlResponse> =
 export interface ApproveSpaceChangeRequest {
   /**
    * Hash is the SpaceGroupChange hash.
-   *
-   * @generated from field: bytes hash = 1;
    */
   hash?: Uint8Array
 }
 
 export const ApproveSpaceChangeRequest: MessageType<ApproveSpaceChangeRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.ApproveSpaceChangeRequest',
-    fields: [
-      { no: 1, name: 'hash', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApproveSpaceChangeRequest>(
+    's4wave.space.ApproveSpaceChangeRequest',
+    () => [[1, 'hash', 12]],
+  )
 
 /**
  * ApproveSpaceChangeResponse is the response to ApproveSpaceChange.
@@ -1825,9 +1390,9 @@ export const ApproveSpaceChangeRequest: MessageType<ApproveSpaceChangeRequest> =
 export interface ApproveSpaceChangeResponse {}
 
 export const ApproveSpaceChangeResponse: MessageType<ApproveSpaceChangeResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ApproveSpaceChangeResponse>(
+  /* @__PURE__ */ createMessageType<ApproveSpaceChangeResponse>(
     's4wave.space.ApproveSpaceChangeResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1838,33 +1403,27 @@ export const ApproveSpaceChangeResponse: MessageType<ApproveSpaceChangeResponse>
 export interface SetProcessBindingRequest {
   /**
    * ObjectKey is the world object key to bind.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * TypeId is the ObjectType type ID.
-   *
-   * @generated from field: string type_id = 2;
    */
   typeId?: string
   /**
    * Approved sets the binding state. True = approved, false = unapproved.
-   *
-   * @generated from field: bool approved = 3;
    */
   approved?: boolean
 }
 
 export const SetProcessBindingRequest: MessageType<SetProcessBindingRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.SetProcessBindingRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'approved', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetProcessBindingRequest>(
+    's4wave.space.SetProcessBindingRequest',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'type_id', 9],
+      [3, 'approved', 8],
+    ],
+  )
 
 /**
  * SetProcessBindingResponse is the response for SetProcessBinding.
@@ -1874,9 +1433,9 @@ export const SetProcessBindingRequest: MessageType<SetProcessBindingRequest> =
 export interface SetProcessBindingResponse {}
 
 export const SetProcessBindingResponse: MessageType<SetProcessBindingResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetProcessBindingResponse>(
+  /* @__PURE__ */ createMessageType<SetProcessBindingResponse>(
     's4wave.space.SetProcessBindingResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -1887,9 +1446,9 @@ export const SetProcessBindingResponse: MessageType<SetProcessBindingResponse> =
 export interface WatchProcessBindingsRequest {}
 
 export const WatchProcessBindingsRequest: MessageType<WatchProcessBindingsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchProcessBindingsRequest>(
+  /* @__PURE__ */ createMessageType<WatchProcessBindingsRequest>(
     's4wave.space.WatchProcessBindingsRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -1900,22 +1459,47 @@ export const WatchProcessBindingsRequest: MessageType<WatchProcessBindingsReques
 export interface WatchProcessBindingsResponse {
   /**
    * ProcessBindings contains decisions for this mounted Space.
-   *
-   * @generated from field: repeated s4wave.space.ProcessBindingInfo process_bindings = 1;
    */
   processBindings?: ProcessBindingInfo[]
 }
 
 export const WatchProcessBindingsResponse: MessageType<WatchProcessBindingsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.space.WatchProcessBindingsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'process_bindings',
-        kind: 'message',
-        T: ProcessBindingInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchProcessBindingsResponse>(
+    's4wave.space.WatchProcessBindingsResponse',
+    () => [[1, 'process_bindings', 11, 1, ProcessBindingInfo.codec]],
+  )
+
+/**
+ * ProcessBindingInfo contains info about a single process binding.
+ *
+ * @generated from message s4wave.space.ProcessBindingInfo
+ */
+export interface ProcessBindingInfo {
+  /**
+   * ObjectKey is the world object key.
+   */
+  objectKey?: string
+  /**
+   * TypeId is the ObjectType type ID.
+   */
+  typeId?: string
+  /**
+   * Approved indicates whether the binding is approved.
+   */
+  approved?: boolean
+  /**
+   * DecidedAt is the time the binding state was last changed.
+   */
+  decidedAt?: Date
+}
+
+export const ProcessBindingInfo: MessageType<ProcessBindingInfo> =
+  /* @__PURE__ */ createMessageType<ProcessBindingInfo>(
+    's4wave.space.ProcessBindingInfo',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'type_id', 9],
+      [3, 'approved', 8],
+      [4, 'decided_at', 11, 0, Timestamp.codec],
+    ],
+  )

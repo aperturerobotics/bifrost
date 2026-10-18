@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * GetStorageInfoRequest is the request type for GetStorageInfo.
@@ -18,9 +13,27 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface GetStorageInfoRequest {}
 
 export const GetStorageInfoRequest: MessageType<GetStorageInfoRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetStorageInfoRequest>(
+  /* @__PURE__ */ createMessageType<GetStorageInfoRequest>(
     's4wave.debugdb.GetStorageInfoRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * GetStorageInfoResponse is the response type for GetStorageInfo.
+ *
+ * @generated from message s4wave.debugdb.GetStorageInfoResponse
+ */
+export interface GetStorageInfoResponse {
+  /**
+   * Info is the current storage information.
+   */
+  info?: StorageInfo
+}
+
+export const GetStorageInfoResponse: MessageType<GetStorageInfoResponse> =
+  /* @__PURE__ */ createMessageType<GetStorageInfoResponse>(
+    's4wave.debugdb.GetStorageInfoResponse',
+    () => [[1, 'info', 11, 0, StorageInfo.codec]],
   )
 
 /**
@@ -31,62 +44,68 @@ export const GetStorageInfoRequest: MessageType<GetStorageInfoRequest> =
 export interface StorageInfo {
   /**
    * VolumeType is the volume implementation type (e.g. "hydra/volume/browser").
-   *
-   * @generated from field: string volume_type = 1;
    */
   volumeType?: string
   /**
    * Goos is the Go runtime GOOS value.
-   *
-   * @generated from field: string goos = 7;
    */
   goos?: string
   /**
    * Goarch is the Go runtime GOARCH value.
-   *
-   * @generated from field: string goarch = 8;
    */
   goarch?: string
   /**
    * UserAgent is the browser user agent string.
-   *
-   * @generated from field: string user_agent = 9;
    */
   userAgent?: string
 }
 
 export const StorageInfo: MessageType<StorageInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.StorageInfo',
-    fields: [
-      { no: 1, name: 'volume_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'goos', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'goarch', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'user_agent', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StorageInfo>(
+    's4wave.debugdb.StorageInfo',
+    () => [
+      [1, 'volume_type', 9],
+      [7, 'goos', 9],
+      [8, 'goarch', 9],
+      [9, 'user_agent', 9],
+    ],
+  )
 
 /**
- * GetStorageInfoResponse is the response type for GetStorageInfo.
+ * StartBenchmarkRequest is the request type for StartBenchmark.
  *
- * @generated from message s4wave.debugdb.GetStorageInfoResponse
+ * @generated from message s4wave.debugdb.StartBenchmarkRequest
  */
-export interface GetStorageInfoResponse {
+export interface StartBenchmarkRequest {
   /**
-   * Info is the current storage information.
-   *
-   * @generated from field: s4wave.debugdb.StorageInfo info = 1;
+   * Config is the benchmark configuration.
    */
-  info?: StorageInfo
+  config?: BenchmarkConfig
 }
 
-export const GetStorageInfoResponse: MessageType<GetStorageInfoResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.GetStorageInfoResponse',
-    fields: [
-      { no: 1, name: 'info', kind: 'message', T: StorageInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const StartBenchmarkRequest: MessageType<StartBenchmarkRequest> =
+  /* @__PURE__ */ createMessageType<StartBenchmarkRequest>(
+    's4wave.debugdb.StartBenchmarkRequest',
+    () => [[1, 'config', 11, 0, BenchmarkConfig.codec]],
+  )
+
+/**
+ * StartBenchmarkResponse is the response type for StartBenchmark.
+ *
+ * @generated from message s4wave.debugdb.StartBenchmarkResponse
+ */
+export interface StartBenchmarkResponse {
+  /**
+   * ResourceId is the ID of the benchmark resource.
+   */
+  resourceId?: number
+}
+
+export const StartBenchmarkResponse: MessageType<StartBenchmarkResponse> =
+  /* @__PURE__ */ createMessageType<StartBenchmarkResponse>(
+    's4wave.debugdb.StartBenchmarkResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * BenchmarkConfig configures a benchmark run.
@@ -97,89 +116,28 @@ export interface BenchmarkConfig {
   /**
    * DurationSeconds is the total benchmark duration target in seconds.
    * Each suite gets a proportional share. Defaults to 10.
-   *
-   * @generated from field: uint32 duration_seconds = 1;
    */
   durationSeconds?: number
   /**
    * BlockSizes is the list of block sizes to test in bytes.
    * Defaults to [256, 1024, 4096, 16384, 65536].
-   *
-   * @generated from field: repeated uint32 block_sizes = 2;
    */
   blockSizes?: number[]
   /**
    * IncludeWorldSuite enables the world transaction benchmark suite.
-   *
-   * @generated from field: bool include_world_suite = 3;
    */
   includeWorldSuite?: boolean
 }
 
 export const BenchmarkConfig: MessageType<BenchmarkConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.BenchmarkConfig',
-    fields: [
-      { no: 1, name: 'duration_seconds', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 2,
-        name: 'block_sizes',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-        repeated: true,
-      },
-      {
-        no: 3,
-        name: 'include_world_suite',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * StartBenchmarkRequest is the request type for StartBenchmark.
- *
- * @generated from message s4wave.debugdb.StartBenchmarkRequest
- */
-export interface StartBenchmarkRequest {
-  /**
-   * Config is the benchmark configuration.
-   *
-   * @generated from field: s4wave.debugdb.BenchmarkConfig config = 1;
-   */
-  config?: BenchmarkConfig
-}
-
-export const StartBenchmarkRequest: MessageType<StartBenchmarkRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.StartBenchmarkRequest',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: BenchmarkConfig },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * StartBenchmarkResponse is the response type for StartBenchmark.
- *
- * @generated from message s4wave.debugdb.StartBenchmarkResponse
- */
-export interface StartBenchmarkResponse {
-  /**
-   * ResourceId is the ID of the benchmark resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
-   */
-  resourceId?: number
-}
-
-export const StartBenchmarkResponse: MessageType<StartBenchmarkResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.StartBenchmarkResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BenchmarkConfig>(
+    's4wave.debugdb.BenchmarkConfig',
+    () => [
+      [1, 'duration_seconds', 13],
+      [2, 'block_sizes', 13, 3],
+      [3, 'include_world_suite', 8],
+    ],
+  )
 
 /**
  * WatchProgressRequest is the request type for WatchProgress.
@@ -189,9 +147,9 @@ export const StartBenchmarkResponse: MessageType<StartBenchmarkResponse> =
 export interface WatchProgressRequest {}
 
 export const WatchProgressRequest: MessageType<WatchProgressRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchProgressRequest>(
+  /* @__PURE__ */ createMessageType<WatchProgressRequest>(
     's4wave.debugdb.WatchProgressRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -202,54 +160,42 @@ export const WatchProgressRequest: MessageType<WatchProgressRequest> =
 export interface WatchProgressResponse {
   /**
    * SuiteName is the name of the currently running suite.
-   *
-   * @generated from field: string suite_name = 1;
    */
   suiteName?: string
   /**
    * SuiteIndex is the zero-based index of the current suite.
-   *
-   * @generated from field: uint32 suite_index = 2;
    */
   suiteIndex?: number
   /**
    * SuiteCount is the total number of suites.
-   *
-   * @generated from field: uint32 suite_count = 3;
    */
   suiteCount?: number
   /**
    * PercentComplete is the overall progress (0-100).
-   *
-   * @generated from field: uint32 percent_complete = 4;
    */
   percentComplete?: number
   /**
    * MetricName is the name of the current metric being measured.
-   *
-   * @generated from field: string metric_name = 5;
    */
   metricName?: string
   /**
    * Done is true when the benchmark has completed.
-   *
-   * @generated from field: bool done = 6;
    */
   done?: boolean
 }
 
 export const WatchProgressResponse: MessageType<WatchProgressResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.WatchProgressResponse',
-    fields: [
-      { no: 1, name: 'suite_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'suite_index', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'suite_count', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'percent_complete', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'metric_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'done', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchProgressResponse>(
+    's4wave.debugdb.WatchProgressResponse',
+    () => [
+      [1, 'suite_name', 9],
+      [2, 'suite_index', 13],
+      [3, 'suite_count', 13],
+      [4, 'percent_complete', 13],
+      [5, 'metric_name', 9],
+      [6, 'done', 8],
+    ],
+  )
 
 /**
  * GetResultsRequest is the request type for GetResults.
@@ -259,9 +205,92 @@ export const WatchProgressResponse: MessageType<WatchProgressResponse> =
 export interface GetResultsRequest {}
 
 export const GetResultsRequest: MessageType<GetResultsRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetResultsRequest>(
+  /* @__PURE__ */ createMessageType<GetResultsRequest>(
     's4wave.debugdb.GetResultsRequest',
-    true,
+    () => [],
+  )
+
+/**
+ * GetResultsResponse is the response type for GetResults.
+ *
+ * @generated from message s4wave.debugdb.GetResultsResponse
+ */
+export interface GetResultsResponse {
+  /**
+   * Results is the full benchmark results.
+   */
+  results?: BenchmarkResults
+}
+
+export const GetResultsResponse: MessageType<GetResultsResponse> =
+  /* @__PURE__ */ createMessageType<GetResultsResponse>(
+    's4wave.debugdb.GetResultsResponse',
+    () => [[1, 'results', 11, 0, BenchmarkResults.codec]],
+  )
+
+/**
+ * BenchmarkResults contains the complete results of a benchmark run.
+ *
+ * @generated from message s4wave.debugdb.BenchmarkResults
+ */
+export interface BenchmarkResults {
+  /**
+   * Info is the storage info at benchmark time.
+   */
+  info?: StorageInfo
+  /**
+   * Config is the benchmark config that was used.
+   */
+  config?: BenchmarkConfig
+  /**
+   * Suites is the list of benchmark suite results.
+   */
+  suites?: BenchmarkSuite[]
+  /**
+   * StartTimeUnixMillis is the benchmark start time.
+   */
+  startTimeUnixMillis?: bigint
+  /**
+   * TotalDurationMillis is the total wall-clock duration.
+   */
+  totalDurationMillis?: bigint
+}
+
+export const BenchmarkResults: MessageType<BenchmarkResults> =
+  /* @__PURE__ */ createMessageType<BenchmarkResults>(
+    's4wave.debugdb.BenchmarkResults',
+    () => [
+      [1, 'info', 11, 0, StorageInfo.codec],
+      [2, 'config', 11, 0, BenchmarkConfig.codec],
+      [3, 'suites', 11, 1, BenchmarkSuite.codec],
+      [4, 'start_time_unix_millis', 4],
+      [5, 'total_duration_millis', 4],
+    ],
+  )
+
+/**
+ * BenchmarkSuite contains results for one benchmark suite.
+ *
+ * @generated from message s4wave.debugdb.BenchmarkSuite
+ */
+export interface BenchmarkSuite {
+  /**
+   * Name is the suite name (e.g. "engine-put-single").
+   */
+  name?: string
+  /**
+   * Metrics is the list of measured metrics.
+   */
+  metrics?: BenchmarkMetric[]
+}
+
+export const BenchmarkSuite: MessageType<BenchmarkSuite> =
+  /* @__PURE__ */ createMessageType<BenchmarkSuite>(
+    's4wave.debugdb.BenchmarkSuite',
+    () => [
+      [1, 'name', 9],
+      [2, 'metrics', 11, 1, BenchmarkMetric.codec],
+    ],
   )
 
 /**
@@ -272,202 +301,55 @@ export const GetResultsRequest: MessageType<GetResultsRequest> =
 export interface BenchmarkMetric {
   /**
    * Name is the metric name (e.g. "put-4096b").
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Unit is the measurement unit (e.g. "ms", "ops/s").
-   *
-   * @generated from field: string unit = 2;
    */
   unit?: string
   /**
    * Count is the number of operations measured.
-   *
-   * @generated from field: uint64 count = 3;
    */
   count?: bigint
   /**
    * TotalMs is the total time in milliseconds.
-   *
-   * @generated from field: double total_ms = 4;
    */
   totalMs?: number
   /**
    * MinMs is the minimum operation time.
-   *
-   * @generated from field: double min_ms = 5;
    */
   minMs?: number
   /**
    * P50Ms is the 50th percentile operation time.
-   *
-   * @generated from field: double p50_ms = 6;
    */
   p50Ms?: number
   /**
    * P99Ms is the 99th percentile operation time.
-   *
-   * @generated from field: double p99_ms = 7;
    */
   p99Ms?: number
   /**
    * MaxMs is the maximum operation time.
-   *
-   * @generated from field: double max_ms = 8;
    */
   maxMs?: number
   /**
    * Samples contains raw timing samples when count < 1000.
    * Empty for high-count metrics to keep response compact.
-   *
-   * @generated from field: repeated double samples = 9;
    */
   samples?: number[]
 }
 
 export const BenchmarkMetric: MessageType<BenchmarkMetric> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.BenchmarkMetric',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'unit', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'count', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'total_ms', kind: 'scalar', T: ScalarType.DOUBLE },
-      { no: 5, name: 'min_ms', kind: 'scalar', T: ScalarType.DOUBLE },
-      { no: 6, name: 'p50_ms', kind: 'scalar', T: ScalarType.DOUBLE },
-      { no: 7, name: 'p99_ms', kind: 'scalar', T: ScalarType.DOUBLE },
-      { no: 8, name: 'max_ms', kind: 'scalar', T: ScalarType.DOUBLE },
-      {
-        no: 9,
-        name: 'samples',
-        kind: 'scalar',
-        T: ScalarType.DOUBLE,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BenchmarkSuite contains results for one benchmark suite.
- *
- * @generated from message s4wave.debugdb.BenchmarkSuite
- */
-export interface BenchmarkSuite {
-  /**
-   * Name is the suite name (e.g. "engine-put-single").
-   *
-   * @generated from field: string name = 1;
-   */
-  name?: string
-  /**
-   * Metrics is the list of measured metrics.
-   *
-   * @generated from field: repeated s4wave.debugdb.BenchmarkMetric metrics = 2;
-   */
-  metrics?: BenchmarkMetric[]
-}
-
-export const BenchmarkSuite: MessageType<BenchmarkSuite> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.BenchmarkSuite',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'metrics',
-        kind: 'message',
-        T: BenchmarkMetric,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * BenchmarkResults contains the complete results of a benchmark run.
- *
- * @generated from message s4wave.debugdb.BenchmarkResults
- */
-export interface BenchmarkResults {
-  /**
-   * Info is the storage info at benchmark time.
-   *
-   * @generated from field: s4wave.debugdb.StorageInfo info = 1;
-   */
-  info?: StorageInfo
-  /**
-   * Config is the benchmark config that was used.
-   *
-   * @generated from field: s4wave.debugdb.BenchmarkConfig config = 2;
-   */
-  config?: BenchmarkConfig
-  /**
-   * Suites is the list of benchmark suite results.
-   *
-   * @generated from field: repeated s4wave.debugdb.BenchmarkSuite suites = 3;
-   */
-  suites?: BenchmarkSuite[]
-  /**
-   * StartTimeUnixMillis is the benchmark start time.
-   *
-   * @generated from field: uint64 start_time_unix_millis = 4;
-   */
-  startTimeUnixMillis?: bigint
-  /**
-   * TotalDurationMillis is the total wall-clock duration.
-   *
-   * @generated from field: uint64 total_duration_millis = 5;
-   */
-  totalDurationMillis?: bigint
-}
-
-export const BenchmarkResults: MessageType<BenchmarkResults> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.BenchmarkResults',
-    fields: [
-      { no: 1, name: 'info', kind: 'message', T: StorageInfo },
-      { no: 2, name: 'config', kind: 'message', T: BenchmarkConfig },
-      {
-        no: 3,
-        name: 'suites',
-        kind: 'message',
-        T: BenchmarkSuite,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'start_time_unix_millis',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-      {
-        no: 5,
-        name: 'total_duration_millis',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * GetResultsResponse is the response type for GetResults.
- *
- * @generated from message s4wave.debugdb.GetResultsResponse
- */
-export interface GetResultsResponse {
-  /**
-   * Results is the full benchmark results.
-   *
-   * @generated from field: s4wave.debugdb.BenchmarkResults results = 1;
-   */
-  results?: BenchmarkResults
-}
-
-export const GetResultsResponse: MessageType<GetResultsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.debugdb.GetResultsResponse',
-    fields: [
-      { no: 1, name: 'results', kind: 'message', T: BenchmarkResults },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BenchmarkMetric>(
+    's4wave.debugdb.BenchmarkMetric',
+    () => [
+      [1, 'name', 9],
+      [2, 'unit', 9],
+      [3, 'count', 4],
+      [4, 'total_ms', 1],
+      [5, 'min_ms', 1],
+      [6, 'p50_ms', 1],
+      [7, 'p99_ms', 1],
+      [8, 'max_ms', 1],
+      [9, 'samples', 1, 3],
+    ],
+  )

@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { SharedObjectListEntry } from '../sobject/sobject.pb.js'
 
 /**
@@ -16,19 +14,14 @@ import { SharedObjectListEntry } from '../sobject/sobject.pb.js'
 export interface SpaceSoMeta {
   /**
    * Name is the user-defined space name.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
 }
 
 export const SpaceSoMeta: MessageType<SpaceSoMeta> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.SpaceSoMeta',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceSoMeta>('space.SpaceSoMeta', () => [
+    [1, 'name', 9],
+  ])
 
 /**
  * SpaceSoListEntry is a SharedObjectListEntry with parsed metadata.
@@ -38,35 +31,24 @@ export const SpaceSoMeta: MessageType<SpaceSoMeta> =
 export interface SpaceSoListEntry {
   /**
    * Entry is the shared object list entry.
-   *
-   * @generated from field: sobject.SharedObjectListEntry entry = 1;
    */
   entry?: SharedObjectListEntry
   /**
    * SpaceMeta is the space shared object meta.
-   *
-   * @generated from field: space.SpaceSoMeta space_meta = 2;
    */
   spaceMeta?: SpaceSoMeta
   /**
    * IndexObjectType is the semantic ObjectType of the object selected by SpaceSettings.index_path.
-   *
-   * @generated from field: string index_object_type = 3;
    */
   indexObjectType?: string
 }
 
 export const SpaceSoListEntry: MessageType<SpaceSoListEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.SpaceSoListEntry',
-    fields: [
-      { no: 1, name: 'entry', kind: 'message', T: () => SharedObjectListEntry },
-      { no: 2, name: 'space_meta', kind: 'message', T: SpaceSoMeta },
-      {
-        no: 3,
-        name: 'index_object_type',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SpaceSoListEntry>(
+    'space.SpaceSoListEntry',
+    () => [
+      [1, 'entry', 11, 0, SharedObjectListEntry.codec],
+      [2, 'space_meta', 11, 0, SpaceSoMeta.codec],
+      [3, 'index_object_type', 9],
+    ],
+  )

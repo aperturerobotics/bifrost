@@ -3,12 +3,8 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Blog } from '../proto/blog.pb.js'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * WatchBlogRequest is the request for WatchBlog.
@@ -18,9 +14,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface WatchBlogRequest {}
 
 export const WatchBlogRequest: MessageType<WatchBlogRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchBlogRequest>(
+  /* @__PURE__ */ createMessageType<WatchBlogRequest>(
     'notes.WatchBlogRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -31,16 +27,12 @@ export const WatchBlogRequest: MessageType<WatchBlogRequest> =
 export interface WatchBlogResponse {
   /**
    * Blog is the current blog state.
-   *
-   * @generated from field: notes.Blog blog = 1;
    */
   blog?: Blog
 }
 
 export const WatchBlogResponse: MessageType<WatchBlogResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.WatchBlogResponse',
-    fields: [
-      { no: 1, name: 'blog', kind: 'message', T: () => Blog },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchBlogResponse>(
+    'notes.WatchBlogResponse',
+    () => [[1, 'blog', 11, 0, Blog.codec]],
+  )

@@ -6,8 +6,6 @@ import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import { SqlValue } from '../../../db/sql/sql.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ObjectRef } from '../../../db/bucket/bucket.pb.js'
 
 /**
@@ -18,30 +16,27 @@ import { ObjectRef } from '../../../db/bucket/bucket.pb.js'
 export enum SqlStatementKind {
   /**
    * SQL_STATEMENT_KIND_UNSPECIFIED is invalid.
-   *
-   * @generated from enum value: SQL_STATEMENT_KIND_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * SQL_STATEMENT_KIND_EXEC replays via ExecContext.
-   *
-   * @generated from enum value: SQL_STATEMENT_KIND_EXEC = 1;
    */
   EXEC = 1,
 
   /**
    * SQL_STATEMENT_KIND_QUERY replays via QueryContext and drains rows.
-   *
-   * @generated from enum value: SQL_STATEMENT_KIND_QUERY = 2;
    */
   QUERY = 2,
 }
 
 export const SqlStatementKind_Enum = /* @__PURE__ */ createEnumType(
   's4wave.sql.world.SqlStatementKind',
-  SqlStatementKind,
-  'SQL_STATEMENT_KIND_',
+  [
+    [0, 'SQL_STATEMENT_KIND_UNSPECIFIED'],
+    [1, 'SQL_STATEMENT_KIND_EXEC'],
+    [2, 'SQL_STATEMENT_KIND_QUERY'],
+  ],
 )
 
 /**
@@ -52,33 +47,27 @@ export const SqlStatementKind_Enum = /* @__PURE__ */ createEnumType(
 export interface SqlArgument {
   /**
    * Name is the named-argument name, if any.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Ordinal is the positional argument ordinal.
-   *
-   * @generated from field: int32 ordinal = 2;
    */
   ordinal?: number
   /**
    * Value is the SQL bind value.
-   *
-   * @generated from field: sql.SqlValue value = 3;
    */
   value?: SqlValue
 }
 
 export const SqlArgument: MessageType<SqlArgument> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.world.SqlArgument',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'ordinal', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 3, name: 'value', kind: 'message', T: () => SqlValue },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlArgument>(
+    's4wave.sql.world.SqlArgument',
+    () => [
+      [1, 'name', 9],
+      [2, 'ordinal', 5],
+      [3, 'value', 11, 0, SqlValue.codec],
+    ],
+  )
 
 /**
  * SqlStatement records one statement in transaction execution order.
@@ -88,40 +77,32 @@ export const SqlArgument: MessageType<SqlArgument> =
 export interface SqlStatement {
   /**
    * Kind is the replay method.
-   *
-   * @generated from field: s4wave.sql.world.SqlStatementKind kind = 1;
    */
   kind?: SqlStatementKind
   /**
    * Dsn is the transaction default database.
-   *
-   * @generated from field: string dsn = 2;
    */
   dsn?: string
   /**
    * Query is the SQL statement text.
-   *
-   * @generated from field: string query = 3;
    */
   query?: string
   /**
    * Args are the bind arguments.
-   *
-   * @generated from field: repeated s4wave.sql.world.SqlArgument args = 4;
    */
   args?: SqlArgument[]
 }
 
 export const SqlStatement: MessageType<SqlStatement> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.world.SqlStatement',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: SqlStatementKind_Enum },
-      { no: 2, name: 'dsn', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'query', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'args', kind: 'message', T: SqlArgument, repeated: true },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlStatement>(
+    's4wave.sql.world.SqlStatement',
+    () => [
+      [1, 'kind', 14, 0, SqlStatementKind_Enum],
+      [2, 'dsn', 9],
+      [3, 'query', 9],
+      [4, 'args', 11, 1, SqlArgument.codec],
+    ],
+  )
 
 /**
  * SqlSetRootOp advances a sql/db world object's root after a SQL commit.
@@ -131,43 +112,29 @@ export const SqlStatement: MessageType<SqlStatement> =
 export interface SqlSetRootOp {
   /**
    * ObjectKey is the sql/db object key to update.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RootRef is the committed SQL root reference.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
    */
   rootRef?: ObjectRef
   /**
    * BaseRef is the object root the transaction committed from.
-   *
-   * @generated from field: bucket.ObjectRef base_ref = 3;
    */
   baseRef?: ObjectRef
   /**
    * Statements are the committed writes needed to rebase from a moved base.
-   *
-   * @generated from field: repeated s4wave.sql.world.SqlStatement statements = 4;
    */
   statements?: SqlStatement[]
 }
 
 export const SqlSetRootOp: MessageType<SqlSetRootOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.sql.world.SqlSetRootOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-      { no: 3, name: 'base_ref', kind: 'message', T: () => ObjectRef },
-      {
-        no: 4,
-        name: 'statements',
-        kind: 'message',
-        T: SqlStatement,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SqlSetRootOp>(
+    's4wave.sql.world.SqlSetRootOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+      [3, 'base_ref', 11, 0, ObjectRef.codec],
+      [4, 'statements', 11, 1, SqlStatement.codec],
+    ],
+  )

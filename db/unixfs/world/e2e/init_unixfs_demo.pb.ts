@@ -4,9 +4,7 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * InitUnixFSDemoOp initializes a UnixFS filesystem with demo content.
@@ -16,23 +14,19 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface InitUnixFSDemoOp {
   /**
    * ObjectKey is the object key for the UnixFS filesystem.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Timestamp is the timestamp to use for operations.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 2;
    */
   timestamp?: Date
 }
 
 export const InitUnixFSDemoOp: MessageType<InitUnixFSDemoOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'unixfs.world.e2e.InitUnixFSDemoOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InitUnixFSDemoOp>(
+    'unixfs.world.e2e.InitUnixFSDemoOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

@@ -7,8 +7,6 @@ import { BlockRef } from '../../db/block/block.pb.js'
 import { ObjectRef } from '../../db/bucket/bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * AptRepositoryState is the index lifecycle state of an AptRepository.
@@ -18,36 +16,33 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum AptRepositoryState {
   /**
    * AptRepositoryState_EMPTY means the repository has no generated index.
-   *
-   * @generated from enum value: AptRepositoryState_EMPTY = 0;
    */
   AptRepositoryState_EMPTY = 0,
 
   /**
    * AptRepositoryState_INDEXING means index regeneration is in progress.
-   *
-   * @generated from enum value: AptRepositoryState_INDEXING = 1;
    */
   AptRepositoryState_INDEXING = 1,
 
   /**
    * AptRepositoryState_READY means the repository index is generated and usable.
-   *
-   * @generated from enum value: AptRepositoryState_READY = 2;
    */
   AptRepositoryState_READY = 2,
 
   /**
    * AptRepositoryState_ERROR means the last index regeneration failed.
-   *
-   * @generated from enum value: AptRepositoryState_ERROR = 3;
    */
   AptRepositoryState_ERROR = 3,
 }
 
 export const AptRepositoryState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.apt.AptRepositoryState',
-  AptRepositoryState,
+  [
+    [0, 'AptRepositoryState_EMPTY'],
+    [1, 'AptRepositoryState_INDEXING'],
+    [2, 'AptRepositoryState_READY'],
+    [3, 'AptRepositoryState_ERROR'],
+  ],
 )
 
 /**
@@ -58,36 +53,33 @@ export const AptRepositoryState_Enum = /* @__PURE__ */ createEnumType(
 export enum AptPackageState {
   /**
    * AptPackageState_IMPORTING means the package is being ingested.
-   *
-   * @generated from enum value: AptPackageState_IMPORTING = 0;
    */
   AptPackageState_IMPORTING = 0,
 
   /**
    * AptPackageState_BUILT means the package artifact exists but is not indexed.
-   *
-   * @generated from enum value: AptPackageState_BUILT = 1;
    */
   AptPackageState_BUILT = 1,
 
   /**
    * AptPackageState_PUBLISHED means the package is included in the current index.
-   *
-   * @generated from enum value: AptPackageState_PUBLISHED = 2;
    */
   AptPackageState_PUBLISHED = 2,
 
   /**
    * AptPackageState_SUPERSEDED means a newer package replaced this package.
-   *
-   * @generated from enum value: AptPackageState_SUPERSEDED = 3;
    */
   AptPackageState_SUPERSEDED = 3,
 }
 
 export const AptPackageState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.apt.AptPackageState',
-  AptPackageState,
+  [
+    [0, 'AptPackageState_IMPORTING'],
+    [1, 'AptPackageState_BUILT'],
+    [2, 'AptPackageState_PUBLISHED'],
+    [3, 'AptPackageState_SUPERSEDED'],
+  ],
 )
 
 /**
@@ -98,66 +90,42 @@ export const AptPackageState_Enum = /* @__PURE__ */ createEnumType(
 export interface AptRepository {
   /**
    * State is the current repository index lifecycle state.
-   *
-   * @generated from field: s4wave.apt.AptRepositoryState state = 1;
    */
   state?: AptRepositoryState
   /**
    * Distribution is the apt distribution name, e.g. "stable".
-   *
-   * @generated from field: string distribution = 2;
    */
   distribution?: string
   /**
    * Components is the apt component list, e.g. ["main"].
-   *
-   * @generated from field: repeated string components = 3;
    */
   components?: string[]
   /**
    * Architectures is the architecture list served by this repository.
-   *
-   * @generated from field: repeated string architectures = 4;
    */
   architectures?: string[]
   /**
    * SigningKeyRef points at the standalone Ed25519 GPG signing key block.
-   *
-   * @generated from field: block.BlockRef signing_key_ref = 5;
    */
   signingKeyRef?: BlockRef
   /**
    * IndexRef points at the materialized dists/ UnixFS tree.
-   *
-   * @generated from field: bucket.ObjectRef index_ref = 6;
    */
   indexRef?: ObjectRef
 }
 
 export const AptRepository: MessageType<AptRepository> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.AptRepository',
-    fields: [
-      { no: 1, name: 'state', kind: 'enum', T: AptRepositoryState_Enum },
-      { no: 2, name: 'distribution', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'components',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 4,
-        name: 'architectures',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 5, name: 'signing_key_ref', kind: 'message', T: () => BlockRef },
-      { no: 6, name: 'index_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AptRepository>(
+    's4wave.apt.AptRepository',
+    () => [
+      [1, 'state', 14, 0, AptRepositoryState_Enum],
+      [2, 'distribution', 9],
+      [3, 'components', 9, 1],
+      [4, 'architectures', 9, 1],
+      [5, 'signing_key_ref', 11, 0, BlockRef.codec],
+      [6, 'index_ref', 11, 0, ObjectRef.codec],
+    ],
+  )
 
 /**
  * AptPackageChecksum records a digest for the .deb payload.
@@ -167,26 +135,22 @@ export const AptRepository: MessageType<AptRepository> =
 export interface AptPackageChecksum {
   /**
    * Algorithm is the checksum algorithm name, e.g. "sha256".
-   *
-   * @generated from field: string algorithm = 1;
    */
   algorithm?: string
   /**
    * Hex is the lowercase hex digest.
-   *
-   * @generated from field: string hex = 2;
    */
   hex?: string
 }
 
 export const AptPackageChecksum: MessageType<AptPackageChecksum> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.AptPackageChecksum',
-    fields: [
-      { no: 1, name: 'algorithm', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'hex', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AptPackageChecksum>(
+    's4wave.apt.AptPackageChecksum',
+    () => [
+      [1, 'algorithm', 9],
+      [2, 'hex', 9],
+    ],
+  )
 
 /**
  * AptPackage stores apt package metadata and the .deb payload reference.
@@ -196,113 +160,64 @@ export const AptPackageChecksum: MessageType<AptPackageChecksum> =
 export interface AptPackage {
   /**
    * State is the package publication lifecycle state.
-   *
-   * @generated from field: s4wave.apt.AptPackageState state = 1;
    */
   state?: AptPackageState
   /**
    * Name is the binary package name, e.g. "busybox".
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Version is the Debian package version.
-   *
-   * @generated from field: string version = 3;
    */
   version?: string
   /**
    * Architecture is the Debian architecture, e.g. "i386".
-   *
-   * @generated from field: string architecture = 4;
    */
   architecture?: string
   /**
    * Depends is the parsed Depends control field.
-   *
-   * @generated from field: repeated string depends = 5;
    */
   depends?: string[]
   /**
    * Provides is the parsed Provides control field.
-   *
-   * @generated from field: repeated string provides = 6;
    */
   provides?: string[]
   /**
    * Conflicts is the parsed Conflicts control field.
-   *
-   * @generated from field: repeated string conflicts = 7;
    */
   conflicts?: string[]
   /**
    * Description is the package description from the control file.
-   *
-   * @generated from field: string description = 8;
    */
   description?: string
   /**
    * Size is the .deb payload size in bytes.
-   *
-   * @generated from field: uint64 size = 9;
    */
   size?: bigint
   /**
    * Checksums are the recorded .deb payload digests.
-   *
-   * @generated from field: repeated s4wave.apt.AptPackageChecksum checksums = 10;
    */
   checksums?: AptPackageChecksum[]
   /**
    * DebRef points at the stored .deb payload block.
-   *
-   * @generated from field: block.BlockRef deb_ref = 11;
    */
   debRef?: BlockRef
 }
 
 export const AptPackage: MessageType<AptPackage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.AptPackage',
-    fields: [
-      { no: 1, name: 'state', kind: 'enum', T: AptPackageState_Enum },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'architecture', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'depends',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'provides',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 7,
-        name: 'conflicts',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 8, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'size', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 10,
-        name: 'checksums',
-        kind: 'message',
-        T: AptPackageChecksum,
-        repeated: true,
-      },
-      { no: 11, name: 'deb_ref', kind: 'message', T: () => BlockRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AptPackage>('s4wave.apt.AptPackage', () => [
+    [1, 'state', 14, 0, AptPackageState_Enum],
+    [2, 'name', 9],
+    [3, 'version', 9],
+    [4, 'architecture', 9],
+    [5, 'depends', 9, 1],
+    [6, 'provides', 9, 1],
+    [7, 'conflicts', 9, 1],
+    [8, 'description', 9],
+    [9, 'size', 4],
+    [10, 'checksums', 11, 1, AptPackageChecksum.codec],
+    [11, 'deb_ref', 11, 0, BlockRef.codec],
+  ])
 
 /**
  * AptBuildConfig stores build options for an AptBuildSpec.
@@ -312,37 +227,22 @@ export const AptPackage: MessageType<AptPackage> =
 export interface AptBuildConfig {
   /**
    * Env contains environment variables for the package build.
-   *
-   * @generated from field: map<string, string> env = 1;
    */
   env?: { [key: string]: string }
   /**
    * CrossCompilePrefix is the toolchain prefix, e.g. "i686-linux-gnu-".
-   *
-   * @generated from field: string cross_compile_prefix = 2;
    */
   crossCompilePrefix?: string
 }
 
 export const AptBuildConfig: MessageType<AptBuildConfig> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.AptBuildConfig',
-    fields: [
-      {
-        no: 1,
-        name: 'env',
-        kind: 'map',
-        K: ScalarType.STRING,
-        V: { kind: 'scalar', T: ScalarType.STRING },
-      },
-      {
-        no: 2,
-        name: 'cross_compile_prefix',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AptBuildConfig>(
+    's4wave.apt.AptBuildConfig',
+    () => [
+      [1, 'env', 9, 584],
+      [2, 'cross_compile_prefix', 9],
+    ],
+  )
 
 /**
  * AptBuildSpec stores the build recipe for an apt source package.
@@ -352,59 +252,37 @@ export const AptBuildConfig: MessageType<AptBuildConfig> =
 export interface AptBuildSpec {
   /**
    * SourcePackage is the Debian source package name, e.g. "busybox".
-   *
-   * @generated from field: string source_package = 1;
    */
   sourcePackage?: string
   /**
    * SourceRef points at the source tree used for builds.
-   *
-   * @generated from field: bucket.ObjectRef source_ref = 2;
    */
   sourceRef?: ObjectRef
   /**
    * BuildConfig contains build-time configuration for the Forge target.
-   *
-   * @generated from field: s4wave.apt.AptBuildConfig build_config = 3;
    */
   buildConfig?: AptBuildConfig
   /**
    * Architectures are the Debian architectures to build from this spec.
-   *
-   * @generated from field: repeated string architectures = 4;
    */
   architectures?: string[]
   /**
    * BuildDeps are source packages that must build before this spec.
-   *
-   * @generated from field: repeated string build_deps = 5;
    */
   buildDeps?: string[]
 }
 
 export const AptBuildSpec: MessageType<AptBuildSpec> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.AptBuildSpec',
-    fields: [
-      { no: 1, name: 'source_package', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'source_ref', kind: 'message', T: () => ObjectRef },
-      { no: 3, name: 'build_config', kind: 'message', T: AptBuildConfig },
-      {
-        no: 4,
-        name: 'architectures',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      {
-        no: 5,
-        name: 'build_deps',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AptBuildSpec>(
+    's4wave.apt.AptBuildSpec',
+    () => [
+      [1, 'source_package', 9],
+      [2, 'source_ref', 11, 0, ObjectRef.codec],
+      [3, 'build_config', 11, 0, AptBuildConfig.codec],
+      [4, 'architectures', 9, 1],
+      [5, 'build_deps', 9, 1],
+    ],
+  )
 
 /**
  * CreateAptRepositoryOp creates a new AptRepository world object.
@@ -414,26 +292,22 @@ export const AptBuildSpec: MessageType<AptBuildSpec> =
 export interface CreateAptRepositoryOp {
   /**
    * ObjectKey is the key to create the repository at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Repository carries the metadata for the new AptRepository.
-   *
-   * @generated from field: s4wave.apt.AptRepository repository = 2;
    */
   repository?: AptRepository
 }
 
 export const CreateAptRepositoryOp: MessageType<CreateAptRepositoryOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.CreateAptRepositoryOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'repository', kind: 'message', T: AptRepository },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateAptRepositoryOp>(
+    's4wave.apt.CreateAptRepositoryOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'repository', 11, 0, AptRepository.codec],
+    ],
+  )
 
 /**
  * AddAptPackageOp creates an AptPackage and links it to an AptRepository.
@@ -443,33 +317,27 @@ export const CreateAptRepositoryOp: MessageType<CreateAptRepositoryOp> =
 export interface AddAptPackageOp {
   /**
    * RepositoryKey is the AptRepository object key.
-   *
-   * @generated from field: string repository_key = 1;
    */
   repositoryKey?: string
   /**
    * PackageKey is the key to create the AptPackage at.
-   *
-   * @generated from field: string package_key = 2;
    */
   packageKey?: string
   /**
    * AptPackage carries the metadata for the new package.
-   *
-   * @generated from field: s4wave.apt.AptPackage apt_package = 3;
    */
   aptPackage?: AptPackage
 }
 
 export const AddAptPackageOp: MessageType<AddAptPackageOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.AddAptPackageOp',
-    fields: [
-      { no: 1, name: 'repository_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'package_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'apt_package', kind: 'message', T: AptPackage },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddAptPackageOp>(
+    's4wave.apt.AddAptPackageOp',
+    () => [
+      [1, 'repository_key', 9],
+      [2, 'package_key', 9],
+      [3, 'apt_package', 11, 0, AptPackage.codec],
+    ],
+  )
 
 /**
  * AptPublishPackageOp publishes a built AptPackage into the repository index.
@@ -479,19 +347,15 @@ export const AddAptPackageOp: MessageType<AddAptPackageOp> =
 export interface AptPublishPackageOp {
   /**
    * PackageKey is the AptPackage object key.
-   *
-   * @generated from field: string package_key = 1;
    */
   packageKey?: string
 }
 
 export const AptPublishPackageOp: MessageType<AptPublishPackageOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.AptPublishPackageOp',
-    fields: [
-      { no: 1, name: 'package_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AptPublishPackageOp>(
+    's4wave.apt.AptPublishPackageOp',
+    () => [[1, 'package_key', 9]],
+  )
 
 /**
  * AptSupersedePackageOp marks a published AptPackage as superseded.
@@ -501,19 +365,15 @@ export const AptPublishPackageOp: MessageType<AptPublishPackageOp> =
 export interface AptSupersedePackageOp {
   /**
    * PackageKey is the AptPackage object key.
-   *
-   * @generated from field: string package_key = 1;
    */
   packageKey?: string
 }
 
 export const AptSupersedePackageOp: MessageType<AptSupersedePackageOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.AptSupersedePackageOp',
-    fields: [
-      { no: 1, name: 'package_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AptSupersedePackageOp>(
+    's4wave.apt.AptSupersedePackageOp',
+    () => [[1, 'package_key', 9]],
+  )
 
 /**
  * AddAptBuildSpecOp creates an AptBuildSpec and links it to an AptRepository.
@@ -523,30 +383,24 @@ export const AptSupersedePackageOp: MessageType<AptSupersedePackageOp> =
 export interface AddAptBuildSpecOp {
   /**
    * RepositoryKey is the AptRepository object key.
-   *
-   * @generated from field: string repository_key = 1;
    */
   repositoryKey?: string
   /**
    * BuildSpecKey is the key to create the AptBuildSpec at.
-   *
-   * @generated from field: string build_spec_key = 2;
    */
   buildSpecKey?: string
   /**
    * BuildSpec carries the build recipe for the new spec.
-   *
-   * @generated from field: s4wave.apt.AptBuildSpec build_spec = 3;
    */
   buildSpec?: AptBuildSpec
 }
 
 export const AddAptBuildSpecOp: MessageType<AddAptBuildSpecOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.apt.AddAptBuildSpecOp',
-    fields: [
-      { no: 1, name: 'repository_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'build_spec_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'build_spec', kind: 'message', T: AptBuildSpec },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddAptBuildSpecOp>(
+    's4wave.apt.AddAptBuildSpecOp',
+    () => [
+      [1, 'repository_key', 9],
+      [2, 'build_spec_key', 9],
+      [3, 'build_spec', 11, 0, AptBuildSpec.codec],
+    ],
+  )

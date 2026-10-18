@@ -5,9 +5,7 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ProcessBindingState is the approval state of a process binding.
@@ -17,22 +15,21 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ProcessBindingState {
   /**
    * ProcessBindingState_UNAPPROVED means the process is not approved to run.
-   *
-   * @generated from enum value: ProcessBindingState_UNAPPROVED = 0;
    */
   ProcessBindingState_UNAPPROVED = 0,
 
   /**
    * ProcessBindingState_APPROVED means the process is approved to run.
-   *
-   * @generated from enum value: ProcessBindingState_APPROVED = 1;
    */
   ProcessBindingState_APPROVED = 1,
 }
 
 export const ProcessBindingState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.process.ProcessBindingState',
-  ProcessBindingState,
+  [
+    [0, 'ProcessBindingState_UNAPPROVED'],
+    [1, 'ProcessBindingState_APPROVED'],
+  ],
 )
 
 /**
@@ -44,37 +41,29 @@ export const ProcessBindingState_Enum = /* @__PURE__ */ createEnumType(
 export interface ProcessBinding {
   /**
    * State is the approval state of this binding.
-   *
-   * @generated from field: s4wave.process.ProcessBindingState state = 1;
    */
   state?: ProcessBindingState
   /**
    * ObjectKey is the world object key this binding is for.
-   *
-   * @generated from field: string object_key = 2;
    */
   objectKey?: string
   /**
    * TypeId is the ObjectType type ID.
-   *
-   * @generated from field: string type_id = 3;
    */
   typeId?: string
   /**
    * DecidedAt is the time the binding state was last changed.
-   *
-   * @generated from field: google.protobuf.Timestamp decided_at = 4;
    */
   decidedAt?: Date
 }
 
 export const ProcessBinding: MessageType<ProcessBinding> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.process.ProcessBinding',
-    fields: [
-      { no: 1, name: 'state', kind: 'enum', T: ProcessBindingState_Enum },
-      { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'type_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'decided_at', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ProcessBinding>(
+    's4wave.process.ProcessBinding',
+    () => [
+      [1, 'state', 14, 0, ProcessBindingState_Enum],
+      [2, 'object_key', 9],
+      [3, 'type_id', 9],
+      [4, 'decided_at', 11, 0, Timestamp.codec],
+    ],
+  )

@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ObjectInfoType contains the set of object info types.
@@ -16,111 +14,30 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ObjectInfoType {
   /**
    * ObjectInfoType_UNKNOWN is the zero value.
-   *
-   * @generated from enum value: ObjectInfoType_UNKNOWN = 0;
    */
   ObjectInfoType_UNKNOWN = 0,
 
   /**
    * ObjectInfoType_WORLD is the world object type.
    * Corresponds to WorldObjectInfo.
-   *
-   * @generated from enum value: ObjectInfoType_WORLD = 1;
    */
   ObjectInfoType_WORLD = 1,
 
   /**
    * ObjectInfoType_UNIXFS is the UnixFS object type.
    * Corresponds to UnixfsObjectInfo.
-   *
-   * @generated from enum value: ObjectInfoType_UNIXFS = 2;
    */
   ObjectInfoType_UNIXFS = 2,
 }
 
 export const ObjectInfoType_Enum = /* @__PURE__ */ createEnumType(
   's4wave.web.object.ObjectInfoType',
-  ObjectInfoType,
+  [
+    [0, 'ObjectInfoType_UNKNOWN'],
+    [1, 'ObjectInfoType_WORLD'],
+    [2, 'ObjectInfoType_UNIXFS'],
+  ],
 )
-
-/**
- * WorldObjectInfo is basic metadata about a world object.
- * Some components support empty fields: all fields are optional.
- * ObjectInfoType_WORLD
- *
- * @generated from message s4wave.web.object.WorldObjectInfo
- */
-export interface WorldObjectInfo {
-  /**
-   * EngineId is the identifier used to look up the world on the bus.
-   *
-   * @generated from field: string engine_id = 1;
-   */
-  engineId?: string
-  /**
-   * ObjectKey is the ID of the referenced object.
-   *
-   * @generated from field: string object_key = 2;
-   */
-  objectKey?: string
-  /**
-   * ObjectType is the object type string for the object.
-   *
-   * @generated from field: string object_type = 3;
-   */
-  objectType?: string
-}
-
-export const WorldObjectInfo: MessageType<WorldObjectInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.web.object.WorldObjectInfo',
-    fields: [
-      { no: 1, name: 'engine_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'object_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * UnixfsObjectInfo is basic metadata about a UnixFS file.
- * Some components support empty fields: all fields are optional.
- * ObjectInfoType_UNIXFS
- *
- * @generated from message s4wave.web.object.UnixfsObjectInfo
- */
-export interface UnixfsObjectInfo {
-  /**
-   * UnixfsId is the identifier for the UnixFS on the bus.
-   * The fs should be provided with the AccessUnixFS controller.
-   *
-   * @generated from field: string unixfs_id = 1;
-   */
-  unixfsId?: string
-  /**
-   * Path is the base path to select within the UnixFS.
-   * Optional.
-   *
-   * @generated from field: string path = 2;
-   */
-  path?: string
-  /**
-   * MimeType is the mime type of the passed path, if known.
-   * Optional.
-   *
-   * @generated from field: string mime_type = 3;
-   */
-  mimeType?: string
-}
-
-export const UnixfsObjectInfo: MessageType<UnixfsObjectInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.web.object.UnixfsObjectInfo',
-    fields: [
-      { no: 1, name: 'unixfs_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'mime_type', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * ObjectInfo is basic metadata about an object.
@@ -134,49 +51,83 @@ export interface ObjectInfo {
    * @generated from oneof s4wave.web.object.ObjectInfo.info
    */
   info?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * WorldObjectInfo contains info about an object within a Hydra World.
-         * ObjectInfoType_WORLD
-         *
-         * @generated from field: s4wave.web.object.WorldObjectInfo world_object_info = 1;
-         */
-        value: WorldObjectInfo
-        case: 'worldObjectInfo'
-      }
-    | {
-        /**
-         * UnixfsObjectInfo contains info about a file within a UnixFS filesystem.
-         * ObjectInfoType_UNIXFS
-         *
-         * @generated from field: s4wave.web.object.UnixfsObjectInfo unixfs_object_info = 2;
-         */
-        value: UnixfsObjectInfo
-        case: 'unixfsObjectInfo'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: WorldObjectInfo; case: 'worldObjectInfo' }
+    | { value: UnixfsObjectInfo; case: 'unixfsObjectInfo' }
 }
 
 export const ObjectInfo: MessageType<ObjectInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.web.object.ObjectInfo',
-    fields: [
-      {
-        no: 1,
-        name: 'world_object_info',
-        kind: 'message',
-        T: WorldObjectInfo,
-        oneof: 'info',
-      },
-      {
-        no: 2,
-        name: 'unixfs_object_info',
-        kind: 'message',
-        T: UnixfsObjectInfo,
-        oneof: 'info',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectInfo>(
+    's4wave.web.object.ObjectInfo',
+    () => [
+      [1, 'world_object_info', 11, 0, WorldObjectInfo.codec, 'info'],
+      [2, 'unixfs_object_info', 11, 0, UnixfsObjectInfo.codec, 'info'],
+    ],
+  )
+
+/**
+ * WorldObjectInfo is basic metadata about a world object.
+ * Some components support empty fields: all fields are optional.
+ * ObjectInfoType_WORLD
+ *
+ * @generated from message s4wave.web.object.WorldObjectInfo
+ */
+export interface WorldObjectInfo {
+  /**
+   * EngineId is the identifier used to look up the world on the bus.
+   */
+  engineId?: string
+  /**
+   * ObjectKey is the ID of the referenced object.
+   */
+  objectKey?: string
+  /**
+   * ObjectType is the object type string for the object.
+   */
+  objectType?: string
+}
+
+export const WorldObjectInfo: MessageType<WorldObjectInfo> =
+  /* @__PURE__ */ createMessageType<WorldObjectInfo>(
+    's4wave.web.object.WorldObjectInfo',
+    () => [
+      [1, 'engine_id', 9],
+      [2, 'object_key', 9],
+      [3, 'object_type', 9],
+    ],
+  )
+
+/**
+ * UnixfsObjectInfo is basic metadata about a UnixFS file.
+ * Some components support empty fields: all fields are optional.
+ * ObjectInfoType_UNIXFS
+ *
+ * @generated from message s4wave.web.object.UnixfsObjectInfo
+ */
+export interface UnixfsObjectInfo {
+  /**
+   * UnixfsId is the identifier for the UnixFS on the bus.
+   * The fs should be provided with the AccessUnixFS controller.
+   */
+  unixfsId?: string
+  /**
+   * Path is the base path to select within the UnixFS.
+   * Optional.
+   */
+  path?: string
+  /**
+   * MimeType is the mime type of the passed path, if known.
+   * Optional.
+   */
+  mimeType?: string
+}
+
+export const UnixfsObjectInfo: MessageType<UnixfsObjectInfo> =
+  /* @__PURE__ */ createMessageType<UnixfsObjectInfo>(
+    's4wave.web.object.UnixfsObjectInfo',
+    () => [
+      [1, 'unixfs_id', 9],
+      [2, 'path', 9],
+      [3, 'mime_type', 9],
+    ],
+  )

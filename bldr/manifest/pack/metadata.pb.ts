@@ -2,68 +2,10 @@
 // @generated from file github.com/s4wave/spacewave/bldr/manifest/pack/metadata.proto (package bldr.manifest.pack, syntax proto3)
 /* eslint-disable */
 
-import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ObjectRef } from '@go/github.com/s4wave/spacewave/db/bucket/bucket.pb.js'
 import { PackfileEntry } from '@go/github.com/s4wave/spacewave/db/packfile/packfile.pb.js'
-
-/**
- * ManifestTuple names one bldr manifest tuple in a manifest-pack handoff.
- *
- * @generated from message bldr.manifest.pack.ManifestTuple
- */
-export interface ManifestTuple {
-  /**
-   * ManifestId is the bldr manifest ID.
-   *
-   * @generated from field: string manifest_id = 1;
-   */
-  manifestId?: string
-  /**
-   * PlatformId is the bldr platform ID.
-   *
-   * @generated from field: string platform_id = 2;
-   */
-  platformId?: string
-  /**
-   * Rev is the manifest revision.
-   *
-   * @generated from field: uint64 rev = 3;
-   */
-  rev?: bigint
-  /**
-   * ObjectKey is the object key used for the bundle or stored manifest.
-   *
-   * @generated from field: string object_key = 4;
-   */
-  objectKey?: string
-  /**
-   * LinkObjectKeys are world object keys linked to the manifest bundle.
-   *
-   * @generated from field: repeated string link_object_keys = 5;
-   */
-  linkObjectKeys?: string[]
-}
-
-export const ManifestTuple: MessageType<ManifestTuple> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.pack.ManifestTuple',
-    fields: [
-      { no: 1, name: 'manifest_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'platform_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'rev', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'link_object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * ManifestPackMetadata describes a CI manifest-pack handoff artifact.
@@ -73,90 +15,99 @@ export const ManifestTuple: MessageType<ManifestTuple> =
 export interface ManifestPackMetadata {
   /**
    * FormatVersion is the manifest-pack metadata schema version.
-   *
-   * @generated from field: uint32 format_version = 1;
    */
   formatVersion?: number
   /**
    * GitSha is the source git commit SHA the pack was built from.
-   *
-   * @generated from field: string git_sha = 2;
    */
   gitSha?: string
   /**
    * BuildType is the bldr build type used to resolve manifests.
-   *
-   * @generated from field: string build_type = 3;
    */
   buildType?: string
   /**
    * ProducerTarget is the bldr or workflow target that emitted the pack.
-   *
-   * @generated from field: string producer_target = 4;
    */
   producerTarget?: string
   /**
    * Manifests is the explicit tuple set carried by this pack.
-   *
-   * @generated from field: repeated bldr.manifest.pack.ManifestTuple manifests = 5;
    */
   manifests?: ManifestTuple[]
   /**
    * ManifestBundleRef is the object ref for the ManifestBundle root.
-   *
-   * @generated from field: bucket.ObjectRef manifest_bundle_ref = 6;
    */
   manifestBundleRef?: ObjectRef
   /**
    * Pack is the packfile manifest entry for the kvfile pack.
-   *
-   * @generated from field: packfile.PackfileEntry pack = 7;
    */
   pack?: PackfileEntry
   /**
    * PackSha256 is the sha256 digest of the kvfile pack bytes.
-   *
-   * @generated from field: bytes pack_sha256 = 8;
    */
   packSha256?: Uint8Array
   /**
    * ReactDev indicates the browser entrypoint was built in react_dev mode.
-   *
-   * @generated from field: bool react_dev = 9;
    */
   reactDev?: boolean
   /**
    * CacheSchema is bumped when cache/artifact identity semantics change.
-   *
-   * @generated from field: string cache_schema = 10;
    */
   cacheSchema?: string
 }
 
 export const ManifestPackMetadata: MessageType<ManifestPackMetadata> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.pack.ManifestPackMetadata',
-    fields: [
-      { no: 1, name: 'format_version', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'git_sha', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'build_type', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'producer_target', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'manifests',
-        kind: 'message',
-        T: ManifestTuple,
-        repeated: true,
-      },
-      {
-        no: 6,
-        name: 'manifest_bundle_ref',
-        kind: 'message',
-        T: () => ObjectRef,
-      },
-      { no: 7, name: 'pack', kind: 'message', T: () => PackfileEntry },
-      { no: 8, name: 'pack_sha256', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 9, name: 'react_dev', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 10, name: 'cache_schema', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ManifestPackMetadata>(
+    'bldr.manifest.pack.ManifestPackMetadata',
+    () => [
+      [1, 'format_version', 13],
+      [2, 'git_sha', 9],
+      [3, 'build_type', 9],
+      [4, 'producer_target', 9],
+      [5, 'manifests', 11, 1, ManifestTuple.codec],
+      [6, 'manifest_bundle_ref', 11, 0, ObjectRef.codec],
+      [7, 'pack', 11, 0, PackfileEntry.codec],
+      [8, 'pack_sha256', 12],
+      [9, 'react_dev', 8],
+      [10, 'cache_schema', 9],
+    ],
+  )
+
+/**
+ * ManifestTuple names one bldr manifest tuple in a manifest-pack handoff.
+ *
+ * @generated from message bldr.manifest.pack.ManifestTuple
+ */
+export interface ManifestTuple {
+  /**
+   * ManifestId is the bldr manifest ID.
+   */
+  manifestId?: string
+  /**
+   * PlatformId is the bldr platform ID.
+   */
+  platformId?: string
+  /**
+   * Rev is the manifest revision.
+   */
+  rev?: bigint
+  /**
+   * ObjectKey is the object key used for the bundle or stored manifest.
+   */
+  objectKey?: string
+  /**
+   * LinkObjectKeys are world object keys linked to the manifest bundle.
+   */
+  linkObjectKeys?: string[]
+}
+
+export const ManifestTuple: MessageType<ManifestTuple> =
+  /* @__PURE__ */ createMessageType<ManifestTuple>(
+    'bldr.manifest.pack.ManifestTuple',
+    () => [
+      [1, 'manifest_id', 9],
+      [2, 'platform_id', 9],
+      [3, 'rev', 4],
+      [4, 'object_key', 9],
+      [5, 'link_object_keys', 9, 1],
+    ],
+  )

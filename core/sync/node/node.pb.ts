@@ -2,65 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/core/sync/node/node.proto (package core.sync.node, syntax proto3)
 /* eslint-disable */
 
-import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * Kind identifies the required Worker lifecycle operation or response.
- *
- * @generated from enum core.sync.node.RuntimeMessage.Kind
- */
-export enum RuntimeMessage_Kind {
-  /**
-   * KIND_UNKNOWN is invalid for every lifecycle operation.
-   *
-   * @generated from enum value: KIND_UNKNOWN = 0;
-   */
-  KIND_UNKNOWN = 0,
-
-  /**
-   * READY confirms the World is open and accepts Resource streams.
-   *
-   * @generated from enum value: READY = 1;
-   */
-  READY = 1,
-
-  /**
-   * OPEN_STREAM supplies one transferred MessagePort for a StaRPC exchange.
-   *
-   * @generated from enum value: OPEN_STREAM = 2;
-   */
-  OPEN_STREAM = 2,
-
-  /**
-   * CLOSE stops admission and requests a durable, joined shutdown.
-   *
-   * @generated from enum value: CLOSE = 3;
-   */
-  CLOSE = 3,
-
-  /**
-   * CLOSED reports completion of shutdown, including any failure.
-   *
-   * @generated from enum value: CLOSED = 4;
-   */
-  CLOSED = 4,
-
-  /**
-   * FAILED reports a startup, protocol, or panic failure that ends the runtime.
-   *
-   * @generated from enum value: FAILED = 5;
-   */
-  FAILED = 5,
-}
-
-export const RuntimeMessage_Kind_Enum = /* @__PURE__ */ createEnumType(
-  'core.sync.node.RuntimeMessage.Kind',
-  RuntimeMessage_Kind,
-)
+import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 
 /**
  * RuntimeInit selects the exclusively owned storage directory for one Worker.
@@ -70,19 +14,15 @@ export const RuntimeMessage_Kind_Enum = /* @__PURE__ */ createEnumType(
 export interface RuntimeInit {
   /**
    * Directory is the filesystem path exclusively owned until the Worker exits.
-   *
-   * @generated from field: string directory = 1;
    */
   directory?: string
 }
 
 export const RuntimeInit: MessageType<RuntimeInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'core.sync.node.RuntimeInit',
-    fields: [
-      { no: 1, name: 'directory', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RuntimeInit>(
+    'core.sync.node.RuntimeInit',
+    () => [[1, 'directory', 9]],
+  )
 
 /**
  * RuntimeMessage controls the Worker lifetime outside its Resource connection.
@@ -93,23 +33,68 @@ export const RuntimeInit: MessageType<RuntimeInit> =
 export interface RuntimeMessage {
   /**
    * Kind selects the required operation or response.
-   *
-   * @generated from field: core.sync.node.RuntimeMessage.Kind kind = 1;
    */
   kind?: RuntimeMessage_Kind
   /**
    * Error describes a failure in FAILED or CLOSED and is empty on success.
-   *
-   * @generated from field: string error = 2;
    */
   error?: string
 }
 
 export const RuntimeMessage: MessageType<RuntimeMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'core.sync.node.RuntimeMessage',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: RuntimeMessage_Kind_Enum },
-      { no: 2, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RuntimeMessage>(
+    'core.sync.node.RuntimeMessage',
+    () => [
+      [1, 'kind', 14, 0, RuntimeMessage_Kind_Enum],
+      [2, 'error', 9],
+    ],
+  )
+
+/**
+ * Kind identifies the required Worker lifecycle operation or response.
+ *
+ * @generated from enum core.sync.node.RuntimeMessage.Kind
+ */
+export enum RuntimeMessage_Kind {
+  /**
+   * KIND_UNKNOWN is invalid for every lifecycle operation.
+   */
+  KIND_UNKNOWN = 0,
+
+  /**
+   * READY confirms the World is open and accepts Resource streams.
+   */
+  READY = 1,
+
+  /**
+   * OPEN_STREAM supplies one transferred MessagePort for a StaRPC exchange.
+   */
+  OPEN_STREAM = 2,
+
+  /**
+   * CLOSE stops admission and requests a durable, joined shutdown.
+   */
+  CLOSE = 3,
+
+  /**
+   * CLOSED reports completion of shutdown, including any failure.
+   */
+  CLOSED = 4,
+
+  /**
+   * FAILED reports a startup, protocol, or panic failure that ends the runtime.
+   */
+  FAILED = 5,
+}
+
+export const RuntimeMessage_Kind_Enum = /* @__PURE__ */ createEnumType(
+  'core.sync.node.RuntimeMessage.Kind',
+  [
+    [0, 'KIND_UNKNOWN'],
+    [1, 'READY'],
+    [2, 'OPEN_STREAM'],
+    [3, 'CLOSE'],
+    [4, 'CLOSED'],
+    [5, 'FAILED'],
+  ],
+)

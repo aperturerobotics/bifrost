@@ -7,8 +7,6 @@ import type { HashType } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.
 import { HashType_Enum } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the inmem block store controller.
@@ -18,67 +16,45 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * BlockStoreId is the block store id to use on the bus.
-   *
-   * @generated from field: string block_store_id = 1;
    */
   blockStoreId?: string
   /**
    * KvKeyOpts are key/value key constants.
    * Optional.
-   *
-   * @generated from field: store.kvkey.Config kv_key_opts = 2;
    */
   kvKeyOpts?: Config$1
   /**
    * ForceHashType forces writing the given hash type to the store.
    * If unset, accepts any hash type.
-   *
-   * @generated from field: hash.HashType force_hash_type = 3;
    */
   forceHashType?: HashType
   /**
    * HashGet enables hashing values for Get requests.
    * This reduces performance but ensures data integrity.
    * As inmem is an in-memory cache, it shouldn't be necessary to use this.
-   *
-   * @generated from field: bool hash_get = 4;
    */
   hashGet?: boolean
   /**
    * BucketIds is a list of bucket ids to serve LookupBlockFromNetwork directives.
-   *
-   * @generated from field: repeated string bucket_ids = 5;
    */
   bucketIds?: string[]
   /**
    * SkipNotFound skips returning a value if the block was not found.
-   *
-   * @generated from field: bool skip_not_found = 6;
    */
   skipNotFound?: boolean
   /**
    * Verbose enables verbose logging of the block store.
-   *
-   * @generated from field: bool verbose = 7;
    */
   verbose?: boolean
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'block.store.inmem.Config',
-  fields: [
-    { no: 1, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'kv_key_opts', kind: 'message', T: () => Config$1 },
-    { no: 3, name: 'force_hash_type', kind: 'enum', T: HashType_Enum },
-    { no: 4, name: 'hash_get', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 5,
-      name: 'bucket_ids',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 6, name: 'skip_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 7, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('block.store.inmem.Config', () => [
+    [1, 'block_store_id', 9],
+    [2, 'kv_key_opts', 11, 0, Config$1.codec],
+    [3, 'force_hash_type', 14, 0, HashType_Enum],
+    [4, 'hash_get', 8],
+    [5, 'bucket_ids', 9, 1],
+    [6, 'skip_not_found', 8],
+    [7, 'verbose', 8],
+  ])

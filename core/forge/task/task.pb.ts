@@ -4,9 +4,7 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ForgeTaskCreateOp creates a Forge Task and optionally links it to a Job.
@@ -17,38 +15,30 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface ForgeTaskCreateOp {
   /**
    * TaskKey is the object key for the new Task.
-   *
-   * @generated from field: string task_key = 1;
    */
   taskKey?: string
   /**
    * Name is the task name (must be a valid DNS label).
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * JobKey is the object key of the Job to link the Task to.
    * If empty, the Task is created without a Job link.
-   *
-   * @generated from field: string job_key = 3;
    */
   jobKey?: string
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
 }
 
 export const ForgeTaskCreateOp: MessageType<ForgeTaskCreateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.forge.task.ForgeTaskCreateOp',
-    fields: [
-      { no: 1, name: 'task_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'job_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ForgeTaskCreateOp>(
+    's4wave.forge.task.ForgeTaskCreateOp',
+    () => [
+      [1, 'task_key', 9],
+      [2, 'name', 9],
+      [3, 'job_key', 9],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )

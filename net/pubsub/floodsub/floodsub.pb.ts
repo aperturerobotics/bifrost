@@ -6,8 +6,6 @@ import type { HashType } from '../../hash/hash.pb.js'
 import { HashType_Enum } from '../../hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { SignedMsg } from '../../peer/peer.pb.js'
 
 /**
@@ -19,47 +17,14 @@ export interface Config {
   /**
    * PublishHashType is the hash type to use when signing published messages.
    * Defaults to sha256
-   *
-   * @generated from field: hash.HashType publish_hash_type = 1;
    */
   publishHashType?: HashType
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'floodsub.Config',
-  fields: [
-    { no: 1, name: 'publish_hash_type', kind: 'enum', T: HashType_Enum },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * SubscriptionOpts are subscription options.
- *
- * @generated from message floodsub.SubscriptionOpts
- */
-export interface SubscriptionOpts {
-  /**
-   * Subscribe indicates if we are subscribing to this channel ID.
-   *
-   * @generated from field: bool subscribe = 1;
-   */
-  subscribe?: boolean
-  /**
-   * ChannelId is the channel to subscribe to.
-   *
-   * @generated from field: string channel_id = 2;
-   */
-  channelId?: string
-}
-
-export const SubscriptionOpts: MessageType<SubscriptionOpts> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'floodsub.SubscriptionOpts',
-    fields: [
-      { no: 1, name: 'subscribe', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'channel_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('floodsub.Config', () => [
+    [1, 'publish_hash_type', 14, 0, HashType_Enum],
+  ])
 
 /**
  * Packet is the floodsub packet.
@@ -69,34 +34,41 @@ export const SubscriptionOpts: MessageType<SubscriptionOpts> =
 export interface Packet {
   /**
    * Subscriptions contains any new subscription changes.
-   *
-   * @generated from field: repeated floodsub.SubscriptionOpts subscriptions = 1;
    */
   subscriptions?: SubscriptionOpts[]
   /**
    * Publish contains messages we are publishing.
-   *
-   * @generated from field: repeated peer.SignedMsg publish = 2;
    */
   publish?: SignedMsg[]
 }
 
-export const Packet: MessageType<Packet> = /* @__PURE__ */ createMessageType({
-  typeName: 'floodsub.Packet',
-  fields: [
-    {
-      no: 1,
-      name: 'subscriptions',
-      kind: 'message',
-      T: SubscriptionOpts,
-      repeated: true,
-    },
-    {
-      no: 2,
-      name: 'publish',
-      kind: 'message',
-      T: () => SignedMsg,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Packet: MessageType<Packet> =
+  /* @__PURE__ */ createMessageType<Packet>('floodsub.Packet', () => [
+    [1, 'subscriptions', 11, 1, SubscriptionOpts.codec],
+    [2, 'publish', 11, 1, SignedMsg.codec],
+  ])
+
+/**
+ * SubscriptionOpts are subscription options.
+ *
+ * @generated from message floodsub.SubscriptionOpts
+ */
+export interface SubscriptionOpts {
+  /**
+   * Subscribe indicates if we are subscribing to this channel ID.
+   */
+  subscribe?: boolean
+  /**
+   * ChannelId is the channel to subscribe to.
+   */
+  channelId?: string
+}
+
+export const SubscriptionOpts: MessageType<SubscriptionOpts> =
+  /* @__PURE__ */ createMessageType<SubscriptionOpts>(
+    'floodsub.SubscriptionOpts',
+    () => [
+      [1, 'subscribe', 8],
+      [2, 'channel_id', 9],
+    ],
+  )

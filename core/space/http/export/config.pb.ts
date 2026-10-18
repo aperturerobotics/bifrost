@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * Config configures the export controller.
@@ -18,9 +13,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {}
 
 export const Config: MessageType<Config> =
-  /* @__PURE__ */ createEmptyMessageType<Config>(
+  /* @__PURE__ */ createMessageType<Config>(
     'space.http.export.Config',
-    true,
+    () => [],
   )
 
 /**
@@ -29,22 +24,11 @@ export const Config: MessageType<Config> =
  * @generated from message space.http.export.ExportBatchRequest
  */
 export interface ExportBatchRequest {
-  /**
-   * @generated from field: repeated string paths = 1;
-   */
   paths?: string[]
 }
 
 export const ExportBatchRequest: MessageType<ExportBatchRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'space.http.export.ExportBatchRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'paths',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ExportBatchRequest>(
+    'space.http.export.ExportBatchRequest',
+    () => [[1, 'paths', 9, 1]],
+  )

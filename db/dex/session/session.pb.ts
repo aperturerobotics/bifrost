@@ -5,8 +5,6 @@
 import { BlockRef } from '../../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * BlockTransfer is a message on a block transfer stream.
@@ -17,59 +15,45 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface BlockTransfer {
   /**
    * RequestId pairs requests with responses.
-   *
-   * @generated from field: uint64 request_id = 1;
    */
   requestId?: bigint
   /**
    * Ref is the block reference (set in Init message).
-   *
-   * @generated from field: block.BlockRef ref = 2;
    */
   ref?: BlockRef
   /**
    * TotalSize is the total block size in bytes (set in Init message).
    * Receiver rejects if over max_block_size.
-   *
-   * @generated from field: uint64 total_size = 3;
    */
   totalSize?: bigint
   /**
    * Data is the chunk payload (up to chunk_size bytes).
-   *
-   * @generated from field: bytes data = 4;
    */
   data?: Uint8Array
   /**
    * Complete indicates this is the last chunk for this block.
-   *
-   * @generated from field: bool complete = 5;
    */
   complete?: boolean
   /**
    * Error is set if the transfer failed.
-   *
-   * @generated from field: string error = 6;
    */
   error?: string
   /**
    * Cancel requests the sender to skip this block.
-   *
-   * @generated from field: bool cancel = 7;
    */
   cancel?: boolean
 }
 
 export const BlockTransfer: MessageType<BlockTransfer> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'dex.session.BlockTransfer',
-    fields: [
-      { no: 1, name: 'request_id', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'ref', kind: 'message', T: () => BlockRef },
-      { no: 3, name: 'total_size', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 5, name: 'complete', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'cancel', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BlockTransfer>(
+    'dex.session.BlockTransfer',
+    () => [
+      [1, 'request_id', 4],
+      [2, 'ref', 11, 0, BlockRef.codec],
+      [3, 'total_size', 4],
+      [4, 'data', 12],
+      [5, 'complete', 8],
+      [6, 'error', 9],
+      [7, 'cancel', 8],
+    ],
+  )

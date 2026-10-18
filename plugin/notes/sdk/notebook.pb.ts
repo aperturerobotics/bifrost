@@ -3,13 +3,8 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Notebook, NotebookSource } from '../proto/notebook.pb.js'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 
 /**
  * WatchNotebookRequest is the request for WatchNotebook.
@@ -19,9 +14,9 @@ import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 export interface WatchNotebookRequest {}
 
 export const WatchNotebookRequest: MessageType<WatchNotebookRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchNotebookRequest>(
+  /* @__PURE__ */ createMessageType<WatchNotebookRequest>(
     'notes.WatchNotebookRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -32,19 +27,15 @@ export const WatchNotebookRequest: MessageType<WatchNotebookRequest> =
 export interface WatchNotebookResponse {
   /**
    * Notebook is the current notebook state.
-   *
-   * @generated from field: notes.Notebook notebook = 1;
    */
   notebook?: Notebook
 }
 
 export const WatchNotebookResponse: MessageType<WatchNotebookResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.WatchNotebookResponse',
-    fields: [
-      { no: 1, name: 'notebook', kind: 'message', T: () => Notebook },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchNotebookResponse>(
+    'notes.WatchNotebookResponse',
+    () => [[1, 'notebook', 11, 0, Notebook.codec]],
+  )
 
 /**
  * AddSourceRequest is the request for AddSource.
@@ -54,19 +45,15 @@ export const WatchNotebookResponse: MessageType<WatchNotebookResponse> =
 export interface AddSourceRequest {
   /**
    * Source is the source to add.
-   *
-   * @generated from field: notes.NotebookSource source = 1;
    */
   source?: NotebookSource
 }
 
 export const AddSourceRequest: MessageType<AddSourceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.AddSourceRequest',
-    fields: [
-      { no: 1, name: 'source', kind: 'message', T: () => NotebookSource },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AddSourceRequest>(
+    'notes.AddSourceRequest',
+    () => [[1, 'source', 11, 0, NotebookSource.codec]],
+  )
 
 /**
  * AddSourceResponse is the response for AddSource.
@@ -76,9 +63,9 @@ export const AddSourceRequest: MessageType<AddSourceRequest> =
 export interface AddSourceResponse {}
 
 export const AddSourceResponse: MessageType<AddSourceResponse> =
-  /* @__PURE__ */ createEmptyMessageType<AddSourceResponse>(
+  /* @__PURE__ */ createMessageType<AddSourceResponse>(
     'notes.AddSourceResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -89,19 +76,15 @@ export const AddSourceResponse: MessageType<AddSourceResponse> =
 export interface RemoveSourceRequest {
   /**
    * Index is the source index to remove.
-   *
-   * @generated from field: uint32 index = 1;
    */
   index?: number
 }
 
 export const RemoveSourceRequest: MessageType<RemoveSourceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.RemoveSourceRequest',
-    fields: [
-      { no: 1, name: 'index', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RemoveSourceRequest>(
+    'notes.RemoveSourceRequest',
+    () => [[1, 'index', 13]],
+  )
 
 /**
  * RemoveSourceResponse is the response for RemoveSource.
@@ -111,9 +94,9 @@ export const RemoveSourceRequest: MessageType<RemoveSourceRequest> =
 export interface RemoveSourceResponse {}
 
 export const RemoveSourceResponse: MessageType<RemoveSourceResponse> =
-  /* @__PURE__ */ createEmptyMessageType<RemoveSourceResponse>(
+  /* @__PURE__ */ createMessageType<RemoveSourceResponse>(
     'notes.RemoveSourceResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -124,25 +107,15 @@ export const RemoveSourceResponse: MessageType<RemoveSourceResponse> =
 export interface ReorderSourcesRequest {
   /**
    * Order is the new index ordering.
-   *
-   * @generated from field: repeated uint32 order = 1;
    */
   order?: number[]
 }
 
 export const ReorderSourcesRequest: MessageType<ReorderSourcesRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.ReorderSourcesRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'order',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReorderSourcesRequest>(
+    'notes.ReorderSourcesRequest',
+    () => [[1, 'order', 13, 3]],
+  )
 
 /**
  * ReorderSourcesResponse is the response for ReorderSources.
@@ -152,9 +125,9 @@ export const ReorderSourcesRequest: MessageType<ReorderSourcesRequest> =
 export interface ReorderSourcesResponse {}
 
 export const ReorderSourcesResponse: MessageType<ReorderSourcesResponse> =
-  /* @__PURE__ */ createEmptyMessageType<ReorderSourcesResponse>(
+  /* @__PURE__ */ createMessageType<ReorderSourcesResponse>(
     'notes.ReorderSourcesResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -165,9 +138,9 @@ export const ReorderSourcesResponse: MessageType<ReorderSourcesResponse> =
 export interface GetSavedViewsAppRequest {}
 
 export const GetSavedViewsAppRequest: MessageType<GetSavedViewsAppRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetSavedViewsAppRequest>(
+  /* @__PURE__ */ createMessageType<GetSavedViewsAppRequest>(
     'notes.GetSavedViewsAppRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -179,30 +152,24 @@ export const GetSavedViewsAppRequest: MessageType<GetSavedViewsAppRequest> =
 export interface GetSavedViewsAppResponse {
   /**
    * ObjectKey is the saved-view application object within the same World.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * PluginId is the plugin family that serves saved-view operations.
-   *
-   * @generated from field: string plugin_id = 2;
    */
   pluginId?: string
   /**
    * ManifestRoot identifies the exact executable used to create the dataset.
-   *
-   * @generated from field: string manifest_root = 3;
    */
   manifestRoot?: string
 }
 
 export const GetSavedViewsAppResponse: MessageType<GetSavedViewsAppResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'notes.GetSavedViewsAppResponse',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'plugin_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'manifest_root', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetSavedViewsAppResponse>(
+    'notes.GetSavedViewsAppResponse',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'plugin_id', 9],
+      [3, 'manifest_root', 9],
+    ],
+  )

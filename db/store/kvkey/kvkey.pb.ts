@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is key/value key configuration.
@@ -16,52 +14,35 @@ export interface Config {
   /**
    * Prefix is the prefix applied to all keys.
    * Default: h/
-   *
-   * @generated from field: bytes prefix = 1;
    */
   prefix?: Uint8Array
   /**
    * BucketConfigPrefix is the prefix applied to bucket configs.
    * Default: bkt/c/
-   *
-   * @generated from field: bytes bucket_config_prefix = 2;
    */
   bucketConfigPrefix?: Uint8Array
   /**
    * PeerPrivKey is the key to use for the peer private key.
    * Default: priv
-   *
-   * @generated from field: bytes peer_priv_key = 3;
    */
   peerPrivKey?: Uint8Array
   /**
    * BlockPrefix is the prefix applied to block hashes.
    * Default: b/
-   *
-   * @generated from field: bytes block_prefix = 5;
    */
   blockPrefix?: Uint8Array
   /**
    * ObjectStorePrefix is the prefix applied to object stores.
    * Default: objs/
-   *
-   * @generated from field: bytes object_store_prefix = 6;
    */
   objectStorePrefix?: Uint8Array
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'store.kvkey.Config',
-  fields: [
-    { no: 1, name: 'prefix', kind: 'scalar', T: ScalarType.BYTES },
-    {
-      no: 2,
-      name: 'bucket_config_prefix',
-      kind: 'scalar',
-      T: ScalarType.BYTES,
-    },
-    { no: 3, name: 'peer_priv_key', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 5, name: 'block_prefix', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 6, name: 'object_store_prefix', kind: 'scalar', T: ScalarType.BYTES },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('store.kvkey.Config', () => [
+    [1, 'prefix', 12],
+    [2, 'bucket_config_prefix', 12],
+    [3, 'peer_priv_key', 12],
+    [5, 'block_prefix', 12],
+    [6, 'object_store_prefix', 12],
+  ])

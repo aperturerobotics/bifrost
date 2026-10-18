@@ -5,8 +5,6 @@
 import { ManifestRef } from '../manifest.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ObjectRef } from '@go/github.com/s4wave/spacewave/db/bucket/bucket.pb.js'
 
 /**
@@ -17,39 +15,27 @@ import { ObjectRef } from '@go/github.com/s4wave/spacewave/db/bucket/bucket.pb.j
 export interface StoreManifestOp {
   /**
    * ObjectKey is the object key to set.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * LinkObjectKeys is the list of keys to link from with the <manifest> predicate.
-   *
-   * @generated from field: repeated string link_object_keys = 2;
    */
   linkObjectKeys?: string[]
   /**
    * ManifestRef is the manifest reference.
-   *
-   * @generated from field: bldr.manifest.ManifestRef manifest_ref = 3;
    */
   manifestRef?: ManifestRef
 }
 
 export const StoreManifestOp: MessageType<StoreManifestOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.world.StoreManifestOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'link_object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 3, name: 'manifest_ref', kind: 'message', T: () => ManifestRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StoreManifestOp>(
+    'bldr.manifest.world.StoreManifestOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'link_object_keys', 9, 1],
+      [3, 'manifest_ref', 11, 0, ManifestRef.codec],
+    ],
+  )
 
 /**
  * ExtractManifestBundleOp stores a ManifestBundle to an object key.
@@ -60,36 +46,24 @@ export const StoreManifestOp: MessageType<StoreManifestOp> =
 export interface ExtractManifestBundleOp {
   /**
    * ObjectKey is the object key to set.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * LinkObjectKeys is the list of keys to link from with the <manifest> predicate.
-   *
-   * @generated from field: repeated string link_object_keys = 2;
    */
   linkObjectKeys?: string[]
   /**
    * ManifestBundle is the root reference to the ManifestBundle.
-   *
-   * @generated from field: bucket.ObjectRef manifest_bundle = 3;
    */
   manifestBundle?: ObjectRef
 }
 
 export const ExtractManifestBundleOp: MessageType<ExtractManifestBundleOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.manifest.world.ExtractManifestBundleOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'link_object_keys',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 3, name: 'manifest_bundle', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ExtractManifestBundleOp>(
+    'bldr.manifest.world.ExtractManifestBundleOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'link_object_keys', 9, 1],
+      [3, 'manifest_bundle', 11, 0, ObjectRef.codec],
+    ],
+  )

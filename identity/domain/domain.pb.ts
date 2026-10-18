@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * DomainInfo contains information about the domain to show the user.
@@ -16,30 +14,24 @@ export interface DomainInfo {
   /**
    * DomainId is the domain identifier.
    * (not human readable)
-   *
-   * @generated from field: string domain_id = 1;
    */
   domainId?: string
   /**
    * Name is the domain name to render (title).
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Description is the short description to show.
-   *
-   * @generated from field: string description = 3;
    */
   description?: string
 }
 
 export const DomainInfo: MessageType<DomainInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'identity.domain.DomainInfo',
-    fields: [
-      { no: 1, name: 'domain_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DomainInfo>(
+    'identity.domain.DomainInfo',
+    () => [
+      [1, 'domain_id', 9],
+      [2, 'name', 9],
+      [3, 'description', 9],
+    ],
+  )

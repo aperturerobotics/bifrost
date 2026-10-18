@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * ApplicationState controls all Sessions and provisioning within an application.
@@ -16,37 +14,33 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum ApplicationState {
   /**
    * APPLICATION_STATE_UNKNOWN is invalid for lifecycle mutations.
-   *
-   * @generated from enum value: APPLICATION_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * APPLICATION_STATE_ACTIVE permits authorized application operations.
-   *
-   * @generated from enum value: APPLICATION_STATE_ACTIVE = 1;
    */
   ACTIVE = 1,
 
   /**
    * APPLICATION_STATE_PAUSED retains Sessions with only status access permitted.
-   *
-   * @generated from enum value: APPLICATION_STATE_PAUSED = 2;
    */
   PAUSED = 2,
 
   /**
    * APPLICATION_STATE_DISABLED deletes Sessions and requires fresh login on reactivation.
-   *
-   * @generated from enum value: APPLICATION_STATE_DISABLED = 3;
    */
   DISABLED = 3,
 }
 
 export const ApplicationState_Enum = /* @__PURE__ */ createEnumType(
   'provider.spacewave.api.ApplicationState',
-  ApplicationState,
-  'APPLICATION_STATE_',
+  [
+    [0, 'APPLICATION_STATE_UNKNOWN'],
+    [1, 'APPLICATION_STATE_ACTIVE'],
+    [2, 'APPLICATION_STATE_PAUSED'],
+    [3, 'APPLICATION_STATE_DISABLED'],
+  ],
 )
 
 /**
@@ -57,30 +51,27 @@ export const ApplicationState_Enum = /* @__PURE__ */ createEnumType(
 export enum ApplicationFunding {
   /**
    * APPLICATION_FUNDING_UNKNOWN means funding has not been accepted.
-   *
-   * @generated from enum value: APPLICATION_FUNDING_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * APPLICATION_FUNDING_OPERATOR bills the operator-authorized payer.
-   *
-   * @generated from enum value: APPLICATION_FUNDING_OPERATOR = 1;
    */
   OPERATOR = 1,
 
   /**
    * APPLICATION_FUNDING_APERTURE bills the platform-authorized sponsor.
-   *
-   * @generated from enum value: APPLICATION_FUNDING_APERTURE = 2;
    */
   APERTURE = 2,
 }
 
 export const ApplicationFunding_Enum = /* @__PURE__ */ createEnumType(
   'provider.spacewave.api.ApplicationFunding',
-  ApplicationFunding,
-  'APPLICATION_FUNDING_',
+  [
+    [0, 'APPLICATION_FUNDING_UNKNOWN'],
+    [1, 'APPLICATION_FUNDING_OPERATOR'],
+    [2, 'APPLICATION_FUNDING_APERTURE'],
+  ],
 )
 
 /**
@@ -91,85 +82,57 @@ export const ApplicationFunding_Enum = /* @__PURE__ */ createEnumType(
 export interface Application {
   /**
    * Id is the immutable cloud registration identifier, distinct from a build project.
-   *
-   * @generated from field: string id = 1;
    */
   id?: string
   /**
    * DisplayName is the operator-facing product name.
-   *
-   * @generated from field: string display_name = 2;
    */
   displayName?: string
   /**
    * OperatorAccountId identifies the account authorized to administer this registration.
-   *
-   * @generated from field: string operator_account_id = 3;
    */
   operatorAccountId?: string
   /**
    * BillingAccountId is the authorized payer; empty means funding is not configured.
-   *
-   * @generated from field: string billing_account_id = 4;
    */
   billingAccountId?: string
   /**
    * State controls current access; new registrations start paused.
-   *
-   * @generated from field: provider.spacewave.api.ApplicationState state = 5;
    */
   state?: ApplicationState
   /**
    * Revision fences concurrent configuration changes and advances on each mutation.
-   *
-   * @generated from field: uint64 revision = 6;
    */
   revision?: bigint
   /**
    * CreatedAtMs is the registration time in Unix milliseconds.
-   *
-   * @generated from field: int64 created_at_ms = 7;
    */
   createdAtMs?: bigint
   /**
    * UpdatedAtMs is the last configuration mutation time in Unix milliseconds.
-   *
-   * @generated from field: int64 updated_at_ms = 8;
    */
   updatedAtMs?: bigint
   /**
    * Funding distinguishes operator payment from platform sponsorship without suppressing usage.
-   *
-   * @generated from field: provider.spacewave.api.ApplicationFunding funding = 9;
    */
   funding?: ApplicationFunding
 }
 
 export const Application: MessageType<Application> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.Application',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'operator_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 4,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 5, name: 'state', kind: 'enum', T: ApplicationState_Enum },
-      { no: 6, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 7, name: 'created_at_ms', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 8, name: 'updated_at_ms', kind: 'scalar', T: ScalarType.INT64 },
-      { no: 9, name: 'funding', kind: 'enum', T: ApplicationFunding_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Application>(
+    'provider.spacewave.api.Application',
+    () => [
+      [1, 'id', 9],
+      [2, 'display_name', 9],
+      [3, 'operator_account_id', 9],
+      [4, 'billing_account_id', 9],
+      [5, 'state', 14, 0, ApplicationState_Enum],
+      [6, 'revision', 4],
+      [7, 'created_at_ms', 3],
+      [8, 'updated_at_ms', 3],
+      [9, 'funding', 14, 0, ApplicationFunding_Enum],
+    ],
+  )
 
 /**
  * RegisterApplicationRequest asks a platform administrator to approve a product.
@@ -180,38 +143,27 @@ export const Application: MessageType<Application> =
 export interface RegisterApplicationRequest {
   /**
    * DisplayName is the product name, with at most 128 UTF-8 bytes.
-   *
-   * @generated from field: string display_name = 1;
    */
   displayName?: string
   /**
    * OperatorAccountId identifies the existing account receiving product administration.
-   *
-   * @generated from field: string operator_account_id = 2;
    */
   operatorAccountId?: string
   /**
    * RequestId deduplicates registration retries for the authenticated administrator.
-   *
-   * @generated from field: string request_id = 3;
    */
   requestId?: string
 }
 
 export const RegisterApplicationRequest: MessageType<RegisterApplicationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RegisterApplicationRequest',
-    fields: [
-      { no: 1, name: 'display_name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'operator_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'request_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterApplicationRequest>(
+    'provider.spacewave.api.RegisterApplicationRequest',
+    () => [
+      [1, 'display_name', 9],
+      [2, 'operator_account_id', 9],
+      [3, 'request_id', 9],
+    ],
+  )
 
 /**
  * RegisterApplicationResponse returns the paused registration, including on retry.
@@ -221,19 +173,15 @@ export const RegisterApplicationRequest: MessageType<RegisterApplicationRequest>
 export interface RegisterApplicationResponse {
   /**
    * Application is the approved product registration.
-   *
-   * @generated from field: provider.spacewave.api.Application application = 1;
    */
   application?: Application
 }
 
 export const RegisterApplicationResponse: MessageType<RegisterApplicationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.RegisterApplicationResponse',
-    fields: [
-      { no: 1, name: 'application', kind: 'message', T: Application },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterApplicationResponse>(
+    'provider.spacewave.api.RegisterApplicationResponse',
+    () => [[1, 'application', 11, 0, Application.codec]],
+  )
 
 /**
  * GetApplicationRequest selects a registration visible to its operator or a platform administrator.
@@ -243,19 +191,15 @@ export const RegisterApplicationResponse: MessageType<RegisterApplicationRespons
 export interface GetApplicationRequest {
   /**
    * ApplicationId is the cloud registration identifier.
-   *
-   * @generated from field: string application_id = 1;
    */
   applicationId?: string
 }
 
 export const GetApplicationRequest: MessageType<GetApplicationRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.GetApplicationRequest',
-    fields: [
-      { no: 1, name: 'application_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetApplicationRequest>(
+    'provider.spacewave.api.GetApplicationRequest',
+    () => [[1, 'application_id', 9]],
+  )
 
 /**
  * GetApplicationResponse returns the current application configuration.
@@ -265,19 +209,15 @@ export const GetApplicationRequest: MessageType<GetApplicationRequest> =
 export interface GetApplicationResponse {
   /**
    * Application is the selected product registration.
-   *
-   * @generated from field: provider.spacewave.api.Application application = 1;
    */
   application?: Application
 }
 
 export const GetApplicationResponse: MessageType<GetApplicationResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.GetApplicationResponse',
-    fields: [
-      { no: 1, name: 'application', kind: 'message', T: Application },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetApplicationResponse>(
+    'provider.spacewave.api.GetApplicationResponse',
+    () => [[1, 'application', 11, 0, Application.codec]],
+  )
 
 /**
  * SetApplicationFundingRequest accepts a payer for subsequent application usage.
@@ -288,50 +228,32 @@ export const GetApplicationResponse: MessageType<GetApplicationResponse> =
 export interface SetApplicationFundingRequest {
   /**
    * ApplicationId identifies the approved registration.
-   *
-   * @generated from field: string application_id = 1;
    */
   applicationId?: string
   /**
    * BillingAccountId identifies the payer accepting subsequent costs.
-   *
-   * @generated from field: string billing_account_id = 2;
    */
   billingAccountId?: string
   /**
    * Funding distinguishes operator payment from platform-authorized sponsorship.
-   *
-   * @generated from field: provider.spacewave.api.ApplicationFunding funding = 3;
    */
   funding?: ApplicationFunding
   /**
    * ExpectedRevision fences concurrent changes; an identical retry returns its assignment.
-   *
-   * @generated from field: uint64 expected_revision = 4;
    */
   expectedRevision?: bigint
 }
 
 export const SetApplicationFundingRequest: MessageType<SetApplicationFundingRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.SetApplicationFundingRequest',
-    fields: [
-      { no: 1, name: 'application_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'funding', kind: 'enum', T: ApplicationFunding_Enum },
-      {
-        no: 4,
-        name: 'expected_revision',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetApplicationFundingRequest>(
+    'provider.spacewave.api.SetApplicationFundingRequest',
+    () => [
+      [1, 'application_id', 9],
+      [2, 'billing_account_id', 9],
+      [3, 'funding', 14, 0, ApplicationFunding_Enum],
+      [4, 'expected_revision', 4],
+    ],
+  )
 
 /**
  * ApplicationFundingAssignment preserves the authority and payer for a funding interval.
@@ -341,64 +263,42 @@ export const SetApplicationFundingRequest: MessageType<SetApplicationFundingRequ
 export interface ApplicationFundingAssignment {
   /**
    * ApplicationId identifies the approved registration.
-   *
-   * @generated from field: string application_id = 1;
    */
   applicationId?: string
   /**
    * Revision identifies the application configuration that accepted this assignment.
-   *
-   * @generated from field: uint64 revision = 2;
    */
   revision?: bigint
   /**
    * BillingAccountId identifies the payer for usage attributed to this interval.
-   *
-   * @generated from field: string billing_account_id = 3;
    */
   billingAccountId?: string
   /**
    * Funding preserves whether the payer accepted operator costs or sponsorship.
-   *
-   * @generated from field: provider.spacewave.api.ApplicationFunding funding = 4;
    */
   funding?: ApplicationFunding
   /**
    * AuthorizedByAccountId identifies the authenticated account that accepted the costs.
-   *
-   * @generated from field: string authorized_by_account_id = 5;
    */
   authorizedByAccountId?: string
   /**
    * StartedAtMs is the effective start in Unix milliseconds.
-   *
-   * @generated from field: int64 started_at_ms = 6;
    */
   startedAtMs?: bigint
 }
 
 export const ApplicationFundingAssignment: MessageType<ApplicationFundingAssignment> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.ApplicationFundingAssignment',
-    fields: [
-      { no: 1, name: 'application_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 3,
-        name: 'billing_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'funding', kind: 'enum', T: ApplicationFunding_Enum },
-      {
-        no: 5,
-        name: 'authorized_by_account_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 6, name: 'started_at_ms', kind: 'scalar', T: ScalarType.INT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplicationFundingAssignment>(
+    'provider.spacewave.api.ApplicationFundingAssignment',
+    () => [
+      [1, 'application_id', 9],
+      [2, 'revision', 4],
+      [3, 'billing_account_id', 9],
+      [4, 'funding', 14, 0, ApplicationFunding_Enum],
+      [5, 'authorized_by_account_id', 9],
+      [6, 'started_at_ms', 3],
+    ],
+  )
 
 /**
  * SetApplicationFundingResponse returns the durably accepted funding assignment.
@@ -408,24 +308,15 @@ export const ApplicationFundingAssignment: MessageType<ApplicationFundingAssignm
 export interface SetApplicationFundingResponse {
   /**
    * Assignment is stable across identical retries, including after later funding changes.
-   *
-   * @generated from field: provider.spacewave.api.ApplicationFundingAssignment assignment = 1;
    */
   assignment?: ApplicationFundingAssignment
 }
 
 export const SetApplicationFundingResponse: MessageType<SetApplicationFundingResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.SetApplicationFundingResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'assignment',
-        kind: 'message',
-        T: ApplicationFundingAssignment,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetApplicationFundingResponse>(
+    'provider.spacewave.api.SetApplicationFundingResponse',
+    () => [[1, 'assignment', 11, 0, ApplicationFundingAssignment.codec]],
+  )
 
 /**
  * ListApplicationFundingRequest selects a bounded page of funding history.
@@ -435,33 +326,27 @@ export const SetApplicationFundingResponse: MessageType<SetApplicationFundingRes
 export interface ListApplicationFundingRequest {
   /**
    * ApplicationId identifies a registration visible to its operator or platform administration.
-   *
-   * @generated from field: string application_id = 1;
    */
   applicationId?: string
   /**
    * AfterRevision excludes assignments at or before this revision.
-   *
-   * @generated from field: uint64 after_revision = 2;
    */
   afterRevision?: bigint
   /**
    * Limit defaults to 50 and cannot exceed 100 assignments.
-   *
-   * @generated from field: uint32 limit = 3;
    */
   limit?: number
 }
 
 export const ListApplicationFundingRequest: MessageType<ListApplicationFundingRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.ListApplicationFundingRequest',
-    fields: [
-      { no: 1, name: 'application_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'after_revision', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'limit', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListApplicationFundingRequest>(
+    'provider.spacewave.api.ListApplicationFundingRequest',
+    () => [
+      [1, 'application_id', 9],
+      [2, 'after_revision', 4],
+      [3, 'limit', 13],
+    ],
+  )
 
 /**
  * ListApplicationFundingResponse returns funding history in increasing revision order.
@@ -471,37 +356,22 @@ export const ListApplicationFundingRequest: MessageType<ListApplicationFundingRe
 export interface ListApplicationFundingResponse {
   /**
    * Assignments preserve the payer and authorization for each accepted interval.
-   *
-   * @generated from field: repeated provider.spacewave.api.ApplicationFundingAssignment assignments = 1;
    */
   assignments?: ApplicationFundingAssignment[]
   /**
    * NextAfterRevision is the continuation cursor, or zero when there are no more assignments.
-   *
-   * @generated from field: uint64 next_after_revision = 2;
    */
   nextAfterRevision?: bigint
 }
 
 export const ListApplicationFundingResponse: MessageType<ListApplicationFundingResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.ListApplicationFundingResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'assignments',
-        kind: 'message',
-        T: ApplicationFundingAssignment,
-        repeated: true,
-      },
-      {
-        no: 2,
-        name: 'next_after_revision',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListApplicationFundingResponse>(
+    'provider.spacewave.api.ListApplicationFundingResponse',
+    () => [
+      [1, 'assignments', 11, 1, ApplicationFundingAssignment.codec],
+      [2, 'next_after_revision', 4],
+    ],
+  )
 
 /**
  * ManagedAccountEnrollment binds a new credential to a verified application identity.
@@ -513,52 +383,37 @@ export const ListApplicationFundingResponse: MessageType<ListApplicationFundingR
 export interface ManagedAccountEnrollment {
   /**
    * ApplicationId identifies the application whose operator approves this enrollment.
-   *
-   * @generated from field: string application_id = 1;
    */
   applicationId?: string
   /**
    * Issuer is the verified identity provider's stable namespace, at most 512 UTF-8 bytes.
-   *
-   * @generated from field: string issuer = 2;
    */
   issuer?: string
   /**
    * Subject is the verified identity within the issuer, at most 256 UTF-8 bytes.
-   *
-   * @generated from field: string subject = 3;
    */
   subject?: string
   /**
    * KeypairPeerId embeds the public key of the credential being enrolled.
-   *
-   * @generated from field: string keypair_peer_id = 4;
    */
   keypairPeerId?: string
   /**
    * ExpectedApplicationRevision invalidates approvals after application configuration changes.
-   *
-   * @generated from field: uint64 expected_application_revision = 5;
    */
   expectedApplicationRevision?: bigint
 }
 
 export const ManagedAccountEnrollment: MessageType<ManagedAccountEnrollment> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.ManagedAccountEnrollment',
-    fields: [
-      { no: 1, name: 'application_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'issuer', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'subject', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'keypair_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'expected_application_revision',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ManagedAccountEnrollment>(
+    'provider.spacewave.api.ManagedAccountEnrollment',
+    () => [
+      [1, 'application_id', 9],
+      [2, 'issuer', 9],
+      [3, 'subject', 9],
+      [4, 'keypair_peer_id', 9],
+      [5, 'expected_application_revision', 4],
+    ],
+  )
 
 /**
  * EnrollManagedAccountRequest asks the authenticated application operator to enroll a credential.
@@ -569,31 +424,22 @@ export const ManagedAccountEnrollment: MessageType<ManagedAccountEnrollment> =
 export interface EnrollManagedAccountRequest {
   /**
    * Enrollment identifies the verified subject and credential being authorized.
-   *
-   * @generated from field: provider.spacewave.api.ManagedAccountEnrollment enrollment = 1;
    */
   enrollment?: ManagedAccountEnrollment
   /**
    * Signature proves possession over "spacewave 2026-09-06 managed account enrollment v1." followed by Enrollment binary.
-   *
-   * @generated from field: bytes signature = 2;
    */
   signature?: Uint8Array
 }
 
 export const EnrollManagedAccountRequest: MessageType<EnrollManagedAccountRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.EnrollManagedAccountRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'enrollment',
-        kind: 'message',
-        T: ManagedAccountEnrollment,
-      },
-      { no: 2, name: 'signature', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnrollManagedAccountRequest>(
+    'provider.spacewave.api.EnrollManagedAccountRequest',
+    () => [
+      [1, 'enrollment', 11, 0, ManagedAccountEnrollment.codec],
+      [2, 'signature', 12],
+    ],
+  )
 
 /**
  * EnrollManagedAccountResponse identifies the ordinary account retained across recovery.
@@ -603,47 +449,37 @@ export const EnrollManagedAccountRequest: MessageType<EnrollManagedAccountReques
 export interface EnrollManagedAccountResponse {
   /**
    * ApplicationId identifies the application that manages the account.
-   *
-   * @generated from field: string application_id = 1;
    */
   applicationId?: string
   /**
    * AccountId identifies the ordinary provider account for subsequent Session registration.
-   *
-   * @generated from field: string account_id = 2;
    */
   accountId?: string
   /**
    * DomainId is the provider's account namespace.
-   *
-   * @generated from field: string domain_id = 3;
    */
   domainId?: string
   /**
    * EntityId is the stable account name within its domain.
-   *
-   * @generated from field: string entity_id = 4;
    */
   entityId?: string
   /**
    * KeypairPeerId confirms the newly authorized credential; existing credentials remain valid.
-   *
-   * @generated from field: string keypair_peer_id = 5;
    */
   keypairPeerId?: string
 }
 
 export const EnrollManagedAccountResponse: MessageType<EnrollManagedAccountResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.EnrollManagedAccountResponse',
-    fields: [
-      { no: 1, name: 'application_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'account_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'domain_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'entity_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'keypair_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<EnrollManagedAccountResponse>(
+    'provider.spacewave.api.EnrollManagedAccountResponse',
+    () => [
+      [1, 'application_id', 9],
+      [2, 'account_id', 9],
+      [3, 'domain_id', 9],
+      [4, 'entity_id', 9],
+      [5, 'keypair_peer_id', 9],
+    ],
+  )
 
 /**
  * SetApplicationStateRequest changes availability under application administration.
@@ -653,38 +489,27 @@ export const EnrollManagedAccountResponse: MessageType<EnrollManagedAccountRespo
 export interface SetApplicationStateRequest {
   /**
    * ApplicationId selects the approved application.
-   *
-   * @generated from field: string application_id = 1;
    */
   applicationId?: string
   /**
    * State selects Active, Paused, or Disabled; Active requires accepted funding.
-   *
-   * @generated from field: provider.spacewave.api.ApplicationState state = 2;
    */
   state?: ApplicationState
   /**
    * ExpectedRevision fences concurrent configuration changes.
-   *
-   * @generated from field: uint64 expected_revision = 3;
    */
   expectedRevision?: bigint
 }
 
 export const SetApplicationStateRequest: MessageType<SetApplicationStateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.SetApplicationStateRequest',
-    fields: [
-      { no: 1, name: 'application_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'state', kind: 'enum', T: ApplicationState_Enum },
-      {
-        no: 3,
-        name: 'expected_revision',
-        kind: 'scalar',
-        T: ScalarType.UINT64,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetApplicationStateRequest>(
+    'provider.spacewave.api.SetApplicationStateRequest',
+    () => [
+      [1, 'application_id', 9],
+      [2, 'state', 14, 0, ApplicationState_Enum],
+      [3, 'expected_revision', 4],
+    ],
+  )
 
 /**
  * SetApplicationStateResponse returns current availability after the durable transition.
@@ -694,16 +519,12 @@ export const SetApplicationStateRequest: MessageType<SetApplicationStateRequest>
 export interface SetApplicationStateResponse {
   /**
    * Application contains the new configuration; disabled credentials are never restored.
-   *
-   * @generated from field: provider.spacewave.api.Application application = 1;
    */
   application?: Application
 }
 
 export const SetApplicationStateResponse: MessageType<SetApplicationStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.spacewave.api.SetApplicationStateResponse',
-    fields: [
-      { no: 1, name: 'application', kind: 'message', T: Application },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetApplicationStateResponse>(
+    'provider.spacewave.api.SetApplicationStateResponse',
+    () => [[1, 'application', 11, 0, Application.codec]],
+  )

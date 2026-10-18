@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the ristretto cache.
@@ -25,8 +23,6 @@ export interface Config {
    * cache, not necessarily the MaxCost value.
    *
    * If unset (zero) defaults to 100,000.
-   *
-   * @generated from field: uint64 num_counters = 1;
    */
   numCounters?: bigint
   /**
@@ -37,8 +33,6 @@ export interface Config {
    * evicted.
    *
    * If unset (zero) defaults to 1GB (1e9).
-   *
-   * @generated from field: uint64 max_cost = 2;
    */
   maxCost?: bigint
   /**
@@ -49,26 +43,23 @@ export interface Config {
    * fine-tuning mechanism and you probably won't have to touch this.
    *
    * If unset (zero) defaults to 64.
-   *
-   * @generated from field: uint32 buffer_items = 3;
    */
   bufferItems?: number
   /**
    * TtlDur is the time to live duration.
    * If empty or zero has no ttl.
    * Example: 1m
-   *
-   * @generated from field: string ttl_dur = 4;
    */
   ttlDur?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'store.kvtx.ristretto.Config',
-  fields: [
-    { no: 1, name: 'num_counters', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 2, name: 'max_cost', kind: 'scalar', T: ScalarType.UINT64 },
-    { no: 3, name: 'buffer_items', kind: 'scalar', T: ScalarType.UINT32 },
-    { no: 4, name: 'ttl_dur', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'store.kvtx.ristretto.Config',
+    () => [
+      [1, 'num_counters', 4],
+      [2, 'max_cost', 4],
+      [3, 'buffer_items', 13],
+      [4, 'ttl_dur', 9],
+    ],
+  )

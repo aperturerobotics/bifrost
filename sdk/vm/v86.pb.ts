@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 
 /**
@@ -17,45 +15,41 @@ import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
 export enum VmState {
   /**
    * VmState_STOPPED means the VM should not be running.
-   *
-   * @generated from enum value: VmState_STOPPED = 0;
    */
   VmState_STOPPED = 0,
 
   /**
    * VmState_STARTING means a runtime is starting the VM. A request for it
    * asks for RUNNING.
-   *
-   * @generated from enum value: VmState_STARTING = 1;
    */
   VmState_STARTING = 1,
 
   /**
    * VmState_RUNNING means the VM should be running.
-   *
-   * @generated from enum value: VmState_RUNNING = 2;
    */
   VmState_RUNNING = 2,
 
   /**
    * VmState_STOPPING means a runtime is stopping the VM. A request for it
    * asks for STOPPED.
-   *
-   * @generated from enum value: VmState_STOPPING = 3;
    */
   VmState_STOPPING = 3,
 
   /**
    * VmState_ERROR is reserved for observed runtime failures.
-   *
-   * @generated from enum value: VmState_ERROR = 4;
    */
   VmState_ERROR = 4,
 }
 
 export const VmState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.vm.VmState',
-  VmState,
+  [
+    [0, 'VmState_STOPPED'],
+    [1, 'VmState_STARTING'],
+    [2, 'VmState_RUNNING'],
+    [3, 'VmState_STOPPING'],
+    [4, 'VmState_ERROR'],
+  ],
 )
 
 /**
@@ -66,79 +60,40 @@ export const VmState_Enum = /* @__PURE__ */ createEnumType(
 export enum V86RuntimeStatus {
   /**
    * V86RuntimeStatus_UNKNOWN is unset.
-   *
-   * @generated from enum value: V86RuntimeStatus_UNKNOWN = 0;
    */
   V86RuntimeStatus_UNKNOWN = 0,
 
   /**
    * V86RuntimeStatus_BOOTING means the emulator is loading or booting.
-   *
-   * @generated from enum value: V86RuntimeStatus_BOOTING = 1;
    */
   V86RuntimeStatus_BOOTING = 1,
 
   /**
    * V86RuntimeStatus_READY means the v86min guest-ready marker was observed.
-   *
-   * @generated from enum value: V86RuntimeStatus_READY = 2;
    */
   V86RuntimeStatus_READY = 2,
 
   /**
    * V86RuntimeStatus_STOPPED means the emulator stopped cleanly.
-   *
-   * @generated from enum value: V86RuntimeStatus_STOPPED = 3;
    */
   V86RuntimeStatus_STOPPED = 3,
 
   /**
    * V86RuntimeStatus_ERROR means the emulator reached a terminal failure.
-   *
-   * @generated from enum value: V86RuntimeStatus_ERROR = 4;
    */
   V86RuntimeStatus_ERROR = 4,
 }
 
 export const V86RuntimeStatus_Enum = /* @__PURE__ */ createEnumType(
   's4wave.vm.V86RuntimeStatus',
-  V86RuntimeStatus,
+  [
+    [0, 'V86RuntimeStatus_UNKNOWN'],
+    [1, 'V86RuntimeStatus_BOOTING'],
+    [2, 'V86RuntimeStatus_READY'],
+    [3, 'V86RuntimeStatus_STOPPED'],
+    [4, 'V86RuntimeStatus_ERROR'],
+  ],
 )
-
-/**
- * VmMount is a v86fs mount bound to a UnixFS object in the Space.
- *
- * @generated from message s4wave.vm.VmMount
- */
-export interface VmMount {
-  /**
-   * Path is the guest filesystem path at which the mount is attached.
-   *
-   * @generated from field: string path = 1;
-   */
-  path?: string
-  /**
-   * ObjectKey is the UnixFS object key providing the mount contents.
-   *
-   * @generated from field: string object_key = 2;
-   */
-  objectKey?: string
-  /**
-   * Writable controls whether the guest can write into the mount.
-   *
-   * @generated from field: bool writable = 3;
-   */
-  writable?: boolean
-}
-
-export const VmMount: MessageType<VmMount> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.vm.VmMount',
-  fields: [
-    { no: 1, name: 'path', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'writable', kind: 'scalar', T: ScalarType.BOOL },
-  ] satisfies readonly PartialFieldInfo[],
-})
 
 /**
  * V86Config contains configuration for a V86 virtual machine.
@@ -148,67 +103,72 @@ export const VmMount: MessageType<VmMount> = /* @__PURE__ */ createMessageType({
 export interface V86Config {
   /**
    * MemoryMb is the memory size in megabytes.
-   *
-   * @generated from field: uint32 memory_mb = 1;
    */
   memoryMb?: number
   /**
    * VgaMemoryMb is the VGA memory size in megabytes.
-   *
-   * @generated from field: uint32 vga_memory_mb = 2;
    */
   vgaMemoryMb?: number
   /**
    * Networking enables network support.
-   *
-   * @generated from field: bool networking = 3;
    */
   networking?: boolean
   /**
    * SerialEnabled enables a serial console on COM1 bridged to the viewer.
-   *
-   * @generated from field: bool serial_enabled = 4;
    */
   serialEnabled?: boolean
   /**
    * BootArgs is appended to the kernel command line at boot time.
-   *
-   * @generated from field: string boot_args = 5;
    */
   bootArgs?: string
   /**
    * Mounts lists workspace/home/other v86fs mounts to attach after boot.
-   *
-   * @generated from field: repeated s4wave.vm.VmMount mounts = 6;
    */
   mounts?: VmMount[]
   /**
    * RuntimePluginId is the plugin that hosts the instanced V86 runtime.
    * Empty defaults to spacewave-v86.
-   *
-   * @generated from field: string runtime_plugin_id = 7;
    */
   runtimePluginId?: string
 }
 
 export const V86Config: MessageType<V86Config> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.V86Config',
-    fields: [
-      { no: 1, name: 'memory_mb', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'vga_memory_mb', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 3, name: 'networking', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 4, name: 'serial_enabled', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 5, name: 'boot_args', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'mounts', kind: 'message', T: VmMount, repeated: true },
-      {
-        no: 7,
-        name: 'runtime_plugin_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<V86Config>('s4wave.vm.V86Config', () => [
+    [1, 'memory_mb', 13],
+    [2, 'vga_memory_mb', 13],
+    [3, 'networking', 8],
+    [4, 'serial_enabled', 8],
+    [5, 'boot_args', 9],
+    [6, 'mounts', 11, 1, VmMount.codec],
+    [7, 'runtime_plugin_id', 9],
+  ])
+
+/**
+ * VmMount is a v86fs mount bound to a UnixFS object in the Space.
+ *
+ * @generated from message s4wave.vm.VmMount
+ */
+export interface VmMount {
+  /**
+   * Path is the guest filesystem path at which the mount is attached.
+   */
+  path?: string
+  /**
+   * ObjectKey is the UnixFS object key providing the mount contents.
+   */
+  objectKey?: string
+  /**
+   * Writable controls whether the guest can write into the mount.
+   */
+  writable?: boolean
+}
+
+export const VmMount: MessageType<VmMount> =
+  /* @__PURE__ */ createMessageType<VmMount>('s4wave.vm.VmMount', () => [
+    [1, 'path', 9],
+    [2, 'object_key', 9],
+    [3, 'writable', 8],
+  ])
 
 /**
  * VmV86 represents an x86 virtual machine instance via v86 emulation.
@@ -219,38 +179,26 @@ export const V86Config: MessageType<V86Config> =
 export interface VmV86 {
   /**
    * State is the desired VM state. Runtime observations are in observed_state.
-   *
-   * @generated from field: s4wave.vm.VmState state = 1;
    */
   state?: VmState
   /**
    * Name is the human-readable name of this VM instance.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Config contains V86-specific configuration.
-   *
-   * @generated from field: s4wave.vm.V86Config config = 3;
    */
   config?: V86Config
   /**
    * CreatedAt is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 4;
    */
   createdAt?: Date
   /**
    * ErrorMessage is the terminal diagnostic for the observed generation.
-   *
-   * @generated from field: string error_message = 5;
    */
   errorMessage?: string
   /**
    * ObservedState is the runtime state committed by the VM resource owner.
-   *
-   * @generated from field: s4wave.vm.VmState observed_state = 6;
    */
   observedState?: VmState
   /**
@@ -265,24 +213,20 @@ export interface VmV86 {
    *   v86/rootfs-override -> UnixFS object (optional, per-VM rootfs override)
    *   v86/bios-override   -> UnixFS object (optional, per-VM BIOS override)
    *   v86/wasm-override   -> UnixFS object (optional, per-VM emulator override)
-   *
-   * @generated from field: uint64 run_generation = 7;
    */
   runGeneration?: bigint
 }
 
-export const VmV86: MessageType<VmV86> = /* @__PURE__ */ createMessageType({
-  typeName: 's4wave.vm.VmV86',
-  fields: [
-    { no: 1, name: 'state', kind: 'enum', T: VmState_Enum },
-    { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'config', kind: 'message', T: V86Config },
-    { no: 4, name: 'created_at', kind: 'message', T: () => Timestamp },
-    { no: 5, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-    { no: 6, name: 'observed_state', kind: 'enum', T: VmState_Enum },
-    { no: 7, name: 'run_generation', kind: 'scalar', T: ScalarType.UINT64 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const VmV86: MessageType<VmV86> =
+  /* @__PURE__ */ createMessageType<VmV86>('s4wave.vm.VmV86', () => [
+    [1, 'state', 14, 0, VmState_Enum],
+    [2, 'name', 9],
+    [3, 'config', 11, 0, V86Config.codec],
+    [4, 'created_at', 11, 0, Timestamp.codec],
+    [5, 'error_message', 9],
+    [6, 'observed_state', 14, 0, VmState_Enum],
+    [7, 'run_generation', 4],
+  ])
 
 /**
  * CreateVmV86Op creates a new VmV86 world object. The V86Image at
@@ -295,99 +239,61 @@ export const VmV86: MessageType<VmV86> = /* @__PURE__ */ createMessageType({
 export interface CreateVmV86Op {
   /**
    * ObjectKey is the key to create the VM at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the display name.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Config contains V86-specific configuration.
-   *
-   * @generated from field: s4wave.vm.V86Config config = 3;
    */
   config?: V86Config
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 4;
    */
   timestamp?: Date
   /**
    * ImageObjectKey points at a V86Image providing default asset edges. Required.
-   *
-   * @generated from field: string image_object_key = 5;
    */
   imageObjectKey?: string
   /**
    * KernelOverrideObjectKey optionally overrides the kernel resolved from the
    * linked V86Image. Points at a UnixFS object.
-   *
-   * @generated from field: string kernel_override_object_key = 6;
    */
   kernelOverrideObjectKey?: string
   /**
    * RootfsOverrideObjectKey optionally overrides the rootfs resolved from the
    * linked V86Image. Points at a UnixFS object.
-   *
-   * @generated from field: string rootfs_override_object_key = 7;
    */
   rootfsOverrideObjectKey?: string
   /**
    * BiosOverrideObjectKey optionally overrides the BIOS resolved from the
    * linked V86Image. Points at a UnixFS object.
-   *
-   * @generated from field: string bios_override_object_key = 8;
    */
   biosOverrideObjectKey?: string
   /**
    * WasmOverrideObjectKey optionally overrides the emulator WASM resolved from
    * the linked V86Image. Points at a UnixFS object.
-   *
-   * @generated from field: string wasm_override_object_key = 9;
    */
   wasmOverrideObjectKey?: string
 }
 
 export const CreateVmV86Op: MessageType<CreateVmV86Op> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.CreateVmV86Op',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'config', kind: 'message', T: V86Config },
-      { no: 4, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 5, name: 'image_object_key', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'kernel_override_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 7,
-        name: 'rootfs_override_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 8,
-        name: 'bios_override_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 9,
-        name: 'wasm_override_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateVmV86Op>(
+    's4wave.vm.CreateVmV86Op',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'config', 11, 0, V86Config.codec],
+      [4, 'timestamp', 11, 0, Timestamp.codec],
+      [5, 'image_object_key', 9],
+      [6, 'kernel_override_object_key', 9],
+      [7, 'rootfs_override_object_key', 9],
+      [8, 'bios_override_object_key', 9],
+      [9, 'wasm_override_object_key', 9],
+    ],
+  )
 
 /**
  * SetV86ConfigOp mutates the mutable V86Config on an existing VmV86 object.
@@ -398,26 +304,22 @@ export const CreateVmV86Op: MessageType<CreateVmV86Op> =
 export interface SetV86ConfigOp {
   /**
    * ObjectKey is the object key of the VmV86 to update.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Config is the new configuration to apply. Replaces the stored Config.
-   *
-   * @generated from field: s4wave.vm.V86Config config = 2;
    */
   config?: V86Config
 }
 
 export const SetV86ConfigOp: MessageType<SetV86ConfigOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.SetV86ConfigOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'config', kind: 'message', T: V86Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetV86ConfigOp>(
+    's4wave.vm.SetV86ConfigOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'config', 11, 0, V86Config.codec],
+    ],
+  )
 
 /**
  * SetV86StateOp changes the desired state of an existing VmV86 object.
@@ -429,34 +331,28 @@ export const SetV86ConfigOp: MessageType<SetV86ConfigOp> =
 export interface SetV86StateOp {
   /**
    * ObjectKey is the object key of the VmV86 to update.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * State is the target state to transition to.
-   *
-   * @generated from field: s4wave.vm.VmState state = 2;
    */
   state?: VmState
   /**
    * ErrorMessage is an optional diagnostic for legacy callers. Runtime
    * diagnostics are written by the resource owner.
-   *
-   * @generated from field: string error_message = 3;
    */
   errorMessage?: string
 }
 
 export const SetV86StateOp: MessageType<SetV86StateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.SetV86StateOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'state', kind: 'enum', T: VmState_Enum },
-      { no: 3, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetV86StateOp>(
+    's4wave.vm.SetV86StateOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'state', 14, 0, VmState_Enum],
+      [3, 'error_message', 9],
+    ],
+  )
 
 /**
  * ReportV86RuntimeStatusRequest is a typed status report from an instanced
@@ -467,40 +363,32 @@ export const SetV86StateOp: MessageType<SetV86StateOp> =
 export interface ReportV86RuntimeStatusRequest {
   /**
    * ObjectKey identifies the VM resource receiving the report.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RunGeneration fences reports from prior runtime instances.
-   *
-   * @generated from field: uint64 run_generation = 2;
    */
   runGeneration?: bigint
   /**
    * Status is the runtime observation being reported.
-   *
-   * @generated from field: s4wave.vm.V86RuntimeStatus status = 3;
    */
   status?: V86RuntimeStatus
   /**
    * ErrorMessage is required for V86RuntimeStatus_ERROR.
-   *
-   * @generated from field: string error_message = 4;
    */
   errorMessage?: string
 }
 
 export const ReportV86RuntimeStatusRequest: MessageType<ReportV86RuntimeStatusRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.ReportV86RuntimeStatusRequest',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'run_generation', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'status', kind: 'enum', T: V86RuntimeStatus_Enum },
-      { no: 4, name: 'error_message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReportV86RuntimeStatusRequest>(
+    's4wave.vm.ReportV86RuntimeStatusRequest',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'run_generation', 4],
+      [3, 'status', 14, 0, V86RuntimeStatus_Enum],
+      [4, 'error_message', 9],
+    ],
+  )
 
 /**
  * ReportV86RuntimeStatusResponse acknowledges a runtime status report.
@@ -510,71 +398,33 @@ export const ReportV86RuntimeStatusRequest: MessageType<ReportV86RuntimeStatusRe
 export interface ReportV86RuntimeStatusResponse {
   /**
    * Accepted is false when the report does not match the active generation.
-   *
-   * @generated from field: bool accepted = 1;
    */
   accepted?: boolean
   /**
    * RunGeneration is the route generation used for the report.
-   *
-   * @generated from field: uint64 run_generation = 2;
    */
   runGeneration?: bigint
   /**
    * Rejection explains why a report was not accepted.
-   *
-   * @generated from field: string rejection = 3;
    */
   rejection?: string
   /**
    * Config is the VM configuration the runtime boots with. It is set on an
    * accepted report so the runtime reads it once per generation.
-   *
-   * @generated from field: s4wave.vm.V86Config config = 4;
    */
   config?: V86Config
 }
 
 export const ReportV86RuntimeStatusResponse: MessageType<ReportV86RuntimeStatusResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.ReportV86RuntimeStatusResponse',
-    fields: [
-      { no: 1, name: 'accepted', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'run_generation', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 3, name: 'rejection', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'config', kind: 'message', T: V86Config },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * VmImageCdnSource locates a VM image in a published CDN Space. An image
- * without its own asset edges resolves each asset through this source.
- *
- * @generated from message s4wave.vm.VmImageCdnSource
- */
-export interface VmImageCdnSource {
-  /**
-   * SpaceId is the CDN Space ULID.
-   *
-   * @generated from field: string space_id = 1;
-   */
-  spaceId?: string
-  /**
-   * ObjectKey is the image object key in the CDN Space.
-   *
-   * @generated from field: string object_key = 2;
-   */
-  objectKey?: string
-}
-
-export const VmImageCdnSource: MessageType<VmImageCdnSource> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.VmImageCdnSource',
-    fields: [
-      { no: 1, name: 'space_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ReportV86RuntimeStatusResponse>(
+    's4wave.vm.ReportV86RuntimeStatusResponse',
+    () => [
+      [1, 'accepted', 8],
+      [2, 'run_generation', 4],
+      [3, 'rejection', 9],
+      [4, 'config', 11, 0, V86Config.codec],
+    ],
+  )
 
 /**
  * V86Image is a curated bundle of v86 assets (WASM emulator, SeaBIOS, VGA BIOS,
@@ -587,50 +437,34 @@ export const VmImageCdnSource: MessageType<VmImageCdnSource> =
 export interface V86Image {
   /**
    * Name is the human-readable name of the image.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * Version identifies this revision of the image.
-   *
-   * @generated from field: string version = 2;
    */
   version?: string
   /**
    * Platform identifies the target VM platform. Must be "v86".
-   *
-   * @generated from field: string platform = 3;
    */
   platform?: string
   /**
    * Distro is the distribution name, e.g. "debian".
-   *
-   * @generated from field: string distro = 4;
    */
   distro?: string
   /**
    * KernelVersion is the kernel version string, e.g. "6.1.0-13-686".
-   *
-   * @generated from field: string kernel_version = 5;
    */
   kernelVersion?: string
   /**
    * Description is a free-form description of the image.
-   *
-   * @generated from field: string description = 6;
    */
   description?: string
   /**
    * Tags is a list of discovery tags, e.g. ["default", "browser"].
-   *
-   * @generated from field: repeated string tags = 7;
    */
   tags?: string[]
   /**
    * CreatedAt is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 8;
    */
   createdAt?: Date
   /**
@@ -643,33 +477,48 @@ export interface V86Image {
    *   v86image/bios/vgabios  -> UnixFS object (VGA BIOS)
    *   v86image/kernel        -> UnixFS object (kernel image)
    *   v86image/rootfs        -> UnixFS object (rootfs archive)
-   *
-   * @generated from field: s4wave.vm.VmImageCdnSource cdn_source = 9;
    */
   cdnSource?: VmImageCdnSource
 }
 
 export const V86Image: MessageType<V86Image> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.V86Image',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'platform', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'distro', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'kernel_version', kind: 'scalar', T: ScalarType.STRING },
-      { no: 6, name: 'description', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 7,
-        name: 'tags',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 8, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 9, name: 'cdn_source', kind: 'message', T: VmImageCdnSource },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<V86Image>('s4wave.vm.V86Image', () => [
+    [1, 'name', 9],
+    [2, 'version', 9],
+    [3, 'platform', 9],
+    [4, 'distro', 9],
+    [5, 'kernel_version', 9],
+    [6, 'description', 9],
+    [7, 'tags', 9, 1],
+    [8, 'created_at', 11, 0, Timestamp.codec],
+    [9, 'cdn_source', 11, 0, VmImageCdnSource.codec],
+  ])
+
+/**
+ * VmImageCdnSource locates a VM image in a published CDN Space. An image
+ * without its own asset edges resolves each asset through this source.
+ *
+ * @generated from message s4wave.vm.VmImageCdnSource
+ */
+export interface VmImageCdnSource {
+  /**
+   * SpaceId is the CDN Space ULID.
+   */
+  spaceId?: string
+  /**
+   * ObjectKey is the image object key in the CDN Space.
+   */
+  objectKey?: string
+}
+
+export const VmImageCdnSource: MessageType<VmImageCdnSource> =
+  /* @__PURE__ */ createMessageType<VmImageCdnSource>(
+    's4wave.vm.VmImageCdnSource',
+    () => [
+      [1, 'space_id', 9],
+      [2, 'object_key', 9],
+    ],
+  )
 
 /**
  * CreateV86ImageOp creates a new V86Image world object. Metadata is supplied
@@ -680,34 +529,28 @@ export const V86Image: MessageType<V86Image> =
 export interface CreateV86ImageOp {
   /**
    * ObjectKey is the key to create the V86Image at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Image carries the metadata for the new V86Image. Name / platform / tags
    * are required; the remaining fields are optional.
-   *
-   * @generated from field: s4wave.vm.V86Image image = 2;
    */
   image?: V86Image
   /**
    * Timestamp is the creation timestamp. Stored on the block as CreatedAt.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 3;
    */
   timestamp?: Date
 }
 
 export const CreateV86ImageOp: MessageType<CreateV86ImageOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.CreateV86ImageOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'image', kind: 'message', T: V86Image },
-      { no: 3, name: 'timestamp', kind: 'message', T: () => Timestamp },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateV86ImageOp>(
+    's4wave.vm.CreateV86ImageOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'image', 11, 0, V86Image.codec],
+      [3, 'timestamp', 11, 0, Timestamp.codec],
+    ],
+  )
 
 /**
  * SetV86ImageMetadataOp replaces the metadata fields on an existing V86Image.
@@ -719,24 +562,20 @@ export const CreateV86ImageOp: MessageType<CreateV86ImageOp> =
 export interface SetV86ImageMetadataOp {
   /**
    * ObjectKey is the key of the V86Image to update.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Image carries the new metadata. CreatedAt is preserved from the stored
    * block; any CreatedAt on the supplied V86Image is ignored.
-   *
-   * @generated from field: s4wave.vm.V86Image image = 2;
    */
   image?: V86Image
 }
 
 export const SetV86ImageMetadataOp: MessageType<SetV86ImageMetadataOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.vm.SetV86ImageMetadataOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'image', kind: 'message', T: V86Image },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetV86ImageMetadataOp>(
+    's4wave.vm.SetV86ImageMetadataOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'image', 11, 0, V86Image.codec],
+    ],
+  )

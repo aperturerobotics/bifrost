@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * LookupRpcServiceRequest is a request to lookup an rpc service.
@@ -15,27 +13,23 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface LookupRpcServiceRequest {
   /**
    * ServiceId is the service identifier.
-   *
-   * @generated from field: string service_id = 1;
    */
   serviceId?: string
   /**
    * ServerId is the identifier of the server requesting the service.
    * Can be empty.
-   *
-   * @generated from field: string server_id = 2;
    */
   serverId?: string
 }
 
 export const LookupRpcServiceRequest: MessageType<LookupRpcServiceRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bifrost.rpc.access.LookupRpcServiceRequest',
-    fields: [
-      { no: 1, name: 'service_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'server_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupRpcServiceRequest>(
+    'bifrost.rpc.access.LookupRpcServiceRequest',
+    () => [
+      [1, 'service_id', 9],
+      [2, 'server_id', 9],
+    ],
+  )
 
 /**
  * LookupRpcServiceResponse is a response to LookupRpcService
@@ -45,30 +39,24 @@ export const LookupRpcServiceRequest: MessageType<LookupRpcServiceRequest> =
 export interface LookupRpcServiceResponse {
   /**
    * Idle indicates the directive is now idle.
-   *
-   * @generated from field: bool idle = 1;
    */
   idle?: boolean
   /**
    * Exists indicates we found the service on the remote.
-   *
-   * @generated from field: bool exists = 2;
    */
   exists?: boolean
   /**
    * Removed indicates the value no longer exists.
-   *
-   * @generated from field: bool removed = 3;
    */
   removed?: boolean
 }
 
 export const LookupRpcServiceResponse: MessageType<LookupRpcServiceResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bifrost.rpc.access.LookupRpcServiceResponse',
-    fields: [
-      { no: 1, name: 'idle', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 2, name: 'exists', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 3, name: 'removed', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<LookupRpcServiceResponse>(
+    'bifrost.rpc.access.LookupRpcServiceResponse',
+    () => [
+      [1, 'idle', 8],
+      [2, 'exists', 8],
+      [3, 'removed', 8],
+    ],
+  )

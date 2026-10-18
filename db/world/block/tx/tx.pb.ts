@@ -5,8 +5,6 @@
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ObjectRef } from '../../../bucket/bucket.pb.js'
 import { Quad } from '../../../block/quad/quad.pb.js'
 
@@ -16,86 +14,168 @@ import { Quad } from '../../../block/quad/quad.pb.js'
  * @generated from enum world.block.tx.TxType
  */
 export enum TxType {
-  /**
-   * @generated from enum value: TxType_INVALID = 0;
-   */
   TxType_INVALID = 0,
 
   /**
    * TxType_APPLY_WORLD_OP applies a world operation.
-   *
-   * @generated from enum value: TxType_APPLY_WORLD_OP = 1;
    */
   TxType_APPLY_WORLD_OP = 1,
 
   /**
    * TxType_APPLY_OBJECT_OP applies a object operation.
-   *
-   * @generated from enum value: TxType_APPLY_OBJECT_OP = 2;
    */
   TxType_APPLY_OBJECT_OP = 2,
 
   /**
    * TxType_CREATE_OBJECT creates a new object with a key and root ref.
-   *
-   * @generated from enum value: TxType_CREATE_OBJECT = 3;
    */
   TxType_CREATE_OBJECT = 3,
 
   /**
    * TxType_OBJECT_SET sets the root ref on an object.
-   *
-   * @generated from enum value: TxType_OBJECT_SET = 4;
    */
   TxType_OBJECT_SET = 4,
 
   /**
    * TxType_OBJECT_INC_REV increments the rev on a object.
-   *
-   * @generated from enum value: TxType_OBJECT_INC_REV = 5;
    */
   TxType_OBJECT_INC_REV = 5,
 
   /**
    * TxType_DELETE_OBJECT deletes a object with a key.
-   *
-   * @generated from enum value: TxType_DELETE_OBJECT = 6;
    */
   TxType_DELETE_OBJECT = 6,
 
   /**
    * TxType_RENAME_OBJECT renames an object key.
-   *
-   * @generated from enum value: TxType_RENAME_OBJECT = 11;
    */
   TxType_RENAME_OBJECT = 11,
 
   /**
    * TxType_SET_GRAPH_QUAD sets a graph quad in the graph store.
-   *
-   * @generated from enum value: TxType_SET_GRAPH_QUAD = 7;
    */
   TxType_SET_GRAPH_QUAD = 7,
 
   /**
    * TxType_DELETE_GRAPH_QUAD deletes a graph quad from the store.
-   *
-   * @generated from enum value: TxType_DELETE_GRAPH_QUAD = 8;
    */
   TxType_DELETE_GRAPH_QUAD = 8,
 
   /**
    * TxType_BATCH applies multiple sub-transactions.
-   *
-   * @generated from enum value: TxType_BATCH = 9;
    */
   TxType_BATCH = 9,
 }
 
 export const TxType_Enum = /* @__PURE__ */ createEnumType(
   'world.block.tx.TxType',
-  TxType,
+  [
+    [0, 'TxType_INVALID'],
+    [1, 'TxType_APPLY_WORLD_OP'],
+    [2, 'TxType_APPLY_OBJECT_OP'],
+    [3, 'TxType_CREATE_OBJECT'],
+    [4, 'TxType_OBJECT_SET'],
+    [5, 'TxType_OBJECT_INC_REV'],
+    [6, 'TxType_DELETE_OBJECT'],
+    [11, 'TxType_RENAME_OBJECT'],
+    [7, 'TxType_SET_GRAPH_QUAD'],
+    [8, 'TxType_DELETE_GRAPH_QUAD'],
+    [9, 'TxType_BATCH'],
+  ],
 )
+
+/**
+ * Tx is the on-the-wire representation of a World transaction.
+ *
+ * @generated from message world.block.tx.Tx
+ */
+export interface Tx {
+  /**
+   * TxType is the kind of transaction this is.
+   */
+  txType?: TxType
+  /**
+   * TxApplyWorldOp is an operation to apply a world operation
+   * TxType_APPLY_WORLD_OP
+   */
+  txApplyWorldOp?: TxApplyWorldOp
+  /**
+   * TxApplyObjectOp is an operation to apply a object operation
+   * TxType_APPLY_OBJECT_OP
+   */
+  txApplyObjectOp?: TxApplyObjectOp
+  /**
+   * TxCreateObject is an operation to create a new object.
+   * TxType_CREATE_OBJECT
+   */
+  txCreateObject?: TxCreateObject
+  /**
+   * TxObjectSet sets the root ref of an object.
+   * TxType_OBJECT_SET
+   */
+  txObjectSet?: TxObjectSet
+  /**
+   * TxObjectIncRev increments the revision of an object.
+   * TxType_OBJECT_INC_REV
+   */
+  txObjectIncRev?: TxObjectIncRev
+  /**
+   * TxDeleteObject to delete a object.
+   * TxType_DELETE_OBJECT
+   */
+  txDeleteObject?: TxDeleteObject
+  /**
+   * TxRenameObject renames an object key.
+   * TxType_RENAME_OBJECT
+   */
+  txRenameObject?: TxRenameObject
+  /**
+   * TxSetGraphQuad sets a graph quad.
+   */
+  txSetGraphQuad?: TxSetGraphQuad
+  /**
+   * TxDeleteGraphQuad deletes a graph quad.
+   */
+  txDeleteGraphQuad?: TxDeleteGraphQuad
+  /**
+   * TxBatch is a batch of multiple txs.
+   */
+  txBatch?: TxBatch
+}
+
+export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType<Tx>(
+  'world.block.tx.Tx',
+  () => [
+    [1, 'tx_type', 14, 0, TxType_Enum],
+    [2, 'tx_apply_world_op', 11, 0, TxApplyWorldOp.codec],
+    [3, 'tx_apply_object_op', 11, 0, TxApplyObjectOp.codec],
+    [4, 'tx_create_object', 11, 0, TxCreateObject.codec],
+    [5, 'tx_object_set', 11, 0, TxObjectSet.codec],
+    [6, 'tx_object_inc_rev', 11, 0, TxObjectIncRev.codec],
+    [7, 'tx_delete_object', 11, 0, TxDeleteObject.codec],
+    [8, 'tx_set_graph_quad', 11, 0, TxSetGraphQuad.codec],
+    [9, 'tx_delete_graph_quad', 11, 0, TxDeleteGraphQuad.codec],
+    [10, 'tx_batch', 11, 0, TxBatch.codec],
+    [12, 'tx_rename_object', 11, 0, TxRenameObject.codec],
+  ],
+)
+
+/**
+ * TxBatch is a batch of multiple transactions.
+ *
+ * @generated from message world.block.tx.TxBatch
+ */
+export interface TxBatch {
+  /**
+   * Txs is the list of transactions.
+   */
+  txs?: Tx[]
+}
+
+export const TxBatch: MessageType<TxBatch> =
+  /* @__PURE__ */ createMessageType<TxBatch>('world.block.tx.TxBatch', () => [
+    [1, 'txs', 11, 1, Tx.codec],
+  ])
 
 /**
  * TxApplyWorldOp applies a world operation.
@@ -106,38 +186,27 @@ export const TxType_Enum = /* @__PURE__ */ createEnumType(
 export interface TxApplyWorldOp {
   /**
    * OperationTypeId is the operation type identifier.
-   *
-   * @generated from field: string operation_type_id = 1;
    */
   operationTypeId?: string
   /**
    * OperationBody is the encoded operation Block.
-   *
-   * @generated from field: bytes operation_body = 2;
    */
   operationBody?: Uint8Array
   /**
    * OpSender is the peer ID to apply the operation as.
-   *
-   * @generated from field: string op_sender = 3;
    */
   opSender?: string
 }
 
 export const TxApplyWorldOp: MessageType<TxApplyWorldOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.tx.TxApplyWorldOp',
-    fields: [
-      {
-        no: 1,
-        name: 'operation_type_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'operation_body', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'op_sender', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxApplyWorldOp>(
+    'world.block.tx.TxApplyWorldOp',
+    () => [
+      [1, 'operation_type_id', 9],
+      [2, 'operation_body', 12],
+      [3, 'op_sender', 9],
+    ],
+  )
 
 /**
  * TxApplyObjectOp applies a object operation.
@@ -148,45 +217,32 @@ export const TxApplyWorldOp: MessageType<TxApplyWorldOp> =
 export interface TxApplyObjectOp {
   /**
    * OperationTypeId is the operation type identifier.
-   *
-   * @generated from field: string operation_type_id = 1;
    */
   operationTypeId?: string
   /**
    * OperationBody is the encoded operation Block.
-   *
-   * @generated from field: bytes operation_body = 2;
    */
   operationBody?: Uint8Array
   /**
    * ObjectKey is the object key to apply the operation to.
-   *
-   * @generated from field: string object_key = 3;
    */
   objectKey?: string
   /**
    * OpSender is the peer ID to apply the operation as.
-   *
-   * @generated from field: string op_sender = 4;
    */
   opSender?: string
 }
 
 export const TxApplyObjectOp: MessageType<TxApplyObjectOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.tx.TxApplyObjectOp',
-    fields: [
-      {
-        no: 1,
-        name: 'operation_type_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'operation_body', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'op_sender', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxApplyObjectOp>(
+    'world.block.tx.TxApplyObjectOp',
+    () => [
+      [1, 'operation_type_id', 9],
+      [2, 'operation_body', 12],
+      [3, 'object_key', 9],
+      [4, 'op_sender', 9],
+    ],
+  )
 
 /**
  * TxCreateObject creates a new object with a key and ref.
@@ -197,26 +253,22 @@ export const TxApplyObjectOp: MessageType<TxApplyObjectOp> =
 export interface TxCreateObject {
   /**
    * ObjectKey is the object key to apply the operation to.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RootRef is the bucket object ref to set as the value.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
    */
   rootRef?: ObjectRef
 }
 
 export const TxCreateObject: MessageType<TxCreateObject> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.tx.TxCreateObject',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxCreateObject>(
+    'world.block.tx.TxCreateObject',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+    ],
+  )
 
 /**
  * TxObjectSet sets the root ref of an existing object.
@@ -227,26 +279,22 @@ export const TxCreateObject: MessageType<TxCreateObject> =
 export interface TxObjectSet {
   /**
    * ObjectKey is the object key to apply the operation to.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * RootRef is the bucket object ref to set as the value.
-   *
-   * @generated from field: bucket.ObjectRef root_ref = 2;
    */
   rootRef?: ObjectRef
 }
 
 export const TxObjectSet: MessageType<TxObjectSet> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.tx.TxObjectSet',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'root_ref', kind: 'message', T: () => ObjectRef },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxObjectSet>(
+    'world.block.tx.TxObjectSet',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'root_ref', 11, 0, ObjectRef.codec],
+    ],
+  )
 
 /**
  * TxObjectIncRev increments the revision of a object.
@@ -257,19 +305,15 @@ export const TxObjectSet: MessageType<TxObjectSet> =
 export interface TxObjectIncRev {
   /**
    * ObjectKey is the object key to apply the operation to.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
 }
 
 export const TxObjectIncRev: MessageType<TxObjectIncRev> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.tx.TxObjectIncRev',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxObjectIncRev>(
+    'world.block.tx.TxObjectIncRev',
+    () => [[1, 'object_key', 9]],
+  )
 
 /**
  * TxDeleteObject deletes an object with a given key.
@@ -280,26 +324,22 @@ export const TxObjectIncRev: MessageType<TxObjectIncRev> =
 export interface TxDeleteObject {
   /**
    * ObjectKey is the object key to delete.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * FailIfNotFound indicates to error if not found.
-   *
-   * @generated from field: bool fail_if_not_found = 2;
    */
   failIfNotFound?: boolean
 }
 
 export const TxDeleteObject: MessageType<TxDeleteObject> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.tx.TxDeleteObject',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'fail_if_not_found', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxDeleteObject>(
+    'world.block.tx.TxDeleteObject',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'fail_if_not_found', 8],
+    ],
+  )
 
 /**
  * TxRenameObject renames an object key.
@@ -310,26 +350,22 @@ export const TxDeleteObject: MessageType<TxDeleteObject> =
 export interface TxRenameObject {
   /**
    * OldObjectKey is the object key to rename.
-   *
-   * @generated from field: string old_object_key = 1;
    */
   oldObjectKey?: string
   /**
    * NewObjectKey is the new object key.
-   *
-   * @generated from field: string new_object_key = 2;
    */
   newObjectKey?: string
 }
 
 export const TxRenameObject: MessageType<TxRenameObject> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.tx.TxRenameObject',
-    fields: [
-      { no: 1, name: 'old_object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'new_object_key', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxRenameObject>(
+    'world.block.tx.TxRenameObject',
+    () => [
+      [1, 'old_object_key', 9],
+      [2, 'new_object_key', 9],
+    ],
+  )
 
 /**
  * TxSetGraphQuad sets a graph quad.
@@ -340,19 +376,15 @@ export const TxRenameObject: MessageType<TxRenameObject> =
 export interface TxSetGraphQuad {
   /**
    * Quad is the graph quad to create.
-   *
-   * @generated from field: quad.Quad quad = 1;
    */
   quad?: Quad
 }
 
 export const TxSetGraphQuad: MessageType<TxSetGraphQuad> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.tx.TxSetGraphQuad',
-    fields: [
-      { no: 1, name: 'quad', kind: 'message', T: () => Quad },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TxSetGraphQuad>(
+    'world.block.tx.TxSetGraphQuad',
+    () => [[1, 'quad', 11, 0, Quad.codec]],
+  )
 
 /**
  * TxDeleteGraphQuad deletes a graph quad.
@@ -363,140 +395,12 @@ export const TxSetGraphQuad: MessageType<TxSetGraphQuad> =
 export interface TxDeleteGraphQuad {
   /**
    * Quad is the graph quad to delete.
-   *
-   * @generated from field: quad.Quad quad = 1;
    */
   quad?: Quad
 }
 
 export const TxDeleteGraphQuad: MessageType<TxDeleteGraphQuad> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'world.block.tx.TxDeleteGraphQuad',
-    fields: [
-      { no: 1, name: 'quad', kind: 'message', T: () => Quad },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * TxBatch is a batch of multiple transactions.
- *
- * @generated from message world.block.tx.TxBatch
- */
-export interface TxBatch {
-  /**
-   * Txs is the list of transactions.
-   *
-   * @generated from field: repeated world.block.tx.Tx txs = 1;
-   */
-  txs?: Tx[]
-}
-
-export const TxBatch: MessageType<TxBatch> = /* @__PURE__ */ createMessageType({
-  typeName: 'world.block.tx.TxBatch',
-  fields: [
-    { no: 1, name: 'txs', kind: 'message', T: () => Tx, repeated: true },
-  ] satisfies readonly PartialFieldInfo[],
-})
-
-/**
- * Tx is the on-the-wire representation of a World transaction.
- *
- * @generated from message world.block.tx.Tx
- */
-export interface Tx {
-  /**
-   * TxType is the kind of transaction this is.
-   *
-   * @generated from field: world.block.tx.TxType tx_type = 1;
-   */
-  txType?: TxType
-  /**
-   * TxApplyWorldOp is an operation to apply a world operation
-   * TxType_APPLY_WORLD_OP
-   *
-   * @generated from field: world.block.tx.TxApplyWorldOp tx_apply_world_op = 2;
-   */
-  txApplyWorldOp?: TxApplyWorldOp
-  /**
-   * TxApplyObjectOp is an operation to apply a object operation
-   * TxType_APPLY_OBJECT_OP
-   *
-   * @generated from field: world.block.tx.TxApplyObjectOp tx_apply_object_op = 3;
-   */
-  txApplyObjectOp?: TxApplyObjectOp
-  /**
-   * TxCreateObject is an operation to create a new object.
-   * TxType_CREATE_OBJECT
-   *
-   * @generated from field: world.block.tx.TxCreateObject tx_create_object = 4;
-   */
-  txCreateObject?: TxCreateObject
-  /**
-   * TxObjectSet sets the root ref of an object.
-   * TxType_OBJECT_SET
-   *
-   * @generated from field: world.block.tx.TxObjectSet tx_object_set = 5;
-   */
-  txObjectSet?: TxObjectSet
-  /**
-   * TxObjectIncRev increments the revision of an object.
-   * TxType_OBJECT_INC_REV
-   *
-   * @generated from field: world.block.tx.TxObjectIncRev tx_object_inc_rev = 6;
-   */
-  txObjectIncRev?: TxObjectIncRev
-  /**
-   * TxDeleteObject to delete a object.
-   * TxType_DELETE_OBJECT
-   *
-   * @generated from field: world.block.tx.TxDeleteObject tx_delete_object = 7;
-   */
-  txDeleteObject?: TxDeleteObject
-  /**
-   * TxRenameObject renames an object key.
-   * TxType_RENAME_OBJECT
-   *
-   * @generated from field: world.block.tx.TxRenameObject tx_rename_object = 12;
-   */
-  txRenameObject?: TxRenameObject
-  /**
-   * TxSetGraphQuad sets a graph quad.
-   *
-   * @generated from field: world.block.tx.TxSetGraphQuad tx_set_graph_quad = 8;
-   */
-  txSetGraphQuad?: TxSetGraphQuad
-  /**
-   * TxDeleteGraphQuad deletes a graph quad.
-   *
-   * @generated from field: world.block.tx.TxDeleteGraphQuad tx_delete_graph_quad = 9;
-   */
-  txDeleteGraphQuad?: TxDeleteGraphQuad
-  /**
-   * TxBatch is a batch of multiple txs.
-   *
-   * @generated from field: world.block.tx.TxBatch tx_batch = 10;
-   */
-  txBatch?: TxBatch
-}
-
-export const Tx: MessageType<Tx> = /* @__PURE__ */ createMessageType({
-  typeName: 'world.block.tx.Tx',
-  fields: [
-    { no: 1, name: 'tx_type', kind: 'enum', T: TxType_Enum },
-    { no: 2, name: 'tx_apply_world_op', kind: 'message', T: TxApplyWorldOp },
-    { no: 3, name: 'tx_apply_object_op', kind: 'message', T: TxApplyObjectOp },
-    { no: 4, name: 'tx_create_object', kind: 'message', T: TxCreateObject },
-    { no: 5, name: 'tx_object_set', kind: 'message', T: TxObjectSet },
-    { no: 6, name: 'tx_object_inc_rev', kind: 'message', T: TxObjectIncRev },
-    { no: 7, name: 'tx_delete_object', kind: 'message', T: TxDeleteObject },
-    { no: 12, name: 'tx_rename_object', kind: 'message', T: TxRenameObject },
-    { no: 8, name: 'tx_set_graph_quad', kind: 'message', T: TxSetGraphQuad },
-    {
-      no: 9,
-      name: 'tx_delete_graph_quad',
-      kind: 'message',
-      T: TxDeleteGraphQuad,
-    },
-    { no: 10, name: 'tx_batch', kind: 'message', T: TxBatch },
-  ] satisfies readonly PartialFieldInfo[],
-})
+  /* @__PURE__ */ createMessageType<TxDeleteGraphQuad>(
+    'world.block.tx.TxDeleteGraphQuad',
+    () => [[1, 'quad', 11, 0, Quad.codec]],
+  )

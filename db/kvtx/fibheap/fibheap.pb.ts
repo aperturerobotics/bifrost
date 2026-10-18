@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Entry is an entry in the heap.
@@ -15,60 +13,44 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Entry {
   /**
    * Degree is the degree of the entry.
-   *
-   * @generated from field: int32 degree = 1;
    */
   degree?: number
   /**
    * Marked indicates if the entry is marked.
-   *
-   * @generated from field: bool marked = 2;
    */
   marked?: boolean
   /**
    * Next is the key of the next entry.
-   *
-   * @generated from field: bytes next = 3;
    */
   next?: Uint8Array
   /**
    * Prev is the key of the previous entry.
-   *
-   * @generated from field: bytes prev = 4;
    */
   prev?: Uint8Array
   /**
    * Child is the key of the child entry.
-   *
-   * @generated from field: bytes child = 5;
    */
   child?: Uint8Array
   /**
    * Parent is the key of the parent entry.
-   *
-   * @generated from field: bytes parent = 6;
    */
   parent?: Uint8Array
   /**
    * Priority is the numerical priority of the entry.
-   *
-   * @generated from field: double priority = 7;
    */
   priority?: number
 }
 
-export const Entry: MessageType<Entry> = /* @__PURE__ */ createMessageType({
-  typeName: 'fibheap.Entry',
-  fields: [
-    { no: 1, name: 'degree', kind: 'scalar', T: ScalarType.INT32 },
-    { no: 2, name: 'marked', kind: 'scalar', T: ScalarType.BOOL },
-    { no: 3, name: 'next', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 4, name: 'prev', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 5, name: 'child', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 6, name: 'parent', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 7, name: 'priority', kind: 'scalar', T: ScalarType.DOUBLE },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Entry: MessageType<Entry> =
+  /* @__PURE__ */ createMessageType<Entry>('fibheap.Entry', () => [
+    [1, 'degree', 5],
+    [2, 'marked', 8],
+    [3, 'next', 12],
+    [4, 'prev', 12],
+    [5, 'child', 12],
+    [6, 'parent', 12],
+    [7, 'priority', 1],
+  ])
 
 /**
  * Root is the root object of the heap.
@@ -78,29 +60,23 @@ export const Entry: MessageType<Entry> = /* @__PURE__ */ createMessageType({
 export interface Root {
   /**
    * Min is the key of the current minimum item.
-   *
-   * @generated from field: bytes min = 1;
    */
   min?: Uint8Array
   /**
    * MinPriority is the priority of the current minimum item.
-   *
-   * @generated from field: double min_priority = 2;
    */
   minPriority?: number
   /**
    * Size is the current size of the heap.
-   *
-   * @generated from field: uint32 size = 3;
    */
   size?: number
 }
 
-export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType({
-  typeName: 'fibheap.Root',
-  fields: [
-    { no: 1, name: 'min', kind: 'scalar', T: ScalarType.BYTES },
-    { no: 2, name: 'min_priority', kind: 'scalar', T: ScalarType.DOUBLE },
-    { no: 3, name: 'size', kind: 'scalar', T: ScalarType.UINT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Root: MessageType<Root> = /* @__PURE__ */ createMessageType<Root>(
+  'fibheap.Root',
+  () => [
+    [1, 'min', 12],
+    [2, 'min_priority', 1],
+    [3, 'size', 13],
+  ],
+)

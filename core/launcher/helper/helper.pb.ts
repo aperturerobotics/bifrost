@@ -3,106 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
-
-/**
- * ProgressUpdate reports download/processing progress.
- *
- * @generated from message launcher.helper.ProgressUpdate
- */
-export interface ProgressUpdate {
-  /**
-   * Fraction is the progress fraction 0.0..1.0.
-   * Negative values indicate indeterminate progress.
-   *
-   * @generated from field: float fraction = 1;
-   */
-  fraction?: number
-  /**
-   * Text is a human-readable status string.
-   *
-   * @generated from field: string text = 2;
-   */
-  text?: string
-}
-
-export const ProgressUpdate: MessageType<ProgressUpdate> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'launcher.helper.ProgressUpdate',
-    fields: [
-      { no: 1, name: 'fraction', kind: 'scalar', T: ScalarType.FLOAT },
-      { no: 2, name: 'text', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * StatusUpdate reports a status text change without progress.
- *
- * @generated from message launcher.helper.StatusUpdate
- */
-export interface StatusUpdate {
-  /**
-   * Text is the status message to display.
-   *
-   * @generated from field: string text = 1;
-   */
-  text?: string
-}
-
-export const StatusUpdate: MessageType<StatusUpdate> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'launcher.helper.StatusUpdate',
-    fields: [
-      { no: 1, name: 'text', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DismissCommand tells the helper to close its window and exit.
- *
- * @generated from message launcher.helper.DismissCommand
- */
-export interface DismissCommand {}
-
-export const DismissCommand: MessageType<DismissCommand> =
-  /* @__PURE__ */ createEmptyMessageType<DismissCommand>(
-    'launcher.helper.DismissCommand',
-    true,
-  )
-
-/**
- * ErrorReport displays an error to the user.
- *
- * @generated from message launcher.helper.ErrorReport
- */
-export interface ErrorReport {
-  /**
-   * Message is the error description.
-   *
-   * @generated from field: string message = 1;
-   */
-  message?: string
-  /**
-   * Retryable indicates the user can retry the operation.
-   *
-   * @generated from field: bool retryable = 2;
-   */
-  retryable?: boolean
-}
-
-export const ErrorReport: MessageType<ErrorReport> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'launcher.helper.ErrorReport',
-    fields: [
-      { no: 1, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'retryable', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * HelperMessage is sent from the launcher to the desktop loading-UI helper.
@@ -114,106 +15,22 @@ export interface HelperMessage {
    * @generated from oneof launcher.helper.HelperMessage.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * @generated from field: launcher.helper.ProgressUpdate progress = 1;
-         */
-        value: ProgressUpdate
-        case: 'progress'
-      }
-    | {
-        /**
-         * @generated from field: launcher.helper.StatusUpdate status = 2;
-         */
-        value: StatusUpdate
-        case: 'status'
-      }
-    | {
-        /**
-         * @generated from field: launcher.helper.DismissCommand dismiss = 3;
-         */
-        value: DismissCommand
-        case: 'dismiss'
-      }
-    | {
-        /**
-         * @generated from field: launcher.helper.ErrorReport error = 4;
-         */
-        value: ErrorReport
-        case: 'error'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: ProgressUpdate; case: 'progress' }
+    | { value: StatusUpdate; case: 'status' }
+    | { value: DismissCommand; case: 'dismiss' }
+    | { value: ErrorReport; case: 'error' }
 }
 
 export const HelperMessage: MessageType<HelperMessage> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'launcher.helper.HelperMessage',
-    fields: [
-      {
-        no: 1,
-        name: 'progress',
-        kind: 'message',
-        T: ProgressUpdate,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'status',
-        kind: 'message',
-        T: StatusUpdate,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'dismiss',
-        kind: 'message',
-        T: DismissCommand,
-        oneof: 'body',
-      },
-      { no: 4, name: 'error', kind: 'message', T: ErrorReport, oneof: 'body' },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * RetryRequest is sent when the user clicks retry after an error.
- *
- * @generated from message launcher.helper.RetryRequest
- */
-export interface RetryRequest {}
-
-export const RetryRequest: MessageType<RetryRequest> =
-  /* @__PURE__ */ createEmptyMessageType<RetryRequest>(
-    'launcher.helper.RetryRequest',
-    true,
-  )
-
-/**
- * CancelRequest is sent when the user cancels the operation.
- *
- * @generated from message launcher.helper.CancelRequest
- */
-export interface CancelRequest {}
-
-export const CancelRequest: MessageType<CancelRequest> =
-  /* @__PURE__ */ createEmptyMessageType<CancelRequest>(
-    'launcher.helper.CancelRequest',
-    true,
-  )
-
-/**
- * HelperReady is sent when the helper window is displayed and ready.
- *
- * @generated from message launcher.helper.HelperReady
- */
-export interface HelperReady {}
-
-export const HelperReady: MessageType<HelperReady> =
-  /* @__PURE__ */ createEmptyMessageType<HelperReady>(
-    'launcher.helper.HelperReady',
-    true,
+  /* @__PURE__ */ createMessageType<HelperMessage>(
+    'launcher.helper.HelperMessage',
+    () => [
+      [1, 'progress', 11, 0, ProgressUpdate.codec, 'body'],
+      [2, 'status', 11, 0, StatusUpdate.codec, 'body'],
+      [3, 'dismiss', 11, 0, DismissCommand.codec, 'body'],
+      [4, 'error', 11, 0, ErrorReport.codec, 'body'],
+    ],
   )
 
 /**
@@ -226,45 +43,139 @@ export interface HelperEvent {
    * @generated from oneof launcher.helper.HelperEvent.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * @generated from field: launcher.helper.RetryRequest retry = 1;
-         */
-        value: RetryRequest
-        case: 'retry'
-      }
-    | {
-        /**
-         * @generated from field: launcher.helper.CancelRequest cancel = 2;
-         */
-        value: CancelRequest
-        case: 'cancel'
-      }
-    | {
-        /**
-         * @generated from field: launcher.helper.HelperReady ready = 3;
-         */
-        value: HelperReady
-        case: 'ready'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: RetryRequest; case: 'retry' }
+    | { value: CancelRequest; case: 'cancel' }
+    | { value: HelperReady; case: 'ready' }
 }
 
 export const HelperEvent: MessageType<HelperEvent> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'launcher.helper.HelperEvent',
-    fields: [
-      { no: 1, name: 'retry', kind: 'message', T: RetryRequest, oneof: 'body' },
-      {
-        no: 2,
-        name: 'cancel',
-        kind: 'message',
-        T: CancelRequest,
-        oneof: 'body',
-      },
-      { no: 3, name: 'ready', kind: 'message', T: HelperReady, oneof: 'body' },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HelperEvent>(
+    'launcher.helper.HelperEvent',
+    () => [
+      [1, 'retry', 11, 0, RetryRequest.codec, 'body'],
+      [2, 'cancel', 11, 0, CancelRequest.codec, 'body'],
+      [3, 'ready', 11, 0, HelperReady.codec, 'body'],
+    ],
+  )
+
+/**
+ * ProgressUpdate reports download/processing progress.
+ *
+ * @generated from message launcher.helper.ProgressUpdate
+ */
+export interface ProgressUpdate {
+  /**
+   * Fraction is the progress fraction 0.0..1.0.
+   * Negative values indicate indeterminate progress.
+   */
+  fraction?: number
+  /**
+   * Text is a human-readable status string.
+   */
+  text?: string
+}
+
+export const ProgressUpdate: MessageType<ProgressUpdate> =
+  /* @__PURE__ */ createMessageType<ProgressUpdate>(
+    'launcher.helper.ProgressUpdate',
+    () => [
+      [1, 'fraction', 2],
+      [2, 'text', 9],
+    ],
+  )
+
+/**
+ * StatusUpdate reports a status text change without progress.
+ *
+ * @generated from message launcher.helper.StatusUpdate
+ */
+export interface StatusUpdate {
+  /**
+   * Text is the status message to display.
+   */
+  text?: string
+}
+
+export const StatusUpdate: MessageType<StatusUpdate> =
+  /* @__PURE__ */ createMessageType<StatusUpdate>(
+    'launcher.helper.StatusUpdate',
+    () => [[1, 'text', 9]],
+  )
+
+/**
+ * DismissCommand tells the helper to close its window and exit.
+ *
+ * @generated from message launcher.helper.DismissCommand
+ */
+export interface DismissCommand {}
+
+export const DismissCommand: MessageType<DismissCommand> =
+  /* @__PURE__ */ createMessageType<DismissCommand>(
+    'launcher.helper.DismissCommand',
+    () => [],
+  )
+
+/**
+ * ErrorReport displays an error to the user.
+ *
+ * @generated from message launcher.helper.ErrorReport
+ */
+export interface ErrorReport {
+  /**
+   * Message is the error description.
+   */
+  message?: string
+  /**
+   * Retryable indicates the user can retry the operation.
+   */
+  retryable?: boolean
+}
+
+export const ErrorReport: MessageType<ErrorReport> =
+  /* @__PURE__ */ createMessageType<ErrorReport>(
+    'launcher.helper.ErrorReport',
+    () => [
+      [1, 'message', 9],
+      [2, 'retryable', 8],
+    ],
+  )
+
+/**
+ * RetryRequest is sent when the user clicks retry after an error.
+ *
+ * @generated from message launcher.helper.RetryRequest
+ */
+export interface RetryRequest {}
+
+export const RetryRequest: MessageType<RetryRequest> =
+  /* @__PURE__ */ createMessageType<RetryRequest>(
+    'launcher.helper.RetryRequest',
+    () => [],
+  )
+
+/**
+ * CancelRequest is sent when the user cancels the operation.
+ *
+ * @generated from message launcher.helper.CancelRequest
+ */
+export interface CancelRequest {}
+
+export const CancelRequest: MessageType<CancelRequest> =
+  /* @__PURE__ */ createMessageType<CancelRequest>(
+    'launcher.helper.CancelRequest',
+    () => [],
+  )
+
+/**
+ * HelperReady is sent when the helper window is displayed and ready.
+ *
+ * @generated from message launcher.helper.HelperReady
+ */
+export interface HelperReady {}
+
+export const HelperReady: MessageType<HelperReady> =
+  /* @__PURE__ */ createMessageType<HelperReady>(
+    'launcher.helper.HelperReady',
+    () => [],
+  )

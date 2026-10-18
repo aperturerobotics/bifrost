@@ -5,7 +5,6 @@
 import { Config as Config$1 } from '../../../stream/srpc/server/server.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the configuration for the Signaling RPC server.
@@ -15,15 +14,12 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * Server configures the peer ids and protocol ids to listen on.
-   *
-   * @generated from field: stream.srpc.server.Config server = 1;
    */
   server?: Config$1
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'signaling.rpc.server.Config',
-  fields: [
-    { no: 1, name: 'server', kind: 'message', T: () => Config$1 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'signaling.rpc.server.Config',
+    () => [[1, 'server', 11, 0, Config$1.codec]],
+  )

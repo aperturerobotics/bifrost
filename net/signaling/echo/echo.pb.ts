@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the echo controller.
@@ -16,15 +14,11 @@ export interface Config {
   /**
    * SignalingId is the incoming signaling ID to handle and echo messages.
    * Cannot be empty.
-   *
-   * @generated from field: string signaling_id = 1;
    */
   signalingId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'signaling.echo.Config',
-  fields: [
-    { no: 1, name: 'signaling_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('signaling.echo.Config', () => [
+    [1, 'signaling_id', 9],
+  ])

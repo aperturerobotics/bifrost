@@ -3,12 +3,7 @@
 /* eslint-disable */
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * GetStateRequest is the request for GetState.
@@ -18,9 +13,9 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface GetStateRequest {}
 
 export const GetStateRequest: MessageType<GetStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<GetStateRequest>(
+  /* @__PURE__ */ createMessageType<GetStateRequest>(
     'resource.state.GetStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -31,26 +26,22 @@ export const GetStateRequest: MessageType<GetStateRequest> =
 export interface GetStateResponse {
   /**
    * StateJson is the current state as a JSON string.
-   *
-   * @generated from field: string state_json = 1;
    */
   stateJson?: string
   /**
    * Seqno is the sequence number of this state version.
-   *
-   * @generated from field: uint64 seqno = 2;
    */
   seqno?: bigint
 }
 
 export const GetStateResponse: MessageType<GetStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.state.GetStateResponse',
-    fields: [
-      { no: 1, name: 'state_json', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<GetStateResponse>(
+    'resource.state.GetStateResponse',
+    () => [
+      [1, 'state_json', 9],
+      [2, 'seqno', 4],
+    ],
+  )
 
 /**
  * SetStateRequest is the request for SetState.
@@ -60,19 +51,15 @@ export const GetStateResponse: MessageType<GetStateResponse> =
 export interface SetStateRequest {
   /**
    * StateJson is the new state value as a JSON string.
-   *
-   * @generated from field: string state_json = 1;
    */
   stateJson?: string
 }
 
 export const SetStateRequest: MessageType<SetStateRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.state.SetStateRequest',
-    fields: [
-      { no: 1, name: 'state_json', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetStateRequest>(
+    'resource.state.SetStateRequest',
+    () => [[1, 'state_json', 9]],
+  )
 
 /**
  * SetStateResponse is the response for SetState.
@@ -82,19 +69,15 @@ export const SetStateRequest: MessageType<SetStateRequest> =
 export interface SetStateResponse {
   /**
    * Seqno is the sequence number after the update.
-   *
-   * @generated from field: uint64 seqno = 1;
    */
   seqno?: bigint
 }
 
 export const SetStateResponse: MessageType<SetStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.state.SetStateResponse',
-    fields: [
-      { no: 1, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetStateResponse>(
+    'resource.state.SetStateResponse',
+    () => [[1, 'seqno', 4]],
+  )
 
 /**
  * WatchStateRequest is the request for WatchState.
@@ -104,9 +87,9 @@ export const SetStateResponse: MessageType<SetStateResponse> =
 export interface WatchStateRequest {}
 
 export const WatchStateRequest: MessageType<WatchStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchStateRequest>(
     'resource.state.WatchStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -117,23 +100,19 @@ export const WatchStateRequest: MessageType<WatchStateRequest> =
 export interface WatchStateResponse {
   /**
    * StateJson is the current state as a JSON string.
-   *
-   * @generated from field: string state_json = 1;
    */
   stateJson?: string
   /**
    * Seqno is the sequence number of this state version.
-   *
-   * @generated from field: uint64 seqno = 2;
    */
   seqno?: bigint
 }
 
 export const WatchStateResponse: MessageType<WatchStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.state.WatchStateResponse',
-    fields: [
-      { no: 1, name: 'state_json', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'seqno', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchStateResponse>(
+    'resource.state.WatchStateResponse',
+    () => [
+      [1, 'state_json', 9],
+      [2, 'seqno', 4],
+    ],
+  )

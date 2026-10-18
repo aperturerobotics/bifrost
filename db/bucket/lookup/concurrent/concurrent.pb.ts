@@ -6,8 +6,6 @@ import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import { Config as Config$1 } from '../../bucket.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * NotFoundBehavior controls what happens when a block was not found locally.
@@ -17,31 +15,29 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum NotFoundBehavior {
   /**
    * NotFoundBehavior_NONE does nothing when we don't find a block.
-   *
-   * @generated from enum value: NotFoundBehavior_NONE = 0;
    */
   NotFoundBehavior_NONE = 0,
 
   /**
    * NotFoundBehavior_LOOKUP_DIRECTIVE uses LookupBlockFromNetwork to lookup the block.
    * If the directive becomes idle returns not found.
-   *
-   * @generated from enum value: NotFoundBehavior_LOOKUP_DIRECTIVE = 1;
    */
   NotFoundBehavior_LOOKUP_DIRECTIVE = 1,
 
   /**
    * NotFoundBehavior_LOOKUP_DIRECTIVE_WAIT uses LookupBlockFromNetwork to lookup the block.
    * Continues to wait even if the directive becomes idle.
-   *
-   * @generated from enum value: NotFoundBehavior_LOOKUP_DIRECTIVE_WAIT = 2;
    */
   NotFoundBehavior_LOOKUP_DIRECTIVE_WAIT = 2,
 }
 
 export const NotFoundBehavior_Enum = /* @__PURE__ */ createEnumType(
   'lookup.concurrent.NotFoundBehavior',
-  NotFoundBehavior,
+  [
+    [0, 'NotFoundBehavior_NONE'],
+    [1, 'NotFoundBehavior_LOOKUP_DIRECTIVE'],
+    [2, 'NotFoundBehavior_LOOKUP_DIRECTIVE_WAIT'],
+  ],
 )
 
 /**
@@ -52,22 +48,21 @@ export const NotFoundBehavior_Enum = /* @__PURE__ */ createEnumType(
 export enum PutBlockBehavior {
   /**
    * PutBlockBehavior_NONE does nothing with the block.
-   *
-   * @generated from enum value: PutBlockBehavior_NONE = 0;
    */
   PutBlockBehavior_NONE = 0,
 
   /**
    * PutBlockBehavior_ALL writes the block to all block stores.
-   *
-   * @generated from enum value: PutBlockBehavior_ALL = 1;
    */
   PutBlockBehavior_ALL = 1,
 }
 
 export const PutBlockBehavior_Enum = /* @__PURE__ */ createEnumType(
   'lookup.concurrent.PutBlockBehavior',
-  PutBlockBehavior,
+  [
+    [0, 'PutBlockBehavior_NONE'],
+    [1, 'PutBlockBehavior_ALL'],
+  ],
 )
 
 /**
@@ -78,22 +73,21 @@ export const PutBlockBehavior_Enum = /* @__PURE__ */ createEnumType(
 export enum WritebackBehavior {
   /**
    * WritebackBehavior_NONE returns the block without writing it back.
-   *
-   * @generated from enum value: WritebackBehavior_NONE = 0;
    */
   WritebackBehavior_NONE = 0,
 
   /**
    * WritebackBehavior_ALL writes the block to all block stores.
-   *
-   * @generated from enum value: WritebackBehavior_ALL = 1;
    */
   WritebackBehavior_ALL = 1,
 }
 
 export const WritebackBehavior_Enum = /* @__PURE__ */ createEnumType(
   'lookup.concurrent.WritebackBehavior',
-  WritebackBehavior,
+  [
+    [0, 'WritebackBehavior_NONE'],
+    [1, 'WritebackBehavior_ALL'],
+  ],
 )
 
 /**
@@ -104,26 +98,18 @@ export const WritebackBehavior_Enum = /* @__PURE__ */ createEnumType(
 export interface Config {
   /**
    * BucketConf is the bucket configuration.
-   *
-   * @generated from field: bucket.Config bucket_conf = 1;
    */
   bucketConf?: Config$1
   /**
    * NotFoundBehavior controls the not-found behavior.
-   *
-   * @generated from field: lookup.concurrent.NotFoundBehavior not_found_behavior = 2;
    */
   notFoundBehavior?: NotFoundBehavior
   /**
    * PutBlockBehavior controls the PutBlock behavior.
-   *
-   * @generated from field: lookup.concurrent.PutBlockBehavior put_block_behavior = 3;
    */
   putBlockBehavior?: PutBlockBehavior
   /**
    * WritebackBehavior controls what to do after fetching a block.
-   *
-   * @generated from field: lookup.concurrent.WritebackBehavior writeback_behavior = 4;
    */
   writebackBehavior?: WritebackBehavior
   /**
@@ -132,14 +118,10 @@ export interface Config {
    * Note: this can be overridden by the lookup options.
    * If this timeout is exceeded, returns context.ErrDeadlineExceeded.
    * If unset, waits forever.
-   *
-   * @generated from field: string lookup_timeout_dur = 6;
    */
   lookupTimeoutDur?: string
   /**
    * Verbose enables verbose debug logging.
-   *
-   * @generated from field: bool verbose = 5;
    */
   verbose?: boolean
   /**
@@ -148,41 +130,17 @@ export interface Config {
    * according to the writeback behavior.
    *
    * The lookup will be performed before the NotFoundBehavior is evaluated.
-   *
-   * @generated from field: string fallback_block_store_id = 7;
    */
   fallbackBlockStoreId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'lookup.concurrent.Config',
-  fields: [
-    { no: 1, name: 'bucket_conf', kind: 'message', T: () => Config$1 },
-    {
-      no: 2,
-      name: 'not_found_behavior',
-      kind: 'enum',
-      T: NotFoundBehavior_Enum,
-    },
-    {
-      no: 3,
-      name: 'put_block_behavior',
-      kind: 'enum',
-      T: PutBlockBehavior_Enum,
-    },
-    {
-      no: 4,
-      name: 'writeback_behavior',
-      kind: 'enum',
-      T: WritebackBehavior_Enum,
-    },
-    { no: 6, name: 'lookup_timeout_dur', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'verbose', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 7,
-      name: 'fallback_block_store_id',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('lookup.concurrent.Config', () => [
+    [1, 'bucket_conf', 11, 0, Config$1.codec],
+    [2, 'not_found_behavior', 14, 0, NotFoundBehavior_Enum],
+    [3, 'put_block_behavior', 14, 0, PutBlockBehavior_Enum],
+    [4, 'writeback_behavior', 14, 0, WritebackBehavior_Enum],
+    [5, 'verbose', 8],
+    [6, 'lookup_timeout_dur', 9],
+    [7, 'fallback_block_store_id', 9],
+  ])

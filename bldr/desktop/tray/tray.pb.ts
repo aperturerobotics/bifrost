@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * DesktopTrayEntryKind describes native menu mapping semantics.
@@ -19,51 +14,45 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum DesktopTrayEntryKind {
   /**
    * DESKTOP_TRAY_ENTRY_KIND_UNSPECIFIED leaves row semantics unset.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ENTRY_KIND_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_TRAY_ENTRY_KIND_SECTION renders a disabled section heading.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ENTRY_KIND_SECTION = 1;
    */
   SECTION = 1,
 
   /**
    * DESKTOP_TRAY_ENTRY_KIND_SEPARATOR renders a native separator.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ENTRY_KIND_SEPARATOR = 2;
    */
   SEPARATOR = 2,
 
   /**
    * DESKTOP_TRAY_ENTRY_KIND_STATUS renders a disabled status row.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ENTRY_KIND_STATUS = 3;
    */
   STATUS = 3,
 
   /**
    * DESKTOP_TRAY_ENTRY_KIND_ACTION renders an invokable action row.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ENTRY_KIND_ACTION = 4;
    */
   ACTION = 4,
 
   /**
    * DESKTOP_TRAY_ENTRY_KIND_SUBMENU renders a submenu container.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ENTRY_KIND_SUBMENU = 5;
    */
   SUBMENU = 5,
 }
 
 export const DesktopTrayEntryKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.desktop.tray.DesktopTrayEntryKind',
-  DesktopTrayEntryKind,
-  'DESKTOP_TRAY_ENTRY_KIND_',
+  [
+    [0, 'DESKTOP_TRAY_ENTRY_KIND_UNSPECIFIED'],
+    [1, 'DESKTOP_TRAY_ENTRY_KIND_SECTION'],
+    [2, 'DESKTOP_TRAY_ENTRY_KIND_SEPARATOR'],
+    [3, 'DESKTOP_TRAY_ENTRY_KIND_STATUS'],
+    [4, 'DESKTOP_TRAY_ENTRY_KIND_ACTION'],
+    [5, 'DESKTOP_TRAY_ENTRY_KIND_SUBMENU'],
+  ],
 )
 
 /**
@@ -74,58 +63,51 @@ export const DesktopTrayEntryKind_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopTrayActionKind {
   /**
    * DESKTOP_TRAY_ACTION_KIND_UNSPECIFIED leaves action semantics unset.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ACTION_KIND_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_TRAY_ACTION_KIND_OPEN_ROUTE opens or focuses an app route.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ACTION_KIND_OPEN_ROUTE = 1;
    */
   OPEN_ROUTE = 1,
 
   /**
    * DESKTOP_TRAY_ACTION_KIND_NEW_WINDOW opens an app route in a new window.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ACTION_KIND_NEW_WINDOW = 2;
    */
   NEW_WINDOW = 2,
 
   /**
    * DESKTOP_TRAY_ACTION_KIND_COPY_TEXT copies text to the native clipboard.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ACTION_KIND_COPY_TEXT = 3;
    */
   COPY_TEXT = 3,
 
   /**
    * DESKTOP_TRAY_ACTION_KIND_REVEAL_PATH reveals a local filesystem path.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ACTION_KIND_REVEAL_PATH = 4;
    */
   REVEAL_PATH = 4,
 
   /**
    * DESKTOP_TRAY_ACTION_KIND_QUIT requests explicit runtime quit.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ACTION_KIND_QUIT = 5;
    */
   QUIT = 5,
 
   /**
    * DESKTOP_TRAY_ACTION_KIND_ATTACHED_HANDLER invokes the attached action resource.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ACTION_KIND_ATTACHED_HANDLER = 6;
    */
   ATTACHED_HANDLER = 6,
 }
 
 export const DesktopTrayActionKind_Enum = /* @__PURE__ */ createEnumType(
   'bldr.desktop.tray.DesktopTrayActionKind',
-  DesktopTrayActionKind,
-  'DESKTOP_TRAY_ACTION_KIND_',
+  [
+    [0, 'DESKTOP_TRAY_ACTION_KIND_UNSPECIFIED'],
+    [1, 'DESKTOP_TRAY_ACTION_KIND_OPEN_ROUTE'],
+    [2, 'DESKTOP_TRAY_ACTION_KIND_NEW_WINDOW'],
+    [3, 'DESKTOP_TRAY_ACTION_KIND_COPY_TEXT'],
+    [4, 'DESKTOP_TRAY_ACTION_KIND_REVEAL_PATH'],
+    [5, 'DESKTOP_TRAY_ACTION_KIND_QUIT'],
+    [6, 'DESKTOP_TRAY_ACTION_KIND_ATTACHED_HANDLER'],
+  ],
 )
 
 /**
@@ -136,51 +118,45 @@ export const DesktopTrayActionKind_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopTrayIconState {
   /**
    * DESKTOP_TRAY_ICON_STATE_UNSPECIFIED leaves icon status unset.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ICON_STATE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_TRAY_ICON_STATE_NORMAL indicates steady healthy state.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ICON_STATE_NORMAL = 1;
    */
   NORMAL = 1,
 
   /**
    * DESKTOP_TRAY_ICON_STATE_ACTIVE indicates useful background activity.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ICON_STATE_ACTIVE = 2;
    */
   ACTIVE = 2,
 
   /**
    * DESKTOP_TRAY_ICON_STATE_ATTENTION indicates user action is needed.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ICON_STATE_ATTENTION = 3;
    */
   ATTENTION = 3,
 
   /**
    * DESKTOP_TRAY_ICON_STATE_DISCONNECTED indicates runtime disconnection.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ICON_STATE_DISCONNECTED = 4;
    */
   DISCONNECTED = 4,
 
   /**
    * DESKTOP_TRAY_ICON_STATE_QUITTING indicates explicit shutdown is running.
-   *
-   * @generated from enum value: DESKTOP_TRAY_ICON_STATE_QUITTING = 5;
    */
   QUITTING = 5,
 }
 
 export const DesktopTrayIconState_Enum = /* @__PURE__ */ createEnumType(
   'bldr.desktop.tray.DesktopTrayIconState',
-  DesktopTrayIconState,
-  'DESKTOP_TRAY_ICON_STATE_',
+  [
+    [0, 'DESKTOP_TRAY_ICON_STATE_UNSPECIFIED'],
+    [1, 'DESKTOP_TRAY_ICON_STATE_NORMAL'],
+    [2, 'DESKTOP_TRAY_ICON_STATE_ACTIVE'],
+    [3, 'DESKTOP_TRAY_ICON_STATE_ATTENTION'],
+    [4, 'DESKTOP_TRAY_ICON_STATE_DISCONNECTED'],
+    [5, 'DESKTOP_TRAY_ICON_STATE_QUITTING'],
+  ],
 )
 
 /**
@@ -191,198 +167,34 @@ export const DesktopTrayIconState_Enum = /* @__PURE__ */ createEnumType(
 export enum DesktopTraySeverity {
   /**
    * DESKTOP_TRAY_SEVERITY_UNSPECIFIED leaves severity unset.
-   *
-   * @generated from enum value: DESKTOP_TRAY_SEVERITY_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
    * DESKTOP_TRAY_SEVERITY_INFO marks informational status.
-   *
-   * @generated from enum value: DESKTOP_TRAY_SEVERITY_INFO = 1;
    */
   INFO = 1,
 
   /**
    * DESKTOP_TRAY_SEVERITY_WARNING marks a recoverable warning.
-   *
-   * @generated from enum value: DESKTOP_TRAY_SEVERITY_WARNING = 2;
    */
   WARNING = 2,
 
   /**
    * DESKTOP_TRAY_SEVERITY_CRITICAL marks a blocking issue.
-   *
-   * @generated from enum value: DESKTOP_TRAY_SEVERITY_CRITICAL = 3;
    */
   CRITICAL = 3,
 }
 
 export const DesktopTraySeverity_Enum = /* @__PURE__ */ createEnumType(
   'bldr.desktop.tray.DesktopTraySeverity',
-  DesktopTraySeverity,
-  'DESKTOP_TRAY_SEVERITY_',
+  [
+    [0, 'DESKTOP_TRAY_SEVERITY_UNSPECIFIED'],
+    [1, 'DESKTOP_TRAY_SEVERITY_INFO'],
+    [2, 'DESKTOP_TRAY_SEVERITY_WARNING'],
+    [3, 'DESKTOP_TRAY_SEVERITY_CRITICAL'],
+  ],
 )
-
-/**
- * DesktopTrayAction describes a selectable tray action.
- *
- * @generated from message bldr.desktop.tray.DesktopTrayAction
- */
-export interface DesktopTrayAction {
-  /**
-   * Kind describes the platform-neutral action category.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTrayActionKind kind = 1;
-   */
-  kind?: DesktopTrayActionKind
-  /**
-   * Route is the app route used by route-opening actions.
-   *
-   * @generated from field: string route = 2;
-   */
-  route?: string
-  /**
-   * Value is action-specific text such as copy text or a filesystem path.
-   *
-   * @generated from field: string value = 3;
-   */
-  value?: string
-}
-
-export const DesktopTrayAction: MessageType<DesktopTrayAction> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.DesktopTrayAction',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: DesktopTrayActionKind_Enum },
-      { no: 2, name: 'route', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'value', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * DesktopTrayEntry describes one platform-neutral tray row.
- *
- * @generated from message bldr.desktop.tray.DesktopTrayEntry
- */
-export interface DesktopTrayEntry {
-  /**
-   * Id identifies the entry within the tray tree.
-   *
-   * @generated from field: string id = 1;
-   */
-  id?: string
-  /**
-   * Kind describes how the entry maps to a native menu item.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTrayEntryKind kind = 2;
-   */
-  kind?: DesktopTrayEntryKind
-  /**
-   * Path places the entry under nested submenu labels.
-   *
-   * @generated from field: repeated string path = 3;
-   */
-  path?: string[]
-  /**
-   * Group orders related entries and creates section breaks between groups.
-   *
-   * @generated from field: string group = 4;
-   */
-  group?: string
-  /**
-   * Order sorts entries within a path and group.
-   *
-   * @generated from field: int32 order = 5;
-   */
-  order?: number
-  /**
-   * Label is primary display text.
-   *
-   * @generated from field: string label = 6;
-   */
-  label?: string
-  /**
-   * Detail is secondary display text.
-   *
-   * @generated from field: string detail = 7;
-   */
-  detail?: string
-  /**
-   * StatusText is compact status text for the row.
-   *
-   * @generated from field: string status_text = 8;
-   */
-  statusText?: string
-  /**
-   * IconName is a platform-neutral icon hint.
-   *
-   * @generated from field: string icon_name = 9;
-   */
-  iconName?: string
-  /**
-   * IconState is a platform-neutral status hint.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTrayIconState icon_state = 10;
-   */
-  iconState?: DesktopTrayIconState
-  /**
-   * Severity describes attention urgency for status and action rows.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTraySeverity severity = 11;
-   */
-  severity?: DesktopTraySeverity
-  /**
-   * Active is set when the row describes active foreground work.
-   *
-   * @generated from field: bool active = 12;
-   */
-  active?: boolean
-  /**
-   * Enabled indicates whether an action row can run.
-   *
-   * @generated from field: bool enabled = 13;
-   */
-  enabled?: boolean
-  /**
-   * Action describes what happens when an action row is selected.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTrayAction action = 14;
-   */
-  action?: DesktopTrayAction
-}
-
-export const DesktopTrayEntry: MessageType<DesktopTrayEntry> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.DesktopTrayEntry',
-    fields: [
-      { no: 1, name: 'id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'kind', kind: 'enum', T: DesktopTrayEntryKind_Enum },
-      {
-        no: 3,
-        name: 'path',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 4, name: 'group', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'order', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 6, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-      { no: 7, name: 'detail', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'status_text', kind: 'scalar', T: ScalarType.STRING },
-      { no: 9, name: 'icon_name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 10,
-        name: 'icon_state',
-        kind: 'enum',
-        T: DesktopTrayIconState_Enum,
-      },
-      { no: 11, name: 'severity', kind: 'enum', T: DesktopTraySeverity_Enum },
-      { no: 12, name: 'active', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 13, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 14, name: 'action', kind: 'message', T: DesktopTrayAction },
-    ] satisfies readonly PartialFieldInfo[],
-  })
 
 /**
  * DesktopTrayState is the full tray tree snapshot.
@@ -392,39 +204,142 @@ export const DesktopTrayEntry: MessageType<DesktopTrayEntry> =
 export interface DesktopTrayState {
   /**
    * Entries contains the registered tray entries.
-   *
-   * @generated from field: repeated bldr.desktop.tray.DesktopTrayEntry entries = 1;
    */
   entries?: DesktopTrayEntry[]
   /**
    * IconState describes the collapsed platform icon status.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTrayIconState icon_state = 2;
    */
   iconState?: DesktopTrayIconState
   /**
    * StatusText is short platform icon tooltip text.
-   *
-   * @generated from field: string status_text = 3;
    */
   statusText?: string
 }
 
 export const DesktopTrayState: MessageType<DesktopTrayState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.DesktopTrayState',
-    fields: [
-      {
-        no: 1,
-        name: 'entries',
-        kind: 'message',
-        T: DesktopTrayEntry,
-        repeated: true,
-      },
-      { no: 2, name: 'icon_state', kind: 'enum', T: DesktopTrayIconState_Enum },
-      { no: 3, name: 'status_text', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DesktopTrayState>(
+    'bldr.desktop.tray.DesktopTrayState',
+    () => [
+      [1, 'entries', 11, 1, DesktopTrayEntry.codec],
+      [2, 'icon_state', 14, 0, DesktopTrayIconState_Enum],
+      [3, 'status_text', 9],
+    ],
+  )
+
+/**
+ * DesktopTrayEntry describes one platform-neutral tray row.
+ *
+ * @generated from message bldr.desktop.tray.DesktopTrayEntry
+ */
+export interface DesktopTrayEntry {
+  /**
+   * Id identifies the entry within the tray tree.
+   */
+  id?: string
+  /**
+   * Kind describes how the entry maps to a native menu item.
+   */
+  kind?: DesktopTrayEntryKind
+  /**
+   * Path places the entry under nested submenu labels.
+   */
+  path?: string[]
+  /**
+   * Group orders related entries and creates section breaks between groups.
+   */
+  group?: string
+  /**
+   * Order sorts entries within a path and group.
+   */
+  order?: number
+  /**
+   * Label is primary display text.
+   */
+  label?: string
+  /**
+   * Detail is secondary display text.
+   */
+  detail?: string
+  /**
+   * StatusText is compact status text for the row.
+   */
+  statusText?: string
+  /**
+   * IconName is a platform-neutral icon hint.
+   */
+  iconName?: string
+  /**
+   * IconState is a platform-neutral status hint.
+   */
+  iconState?: DesktopTrayIconState
+  /**
+   * Severity describes attention urgency for status and action rows.
+   */
+  severity?: DesktopTraySeverity
+  /**
+   * Active is set when the row describes active foreground work.
+   */
+  active?: boolean
+  /**
+   * Enabled indicates whether an action row can run.
+   */
+  enabled?: boolean
+  /**
+   * Action describes what happens when an action row is selected.
+   */
+  action?: DesktopTrayAction
+}
+
+export const DesktopTrayEntry: MessageType<DesktopTrayEntry> =
+  /* @__PURE__ */ createMessageType<DesktopTrayEntry>(
+    'bldr.desktop.tray.DesktopTrayEntry',
+    () => [
+      [1, 'id', 9],
+      [2, 'kind', 14, 0, DesktopTrayEntryKind_Enum],
+      [3, 'path', 9, 1],
+      [4, 'group', 9],
+      [5, 'order', 5],
+      [6, 'label', 9],
+      [7, 'detail', 9],
+      [8, 'status_text', 9],
+      [9, 'icon_name', 9],
+      [10, 'icon_state', 14, 0, DesktopTrayIconState_Enum],
+      [11, 'severity', 14, 0, DesktopTraySeverity_Enum],
+      [12, 'active', 8],
+      [13, 'enabled', 8],
+      [14, 'action', 11, 0, DesktopTrayAction.codec],
+    ],
+  )
+
+/**
+ * DesktopTrayAction describes a selectable tray action.
+ *
+ * @generated from message bldr.desktop.tray.DesktopTrayAction
+ */
+export interface DesktopTrayAction {
+  /**
+   * Kind describes the platform-neutral action category.
+   */
+  kind?: DesktopTrayActionKind
+  /**
+   * Route is the app route used by route-opening actions.
+   */
+  route?: string
+  /**
+   * Value is action-specific text such as copy text or a filesystem path.
+   */
+  value?: string
+}
+
+export const DesktopTrayAction: MessageType<DesktopTrayAction> =
+  /* @__PURE__ */ createMessageType<DesktopTrayAction>(
+    'bldr.desktop.tray.DesktopTrayAction',
+    () => [
+      [1, 'kind', 14, 0, DesktopTrayActionKind_Enum],
+      [2, 'route', 9],
+      [3, 'value', 9],
+    ],
+  )
 
 /**
  * RegisterDesktopTrayEntryRequest is the request for RegisterDesktopTrayEntry.
@@ -434,31 +349,22 @@ export const DesktopTrayState: MessageType<DesktopTrayState> =
 export interface RegisterDesktopTrayEntryRequest {
   /**
    * Entry is the tray entry to register.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTrayEntry entry = 1;
    */
   entry?: DesktopTrayEntry
   /**
    * AttachedActionResourceId is an optional attached DesktopTrayActionHandlerService resource.
-   *
-   * @generated from field: uint32 attached_action_resource_id = 2;
    */
   attachedActionResourceId?: number
 }
 
 export const RegisterDesktopTrayEntryRequest: MessageType<RegisterDesktopTrayEntryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.RegisterDesktopTrayEntryRequest',
-    fields: [
-      { no: 1, name: 'entry', kind: 'message', T: DesktopTrayEntry },
-      {
-        no: 2,
-        name: 'attached_action_resource_id',
-        kind: 'scalar',
-        T: ScalarType.UINT32,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterDesktopTrayEntryRequest>(
+    'bldr.desktop.tray.RegisterDesktopTrayEntryRequest',
+    () => [
+      [1, 'entry', 11, 0, DesktopTrayEntry.codec],
+      [2, 'attached_action_resource_id', 13],
+    ],
+  )
 
 /**
  * RegisterDesktopTrayEntryResponse is the response for RegisterDesktopTrayEntry.
@@ -468,19 +374,15 @@ export const RegisterDesktopTrayEntryRequest: MessageType<RegisterDesktopTrayEnt
 export interface RegisterDesktopTrayEntryResponse {
   /**
    * ResourceId is the registered DesktopTrayEntryResourceService resource.
-   *
-   * @generated from field: uint32 resource_id = 1;
    */
   resourceId?: number
 }
 
 export const RegisterDesktopTrayEntryResponse: MessageType<RegisterDesktopTrayEntryResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.RegisterDesktopTrayEntryResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<RegisterDesktopTrayEntryResponse>(
+    'bldr.desktop.tray.RegisterDesktopTrayEntryResponse',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * WatchDesktopTrayRequest is the request for WatchDesktopTray.
@@ -490,9 +392,9 @@ export const RegisterDesktopTrayEntryResponse: MessageType<RegisterDesktopTrayEn
 export interface WatchDesktopTrayRequest {}
 
 export const WatchDesktopTrayRequest: MessageType<WatchDesktopTrayRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchDesktopTrayRequest>(
+  /* @__PURE__ */ createMessageType<WatchDesktopTrayRequest>(
     'bldr.desktop.tray.WatchDesktopTrayRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -503,19 +405,15 @@ export const WatchDesktopTrayRequest: MessageType<WatchDesktopTrayRequest> =
 export interface WatchDesktopTrayResponse {
   /**
    * State is the current tray tree snapshot.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTrayState state = 1;
    */
   state?: DesktopTrayState
 }
 
 export const WatchDesktopTrayResponse: MessageType<WatchDesktopTrayResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.WatchDesktopTrayResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: DesktopTrayState },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchDesktopTrayResponse>(
+    'bldr.desktop.tray.WatchDesktopTrayResponse',
+    () => [[1, 'state', 11, 0, DesktopTrayState.codec]],
+  )
 
 /**
  * InvokeDesktopTrayEntryRequest is the request for InvokeDesktopTrayEntry.
@@ -525,19 +423,15 @@ export const WatchDesktopTrayResponse: MessageType<WatchDesktopTrayResponse> =
 export interface InvokeDesktopTrayEntryRequest {
   /**
    * EntryId is the entry id to invoke.
-   *
-   * @generated from field: string entry_id = 1;
    */
   entryId?: string
 }
 
 export const InvokeDesktopTrayEntryRequest: MessageType<InvokeDesktopTrayEntryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.InvokeDesktopTrayEntryRequest',
-    fields: [
-      { no: 1, name: 'entry_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<InvokeDesktopTrayEntryRequest>(
+    'bldr.desktop.tray.InvokeDesktopTrayEntryRequest',
+    () => [[1, 'entry_id', 9]],
+  )
 
 /**
  * InvokeDesktopTrayEntryResponse is the response for InvokeDesktopTrayEntry.
@@ -547,9 +441,9 @@ export const InvokeDesktopTrayEntryRequest: MessageType<InvokeDesktopTrayEntryRe
 export interface InvokeDesktopTrayEntryResponse {}
 
 export const InvokeDesktopTrayEntryResponse: MessageType<InvokeDesktopTrayEntryResponse> =
-  /* @__PURE__ */ createEmptyMessageType<InvokeDesktopTrayEntryResponse>(
+  /* @__PURE__ */ createMessageType<InvokeDesktopTrayEntryResponse>(
     'bldr.desktop.tray.InvokeDesktopTrayEntryResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -560,19 +454,15 @@ export const InvokeDesktopTrayEntryResponse: MessageType<InvokeDesktopTrayEntryR
 export interface SetDesktopTrayEntryRequest {
   /**
    * Entry is the replacement entry state.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTrayEntry entry = 1;
    */
   entry?: DesktopTrayEntry
 }
 
 export const SetDesktopTrayEntryRequest: MessageType<SetDesktopTrayEntryRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.SetDesktopTrayEntryRequest',
-    fields: [
-      { no: 1, name: 'entry', kind: 'message', T: DesktopTrayEntry },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetDesktopTrayEntryRequest>(
+    'bldr.desktop.tray.SetDesktopTrayEntryRequest',
+    () => [[1, 'entry', 11, 0, DesktopTrayEntry.codec]],
+  )
 
 /**
  * SetDesktopTrayEntryResponse is the response for SetDesktopTrayEntry.
@@ -582,9 +472,9 @@ export const SetDesktopTrayEntryRequest: MessageType<SetDesktopTrayEntryRequest>
 export interface SetDesktopTrayEntryResponse {}
 
 export const SetDesktopTrayEntryResponse: MessageType<SetDesktopTrayEntryResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetDesktopTrayEntryResponse>(
+  /* @__PURE__ */ createMessageType<SetDesktopTrayEntryResponse>(
     'bldr.desktop.tray.SetDesktopTrayEntryResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -595,19 +485,15 @@ export const SetDesktopTrayEntryResponse: MessageType<SetDesktopTrayEntryRespons
 export interface SetDesktopTrayEntryActiveRequest {
   /**
    * Active is the replacement active flag.
-   *
-   * @generated from field: bool active = 1;
    */
   active?: boolean
 }
 
 export const SetDesktopTrayEntryActiveRequest: MessageType<SetDesktopTrayEntryActiveRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.SetDesktopTrayEntryActiveRequest',
-    fields: [
-      { no: 1, name: 'active', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetDesktopTrayEntryActiveRequest>(
+    'bldr.desktop.tray.SetDesktopTrayEntryActiveRequest',
+    () => [[1, 'active', 8]],
+  )
 
 /**
  * SetDesktopTrayEntryActiveResponse is the response for SetDesktopTrayEntryActive.
@@ -617,9 +503,9 @@ export const SetDesktopTrayEntryActiveRequest: MessageType<SetDesktopTrayEntryAc
 export interface SetDesktopTrayEntryActiveResponse {}
 
 export const SetDesktopTrayEntryActiveResponse: MessageType<SetDesktopTrayEntryActiveResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetDesktopTrayEntryActiveResponse>(
+  /* @__PURE__ */ createMessageType<SetDesktopTrayEntryActiveResponse>(
     'bldr.desktop.tray.SetDesktopTrayEntryActiveResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -630,19 +516,15 @@ export const SetDesktopTrayEntryActiveResponse: MessageType<SetDesktopTrayEntryA
 export interface SetDesktopTrayEntryEnabledRequest {
   /**
    * Enabled is the replacement enabled flag.
-   *
-   * @generated from field: bool enabled = 1;
    */
   enabled?: boolean
 }
 
 export const SetDesktopTrayEntryEnabledRequest: MessageType<SetDesktopTrayEntryEnabledRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.SetDesktopTrayEntryEnabledRequest',
-    fields: [
-      { no: 1, name: 'enabled', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SetDesktopTrayEntryEnabledRequest>(
+    'bldr.desktop.tray.SetDesktopTrayEntryEnabledRequest',
+    () => [[1, 'enabled', 8]],
+  )
 
 /**
  * SetDesktopTrayEntryEnabledResponse is the response for SetDesktopTrayEntryEnabled.
@@ -652,9 +534,9 @@ export const SetDesktopTrayEntryEnabledRequest: MessageType<SetDesktopTrayEntryE
 export interface SetDesktopTrayEntryEnabledResponse {}
 
 export const SetDesktopTrayEntryEnabledResponse: MessageType<SetDesktopTrayEntryEnabledResponse> =
-  /* @__PURE__ */ createEmptyMessageType<SetDesktopTrayEntryEnabledResponse>(
+  /* @__PURE__ */ createMessageType<SetDesktopTrayEntryEnabledResponse>(
     'bldr.desktop.tray.SetDesktopTrayEntryEnabledResponse',
-    true,
+    () => [],
   )
 
 /**
@@ -665,26 +547,22 @@ export const SetDesktopTrayEntryEnabledResponse: MessageType<SetDesktopTrayEntry
 export interface HandleDesktopTrayActionRequest {
   /**
    * EntryId identifies the invoked tray entry.
-   *
-   * @generated from field: string entry_id = 1;
    */
   entryId?: string
   /**
    * Action is the action payload from the registered entry.
-   *
-   * @generated from field: bldr.desktop.tray.DesktopTrayAction action = 2;
    */
   action?: DesktopTrayAction
 }
 
 export const HandleDesktopTrayActionRequest: MessageType<HandleDesktopTrayActionRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'bldr.desktop.tray.HandleDesktopTrayActionRequest',
-    fields: [
-      { no: 1, name: 'entry_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'action', kind: 'message', T: DesktopTrayAction },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<HandleDesktopTrayActionRequest>(
+    'bldr.desktop.tray.HandleDesktopTrayActionRequest',
+    () => [
+      [1, 'entry_id', 9],
+      [2, 'action', 11, 0, DesktopTrayAction.codec],
+    ],
+  )
 
 /**
  * HandleDesktopTrayActionResponse is the response for HandleDesktopTrayAction.
@@ -694,7 +572,7 @@ export const HandleDesktopTrayActionRequest: MessageType<HandleDesktopTrayAction
 export interface HandleDesktopTrayActionResponse {}
 
 export const HandleDesktopTrayActionResponse: MessageType<HandleDesktopTrayActionResponse> =
-  /* @__PURE__ */ createEmptyMessageType<HandleDesktopTrayActionResponse>(
+  /* @__PURE__ */ createMessageType<HandleDesktopTrayActionResponse>(
     'bldr.desktop.tray.HandleDesktopTrayActionResponse',
-    true,
+    () => [],
   )

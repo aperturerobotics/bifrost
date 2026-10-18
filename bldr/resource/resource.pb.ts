@@ -4,12 +4,7 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * ResourceFailureCode controls lifecycle recovery independently of diagnostics.
@@ -17,41 +12,24 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
  * @generated from enum resource.ResourceFailureCode
  */
 export enum ResourceFailureCode {
-  /**
-   * @generated from enum value: RESOURCE_FAILURE_CODE_UNKNOWN = 0;
-   */
   UNKNOWN = 0,
-
-  /**
-   * @generated from enum value: RESOURCE_FAILURE_CODE_RESOURCE_NOT_FOUND = 1;
-   */
   RESOURCE_NOT_FOUND = 1,
-
-  /**
-   * @generated from enum value: RESOURCE_FAILURE_CODE_CLIENT_RELEASED = 2;
-   */
   CLIENT_RELEASED = 2,
-
-  /**
-   * @generated from enum value: RESOURCE_FAILURE_CODE_INVALID_RESOURCE_ID = 3;
-   */
   INVALID_RESOURCE_ID = 3,
-
-  /**
-   * @generated from enum value: RESOURCE_FAILURE_CODE_INVALID_CLIENT_ID = 4;
-   */
   INVALID_CLIENT_ID = 4,
-
-  /**
-   * @generated from enum value: RESOURCE_FAILURE_CODE_RESOURCE_OR_CLIENT_RELEASED = 5;
-   */
   RESOURCE_OR_CLIENT_RELEASED = 5,
 }
 
 export const ResourceFailureCode_Enum = /* @__PURE__ */ createEnumType(
   'resource.ResourceFailureCode',
-  ResourceFailureCode,
-  'RESOURCE_FAILURE_CODE_',
+  [
+    [0, 'RESOURCE_FAILURE_CODE_UNKNOWN'],
+    [1, 'RESOURCE_FAILURE_CODE_RESOURCE_NOT_FOUND'],
+    [2, 'RESOURCE_FAILURE_CODE_CLIENT_RELEASED'],
+    [3, 'RESOURCE_FAILURE_CODE_INVALID_RESOURCE_ID'],
+    [4, 'RESOURCE_FAILURE_CODE_INVALID_CLIENT_ID'],
+    [5, 'RESOURCE_FAILURE_CODE_RESOURCE_OR_CLIENT_RELEASED'],
+  ],
 )
 
 /**
@@ -60,78 +38,17 @@ export const ResourceFailureCode_Enum = /* @__PURE__ */ createEnumType(
  * @generated from message resource.ResourceFailure
  */
 export interface ResourceFailure {
-  /**
-   * @generated from field: resource.ResourceFailureCode code = 1;
-   */
   code?: ResourceFailureCode
-  /**
-   * @generated from field: string message = 2;
-   */
   message?: string
 }
 
 export const ResourceFailure: MessageType<ResourceFailure> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceFailure',
-    fields: [
-      { no: 1, name: 'code', kind: 'enum', T: ResourceFailureCode_Enum },
-      { no: 2, name: 'message', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceRpcInit selects a resource opened by ResourceClient or ResourceAttach.
- *
- * @generated from message resource.ResourceRpcInit
- */
-export interface ResourceRpcInit {
-  /**
-   * @generated from field: uint32 resource_id = 1;
-   */
-  resourceId?: number
-}
-
-export const ResourceRpcInit: MessageType<ResourceRpcInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceRpcInit',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceRpcAck accepts the route when failure is absent.
- *
- * @generated from message resource.ResourceRpcAck
- */
-export interface ResourceRpcAck {
-  /**
-   * @generated from field: resource.ResourceFailure failure = 1;
-   */
-  failure?: ResourceFailure
-}
-
-export const ResourceRpcAck: MessageType<ResourceRpcAck> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceRpcAck',
-    fields: [
-      { no: 1, name: 'failure', kind: 'message', T: ResourceFailure },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceRpcAbandon reports that a unary caller failed to receive its result.
- * The server releases only children still pending adoption, even after the
- * invoked handler has returned. Closing a route alone does not abandon it.
- *
- * @generated from message resource.ResourceRpcAbandon
- */
-export interface ResourceRpcAbandon {}
-
-export const ResourceRpcAbandon: MessageType<ResourceRpcAbandon> =
-  /* @__PURE__ */ createEmptyMessageType<ResourceRpcAbandon>(
-    'resource.ResourceRpcAbandon',
-    true,
+  /* @__PURE__ */ createMessageType<ResourceFailure>(
+    'resource.ResourceFailure',
+    () => [
+      [1, 'code', 14, 0, ResourceFailureCode_Enum],
+      [2, 'message', 9],
+    ],
   )
 
 /**
@@ -144,133 +61,68 @@ export interface ResourceRpcPacket {
    * @generated from oneof resource.ResourceRpcPacket.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Init selects the resource before any data is sent.
-         *
-         * @generated from field: resource.ResourceRpcInit init = 1;
-         */
-        value: ResourceRpcInit
-        case: 'init'
-      }
-    | {
-        /**
-         * Ack reports whether the server accepted the route.
-         *
-         * @generated from field: resource.ResourceRpcAck ack = 2;
-         */
-        value: ResourceRpcAck
-        case: 'ack'
-      }
-    | {
-        /**
-         * Data carries an SRPC packet after the route acknowledgement.
-         *
-         * @generated from field: bytes data = 3;
-         */
-        value: Uint8Array
-        case: 'data'
-      }
-    | {
-        /**
-         * Abandon releases this route's published children that remain unadopted.
-         *
-         * @generated from field: resource.ResourceRpcAbandon abandon = 4;
-         */
-        value: ResourceRpcAbandon
-        case: 'abandon'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: ResourceRpcInit; case: 'init' }
+    | { value: ResourceRpcAck; case: 'ack' }
+    | { value: Uint8Array; case: 'data' }
+    | { value: ResourceRpcAbandon; case: 'abandon' }
 }
 
 export const ResourceRpcPacket: MessageType<ResourceRpcPacket> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceRpcPacket',
-    fields: [
-      {
-        no: 1,
-        name: 'init',
-        kind: 'message',
-        T: ResourceRpcInit,
-        oneof: 'body',
-      },
-      { no: 2, name: 'ack', kind: 'message', T: ResourceRpcAck, oneof: 'body' },
-      {
-        no: 3,
-        name: 'data',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'abandon',
-        kind: 'message',
-        T: ResourceRpcAbandon,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceClientInitRequest is sent first on every ResourceClient stream.
- *
- * @generated from message resource.ResourceClientInitRequest
- */
-export interface ResourceClientInitRequest {}
-
-export const ResourceClientInitRequest: MessageType<ResourceClientInitRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ResourceClientInitRequest>(
-    'resource.ResourceClientInitRequest',
-    true,
+  /* @__PURE__ */ createMessageType<ResourceRpcPacket>(
+    'resource.ResourceRpcPacket',
+    () => [
+      [1, 'init', 11, 0, ResourceRpcInit.codec, 'body'],
+      [2, 'ack', 11, 0, ResourceRpcAck.codec, 'body'],
+      [3, 'data', 12, 0, 0, 'body'],
+      [4, 'abandon', 11, 0, ResourceRpcAbandon.codec, 'body'],
+    ],
   )
 
 /**
- * ResourceClientAdopt adopts a pending resource.
+ * ResourceRpcInit selects a resource opened by ResourceClient or ResourceAttach.
  *
- * @generated from message resource.ResourceClientAdopt
+ * @generated from message resource.ResourceRpcInit
  */
-export interface ResourceClientAdopt {
-  /**
-   * ResourceId identifies the pending resource to adopt.
-   *
-   * @generated from field: uint32 resource_id = 1;
-   */
+export interface ResourceRpcInit {
   resourceId?: number
 }
 
-export const ResourceClientAdopt: MessageType<ResourceClientAdopt> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceClientAdopt',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const ResourceRpcInit: MessageType<ResourceRpcInit> =
+  /* @__PURE__ */ createMessageType<ResourceRpcInit>(
+    'resource.ResourceRpcInit',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
- * ResourceClientRelease releases a resource and its pending descendants.
+ * ResourceRpcAck accepts the route when failure is absent.
  *
- * @generated from message resource.ResourceClientRelease
+ * @generated from message resource.ResourceRpcAck
  */
-export interface ResourceClientRelease {
-  /**
-   * ResourceId identifies the resource to release.
-   *
-   * @generated from field: uint32 resource_id = 1;
-   */
-  resourceId?: number
+export interface ResourceRpcAck {
+  failure?: ResourceFailure
 }
 
-export const ResourceClientRelease: MessageType<ResourceClientRelease> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceClientRelease',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const ResourceRpcAck: MessageType<ResourceRpcAck> =
+  /* @__PURE__ */ createMessageType<ResourceRpcAck>(
+    'resource.ResourceRpcAck',
+    () => [[1, 'failure', 11, 0, ResourceFailure.codec]],
+  )
+
+/**
+ * ResourceRpcAbandon reports that a unary caller failed to receive its result.
+ * The server releases only children still pending adoption, even after the
+ * invoked handler has returned. Closing a route alone does not abandon it.
+ *
+ * @generated from message resource.ResourceRpcAbandon
+ */
+export interface ResourceRpcAbandon {}
+
+export const ResourceRpcAbandon: MessageType<ResourceRpcAbandon> =
+  /* @__PURE__ */ createMessageType<ResourceRpcAbandon>(
+    'resource.ResourceRpcAbandon',
+    () => [],
+  )
 
 /**
  * ResourceClientRequest is a control packet for ResourceClient.
@@ -281,149 +133,77 @@ export interface ResourceClientRequest {
   /**
    * ControlId orders every lifecycle control within one immutable generation.
    * Init uses zero; every later control increments the identifier by one.
-   *
-   * @generated from field: uint32 control_id = 5;
    */
   controlId?: number
-
   /**
    * @generated from oneof resource.ResourceClientRequest.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Init starts a new client generation.
-         *
-         * @generated from field: resource.ResourceClientInitRequest init = 2;
-         */
-        value: ResourceClientInitRequest
-        case: 'init'
-      }
-    | {
-        /**
-         * Adopt detaches a pending child from its parent.
-         *
-         * @generated from field: resource.ResourceClientAdopt adopt = 3;
-         */
-        value: ResourceClientAdopt
-        case: 'adopt'
-      }
-    | {
-        /**
-         * Release releases a resource and its pending descendants.
-         *
-         * @generated from field: resource.ResourceClientRelease release = 4;
-         */
-        value: ResourceClientRelease
-        case: 'release'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: ResourceClientInitRequest; case: 'init' }
+    | { value: ResourceClientAdopt; case: 'adopt' }
+    | { value: ResourceClientRelease; case: 'release' }
 }
 
 export const ResourceClientRequest: MessageType<ResourceClientRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceClientRequest',
-    fields: [
-      { no: 5, name: 'control_id', kind: 'scalar', T: ScalarType.UINT32 },
-      {
-        no: 2,
-        name: 'init',
-        kind: 'message',
-        T: ResourceClientInitRequest,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'adopt',
-        kind: 'message',
-        T: ResourceClientAdopt,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'release',
-        kind: 'message',
-        T: ResourceClientRelease,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResourceClientRequest>(
+    'resource.ResourceClientRequest',
+    () => [
+      [2, 'init', 11, 0, ResourceClientInitRequest.codec, 'body'],
+      [3, 'adopt', 11, 0, ResourceClientAdopt.codec, 'body'],
+      [4, 'release', 11, 0, ResourceClientRelease.codec, 'body'],
+      [5, 'control_id', 13],
+    ],
+  )
 
 /**
- * ResourceClientInit is the initialization response to ResourceClient.
+ * ResourceClientInitRequest is sent first on every ResourceClient stream.
  *
- * @generated from message resource.ResourceClientInit
+ * @generated from message resource.ResourceClientInitRequest
  */
-export interface ResourceClientInit {
-  /**
-   * ClientHandleId is the handle identifier for the client.
-   *
-   * @generated from field: uint32 client_handle_id = 1;
-   */
-  clientHandleId?: number
-  /**
-   * RootResourceId is the ID of the root resource for this client.
-   *
-   * @generated from field: uint32 root_resource_id = 2;
-   */
-  rootResourceId?: number
-}
+export interface ResourceClientInitRequest {}
 
-export const ResourceClientInit: MessageType<ResourceClientInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceClientInit',
-    fields: [
-      { no: 1, name: 'client_handle_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'root_resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const ResourceClientInitRequest: MessageType<ResourceClientInitRequest> =
+  /* @__PURE__ */ createMessageType<ResourceClientInitRequest>(
+    'resource.ResourceClientInitRequest',
+    () => [],
+  )
 
 /**
- * ResourceReleasedResponse is a message indicating a resource was released.
+ * ResourceClientAdopt adopts a pending resource.
  *
- * @generated from message resource.ResourceReleasedResponse
+ * @generated from message resource.ResourceClientAdopt
  */
-export interface ResourceReleasedResponse {
+export interface ResourceClientAdopt {
   /**
-   * ResourceId is the ID of the resource that was released.
-   *
-   * @generated from field: uint32 resource_id = 1;
+   * ResourceId identifies the pending resource to adopt.
    */
   resourceId?: number
 }
 
-export const ResourceReleasedResponse: MessageType<ResourceReleasedResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceReleasedResponse',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const ResourceClientAdopt: MessageType<ResourceClientAdopt> =
+  /* @__PURE__ */ createMessageType<ResourceClientAdopt>(
+    'resource.ResourceClientAdopt',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
- * ResourceClientControlAck confirms a lifecycle control completed.
+ * ResourceClientRelease releases a resource and its pending descendants.
  *
- * @generated from message resource.ResourceClientControlAck
+ * @generated from message resource.ResourceClientRelease
  */
-export interface ResourceClientControlAck {
+export interface ResourceClientRelease {
   /**
-   * ControlId matches ResourceClientRequest.control_id.
-   *
-   * @generated from field: uint32 control_id = 1;
+   * ResourceId identifies the resource to release.
    */
-  controlId?: number
+  resourceId?: number
 }
 
-export const ResourceClientControlAck: MessageType<ResourceClientControlAck> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceClientControlAck',
-    fields: [
-      { no: 1, name: 'control_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const ResourceClientRelease: MessageType<ResourceClientRelease> =
+  /* @__PURE__ */ createMessageType<ResourceClientRelease>(
+    'resource.ResourceClientRelease',
+    () => [[1, 'resource_id', 13]],
+  )
 
 /**
  * ResourceClientResponse contains a server-client message for a ResourceClient request.
@@ -437,140 +217,82 @@ export interface ResourceClientResponse {
    * @generated from oneof resource.ResourceClientResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Init contains the initialization message for ResourceClient.
-         * This is the first message sent on the stream and is only sent once.
-         *
-         * @generated from field: resource.ResourceClientInit init = 1;
-         */
-        value: ResourceClientInit
-        case: 'init'
-      }
-    | {
-        /**
-         * ResourceReleased is returned if a resource was released by the server.
-         *
-         * @generated from field: resource.ResourceReleasedResponse resource_released = 2;
-         */
-        value: ResourceReleasedResponse
-        case: 'resourceReleased'
-      }
-    | {
-        /**
-         * ControlAck confirms that one lifecycle control and its callbacks completed.
-         *
-         * @generated from field: resource.ResourceClientControlAck control_ack = 4;
-         */
-        value: ResourceClientControlAck
-        case: 'controlAck'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: ResourceClientInit; case: 'init' }
+    | { value: ResourceReleasedResponse; case: 'resourceReleased' }
+    | { value: ResourceClientControlAck; case: 'controlAck' }
 }
 
 export const ResourceClientResponse: MessageType<ResourceClientResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceClientResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'init',
-        kind: 'message',
-        T: ResourceClientInit,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'resource_released',
-        kind: 'message',
-        T: ResourceReleasedResponse,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'control_ack',
-        kind: 'message',
-        T: ResourceClientControlAck,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResourceClientResponse>(
+    'resource.ResourceClientResponse',
+    () => [
+      [1, 'init', 11, 0, ResourceClientInit.codec, 'body'],
+      [2, 'resource_released', 11, 0, ResourceReleasedResponse.codec, 'body'],
+      [4, 'control_ack', 11, 0, ResourceClientControlAck.codec, 'body'],
+    ],
+  )
 
 /**
- * ResourceAttachInit is sent by the client to initiate a session.
+ * ResourceClientControlAck confirms a lifecycle control completed.
  *
- * @generated from message resource.ResourceAttachInit
+ * @generated from message resource.ResourceClientControlAck
  */
-export interface ResourceAttachInit {
+export interface ResourceClientControlAck {
   /**
-   * ClientHandleId identifies the owning client session.
-   *
-   * @generated from field: uint32 client_handle_id = 1;
+   * ControlId matches ResourceClientRequest.control_id.
    */
-  clientHandleId?: number
+  controlId?: number
 }
 
-export const ResourceAttachInit: MessageType<ResourceAttachInit> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceAttachInit',
-    fields: [
-      { no: 1, name: 'client_handle_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const ResourceClientControlAck: MessageType<ResourceClientControlAck> =
+  /* @__PURE__ */ createMessageType<ResourceClientControlAck>(
+    'resource.ResourceClientControlAck',
+    () => [[1, 'control_id', 13]],
+  )
 
 /**
- * ResourceAttachAdd is sent by the client to register a resource.
+ * ResourceReleasedResponse is a message indicating a resource was released.
  *
- * @generated from message resource.ResourceAttachAdd
+ * @generated from message resource.ResourceReleasedResponse
  */
-export interface ResourceAttachAdd {
+export interface ResourceReleasedResponse {
   /**
-   * AttachId is a client-chosen correlation ID.
-   *
-   * @generated from field: uint32 attach_id = 1;
-   */
-  attachId?: number
-  /**
-   * Label is an informational description of the attached resource.
-   *
-   * @generated from field: string label = 2;
-   */
-  label?: string
-}
-
-export const ResourceAttachAdd: MessageType<ResourceAttachAdd> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceAttachAdd',
-    fields: [
-      { no: 1, name: 'attach_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'label', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceAttachDetach is sent by the client to withdraw a resource.
- *
- * @generated from message resource.ResourceAttachDetach
- */
-export interface ResourceAttachDetach {
-  /**
-   * ResourceId is the server-assigned ID to detach.
-   *
-   * @generated from field: uint32 resource_id = 1;
+   * ResourceId is the ID of the resource that was released.
    */
   resourceId?: number
 }
 
-export const ResourceAttachDetach: MessageType<ResourceAttachDetach> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceAttachDetach',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+export const ResourceReleasedResponse: MessageType<ResourceReleasedResponse> =
+  /* @__PURE__ */ createMessageType<ResourceReleasedResponse>(
+    'resource.ResourceReleasedResponse',
+    () => [[1, 'resource_id', 13]],
+  )
+
+/**
+ * ResourceClientInit is the initialization response to ResourceClient.
+ *
+ * @generated from message resource.ResourceClientInit
+ */
+export interface ResourceClientInit {
+  /**
+   * ClientHandleId is the handle identifier for the client.
+   */
+  clientHandleId?: number
+  /**
+   * RootResourceId is the ID of the root resource for this client.
+   */
+  rootResourceId?: number
+}
+
+export const ResourceClientInit: MessageType<ResourceClientInit> =
+  /* @__PURE__ */ createMessageType<ResourceClientInit>(
+    'resource.ResourceClientInit',
+    () => [
+      [1, 'client_handle_id', 13],
+      [2, 'root_resource_id', 13],
+    ],
+  )
 
 /**
  * ResourceAttachRequest is a client-to-server message on the ResourceAttach stream.
@@ -584,162 +306,23 @@ export interface ResourceAttachRequest {
    * @generated from oneof resource.ResourceAttachRequest.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Init is the session initialization message.
-         *
-         * @generated from field: resource.ResourceAttachInit init = 1;
-         */
-        value: ResourceAttachInit
-        case: 'init'
-      }
-    | {
-        /**
-         * Add registers a new resource on the session.
-         *
-         * @generated from field: resource.ResourceAttachAdd add = 2;
-         */
-        value: ResourceAttachAdd
-        case: 'add'
-      }
-    | {
-        /**
-         * Detach withdraws a previously added resource.
-         *
-         * @generated from field: resource.ResourceAttachDetach detach = 3;
-         */
-        value: ResourceAttachDetach
-        case: 'detach'
-      }
-    | {
-        /**
-         * MuxData carries yamux multiplexer frames after handshake.
-         *
-         * @generated from field: bytes mux_data = 4;
-         */
-        value: Uint8Array
-        case: 'muxData'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: ResourceAttachInit; case: 'init' }
+    | { value: ResourceAttachAdd; case: 'add' }
+    | { value: ResourceAttachDetach; case: 'detach' }
+    | { value: Uint8Array; case: 'muxData' }
 }
 
 export const ResourceAttachRequest: MessageType<ResourceAttachRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceAttachRequest',
-    fields: [
-      {
-        no: 1,
-        name: 'init',
-        kind: 'message',
-        T: ResourceAttachInit,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'add',
-        kind: 'message',
-        T: ResourceAttachAdd,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'detach',
-        kind: 'message',
-        T: ResourceAttachDetach,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'mux_data',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceAttachAck is sent by the server to confirm the session.
- *
- * @generated from message resource.ResourceAttachAck
- */
-export interface ResourceAttachAck {
-  /**
-   * Failure is set if the session was rejected.
-   *
-   * @generated from field: resource.ResourceFailure failure = 1;
-   */
-  failure?: ResourceFailure
-}
-
-export const ResourceAttachAck: MessageType<ResourceAttachAck> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceAttachAck',
-    fields: [
-      { no: 1, name: 'failure', kind: 'message', T: ResourceFailure },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceAttachAddAck is sent by the server to confirm a resource was added.
- *
- * @generated from message resource.ResourceAttachAddAck
- */
-export interface ResourceAttachAddAck {
-  /**
-   * AttachId echoes the client-chosen correlation ID.
-   *
-   * @generated from field: uint32 attach_id = 1;
-   */
-  attachId?: number
-  /**
-   * Failure is set if the add was rejected.
-   *
-   * @generated from field: resource.ResourceFailure failure = 2;
-   */
-  failure?: ResourceFailure
-  /**
-   * ResourceId is the server-assigned ID for the attached resource.
-   *
-   * @generated from field: uint32 resource_id = 3;
-   */
-  resourceId?: number
-}
-
-export const ResourceAttachAddAck: MessageType<ResourceAttachAddAck> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceAttachAddAck',
-    fields: [
-      { no: 1, name: 'attach_id', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 2, name: 'failure', kind: 'message', T: ResourceFailure },
-      { no: 3, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
-
-/**
- * ResourceAttachDetachAck is sent by the server to confirm a resource was detached.
- *
- * @generated from message resource.ResourceAttachDetachAck
- */
-export interface ResourceAttachDetachAck {
-  /**
-   * ResourceId confirms which resource was detached.
-   *
-   * @generated from field: uint32 resource_id = 1;
-   */
-  resourceId?: number
-}
-
-export const ResourceAttachDetachAck: MessageType<ResourceAttachDetachAck> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceAttachDetachAck',
-    fields: [
-      { no: 1, name: 'resource_id', kind: 'scalar', T: ScalarType.UINT32 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResourceAttachRequest>(
+    'resource.ResourceAttachRequest',
+    () => [
+      [1, 'init', 11, 0, ResourceAttachInit.codec, 'body'],
+      [2, 'add', 11, 0, ResourceAttachAdd.codec, 'body'],
+      [3, 'detach', 11, 0, ResourceAttachDetach.codec, 'body'],
+      [4, 'mux_data', 12, 0, 0, 'body'],
+    ],
+  )
 
 /**
  * ResourceAttachResponse is a server-to-client message on the ResourceAttach stream.
@@ -753,79 +336,147 @@ export interface ResourceAttachResponse {
    * @generated from oneof resource.ResourceAttachResponse.body
    */
   body?:
-    | {
-        value?: undefined
-        case: undefined
-      }
-    | {
-        /**
-         * Ack is the session acknowledgment.
-         *
-         * @generated from field: resource.ResourceAttachAck ack = 1;
-         */
-        value: ResourceAttachAck
-        case: 'ack'
-      }
-    | {
-        /**
-         * AddAck confirms a resource was added.
-         *
-         * @generated from field: resource.ResourceAttachAddAck add_ack = 2;
-         */
-        value: ResourceAttachAddAck
-        case: 'addAck'
-      }
-    | {
-        /**
-         * DetachAck confirms a resource was detached.
-         *
-         * @generated from field: resource.ResourceAttachDetachAck detach_ack = 3;
-         */
-        value: ResourceAttachDetachAck
-        case: 'detachAck'
-      }
-    | {
-        /**
-         * MuxData carries yamux multiplexer frames after handshake.
-         *
-         * @generated from field: bytes mux_data = 4;
-         */
-        value: Uint8Array
-        case: 'muxData'
-      }
+    | { value?: undefined; case: undefined }
+    | { value: ResourceAttachAck; case: 'ack' }
+    | { value: ResourceAttachAddAck; case: 'addAck' }
+    | { value: ResourceAttachDetachAck; case: 'detachAck' }
+    | { value: Uint8Array; case: 'muxData' }
 }
 
 export const ResourceAttachResponse: MessageType<ResourceAttachResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'resource.ResourceAttachResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'ack',
-        kind: 'message',
-        T: ResourceAttachAck,
-        oneof: 'body',
-      },
-      {
-        no: 2,
-        name: 'add_ack',
-        kind: 'message',
-        T: ResourceAttachAddAck,
-        oneof: 'body',
-      },
-      {
-        no: 3,
-        name: 'detach_ack',
-        kind: 'message',
-        T: ResourceAttachDetachAck,
-        oneof: 'body',
-      },
-      {
-        no: 4,
-        name: 'mux_data',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        oneof: 'body',
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ResourceAttachResponse>(
+    'resource.ResourceAttachResponse',
+    () => [
+      [1, 'ack', 11, 0, ResourceAttachAck.codec, 'body'],
+      [2, 'add_ack', 11, 0, ResourceAttachAddAck.codec, 'body'],
+      [3, 'detach_ack', 11, 0, ResourceAttachDetachAck.codec, 'body'],
+      [4, 'mux_data', 12, 0, 0, 'body'],
+    ],
+  )
+
+/**
+ * ResourceAttachInit is sent by the client to initiate a session.
+ *
+ * @generated from message resource.ResourceAttachInit
+ */
+export interface ResourceAttachInit {
+  /**
+   * ClientHandleId identifies the owning client session.
+   */
+  clientHandleId?: number
+}
+
+export const ResourceAttachInit: MessageType<ResourceAttachInit> =
+  /* @__PURE__ */ createMessageType<ResourceAttachInit>(
+    'resource.ResourceAttachInit',
+    () => [[1, 'client_handle_id', 13]],
+  )
+
+/**
+ * ResourceAttachAck is sent by the server to confirm the session.
+ *
+ * @generated from message resource.ResourceAttachAck
+ */
+export interface ResourceAttachAck {
+  /**
+   * Failure is set if the session was rejected.
+   */
+  failure?: ResourceFailure
+}
+
+export const ResourceAttachAck: MessageType<ResourceAttachAck> =
+  /* @__PURE__ */ createMessageType<ResourceAttachAck>(
+    'resource.ResourceAttachAck',
+    () => [[1, 'failure', 11, 0, ResourceFailure.codec]],
+  )
+
+/**
+ * ResourceAttachAdd is sent by the client to register a resource.
+ *
+ * @generated from message resource.ResourceAttachAdd
+ */
+export interface ResourceAttachAdd {
+  /**
+   * AttachId is a client-chosen correlation ID.
+   */
+  attachId?: number
+  /**
+   * Label is an informational description of the attached resource.
+   */
+  label?: string
+}
+
+export const ResourceAttachAdd: MessageType<ResourceAttachAdd> =
+  /* @__PURE__ */ createMessageType<ResourceAttachAdd>(
+    'resource.ResourceAttachAdd',
+    () => [
+      [1, 'attach_id', 13],
+      [2, 'label', 9],
+    ],
+  )
+
+/**
+ * ResourceAttachAddAck is sent by the server to confirm a resource was added.
+ *
+ * @generated from message resource.ResourceAttachAddAck
+ */
+export interface ResourceAttachAddAck {
+  /**
+   * AttachId echoes the client-chosen correlation ID.
+   */
+  attachId?: number
+  /**
+   * Failure is set if the add was rejected.
+   */
+  failure?: ResourceFailure
+  /**
+   * ResourceId is the server-assigned ID for the attached resource.
+   */
+  resourceId?: number
+}
+
+export const ResourceAttachAddAck: MessageType<ResourceAttachAddAck> =
+  /* @__PURE__ */ createMessageType<ResourceAttachAddAck>(
+    'resource.ResourceAttachAddAck',
+    () => [
+      [1, 'attach_id', 13],
+      [2, 'failure', 11, 0, ResourceFailure.codec],
+      [3, 'resource_id', 13],
+    ],
+  )
+
+/**
+ * ResourceAttachDetach is sent by the client to withdraw a resource.
+ *
+ * @generated from message resource.ResourceAttachDetach
+ */
+export interface ResourceAttachDetach {
+  /**
+   * ResourceId is the server-assigned ID to detach.
+   */
+  resourceId?: number
+}
+
+export const ResourceAttachDetach: MessageType<ResourceAttachDetach> =
+  /* @__PURE__ */ createMessageType<ResourceAttachDetach>(
+    'resource.ResourceAttachDetach',
+    () => [[1, 'resource_id', 13]],
+  )
+
+/**
+ * ResourceAttachDetachAck is sent by the server to confirm a resource was detached.
+ *
+ * @generated from message resource.ResourceAttachDetachAck
+ */
+export interface ResourceAttachDetachAck {
+  /**
+   * ResourceId confirms which resource was detached.
+   */
+  resourceId?: number
+}
+
+export const ResourceAttachDetachAck: MessageType<ResourceAttachDetachAck> =
+  /* @__PURE__ */ createMessageType<ResourceAttachDetachAck>(
+    'resource.ResourceAttachDetachAck',
+    () => [[1, 'resource_id', 13]],
+  )

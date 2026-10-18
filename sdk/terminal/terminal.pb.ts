@@ -4,13 +4,8 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { Timestamp } from '@aptre/protobuf-es-lite/google/protobuf/timestamp'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * TerminalSessionState is the user-visible lifecycle for a Terminal object.
@@ -20,51 +15,45 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export enum TerminalSessionState {
   /**
    * TERMINAL_SESSION_STATE_UNKNOWN is unset.
-   *
-   * @generated from enum value: TERMINAL_SESSION_STATE_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * TERMINAL_SESSION_STATE_CONNECTING means a remote shell stream is opening.
-   *
-   * @generated from enum value: TERMINAL_SESSION_STATE_CONNECTING = 1;
    */
   CONNECTING = 1,
 
   /**
    * TERMINAL_SESSION_STATE_ACTIVE means the PTY stream is active.
-   *
-   * @generated from enum value: TERMINAL_SESSION_STATE_ACTIVE = 2;
    */
   ACTIVE = 2,
 
   /**
    * TERMINAL_SESSION_STATE_DISCONNECTED means the stream ended.
-   *
-   * @generated from enum value: TERMINAL_SESSION_STATE_DISCONNECTED = 3;
    */
   DISCONNECTED = 3,
 
   /**
    * TERMINAL_SESSION_STATE_FAILED means opening or running the stream failed.
-   *
-   * @generated from enum value: TERMINAL_SESSION_STATE_FAILED = 4;
    */
   FAILED = 4,
 
   /**
    * TERMINAL_SESSION_STATE_CLOSED means the user closed the terminal.
-   *
-   * @generated from enum value: TERMINAL_SESSION_STATE_CLOSED = 5;
    */
   CLOSED = 5,
 }
 
 export const TerminalSessionState_Enum = /* @__PURE__ */ createEnumType(
   's4wave.terminal.TerminalSessionState',
-  TerminalSessionState,
-  'TERMINAL_SESSION_STATE_',
+  [
+    [0, 'TERMINAL_SESSION_STATE_UNKNOWN'],
+    [1, 'TERMINAL_SESSION_STATE_CONNECTING'],
+    [2, 'TERMINAL_SESSION_STATE_ACTIVE'],
+    [3, 'TERMINAL_SESSION_STATE_DISCONNECTED'],
+    [4, 'TERMINAL_SESSION_STATE_FAILED'],
+    [5, 'TERMINAL_SESSION_STATE_CLOSED'],
+  ],
 )
 
 /**
@@ -75,86 +64,75 @@ export const TerminalSessionState_Enum = /* @__PURE__ */ createEnumType(
 export enum TerminalFrameKind {
   /**
    * TERMINAL_FRAME_KIND_UNKNOWN is unset.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * TERMINAL_FRAME_KIND_OPEN carries the initial command and terminal size.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_OPEN = 1;
    */
   OPEN = 1,
 
   /**
    * TERMINAL_FRAME_KIND_READY means the PTY is attached.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_READY = 2;
    */
   READY = 2,
 
   /**
    * TERMINAL_FRAME_KIND_INPUT carries bytes from the viewer to the PTY.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_INPUT = 3;
    */
   INPUT = 3,
 
   /**
    * TERMINAL_FRAME_KIND_OUTPUT carries bytes from the PTY to the viewer.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_OUTPUT = 4;
    */
   OUTPUT = 4,
 
   /**
    * TERMINAL_FRAME_KIND_RESIZE carries terminal dimensions.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_RESIZE = 5;
    */
   RESIZE = 5,
 
   /**
    * TERMINAL_FRAME_KIND_CLOSE requests a clean close.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_CLOSE = 6;
    */
   CLOSE = 6,
 
   /**
    * TERMINAL_FRAME_KIND_EXIT reports process exit.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_EXIT = 7;
    */
   EXIT = 7,
 
   /**
    * TERMINAL_FRAME_KIND_ERROR reports a terminal stream error.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_ERROR = 8;
    */
   ERROR = 8,
 
   /**
    * TERMINAL_FRAME_KIND_SSH_HOST_KEY_TRUST_CHALLENGE asks the viewer to confirm a first-connect SSH Host key.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_SSH_HOST_KEY_TRUST_CHALLENGE = 9;
    */
   SSH_HOST_KEY_TRUST_CHALLENGE = 9,
 
   /**
    * TERMINAL_FRAME_KIND_SSH_HOST_KEY_TRUST_RESPONSE carries the viewer's SSH Host key trust decision.
-   *
-   * @generated from enum value: TERMINAL_FRAME_KIND_SSH_HOST_KEY_TRUST_RESPONSE = 10;
    */
   SSH_HOST_KEY_TRUST_RESPONSE = 10,
 }
 
 export const TerminalFrameKind_Enum = /* @__PURE__ */ createEnumType(
   's4wave.terminal.TerminalFrameKind',
-  TerminalFrameKind,
-  'TERMINAL_FRAME_KIND_',
+  [
+    [0, 'TERMINAL_FRAME_KIND_UNKNOWN'],
+    [1, 'TERMINAL_FRAME_KIND_OPEN'],
+    [2, 'TERMINAL_FRAME_KIND_READY'],
+    [3, 'TERMINAL_FRAME_KIND_INPUT'],
+    [4, 'TERMINAL_FRAME_KIND_OUTPUT'],
+    [5, 'TERMINAL_FRAME_KIND_RESIZE'],
+    [6, 'TERMINAL_FRAME_KIND_CLOSE'],
+    [7, 'TERMINAL_FRAME_KIND_EXIT'],
+    [8, 'TERMINAL_FRAME_KIND_ERROR'],
+    [9, 'TERMINAL_FRAME_KIND_SSH_HOST_KEY_TRUST_CHALLENGE'],
+    [10, 'TERMINAL_FRAME_KIND_SSH_HOST_KEY_TRUST_RESPONSE'],
+  ],
 )
 
 /**
@@ -165,30 +143,27 @@ export const TerminalFrameKind_Enum = /* @__PURE__ */ createEnumType(
 export enum TerminalTargetKind {
   /**
    * TERMINAL_TARGET_KIND_UNKNOWN preserves old Device terminals when Device fields are set.
-   *
-   * @generated from enum value: TERMINAL_TARGET_KIND_UNKNOWN = 0;
    */
   UNKNOWN = 0,
 
   /**
    * TERMINAL_TARGET_KIND_DEVICE opens a Spacewave-managed Device remote shell.
-   *
-   * @generated from enum value: TERMINAL_TARGET_KIND_DEVICE = 1;
    */
   DEVICE = 1,
 
   /**
    * TERMINAL_TARGET_KIND_SSH_HOST opens an SSH-only Host session.
-   *
-   * @generated from enum value: TERMINAL_TARGET_KIND_SSH_HOST = 2;
    */
   SSH_HOST = 2,
 }
 
 export const TerminalTargetKind_Enum = /* @__PURE__ */ createEnumType(
   's4wave.terminal.TerminalTargetKind',
-  TerminalTargetKind,
-  'TERMINAL_TARGET_KIND_',
+  [
+    [0, 'TERMINAL_TARGET_KIND_UNKNOWN'],
+    [1, 'TERMINAL_TARGET_KIND_DEVICE'],
+    [2, 'TERMINAL_TARGET_KIND_SSH_HOST'],
+  ],
 )
 
 /**
@@ -199,126 +174,82 @@ export const TerminalTargetKind_Enum = /* @__PURE__ */ createEnumType(
 export interface Terminal {
   /**
    * Name is the display name for this terminal.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
   /**
    * DeviceObjectKey is the linked Spacewave-managed Device object key.
-   *
-   * @generated from field: string device_object_key = 2;
    */
   deviceObjectKey?: string
   /**
    * DevicePeerId is the DEVICE session peer id to open the shell stream to.
-   *
-   * @generated from field: string device_peer_id = 3;
    */
   devicePeerId?: string
   /**
    * Command is the optional command to run; empty opens the default shell.
-   *
-   * @generated from field: string command = 4;
    */
   command?: string
   /**
    * Environment contains optional KEY=VALUE entries for the shell process.
-   *
-   * @generated from field: repeated string environment = 5;
    */
   environment?: string[]
   /**
    * Cols is the requested terminal column count.
-   *
-   * @generated from field: uint32 cols = 6;
    */
   cols?: number
   /**
    * Rows is the requested terminal row count.
-   *
-   * @generated from field: uint32 rows = 7;
    */
   rows?: number
   /**
    * State is the current user-visible session state.
-   *
-   * @generated from field: s4wave.terminal.TerminalSessionState state = 8;
    */
   state?: TerminalSessionState
   /**
    * Status is a short operator-visible status.
-   *
-   * @generated from field: string status = 9;
    */
   status?: string
   /**
    * Error is the last terminal error, if any.
-   *
-   * @generated from field: string error = 10;
    */
   error?: string
   /**
    * CreatedAt is when this Terminal object was created.
-   *
-   * @generated from field: google.protobuf.Timestamp created_at = 11;
    */
   createdAt?: Date
   /**
    * UpdatedAt is when this Terminal object was last updated.
-   *
-   * @generated from field: google.protobuf.Timestamp updated_at = 12;
    */
   updatedAt?: Date
   /**
    * TargetKind selects the terminal session owner.
-   *
-   * @generated from field: s4wave.terminal.TerminalTargetKind target_kind = 13;
    */
   targetKind?: TerminalTargetKind
   /**
    * SshHostObjectKey is the linked SSH Host object key for SSH Host terminals.
-   *
-   * @generated from field: string ssh_host_object_key = 14;
    */
   sshHostObjectKey?: string
 }
 
 export const Terminal: MessageType<Terminal> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.terminal.Terminal',
-    fields: [
-      { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 2,
-        name: 'device_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 3, name: 'device_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'command', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 5,
-        name: 'environment',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 6, name: 'cols', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 7, name: 'rows', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 8, name: 'state', kind: 'enum', T: TerminalSessionState_Enum },
-      { no: 9, name: 'status', kind: 'scalar', T: ScalarType.STRING },
-      { no: 10, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 11, name: 'created_at', kind: 'message', T: () => Timestamp },
-      { no: 12, name: 'updated_at', kind: 'message', T: () => Timestamp },
-      { no: 13, name: 'target_kind', kind: 'enum', T: TerminalTargetKind_Enum },
-      {
-        no: 14,
-        name: 'ssh_host_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Terminal>(
+    's4wave.terminal.Terminal',
+    () => [
+      [1, 'name', 9],
+      [2, 'device_object_key', 9],
+      [3, 'device_peer_id', 9],
+      [4, 'command', 9],
+      [5, 'environment', 9, 1],
+      [6, 'cols', 13],
+      [7, 'rows', 13],
+      [8, 'state', 14, 0, TerminalSessionState_Enum],
+      [9, 'status', 9],
+      [10, 'error', 9],
+      [11, 'created_at', 11, 0, Timestamp.codec],
+      [12, 'updated_at', 11, 0, Timestamp.codec],
+      [13, 'target_kind', 14, 0, TerminalTargetKind_Enum],
+      [14, 'ssh_host_object_key', 9],
+    ],
+  )
 
 /**
  * TerminalFrame carries terminal data and control frames.
@@ -328,129 +259,77 @@ export const Terminal: MessageType<Terminal> =
 export interface TerminalFrame {
   /**
    * Kind is the frame type.
-   *
-   * @generated from field: s4wave.terminal.TerminalFrameKind kind = 1;
    */
   kind?: TerminalFrameKind
   /**
    * Data carries input or output bytes.
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * Cols is the terminal column count for OPEN or RESIZE.
-   *
-   * @generated from field: uint32 cols = 3;
    */
   cols?: number
   /**
    * Rows is the terminal row count for OPEN or RESIZE.
-   *
-   * @generated from field: uint32 rows = 4;
    */
   rows?: number
   /**
    * Command is the optional command for OPEN.
-   *
-   * @generated from field: string command = 5;
    */
   command?: string
   /**
    * Environment carries optional KEY=VALUE entries for OPEN.
-   *
-   * @generated from field: repeated string environment = 6;
    */
   environment?: string[]
   /**
    * Error is the error message for ERROR.
-   *
-   * @generated from field: string error = 7;
    */
   error?: string
   /**
    * ExitCode is the process exit code for EXIT.
-   *
-   * @generated from field: int32 exit_code = 8;
    */
   exitCode?: number
   /**
    * SshTrustHost is the host that presented an unknown SSH host key.
-   *
-   * @generated from field: string ssh_trust_host = 9;
    */
   sshTrustHost?: string
   /**
    * SshTrustAlgorithm is the presented SSH host key algorithm.
-   *
-   * @generated from field: string ssh_trust_algorithm = 10;
    */
   sshTrustAlgorithm?: string
   /**
    * SshTrustSha256Fingerprint is the presented SSH host key SHA256 fingerprint.
-   *
-   * @generated from field: string ssh_trust_sha256_fingerprint = 11;
    */
   sshTrustSha256Fingerprint?: string
   /**
    * SshTrustPublicKey is the presented SSH host public key in authorized_keys format.
-   *
-   * @generated from field: string ssh_trust_public_key = 12;
    */
   sshTrustPublicKey?: string
   /**
    * SshTrustAccepted is true when the viewer explicitly accepted the presented SSH host key.
-   *
-   * @generated from field: bool ssh_trust_accepted = 13;
    */
   sshTrustAccepted?: boolean
 }
 
 export const TerminalFrame: MessageType<TerminalFrame> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.terminal.TerminalFrame',
-    fields: [
-      { no: 1, name: 'kind', kind: 'enum', T: TerminalFrameKind_Enum },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'cols', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 4, name: 'rows', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 5, name: 'command', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'environment',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 7, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-      { no: 8, name: 'exit_code', kind: 'scalar', T: ScalarType.INT32 },
-      { no: 9, name: 'ssh_trust_host', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 10,
-        name: 'ssh_trust_algorithm',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 11,
-        name: 'ssh_trust_sha256_fingerprint',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 12,
-        name: 'ssh_trust_public_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      {
-        no: 13,
-        name: 'ssh_trust_accepted',
-        kind: 'scalar',
-        T: ScalarType.BOOL,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<TerminalFrame>(
+    's4wave.terminal.TerminalFrame',
+    () => [
+      [1, 'kind', 14, 0, TerminalFrameKind_Enum],
+      [2, 'data', 12],
+      [3, 'cols', 13],
+      [4, 'rows', 13],
+      [5, 'command', 9],
+      [6, 'environment', 9, 1],
+      [7, 'error', 9],
+      [8, 'exit_code', 5],
+      [9, 'ssh_trust_host', 9],
+      [10, 'ssh_trust_algorithm', 9],
+      [11, 'ssh_trust_sha256_fingerprint', 9],
+      [12, 'ssh_trust_public_key', 9],
+      [13, 'ssh_trust_accepted', 8],
+    ],
+  )
 
 /**
  * CreateTerminalOp creates a Terminal world object.
@@ -460,105 +339,67 @@ export const TerminalFrame: MessageType<TerminalFrame> =
 export interface CreateTerminalOp {
   /**
    * ObjectKey is the key to create the Terminal at.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the Terminal display name.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * DeviceObjectKey is the linked Device object key.
-   *
-   * @generated from field: string device_object_key = 3;
    */
   deviceObjectKey?: string
   /**
    * DevicePeerId is the linked DEVICE session peer id.
-   *
-   * @generated from field: string device_peer_id = 4;
    */
   devicePeerId?: string
   /**
    * Command is the optional command to run.
-   *
-   * @generated from field: string command = 5;
    */
   command?: string
   /**
    * Environment carries optional KEY=VALUE entries.
-   *
-   * @generated from field: repeated string environment = 6;
    */
   environment?: string[]
   /**
    * Cols is the initial column count.
-   *
-   * @generated from field: uint32 cols = 7;
    */
   cols?: number
   /**
    * Rows is the initial row count.
-   *
-   * @generated from field: uint32 rows = 8;
    */
   rows?: number
   /**
    * Timestamp is the creation timestamp.
-   *
-   * @generated from field: google.protobuf.Timestamp timestamp = 9;
    */
   timestamp?: Date
   /**
    * TargetKind selects the terminal session owner.
-   *
-   * @generated from field: s4wave.terminal.TerminalTargetKind target_kind = 10;
    */
   targetKind?: TerminalTargetKind
   /**
    * SshHostObjectKey is the linked SSH Host object key for SSH Host terminals.
-   *
-   * @generated from field: string ssh_host_object_key = 11;
    */
   sshHostObjectKey?: string
 }
 
 export const CreateTerminalOp: MessageType<CreateTerminalOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.terminal.CreateTerminalOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'device_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 4, name: 'device_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'command', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 6,
-        name: 'environment',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-      { no: 7, name: 'cols', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 8, name: 'rows', kind: 'scalar', T: ScalarType.UINT32 },
-      { no: 9, name: 'timestamp', kind: 'message', T: () => Timestamp },
-      { no: 10, name: 'target_kind', kind: 'enum', T: TerminalTargetKind_Enum },
-      {
-        no: 11,
-        name: 'ssh_host_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<CreateTerminalOp>(
+    's4wave.terminal.CreateTerminalOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'device_object_key', 9],
+      [4, 'device_peer_id', 9],
+      [5, 'command', 9],
+      [6, 'environment', 9, 1],
+      [7, 'cols', 13],
+      [8, 'rows', 13],
+      [9, 'timestamp', 11, 0, Timestamp.codec],
+      [10, 'target_kind', 14, 0, TerminalTargetKind_Enum],
+      [11, 'ssh_host_object_key', 9],
+    ],
+  )
 
 /**
  * WatchTerminalStateRequest is a request to watch Terminal state.
@@ -568,9 +409,9 @@ export const CreateTerminalOp: MessageType<CreateTerminalOp> =
 export interface WatchTerminalStateRequest {}
 
 export const WatchTerminalStateRequest: MessageType<WatchTerminalStateRequest> =
-  /* @__PURE__ */ createEmptyMessageType<WatchTerminalStateRequest>(
+  /* @__PURE__ */ createMessageType<WatchTerminalStateRequest>(
     's4wave.terminal.WatchTerminalStateRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -581,16 +422,12 @@ export const WatchTerminalStateRequest: MessageType<WatchTerminalStateRequest> =
 export interface WatchTerminalStateResponse {
   /**
    * State is the current Terminal block state.
-   *
-   * @generated from field: s4wave.terminal.Terminal state = 1;
    */
   state?: Terminal
 }
 
 export const WatchTerminalStateResponse: MessageType<WatchTerminalStateResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.terminal.WatchTerminalStateResponse',
-    fields: [
-      { no: 1, name: 'state', kind: 'message', T: Terminal },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WatchTerminalStateResponse>(
+    's4wave.terminal.WatchTerminalStateResponse',
+    () => [[1, 'state', 11, 0, Terminal.codec]],
+  )

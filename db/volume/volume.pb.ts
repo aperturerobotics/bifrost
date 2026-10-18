@@ -7,8 +7,6 @@ import type { HashType } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.
 import { HashType_Enum } from '@go/github.com/s4wave/spacewave/net/hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { BucketInfo } from '../bucket/bucket.pb.js'
 
 /**
@@ -19,49 +17,36 @@ import { BucketInfo } from '../bucket/bucket.pb.js'
 export interface VolumeInfo {
   /**
    * VolumeId is the volume ID as determined by the controller.
-   *
-   * @generated from field: string volume_id = 1;
    */
   volumeId?: string
   /**
    * PeerId is the peer ID of the volume.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * PeerPub is the pem public key of the volume.
-   *
-   * @generated from field: string peer_pub = 3;
    */
   peerPub?: string
   /**
    * ControllerInfo is information about the volume controller.
    * Note: may be empty.
-   *
-   * @generated from field: controller.Info controller_info = 4;
    */
   controllerInfo?: Info
   /**
    * HashType is the default block hash type to use for blocks.
    * If unset (0 value) will use the Spacewave default (SHA256).
-   *
-   * @generated from field: hash.HashType hash_type = 5;
    */
   hashType?: HashType
 }
 
 export const VolumeInfo: MessageType<VolumeInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.VolumeInfo',
-    fields: [
-      { no: 1, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'peer_pub', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'controller_info', kind: 'message', T: () => Info },
-      { no: 5, name: 'hash_type', kind: 'enum', T: HashType_Enum },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<VolumeInfo>('volume.VolumeInfo', () => [
+    [1, 'volume_id', 9],
+    [2, 'peer_id', 9],
+    [3, 'peer_pub', 9],
+    [4, 'controller_info', 11, 0, Info.codec],
+    [5, 'hash_type', 14, 0, HashType_Enum],
+  ])
 
 /**
  * StorageStats contains storage usage statistics for a volume.
@@ -71,26 +56,19 @@ export const VolumeInfo: MessageType<VolumeInfo> =
 export interface StorageStats {
   /**
    * TotalBytes is the total storage size in bytes.
-   *
-   * @generated from field: uint64 total_bytes = 1;
    */
   totalBytes?: bigint
   /**
    * BlockCount is the number of blocks stored.
-   *
-   * @generated from field: uint64 block_count = 2;
    */
   blockCount?: bigint
 }
 
 export const StorageStats: MessageType<StorageStats> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.StorageStats',
-    fields: [
-      { no: 1, name: 'total_bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 2, name: 'block_count', kind: 'scalar', T: ScalarType.UINT64 },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<StorageStats>('volume.StorageStats', () => [
+    [1, 'total_bytes', 4],
+    [2, 'block_count', 4],
+  ])
 
 /**
  * VolumeBucketInfo is information about a bucket in a volume.
@@ -100,26 +78,22 @@ export const StorageStats: MessageType<StorageStats> =
 export interface VolumeBucketInfo {
   /**
    * BucketInfo is the bucket information.
-   *
-   * @generated from field: bucket.BucketInfo bucket_info = 1;
    */
   bucketInfo?: BucketInfo
   /**
    * VolumeInfo is the volume containing the bucket instance.
-   *
-   * @generated from field: volume.VolumeInfo volume_info = 2;
    */
   volumeInfo?: VolumeInfo
 }
 
 export const VolumeBucketInfo: MessageType<VolumeBucketInfo> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.VolumeBucketInfo',
-    fields: [
-      { no: 1, name: 'bucket_info', kind: 'message', T: () => BucketInfo },
-      { no: 2, name: 'volume_info', kind: 'message', T: VolumeInfo },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<VolumeBucketInfo>(
+    'volume.VolumeBucketInfo',
+    () => [
+      [1, 'bucket_info', 11, 0, BucketInfo.codec],
+      [2, 'volume_info', 11, 0, VolumeInfo.codec],
+    ],
+  )
 
 /**
  * ListBucketsRequest is a list buckets directive in proto form.
@@ -130,40 +104,28 @@ export interface ListBucketsRequest {
   /**
    * BucketId limits information to a specific bucket.
    * Can be empty.
-   *
-   * @generated from field: string bucket_id = 1;
    */
   bucketId?: string
   /**
    * VolumeIdRe limits to specific volumes by regex.
    * Can be empty.
    * Cannot be specified if VolumeIDList is set.
-   *
-   * @generated from field: string volume_id_re = 2;
    */
   volumeIdRe?: string
   /**
    * VolumeIdList returns a specific list of volumes to list.
    * If empty, uses the VolumeIDRe field instead.
    * Cannot be specified if VolumeIDRe is set.
-   *
-   * @generated from field: repeated string volume_id_list = 3;
    */
   volumeIdList?: string[]
 }
 
 export const ListBucketsRequest: MessageType<ListBucketsRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'volume.ListBucketsRequest',
-    fields: [
-      { no: 1, name: 'bucket_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'volume_id_re', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'volume_id_list',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListBucketsRequest>(
+    'volume.ListBucketsRequest',
+    () => [
+      [1, 'bucket_id', 9],
+      [2, 'volume_id_re', 9],
+      [3, 'volume_id_list', 9, 1],
+    ],
+  )

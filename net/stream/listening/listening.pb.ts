@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the listening controller.
@@ -16,44 +14,32 @@ export interface Config {
   /**
    * LocalPeerId is the peer ID to forward incoming connections with.
    * Can be empty.
-   *
-   * @generated from field: string local_peer_id = 1;
    */
   localPeerId?: string
   /**
    * RemotePeerId is the peer ID to forward incoming connections to.
-   *
-   * @generated from field: string remote_peer_id = 2;
    */
   remotePeerId?: string
   /**
    * ProtocolId is the protocol ID to assign to incoming connections.
-   *
-   * @generated from field: string protocol_id = 3;
    */
   protocolId?: string
   /**
    * ListenMultiaddr is the listening multiaddress.
-   *
-   * @generated from field: string listen_multiaddr = 4;
    */
   listenMultiaddr?: string
   /**
    * TransportId sets a transport ID constraint.
    * Can be empty.
-   *
-   * @generated from field: uint64 transport_id = 5;
    */
   transportId?: bigint
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'stream.listening.Config',
-  fields: [
-    { no: 1, name: 'local_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'remote_peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'protocol_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'listen_multiaddr', kind: 'scalar', T: ScalarType.STRING },
-    { no: 5, name: 'transport_id', kind: 'scalar', T: ScalarType.UINT64 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('stream.listening.Config', () => [
+    [1, 'local_peer_id', 9],
+    [2, 'remote_peer_id', 9],
+    [3, 'protocol_id', 9],
+    [4, 'listen_multiaddr', 9],
+    [5, 'transport_id', 4],
+  ])

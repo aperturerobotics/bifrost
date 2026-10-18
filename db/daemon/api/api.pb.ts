@@ -4,18 +4,13 @@
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
-import {
-  createEmptyMessageType,
-  createMessageType,
-} from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 import { VolumeBucketInfo, VolumeInfo } from '../../volume/volume.pb.js'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import {
   ApplyBucketConfigResult,
   BucketOpArgs,
   Config as Config$1,
 } from '../../bucket/bucket.pb.js'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
 import { BlockRef, PutOpts } from '../../block/block.pb.js'
 import { Event } from '../../bucket/event/event.pb.js'
 
@@ -25,30 +20,20 @@ import { Event } from '../../bucket/event/event.pb.js'
  * @generated from enum hydra.api.BucketOp
  */
 export enum BucketOp {
-  /**
-   * @generated from enum value: BucketOp_UNKNOWN = 0;
-   */
   BucketOp_UNKNOWN = 0,
-
-  /**
-   * @generated from enum value: BucketOp_BLOCK_GET = 1;
-   */
   BucketOp_BLOCK_GET = 1,
-
-  /**
-   * @generated from enum value: BucketOp_BLOCK_PUT = 2;
-   */
   BucketOp_BLOCK_PUT = 2,
-
-  /**
-   * @generated from enum value: BucketOp_BLOCK_RM = 3;
-   */
   BucketOp_BLOCK_RM = 3,
 }
 
 export const BucketOp_Enum = /* @__PURE__ */ createEnumType(
   'hydra.api.BucketOp',
-  BucketOp,
+  [
+    [0, 'BucketOp_UNKNOWN'],
+    [1, 'BucketOp_BLOCK_GET'],
+    [2, 'BucketOp_BLOCK_PUT'],
+    [3, 'BucketOp_BLOCK_RM'],
+  ],
 )
 
 /**
@@ -57,43 +42,38 @@ export const BucketOp_Enum = /* @__PURE__ */ createEnumType(
  * @generated from enum hydra.api.ObjectStoreOp
  */
 export enum ObjectStoreOp {
-  /**
-   * @generated from enum value: ObjectStoreOp_UNKNOWN = 0;
-   */
   ObjectStoreOp_UNKNOWN = 0,
 
   /**
    * ObjectStoreOp_GET_KEY gets a key.
-   *
-   * @generated from enum value: ObjectStoreOp_GET_KEY = 1;
    */
   ObjectStoreOp_GET_KEY = 1,
 
   /**
    * ObjectStoreOp_PUT_KEY sets a key.
-   *
-   * @generated from enum value: ObjectStoreOp_PUT_KEY = 2;
    */
   ObjectStoreOp_PUT_KEY = 2,
 
   /**
    * ObjectStoreOp_LIST_KEYS lists keys by a prefix.
-   *
-   * @generated from enum value: ObjectStoreOp_LIST_KEYS = 3;
    */
   ObjectStoreOp_LIST_KEYS = 3,
 
   /**
    * ObjectStoreOp_DELETE_KEY deletes a key.
-   *
-   * @generated from enum value: ObjectStoreOp_DELETE_KEY = 4;
    */
   ObjectStoreOp_DELETE_KEY = 4,
 }
 
 export const ObjectStoreOp_Enum = /* @__PURE__ */ createEnumType(
   'hydra.api.ObjectStoreOp',
-  ObjectStoreOp,
+  [
+    [0, 'ObjectStoreOp_UNKNOWN'],
+    [1, 'ObjectStoreOp_GET_KEY'],
+    [2, 'ObjectStoreOp_PUT_KEY'],
+    [3, 'ObjectStoreOp_LIST_KEYS'],
+    [4, 'ObjectStoreOp_DELETE_KEY'],
+  ],
 )
 
 /**
@@ -104,7 +84,7 @@ export const ObjectStoreOp_Enum = /* @__PURE__ */ createEnumType(
 export interface Config {}
 
 export const Config: MessageType<Config> =
-  /* @__PURE__ */ createEmptyMessageType<Config>('hydra.api.Config', true)
+  /* @__PURE__ */ createMessageType<Config>('hydra.api.Config', () => [])
 
 /**
  * ListVolumesRequest looks up volumes.
@@ -114,9 +94,9 @@ export const Config: MessageType<Config> =
 export interface ListVolumesRequest {}
 
 export const ListVolumesRequest: MessageType<ListVolumesRequest> =
-  /* @__PURE__ */ createEmptyMessageType<ListVolumesRequest>(
+  /* @__PURE__ */ createMessageType<ListVolumesRequest>(
     'hydra.api.ListVolumesRequest',
-    true,
+    () => [],
   )
 
 /**
@@ -127,25 +107,15 @@ export const ListVolumesRequest: MessageType<ListVolumesRequest> =
 export interface ListVolumesResponse {
   /**
    * Volumes is the list of volumes returned from the request.
-   *
-   * @generated from field: repeated volume.VolumeInfo volumes = 1;
    */
   volumes?: VolumeInfo[]
 }
 
 export const ListVolumesResponse: MessageType<ListVolumesResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'hydra.api.ListVolumesResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'volumes',
-        kind: 'message',
-        T: () => VolumeInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListVolumesResponse>(
+    'hydra.api.ListVolumesResponse',
+    () => [[1, 'volumes', 11, 1, VolumeInfo.codec]],
+  )
 
 /**
  * ListBucketsResponse returns buckets.
@@ -155,25 +125,15 @@ export const ListVolumesResponse: MessageType<ListVolumesResponse> =
 export interface ListBucketsResponse {
   /**
    * Buckets is the list of buckets returned from the request.
-   *
-   * @generated from field: repeated volume.VolumeBucketInfo buckets = 1;
    */
   buckets?: VolumeBucketInfo[]
 }
 
 export const ListBucketsResponse: MessageType<ListBucketsResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'hydra.api.ListBucketsResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'buckets',
-        kind: 'message',
-        T: () => VolumeBucketInfo,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ListBucketsResponse>(
+    'hydra.api.ListBucketsResponse',
+    () => [[1, 'buckets', 11, 1, VolumeBucketInfo.codec]],
+  )
 
 /**
  * ApplyBucketConfigRequest requests to apply a bucket config to volumes.
@@ -183,8 +143,6 @@ export const ListBucketsResponse: MessageType<ListBucketsResponse> =
 export interface ApplyBucketConfigRequest {
   /**
    * Config is the bucket config.
-   *
-   * @generated from field: bucket.Config config = 1;
    */
   config?: Config$1
   /**
@@ -193,34 +151,24 @@ export interface ApplyBucketConfigRequest {
    * If empty, will update volumes that already have the config only.
    * If VolumeIDList is set, it will override this field.
    * Cannot be specified if VolumeIDList is set.
-   *
-   * @generated from field: string volume_id_re = 2;
    */
   volumeIdRe?: string
   /**
    * VolumeIdList is a list of volume IDs to match.
    * Cannot be specified if VolumeIDRe is set.
-   *
-   * @generated from field: repeated string volume_id_list = 3;
    */
   volumeIdList?: string[]
 }
 
 export const ApplyBucketConfigRequest: MessageType<ApplyBucketConfigRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'hydra.api.ApplyBucketConfigRequest',
-    fields: [
-      { no: 1, name: 'config', kind: 'message', T: () => Config$1 },
-      { no: 2, name: 'volume_id_re', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'volume_id_list',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyBucketConfigRequest>(
+    'hydra.api.ApplyBucketConfigRequest',
+    () => [
+      [1, 'config', 11, 0, Config$1.codec],
+      [2, 'volume_id_re', 9],
+      [3, 'volume_id_list', 9, 1],
+    ],
+  )
 
 /**
  * ApplyBucketConfigResponse returns results of the request.
@@ -230,24 +178,15 @@ export const ApplyBucketConfigRequest: MessageType<ApplyBucketConfigRequest> =
 export interface ApplyBucketConfigResponse {
   /**
    * ApplyConfResult is a result value for the application.
-   *
-   * @generated from field: bucket.ApplyBucketConfigResult apply_conf_result = 1;
    */
   applyConfResult?: ApplyBucketConfigResult
 }
 
 export const ApplyBucketConfigResponse: MessageType<ApplyBucketConfigResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'hydra.api.ApplyBucketConfigResponse',
-    fields: [
-      {
-        no: 1,
-        name: 'apply_conf_result',
-        kind: 'message',
-        T: () => ApplyBucketConfigResult,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ApplyBucketConfigResponse>(
+    'hydra.api.ApplyBucketConfigResponse',
+    () => [[1, 'apply_conf_result', 11, 0, ApplyBucketConfigResult.codec]],
+  )
 
 /**
  * @generated from message hydra.api.BucketOpRequest
@@ -255,52 +194,42 @@ export const ApplyBucketConfigResponse: MessageType<ApplyBucketConfigResponse> =
 export interface BucketOpRequest {
   /**
    * Op is the operation to perform against the bucket.
-   *
-   * @generated from field: hydra.api.BucketOp op = 1;
    */
   op?: BucketOp
   /**
    * BucketOpArgs are common bucket operation arguments.
-   *
-   * @generated from field: bucket.BucketOpArgs bucket_op_args = 2;
    */
   bucketOpArgs?: BucketOpArgs
   /**
    * BlockRef is the block ref to lookup.
    * Used when op == BLOCK_GET || op == BLOCK_RM
-   *
-   * @generated from field: block.BlockRef block_ref = 3;
    */
   blockRef?: BlockRef
   /**
    * PutOpts are overriding put options.
    * Defaults are specified by the bucket.
    * Used when op == BLOCK_PUT
-   *
-   * @generated from field: block.PutOpts put_opts = 4;
    */
   putOpts?: PutOpts
   /**
    * Data is the data to put in the block.
    * May be constrained by the bucket block size limit.
    * Used when op == BLOCK_PUT
-   *
-   * @generated from field: bytes data = 5;
    */
   data?: Uint8Array
 }
 
 export const BucketOpRequest: MessageType<BucketOpRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'hydra.api.BucketOpRequest',
-    fields: [
-      { no: 1, name: 'op', kind: 'enum', T: BucketOp_Enum },
-      { no: 2, name: 'bucket_op_args', kind: 'message', T: () => BucketOpArgs },
-      { no: 3, name: 'block_ref', kind: 'message', T: () => BlockRef },
-      { no: 4, name: 'put_opts', kind: 'message', T: () => PutOpts },
-      { no: 5, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BucketOpRequest>(
+    'hydra.api.BucketOpRequest',
+    () => [
+      [1, 'op', 14, 0, BucketOp_Enum],
+      [2, 'bucket_op_args', 11, 0, BucketOpArgs.codec],
+      [3, 'block_ref', 11, 0, BlockRef.codec],
+      [4, 'put_opts', 11, 0, PutOpts.codec],
+      [5, 'data', 12],
+    ],
+  )
 
 /**
  * BucketOpResponse is the response type for BucketOp.
@@ -311,35 +240,29 @@ export interface BucketOpResponse {
   /**
    * Event is the bucket event, if any.
    * Used when op == BLOCK_PUT
-   *
-   * @generated from field: bucket.event.Event event = 1;
    */
   event?: Event
   /**
    * Data is the returned data, if any.
    * Used when op == BLOCK_GET
-   *
-   * @generated from field: bytes data = 2;
    */
   data?: Uint8Array
   /**
    * Found indicates if the data field is filled.
    * Used when op == BLOCK_GET
-   *
-   * @generated from field: bool found = 3;
    */
   found?: boolean
 }
 
 export const BucketOpResponse: MessageType<BucketOpResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'hydra.api.BucketOpResponse',
-    fields: [
-      { no: 1, name: 'event', kind: 'message', T: () => Event },
-      { no: 2, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 3, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<BucketOpResponse>(
+    'hydra.api.BucketOpResponse',
+    () => [
+      [1, 'event', 11, 0, Event.codec],
+      [2, 'data', 12],
+      [3, 'found', 8],
+    ],
+  )
 
 /**
  * ObjectStoreOpRequest is the object store operation request.
@@ -349,50 +272,40 @@ export const BucketOpResponse: MessageType<BucketOpResponse> =
 export interface ObjectStoreOpRequest {
   /**
    * Op is the operation to perform against the bucket.
-   *
-   * @generated from field: hydra.api.ObjectStoreOp op = 1;
    */
   op?: ObjectStoreOp
   /**
    * VolumeId is the volume id.
-   *
-   * @generated from field: string volume_id = 2;
    */
   volumeId?: string
   /**
    * StoreName is the object store name.
-   *
-   * @generated from field: string store_name = 3;
    */
   storeName?: string
   /**
    * Key is the key to get, put, or delete.
    * Field is the prefix if a list request.
-   *
-   * @generated from field: string key = 4;
    */
   key?: string
   /**
    * Data is the data to put.
    * May be constrained by a size limit.
    * Used when op == PUT_KEY
-   *
-   * @generated from field: bytes data = 5;
    */
   data?: Uint8Array
 }
 
 export const ObjectStoreOpRequest: MessageType<ObjectStoreOpRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'hydra.api.ObjectStoreOpRequest',
-    fields: [
-      { no: 1, name: 'op', kind: 'enum', T: ObjectStoreOp_Enum },
-      { no: 2, name: 'volume_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 3, name: 'store_name', kind: 'scalar', T: ScalarType.STRING },
-      { no: 4, name: 'key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 5, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectStoreOpRequest>(
+    'hydra.api.ObjectStoreOpRequest',
+    () => [
+      [1, 'op', 14, 0, ObjectStoreOp_Enum],
+      [2, 'volume_id', 9],
+      [3, 'store_name', 9],
+      [4, 'key', 9],
+      [5, 'data', 12],
+    ],
+  )
 
 /**
  * ObjectStoreOpResponse is the response type for ObjectStoreOp.
@@ -403,37 +316,25 @@ export interface ObjectStoreOpResponse {
   /**
    * Data is the returned data, if any.
    * Used when op == BLOCK_GET
-   *
-   * @generated from field: bytes data = 1;
    */
   data?: Uint8Array
   /**
    * Found indicates if the data field is filled.
    * Used when op == BLOCK_GET
-   *
-   * @generated from field: bool found = 2;
    */
   found?: boolean
   /**
    * Keys are the output keys from the list call.
-   *
-   * @generated from field: repeated bytes keys = 3;
    */
   keys?: Uint8Array[]
 }
 
 export const ObjectStoreOpResponse: MessageType<ObjectStoreOpResponse> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'hydra.api.ObjectStoreOpResponse',
-    fields: [
-      { no: 1, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'found', kind: 'scalar', T: ScalarType.BOOL },
-      {
-        no: 3,
-        name: 'keys',
-        kind: 'scalar',
-        T: ScalarType.BYTES,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<ObjectStoreOpResponse>(
+    'hydra.api.ObjectStoreOpResponse',
+    () => [
+      [1, 'data', 12],
+      [2, 'found', 8],
+      [3, 'keys', 12, 1],
+    ],
+  )

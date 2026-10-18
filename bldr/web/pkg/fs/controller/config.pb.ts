@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the web pkg fs controller.
@@ -18,46 +16,33 @@ export interface Config {
   /**
    * UnixfsId is the identifier for the UnixFS on the bus.
    * The fs should be provided with the AccessUnixFS controller.
-   *
-   * @generated from field: string unixfs_id = 1;
    */
   unixfsId?: string
   /**
    * UnixfsPrefix is a path prefix to apply to paths in the FS.
    * This applies a chroot to the UnixFS.
-   *
-   * @generated from field: string unixfs_prefix = 2;
    */
   unixfsPrefix?: string
   /**
    * NotFoundIfIdle returns 404 not found if the FS lookup becomes idle.
    * Lookup becomes idle if no FS is available for the URL.
    * If unset, waits until the FS is available.
-   *
-   * @generated from field: bool not_found_if_idle = 3;
    */
   notFoundIfIdle?: boolean
   /**
    * WebPkgIdList is a list of web pkg IDs to resolve.
    * Ignored if empty.
-   *
-   * @generated from field: repeated string web_pkg_id_list = 4;
    */
   webPkgIdList?: string[]
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'web.pkg.fs.controller.Config',
-  fields: [
-    { no: 1, name: 'unixfs_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'unixfs_prefix', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'not_found_if_idle', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 4,
-      name: 'web_pkg_id_list',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'web.pkg.fs.controller.Config',
+    () => [
+      [1, 'unixfs_id', 9],
+      [2, 'unixfs_prefix', 9],
+      [3, 'not_found_if_idle', 8],
+      [4, 'web_pkg_id_list', 9, 1],
+    ],
+  )

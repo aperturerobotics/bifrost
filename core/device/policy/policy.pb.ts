@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * DevicePolicy is the daemon-local policy that controls Device capabilities.
@@ -15,30 +13,20 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface DevicePolicy {
   /**
    * Revision increments on every policy mutation.
-   *
-   * @generated from field: uint64 revision = 1;
    */
   revision?: bigint
   /**
    * NodeTypeId is the allow list of Flowgraph node type IDs this Device runs.
    * A node whose type is absent from the list is rejected.
-   *
-   * @generated from field: repeated string node_type_id = 2;
    */
   nodeTypeId?: string[]
 }
 
 export const DevicePolicy: MessageType<DevicePolicy> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 's4wave.device.policy.DevicePolicy',
-    fields: [
-      { no: 1, name: 'revision', kind: 'scalar', T: ScalarType.UINT64 },
-      {
-        no: 2,
-        name: 'node_type_id',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<DevicePolicy>(
+    's4wave.device.policy.DevicePolicy',
+    () => [
+      [1, 'revision', 4],
+      [2, 'node_type_id', 9, 1],
+    ],
+  )

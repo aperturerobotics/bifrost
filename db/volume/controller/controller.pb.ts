@@ -6,8 +6,6 @@ import type { OverlayMode } from '../../block/block.pb.js'
 import { OverlayMode_Enum, PutOpts } from '../../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the generic volume controller.
@@ -19,111 +17,60 @@ export interface Config {
    * DisableEventBlockRm disables the block removed event.
    *
    * Optimization: skips exists() before delete.
-   *
-   * @generated from field: bool disable_event_block_rm = 1;
    */
   disableEventBlockRm?: boolean
   /**
    * VolumeIdAlias matches LookupVolume and LookupBlockStore calls for the given ids.
-   *
-   * @generated from field: repeated string volume_id_alias = 2;
    */
   volumeIdAlias?: string[]
   /**
    * DisablePeer disables loading the peer controller from the volume.
-   *
-   * @generated from field: bool disable_peer = 4;
    */
   disablePeer?: boolean
   /**
    * DisableLookupBlockStore disables resolving LookupBlockStore when using the
    * volume ID for the store_id field.
-   *
-   * @generated from field: bool disable_lookup_block_store = 7;
    */
   disableLookupBlockStore?: boolean
   /**
    * BlockStoreId configures using a separate block store for blocks.
    * uses LookupBlockStore to lookup the block store on the bus.
-   *
-   * @generated from field: string block_store_id = 5;
    */
   blockStoreId?: string
   /**
    * BlockStoreOverlayMode indicates the mode to use for the block store.
    * The volume is the lower store, the block store is the upper store.
    * Does nothing if block_store_id is empty.
-   *
-   * @generated from field: block.OverlayMode block_store_overlay_mode = 6;
    */
   blockStoreOverlayMode?: OverlayMode
   /**
    * BlockStoreWritebackTimeoutDur is the timeout for writing back blocks.
    * If block_store_id or block_store_overlay_mode do not enable writeback, this is N/A.
    * Example: 30s
-   *
-   * @generated from field: string block_store_writeback_timeout_dur = 8;
    */
   blockStoreWritebackTimeoutDur?: string
   /**
    * BlockStoreWritebackPutOpts are the base put options for writing back blocks.
    * If block_store_id or block_store_overlay_mode do not enable writeback, this is N/A.
-   *
-   * @generated from field: block.PutOpts block_store_writeback_put_opts = 9;
    */
   blockStoreWritebackPutOpts?: PutOpts
   /**
    * GcIntervalDur is the interval between GC sweeps.
    * Default: 1m. Set to 0s to disable periodic GC.
    * Example: 1m
-   *
-   * @generated from field: string gc_interval_dur = 10;
    */
   gcIntervalDur?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'volume.controller.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'disable_event_block_rm',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    {
-      no: 2,
-      name: 'volume_id_alias',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-      repeated: true,
-    },
-    { no: 4, name: 'disable_peer', kind: 'scalar', T: ScalarType.BOOL },
-    {
-      no: 7,
-      name: 'disable_lookup_block_store',
-      kind: 'scalar',
-      T: ScalarType.BOOL,
-    },
-    { no: 5, name: 'block_store_id', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 6,
-      name: 'block_store_overlay_mode',
-      kind: 'enum',
-      T: OverlayMode_Enum,
-    },
-    {
-      no: 8,
-      name: 'block_store_writeback_timeout_dur',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    {
-      no: 9,
-      name: 'block_store_writeback_put_opts',
-      kind: 'message',
-      T: () => PutOpts,
-    },
-    { no: 10, name: 'gc_interval_dur', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('volume.controller.Config', () => [
+    [1, 'disable_event_block_rm', 8],
+    [2, 'volume_id_alias', 9, 1],
+    [4, 'disable_peer', 8],
+    [5, 'block_store_id', 9],
+    [6, 'block_store_overlay_mode', 14, 0, OverlayMode_Enum],
+    [7, 'disable_lookup_block_store', 8],
+    [8, 'block_store_writeback_timeout_dur', 9],
+    [9, 'block_store_writeback_put_opts', 11, 0, PutOpts.codec],
+    [10, 'gc_interval_dur', 9],
+  ])

@@ -6,8 +6,6 @@ import type { HashType } from '../hash/hash.pb.js'
 import { HashType_Enum } from '../hash/hash.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Signature contains a signature by a peer.
@@ -18,35 +16,26 @@ export interface Signature {
   /**
    * PubKey is the public key of the peer.
    * May be empty if the public key is to be inferred from context.
-   *
-   * @generated from field: bytes pub_key = 1;
    */
   pubKey?: Uint8Array
   /**
    * HashType is the hash type used to hash the data.
    * The signature is then of the hash bytes (usually 32).
-   *
-   * @generated from field: hash.HashType hash_type = 2;
    */
   hashType?: HashType
   /**
    * SigData contains the signature data.
    * The format is defined by the key type.
-   *
-   * @generated from field: bytes sig_data = 3;
    */
   sigData?: Uint8Array
 }
 
 export const Signature: MessageType<Signature> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'peer.Signature',
-    fields: [
-      { no: 1, name: 'pub_key', kind: 'scalar', T: ScalarType.BYTES },
-      { no: 2, name: 'hash_type', kind: 'enum', T: HashType_Enum },
-      { no: 3, name: 'sig_data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Signature>('peer.Signature', () => [
+    [1, 'pub_key', 12],
+    [2, 'hash_type', 14, 0, HashType_Enum],
+    [3, 'sig_data', 12],
+  ])
 
 /**
  * SignedMsg is a message from a peer with a signature.
@@ -56,31 +45,22 @@ export const Signature: MessageType<Signature> =
 export interface SignedMsg {
   /**
    * FromPeerId is the peer identifier of the sender.
-   *
-   * @generated from field: string from_peer_id = 1;
    */
   fromPeerId?: string
   /**
    * Signature is the sender signature.
    * Should not contain PubKey, which is inferred from peer id.
-   *
-   * @generated from field: peer.Signature signature = 2;
    */
   signature?: Signature
   /**
    * Data is the signed data.
-   *
-   * @generated from field: bytes data = 3;
    */
   data?: Uint8Array
 }
 
 export const SignedMsg: MessageType<SignedMsg> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'peer.SignedMsg',
-    fields: [
-      { no: 1, name: 'from_peer_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'signature', kind: 'message', T: Signature },
-      { no: 3, name: 'data', kind: 'scalar', T: ScalarType.BYTES },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<SignedMsg>('peer.SignedMsg', () => [
+    [1, 'from_peer_id', 9],
+    [2, 'signature', 11, 0, Signature.codec],
+    [3, 'data', 12],
+  ])

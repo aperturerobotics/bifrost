@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config is the solicitation controller config.
@@ -16,15 +14,12 @@ export interface Config {
   /**
    * MaxHashes is the maximum number of hashes per exchange.
    * If 0, defaults to 256.
-   *
-   * @generated from field: uint32 max_hashes = 1;
    */
   maxHashes?: number
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'link.solicit.controller.Config',
-  fields: [
-    { no: 1, name: 'max_hashes', kind: 'scalar', T: ScalarType.UINT32 },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>(
+    'link.solicit.controller.Config',
+    () => [[1, 'max_hashes', 13]],
+  )

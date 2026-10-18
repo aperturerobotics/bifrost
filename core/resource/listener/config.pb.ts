@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 
 /**
  * Config configures the resource listener controller.
@@ -15,29 +13,18 @@ import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 export interface Config {
   /**
    * ListenerSocketPath is the path to the Unix socket to listen on.
-   *
-   * @generated from field: string listener_socket_path = 1;
    */
   listenerSocketPath?: string
   /**
    * StorageProjectId derives the socket path as
    * DetermineStorageRoot(project_id)/project_id.sock when ListenerSocketPath is
    * empty. An explicit ListenerSocketPath always takes precedence.
-   *
-   * @generated from field: string storage_project_id = 2;
    */
   storageProjectId?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'resource.listener.Config',
-  fields: [
-    {
-      no: 1,
-      name: 'listener_socket_path',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-    { no: 2, name: 'storage_project_id', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('resource.listener.Config', () => [
+    [1, 'listener_socket_path', 9],
+    [2, 'storage_project_id', 9],
+  ])

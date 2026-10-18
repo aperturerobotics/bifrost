@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { ObjectRef } from '../../../db/bucket/bucket.pb.js'
 
 /**
@@ -16,26 +14,22 @@ import { ObjectRef } from '../../../db/bucket/bucket.pb.js'
 export interface AccountReplicaObjectRequest {
   /**
    * SettingsId binds the request to the already enrolled account settings object.
-   *
-   * @generated from field: string settings_id = 1;
    */
   settingsId?: string
   /**
    * ObjectId selects a live entry in that account's catalog.
-   *
-   * @generated from field: string object_id = 2;
    */
   objectId?: string
 }
 
 export const AccountReplicaObjectRequest: MessageType<AccountReplicaObjectRequest> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.local.AccountReplicaObjectRequest',
-    fields: [
-      { no: 1, name: 'settings_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'object_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccountReplicaObjectRequest>(
+    'provider.local.AccountReplicaObjectRequest',
+    () => [
+      [1, 'settings_id', 9],
+      [2, 'object_id', 9],
+    ],
+  )
 
 /**
  * Config configures the local space provider controller.
@@ -47,22 +41,16 @@ export interface Config {
    * ProviderId is the provider identifier.
    * Defaults to "local" if unset.
    * NOTE: Many places in the codebase expect this to be "local" so change carefully!
-   *
-   * @generated from field: string provider_id = 1;
    */
   providerId?: string
   /**
    * PeerId is the peer id to use.
    * If empty, uses the first value returned from GetPeer
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
   /**
    * StorageId is the storage id to use.
    * If empty, uses the default storage controller id.
-   *
-   * @generated from field: string storage_id = 3;
    */
   storageId?: string
   /**
@@ -71,34 +59,23 @@ export interface Config {
    * signs its own short-lived ticket request with its session keypair; no
    * cloud account or provider credential is involved. Empty disables WebRTC
    * signaling for standalone sessions.
-   *
-   * @generated from field: string signaling_url = 4;
    */
   signalingUrl?: string
   /**
    * SignalingEnvPrefix is the request-signing namespace of the signaling server.
    * Empty uses the production namespace.
-   *
-   * @generated from field: string signaling_env_prefix = 5;
    */
   signalingEnvPrefix?: string
 }
 
-export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
-  typeName: 'provider.local.Config',
-  fields: [
-    { no: 1, name: 'provider_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 3, name: 'storage_id', kind: 'scalar', T: ScalarType.STRING },
-    { no: 4, name: 'signaling_url', kind: 'scalar', T: ScalarType.STRING },
-    {
-      no: 5,
-      name: 'signaling_env_prefix',
-      kind: 'scalar',
-      T: ScalarType.STRING,
-    },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Config: MessageType<Config> =
+  /* @__PURE__ */ createMessageType<Config>('provider.local.Config', () => [
+    [1, 'provider_id', 9],
+    [2, 'peer_id', 9],
+    [3, 'storage_id', 9],
+    [4, 'signaling_url', 9],
+    [5, 'signaling_env_prefix', 9],
+  ])
 
 /**
  * AccountReplicaCopyState records local durability for one accepted World head.
@@ -108,51 +85,39 @@ export const Config: MessageType<Config> = /* @__PURE__ */ createMessageType({
 export interface AccountReplicaCopyState {
   /**
    * ObjectId identifies the SharedObject within this ProviderAccount.
-   *
-   * @generated from field: string object_id = 1;
    */
   objectId?: string
   /**
    * Head is the exact accepted World root being copied.
-   *
-   * @generated from field: bucket.ObjectRef head = 2;
    */
   head?: ObjectRef
   /**
    * Blocks is the number of distinct blocks copied for this head.
-   *
-   * @generated from field: uint64 blocks = 3;
    */
   blocks?: bigint
   /**
    * Bytes is the at-rest size of those blocks, including local cache hits.
-   *
-   * @generated from field: uint64 bytes = 4;
    */
   bytes?: bigint
   /**
    * Complete is set only after all reachable blocks cross the durability fence.
-   *
-   * @generated from field: bool complete = 5;
    */
   complete?: boolean
   /**
    * Error describes why this head could not finish; a later attempt resumes from local blocks.
-   *
-   * @generated from field: string error = 6;
    */
   error?: string
 }
 
 export const AccountReplicaCopyState: MessageType<AccountReplicaCopyState> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'provider.local.AccountReplicaCopyState',
-    fields: [
-      { no: 1, name: 'object_id', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'head', kind: 'message', T: () => ObjectRef },
-      { no: 3, name: 'blocks', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 4, name: 'bytes', kind: 'scalar', T: ScalarType.UINT64 },
-      { no: 5, name: 'complete', kind: 'scalar', T: ScalarType.BOOL },
-      { no: 6, name: 'error', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<AccountReplicaCopyState>(
+    'provider.local.AccountReplicaCopyState',
+    () => [
+      [1, 'object_id', 9],
+      [2, 'head', 11, 0, ObjectRef.codec],
+      [3, 'blocks', 4],
+      [4, 'bytes', 4],
+      [5, 'complete', 8],
+      [6, 'error', 9],
+    ],
+  )

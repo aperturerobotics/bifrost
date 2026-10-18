@@ -4,8 +4,6 @@
 
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
-import { ScalarType } from '@aptre/protobuf-es-lite/scalar'
-import type { PartialFieldInfo } from '@aptre/protobuf-es-lite/field'
 import { Keypair } from '@go/github.com/s4wave/spacewave/identity/identity.pb.js'
 
 /**
@@ -26,18 +24,14 @@ export interface Worker {
    * Name is the human readable worker name.
    * Example: "my-worker-1"
    * Must be a valid DNS label as defined in RFC 1123.
-   *
-   * @generated from field: string name = 1;
    */
   name?: string
 }
 
-export const Worker: MessageType<Worker> = /* @__PURE__ */ createMessageType({
-  typeName: 'forge.worker.Worker',
-  fields: [
-    { no: 1, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-  ] satisfies readonly PartialFieldInfo[],
-})
+export const Worker: MessageType<Worker> =
+  /* @__PURE__ */ createMessageType<Worker>('forge.worker.Worker', () => [
+    [1, 'name', 9],
+  ])
 
 /**
  * Placement freezes the selected Worker and authenticated Device peer for a Job attempt.
@@ -47,31 +41,19 @@ export const Worker: MessageType<Worker> = /* @__PURE__ */ createMessageType({
 export interface Placement {
   /**
    * WorkerObjectKey is the selected Worker's World identity, retained as an immutable placement snapshot.
-   *
-   * @generated from field: string worker_object_key = 1;
    */
   workerObjectKey?: string
   /**
    * PeerId is the authenticated Device peer linked to that Worker when selected.
-   *
-   * @generated from field: string peer_id = 2;
    */
   peerId?: string
 }
 
 export const Placement: MessageType<Placement> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.worker.Placement',
-    fields: [
-      {
-        no: 1,
-        name: 'worker_object_key',
-        kind: 'scalar',
-        T: ScalarType.STRING,
-      },
-      { no: 2, name: 'peer_id', kind: 'scalar', T: ScalarType.STRING },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<Placement>('forge.worker.Placement', () => [
+    [1, 'worker_object_key', 9],
+    [2, 'peer_id', 9],
+  ])
 
 /**
  * WorkerCreateOp creates a Worker.
@@ -81,38 +63,26 @@ export const Placement: MessageType<Placement> =
 export interface WorkerCreateOp {
   /**
    * ObjectKey is the object key to create the Worker.
-   *
-   * @generated from field: string object_key = 1;
    */
   objectKey?: string
   /**
    * Name is the worker name to create.
-   *
-   * @generated from field: string name = 2;
    */
   name?: string
   /**
    * Keypairs is the list of keypairs to add and/or link to the worker.
    * Must not have duplicates.
    * Optional.
-   *
-   * @generated from field: repeated identity.Keypair keypairs = 3;
    */
   keypairs?: Keypair[]
 }
 
 export const WorkerCreateOp: MessageType<WorkerCreateOp> =
-  /* @__PURE__ */ createMessageType({
-    typeName: 'forge.worker.WorkerCreateOp',
-    fields: [
-      { no: 1, name: 'object_key', kind: 'scalar', T: ScalarType.STRING },
-      { no: 2, name: 'name', kind: 'scalar', T: ScalarType.STRING },
-      {
-        no: 3,
-        name: 'keypairs',
-        kind: 'message',
-        T: () => Keypair,
-        repeated: true,
-      },
-    ] satisfies readonly PartialFieldInfo[],
-  })
+  /* @__PURE__ */ createMessageType<WorkerCreateOp>(
+    'forge.worker.WorkerCreateOp',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'name', 9],
+      [3, 'keypairs', 11, 1, Keypair.codec],
+    ],
+  )
