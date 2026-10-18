@@ -208,7 +208,7 @@ func TestLeaveSOParticipantsRejectsPriorAdmissionConsent(t *testing.T) {
 }
 
 // newLeaveTestHost retains signed config history behind the same lock as state.
-func newLeaveTestHost(t *testing.T, config *SharedObjectConfig, retained ...*SOConfigChange) (*SOHost, **SOState) {
+func newLeaveTestHost(t testing.TB, config *SharedObjectConfig, retained ...*SOConfigChange) (*SOHost, **SOState) {
 	t.Helper()
 	state := &SOState{Config: config.CloneVT()}
 	statePtr := &state

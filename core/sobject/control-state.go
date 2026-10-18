@@ -18,8 +18,9 @@ const maxControlAgreements = 4
 // round. A second message is evidence that the voter equivocated.
 const maxControlEvidence = 2
 
-// MaxControlMessages bounds the control messages a state holds.
-const MaxControlMessages = MaxParticipants * (maxControlRounds*3*maxControlEvidence + maxControlAgreements) * 2
+// maxControlMessagesPerVoter bounds the control messages a state holds for one
+// voter of its config.
+const maxControlMessagesPerVoter = (maxControlRounds*3*maxControlEvidence + maxControlAgreements) * 2
 
 // ControlMessage is a verified control message with its body.
 type ControlMessage struct {
@@ -207,7 +208,7 @@ func (s *SOState) pruneControlMessages() {
 // validateControlMessages checks that the control messages are signed for
 // this object, bounded, and sorted by hash.
 func (s *SOState) validateControlMessages(sharedObjectID string) error {
-	if len(s.GetControlMessages()) > MaxControlMessages {
+	if len(s.GetControlMessages()) > s.GetConfig().voterCount()*maxControlMessagesPerVoter {
 		return errors.Wrap(ErrMaxCountExceeded, "control messages")
 	}
 	var prev []byte

@@ -41,7 +41,7 @@ func (r *SOLeaveRequest) Verify() ([]string, error) {
 	if r.GetSharedObjectId() == "" || len(r.GetSharedObjectId()) > 256 {
 		return nil, errors.New("leave requires a bounded shared object ID")
 	}
-	if len(r.GetConfigHash()) != 32 || len(r.GetSignatures()) == 0 || len(r.GetSignatures()) > MaxParticipants {
+	if len(r.GetConfigHash()) != 32 || len(r.GetSignatures()) == 0 || r.SizeVT() > MaxSyncStateSize {
 		return nil, errors.New("leave requires a configuration hash and bounded identity proofs")
 	}
 	unsigned := r.CloneVT()

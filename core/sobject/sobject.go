@@ -168,6 +168,12 @@ func NewLocalStateStoreRefcount(
 // Validate checks bootstrap structure or a retained configuration, including a terminal empty audience.
 // A nonempty configuration must keep an OWNER so later changes remain authorizable.
 func (c *SharedObjectConfig) Validate() error {
+	// The participant list has no count of its own; the encoded config bounds
+	// it, and so bounds the voting weight sums and the work below.
+	if c.SizeVT() > MaxStateDataSize {
+		return ErrMaxCountExceeded
+	}
+
 	// Pinned operations of removed authors outlive the final departure too.
 	if err := validateAuthorHeads("removed_authors", c.GetRemovedAuthors()); err != nil {
 		return err
@@ -200,9 +206,6 @@ func (c *SharedObjectConfig) Validate() error {
 			return ErrEmptyParticipants
 		}
 		return nil
-	}
-	if len(participants) > MaxParticipants {
-		return ErrMaxCountExceeded
 	}
 
 	// Each remaining peer has one unambiguous role in this configuration.

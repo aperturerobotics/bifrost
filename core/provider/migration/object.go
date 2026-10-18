@@ -48,9 +48,6 @@ func CheckObject(ctx context.Context, object sobject.SharedObject, peers []strin
 	if !owner {
 		return errors.New("the Space owner must authorize the destination account before this Space can move")
 	}
-	if len(state.GetConfig().GetParticipants())+len(remaining) > sobject.MaxParticipants {
-		return errors.New("the destination account exceeds this Space's participant limit")
-	}
 	return nil
 }
 

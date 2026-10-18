@@ -150,13 +150,14 @@ def CheckpointBody.valid (b : CheckpointBody) : Bool :=
 
 /--
 verifyCheckpoint mirrors `SOCheckpoint.Verify`: a nonempty well-formed body
-bound to `obj` with one to `maxParticipants` verified signatures from distinct
-signers. It returns the body and the signers.
+bound to `obj` with at least one verified signature from distinct signers. It
+returns the body and the signers. Go also bounds the encoded size, which the
+model leaves out.
 -/
 def verifyCheckpoint (obj : String) (cp : Checkpoint) : Option (CheckpointBody × List String) := do
   let b ← cp.body
   let signers := cp.sigs.map (·.signer)
-  if cp.innerBytes > 0 && !cp.sigs.isEmpty && cp.sigs.length ≤ maxParticipants && b.valid &&
+  if cp.innerBytes > 0 && !cp.sigs.isEmpty && b.valid &&
       b.object == obj && cp.sigs.all (fun s => s.signer != "" && s.valid) &&
       decide signers.Nodup then
     some (b, signers)
@@ -247,7 +248,7 @@ theorem verifyCheckpoint_spec {obj : String} {cp : Checkpoint} {b : CheckpointBo
       cases h
       simp only [Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq, Bool.not_eq_true',
         List.isEmpty_eq_false_iff, List.all_eq_true] at ok
-      obtain ⟨⟨⟨⟨⟨⟨_, nonempty⟩, _⟩, valid⟩, bound⟩, signed⟩, nodup⟩ := ok
+      obtain ⟨⟨⟨⟨⟨_, nonempty⟩, valid⟩, bound⟩, signed⟩, nodup⟩ := ok
       exact ⟨rfl, valid, bound, rfl, nodup, nonempty, fun s mem => (signed s mem).2⟩
     · contradiction
 

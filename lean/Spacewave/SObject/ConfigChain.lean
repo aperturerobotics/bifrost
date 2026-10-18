@@ -69,9 +69,6 @@ def peerChanges : List ChangeType :=
 
 end ChangeType
 
-/-- maxParticipants mirrors Go `MaxParticipants`. -/
-def maxParticipants : Nat := 100
-
 /-- seqnoLimit bounds a `uint64` configuration sequence number. -/
 def seqnoLimit : Nat := 2 ^ 64
 
@@ -138,15 +135,14 @@ def Config.hasOwner (c : Config) : Bool :=
 
 /--
 Config.validate mirrors `SharedObjectConfig.Validate`. An empty participant
-list is valid only as a signed terminal head; a nonempty one needs bounded,
-valid, unique participants and an OWNER.
+list is valid only as a signed terminal head; a nonempty one needs valid,
+unique participants and an OWNER.
 -/
 def Config.validate (c : Config) : Bool :=
   if c.participants.isEmpty then
     c.hash.length == digestLength
   else
-    c.participants.length ≤ maxParticipants &&
-      c.participants.all Participant.valid &&
+    c.participants.all Participant.valid &&
       decide (c.participants.map (·.peer)).Nodup &&
       c.hasOwner
 
@@ -492,7 +488,7 @@ theorem Config.validate_perm {a b : Config} (hp : a.participants.Perm b.particip
     apply Bool.eq_iff_iff.mpr
     simp only [List.isEmpty_iff]
     exact ⟨fun h => List.perm_nil.1 (h ▸ hp).symm, fun h => List.perm_nil.1 (h ▸ hp.symm).symm⟩
-  simp only [Config.validate, Config.hasOwner, hempty, hh, hp.length_eq, hall, hany,
+  simp only [Config.validate, Config.hasOwner, hempty, hh, hall, hany,
     (hp.map (·.peer)).nodup_iff]
 
 /-- Merging a change keeps a permutation of the target a permutation. -/

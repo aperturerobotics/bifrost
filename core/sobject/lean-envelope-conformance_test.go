@@ -280,13 +280,10 @@ func (e *envelopeScenario) breakEnvelope(inner *[]byte, sig **peer.Signature) {
 }
 
 // signatureCount returns how many signatures a checkpoint carries: usually
-// one to three, rarely none or more than the participant limit.
+// one to three, rarely none.
 func (e *envelopeScenario) signatureCount() int {
-	switch e.rng.IntN(32) {
-	case 0:
+	if e.rng.IntN(32) == 0 {
 		return 0
-	case 1:
-		return MaxParticipants + 1
 	}
 	return 1 + e.rng.IntN(3)
 }

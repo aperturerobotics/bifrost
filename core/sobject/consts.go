@@ -19,9 +19,6 @@ const (
 	// MaxSignatureSize is the maximum size in bytes for signatures.
 	MaxSignatureSize = 512
 
-	// MaxParticipants is the maximum number of participants in a shared object.
-	MaxParticipants = 100
-
 	// MaxOperations is the maximum number of operations above the checkpoint.
 	MaxOperations = 65536
 

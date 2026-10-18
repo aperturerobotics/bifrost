@@ -3,7 +3,6 @@ import { bytesToHex, concatBytes } from '@noble/hashes/utils.js'
 
 import { verifySignature } from '../../net/peer/signature.js'
 import {
-  MAX_SO_PARTICIPANTS,
   validateSOAuthorHeads,
   validateSOSequenceHead,
 } from './config-chain.js'
@@ -100,12 +99,6 @@ export async function verifySOCheckpoint(
   }
   if (signatures.length === 0 && commit.length === 0) {
     throw new Error('checkpoint has no signature or commit')
-  }
-  if (
-    signatures.length > MAX_SO_PARTICIPANTS ||
-    commit.length > MAX_SO_PARTICIPANTS
-  ) {
-    throw new Error('checkpoint has too many signatures')
   }
   const inner = SOCheckpointInner.fromBinary(data)
   validateSOCheckpointInner(inner)

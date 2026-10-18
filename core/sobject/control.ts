@@ -4,7 +4,7 @@ import { bytesToHex, concatBytes } from '@noble/hashes/utils.js'
 import { extractPublicKeyFromPeerID } from '../../net/peer/id.js'
 import { verifySignature } from '../../net/peer/signature.js'
 import { hashSOCheckpointInner, MAX_SO_STATE_DATA_SIZE } from './checkpoint.js'
-import { configChangeSignedBody, MAX_SO_PARTICIPANTS } from './config-chain.js'
+import { configChangeSignedBody } from './config-chain.js'
 import { SOBJECT_BASE_CRYPTO_CONTEXT } from './operation-log.js'
 import {
   SOConfigChange,
@@ -298,9 +298,12 @@ export async function verifySOCommit(
   if (!isSOGroupControl(cfg)) {
     throw new Error('commit requires group control')
   }
-  if (commit.length === 0 || commit.length > MAX_SO_PARTICIPANTS) {
+  const voters = (cfg.participants ?? []).filter(
+    (p) => (p.votingWeight ?? 0) !== 0,
+  ).length
+  if (commit.length === 0 || commit.length > voters) {
     throw new Error(
-      'commit must hold between one and the participant limit of precommits',
+      'commit must hold between one and the voter count of precommits',
     )
   }
 

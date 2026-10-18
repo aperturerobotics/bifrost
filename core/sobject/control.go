@@ -12,8 +12,10 @@ import (
 	"github.com/s4wave/spacewave/net/peer"
 )
 
-// MaxVotingWeight bounds one device's voting weight, so weight sums over
-// MaxParticipants devices cannot overflow.
+// MaxVotingWeight bounds one device's voting weight, so weight sums cannot
+// overflow uint64 at any participant count a config can encode: a config of
+// at most MaxStateDataSize bytes holds fewer than 2^24 participants, whose
+// weights sum to less than 2^40, and a quorum test multiplies the sum by three.
 const MaxVotingWeight = 1 << 16
 
 // maxControlValueSize bounds the value a control message carries: a
@@ -59,6 +61,20 @@ func (c *SharedObjectConfig) TotalVotingWeight() uint64 {
 		total += uint64(p.GetVotingWeight())
 	}
 	return total
+}
+
+// voterCount returns how many participants vote under group control.
+func (c *SharedObjectConfig) voterCount() int {
+	if !c.IsGroupControl() {
+		return 0
+	}
+	n := 0
+	for _, p := range c.GetParticipants() {
+		if p.GetVotingWeight() != 0 {
+			n++
+		}
+	}
+	return n
 }
 
 // Voters returns the peer IDs that vote under group control, sorted.
@@ -366,8 +382,8 @@ func VerifyCommit(
 	if !cfg.IsGroupControl() {
 		return errors.New("commit requires group control")
 	}
-	if len(commit) == 0 || len(commit) > MaxParticipants {
-		return errors.New("commit must hold between one and the participant limit of precommits")
+	if len(commit) == 0 || len(commit) > cfg.voterCount() {
+		return errors.New("commit must hold between one and the voter count of precommits")
 	}
 
 	// Sum the weight of distinct voters precommitting valueHash in one round.

@@ -183,7 +183,10 @@ func (c *SOCheckpoint) Verify(sharedObjectID string) (*SOCheckpointInner, []stri
 	if len(c.GetSignatures()) == 0 && len(c.GetCommit()) == 0 {
 		return nil, nil, errors.New("checkpoint has no signature or commit")
 	}
-	if len(c.GetSignatures()) > MaxParticipants || len(c.GetCommit()) > MaxParticipants {
+
+	// No config is in hand here, so the encoded size bounds the signature
+	// work; VerifyCommit bounds the commit by the voters of its config.
+	if c.SizeVT() > MaxSyncStateSize {
 		return nil, nil, ErrMaxCountExceeded
 	}
 	inner, err := c.UnmarshalInner()

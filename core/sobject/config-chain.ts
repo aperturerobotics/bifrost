@@ -28,9 +28,6 @@ import {
 // record. The signed body binds the object, so the context needs no per-record data.
 export const SO_CONFIG_CHANGE_SIGNATURE_CONTEXT = 'sobject config change'
 
-// MAX_SO_PARTICIPANTS bounds the participants of one configuration.
-export const MAX_SO_PARTICIPANTS = 100
-
 // SOConfigChangeErrorKind classifies a rejected control record.
 // invalid: the record is malformed or bound to another object.
 // stale: the record does not extend the held head; a fresher base may succeed.
@@ -111,9 +108,6 @@ export function validateSOConfig(cfg: SharedObjectConfig): void {
       throw new SOConfigChangeError('invalid', 'config has no participants')
     }
     return
-  }
-  if (participants.length > MAX_SO_PARTICIPANTS) {
-    throw new SOConfigChangeError('invalid', 'config has too many participants')
   }
 
   // Each remaining peer has one unambiguous role in this configuration.
