@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react'
 
-import { SOParticipantRole } from '@s4wave/core/sobject/sobject.pb.js'
+import {
+  SOParticipantRole,
+  type SOSyncPeer,
+} from '@s4wave/core/sobject/sobject.pb.js'
 import {
   SpaceSequencer,
   type SpaceSharingState,
@@ -15,10 +24,13 @@ import { SpaceSyncSection } from './SpaceSyncSection.js'
 const h = vi.hoisted(() => ({
   setSpaceSequencer: vi.fn().mockResolvedValue({ changed: true }),
   unorderedCount: 0,
+  syncPeers: [] as SOSyncPeer[],
 }))
 
 vi.mock('@aptre/bldr-react', () => ({
-  useWatchStateRpc: () => ({ health: { unorderedCount: h.unorderedCount } }),
+  useWatchStateRpc: () => ({
+    health: { unorderedCount: h.unorderedCount, syncPeers: h.syncPeers },
+  }),
 }))
 
 vi.mock('@s4wave/web/contexts/contexts.js', () => ({
@@ -69,6 +81,7 @@ describe('SpaceSyncSection', () => {
     cleanup()
     vi.clearAllMocks()
     h.unorderedCount = 0
+    h.syncPeers = []
   })
 
   it('lets an owner of a cloud Space choose Spacewave Cloud', () => {
@@ -146,5 +159,41 @@ describe('SpaceSyncSection', () => {
     expect(screen.queryByText(otherPeer)).toBeNull()
     fireEvent.click(screen.getByText('Show technical details'))
     expect(screen.getByText(otherPeer)).toBeDefined()
+  })
+
+  it('lists each synced device with its connection state', () => {
+    const lostPeer = '12D3KooWLost'
+    h.syncPeers = [
+      { peerId: otherPeer, connected: true, since: new Date() },
+      {
+        peerId: lostPeer,
+        connected: false,
+        since: new Date(),
+        error: 'stream reset',
+      },
+    ]
+    renderSection({
+      sequencer: SpaceSequencer.SpaceSequencer_MERGE,
+      participantInfo: [{ isSelf: true, peerIds: [otherPeer] }],
+    })
+
+    const list = screen.getByRole('list', { name: 'Other devices' })
+    const rows = within(list).getAllByRole('listitem')
+    expect(within(rows[0]).getByText('Your other device')).toBeDefined()
+    expect(within(rows[0]).getByText(/^Connected since /)).toBeDefined()
+    expect(within(rows[1]).getByText('Unknown device')).toBeDefined()
+    expect(within(rows[1]).getByText(/^Disconnected since /)).toBeDefined()
+    expect(within(rows[1]).getByText('stream reset')).toBeDefined()
+    expect(screen.queryByText(lostPeer)).toBeNull()
+    fireEvent.click(screen.getByText('Show technical details'))
+    expect(screen.getByText(lostPeer)).toBeDefined()
+  })
+
+  it('says when no other device has synced', () => {
+    renderSection({ sequencer: SpaceSequencer.SpaceSequencer_MERGE })
+
+    expect(
+      screen.getByText('No other device has synced since this device started.'),
+    ).toBeDefined()
   })
 })
