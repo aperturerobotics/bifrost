@@ -8,6 +8,7 @@ import {
 
 import { useWatchStateRpc } from '@aptre/bldr-react'
 import { useResourceValue } from '@aptre/bldr-sdk/hooks/useResource.js'
+import type { SharedObjectHealth } from '@s4wave/core/sobject/sobject.pb.js'
 import {
   SpaceControl,
   SpaceSequencer,
@@ -35,6 +36,9 @@ import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
 import { RadioOption } from '@s4wave/web/ui/RadioOption.js'
 import { toast } from '@s4wave/web/ui/toaster.js'
 
+import { deviceName } from './device-name.js'
+import { SyncPeerList } from './SyncPeerList.js'
+
 // TakeOver is the wording of one way to make this device the main device.
 interface TakeOver {
   title: string
@@ -61,13 +65,19 @@ const MAIN_LOST: TakeOver = {
 // SpaceSyncSection shows how the Space's edits sync, and lets owners, or the
 // group's voters under group control, choose: Merge, where every device keeps
 // working and edits combine, or One order, where Spacewave Cloud or a main
-// device puts every edit in order.
+// device puts every edit in order. It lists the other devices this device
+// syncs the Space with.
 export function SpaceSyncSection() {
   const { spaceId, spaceSharingState } = SpaceContainerContext.useContext()
   const space = useResourceValue(SpaceContext.useContext())
-  const unordered = useUnorderedCount(spaceId)
+  const health = useSharedObjectHealth(spaceId)
   const [pending, setPending] = useState(false)
   const [takeOver, setTakeOver] = useState<TakeOver | null>(null)
+  const [showDetails, setShowDetails] = useStateAtom<boolean>(
+    null,
+    'showTechnicalDetails',
+    false,
+  )
 
   const choose = useCallback(
     async (sequencer: SpaceSequencer) => {
@@ -122,16 +132,11 @@ export function SpaceSyncSection() {
             disabled={!canManage}
             onChoose={(next) => void choose(next)}
           />
-          <p className="text-foreground-alt text-xs">
-            {sequencerStatus(spaceSharingState, sequencer)}
-          </p>
-          {!merged && unordered > 0 && (
-            <p className="text-warning text-xs">
-              {unordered === 1
-                ? '1 edit is waiting to be put in order.'
-                : `${unordered} edits are waiting to be put in order.`}
-            </p>
-          )}
+          <SyncStatus
+            state={spaceSharingState}
+            sequencer={sequencer}
+            unordered={health?.unorderedCount ?? 0}
+          />
           {canTakeOver && (
             <div className="flex flex-wrap gap-2">
               <DashboardButton
@@ -148,9 +153,18 @@ export function SpaceSyncSection() {
               </DashboardButton>
             </div>
           )}
+          {health && (
+            <SyncPeerList
+              state={spaceSharingState}
+              peers={health.syncPeers ?? []}
+              showDetails={showDetails}
+            />
+          )}
           <TechnicalDetails
             merged={merged}
             peerId={spaceSharingState.sequencerPeerId}
+            show={showDetails}
+            onToggle={() => setShowDetails(!showDetails)}
           />
         </div>
       </InfoCard>
@@ -164,9 +178,11 @@ export function SpaceSyncSection() {
   )
 }
 
-// useUnorderedCount watches how many of the shared object's operations wait
-// for the appointed sequencer.
-function useUnorderedCount(sharedObjectId: string): number {
+// useSharedObjectHealth watches the shared object's health, or returns
+// undefined until the first value arrives.
+function useSharedObjectHealth(
+  sharedObjectId: string,
+): SharedObjectHealth | undefined {
   const session = useResourceValue(SessionContext.useContext())
   const resp = useWatchStateRpc(
     useCallback(
@@ -178,7 +194,7 @@ function useUnorderedCount(sharedObjectId: string): number {
     WatchSharedObjectHealthRequest.equals,
     WatchSharedObjectHealthResponse.equals,
   )
-  return resp?.health?.unorderedCount ?? 0
+  return resp?.health
 }
 
 // SyncChoice is the Merge or One order radio pair. One order appoints the
@@ -222,26 +238,52 @@ function SyncChoice({
   )
 }
 
+// SyncStatus says whose order the Space follows and how many edits wait for it.
+function SyncStatus({
+  state,
+  sequencer,
+  unordered,
+}: {
+  state: SpaceSharingState
+  sequencer: SpaceSequencer
+  unordered: number
+}) {
+  const merged = sequencer === SpaceSequencer.SpaceSequencer_MERGE
+  return (
+    <>
+      <p className="text-foreground-alt text-xs">
+        {sequencerStatus(state, sequencer)}
+      </p>
+      {!merged && unordered > 0 && (
+        <p className="text-warning text-xs">
+          {unordered === 1
+            ? '1 edit is waiting to be put in order.'
+            : `${unordered} edits are waiting to be put in order.`}
+        </p>
+      )}
+    </>
+  )
+}
+
 // TechnicalDetails shows the sequencer terms behind the plain wording, behind
 // the global technical details toggle.
 function TechnicalDetails({
   merged,
   peerId,
+  show,
+  onToggle,
 }: {
   merged: boolean
   peerId?: string
+  show: boolean
+  onToggle: () => void
 }) {
-  const [show, setShow] = useStateAtom<boolean>(
-    null,
-    'showTechnicalDetails',
-    false,
-  )
   return (
     <>
       <button
         type="button"
         className="text-foreground-alt hover:text-foreground text-xs transition-colors"
-        onClick={() => setShow(!show)}
+        onClick={onToggle}
       >
         {show ? 'Hide technical details' : 'Show technical details'}
       </button>
@@ -330,17 +372,8 @@ function sequencerStatus(
     case SpaceSequencer.SpaceSequencer_THIS_DEVICE:
       return 'This device puts every edit in order. Keep it online so edits become final.'
     case SpaceSequencer.SpaceSequencer_OTHER_DEVICE:
-      return `${mainDeviceName(state)} puts every edit in order.`
+      return `${deviceName(state, state.sequencerPeerId ?? '', 'The main device')} puts every edit in order.`
     default:
       return 'Edits become final once every device has them.'
   }
-}
-
-// mainDeviceName names the member whose device is the main device.
-function mainDeviceName(state: SpaceSharingState): string {
-  const peerID = state.sequencerPeerId ?? ''
-  const info = state.participantInfo?.find((p) => p.peerIds?.includes(peerID))
-  if (!info) return 'The main device'
-  if (info.isSelf) return 'Your other device'
-  return `${info.entityId || info.accountId || 'A member'}'s device`
 }
