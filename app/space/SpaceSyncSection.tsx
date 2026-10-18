@@ -9,6 +9,7 @@ import {
 import { useWatchStateRpc } from '@aptre/bldr-react'
 import { useResourceValue } from '@aptre/bldr-sdk/hooks/useResource.js'
 import type { SharedObjectHealth } from '@s4wave/core/sobject/sobject.pb.js'
+import type { Space } from '@s4wave/sdk/space/space.js'
 import {
   SpaceControl,
   SpaceSequencer,
@@ -62,6 +63,13 @@ const MAIN_LOST: TakeOver = {
   confirm: 'Replace main device',
 }
 
+// PendingSequencer is a sequencer change the watched sharing state does not
+// show yet.
+interface PendingSequencer {
+  from: SpaceSequencer
+  to: SpaceSequencer
+}
+
 // SpaceSyncSection shows how the Space's edits sync, and lets owners, or the
 // group's voters under group control, choose: Merge, where every device keeps
 // working and edits combine, or One order, where Spacewave Cloud or a main
@@ -71,7 +79,6 @@ export function SpaceSyncSection() {
   const { spaceId, spaceSharingState } = SpaceContainerContext.useContext()
   const space = useResourceValue(SpaceContext.useContext())
   const health = useSharedObjectHealth(spaceId)
-  const [pending, setPending] = useState(false)
   const [takeOver, setTakeOver] = useState<TakeOver | null>(null)
   const [showDetails, setShowDetails] = useStateAtom<boolean>(
     null,
@@ -79,32 +86,16 @@ export function SpaceSyncSection() {
     false,
   )
 
-  const choose = useCallback(
-    async (sequencer: SpaceSequencer) => {
-      if (!space) return
-      setPending(true)
-      try {
-        const resp = await space.setSpaceSequencer(sequencer)
-        setTakeOver(null)
-        if (resp.awaitingGroup) {
-          toast.info('Asked the group', {
-            description: 'Edits sync the new way once enough members agree.',
-          })
-        }
-      } catch (err) {
-        toast.error('Could not change how edits sync', {
-          description: err instanceof Error ? err.message : String(err),
-        })
-      } finally {
-        setPending(false)
-      }
-    },
-    [space],
+  const current =
+    spaceSharingState?.sequencer ?? SpaceSequencer.SpaceSequencer_UNKNOWN
+  const closeTakeOver = useCallback(() => setTakeOver(null), [])
+  const { sequencer, switching, choose } = useSequencerChoice(
+    space,
+    current,
+    closeTakeOver,
   )
 
-  const sequencer =
-    spaceSharingState?.sequencer ?? SpaceSequencer.SpaceSequencer_UNKNOWN
-  if (!spaceSharingState || sequencer === SpaceSequencer.SpaceSequencer_UNKNOWN)
+  if (!spaceSharingState || current === SpaceSequencer.SpaceSequencer_UNKNOWN)
     return null
 
   const choices = spaceSharingState.sequencerChoices ?? []
@@ -112,7 +103,7 @@ export function SpaceSyncSection() {
   const canManage =
     (spaceSharingState.control === SpaceControl.SpaceControl_GROUP
       ? !!spaceSharingState.canVote
-      : !!spaceSharingState.canManage) && !pending
+      : !!spaceSharingState.canManage) && !switching
   const merged = sequencer === SpaceSequencer.SpaceSequencer_MERGE
   const canTakeOver =
     canManage &&
@@ -135,6 +126,7 @@ export function SpaceSyncSection() {
           <SyncStatus
             state={spaceSharingState}
             sequencer={sequencer}
+            switching={switching}
             unordered={health?.unorderedCount ?? 0}
           />
           {canTakeOver && (
@@ -170,12 +162,58 @@ export function SpaceSyncSection() {
       </InfoCard>
       <TakeOverDialog
         takeOver={takeOver}
-        pending={pending}
+        pending={switching}
         onCancel={() => setTakeOver(null)}
         onConfirm={() => void choose(SpaceSequencer.SpaceSequencer_THIS_DEVICE)}
       />
     </div>
   )
+}
+
+// useSequencerChoice sends a sequencer change and returns the sequencer to
+// show. A choice shows as selected from the moment it is made, and stays
+// switching until the watched sharing state moves off the sequencer it
+// replaced. A failed change, no change, or one the group must approve first
+// ends it early.
+function useSequencerChoice(
+  space: Space | undefined | null,
+  current: SpaceSequencer,
+  onSent: () => void,
+) {
+  const [pending, setPending] = useState<PendingSequencer | null>(null)
+  const settled = !pending || pending.from !== current
+  if (pending && settled) setPending(null)
+
+  const choose = useCallback(
+    async (next: SpaceSequencer) => {
+      if (!space) return
+      const choice = { from: current, to: next }
+      const end = () => setPending((cur) => (cur === choice ? null : cur))
+      setPending(choice)
+      try {
+        const resp = await space.setSpaceSequencer(next)
+        onSent()
+        if (!resp.changed || resp.awaitingGroup) end()
+        if (resp.awaitingGroup) {
+          toast.info('Asked the group', {
+            description: 'Edits sync the new way once enough members agree.',
+          })
+        }
+      } catch (err) {
+        end()
+        toast.error('Could not change how edits sync', {
+          description: err instanceof Error ? err.message : String(err),
+        })
+      }
+    },
+    [space, current, onSent],
+  )
+
+  return {
+    sequencer: settled ? current : pending.to,
+    switching: !settled,
+    choose,
+  }
 }
 
 // useSharedObjectHealth watches the shared object's health, or returns
@@ -238,17 +276,27 @@ function SyncChoice({
   )
 }
 
-// SyncStatus says whose order the Space follows and how many edits wait for it.
+// SyncStatus says whose order the Space follows and how many edits wait for
+// it, or which way the Space is switching to while a change is pending.
 function SyncStatus({
   state,
   sequencer,
+  switching,
   unordered,
 }: {
   state: SpaceSharingState
   sequencer: SpaceSequencer
+  switching: boolean
   unordered: number
 }) {
   const merged = sequencer === SpaceSequencer.SpaceSequencer_MERGE
+  if (switching) {
+    return (
+      <p className="text-foreground-alt text-xs" role="status">
+        {switchingStatus(sequencer)}
+      </p>
+    )
+  }
   return (
     <>
       <p className="text-foreground-alt text-xs">
@@ -375,5 +423,17 @@ function sequencerStatus(
       return `${deviceName(state, state.sequencerPeerId ?? '', 'The main device')} puts every edit in order.`
     default:
       return 'Edits become final once every device has them.'
+  }
+}
+
+// switchingStatus says which way the Space is switching to.
+function switchingStatus(to: SpaceSequencer): string {
+  switch (to) {
+    case SpaceSequencer.SpaceSequencer_MERGE:
+      return 'Switching to Merge…'
+    case SpaceSequencer.SpaceSequencer_THIS_DEVICE:
+      return 'Making this the main device…'
+    default:
+      return 'Switching to One order…'
   }
 }
