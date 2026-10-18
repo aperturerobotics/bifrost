@@ -49,9 +49,10 @@ import { WasiVmMachineCard } from './WasiVmMachineCard.js'
 import {
   useWasiVmWindowRoute,
   WasiVmWindowPane,
+  WasiVmWindowPicker,
   WasiVmWindowsMenu,
   windowLabel,
-  type WasiVmWindowRoute,
+  type WasiVmWindowView,
 } from './WasiVmWindow.js'
 
 // readLinkedKey reads the key of the first object the VM at objectKey links to
@@ -163,20 +164,19 @@ const screenViews = [
 ] as const
 
 // useWasiVmWindows watches the windows of the VM's Wayland display through
-// its handle, starting again for each run.
+// its handle, starting again for each run. It is undefined until the run
+// lists its windows.
 function useWasiVmWindows(
   handleResource: Resource<WasiVmHandle>,
   runGeneration: bigint,
-) {
-  return (
-    useStreamingResource(
-      handleResource,
-      (handle: WasiVmHandle, signal: AbortSignal) =>
-        handle.watchWindows(signal),
-      [runGeneration],
-      { equals: WasiVmWindowList.equals },
-    ).value?.windows ?? []
-  )
+): WasiVmWindow[] | undefined {
+  const list = useStreamingResource(
+    handleResource,
+    (handle: WasiVmHandle, signal: AbortSignal) => handle.watchWindows(signal),
+    [runGeneration],
+    { equals: WasiVmWindowList.equals },
+  ).value
+  return list ? (list.windows ?? []) : undefined
 }
 
 // WasiVmScreenProps configures the screen of one run of a VM.
@@ -248,29 +248,6 @@ function WasiVmShowDesktopButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-// WasiVmEarlierRunCard explains a window tab saved from an earlier run of the
-// VM, whose windows ended with it.
-function WasiVmEarlierRunCard({
-  onShowDesktop,
-}: {
-  onShowDesktop: () => void
-}) {
-  return (
-    <div className="flex min-h-0 flex-1 items-center justify-center p-4">
-      <LoadingCard
-        view={{
-          state: 'error',
-          title: 'The window belonged to an earlier run of this VM',
-          detail: 'Its windows closed when that run stopped.',
-          onRetry: onShowDesktop,
-          retryLabel: 'Show desktop',
-        }}
-        className="w-full max-w-sm"
-      />
-    </div>
-  )
-}
-
 // WasiVmLoadingView holds the view until the VM record loads, so no default
 // stands in for it.
 function WasiVmLoadingView({ loadError }: { loadError?: Error | null }) {
@@ -297,23 +274,27 @@ function WasiVmLoadingView({ loadError }: { loadError?: Error | null }) {
 
 // WasiVmRunningBodyProps configures the body of a running VM.
 interface WasiVmRunningBodyProps {
+  name: string
   handle: WasiVmHandle | undefined
   runGeneration: bigint
-  route: WasiVmWindowRoute | null
+  windows: WasiVmWindow[] | undefined
+  view: WasiVmWindowView
   showDisplay: boolean
-  onShowDesktop: () => void
 }
 
 // WasiVmRunningBody shows a running VM's console or display, or at a
-// window's viewer path that window alone, or why a window of an earlier run
-// is gone. Each run is a new kernel, so a new run attaches a new screen.
+// window's viewer path that window alone. A window tab whose window is gone,
+// closed in this run or ended with an earlier one, offers the run's windows
+// instead. Each run is a new kernel, so a new run attaches a new screen.
 function WasiVmRunningBody({
+  name,
   handle,
   runGeneration,
-  route,
+  windows,
+  view,
   showDisplay,
-  onShowDesktop,
 }: WasiVmRunningBodyProps) {
+  const route = view.route
   if (!route) {
     return (
       <WasiVmScreen
@@ -323,15 +304,24 @@ function WasiVmRunningBody({
       />
     )
   }
-  if (route.run !== runGeneration) {
-    return <WasiVmEarlierRunCard onShowDesktop={onShowDesktop} />
+  const earlierRun = route.run !== runGeneration
+  if (earlierRun || (windows && !view.shownWindow)) {
+    return (
+      <WasiVmWindowPicker
+        name={name}
+        earlierRun={earlierRun}
+        windows={windows}
+        onShowWindow={view.showWindow}
+        onShowDesktop={view.showDesktop}
+      />
+    )
   }
   return (
     <WasiVmWindowPane
-      key={runGeneration.toString()}
+      key={`${runGeneration}/${route.id}`}
       handle={handle}
       id={route.id}
-      onShowDesktop={onShowDesktop}
+      onShowDesktop={view.showDesktop}
     />
   )
 }
@@ -478,7 +468,7 @@ export default function WasiVmViewer({
           state={vm.state}
           stopping={vm.desired === VmState.VmState_STOPPED}
           windowView={!!view.route}
-          windows={windows}
+          windows={windows ?? []}
           showDisplay={showDisplay}
           onShowDisplay={setShowDisplay}
           onOpenWindow={view.openWindow}
@@ -493,11 +483,12 @@ export default function WasiVmViewer({
       )}
       {running ? (
         <WasiVmRunningBody
+          name={vm.name}
           handle={handleResource.value ?? undefined}
           runGeneration={vm.runGeneration}
-          route={view.route}
+          windows={windows}
+          view={view}
           showDisplay={showDisplay}
-          onShowDesktop={view.showDesktop}
         />
       ) : (
         <WasiVmStoppedBody

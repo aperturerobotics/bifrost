@@ -1,6 +1,6 @@
 import { pushable, type Pushable } from 'it-pushable'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { LuAppWindow } from 'react-icons/lu'
+import { LuAppWindow, LuMonitor } from 'react-icons/lu'
 
 import { WasiVmTypeID, type WasiVmHandle } from '@s4wave/sdk/vm/wasivm.js'
 import {
@@ -10,6 +10,7 @@ import {
 } from '@s4wave/sdk/vm/wasivm.pb.js'
 import { createObjectLinkAddTabRequest } from '@s4wave/web/object/ObjectLink.js'
 import { useTabContext } from '@s4wave/web/object/TabContext.js'
+import { localNavigation } from '@s4wave/web/router/HistoryRouter.js'
 import { useNavigate, usePath } from '@s4wave/web/router/router.js'
 import { Button } from '@s4wave/web/ui/button.js'
 import {
@@ -54,7 +55,7 @@ export function windowLabel(w: WasiVmWindow): string {
 }
 
 // WasiVmWindowView is the window a VM viewer's path names, with the actions
-// that move between the VM's view and its windows' tabs.
+// that move between the VM's view and its windows.
 export interface WasiVmWindowView {
   // route is the window the path names, or null for the VM's view.
   route: WasiVmWindowRoute | null
@@ -62,47 +63,61 @@ export interface WasiVmWindowView {
   shownWindow?: WasiVmWindow
   // showDesktop returns the viewer to the VM's view.
   showDesktop: () => void
+  // showWindow shows a window of this run in this viewer.
+  showWindow: (id: number) => void
   // openWindow opens a window of this run in a tab of its own, or in this
   // viewer outside a tab host.
   openWindow: (id: number) => void
 }
 
 // useWasiVmWindowRoute reads the window the viewer path names among the
-// windows of run runGeneration of the VM objectKey.
+// windows of run runGeneration of the VM objectKey. Its paths stay inside the
+// viewer: the host resolves them against the VM's object path.
 export function useWasiVmWindowRoute(
   objectKey: string,
   runGeneration: bigint,
-  windows: WasiVmWindow[],
+  windows: WasiVmWindow[] | undefined,
 ): WasiVmWindowView {
   const route = parseWindowPath(usePath())
   const navigate = useNavigate()
   const tabContext = useTabContext()
   const shownWindow =
     route?.run === runGeneration
-      ? windows.find((w) => w.id === route.id)
+      ? windows?.find((w) => w.id === route.id)
       : undefined
 
-  const showDesktop = useCallback(() => navigate({ path: '/' }), [navigate])
+  const showDesktop = useCallback(
+    () => navigate(localNavigation({ path: '/' })),
+    [navigate],
+  )
+  const showWindow = useCallback(
+    (id: number) =>
+      navigate(
+        localNavigation({
+          path: '/' + formatWindowPath({ run: runGeneration, id }),
+        }),
+      ),
+    [navigate, runGeneration],
+  )
   const openWindow = (id: number) => {
-    const path = formatWindowPath({ run: runGeneration, id })
     if (!tabContext) {
-      navigate({ path: '/' + path })
+      showWindow(id)
       return
     }
-    const w = windows.find((w) => w.id === id)
+    const w = windows?.find((w) => w.id === id)
     void tabContext
       .addTab(
         createObjectLinkAddTabRequest({
           objectKey,
           objectType: WasiVmTypeID,
           label: w ? windowLabel(w) : undefined,
-          path,
+          path: formatWindowPath({ run: runGeneration, id }),
           currentTabId: tabContext.tabId,
         }),
       )
       .catch((err) => console.warn('WasiVmWindow: failed to add tab:', err))
   }
-  return { route, shownWindow, showDesktop, openWindow }
+  return { route, shownWindow, showDesktop, showWindow, openWindow }
 }
 
 // WasiVmWindowsMenuProps configures the windows menu of a running VM.
@@ -138,6 +153,95 @@ export function WasiVmWindowsMenu({ windows, onOpen }: WasiVmWindowsMenuProps) {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+// WasiVmWindowPickerProps configures the picker of a window tab with no
+// window.
+interface WasiVmWindowPickerProps {
+  name: string
+  // earlierRun is set when the tab's window belonged to an earlier run.
+  earlierRun: boolean
+  // windows is the run's windows, or undefined until the VM lists them.
+  windows: WasiVmWindow[] | undefined
+  onShowWindow: (id: number) => void
+  onShowDesktop: () => void
+}
+
+// WasiVmWindowPicker fills a window tab whose window is gone: it names the VM,
+// says why the tab is empty, and lists the running VM's windows to show in
+// the tab instead. The list follows the VM as windows open and close.
+export function WasiVmWindowPicker({
+  name,
+  earlierRun,
+  windows,
+  onShowWindow,
+  onShowDesktop,
+}: WasiVmWindowPickerProps) {
+  return (
+    <div className="flex min-h-0 flex-1 justify-center overflow-y-auto p-4 sm:p-8">
+      <section className="border-foreground/6 bg-background-card/30 flex h-fit w-full max-w-md flex-col gap-4 rounded-lg border p-4 backdrop-blur-sm">
+        {/* Identity */}
+        <div className="flex items-center gap-3">
+          <div className="bg-foreground/5 text-foreground-alt flex size-10 shrink-0 items-center justify-center rounded-lg">
+            <LuAppWindow className="size-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-foreground truncate text-base font-medium">
+              No window in this tab
+            </h2>
+            <div className="text-foreground-alt text-xs">
+              {earlierRun
+                ? `Its window closed when ${name} last stopped.`
+                : `Its window in ${name} closed.`}
+            </div>
+          </div>
+        </div>
+
+        {/* Windows */}
+        <div className="flex flex-col gap-1">
+          <div className="text-foreground-alt text-xs">Show a window here</div>
+          {windows === undefined ? (
+            <div className="text-foreground-alt/70 py-1.5 text-sm">
+              Reading the VM's windows...
+            </div>
+          ) : windows.length === 0 ? (
+            <div className="text-foreground-alt/70 py-1.5 text-sm">
+              No windows are open. Open an app on the desktop and it appears
+              here.
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-0.5">
+              {windows.map((w) => (
+                <li key={w.id}>
+                  <button
+                    type="button"
+                    onClick={() => onShowWindow(w.id ?? 0)}
+                    className="hover:bg-foreground/5 text-foreground flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition duration-150"
+                  >
+                    <LuAppWindow className="text-foreground-alt size-4 shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {windowLabel(w)}
+                    </span>
+                    {w.place === WasiVmWindowPlace.WasiVmWindowPlace_VIEWER && (
+                      <span className="text-foreground-alt/60 text-xs">
+                        In another tab
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Action */}
+        <Button variant="outline" onClick={onShowDesktop}>
+          <LuMonitor />
+          Show desktop
+        </Button>
+      </section>
+    </div>
   )
 }
 
