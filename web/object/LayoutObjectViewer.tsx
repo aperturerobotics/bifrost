@@ -1,10 +1,8 @@
 import {
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react'
 import {
@@ -32,9 +30,9 @@ import {
   type FlexTabContextMenuEntry,
   type FlexTabContextMenuState,
 } from '@s4wave/web/layout/FlexTabContextMenu.js'
+import { FlexTabNameInput } from '@s4wave/web/layout/FlexTabNameInput.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import { useStateAtom, useStateNamespace } from '@s4wave/web/state'
-import { cn } from '@s4wave/web/style/utils.js'
 import { DocumentTitleFocusContext } from '@s4wave/web/title/DocumentTitleFocusContext.js'
 
 import type { ObjectViewerComponentProps } from './object.js'
@@ -68,68 +66,25 @@ function countObjectLayoutTabs(model: Model | null): number {
   return count
 }
 
-// ObjectLayoutTabNameInput edits one tab name. It mounts when the rename starts,
-// so the draft starts from the current name.
-function ObjectLayoutTabNameInput({
-  tabId,
-  name,
-  onRename,
-  onStopRename,
-}: Pick<
-  ObjectLayoutTabLabelProps,
-  'tabId' | 'name' | 'onRename' | 'onStopRename'
->) {
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    inputRef.current?.focus()
-    inputRef.current?.select()
-  }, [])
-
-  const handleSave = () => {
-    onRename(inputRef.current?.value.trim() || name)
-    onStopRename()
-  }
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    event.stopPropagation()
-    if (event.nativeEvent.isComposing) return
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      handleSave()
-    }
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      onStopRename()
-    }
-  }
-
-  return (
-    <input
-      ref={inputRef}
-      aria-label={`Rename ${tabId}`}
-      className={cn(
-        'bg-background-secondary text-foreground rounded-menu-button',
-        'border-none outline-none',
-        'text-metadata leading-5 font-medium tracking-tight-brand',
-        'w-full max-w-64 min-w-12 px-1 py-0',
-      )}
-      defaultValue={name}
-      onBlur={handleSave}
-      onKeyDown={handleKeyDown}
-      onMouseDown={(event) => event.stopPropagation()}
-      onClick={(event) => event.stopPropagation()}
-    />
-  )
-}
-
 // ObjectLayoutTabLabel renders an object-layout tab name with inline rename.
 function ObjectLayoutTabLabel({
   editing,
   onStartRename,
   ...props
 }: ObjectLayoutTabLabelProps) {
-  if (editing) return <ObjectLayoutTabNameInput {...props} />
+  if (editing) {
+    return (
+      <FlexTabNameInput
+        name={props.name}
+        label={`Rename ${props.tabId}`}
+        onSave={(name) => {
+          props.onRename(name || props.name)
+          props.onStopRename()
+        }}
+        onCancel={props.onStopRename}
+      />
+    )
+  }
 
   return (
     <span

@@ -1,5 +1,6 @@
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import {
   act,
   cleanup,
@@ -146,39 +147,6 @@ vi.mock('./ShellTabLabel.js', () => ({
   ShellTabLabel: ({ tab }: { tab: { name: string } }) => (
     <span>{tab.name}</span>
   ),
-}))
-
-vi.mock('@s4wave/web/ui/DropdownMenu.js', () => ({
-  DropdownMenu: ({
-    children,
-    open,
-  }: {
-    children: React.ReactNode
-    open?: boolean
-  }) =>
-    open === false ? null : (
-      <div data-testid={open ? 'context-menu' : undefined}>{children}</div>
-    ),
-  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DropdownMenuItem: ({
-    children,
-    onClick,
-    disabled,
-  }: {
-    children: React.ReactNode
-    onClick?: () => void
-    disabled?: boolean
-  }) => (
-    <button disabled={disabled} onClick={onClick} type="button">
-      {children}
-    </button>
-  ),
-  DropdownMenuSeparator: () => <hr />,
 }))
 
 vi.mock('./shell-grid-utils.js', () => ({
@@ -774,7 +742,7 @@ describe('ShellGridLayout', () => {
     })
   })
 
-  it('opens the shared tab context menu in grid mode and routes rename through tab state', () => {
+  it('opens the shared tab context menu in grid mode and routes rename through tab state', async () => {
     seedShellTabs([
       { id: 'tab-1', name: 'Docs', path: '/docs' },
       { id: 'tab-2', name: 'Home', path: '/' },
@@ -788,14 +756,16 @@ describe('ShellGridLayout', () => {
       </ShellTabsProvider>,
     )
 
-    expect(screen.queryByTestId('context-menu')).toBeNull()
+    expect(screen.queryByRole('menu')).toBeNull()
 
     fireEvent.contextMenu(screen.getByRole('button', { name: 'Docs' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Rename Tab' }),
+    )
 
-    expect(screen.getByTestId('context-menu')).toBeDefined()
-    fireEvent.click(screen.getByRole('button', { name: /rename tab/i }))
-
-    expect(screen.getByTestId('renaming-tab-id').textContent).toBe('tab-1')
+    await waitFor(() =>
+      expect(screen.getByTestId('renaming-tab-id').textContent).toBe('tab-1'),
+    )
   })
 
   it('projects command-created docs tabs into the active grid tabset', async () => {

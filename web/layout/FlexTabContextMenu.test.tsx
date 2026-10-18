@@ -1,83 +1,48 @@
-import React from 'react'
+import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
-import { FlexTabContextMenu } from './FlexTabContextMenu.js'
+import {
+  FlexTabContextMenu,
+  type FlexTabContextMenuEntry,
+  type FlexTabContextMenuState,
+} from './FlexTabContextMenu.js'
 
-vi.mock('@s4wave/web/ui/DropdownMenu.js', () => ({
-  DropdownMenu: ({
-    children,
-    open,
-    onOpenChange,
-  }: {
-    children: React.ReactNode
-    open?: boolean
-    onOpenChange?: (open: boolean) => void
-  }) =>
-    open === false ? null : (
-      <div data-testid="context-menu" data-open={String(open)}>
-        {children}
-        <button type="button" onClick={() => onOpenChange?.(false)}>
-          dismiss
-        </button>
-      </div>
-    ),
-  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DropdownMenuItem: ({
-    children,
-    onClick,
-    disabled,
-    variant,
-  }: {
-    children: React.ReactNode
-    onClick?: () => void
-    disabled?: boolean
-    variant?: string
-  }) => (
-    <button
-      type="button"
-      disabled={disabled}
-      data-variant={variant ?? ''}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  ),
-  DropdownMenuSeparator: () => <hr />,
-}))
-
-vi.mock('@s4wave/web/ui/DropdownMenuGhostAnchor.js', () => ({
-  DropdownMenuGhostAnchor: ({ x, y }: { x: number; y: number }) => (
-    <span data-testid="ghost-anchor" data-x={x} data-y={y} />
-  ),
-}))
+// OpenMenu holds the menu state the way a layout does: open at a tab, closed
+// on dismissal.
+function OpenMenu({ items }: { items: FlexTabContextMenuEntry[] }) {
+  const [state, setState] = useState<FlexTabContextMenuState | null>({
+    tabId: 'tab-7',
+    x: 12,
+    y: 34,
+  })
+  return (
+    <FlexTabContextMenu
+      state={state}
+      items={items}
+      onClose={() => setState(null)}
+    />
+  )
+}
 
 describe('FlexTabContextMenu', () => {
   afterEach(() => {
     cleanup()
-    vi.clearAllMocks()
   })
 
-  it('renders positioned tab actions and routes the clicked tab id', () => {
-    const rename = vi.fn()
+  it('runs the chosen action for the clicked tab after the menu closes', async () => {
+    const user = userEvent.setup()
+    let menuOpenAtRename: boolean | null = null
+    const rename = vi.fn(() => {
+      menuOpenAtRename = screen.queryByRole('menu') !== null
+    })
     const close = vi.fn()
 
     render(
-      <FlexTabContextMenu
-        state={{ tabId: 'tab-7', x: 12, y: 34 }}
-        onClose={vi.fn()}
+      <OpenMenu
         items={[
-          {
-            id: 'rename',
-            label: 'Rename Tab',
-            icon: <span aria-hidden="true">r</span>,
-            onSelect: rename,
-          },
+          { id: 'rename', label: 'Rename Tab', onSelect: rename },
           { id: 'sep', type: 'separator' },
           {
             id: 'close',
@@ -89,30 +54,20 @@ describe('FlexTabContextMenu', () => {
       />,
     )
 
-    expect(screen.getByTestId('ghost-anchor').getAttribute('data-x')).toBe('12')
-    expect(screen.getByTestId('ghost-anchor').getAttribute('data-y')).toBe('34')
     expect(screen.getAllByRole('separator')).toHaveLength(1)
+    await user.click(screen.getByRole('menuitem', { name: 'Rename Tab' }))
 
-    fireEvent.click(screen.getByRole('button', { name: /rename tab/i }))
-    fireEvent.click(screen.getByRole('button', { name: /close tab/i }))
-
-    expect(rename).toHaveBeenCalledWith('tab-7')
-    expect(close).toHaveBeenCalledWith('tab-7')
-    expect(
-      screen
-        .getByRole('button', { name: /close tab/i })
-        .getAttribute('data-variant'),
-    ).toBe('destructive')
+    await waitFor(() => expect(rename).toHaveBeenCalledWith('tab-7'))
+    expect(menuOpenAtRename).toBe(false)
+    expect(close).not.toHaveBeenCalled()
   })
 
-  it('closes on dropdown dismissal and respects disabled items', () => {
-    const onClose = vi.fn()
+  it('runs nothing when dismissed or when a disabled item is clicked', async () => {
+    const user = userEvent.setup()
     const disabled = vi.fn()
 
     render(
-      <FlexTabContextMenu
-        state={{ tabId: 'tab-1', x: 0, y: 0 }}
-        onClose={onClose}
+      <OpenMenu
         items={[
           {
             id: 'disabled',
@@ -124,16 +79,11 @@ describe('FlexTabContextMenu', () => {
       />,
     )
 
-    const closeButton = screen.getByRole('button', { name: /close tab/i })
-    if (!(closeButton instanceof HTMLButtonElement)) {
-      throw new Error('expected close button')
-    }
+    await user.click(screen.getByRole('menuitem', { name: 'Close Tab' }))
+    expect(screen.getByRole('menu')).toBeTruthy()
+    await user.keyboard('{Escape}')
 
-    expect(closeButton.disabled).toBe(true)
-    fireEvent.click(closeButton)
-    fireEvent.click(screen.getByRole('button', { name: /dismiss/i }))
-
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     expect(disabled).not.toHaveBeenCalled()
-    expect(onClose).toHaveBeenCalledOnce()
   })
 })

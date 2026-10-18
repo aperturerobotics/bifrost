@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, beforeEach, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import {
   act,
   cleanup,
@@ -93,39 +94,6 @@ vi.mock('@s4wave/web/layout/BaseLayout.js', () => ({
       />
     )
   },
-}))
-
-vi.mock('@s4wave/web/ui/DropdownMenu.js', () => ({
-  DropdownMenu: ({
-    children,
-    open,
-  }: {
-    children: ReactNode
-    open?: boolean
-  }) =>
-    open === false ? null : (
-      <div data-testid={open ? 'context-menu' : undefined}>{children}</div>
-    ),
-  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
-    <>{children}</>
-  ),
-  DropdownMenuContent: ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DropdownMenuItem: ({
-    children,
-    onClick,
-    disabled,
-  }: {
-    children: ReactNode
-    onClick?: () => void
-    disabled?: boolean
-  }) => (
-    <button disabled={disabled} onClick={onClick} type="button">
-      {children}
-    </button>
-  ),
-  DropdownMenuSeparator: () => <hr />,
 }))
 
 vi.mock('@s4wave/web/ui/DropdownMenuGhostAnchor.js', () => ({
@@ -475,22 +443,32 @@ describe('LayoutObjectViewer', () => {
       { id: 'tab-b', name: 'Beta' },
     ])
     const preventDefault = vi.fn()
+    const openMenu = async () => {
+      act(() => {
+        onContextMenu(nodes[0], { preventDefault, clientX: 20, clientY: 30 })
+      })
+      return screen.findByRole('menu')
+    }
+    const choose = async (name: string) => {
+      await openMenu()
+      await userEvent.click(screen.getByRole('menuitem', { name }))
+      await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    }
 
-    act(() => {
-      onContextMenu(nodes[0], { preventDefault, clientX: 20, clientY: 30 })
-    })
-
+    await openMenu()
     expect(preventDefault).toHaveBeenCalledOnce()
     expect(screen.getByTestId('ghost-anchor').getAttribute('data-x')).toBe('20')
     expect(screen.getByTestId('ghost-anchor').getAttribute('data-y')).toBe('30')
-    expect(screen.queryByRole('button', { name: /^new tab$/i })).toBeNull()
+    expect(screen.queryByRole('menuitem', { name: 'New Tab' })).toBeNull()
     expect(
-      screen.queryByRole('button', { name: /open in new tab/i }),
+      screen.queryByRole('menuitem', { name: 'Open in New Tab' }),
     ).toBeNull()
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
 
-    fireEvent.click(screen.getByRole('button', { name: /duplicate tab/i }))
-    fireEvent.click(screen.getByRole('button', { name: /close other tabs/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^close tab$/i }))
+    await choose('Duplicate Tab')
+    await choose('Close Other Tabs')
+    await choose('Close Tab')
 
     await waitFor(() => {
       const addAction = actions.find(
