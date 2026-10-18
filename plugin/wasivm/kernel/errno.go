@@ -100,6 +100,9 @@ const (
 	// EMSGSIZE reports a message call with more iovecs than the kernel takes.
 	EMSGSIZE = 90
 
+	// ENOPROTOOPT reports a socket option the kernel lacks.
+	ENOPROTOOPT = 92
+
 	// EPROTONOSUPPORT reports a socket type or protocol the kernel lacks.
 	EPROTONOSUPPORT = 93
 
@@ -171,6 +174,7 @@ var linuxToWasiErrno = [ECONNREFUSED + 1]uint32{
 	ELOOP:           32,
 	ENODATA:         61,
 	ENOTSOCK:        57,
+	ENOPROTOOPT:     51,
 	EPROTONOSUPPORT: 66,
 	EOPNOTSUPP:      58,
 	EAFNOSUPPORT:    5,

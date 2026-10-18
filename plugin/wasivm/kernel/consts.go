@@ -184,6 +184,13 @@ const (
 	// Linux.
 	guestSolSocket = 0x7fffffff
 	guestScmRights = 1
+	// The SOL_SOCKET option names, which wasi-libc numbers as Linux does.
+	guestSoType       = 3
+	guestSoError      = 4
+	guestSoPeercred   = 17
+	guestSoAcceptconn = 30
+	guestSoProtocol   = 38
+	guestSoDomain     = 39
 )
 
 // flock operations (asm-generic).

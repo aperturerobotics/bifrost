@@ -52,10 +52,35 @@ type unixSocket struct {
 	path string
 	// peerPath is the connected peer's address, or empty.
 	peerPath string
+	// cred is the credentials of the process that made the socket listen.
+	// A connecting socket takes them as its peer's.
+	cred ucred
+	// peerCred is the credentials the connected peer had when it connected,
+	// listened or called socketpair, as SO_PEERCRED reports them. It is
+	// meaningful only while the socket file is connected.
+	peerCred ucred
 	// node is the filesystem node bind created, or nil.
 	node *VNode
 	// listener is a listening socket's queue, or nil.
 	listener *unixListener
+}
+
+// ucred is the guest's struct ucred: the process id, user id and group id of
+// a socket's peer.
+type ucred struct {
+	pid, uid, gid uint32
+}
+
+// ucredSize is the size of the wasm32 struct ucred.
+const ucredSize = 12
+
+// hostCred is the credentials of the host, which connects without a process.
+var hostCred = ucred{}
+
+// cred returns the process's credentials as a socket records them: its id and
+// its effective user and group ids, as Linux does.
+func (p *Process) cred() ucred {
+	return ucred{pid: uint32(p.pid), uid: p.uids.eff, gid: p.gids.eff}
 }
 
 // vnode returns a node that describes the socket.
@@ -114,10 +139,12 @@ func (k *Kernel) connectPair(a, b *OpenFile) {
 	b.rx, b.tx = toB, toA
 }
 
-// connectUnix connects the unconnected socket file of to the listener bound
-// at the absolute path resolved. The connection waits in the listener's
-// queue, so it returns at once. The caller holds the kernel lock.
-func (k *Kernel) connectUnix(of *OpenFile, resolved string) uint64 {
+// connectUnix connects the unconnected socket file of, whose process has the
+// credentials cred, to the listener bound at the absolute path resolved. Each
+// end records the other's credentials now: the listener's from when it
+// listened, and cred. The connection waits in the listener's queue, so it
+// returns at once. The caller holds the kernel lock.
+func (k *Kernel) connectUnix(of *OpenFile, cred ucred, resolved string) uint64 {
 	// Find the listener.
 	node := k.vfs.lookup(resolved)
 	switch {
@@ -133,9 +160,11 @@ func (k *Kernel) connectUnix(of *OpenFile, resolved string) uint64 {
 		ino:      k.vfs.allocIno(),
 		path:     server.path,
 		peerPath: of.sock.path,
+		peerCred: cred,
 	}}
 	k.connectPair(of, conn)
 	of.sock.peerPath = server.path
+	of.sock.peerCred = server.cred
 	server.listener.push(conn)
 	return 0
 }
@@ -191,6 +220,7 @@ func (p *Process) sysSocketpair(domain, typ, protocol, svPtr uint32) uint64 {
 	}
 	a, b := p.kernel.newSocketFile(status), p.kernel.newSocketFile(status)
 	p.kernel.connectPair(a, b)
+	a.sock.peerCred, b.sock.peerCred = p.cred(), p.cred()
 
 	// Install them and return their numbers.
 	afd, bfd := p.installFD(a, cloexec), p.installFD(b, cloexec)
@@ -299,6 +329,7 @@ func (p *Process) sysListen(fd uint32) uint64 {
 		return negErrno(EINVAL)
 	case of.sock.listener == nil:
 		of.sock.listener = &unixListener{waitCh: make(chan struct{})}
+		of.sock.cred = p.cred()
 		of.sock.node.socket = of.sock
 		p.kernel.listens.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 			broadcast()
@@ -328,7 +359,7 @@ func (p *Process) sysConnect(fd, addrPtr, addrLen uint32) uint64 {
 	case abstract:
 		return negErrno(ECONNREFUSED)
 	}
-	return p.kernel.connectUnix(of, resolved)
+	return p.kernel.connectUnix(of, p.cred(), resolved)
 }
 
 // sysAccept takes the oldest connection waiting on a listening socket and
@@ -404,6 +435,58 @@ func (p *Process) sysShutdown(fd, how uint32) uint64 {
 	}
 	if how&shutWR != 0 {
 		of.tx.close(false)
+	}
+	return 0
+}
+
+// sysGetsockopt writes a SOL_SOCKET option of a socket to optPtr, truncated
+// to the capacity at lenPtr, and the option's full length to lenPtr. The
+// options are the socket's type, pending error and listening state, its
+// domain and protocol, and SO_PEERCRED, the credentials its connected peer
+// had when it connected, listened or called socketpair. SO_PEERCRED on a
+// socket with no peer fails with ENOTCONN. Any other option fails with
+// ENOPROTOOPT.
+func (p *Process) sysGetsockopt(fd, level, opt, optPtr, lenPtr uint32) uint64 {
+	// Find the value.
+	of, errno := p.socketFile(fd)
+	switch {
+	case errno != 0:
+		return errno
+	case level != guestSolSocket:
+		return negErrno(ENOPROTOOPT)
+	}
+	var value []byte
+	switch opt {
+	case guestSoType:
+		value = binary.LittleEndian.AppendUint32(nil, guestSockStream)
+	case guestSoError, guestSoProtocol:
+		value = binary.LittleEndian.AppendUint32(nil, 0)
+	case guestSoDomain:
+		value = binary.LittleEndian.AppendUint32(nil, guestAFUNIX)
+	case guestSoAcceptconn:
+		listening := uint32(0)
+		if of.sock.listener != nil {
+			listening = 1
+		}
+		value = binary.LittleEndian.AppendUint32(nil, listening)
+	case guestSoPeercred:
+		if of.rx == nil {
+			return negErrno(ENOTCONN)
+		}
+		cred := of.sock.peerCred
+		value = make([]byte, 0, ucredSize)
+		for _, id := range []uint32{cred.pid, cred.uid, cred.gid} {
+			value = binary.LittleEndian.AppendUint32(value, id)
+		}
+	default:
+		return negErrno(ENOPROTOOPT)
+	}
+
+	// Write what fits, and the full length.
+	mem := p.inst.Memory()
+	capacity, ok := mem.ReadUint32Le(lenPtr)
+	if !ok || !mem.Write(optPtr, value[:min(int(capacity), len(value))]) || !mem.WriteUint32Le(lenPtr, uint32(len(value))) {
+		return negErrno(EFAULT)
 	}
 	return 0
 }

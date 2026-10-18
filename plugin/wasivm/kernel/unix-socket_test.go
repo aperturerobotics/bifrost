@@ -425,3 +425,89 @@ func TestUnixSocketRightsErrors(t *testing.T) {
 		t.Fatalf("sendmsg of an unknown descriptor = %#x, want EBADF", res)
 	}
 }
+
+// Guest memory addresses the getsockopt tests use.
+const (
+	sockTestOpt    = 5000
+	sockTestOptLen = 5100
+)
+
+// peerCredTest returns the SO_PEERCRED credentials of fd through the
+// kernel's getsockopt import, or the failing result.
+func peerCredTest(t *testing.T, p *Process, mem *memMemory, fd uint32) (ucred, uint64) {
+	// Call the import the guest calls.
+	t.Helper()
+	mem.Write(sockTestOpt, make([]byte, ucredSize))
+	mem.WriteUint32Le(sockTestOptLen, ucredSize)
+	args := []uint64{uint64(fd), guestSolSocket, guestSoPeercred, sockTestOpt, sockTestOptLen}
+	if res := posixFunctions()["getsockopt"].call(context.Background(), p, args); res != 0 {
+		// The import reports failure as -1 and sets the guest's errno, which
+		// this process lacks, so ask the call behind it for the errno.
+		if res != fail {
+			t.Fatalf("getsockopt import = %#x, want 0 or -1", res)
+		}
+		return ucred{}, p.sysGetsockopt(fd, guestSolSocket, guestSoPeercred, sockTestOpt, sockTestOptLen)
+	}
+
+	// Read the struct ucred and its length.
+	if n, _ := mem.ReadUint32Le(sockTestOptLen); n != ucredSize {
+		t.Fatalf("SO_PEERCRED length = %d, want %d", n, ucredSize)
+	}
+	pid, _ := mem.ReadUint32Le(sockTestOpt)
+	uid, _ := mem.ReadUint32Le(sockTestOpt + 4)
+	gid, _ := mem.ReadUint32Le(sockTestOpt + 8)
+	return ucred{pid: pid, uid: uid, gid: gid}, 0
+}
+
+// asTest gives p the process id and ids a later call runs under.
+func asTest(p *Process, pid int, uid, gid uint32) {
+	p.pid = pid
+	p.uids.set(uid)
+	p.gids.set(gid)
+}
+
+// TestSocketPeerCred checks SO_PEERCRED on a socket pair reports the process
+// that made it, on a connection reports the other end's credentials as they
+// were when it listened and connected, and fails on a socket with no peer.
+func TestSocketPeerCred(t *testing.T) {
+	// A pair reports the process that made it, at both ends.
+	p, mem := fsTestProcess()
+	asTest(p, 10, 1000, 100)
+	a, b := pairTest(t, p, mem)
+	asTest(p, 11, 2000, 200)
+	for _, fd := range []uint32{a, b} {
+		if got, errno := peerCredTest(t, p, mem, fd); errno != 0 || got != (ucred{10, 1000, 100}) {
+			t.Fatalf("socketpair SO_PEERCRED = %v, %#x, want {10 1000 100}", got, errno)
+		}
+	}
+
+	// A server listens, a client connects and the server accepts.
+	asTest(p, 20, 3000, 300)
+	listener := listenTestSocket(t, p, mem, "/tmp/sock", guestSockStream)
+	asTest(p, 21, 4000, 400)
+	client := uint32(p.sysSocket(guestAFUNIX, guestSockStream, 0))
+	if res := p.sysConnect(client, sockTestAddr, writeTestSockaddr(mem, "/tmp/sock")); res != 0 {
+		t.Fatalf("connect = %#x", res)
+	}
+	asTest(p, 22, 5000, 500)
+	server := p.sysAccept(context.Background(), listener, 0)
+	if errnoFailed(server) {
+		t.Fatalf("accept = %#x", server)
+	}
+
+	// Each end sees the other's, whoever asks.
+	if got, errno := peerCredTest(t, p, mem, client); errno != 0 || got != (ucred{20, 3000, 300}) {
+		t.Fatalf("client SO_PEERCRED = %v, %#x, want {20 3000 300}", got, errno)
+	}
+	if got, errno := peerCredTest(t, p, mem, uint32(server)); errno != 0 || got != (ucred{21, 4000, 400}) {
+		t.Fatalf("accepted SO_PEERCRED = %v, %#x, want {21 4000 400}", got, errno)
+	}
+
+	// Sockets with no peer fail with ENOTCONN.
+	unconnected := uint32(p.sysSocket(guestAFUNIX, guestSockStream, 0))
+	for _, fd := range []uint32{unconnected, listener} {
+		if _, errno := peerCredTest(t, p, mem, fd); errno != negErrno(ENOTCONN) {
+			t.Fatalf("SO_PEERCRED on fd %d with no peer = %#x, want ENOTCONN", fd, errno)
+		}
+	}
+}

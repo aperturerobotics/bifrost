@@ -523,7 +523,7 @@ func posixFunctions() map[string]hostFunc {
 		}},
 
 		// Sockets. Only Unix stream sockets exist; wasi-libc implements
-		// accept, send, recv, shutdown and getsockopt over the WASI calls.
+		// accept, send, recv and shutdown over the WASI calls.
 		"socket": {"iiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysSocket(uint32(a[0]), uint32(a[1]), uint32(a[2])))
 		}},
@@ -547,6 +547,9 @@ func posixFunctions() map[string]hostFunc {
 		}},
 		"setsockopt": {"iiiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysSetsockopt(uint32(a[0])))
+		}},
+		"getsockopt": {"iiiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
+			return p.posixResult(ctx, p.sysGetsockopt(uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]), uint32(a[4])))
 		}},
 		"sendto": {"iiiiiii", func(ctx context.Context, p *Process, a []uint64) uint64 {
 			return p.posixResult(ctx, p.sysSendto(ctx, uint32(a[0]), uint32(a[1]), uint32(a[2]), uint32(a[3]), uint32(a[5])))

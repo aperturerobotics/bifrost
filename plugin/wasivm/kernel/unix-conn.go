@@ -23,7 +23,7 @@ func (k *Kernel) DialUnix(ctx context.Context, socketPath string) (*UnixConn, er
 	resolved := path.Clean("/" + socketPath)
 	k.mu.Lock()
 	of := k.newSocketFile(0)
-	for k.connectUnix(of, resolved) != 0 {
+	for k.connectUnix(of, hostCred, resolved) != 0 {
 		var listenCh <-chan struct{}
 		k.listens.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
 			listenCh = getWaitCh()
