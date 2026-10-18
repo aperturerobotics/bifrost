@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { act, render, screen, cleanup, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { SpaceSettingsEditor } from './SpaceSettingsEditor.js'
@@ -13,6 +13,11 @@ import {
 } from '@s4wave/sdk/command/command.pb.js'
 import type { SpaceState } from '@s4wave/sdk/space/space.pb.js'
 import type { EngineWorldState } from '@s4wave/sdk/world/engine-state.js'
+import { toast } from '@s4wave/web/ui/toaster.js'
+
+vi.mock('@s4wave/web/ui/toaster.js', () => ({
+  toast: { error: vi.fn() },
+}))
 
 vi.mock('@s4wave/web/ui/ObjectKeySelector.js', () => ({
   ObjectKeySelector: ({
@@ -64,7 +69,15 @@ describe('SpaceSettingsEditor', () => {
     spaceState: SpaceState = mockSpaceState,
     props?: Partial<React.ComponentProps<typeof SpaceSettingsEditor>>,
   ) {
-    return render(
+    return render(editor(canEdit, spaceState, props))
+  }
+
+  function editor(
+    canEdit: boolean,
+    spaceState: SpaceState = mockSpaceState,
+    props?: Partial<React.ComponentProps<typeof SpaceSettingsEditor>>,
+  ) {
+    return (
       <SpaceContainerContext.Provider
         spaceId="test-space"
         spaceState={spaceState}
@@ -82,7 +95,7 @@ describe('SpaceSettingsEditor', () => {
           onRenameStart={mockRenameStart}
           {...props}
         />
-      </SpaceContainerContext.Provider>,
+      </SpaceContainerContext.Provider>
     )
   }
 
@@ -208,5 +221,45 @@ describe('SpaceSettingsEditor', () => {
     const selector = screen.getByTestId('object-key-selector')
     await user.click(selector)
     expect(mockSpaceWorld.applyWorldOp).not.toHaveBeenCalled()
+  })
+
+  it('shows the chosen path until the watched settings show it', async () => {
+    let resolve = () => {}
+    vi.mocked(mockSpaceWorld.applyWorldOp).mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = () => r({ seqno: 2n, sysErr: false })
+      }),
+    )
+    const { rerender } = renderEditor(true)
+
+    fireEvent.click(screen.getByTestId('object-key-selector'))
+    const selector = () => screen.getByTestId('object-key-selector')
+    expect(selector().getAttribute('data-value')).toBe('new/path')
+
+    await act(async () => resolve())
+    expect(selector().getAttribute('data-value')).toBe('new/path')
+
+    rerender(
+      editor(true, {
+        ...mockSpaceState,
+        settings: { ...mockSpaceState.settings, indexPath: 'new/path' },
+      }),
+    )
+    expect(selector().getAttribute('data-value')).toBe('new/path')
+  })
+
+  it('returns to the watched path when the write fails', async () => {
+    vi.mocked(mockSpaceWorld.applyWorldOp).mockRejectedValueOnce(
+      new Error('offline'),
+    )
+    renderEditor(true)
+
+    await act(async () =>
+      fireEvent.click(screen.getByTestId('object-key-selector')),
+    )
+    expect(
+      screen.getByTestId('object-key-selector').getAttribute('data-value'),
+    ).toBe('object-layout/main')
+    expect(toast.error).toHaveBeenCalled()
   })
 })

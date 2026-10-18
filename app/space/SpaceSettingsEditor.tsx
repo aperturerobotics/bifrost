@@ -1,9 +1,10 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { LuKeyboard, LuPencil, LuSettings } from 'react-icons/lu'
 
 import { DashboardButton } from '@s4wave/web/ui/DashboardButton.js'
 import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
 import { ObjectKeySelector } from '@s4wave/web/ui/ObjectKeySelector.js'
+import { toast } from '@s4wave/web/ui/toaster.js'
 
 import { useInvokeCommand } from '@s4wave/web/command/index.js'
 import { SpaceContainerContext } from '@s4wave/web/contexts/SpaceContainerContext.js'
@@ -20,6 +21,12 @@ interface SpaceSettingsEditorProps {
   onRenameStart?: () => void
 }
 
+// PendingIndexPath is an index path write the watched settings do not show yet.
+interface PendingIndexPath {
+  from: string
+  to: string
+}
+
 // SpaceSettingsEditor renders the settings section with an ObjectKeySelector for index_path.
 export function SpaceSettingsEditor({
   canEdit,
@@ -32,14 +39,31 @@ export function SpaceSettingsEditor({
     SpaceContainerContext.useContext()
   const invokeCommand = useInvokeCommand()
 
+  // The selector shows a chosen path from the moment it is picked. The choice
+  // stays pending until the watched settings move off the path it replaced,
+  // or the write fails and the selector falls back to the watched path.
   const indexPath = spaceState.settings?.indexPath ?? ''
+  const [pending, setPending] = useState<PendingIndexPath | null>(null)
+  const settled =
+    !pending || pending.from !== indexPath || pending.to === indexPath
+  if (pending && settled) setPending(null)
+  const shownIndexPath = settled ? indexPath : pending.to
 
   const handleIndexPathChange = useCallback(
     async (newPath: string) => {
-      if (!spaceWorld || newPath === indexPath) return
-      await applySpaceIndexPath(spaceWorld, newPath)
+      if (!spaceWorld || newPath === shownIndexPath) return
+      const choice = { from: indexPath, to: newPath }
+      setPending(choice)
+      try {
+        await applySpaceIndexPath(spaceWorld, newPath)
+      } catch (err) {
+        setPending((cur) => (cur === choice ? null : cur))
+        toast.error('Could not change the index path', {
+          description: err instanceof Error ? err.message : String(err),
+        })
+      }
     },
-    [spaceWorld, indexPath],
+    [spaceWorld, indexPath, shownIndexPath],
   )
 
   const content = (
@@ -93,7 +117,7 @@ export function SpaceSettingsEditor({
             {canEdit ? (
               <ObjectKeySelector
                 world={spaceWorldResource}
-                value={indexPath}
+                value={shownIndexPath}
                 onChange={(newPath) => void handleIndexPathChange(newPath)}
                 placeholder="No default view"
               />
