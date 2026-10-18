@@ -120,11 +120,17 @@ func (db *DB) dropLease(off int64) {
 }
 
 // Release releases the lease. It unlocks the byte before waking this
-// handle's waiters, so a woken waiter finds it free.
+// handle's waiters, so a woken waiter finds it free. After Close the file
+// has dropped the lock, so Release only drops the claim.
 func (l *Lease) Release() error {
 	l.once.Do(func() {
-		l.err = l.db.s.unlock(l.off)
-		l.db.dropLease(l.off)
+		l.db.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			if !l.db.closed.Load() {
+				l.err = l.db.s.unlock(l.off)
+			}
+			delete(l.db.leases, l.off)
+			broadcast()
+		})
 	})
 	return l.err
 }
