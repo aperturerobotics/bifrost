@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 
 import {
   DropdownMenu,
@@ -49,10 +49,11 @@ export function FlexTabContextMenu({
   items,
   onClose,
 }: FlexTabContextMenuProps) {
-  function handleAction(action: (tabId: string) => void) {
-    if (!state) return
-    action(state.tabId)
-  }
+  // chosenRef holds the selected action until the menu has closed. Radix
+  // commits a selection while the menu still traps focus, so an action that
+  // focuses something, such as an inline rename field, would lose that focus
+  // back to the menu. onCloseAutoFocus fires once the menu releases focus.
+  const chosenRef = useRef<(() => void) | null>(null)
 
   return (
     <DropdownMenu
@@ -66,13 +67,17 @@ export function FlexTabContextMenu({
       <DropdownMenuTrigger asChild>
         <DropdownMenuGhostAnchor x={state?.x ?? 0} y={state?.y ?? 0} />
       </DropdownMenuTrigger>
-      {/* Inline rename actions mount a tab input as the menu closes. Radix
-          returns focus to the trigger during close; suppress that return so the
-          new input keeps focus. The ghost-anchor trigger is not focusable. */}
+      {/* The ghost-anchor trigger is not focusable, so skip Radix's return
+          of focus to it and run the chosen action instead. */}
       <DropdownMenuContent
         align="start"
         side="bottom"
-        onCloseAutoFocus={(event) => event.preventDefault()}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          const chosen = chosenRef.current
+          chosenRef.current = null
+          chosen?.()
+        }}
       >
         {items.map((item) =>
           isSeparator(item) ? (
@@ -80,7 +85,11 @@ export function FlexTabContextMenu({
           ) : (
             <DropdownMenuItem
               key={item.id}
-              onClick={() => handleAction(item.onSelect)}
+              onSelect={() => {
+                if (!state) return
+                const tabId = state.tabId
+                chosenRef.current = () => item.onSelect(tabId)
+              }}
               disabled={item.disabled}
               variant={item.variant}
             >

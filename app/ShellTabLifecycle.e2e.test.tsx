@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { page } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { cleanup, render } from 'vitest-browser-react'
 
 import { getAppPath } from '@s4wave/web/router/app-path.js'
@@ -198,4 +198,40 @@ describe('Shell tab lifecycle with FlexLayout', () => {
       expect(getAppPath()).toBe('/u/1')
     }, 15000)
   }
+
+  it('keeps the rename field open after the tab menu closes', async () => {
+    await page.viewport(844, 390)
+    window.location.hash = '/u/1'
+    seedShellTabs([{ id: 'session', name: 'Session', path: '/u/1' }])
+    await mountShell()
+    await onDOMChange(() => !!activePanel())
+
+    // Rename from the tab's context menu, as a person does.
+    await page
+      .getByText('Session', { exact: true })
+      .first()
+      .click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Rename Tab' }).click()
+
+    // FlexLayout renders a hidden drag stamp of each tab beside the visible
+    // button. The visible field must survive the menu's close and keep focus.
+    await onDOMChange(() => !document.querySelector('[role="menu"]'))
+    // A late focus steal, such as Radix's close autofocus, lands well inside
+    // this window and would blur the field closed.
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    const field = document.querySelector<HTMLInputElement>(
+      '.flexlayout__tab_button input[aria-label="Tab name"]',
+    )
+    expect(field).not.toBeNull()
+    expect(document.activeElement).toBe(field)
+
+    await userEvent.fill(field!, 'Notes')
+    await userEvent.keyboard('{Enter}')
+    await onDOMChange(
+      () =>
+        readShellTabsSnapshot().records.find((r) => r.id === 'session')
+          ?.customName === 'Notes',
+    )
+    expect(document.querySelector('input[aria-label="Tab name"]')).toBeNull()
+  })
 })

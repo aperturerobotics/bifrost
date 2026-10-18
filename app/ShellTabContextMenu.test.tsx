@@ -1,117 +1,82 @@
-import React from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { useState } from 'react'
+import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
-import { ShellTabContextMenu } from './ShellTabContextMenu.js'
+import {
+  ShellTabContextMenu,
+  type ShellTabContextMenuProps,
+  type ShellTabContextMenuState,
+} from './ShellTabContextMenu.js'
 
-vi.mock('@s4wave/web/ui/DropdownMenu.js', () => ({
-  DropdownMenu: ({
-    children,
-    open,
-  }: {
-    children: React.ReactNode
-    open?: boolean
-  }) =>
-    open === false ? null : (
-      <div data-testid={open ? 'context-menu' : undefined}>{children}</div>
-    ),
-  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DropdownMenuItem: ({
-    children,
-    onClick,
-    disabled,
-  }: {
-    children: React.ReactNode
-    onClick?: () => void
-    disabled?: boolean
-  }) => (
-    <button disabled={disabled} onClick={onClick} type="button">
-      {children}
-    </button>
-  ),
-  DropdownMenuSeparator: () => <hr />,
-}))
+type ActionProp = Exclude<
+  keyof ShellTabContextMenuProps,
+  'state' | 'canCloseTabs' | 'onClose'
+>
+
+// OpenMenu holds the menu state the way a layout does: open at tab-7, closed
+// on dismissal or selection.
+function OpenMenu(props: Omit<ShellTabContextMenuProps, 'state' | 'onClose'>) {
+  const [state, setState] = useState<ShellTabContextMenuState | null>({
+    tabId: 'tab-7',
+    x: 10,
+    y: 20,
+  })
+  return (
+    <ShellTabContextMenu
+      {...props}
+      state={state}
+      onClose={() => setState(null)}
+    />
+  )
+}
+
+// renderMenu opens the shell tab menu with a spy for each action.
+function renderMenu(canCloseTabs: boolean) {
+  const actions: Record<ActionProp, Mock<(tabId: string) => void>> = {
+    onNewTab: vi.fn(),
+    onRenameTab: vi.fn(),
+    onDuplicateTab: vi.fn(),
+    onPopoutTab: vi.fn(),
+    onCloseOtherTabs: vi.fn(),
+    onCloseTab: vi.fn(),
+  }
+  render(<OpenMenu canCloseTabs={canCloseTabs} {...actions} />)
+  return actions
+}
 
 describe('ShellTabContextMenu', () => {
   afterEach(() => {
     cleanup()
-    vi.clearAllMocks()
   })
 
-  it('routes every action through the clicked tab id', () => {
-    const onClose = vi.fn()
-    const onNewTab = vi.fn()
-    const onRenameTab = vi.fn()
-    const onDuplicateTab = vi.fn()
-    const onPopoutTab = vi.fn()
-    const onCloseOtherTabs = vi.fn()
-    const onCloseTab = vi.fn()
+  it.each<[string, ActionProp]>([
+    ['New Tab', 'onNewTab'],
+    ['Rename Tab', 'onRenameTab'],
+    ['Duplicate Tab', 'onDuplicateTab'],
+    ['Open in New Tab', 'onPopoutTab'],
+    ['Close Other Tabs', 'onCloseOtherTabs'],
+    ['Close Tab', 'onCloseTab'],
+  ])('routes %s to %s for the clicked tab', async (label, prop) => {
+    const actions = renderMenu(true)
 
-    render(
-      <ShellTabContextMenu
-        state={{ tabId: 'tab-7', x: 10, y: 20 }}
-        canCloseTabs={true}
-        onClose={onClose}
-        onNewTab={onNewTab}
-        onRenameTab={onRenameTab}
-        onDuplicateTab={onDuplicateTab}
-        onPopoutTab={onPopoutTab}
-        onCloseOtherTabs={onCloseOtherTabs}
-        onCloseTab={onCloseTab}
-      />,
-    )
+    await userEvent.click(screen.getByRole('menuitem', { name: label }))
 
-    fireEvent.click(screen.getByRole('button', { name: /^new tab$/i }))
-    fireEvent.click(screen.getByRole('button', { name: /rename tab/i }))
-    fireEvent.click(screen.getByRole('button', { name: /duplicate tab/i }))
-    fireEvent.click(screen.getByRole('button', { name: /open in new tab/i }))
-    fireEvent.click(screen.getByRole('button', { name: /close other tabs/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^close tab$/i }))
-
-    expect(onNewTab).toHaveBeenCalledWith('tab-7')
-    expect(onRenameTab).toHaveBeenCalledWith('tab-7')
-    expect(onDuplicateTab).toHaveBeenCalledWith('tab-7')
-    expect(onPopoutTab).toHaveBeenCalledWith('tab-7')
-    expect(onCloseOtherTabs).toHaveBeenCalledWith('tab-7')
-    expect(onCloseTab).toHaveBeenCalledWith('tab-7')
-    expect(onClose).not.toHaveBeenCalled()
+    await waitFor(() => expect(actions[prop]).toHaveBeenCalledWith('tab-7'))
+    for (const [other, spy] of Object.entries(actions)) {
+      if (other !== prop) expect(spy).not.toHaveBeenCalled()
+    }
   })
 
-  it('disables destructive close actions when only one tab remains', () => {
-    render(
-      <ShellTabContextMenu
-        state={{ tabId: 'tab-1', x: 10, y: 20 }}
-        canCloseTabs={false}
-        onClose={vi.fn()}
-        onNewTab={vi.fn()}
-        onRenameTab={vi.fn()}
-        onDuplicateTab={vi.fn()}
-        onPopoutTab={vi.fn()}
-        onCloseOtherTabs={vi.fn()}
-        onCloseTab={vi.fn()}
-      />,
-    )
+  it('disables close actions when only one tab remains', () => {
+    renderMenu(false)
 
-    const closeOtherTabsButton = screen.getByRole('button', {
-      name: /close other tabs/i,
-    })
-    const closeTabButton = screen.getByRole('button', {
-      name: /^close tab$/i,
-    })
-
-    if (!(closeOtherTabsButton instanceof HTMLButtonElement)) {
-      throw new Error('expected close other tabs button')
+    for (const label of ['Close Other Tabs', 'Close Tab']) {
+      expect(
+        screen
+          .getByRole('menuitem', { name: label })
+          .getAttribute('aria-disabled'),
+      ).toBe('true')
     }
-    if (!(closeTabButton instanceof HTMLButtonElement)) {
-      throw new Error('expected close tab button')
-    }
-
-    expect(closeOtherTabsButton.disabled).toBe(true)
-    expect(closeTabButton.disabled).toBe(true)
   })
 })
