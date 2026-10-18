@@ -327,7 +327,10 @@ type resourceRPCClientWithContext struct {
 	release func()
 }
 
+// Context returns the call context bound to the resource lifetime.
 func (c *resourceRPCClientWithContext) Context() context.Context { return c.ctx }
+
+// Close closes the stream client and releases the lifetime binding.
 func (c *resourceRPCClientWithContext) Close() error {
 	err := c.SRPCResourceService_ResourceRpcClient.Close()
 	c.release()
@@ -340,9 +343,14 @@ type resourceRef struct {
 	released   bool
 }
 
-func (r *resourceRef) GetResourceID() uint32           { return r.resourceID }
+// GetResourceID returns the resource ID the reference holds.
+func (r *resourceRef) GetResourceID() uint32 { return r.resourceID }
+
+// GetClient returns the shared client for the resource.
 func (r *resourceRef) GetClient() (srpc.Client, error) { return r.lifetime.clientForRef(r) }
-func (r *resourceRef) Release()                        { r.lifetime.releaseRef(r) }
+
+// Release drops this reference to the resource.
+func (r *resourceRef) Release() { r.lifetime.releaseRef(r) }
 
 // _ is a type assertion
 var _ ResourceRef = (*resourceRef)(nil)

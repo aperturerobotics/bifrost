@@ -48,19 +48,26 @@ func (s *rewordingRouteStream) Send(packet *resource.ResourceRpcPacket) error {
 // lifecycleTestInvoker serves Ping and fails Fail with the requested text.
 func lifecycleTestInvoker(serviceID string) srpc.Invoker {
 	return srpc.InvokerFunc(func(gotService, method string, strm srpc.Stream) (bool, error) {
+		// Leave other services to the next invoker.
 		if gotService != serviceID {
 			return false, nil
 		}
+
+		// Read the request text that Fail echoes back as its error.
 		req := &resource.ResourceFailure{}
 		if err := strm.MsgRecv(req); err != nil {
 			return true, err
 		}
+
+		// Answer Ping with an empty message and fail Fail with the text.
 		switch method {
 		case "Ping":
 			return true, strm.MsgSend(&resource.ResourceFailure{})
 		case "Fail":
 			return true, errors.New(req.GetMessage())
 		}
+
+		// Report any other method as unhandled.
 		return false, nil
 	})
 }
@@ -78,15 +85,19 @@ func callLifecycleTest(ctx context.Context, ref ResourceRef, serviceID, method, 
 // carrying former lifecycle phrases, and caller cancellation, leave valid
 // handles alive, while a reworded route refusal still retires the handle.
 func TestResourceRouteFailureDecidesLifetimeByCode(t *testing.T) {
-	// Open one generation against a real server whose refusals are reworded.
+	// Bound the test with a deadline.
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
+
+	// Serve the real resource server with its refusals reworded.
 	server := resource_server.NewResourceServer(lifecycleTestInvoker("test.Root"))
 	serverMux := srpc.NewMux()
 	rewording := &rewordingResourceServer{ResourceServer: server}
 	if err := resource.SRPCRegisterResourceService(serverMux, rewording); err != nil {
 		t.Fatal(err)
 	}
+
+	// Open one client generation against it and record the server baseline.
 	service := resource.NewSRPCResourceServiceClient(srpc.NewClient(srpc.NewServerPipe(srpc.NewServer(serverMux))))
 	client, err := NewClient(ctx, service)
 	if err != nil {
@@ -104,6 +115,8 @@ func TestResourceRouteFailureDecidesLifetimeByCode(t *testing.T) {
 	}
 	attachedRef := client.CreateResourceReference(attachedID)
 	defer attachedRef.Release()
+
+	// Name both handles with the service each one routes to.
 	handles := []struct {
 		name      string
 		ref       ResourceRef
