@@ -40,6 +40,8 @@ type Controller struct {
 	le *logrus.Entry
 	b  bus.Bus
 	cc *Config
+	// authorizeRequest acquires incoming request authority, or nil for public stores.
+	authorizeRequest RequestAuthorizer
 
 	bcast broadcast.Broadcast
 	// sessions holds the live sessions with each remote peer, keyed by peer ID,
@@ -128,11 +130,18 @@ func (c *Controller) recordTransfer(peerID string, uploaded, downloaded int) {
 
 // NewController constructs a new solicitation-based DEX controller.
 func NewController(le *logrus.Entry, b bus.Bus, cc *Config) (*Controller, error) {
+	return NewControllerWithRequestAuthorizer(le, b, cc, nil)
+}
+
+// NewControllerWithRequestAuthorizer constructs a DEX controller with an incoming request policy.
+func NewControllerWithRequestAuthorizer(le *logrus.Entry, b bus.Bus, cc *Config, authorizeRequest RequestAuthorizer) (*Controller, error) {
+	// Construct the exchange without starting its solicitation.
 	return &Controller{
-		le:       le,
-		b:        b,
-		cc:       cc,
-		sessions: make(map[string][]*peerSession),
+		le:               le,
+		b:                b,
+		cc:               cc,
+		authorizeRequest: authorizeRequest,
+		sessions:         make(map[string][]*peerSession),
 	}, nil
 }
 

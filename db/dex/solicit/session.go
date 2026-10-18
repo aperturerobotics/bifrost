@@ -169,43 +169,82 @@ func (s *peerSession) cancelHandling() {
 	}
 }
 
-// handleRequest handles an incoming block request and sends a response. A
-// request canceled by the peer sends no response.
+// handleRequest retains read authority through lookup, forwarding and response.
+// A request canceled by the peer sends no response.
 func (s *peerSession) handleRequest(
 	ctx context.Context,
 	h *handledRequest,
 	req *DexMessage,
 ) {
-	// Prepare a response that is sent when request handling finishes, and
-	// deregister the request afterward.
-	ref := req.GetRef()
-	resp := &DexMessage{
-		RequestId:  req.GetRequestId(),
-		IsResponse: true,
+	// Release the request registration on every authorization and lookup outcome.
+	defer s.finishRequest(req.GetRequestId(), h)
+	var access RequestAccess
+	if s.c.authorizeRequest != nil {
+		var err error
+		access, err = s.c.authorizeRequest(ctx, s.c.cc, s.ms.GetPeerID())
+		if err != nil {
+			s.sendRequestError(ctx, req.GetRequestId(), err)
+			return
+		}
+		defer access.Release()
+		if err := access.Check(); err != nil {
+			s.sendRequestError(ctx, req.GetRequestId(), err)
+			return
+		}
+	}
+
+	// Cancel blocked reads and forwarding when the authority source revokes access.
+	requestCtx, cancel := context.WithCancelCause(ctx)
+	watcher := routine.NewRoutineContainer()
+	if access != nil {
+		watcher.SetRoutine(func(ctx context.Context) error {
+			cancel(access.WaitRevoked(ctx))
+			return nil
+		})
+		watcher.SetContext(requestCtx, false)
 	}
 	defer func() {
-		err := s.sendMsg(ctx, resp)
-		if err != nil && ctx.Err() == nil {
-			s.le.WithError(err).Debug("dex session send error")
+		cancel(nil)
+		if exited, _ := watcher.SetRoutine(nil); exited != nil {
+			<-exited
 		}
-		s.finishRequest(req.GetRequestId(), h)
 	}()
+
+	// Recheck authority after taking the write slot, before disclosing any block.
+	resp := s.buildResponse(requestCtx, req)
+	if err := s.sendMessage(ctx, requestCtx, resp, access, false); err != nil && ctx.Err() == nil {
+		s.le.WithError(err).Debug("dex session send error")
+	}
+}
+
+// sendRequestError reports a rejection without disclosing block data or refs.
+func (s *peerSession) sendRequestError(ctx context.Context, id uint32, err error) {
+	if sendErr := s.sendMessage(ctx, ctx, &DexMessage{RequestId: id, IsResponse: true, Error: err.Error()}, nil, true); sendErr != nil && ctx.Err() == nil {
+		s.le.WithError(sendErr).Debug("dex session send error")
+	}
+}
+
+// buildResponse reads locally, then forwards within the configured hop budget.
+func (s *peerSession) buildResponse(ctx context.Context, req *DexMessage) *DexMessage {
+	// Prepare the response without disclosing data until lookup succeeds.
+	ref := req.GetRef()
+	resp := &DexMessage{RequestId: req.GetRequestId(), IsResponse: true}
 
 	// Reject a block request that cannot identify stored data.
 	if ref == nil || ref.GetEmpty() {
 		resp.Error = "empty block ref"
-		return
+		return resp
 	}
 
 	// Check the local bucket before forwarding.
 	local, err := s.lookupLocalBlock(ctx, ref)
 	if err != nil {
 		resp.Error = err.Error()
-		return
+		return resp
 	}
 	if local != nil {
 		resp.SetBlock(local)
-		return
+		return resp
 	}
 
 	// Forward to other peers if hops remain.
@@ -216,12 +255,63 @@ func (s *peerSession) handleRequest(
 		found, err := s.c.forwardToPeers(ctx, ref, hops-1, s)
 		if err != nil {
 			resp.Error = err.Error()
-			return
+			return resp
 		}
 		if found != nil {
 			resp.SetBlock(found)
 		}
 	}
+	return resp
+}
+
+// sendMessage checks authority under the write slot and serializes the response.
+// A revoked in-flight payload closes its session because a partial frame cannot be reused.
+func (s *peerSession) sendMessage(ctx, requestCtx context.Context, resp *DexMessage, access RequestAccess, closeOnCancel bool) error {
+	// Serialize with all other session writes, using the caller's cancellation.
+	release, err := s.sendMtx.Lock(ctx)
+	if err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		release()
+		return err
+	}
+
+	// Replace a revoked response entirely so neither data nor child refs escape.
+	if access != nil {
+		err = access.Check()
+		if err != nil {
+			resp = &DexMessage{RequestId: resp.GetRequestId(), IsResponse: true, Error: err.Error()}
+			closeOnCancel = true
+		} else if err = context.Cause(requestCtx); err != nil {
+			resp = &DexMessage{RequestId: resp.GetRequestId(), IsResponse: true, Error: err.Error()}
+		}
+	}
+
+	// Close the stream if a canceled request blocks while writing its denial.
+	if closeOnCancel {
+		stopClose := context.AfterFunc(ctx, s.close)
+		defer stopClose()
+	}
+
+	// Interrupt an in-progress payload write if its requester loses authority.
+	if resp.GetFound() && access != nil {
+		stopClose := context.AfterFunc(requestCtx, func() {
+			if access.Check() != nil {
+				s.close()
+			}
+		})
+		defer stopClose()
+	}
+	err = s.sess.SendMsg(resp)
+	release()
+	if err != nil {
+		return err
+	}
+	if resp.GetIsResponse() {
+		s.c.recordTransfer(s.ms.GetPeerID().String(), len(resp.GetData()), 0)
+	}
+	return nil
 }
 
 // finishRequest removes a finished request from the handling map unless a
@@ -334,23 +424,7 @@ func (s *peerSession) requestBlock(ctx context.Context, ref *block.BlockRef, hop
 // sendMsg sends a message with write serialization. It returns the context
 // error without writing when ctx ends before the write starts.
 func (s *peerSession) sendMsg(ctx context.Context, msg *DexMessage) error {
-	// Wait for the write slot or the end of ctx.
-	release, err := s.sendMtx.Lock(ctx)
-	if err != nil {
-		return err
-	}
-	if err := ctx.Err(); err != nil {
-		release()
-		return err
-	}
-
-	// Write the message and account for response payloads.
-	err = s.sess.SendMsg(msg)
-	release()
-	if err == nil && msg.GetIsResponse() {
-		s.c.recordTransfer(s.ms.GetPeerID().String(), len(msg.GetData()), 0)
-	}
-	return err
+	return s.sendMessage(ctx, ctx, msg, nil, false)
 }
 
 // close closes the session stream.

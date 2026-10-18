@@ -10,12 +10,21 @@ import (
 
 // Factory constructs a solicitation-based DEX controller.
 type Factory struct {
+	// bus resolves the local buckets and peer streams.
 	bus bus.Bus
+	// authorizeRequest supplies the caller's incoming request policy.
+	authorizeRequest RequestAuthorizer
 }
 
 // NewFactory builds a solicitation-based DEX controller factory.
 func NewFactory(bus bus.Bus) *Factory {
-	return &Factory{bus: bus}
+	return NewFactoryWithRequestAuthorizer(bus, nil)
+}
+
+// NewFactoryWithRequestAuthorizer builds a factory with an incoming request policy.
+func NewFactoryWithRequestAuthorizer(bus bus.Bus, authorizeRequest RequestAuthorizer) *Factory {
+	// Retain the policy for every exchange constructed by this factory.
+	return &Factory{bus: bus, authorizeRequest: authorizeRequest}
 }
 
 // GetConfigID returns the unique ID for the config.
@@ -41,7 +50,7 @@ func (t *Factory) Construct(
 ) (controller.Controller, error) {
 	le := opts.GetLogger()
 	cc := conf.(*Config)
-	return NewController(le, t.bus, cc)
+	return NewControllerWithRequestAuthorizer(le, t.bus, cc, t.authorizeRequest)
 }
 
 // GetVersion returns the version of this controller.

@@ -55,6 +55,8 @@ type SessionTransport struct {
 	// watchPeers reports changes to the peers authorizePeer admits; nil
 	// reports none.
 	watchPeers PeerAuthorizationWatch
+	// authorizeDEXRequest checks incoming block reads against the creator's authority.
+	authorizeDEXRequest dex_solicit.RequestAuthorizer
 	// streamsMtx guards streams.
 	streamsMtx sync.Mutex
 	// streams holds the gated streams admitted and not yet closed.
@@ -459,7 +461,7 @@ func (t *SessionTransport) Execute(ctx context.Context) (err error) {
 		sr.AddFactory(factory)
 	}
 	sr.AddFactory(link_solicit_controller.NewFactory())
-	sr.AddFactory(dex_solicit.NewFactory(b))
+	sr.AddFactory(dex_solicit.NewFactoryWithRequestAuthorizer(b, t.authorizeDEXRequest))
 	sr.AddFactory(stream_api_accept.NewFactory(b))
 	sr.AddFactory(stream_forwarding.NewFactory(b))
 	sr.AddFactory(stream_listening.NewFactory(b))

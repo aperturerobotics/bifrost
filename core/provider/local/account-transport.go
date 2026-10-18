@@ -241,6 +241,7 @@ func (a *ProviderAccount) startSessionTransportLocked(
 		transport.WithStartupRetry(),
 		transport.WithPeerAuthorizer(a.authorizeAccountSession),
 		transport.WithPeerAuthorizationWatch(a.watchAccountSessions),
+		transport.WithDEXRequestAuthorizer(a.authorizeDEXRequest),
 		a.t.p.localNetwork,
 	)
 	st, err := transport.NewSessionTransport(a.le, a.t.p.b, sessionKey, signalingURL, signingEnvPrefix, options...)

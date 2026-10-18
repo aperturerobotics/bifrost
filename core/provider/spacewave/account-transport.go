@@ -11,8 +11,11 @@ import (
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
+	sharedobject_dexaccess "github.com/s4wave/spacewave/core/sobject/dexaccess"
 	"github.com/s4wave/spacewave/core/transport"
+	dex_solicit "github.com/s4wave/spacewave/db/dex/solicit"
 	"github.com/s4wave/spacewave/net/crypto"
+	"github.com/s4wave/spacewave/net/peer"
 )
 
 // sessionTransportState holds a running SessionTransport for one Session.
@@ -246,6 +249,7 @@ func (a *ProviderAccount) createSessionTransportForSession(
 		transport.WithStartupRetry(),
 		transport.WithPeerAuthorizer(a.authorizeAccountSession),
 		transport.WithPeerAuthorizationWatch(a.watchAccountSessions),
+		transport.WithDEXRequestAuthorizer(a.authorizeDEXRequest),
 		transport.WithBridgeDirectiveFilter(func(di directive.Instance) (bool, error) {
 			_, isMount := di.GetDirective().(sobject.MountSharedObject)
 			return !isMount, nil
@@ -281,6 +285,24 @@ func (a *ProviderAccount) createSessionTransportForSession(
 		return err
 	}
 	return nil
+}
+
+// authorizeDEXRequest retains the SharedObject authority source for one peer.
+func (a *ProviderAccount) authorizeDEXRequest(ctx context.Context, config *dex_solicit.Config, requester peer.ID) (dex_solicit.RequestAccess, error) {
+	// Mount only the SharedObject named by this DEX protocol context.
+	ref := a.buildSharedObjectRef(string(config.GetProtocolContext()))
+	object, releaseObject, err := a.MountSharedObject(ctx, ref, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Keep the cloud SharedObject watch so an authorized successor can backfill.
+	swObject, ok := object.(*SharedObject)
+	if !ok {
+		releaseObject()
+		return nil, errors.New("DEX protocol context did not mount a cloud SharedObject")
+	}
+	return sharedobject_dexaccess.NewSharedObjectRequestAccess(ctx, nil, swObject.GetSOHost(), requester, releaseObject)
 }
 
 // GetSessionTransport returns the legacy default session transport, or nil.
