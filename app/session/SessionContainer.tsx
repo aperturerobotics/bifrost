@@ -282,7 +282,6 @@ interface AccountButton {
     onClick: () => void,
     className?: string,
   ) => ReactNode
-  buttonKey: string
   label: string
 }
 
@@ -335,9 +334,7 @@ function useAccountButton(
     [label, badge.label, badge.className, metadata],
   )
 
-  // Refresh the registered button when metadata arrives or its badge changes.
-  const buttonKey = `${peerId ?? '?'}/${metadata ? badge.label : ''}`
-  return { button, buttonKey, label }
+  return { button, label }
 }
 
 // accountBadge names the account's provider, or marks a dormant cloud account.
@@ -420,31 +417,30 @@ export function SessionContainer(props: SessionContainerProps) {
         <SessionStorageStatsProvider>
           <SessionSyncStatusProvider>
             <SessionUploadManagerProvider>
-              <BottomBarLevel
-                id="account"
-                button={accountButton.button}
-                overlay={
-                  <SessionDetails
-                    onCloseClick={handleCloseDetails}
-                    onChangeAccountClick={handleChangeAccount}
-                  />
-                }
-                buttonKey={accountButton.buttonKey}
-                menuLabel={accountButton.label}
-                onBreadcrumbClick={handleAccountBreadcrumb}
-              >
-                <SessionSelfEnrollmentStatusScope enabled={isCloudProvider}>
-                  <SessionSelfEnrollmentStatusButton />
-                  <SessionBackgroundPluginsButton />
-                  <SessionSyncStatusButton />
-                  <AgentConnectButton />
-                  <SystemStatusButton />
-                  <SessionUploadIndicator />
-                  <SessionProviderContainer
-                    providerId={providerId}
-                    metadata={props.metadata}
-                    spacewaveOnboarding={onboardingState.value ?? null}
+              <SessionSelfEnrollmentStatusScope enabled={isCloudProvider}>
+                <SessionProviderContainer
+                  providerId={providerId}
+                  metadata={props.metadata}
+                  spacewaveOnboarding={onboardingState.value ?? null}
+                >
+                  <BottomBarLevel
+                    id="account"
+                    button={accountButton.button}
+                    overlay={
+                      <SessionDetails
+                        onCloseClick={handleCloseDetails}
+                        onChangeAccountClick={handleChangeAccount}
+                      />
+                    }
+                    menuLabel={accountButton.label}
+                    onBreadcrumbClick={handleAccountBreadcrumb}
                   >
+                    <SessionSelfEnrollmentStatusButton />
+                    <SessionBackgroundPluginsButton />
+                    <SessionSyncStatusButton />
+                    <AgentConnectButton />
+                    <SystemStatusButton />
+                    <SessionUploadIndicator />
                     <TargetedInvitationInbox
                       sessionResource={spacewaveSessionResource}
                     />
@@ -576,9 +572,9 @@ export function SessionContainer(props: SessionContainerProps) {
                         </div>
                       </Route>
                     </Routes>
-                  </SessionProviderContainer>
-                </SessionSelfEnrollmentStatusScope>
-              </BottomBarLevel>
+                  </BottomBarLevel>
+                </SessionProviderContainer>
+              </SessionSelfEnrollmentStatusScope>
             </SessionUploadManagerProvider>
           </SessionSyncStatusProvider>
         </SessionStorageStatsProvider>

@@ -1,8 +1,14 @@
 import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
-import { useMemo, useCallback, useEffect, useState } from 'react'
+import {
+  type ReactNode,
+  useMemo,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import { joinPath } from '@aptre/bldr'
 import { DebugInfo, useWatchStateRpc } from '@aptre/bldr-react'
-import { LuArrowUp, LuBuilding2, LuPlus } from 'react-icons/lu'
+import { LuArrowUp } from 'react-icons/lu'
 import { PiAppStoreLogoLight } from 'react-icons/pi'
 
 import { useNavigate, useParams, useRouter } from '@s4wave/web/router/router.js'
@@ -47,7 +53,6 @@ import {
 import { BottomBarLevel } from '@s4wave/web/frame/bottom-bar-level.js'
 import { BottomBarItem } from '@s4wave/web/frame/bottom-bar-item.js'
 import { bottomBarIconProps } from '@s4wave/web/frame/bottom-icon-props.js'
-import { SharedObjectDetails } from '@s4wave/app/sobject/SharedObjectDetails.js'
 import { AddUserDialog } from '@s4wave/app/sobject/AddUserDialog.js'
 import { DeleteSpaceDialog } from '@s4wave/app/sobject/DeleteSpaceDialog.js'
 import { RenameSpaceDialog } from '@s4wave/app/sobject/RenameSpaceDialog.js'
@@ -63,6 +68,7 @@ import {
 import { pluginPathPrefix } from '@s4wave/app/urls.js'
 import { useShellTabs, useTabId } from '@s4wave/app/ShellTabContext.js'
 import { SpaceBody } from './SpaceBody.js'
+import { SpaceDetails } from './SpaceDetails.js'
 import {
   buildObjectRoutePath,
   SpaceTabContextProvider,
@@ -74,10 +80,6 @@ import {
   spaceRouteCanRenderBody,
 } from './spaceMountStage.js'
 import { SpaceCommands } from './SpaceCommands.js'
-import { SpaceObjectBrowser } from './SpaceObjectBrowser.js'
-import { SpacePlugins } from './SpacePlugins.js'
-import { SpaceSettingsEditor } from './SpaceSettingsEditor.js'
-import { SpaceDataSection } from './SpaceTransformSection.js'
 import { CreateObjectButton } from './CreateObjectButton.js'
 import { useSessionInfo } from '@s4wave/web/hooks/useSessionInfo.js'
 import {
@@ -492,7 +494,6 @@ function useSpaceContainerController() {
     [spaceName],
   )
 
-  const sharedObjectDisplayKey = `${sharedObjectId}:${spaceName}`
   const ready = canRenderBody
 
   const handleSharingClick = useCallback(() => setSharingOpen(true), [])
@@ -546,19 +547,6 @@ function useSpaceContainerController() {
       handleSwitchSpaceObject,
     ],
   )
-  const sharedObjectContextMenuKey = useMemo(
-    () =>
-      [
-        sharedObjectDisplayKey,
-        objectKey ?? 'none',
-        spaceObjectTargets.targets
-          .map((target) => `${target.objectKey}:${target.objectType}`)
-          .join('|'),
-        spaceObjectTargets.more ? 'more' : 'all',
-      ].join(':'),
-    [sharedObjectDisplayKey, objectKey, spaceObjectTargets],
-  )
-
   const buildExportUrl = useCallback(
     () =>
       `${pluginPathPrefix}/export/u/${sessionIndex}/so/${encodeURIComponent(sharedObjectId)}`,
@@ -588,141 +576,6 @@ function useSpaceContainerController() {
     }
   }, [session, sharedObjectId, sessionIndex, path, redirectTab])
 
-  const sharedObjectOverlay = useMemo(() => {
-    if (!ready || !spaceWorld || !routeSpaceState) return undefined
-    return (
-      <SpaceContext.Provider resource={spaceResource}>
-        <SpaceContentsContext.Provider resource={spaceContentsResource}>
-          <SpaceContainerContext.Provider
-            spaceId={sharedObjectId}
-            spaceName={titleSpaceName}
-            spaceWorldResource={spaceWorldResource}
-            spaceWorld={spaceWorld}
-            spaceObjectTargets={spaceObjectTargets}
-            navigateToRoot={navigateToRoot}
-            navigateToObjects={navigateToObjects}
-            switchObjectAtCurrentPosition={switchObjectAtCurrentPosition}
-            spaceState={routeSpaceState}
-            spaceSharingState={spaceSharingState}
-            orgState={spaceOrgState}
-            buildObjectUrls={buildObjectUrls}
-            buildExportUrl={buildExportUrl}
-            objectKey={objectKey}
-            objectPath={objectPath || undefined}
-            navigateToSubPath={navigateToSubPath}
-          >
-            <SharedObjectDetails
-              displayName={spaceName}
-              canRename={canRename}
-              canShare={canManageSharing}
-              onCloseClick={handleCloseDetails}
-              onSharingClick={canManageSharing ? handleSharingClick : undefined}
-              onExportClick={handleExportClick}
-              onDeleteClick={handleDeleteClick}
-              onRenameStart={handleRenameStart}
-              orgIndicator={
-                spaceOrgId ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate({ path: `../../org/${spaceOrgId}` })
-                    }
-                    className="bg-brand/10 text-brand hover:bg-brand/20 flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium transition-colors"
-                  >
-                    <LuBuilding2 className="size-2.5" />
-                    <span className="max-w-20 truncate">
-                      {spaceOrgState?.organization?.displayName || 'Org'}
-                    </span>
-                  </button>
-                ) : undefined
-              }
-              orgInfoSection={
-                spaceOrgId && spaceOrgState?.organization ? (
-                  <div className="space-y-1">
-                    <div className="text-foreground-alt mb-0.5 text-xs select-none">
-                      Organization
-                    </div>
-                    <div className="text-foreground flex items-center gap-1.5 text-xs">
-                      <LuBuilding2 className="text-brand size-3 shrink-0" />
-                      <span className="truncate">
-                        {spaceOrgState.organization.displayName || spaceOrgId}
-                      </span>
-                      <span className="text-foreground-alt/50 text-xs">
-                        {spaceOrgState.organization.role === 'org:owner'
-                          ? 'Owner'
-                          : 'Member'}
-                      </span>
-                    </div>
-                  </div>
-                ) : undefined
-              }
-              objectsBadge={
-                <span className="text-foreground-alt/50 text-xs">
-                  {spaceObjectTargets.targets.length}
-                  {spaceObjectTargets.more ? '+' : ''}
-                </span>
-              }
-              objectsActions={
-                <button
-                  type="button"
-                  onClick={handleCreateObject}
-                  className="text-foreground-alt hover:text-foreground flex size-4 items-center justify-center transition-colors"
-                  aria-label="Create object"
-                  title="Create object"
-                >
-                  <LuPlus className="size-3.5" />
-                </button>
-              }
-              objectsSection={<SpaceObjectBrowser embedded={true} />}
-              settingsSection={
-                <SpaceSettingsEditor
-                  canEdit={true}
-                  canRename={canRename}
-                  displayName={spaceName}
-                  embedded={true}
-                  onRenameStart={handleRenameStart}
-                />
-              }
-              dataSection={<SpaceDataSection />}
-              pluginsSection={<SpacePlugins />}
-            />
-          </SpaceContainerContext.Provider>
-        </SpaceContentsContext.Provider>
-      </SpaceContext.Provider>
-    )
-  }, [
-    ready,
-    handleCloseDetails,
-    handleSharingClick,
-    handleDeleteClick,
-    handleExportClick,
-    sharedObjectId,
-    titleSpaceName,
-    spaceWorldResource,
-    spaceWorld,
-    navigateToRoot,
-    navigateToObjects,
-    switchObjectAtCurrentPosition,
-    routeSpaceState,
-    spaceSharingState,
-    spaceOrgState,
-    buildObjectUrls,
-    buildExportUrl,
-    objectKey,
-    objectPath,
-    navigateToSubPath,
-    canRename,
-    canManageSharing,
-    spaceName,
-    handleRenameStart,
-    spaceObjectTargets,
-    handleCreateObject,
-    navigate,
-    spaceOrgId,
-    spaceResource,
-    spaceContentsResource,
-  ])
-
   const handleSharedObjectBreadcrumb = useCallback(() => {
     navigate({ path: currentLevelPath })
   }, [navigate, currentLevelPath])
@@ -734,6 +587,10 @@ function useSpaceContainerController() {
     canManageSharing,
     canRename,
     deleteOpen,
+    handleCloseDetails,
+    handleCreateObject,
+    handleDeleteClick,
+    handleExportClick,
     handleDeleteConfirm,
     handleRenameConfirm,
     handleRenameStart,
@@ -756,10 +613,7 @@ function useSpaceContainerController() {
     setSharingOpen,
     sharedObjectButton,
     sharedObjectContextMenuItems,
-    sharedObjectContextMenuKey,
-    sharedObjectDisplayKey,
     sharedObjectId,
-    sharedObjectOverlay,
     sharingOpen,
     space,
     spaceContentsResource,
@@ -788,6 +642,10 @@ export function SpaceContainer() {
     canManageSharing,
     canRename,
     deleteOpen,
+    handleCloseDetails,
+    handleCreateObject,
+    handleDeleteClick,
+    handleExportClick,
     handleDeleteConfirm,
     handleRenameConfirm,
     handleRenameStart,
@@ -810,10 +668,7 @@ export function SpaceContainer() {
     setSharingOpen,
     sharedObjectButton,
     sharedObjectContextMenuItems,
-    sharedObjectContextMenuKey,
-    sharedObjectDisplayKey,
     sharedObjectId,
-    sharedObjectOverlay,
     sharingOpen,
     space,
     spaceContentsResource,
@@ -831,72 +686,97 @@ export function SpaceContainer() {
     titleSpaceName,
   } = useSpaceContainerController()
 
+  // The bottom bar item and its details overlay. The overlay renders inside
+  // this level, so it reads the same Space state and contexts as the body.
+  const renderLevel = (overlay: ReactNode, children: ReactNode) => (
+    <BottomBarLevel
+      id="sharedObject"
+      button={sharedObjectButton}
+      overlay={overlay}
+      menuLabel={spaceName}
+      contextMenuLabel={`${spaceName} actions`}
+      contextMenuItems={sharedObjectContextMenuItems}
+      onBreadcrumbClick={handleSharedObjectBreadcrumb}
+    >
+      <DebugInfo>
+        Shared Object ID: {sharedObjectId}
+        <br />
+        Space loaded: {(!!space).toString()}
+        <br />
+        Space World loaded: {(!!spaceWorld).toString()}
+        <br />
+        Space state ready: {(!!spaceState?.ready).toString()}
+        <br />
+        Object key: {objectKey ?? 'none'}
+        <br />
+        Space state:{' '}
+        <pre>
+          {spaceState
+            ? JSON.stringify(SpaceState.toJson(spaceState), null, 4)
+            : 'none'}
+        </pre>
+      </DebugInfo>
+      {children}
+    </BottomBarLevel>
+  )
+
   return (
     <StateNamespaceProvider namespace={spaceNamespace}>
-      <BottomBarLevel
-        id="sharedObject"
-        button={sharedObjectButton}
-        overlay={sharedObjectOverlay}
-        buttonKey={sharedObjectDisplayKey}
-        overlayKey={sharedObjectDisplayKey}
-        menuLabel={spaceName}
-        contextMenuLabel={`${spaceName} actions`}
-        contextMenuKey={sharedObjectContextMenuKey}
-        contextMenuItems={sharedObjectContextMenuItems}
-        onBreadcrumbClick={handleSharedObjectBreadcrumb}
-      >
-        <DebugInfo>
-          Shared Object ID: {sharedObjectId}
-          <br />
-          Space loaded: {(!!space).toString()}
-          <br />
-          Space World loaded: {(!!spaceWorld).toString()}
-          <br />
-          Space state ready: {(!!spaceState?.ready).toString()}
-          <br />
-          Object key: {objectKey ?? 'none'}
-          <br />
-          Space state:{' '}
-          <pre>
-            {spaceState
-              ? JSON.stringify(SpaceState.toJson(spaceState), null, 4)
-              : 'none'}
-          </pre>
-        </DebugInfo>
-        <SpaceContext.Provider resource={spaceResource}>
-          <SpaceContentsContext.Provider resource={spaceContentsResource}>
-            {ready && routeSpaceState && spaceWorld ? (
-              <SpaceContainerContext.Provider
-                spaceId={sharedObjectId}
-                spaceName={titleSpaceName}
-                spaceWorldResource={spaceWorldResource}
-                spaceWorld={spaceWorld}
-                spaceObjectTargets={spaceObjectTargets}
-                navigateToRoot={navigateToRoot}
-                navigateToObjects={navigateToObjects}
-                switchObjectAtCurrentPosition={switchObjectAtCurrentPosition}
-                spaceState={routeSpaceState}
-                spaceSharingState={spaceSharingState}
-                orgState={spaceOrgState}
-                canDeleteObjects={canDeleteObjects}
-                buildObjectUrls={buildObjectUrls}
-                buildExportUrl={buildExportUrl}
-                objectKey={objectKey}
-                objectPath={objectPath || undefined}
-                navigateToSubPath={navigateToSubPath}
-              >
-                <SpaceCommands
+      <SpaceContext.Provider resource={spaceResource}>
+        <SpaceContentsContext.Provider resource={spaceContentsResource}>
+          {ready && routeSpaceState && spaceWorld ? (
+            <SpaceContainerContext.Provider
+              spaceId={sharedObjectId}
+              spaceName={titleSpaceName}
+              spaceWorldResource={spaceWorldResource}
+              spaceWorld={spaceWorld}
+              spaceObjectTargets={spaceObjectTargets}
+              navigateToRoot={navigateToRoot}
+              navigateToObjects={navigateToObjects}
+              switchObjectAtCurrentPosition={switchObjectAtCurrentPosition}
+              spaceState={routeSpaceState}
+              spaceSharingState={spaceSharingState}
+              orgState={spaceOrgState}
+              canDeleteObjects={canDeleteObjects}
+              buildObjectUrls={buildObjectUrls}
+              buildExportUrl={buildExportUrl}
+              objectKey={objectKey}
+              objectPath={objectPath || undefined}
+              navigateToSubPath={navigateToSubPath}
+            >
+              {renderLevel(
+                <SpaceDetails
+                  spaceName={spaceName}
                   canRename={canRename}
                   canShare={canManageSharing}
-                  onRenameSpace={handleRenameStart}
-                  onShareSpace={handleSharingClick}
-                />
-                <CreateObjectButton />
-                <SpaceTabContextProvider parentPaths={parentPaths}>
-                  <SpaceBody />
-                </SpaceTabContextProvider>
-              </SpaceContainerContext.Provider>
-            ) : (
+                  orgId={spaceOrgId}
+                  onClose={handleCloseDetails}
+                  onSharing={handleSharingClick}
+                  onExport={handleExportClick}
+                  onDelete={handleDeleteClick}
+                  onRename={handleRenameStart}
+                  onCreateObject={handleCreateObject}
+                  onOrgClick={() =>
+                    navigate({ path: `../../org/${spaceOrgId}` })
+                  }
+                />,
+                <>
+                  <SpaceCommands
+                    canRename={canRename}
+                    canShare={canManageSharing}
+                    onRenameSpace={handleRenameStart}
+                    onShareSpace={handleSharingClick}
+                  />
+                  <CreateObjectButton />
+                  <SpaceTabContextProvider parentPaths={parentPaths}>
+                    <SpaceBody />
+                  </SpaceTabContextProvider>
+                </>,
+              )}
+            </SpaceContainerContext.Provider>
+          ) : (
+            renderLevel(
+              undefined,
               <SpaceMountingScreen
                 stage={spaceMountStageFromWorld(
                   !!root,
@@ -911,11 +791,11 @@ export function SpaceContainer() {
                   !!spaceState?.ready,
                 )}
                 onBack={() => navigate({ path: '../' })}
-              />
-            )}
-          </SpaceContentsContext.Provider>
-        </SpaceContext.Provider>
-      </BottomBarLevel>
+              />,
+            )
+          )}
+        </SpaceContentsContext.Provider>
+      </SpaceContext.Provider>
       <AddUserDialog
         open={sharingOpen}
         onOpenChange={setSharingOpen}

@@ -288,7 +288,7 @@ describe('SessionContainer', () => {
       .mockReturnValue({ value: inboxState })
   }
 
-  it('wraps the routes tree with spacewave session providers and renders session details in the overlay', () => {
+  it('wraps the account level with spacewave session providers so its overlay shares them', () => {
     cleanup()
     mockNavigate.mockReset()
     mockUseStreamingResource.mockReset()
@@ -318,15 +318,16 @@ describe('SessionContainer', () => {
       />,
     )
 
-    const overlay = screen.getByTestId('overlay')
-    const content = screen.getByTestId('content')
-    expect(within(content).getByTestId('spacewave-content')).toBeTruthy()
-    expect(
-      within(content).getByTestId('session-self-enrollment-provider'),
-    ).toBeTruthy()
+    const providers = screen.getByTestId('session-self-enrollment-provider')
+    const spacewave = within(providers).getByTestId('spacewave-content')
+    const level = within(spacewave).getByTestId('bottom-bar-level-account')
     expect(mockSessionSelfEnrollmentProvider).toHaveBeenCalledTimes(1)
-    expect(within(overlay).queryByTestId('spacewave-content')).toBeNull()
-    expect(within(overlay).getByTestId('session-details')).toBeTruthy()
+    expect(within(level).getByTestId('overlay')).toBeTruthy()
+    expect(
+      within(within(level).getByTestId('overlay')).getByTestId(
+        'session-details',
+      ),
+    ).toBeTruthy()
   })
 
   it('opens the Onboarding Status route-status stream at the session container boundary', () => {

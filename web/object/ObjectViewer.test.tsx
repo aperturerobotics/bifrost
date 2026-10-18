@@ -15,7 +15,6 @@ vi.mock('@s4wave/web/frame/bottom-bar-level.js', () => ({
   BottomBarLevel: (props: {
     children?: ReactNode
     contextMenuItems?: unknown
-    contextMenuKey?: unknown
     contextMenuLabel?: unknown
   }) => {
     mockBottomBarLevel(props)
@@ -102,10 +101,7 @@ function buildViewerResult(overrides: Record<string, unknown> = {}) {
     },
     buttonRender: vi.fn(),
     overlayContent: undefined,
-    buttonKeyValue: 'button',
-    overlayKeyValue: 'overlay',
     contextMenuItems: undefined,
-    contextMenuKey: 'context',
     contextMenuLabel: 'Object actions',
     ...overrides,
   }
@@ -450,7 +446,6 @@ describe('ObjectViewer', () => {
           component: () => null,
         },
         contextMenuItems,
-        contextMenuKey: 'files:actions',
         contextMenuLabel: 'files actions',
       }),
     )
@@ -475,7 +470,6 @@ describe('ObjectViewer', () => {
     expect(mockBottomBarLevel).toHaveBeenCalledWith(
       expect.objectContaining({
         contextMenuItems,
-        contextMenuKey: 'files:actions',
         contextMenuLabel: 'files actions',
       }),
     )

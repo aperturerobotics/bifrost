@@ -53,24 +53,18 @@ export interface BottomBarItem {
   id: string
   /** Depth in the component tree (for ordering) */
   depth: number
-  /** Stable function that renders the button, receiving selected state */
+  /** Function that renders the button, receiving selected state */
   button: (
     selected: boolean,
     onClick: () => void,
     className: string,
   ) => React.ReactNode
-  /** Optional key that triggers button re-registration when it changes */
-  buttonKey?: React.Key
-  /** Optional overlay resolver to display when this item is active */
-  overlay?: () => React.ReactNode
-  /** Optional key that triggers overlay re-registration when it changes */
-  overlayKey?: React.Key
+  /** Set when the item's level renders an overlay while its menu is open */
+  hasOverlay?: boolean
   /** Optional label used when this item is collapsed into a menu */
   menuLabel?: React.ReactNode
   /** Optional label for the secondary context menu trigger. */
   contextMenuLabel?: string
-  /** Optional key that triggers secondary action re-registration when it changes */
-  contextMenuKey?: React.Key
   /** Typed secondary actions rendered by the frame's context menu */
   contextMenuItems?: readonly BottomBarContextMenuItem[]
   /** Optional handler called when the breadcrumb separator to the right of this item is clicked */
@@ -89,7 +83,7 @@ export interface BottomBarContextValue {
   /** Depth in the component tree (0 for root) */
   depth: number
   /** Register an item with the root context */
-  registerItem: (item: Omit<BottomBarItem, 'depth'> & { depth: number }) => void
+  registerItem: (item: BottomBarItem) => void
   /** Unregister an item from the root context */
   unregisterItem: (id: string) => void
   /** Get root context (for SessionFrame to consume items) */
@@ -109,6 +103,12 @@ export interface BottomBarRootContextValue extends BottomBarContextValue {}
 export interface BottomBarItemsContextValue {
   subscribe: (listener: () => void) => () => void
   getSnapshot: () => BottomBarItem[]
+  /** Subscribes to changes of the overlay host element. */
+  subscribeOverlayHost: (listener: () => void) => () => void
+  /** Returns the element the open level portals its overlay into, if any. */
+  getOverlayHost: () => HTMLElement | null
+  /** Ref callback for the frame's overlay host element. */
+  overlayHostRef: (el: HTMLElement | null) => () => void
   openMenu?: string
   setOpenMenu?: (id: string) => void
 }
@@ -133,6 +133,7 @@ export const BottomBarItemsContext =
 const emptyItems: BottomBarItem[] = []
 const emptySubscribe = () => () => {}
 const emptyGetSnapshot = () => emptyItems
+const noOverlayHost = () => null
 
 /**
  * Hook to get the current bottom bar items.
@@ -143,6 +144,25 @@ export function useBottomBarItems(): BottomBarItem[] {
   const subscribe = context?.subscribe ?? emptySubscribe
   const getSnapshot = context?.getSnapshot ?? emptyGetSnapshot
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+}
+
+/**
+ * Hook to get the element the frame shows open overlays in.
+ */
+export function useBottomBarOverlayHost(): HTMLElement | null {
+  const context = use(BottomBarItemsContext)
+  const subscribe = context?.subscribeOverlayHost ?? emptySubscribe
+  const getHost = context?.getOverlayHost ?? noOverlayHost
+  return useSyncExternalStore(subscribe, getHost, getHost)
+}
+
+/**
+ * Hook to get the ref callback that names the frame's overlay host element.
+ */
+export function useBottomBarOverlayHostRef():
+  | ((el: HTMLElement | null) => () => void)
+  | undefined {
+  return use(BottomBarItemsContext)?.overlayHostRef
 }
 
 /**
