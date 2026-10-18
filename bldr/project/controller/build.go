@@ -17,7 +17,9 @@ import (
 // ResolvedBuildTarget is the effective build-target configuration after CLI
 // overrides are applied.
 type ResolvedBuildTarget struct {
+	// PlatformIDs are the platforms selected for the target.
 	PlatformIDs []string
+	// BuildPolicy is the effective compiler policy for the target.
 	BuildPolicy *manifest_build.BuildPolicy
 }
 
@@ -66,14 +68,30 @@ func (c *Controller) BuildManifests(
 	return c.BuildManifestBuilderConfigs(ctx, confs)
 }
 
-// BuildTargets compiles the given build target(s)
+// BuildTargets compiles the given build target(s).
 //
 // If the targets list is empty, builds all targets.
 // If targetsOverride is specified, it overrides the targets field in all build configs.
-func (c *Controller) BuildTargets(ctx context.Context, remote string, targets []string, buildType bldr_manifest.BuildType, targetsOverride []string, buildPolicyOverride *manifest_build.BuildPolicy) error {
+// manifestRevision raises the configured revision floor for this finite build,
+// including manifests compiled on demand as dependencies. Zero keeps configured floors.
+func (c *Controller) BuildTargets(ctx context.Context, remote string, targets []string, buildType bldr_manifest.BuildType, targetsOverride []string, buildPolicyOverride *manifest_build.BuildPolicy, manifestRevision uint64) error {
 	// Read the project build targets from the current controller configuration.
 	conf := c.conf.Load()
 	projConfig := conf.GetProjectConfig()
+
+	// Apply the floor through the project configuration so dependency builds use
+	// the same revision source as explicitly selected manifests.
+	if manifestRevision != 0 {
+		projConfig = projConfig.CloneVT()
+		for _, manifest := range projConfig.GetManifests() {
+			if manifest != nil {
+				manifest.Rev = max(manifest.GetRev(), manifestRevision)
+			}
+		}
+		if err := c.UpdateProjectConfig(projConfig); err != nil {
+			return err
+		}
+	}
 	buildTargets := projConfig.GetBuild()
 
 	// Expand the selected build targets into manifest builder configurations.

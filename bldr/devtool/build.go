@@ -89,6 +89,7 @@ func (a *DevtoolArgs) BuildProject(ctx context.Context) (err error) {
 		bldr_manifest.BuildType(a.BuildType),
 		targetsOverride,
 		buildPolicyOverride,
+		a.ManifestRevision,
 	)
 }
 

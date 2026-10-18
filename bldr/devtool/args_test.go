@@ -2,7 +2,36 @@
 
 package devtool
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/aperturerobotics/cli"
+)
+
+// TestBuildManifestRevisionFlag preserves the full manifest revision width.
+func TestBuildManifestRevisionFlag(t *testing.T) {
+	// Parse the build command without starting a project.
+	args := &DevtoolArgs{}
+	command := args.BuildBuildCommand()
+	var revision uint64
+	command.Action = func(c *cli.Context) error {
+		revision = c.Uint64("manifest-revision")
+		return nil
+	}
+	app := cli.NewApp()
+	app.Commands = []*cli.Command{command}
+	if err := app.Run([]string{"bldr", "build", "--manifest-revision", "18446744073709551615"}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Preserve the full width of the manifest revision representation.
+	if revision != ^uint64(0) {
+		t.Fatalf("manifest revision = %d, want %d", revision, ^uint64(0))
+	}
+	if args.ManifestRevision != revision {
+		t.Fatalf("build revision = %d, want %d", args.ManifestRevision, revision)
+	}
+}
 
 func TestResolveWebStartModeDefaultsToGoScript(t *testing.T) {
 	args := &DevtoolArgs{}

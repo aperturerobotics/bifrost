@@ -31,9 +31,9 @@ type DevtoolArgs struct {
 	// LogLevel is the log level string (debug, info, warn, error).
 	LogLevel string
 
-	// BldrVersion is the version of bldr to require in go.mod
+	// BldrVersion is the version of bldr to require in go.mod.
 	BldrVersion string
-	// BldrVersionSum is the version sum to require in go.sum
+	// BldrVersionSum is the version sum to require in go.sum.
 	BldrVersionSum string
 	// BldrSrcPath is the path to bldr to replace in go.mod
 	// Use for a local path to a development checkout of the bldr sources.
@@ -60,10 +60,12 @@ type DevtoolArgs struct {
 	// Remote is the remote config to use.
 	// Controls which world is used to store objects.
 	Remote string
-	// BuildType is the type of build to perform
-	// Usually "dev" or "release"
-	// If running "dist" this is forced to "release"
+	// BuildType is the type of build to perform.
+	// Usually "dev" or "release".
+	// If running "dist" this is forced to "release".
 	BuildType string
+	// ManifestRevision is the minimum revision for manifests in a finite build.
+	ManifestRevision uint64
 	// MinifyEntrypoint configures if we will minify the entrypoint files.
 	MinifyEntrypoint bool
 	// JSMinification controls build-scoped JavaScript minification.
@@ -72,7 +74,7 @@ type DevtoolArgs struct {
 	JSSourcemaps string
 	// GoScriptCodeSplitting controls GoScript bundle code splitting.
 	GoScriptCodeSplitting string
-	// WebListenAddr is the address to listen for start:web
+	// WebListenAddr is the address to listen for start:web.
 	WebListenAddr string
 	// WebUseWasm compiles browser Go plugins with standard Go/WASM.
 	WebUseWasm bool
@@ -101,7 +103,7 @@ type DevtoolArgs struct {
 	TargetsCsv string
 
 	// WebRenderer is the web renderer to use for native applications.
-	// Valid values: "electron", "saucer"
+	// Valid values: "electron", "saucer".
 	WebRenderer string
 
 	// StartPlugins is additional plugin IDs to load on startup.
@@ -465,6 +467,12 @@ func (a *DevtoolArgs) BuildBuildCommand() *cli.Command {
 		Name:  "build",
 		Usage: "builds a target",
 		Flags: []cli.Flag{
+			&cli.Uint64Flag{
+				Name:        "manifest-revision",
+				Usage:       "minimum manifest revision (builds still advance past stored revisions)",
+				Value:       a.ManifestRevision,
+				Destination: &a.ManifestRevision,
+			},
 			&cli.StringFlag{
 				Name:        "build",
 				Aliases:     []string{"builds", "b"},
