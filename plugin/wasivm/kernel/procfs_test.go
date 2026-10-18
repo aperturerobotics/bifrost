@@ -54,7 +54,8 @@ func TestProcFS(t *testing.T) {
 		{path: "/proc/self/cmdline", want: "/bin/sh\x00-c\x00true\x00"},
 		{path: "/proc/2/environ", want: "HOME=/\x00"},
 		{path: "/proc/self/status", want: "Name:\tsh\nUmask:\t0022\nState:\tR\n"},
-		{path: "/proc/mounts", want: "rootfs / rootfs rw 0 0\nproc /proc proc rw 0 0\n"},
+		{path: "/proc/mounts", want: "rootfs / rootfs rw 0 0\nproc /proc proc rw 0 0\nsysfs /sys sysfs rw 0 0\n"},
+		{path: "/sys/devices/system/cpu/possible", want: "0\n"},
 	}
 	for _, tc := range tests {
 		if got := readProcFile(t, p, tc.path); !strings.HasPrefix(got, tc.want) {

@@ -42,7 +42,9 @@ func (k *Kernel) newFS(fstype string) *VNode {
 	switch fstype {
 	case "proc":
 		return k.newProcFS()
-	case "tmpfs", "ramfs", "devpts", "sysfs", "mqueue":
+	case "sysfs":
+		return k.newSysFS()
+	case "tmpfs", "ramfs", "devpts", "mqueue":
 		return k.vfs.newDir(0o755)
 	}
 	return nil

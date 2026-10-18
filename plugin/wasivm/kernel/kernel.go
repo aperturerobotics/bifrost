@@ -480,10 +480,11 @@ func (k *Kernel) initVFS(cfg *Config) {
 	v.mkDir(dev, "shm")
 
 	// Add the in-memory directories that overlay the root filesystem, and
-	// mount the root and the proc filesystem as Linux starts init.
+	// mount the root and the proc and sys filesystems as init would.
 	v.mkDir(v.root, "tmp")
 	k.mounts = []*mount{{source: "rootfs", target: "/", fstype: "rootfs", root: v.root}}
 	k.mountFS(v.mkDir(v.root, "proc"), &mount{source: "proc", target: "/proc", fstype: "proc", root: k.newProcFS()})
+	k.mountFS(v.mkDir(v.root, "sys"), &mount{source: "sysfs", target: "/sys", fstype: "sysfs", root: k.newSysFS()})
 
 	// List the root filesystem's top level beside the overlays, or create
 	// the standard directories of an in-memory root.
