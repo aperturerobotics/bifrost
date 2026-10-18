@@ -712,16 +712,21 @@ func readSpaceStorage(ctx context.Context, sess *s4wave_session.Session, spaceID
 }
 
 // formatSpaceStorage describes where a Space's blocks are stored and what
-// remains to upload.
+// remains to upload. The account's own storage is this device's disk: other
+// devices receive the Space through sync, not uploads, so it reports pending
+// blocks only while a write-back from a former backend drains.
 func formatSpaceStorage(storage *s4wave_session.WatchSpaceStorageResponse) string {
-	// Describe the backend name or account storage fallback.
+	// Name the backend, or the account's own storage on this device.
 	name := storage.GetStorageBackendName()
+	settled := name + ", uploaded"
 	if name == "" {
-		return "account storage"
+		name = "account storage"
+		settled = name + ", on this device"
 	}
 	pending := storage.GetPendingBlocks()
-	if pending == 0 {
-		return name + ", uploaded"
+	uploadErr := storage.GetUploadError()
+	if pending == 0 && uploadErr == "" {
+		return settled
 	}
 	blocks := " blocks"
 	if pending == 1 {
@@ -731,7 +736,7 @@ func formatSpaceStorage(storage *s4wave_session.WatchSpaceStorageResponse) strin
 	// Describe the pending block count and upload state.
 	desc := name + ", " + strconv.FormatInt(pending, 10) + blocks + " (" +
 		formatByteCount(storage.GetPendingBytes()) + ") waiting to upload"
-	if uploadErr := storage.GetUploadError(); uploadErr != "" {
+	if uploadErr != "" {
 		desc += ": " + uploadErr
 	}
 	return desc
