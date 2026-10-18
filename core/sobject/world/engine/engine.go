@@ -7,6 +7,7 @@ import (
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
@@ -30,12 +31,31 @@ type Engine = world.Engine
 type blkEngine struct {
 	// bengine serves the World rooted at cursor.
 	bengine *world_block.Engine
+	// bcast guards transaction admission and release.
+	bcast broadcast.Broadcast
+	// transactions counts read snapshots holding the engine open. Guarded by bcast.
+	transactions uint64
+	// releasing prevents new read snapshots once Release starts. Guarded by bcast.
+	releasing bool
 	// lookupOp resolves operations supported by this World.
 	lookupOp world.LookupOp
 }
 
-// Release releases the engine resources.
+// Release stops read admission and closes the engine after its last read
+// transaction finishes. The caller retains the SharedObject until this returns.
 func (w *blkEngine) Release() {
+	// Retire the engine and wait for its read transactions to release their snapshots.
+	locked := w.bcast.Lock()
+	w.releasing = true
+	for w.transactions != 0 {
+		wait := locked.WaitCh()
+		locked.Unlock()
+		<-wait
+		locked = w.bcast.Lock()
+	}
+	locked.Unlock()
+
+	// Close only after no transaction can still read from the block engine.
 	_ = w.bengine.Close()
 }
 
@@ -163,6 +183,8 @@ type soEngine struct {
 	c *Controller
 	// so supplies the operation set and accepts local operations.
 	so sobject.SharedObject
+	// block owns transaction admission and the block engine lifetime.
+	block *blkEngine
 	// bengine serves the replayed World and forks write candidates.
 	bengine *world_block.Engine
 	// replay computes the World from the operation set, guarded by the
@@ -203,12 +225,13 @@ type soEngine struct {
 
 // newSoEngine constructs the shared object engine. lifetime bounds the commits
 // the engine finishes after their callers stop waiting.
-func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObject, engine *world_block.Engine, replay *replayer) *soEngine {
+func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObject, engine *blkEngine, replay *replayer) *soEngine {
 	e := &soEngine{
 		lifetime:       lifetime,
 		c:              c,
 		so:             so,
-		bengine:        engine,
+		block:          engine,
+		bengine:        engine.bengine,
 		replay:         replay,
 		backfillChoice: ccontainer.NewCContainer(false),
 		backfillState:  ccontainer.NewCContainerVT[*BackfillState](nil),
@@ -261,9 +284,19 @@ func wrapReleaseWithTask(release func(), task *trace.Task) func() {
 // write fails with the replay's error when an operation's block is not
 // available, and holds no lock. Always call Discard when done.
 func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, error) {
-	// Read transaction.
+	// Read snapshots depend on the block engine until Discard. Write candidates
+	// own independent forks and end with the controller's lifetime instead.
 	if !write {
-		return e.bengine.NewBlockEngineTransaction(ctx, false)
+		ref, err := e.block.acquireTransaction()
+		if err != nil {
+			return nil, err
+		}
+		tx, err := e.bengine.NewBlockEngineTransaction(ctx, false)
+		if err != nil {
+			ref.Release()
+			return nil, err
+		}
+		return world.NewRefCountTx(tx, ref), nil
 	}
 
 	// Time the write from the writer lock wait.

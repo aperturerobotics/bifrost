@@ -258,7 +258,7 @@ func (c *Controller) executeWorld(
 	defer bgCancel()
 
 	// Wrap the world block engine with our txn logic for sobject.
-	engine := newSoEngine(bgCtx, c, so, blkEngine.bengine, replay)
+	engine := newSoEngine(bgCtx, c, so, blkEngine, replay)
 	if host, ok := so.(sobject.StateHost); ok {
 		engine.control, err = sobject.NewControl(le, host.GetSOHost(), host.GetPrivKey(), engine)
 		if err != nil {

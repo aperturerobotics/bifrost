@@ -187,7 +187,7 @@ func testEngineStopsReplayAtBlockGap(t *testing.T, store *hidingBlockStore, want
 		t.Fatal(err.Error())
 	}
 	t.Cleanup(blk.Release)
-	engine := newSoEngine(ctx, space.c, so, blk.bengine, newReplayer(space.c, so))
+	engine := newSoEngine(ctx, space.c, so, blk, newReplayer(space.c, so))
 
 	// Count the operations replay applies.
 	applied := &opCounter{}
