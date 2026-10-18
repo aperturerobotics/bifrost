@@ -250,6 +250,9 @@ message WasiVmDisplayFrame {
   repeated WasiVmDisplayCopy copies = 3;
   // Regions draw pixels over the screen after the copies.
   repeated WasiVmDisplayRegion regions = 4;
+  // Scale is the number of screen pixels per CSS pixel the viewer shows the
+  // screen at; zero means one.
+  uint32 scale = 5;
 }
 
 // WasiVmDisplayCopy moves an area of the viewer's screen, as a window that
@@ -295,7 +298,17 @@ message WasiVmDisplayInput {
     WasiVmKeyEvent key = 2;
     // Drawn reports the viewer drew the last frame and takes the next.
     WasiVmFrameDrawn drawn = 3;
+    // Scale reports the viewer's device pixels per CSS pixel.
+    WasiVmDisplayScale scale = 4;
   }
+}
+
+// WasiVmDisplayScale is the number of device pixels per CSS pixel on the
+// viewer's screen, rounded up. The display draws at the latest scale any
+// viewer reported.
+message WasiVmDisplayScale {
+  // Scale is the device pixels per CSS pixel, at least one.
+  uint32 scale = 1;
 }
 
 // WasiVmFrameDrawn reports that the viewer drew the last frame it received.

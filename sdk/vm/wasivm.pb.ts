@@ -681,6 +681,30 @@ export const WasiVmFrameDrawn: MessageType<WasiVmFrameDrawn> =
   )
 
 /**
+ * WasiVmDisplayScale is the number of device pixels per CSS pixel on the
+ * viewer's screen, rounded up. The display draws at the latest scale any
+ * viewer reported.
+ *
+ * @generated from message s4wave.vm.WasiVmDisplayScale
+ */
+export interface WasiVmDisplayScale {
+  /**
+   * Scale is the device pixels per CSS pixel, at least one.
+   *
+   * @generated from field: uint32 scale = 1;
+   */
+  scale?: number
+}
+
+export const WasiVmDisplayScale: MessageType<WasiVmDisplayScale> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmDisplayScale',
+    fields: [
+      { no: 1, name: 'scale', kind: 'scalar', T: ScalarType.UINT32 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * WasiVmDisplayInput is a pointer or key event from the viewer, or its report
  * that it drew a frame.
  *
@@ -722,6 +746,15 @@ export interface WasiVmDisplayInput {
         value: WasiVmFrameDrawn
         case: 'drawn'
       }
+    | {
+        /**
+         * Scale reports the viewer's device pixels per CSS pixel.
+         *
+         * @generated from field: s4wave.vm.WasiVmDisplayScale scale = 4;
+         */
+        value: WasiVmDisplayScale
+        case: 'scale'
+      }
 }
 
 export const WasiVmDisplayInput: MessageType<WasiVmDisplayInput> =
@@ -741,6 +774,13 @@ export const WasiVmDisplayInput: MessageType<WasiVmDisplayInput> =
         name: 'drawn',
         kind: 'message',
         T: WasiVmFrameDrawn,
+        oneof: 'body',
+      },
+      {
+        no: 4,
+        name: 'scale',
+        kind: 'message',
+        T: WasiVmDisplayScale,
         oneof: 'body',
       },
     ] satisfies readonly PartialFieldInfo[],
@@ -960,6 +1000,13 @@ export interface WasiVmDisplayFrame {
    * @generated from field: repeated s4wave.vm.WasiVmDisplayRegion regions = 4;
    */
   regions?: WasiVmDisplayRegion[]
+  /**
+   * Scale is the number of screen pixels per CSS pixel the viewer shows the
+   * screen at; zero means one.
+   *
+   * @generated from field: uint32 scale = 5;
+   */
+  scale?: number
 }
 
 export const WasiVmDisplayFrame: MessageType<WasiVmDisplayFrame> =
@@ -982,5 +1029,6 @@ export const WasiVmDisplayFrame: MessageType<WasiVmDisplayFrame> =
         T: WasiVmDisplayRegion,
         repeated: true,
       },
+      { no: 5, name: 'scale', kind: 'scalar', T: ScalarType.UINT32 },
     ] satisfies readonly PartialFieldInfo[],
   })

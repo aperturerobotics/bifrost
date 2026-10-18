@@ -44,7 +44,14 @@ const (
 	surfaceFrame          = 3
 	surfaceSetInputRegion = 5
 	surfaceCommit         = 6
+	surfaceSetBufferScale = 8
 	surfaceDamageBuffer   = 9
+)
+
+// wl_surface events and errors.
+const (
+	surfaceEnter           = 0
+	surfaceErrInvalidScale = 0
 )
 
 // wl_region.

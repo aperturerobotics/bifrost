@@ -41,9 +41,11 @@ type Compositor struct {
 	// bcast guards the fields below and the surfaces' screen state, and
 	// wakes the viewers and the window watchers when they change.
 	bcast broadcast.Broadcast
-	// desktop is the screen's space: the output's size in pixels, with the
-	// layers and the windows not popped out.
+	// desktop is the screen's space: the output's size in screen units,
+	// with the layers and the windows not popped out.
 	desktop *space
+	// scale is the output's pixels a side per screen unit.
+	scale int
 	// clients is the connected clients.
 	clients map[*client]struct{}
 	// closed is set once Close runs, so no client connects after it.
@@ -104,6 +106,7 @@ func Listen(k *kernel.Kernel, width, height int) (*Compositor, error) {
 	return &Compositor{
 		listener:     l,
 		desktop:      desktop,
+		scale:        1,
 		pointerSpace: desktop,
 		usable:       desktop.area,
 		start:        time.Now(),
@@ -195,7 +198,7 @@ func (c *Compositor) Run(ctx context.Context, send func(*s4wave_vm.WasiVmDisplay
 }
 
 // Input sends a viewer's pointer or key event to the surfaces holding the
-// focus. A keysym the keyboard lacks is dropped.
+// focus, or sets the output's scale. A keysym the keyboard lacks is dropped.
 func (c *Compositor) Input(in *s4wave_vm.WasiVmDisplayInput) {
 	c.input(c.desktop, in)
 }

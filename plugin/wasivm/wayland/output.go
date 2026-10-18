@@ -17,31 +17,61 @@ type output struct {
 // request handles a wl_output request: release, from version 3.
 func (o output) request(op uint16, _ *message) error {
 	if op == outputRelease {
+		o.c.comp.update(func() {
+			o.c.outputs = deleteResource(o.c.outputs, o.id)
+		})
 		o.c.destroy(o.id)
 	}
 	return nil
 }
 
-// bindOutput binds wl_output and describes the screen.
+// bindOutput binds wl_output, describes the screen, and enters the
+// client's surfaces already on it.
 func (c *client) bindOutput(r resource) object {
-	// Describe the screen: its position, maker and model, its one mode, and
-	// from version 4 its name, as the xdg output names it.
-	size := c.comp.desktop.area.Size()
-	c.send(newEvent(r.id, outputGeometry).int(0).int(0).int(0).int(0).int(0).
-		string("WasiVM").string("display").int(0))
+	c.comp.update(func() {
+		// Describe the screen: its position, maker and model, its one mode
+		// and scale, and from version 4 its name, as the xdg output names it.
+		c.send(newEvent(r.id, outputGeometry).int(0).int(0).int(0).int(0).int(0).
+			string("WasiVM").string("display").int(0))
+		c.describeMode(r)
+		if r.version >= 4 {
+			c.send(newEvent(r.id, outputName).string(outputNameText))
+			c.send(newEvent(r.id, outputDescription).string(outputDescriptionText))
+		}
+		if r.version >= 2 {
+			c.send(newEvent(r.id, outputDone))
+		}
+
+		// Track it, and enter the surfaces that show. The serve goroutine
+		// owns the objects.
+		c.outputs = append(c.outputs, r)
+		for _, obj := range c.objects {
+			if s, ok := obj.(*surface); ok && s.entered {
+				c.send(newEvent(s.id, surfaceEnter).uint(r.id))
+			}
+		}
+	})
+	return output{c, r}
+}
+
+// describeMode sends the output r its mode, the screen's size in pixels, and
+// from version 2 its scale. The caller holds the compositor's lock and ends
+// the update.
+func (c *client) describeMode(r resource) {
+	size := c.comp.desktop.area.Size().Mul(c.comp.scale)
 	c.send(newEvent(r.id, outputMode).uint(outputModeCurrentPreferred).
 		int(int32(size.X)).int(int32(size.Y)).int(60000)) //nolint:gosec // screen sizes are small.
 	if r.version >= 2 {
-		c.send(newEvent(r.id, outputScale).int(1))
+		c.send(newEvent(r.id, outputScale).int(int32(c.comp.scale))) //nolint:gosec // at most maxScale.
 	}
-	if r.version >= 4 {
-		c.send(newEvent(r.id, outputName).string(outputNameText))
-		c.send(newEvent(r.id, outputDescription).string(outputDescriptionText))
+}
+
+// enterOutputs tells the surface s it shows on each of its client's outputs.
+// The caller holds the compositor's lock.
+func (c *client) enterOutputs(s *surface) {
+	for _, o := range c.outputs {
+		c.send(newEvent(s.id, surfaceEnter).uint(o.id))
 	}
-	if r.version >= 2 {
-		c.send(newEvent(r.id, outputDone))
-	}
-	return output{c, r}
 }
 
 // bindXdgOutputManager binds zxdg_output_manager_v1, which describes an
@@ -74,7 +104,7 @@ func (c *client) bindXdgOutputManager(r resource) object {
 // description to the xdg output x of o, then ends the update. From version
 // 3 the output's done event ends it in place of the xdg output's.
 func (c *client) describeXdgOutput(x resource, o output) {
-	// Describe the screen at its full size, as the scale is 1.
+	// Describe the screen in screen units, whatever the scale.
 	size := c.comp.desktop.area.Size()
 	c.send(newEvent(x.id, xdgOutputLogicalPosition).int(0).int(0))
 	c.send(newEvent(x.id, xdgOutputLogicalSize).int(int32(size.X)).int(int32(size.Y))) //nolint:gosec // screen sizes are small.

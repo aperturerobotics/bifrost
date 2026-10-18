@@ -10,8 +10,7 @@ import (
 	s4wave_vm "github.com/s4wave/spacewave/sdk/vm"
 )
 
-// maxWindowSize bounds each side of a window's own space, and of a surface's
-// image, in pixels.
+// maxWindowSize bounds each side of a window's own space in screen units.
 const maxWindowSize = 4096
 
 // ErrWindowClosed ends a window's viewer stream when the window unmaps or
@@ -164,10 +163,7 @@ func (c *Compositor) resizeSpace(sp *space, size image.Point) {
 		return
 	}
 	sp.area = image.Rectangle{Max: size}
-	for v := range sp.viewers {
-		v.copies, v.damage = v.copies[:0], v.damage[:0]
-	}
-	c.damage(sp, sp.area)
+	c.redrawSpace(sp)
 
 	// Fit the window to it.
 	t := sp.window.xdg.toplevel

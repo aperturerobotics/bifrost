@@ -76,6 +76,37 @@ type DisplayStatus =
 const wheelUp = 1 << 3
 const wheelDown = 1 << 4
 
+// watchPixelRatio calls onChange with the device pixels per CSS pixel,
+// rounded up, now and each time it changes, as when the window moves to
+// another screen or zooms, until the returned function stops it.
+function watchPixelRatio(onChange: (scale: number) => void): () => void {
+  let query: MediaQueryList | null = null
+  const check = () => {
+    query?.removeEventListener('change', check)
+    const ratio = window.devicePixelRatio || 1
+    onChange(Math.max(1, Math.ceil(ratio - 0.001)))
+    query = window.matchMedia(`(resolution: ${ratio}dppx)`)
+    query.addEventListener('change', check)
+  }
+  check()
+  return () => query?.removeEventListener('change', check)
+}
+
+// fitCanvas shows the canvas at the screen's size in CSS pixels, its pixels
+// over scale, shrunk to fit the pane.
+function fitCanvas(
+  canvas: HTMLCanvasElement,
+  pane: HTMLElement,
+  scale: number,
+) {
+  const width = canvas.width / scale
+  const height = canvas.height / scale
+  if (!width || !height) return
+  const fit = Math.min(1, pane.clientWidth / width, pane.clientHeight / height)
+  canvas.style.width = `${width * fit}px`
+  canvas.style.height = `${height * fit}px`
+}
+
 // WasiVmDisplay shows the display of a running VM, X or Wayland, or one
 // window of it, on a canvas scaled to fit the pane. Pointer, wheel and key
 // input on the canvas drive the VM.
@@ -87,22 +118,27 @@ export function WasiVmDisplay({
   const paneRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const inputRef = useRef<Pushable<WasiVmDisplayInput> | null>(null)
+  // scaleRef is the screen pixels per CSS pixel of the last frame.
+  const scaleRef = useRef(1)
   // heldKeys maps each held key's code to the keysym its press sent, so the
   // release sends the same keysym after a modifier changes.
   const heldKeys = useRef(new Map<string, number>())
   const [status, setStatus] = useState<DisplayStatus>({ kind: 'waiting' })
   const [attempt, retry] = useReducer((n: number) => n + 1, 0)
 
-  // Report the pane's size as it changes.
+  // Fit the canvas to the pane and report the pane's size as it changes.
   useEffect(() => {
     const pane = paneRef.current
-    if (!onPaneSize || !pane) return
+    if (!pane) return
     let last = ''
     const observer = new ResizeObserver(() => {
+      if (canvasRef.current) {
+        fitCanvas(canvasRef.current, pane, scaleRef.current)
+      }
       const width = Math.floor(pane.clientWidth)
       const height = Math.floor(pane.clientHeight)
       const key = width + 'x' + height
-      if (!width || !height || key === last) return
+      if (!onPaneSize || !width || !height || key === last) return
       last = key
       onPaneSize({ width, height })
     })
@@ -113,12 +149,18 @@ export function WasiVmDisplay({
   // Stream the screen onto the canvas.
   useEffect(() => {
     const canvas = canvasRef.current
+    const pane = paneRef.current
     const ctx = canvas?.getContext('2d')
-    if (!connectDisplay || !canvas || !ctx) return
+    if (!connectDisplay || !canvas || !pane || !ctx) return
     const abort = new AbortController()
     const input = pushable<WasiVmDisplayInput>({ objectMode: true })
     inputRef.current = input
     setStatus({ kind: 'waiting' })
+
+    // Report the screen's pixel ratio, which the VM draws at.
+    const stopScale = watchPixelRatio((scale) =>
+      input.push({ body: { case: 'scale', value: { scale } } }),
+    )
 
     // cancelled is set once the effect is cleaned up, after which no state
     // is set.
@@ -127,12 +169,20 @@ export function WasiVmDisplay({
       let ready = false
       try {
         for await (const frame of connectDisplay(input, abort.signal)) {
-          // Size the canvas to the screen, which clears it.
+          // Size the canvas to the screen, which clears it, and show it
+          // at the screen's size in CSS pixels.
           const screenWidth = frame.screenWidth ?? 0
           const screenHeight = frame.screenHeight ?? 0
-          if (canvas.width !== screenWidth || canvas.height !== screenHeight) {
+          const scale = frame.scale || 1
+          if (
+            canvas.width !== screenWidth ||
+            canvas.height !== screenHeight ||
+            scaleRef.current !== scale
+          ) {
             canvas.width = screenWidth
             canvas.height = screenHeight
+            scaleRef.current = scale
+            fitCanvas(canvas, pane, scale)
           }
 
           // Move the copied areas in order, then draw the regions.
@@ -190,6 +240,7 @@ export function WasiVmDisplay({
 
     return () => {
       cancelled = true
+      stopScale()
       abort.abort()
       input.end()
       inputRef.current = null

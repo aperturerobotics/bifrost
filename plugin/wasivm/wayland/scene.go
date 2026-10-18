@@ -305,15 +305,18 @@ func (c *Compositor) surfaceAt(sp *space, pt image.Point) *surface {
 }
 
 // readFrame takes what the view v of the space sp lacks as a frame: its
-// moves, then its areas read from the space. The caller holds the lock.
+// moves, then its areas read from the space, in pixels at the output's
+// scale. The caller holds the lock.
 func (c *Compositor) readFrame(sp *space, v *view) *s4wave_vm.WasiVmDisplayFrame {
 	// List the moves, then read each area after them.
+	n := c.scale
 	f := &s4wave_vm.WasiVmDisplayFrame{
-		ScreenWidth:  uint32(sp.area.Dx()), //nolint:gosec // space sizes are small.
-		ScreenHeight: uint32(sp.area.Dy()), //nolint:gosec // space sizes are small.
+		ScreenWidth:  uint32(sp.area.Dx() * n), //nolint:gosec // space sizes are small.
+		ScreenHeight: uint32(sp.area.Dy() * n), //nolint:gosec // space sizes are small.
+		Scale:        uint32(n),                //nolint:gosec // at most maxScale.
 	}
 	for _, m := range v.copies {
-		src, dst := m.src, m.dst()
+		src, dst := scaleRect(m.src, n), scaleRect(m.dst(), n)
 		f.Copies = append(f.Copies, &s4wave_vm.WasiVmDisplayCopy{
 			X:      uint32(src.Min.X), //nolint:gosec // inside the screen.
 			Y:      uint32(src.Min.Y), //nolint:gosec // inside the screen.
@@ -330,12 +333,14 @@ func (c *Compositor) readFrame(sp *space, v *view) *s4wave_vm.WasiVmDisplayFrame
 	return f
 }
 
-// readSpace composites the area r of the space sp: its windows and layer
-// surfaces, bottom to top, over the background. The caller holds the lock.
+// readSpace composites the area r of the space sp at the output's scale:
+// its windows and layer surfaces, bottom to top, over the background. The
+// caller holds the lock.
 func (c *Compositor) readSpace(sp *space, r image.Rectangle) *s4wave_vm.WasiVmDisplayRegion {
 	// Fill the background: one pixel, then double the filled prefix, so a
 	// large area takes a few long copies instead of one per pixel.
-	pix := make([]byte, 4*r.Dx()*r.Dy())
+	px := scaleRect(r, c.scale)
+	pix := make([]byte, 4*px.Dx()*px.Dy())
 	for n := copy(pix, background[:]); n < len(pix); {
 		n += copy(pix[n:], pix[:n])
 	}
@@ -343,28 +348,53 @@ func (c *Compositor) readSpace(sp *space, r image.Rectangle) *s4wave_vm.WasiVmDi
 	// Draw each surface of each tree.
 	for _, w := range c.spaceRoots(sp) {
 		c.walk(w, w.origin(), func(s *surface, at image.Point) bool {
-			blend(pix, r, s, at)
+			blend(pix, r, c.scale, s, at)
 			return false
 		})
 	}
 	return &s4wave_vm.WasiVmDisplayRegion{
-		X:      uint32(r.Min.X), //nolint:gosec // inside the screen.
-		Y:      uint32(r.Min.Y), //nolint:gosec // inside the screen.
-		Width:  uint32(r.Dx()),  //nolint:gosec // inside the screen.
-		Height: uint32(r.Dy()),  //nolint:gosec // inside the screen.
+		X:      uint32(px.Min.X), //nolint:gosec // inside the screen.
+		Y:      uint32(px.Min.Y), //nolint:gosec // inside the screen.
+		Width:  uint32(px.Dx()),  //nolint:gosec // inside the screen.
+		Height: uint32(px.Dy()),  //nolint:gosec // inside the screen.
 		Rgba:   pix,
 	}
 }
 
 // blend draws the image of s, at screen position at, over pix, the opaque
-// RGBA pixels of the screen area r. Each source pixel is premultiplied, so
-// the result is the source plus the destination scaled by the source's
-// transparency.
-func blend(pix []byte, r image.Rectangle, s *surface, at image.Point) {
-	// Find the area both cover.
-	in := r.Intersect(image.Rectangle{Min: at, Max: at.Add(s.size)})
+// RGBA pixels of the screen area r drawn at scale pixels a unit. Each source
+// pixel is premultiplied, so the result is the source plus the destination
+// scaled by the source's transparency. An image drawn at another scale is
+// sampled at the pixel nearest each one drawn.
+func blend(pix []byte, r image.Rectangle, scale int, s *surface, at image.Point) {
+	// Find the area both cover, in pixels.
+	in := scaleRect(r.Intersect(image.Rectangle{Min: at, Max: at.Add(s.size)}), scale)
+	if in.Empty() {
+		return
+	}
+	r, at = scaleRect(r, scale), at.Mul(scale)
+
+	// Map each column to the image's when the scales differ.
+	var cols []int
+	var row []byte
+	if s.scale != scale {
+		cols, row = make([]int, in.Dx()), make([]byte, 4*in.Dx())
+		for i := range cols {
+			cols[i] = 4 * ((in.Min.X + i - at.X) * s.scale / scale)
+		}
+	}
 	for y := in.Min.Y; y < in.Max.Y; y++ {
-		from := s.image[4*((y-at.Y)*s.size.X+in.Min.X-at.X):][:4*in.Dx()]
+		// Read the row from the image.
+		line := s.image[4*((y-at.Y)*s.scale/scale)*s.pixels.X:]
+		var from []byte
+		if cols == nil {
+			from = line[4*(in.Min.X-at.X):][:4*in.Dx()]
+		} else {
+			for i, x := range cols {
+				copy(row[4*i:4*i+4], line[x:])
+			}
+			from = row
+		}
 		to := pix[4*((y-r.Min.Y)*r.Dx()+in.Min.X-r.Min.X):][:4*in.Dx()]
 
 		// Copy an opaque row, or blend each pixel.

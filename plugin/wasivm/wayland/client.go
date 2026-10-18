@@ -67,6 +67,9 @@ type client struct {
 	// keyboards is the client's wl_keyboard objects. The compositor's lock
 	// guards it.
 	keyboards []resource
+	// outputs is the client's wl_output objects. The compositor's lock
+	// guards it.
+	outputs []resource
 
 	// outBcast guards the events not yet written and wakes the writer.
 	outBcast broadcast.Broadcast

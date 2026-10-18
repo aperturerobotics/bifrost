@@ -689,6 +689,9 @@ type WasiVmDisplayFrame struct {
 	Copies []*WasiVmDisplayCopy `protobuf:"bytes,3,rep,name=copies,proto3" json:"copies,omitempty"`
 	// Regions draw pixels over the screen after the copies.
 	Regions []*WasiVmDisplayRegion `protobuf:"bytes,4,rep,name=regions,proto3" json:"regions,omitempty"`
+	// Scale is the number of screen pixels per CSS pixel the viewer shows the
+	// screen at; zero means one.
+	Scale uint32 `protobuf:"varint,5,opt,name=scale,proto3" json:"scale,omitempty"`
 }
 
 func (x *WasiVmDisplayFrame) Reset() {
@@ -723,6 +726,13 @@ func (x *WasiVmDisplayFrame) GetRegions() []*WasiVmDisplayRegion {
 		return x.Regions
 	}
 	return nil
+}
+
+func (x *WasiVmDisplayFrame) GetScale() uint32 {
+	if x != nil {
+		return x.Scale
+	}
+	return 0
 }
 
 // WasiVmDisplayCopy moves an area of the viewer's screen, as a window that
@@ -857,6 +867,7 @@ type WasiVmDisplayInput struct {
 	//	*WasiVmDisplayInput_Pointer
 	//	*WasiVmDisplayInput_Key
 	//	*WasiVmDisplayInput_Drawn
+	//	*WasiVmDisplayInput_Scale
 	Body isWasiVmDisplayInput_Body `protobuf_oneof:"body"`
 }
 
@@ -894,6 +905,13 @@ func (x *WasiVmDisplayInput) GetDrawn() *WasiVmFrameDrawn {
 	return nil
 }
 
+func (x *WasiVmDisplayInput) GetScale() *WasiVmDisplayScale {
+	if x, ok := x.GetBody().(*WasiVmDisplayInput_Scale); ok {
+		return x.Scale
+	}
+	return nil
+}
+
 type isWasiVmDisplayInput_Body interface {
 	isWasiVmDisplayInput_Body()
 }
@@ -913,11 +931,40 @@ type WasiVmDisplayInput_Drawn struct {
 	Drawn *WasiVmFrameDrawn `protobuf:"bytes,3,opt,name=drawn,proto3,oneof"`
 }
 
+type WasiVmDisplayInput_Scale struct {
+	// Scale reports the viewer's device pixels per CSS pixel.
+	Scale *WasiVmDisplayScale `protobuf:"bytes,4,opt,name=scale,proto3,oneof"`
+}
+
 func (*WasiVmDisplayInput_Pointer) isWasiVmDisplayInput_Body() {}
 
 func (*WasiVmDisplayInput_Key) isWasiVmDisplayInput_Body() {}
 
 func (*WasiVmDisplayInput_Drawn) isWasiVmDisplayInput_Body() {}
+
+func (*WasiVmDisplayInput_Scale) isWasiVmDisplayInput_Body() {}
+
+// WasiVmDisplayScale is the number of device pixels per CSS pixel on the
+// viewer's screen, rounded up. The display draws at the latest scale any
+// viewer reported.
+type WasiVmDisplayScale struct {
+	unknownFields []byte
+	// Scale is the device pixels per CSS pixel, at least one.
+	Scale uint32 `protobuf:"varint,1,opt,name=scale,proto3" json:"scale,omitempty"`
+}
+
+func (x *WasiVmDisplayScale) Reset() {
+	*x = WasiVmDisplayScale{}
+}
+
+func (*WasiVmDisplayScale) ProtoMessage() {}
+
+func (x *WasiVmDisplayScale) GetScale() uint32 {
+	if x != nil {
+		return x.Scale
+	}
+	return 0
+}
 
 // WasiVmFrameDrawn reports that the viewer drew the last frame it received.
 type WasiVmFrameDrawn struct {
@@ -1329,6 +1376,7 @@ func (m *WasiVmDisplayFrame) CloneVT() *WasiVmDisplayFrame {
 	r := new(WasiVmDisplayFrame)
 	r.ScreenWidth = m.ScreenWidth
 	r.ScreenHeight = m.ScreenHeight
+	r.Scale = m.Scale
 	r.Copies = protobuf_go_lite.CloneVTSlice(m.Copies)
 	r.Regions = protobuf_go_lite.CloneVTSlice(m.Regions)
 	if len(m.unknownFields) > 0 {
@@ -1438,6 +1486,35 @@ func (m *WasiVmDisplayInput_Drawn) CloneVT() *WasiVmDisplayInput_Drawn {
 }
 
 func (m *WasiVmDisplayInput_Drawn) CloneOneofVT() isWasiVmDisplayInput_Body {
+	return m.CloneVT()
+}
+
+func (m *WasiVmDisplayInput_Scale) CloneVT() *WasiVmDisplayInput_Scale {
+	if m == nil {
+		return (*WasiVmDisplayInput_Scale)(nil)
+	}
+	r := new(WasiVmDisplayInput_Scale)
+	r.Scale = protobuf_go_lite.CloneVTValue(m.Scale)
+	return r
+}
+
+func (m *WasiVmDisplayInput_Scale) CloneOneofVT() isWasiVmDisplayInput_Body {
+	return m.CloneVT()
+}
+
+func (m *WasiVmDisplayScale) CloneVT() *WasiVmDisplayScale {
+	if m == nil {
+		return (*WasiVmDisplayScale)(nil)
+	}
+	r := new(WasiVmDisplayScale)
+	r.Scale = m.Scale
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmDisplayScale) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1942,6 +2019,9 @@ func (this *WasiVmDisplayFrame) EqualVT(that *WasiVmDisplayFrame) bool {
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.Regions, that.Regions, func() *WasiVmDisplayRegion { return &WasiVmDisplayRegion{} }) {
 		return false
 	}
+	if this.Scale != that.Scale {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -2098,6 +2178,43 @@ func (this *WasiVmDisplayInput_Drawn) EqualVT(thatIface isWasiVmDisplayInput_Bod
 		return false
 	}
 	return true
+}
+
+func (this *WasiVmDisplayInput_Scale) EqualVT(thatIface isWasiVmDisplayInput_Body) bool {
+	that, ok := thatIface.(*WasiVmDisplayInput_Scale)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.Scale, that.Scale, func() *WasiVmDisplayScale { return &WasiVmDisplayScale{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *WasiVmDisplayScale) EqualVT(that *WasiVmDisplayScale) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Scale != that.Scale {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmDisplayScale) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmDisplayScale)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
 }
 
 func (this *WasiVmFrameDrawn) EqualVT(that *WasiVmFrameDrawn) bool {
@@ -3255,6 +3372,11 @@ func (x *WasiVmDisplayFrame) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.Scale != 0 || s.HasField("scale") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("scale")
+		s.WriteUint32(x.Scale)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -3314,6 +3436,9 @@ func (x *WasiVmDisplayFrame) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.Regions = append(x.Regions, v)
 			})
+		case "scale":
+			s.AddField("scale")
+			x.Scale = s.ReadUint32()
 		}
 	})
 }
@@ -3501,6 +3626,10 @@ func (x *WasiVmDisplayInput) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("drawn")
 			ov.Drawn.MarshalProtoJSON(s.WithField("drawn"))
+		case *WasiVmDisplayInput_Scale:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("scale")
+			ov.Scale.MarshalProtoJSON(s.WithField("scale"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -3547,12 +3676,63 @@ func (x *WasiVmDisplayInput) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.Drawn = &WasiVmFrameDrawn{}
 			ov.Drawn.UnmarshalProtoJSON(s.WithField("drawn", true))
+		case "scale":
+			ov := &WasiVmDisplayInput_Scale{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.Scale = nil
+				return
+			}
+			ov.Scale = &WasiVmDisplayScale{}
+			ov.Scale.UnmarshalProtoJSON(s.WithField("scale", true))
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the WasiVmDisplayInput from JSON.
 func (x *WasiVmDisplayInput) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmDisplayScale message to JSON.
+func (x *WasiVmDisplayScale) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Scale != 0 || s.HasField("scale") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("scale")
+		s.WriteUint32(x.Scale)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmDisplayScale to JSON.
+func (x *WasiVmDisplayScale) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmDisplayScale message from JSON.
+func (x *WasiVmDisplayScale) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "scale":
+			s.AddField("scale")
+			x.Scale = s.ReadUint32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmDisplayScale from JSON.
+func (x *WasiVmDisplayScale) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -4553,6 +4733,11 @@ func (m *WasiVmDisplayFrame) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Scale != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Scale))
+		i--
+		dAtA[i] = 0x28
+	}
 	if len(m.Regions) > 0 {
 		for iNdEx := len(m.Regions) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.Regions[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -4818,6 +5003,67 @@ func (m *WasiVmDisplayInput_Drawn) MarshalToSizedBufferVT(dAtA []byte) (int, err
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
 		i--
 		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmDisplayInput_Scale) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmDisplayInput_Scale) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Scale != nil {
+		size, err := m.Scale.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x22
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x22
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmDisplayScale) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmDisplayScale) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmDisplayScale) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Scale != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Scale))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -5235,6 +5481,7 @@ func (m *WasiVmDisplayFrame) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Scale)
 	n += len(m.unknownFields)
 	return n
 }
@@ -5325,6 +5572,32 @@ func (m *WasiVmDisplayInput_Drawn) SizeVT() (n int) {
 	} else {
 		n += 2
 	}
+	return n
+}
+
+func (m *WasiVmDisplayInput_Scale) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Scale != nil {
+		l = m.Scale.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
+func (m *WasiVmDisplayScale) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Scale)
+	n += len(m.unknownFields)
 	return n
 }
 
@@ -5782,6 +6055,10 @@ func (x *WasiVmDisplayFrame) MarshalProtoText() string {
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
+	if x.Scale != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "scale")
+		protobuf_go_lite.TextWriteUint(&sb, x.Scale)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -5878,11 +6155,32 @@ func (x *WasiVmDisplayInput) MarshalProtoText() string {
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Drawn)
 		}
+	case *WasiVmDisplayInput_Scale:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "scale")
+		if body.Scale == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmDisplayScale{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Scale)
+		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *WasiVmDisplayInput) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmDisplayScale) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmDisplayScale")
+	if x.Scale != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "scale")
+		protobuf_go_lite.TextWriteUint(&sb, x.Scale)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmDisplayScale) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -7196,6 +7494,15 @@ func (m *WasiVmDisplayFrame) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scale", wireType)
+			}
+			m.Scale = 0
+			m.Scale, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -7483,6 +7790,78 @@ func (m *WasiVmDisplayInput) UnmarshalVT(dAtA []byte) error {
 				m.Body = &WasiVmDisplayInput_Drawn{Drawn: v}
 			}
 			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scale", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*WasiVmDisplayInput_Scale); ok {
+				if err := oneof.Scale.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &WasiVmDisplayScale{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &WasiVmDisplayInput_Scale{Scale: v}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmDisplayScale) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmDisplayScale: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmDisplayScale: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scale", wireType)
+			}
+			m.Scale = 0
+			m.Scale, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

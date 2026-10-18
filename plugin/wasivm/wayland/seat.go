@@ -21,8 +21,9 @@ type grab struct {
 }
 
 // input sends a pointer or key event from a viewer of the space sp to the
-// surfaces holding the focus. A key from a window's own space first
-// activates the window. A keysym the keyboard lacks is dropped.
+// surfaces holding the focus, or applies a viewer's scale to the output. A
+// key from a window's own space first activates the window. A keysym the
+// keyboard lacks is dropped.
 func (c *Compositor) input(sp *space, in *s4wave_vm.WasiVmDisplayInput) {
 	c.update(func() {
 		if sp.done {
@@ -37,6 +38,8 @@ func (c *Compositor) input(sp *space, in *s4wave_vm.WasiVmDisplayInput) {
 				c.activate(sp.window)
 			}
 			c.keyInput(in.GetKey())
+		case in.GetScale() != nil:
+			c.setScale(int(min(in.GetScale().GetScale(), maxScale)))
 		}
 	})
 }
@@ -190,10 +193,11 @@ func (c *Compositor) pointerInput(sp *space, ev *s4wave_vm.WasiVmPointerEvent) {
 		c.pointerSpace = sp
 	}
 
-	// Move the pointer within the space and note the buttons that changed.
+	// Move the pointer within the space, from pixels to screen units, and
+	// note the buttons that changed.
 	c.pointer = image.Pt(
-		max(min(int(ev.GetX()), sp.area.Max.X-1), sp.area.Min.X),
-		max(min(int(ev.GetY()), sp.area.Max.Y-1), sp.area.Min.Y),
+		max(min(int(ev.GetX())/c.scale, sp.area.Max.X-1), sp.area.Min.X),
+		max(min(int(ev.GetY())/c.scale, sp.area.Max.Y-1), sp.area.Min.Y),
 	)
 	changed := ev.GetButtons() ^ c.buttons
 	held := c.buttons&buttonBits != 0

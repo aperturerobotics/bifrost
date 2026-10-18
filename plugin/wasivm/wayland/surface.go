@@ -20,8 +20,10 @@ type surface struct {
 	attached bool
 	// buffer is the attached buffer, or nil to unmap.
 	buffer *shmBuffer
-	// damaged is the pending damage in surface coordinates.
+	// damaged is the pending damage in buffer pixels.
 	damaged image.Rectangle
+	// scaleNext is the pending buffer scale.
+	scaleNext int
 	// callbacks is the pending frame callbacks.
 	callbacks []uint32
 	// inputSet is set when the pending state sets the input region.
@@ -39,12 +41,20 @@ type surface struct {
 	// The compositor's lock guards the fields below. The client's serve
 	// goroutine alone writes them, so it reads them without the lock.
 
-	// size is the image's size: the committed buffer's, clipped to the
-	// screen.
+	// size is the surface's size in screen units: the image's size divided
+	// by its scale.
 	size image.Point
+	// scale is the image's pixels a side per screen unit, as the client
+	// drew it.
+	scale int
+	// pixels is the image's size: the committed buffer's, clipped to
+	// maxImageSize.
+	pixels image.Point
 	// image is the committed pixels in premultiplied RGBA, or nil with no
 	// buffer.
 	image []byte
+	// entered is set once the surface was told it shows on the output.
+	entered bool
 	// opaque is set when every pixel of the image is opaque.
 	opaque bool
 	// input is the area that takes pointer input, clipped to the image, or
@@ -74,7 +84,7 @@ type subsurface struct {
 
 // newSurface makes a surface with no role.
 func newSurface(c *client, id uint32) *surface {
-	s := &surface{c: c, id: id}
+	s := &surface{c: c, id: id, scaleNext: 1, scale: 1}
 	s.stack = []*surface{s}
 	return s
 }
@@ -96,10 +106,25 @@ func (s *surface) request(op uint16, m *message) error {
 		}
 		s.attached, s.buffer = true, buf
 	case surfaceDamage, surfaceDamageBuffer:
+		// Note the damage in buffer pixels.
 		x, y, w, h := m.int(), m.int(), m.int(), m.int()
-		if m.err == nil {
-			s.damaged = s.damaged.Union(image.Rect(int(x), int(y), int(x)+int(w), int(y)+int(h)))
+		if m.err != nil {
+			return nil
 		}
+		r := image.Rect(int(x), int(y), int(x)+int(w), int(y)+int(h))
+		if op == surfaceDamage {
+			r = scaleRect(r, s.scaleNext)
+		}
+		s.damaged = s.damaged.Union(r)
+	case surfaceSetBufferScale:
+		n := m.int()
+		if m.err != nil {
+			return nil
+		}
+		if n < 1 || n > maxScale {
+			return s.c.fail(s.id, surfaceErrInvalidScale, "bad buffer scale")
+		}
+		s.scaleNext = int(n)
 	case surfaceFrame:
 		id := m.uint()
 		if m.err != nil {
@@ -143,12 +168,12 @@ func (s *surface) commit() error {
 	if buf != nil && buf.destroyed {
 		buf = nil
 	}
-	size, area := s.size, image.Rectangle{}
+	size, area := s.pixels, image.Rectangle{}
 	var pix []byte
 	if s.attached && buf != nil {
-		size = image.Pt(min(buf.width, maxWindowSize), min(buf.height, maxWindowSize))
+		size = image.Pt(min(buf.width, maxImageSize), min(buf.height, maxImageSize))
 		area = s.damaged.Intersect(image.Rectangle{Max: size})
-		if size != s.size || s.image == nil {
+		if size != s.pixels || s.image == nil {
 			area = image.Rectangle{Max: size}
 		}
 		var err error
@@ -166,11 +191,16 @@ func (s *surface) commit() error {
 		w := comp.rootOf(s)
 		sp, before := comp.spaceOf(w), comp.bounds(w)
 
-		// Apply the image, the subsurfaces' positions and the role.
-		relayout := s.attached && (buf == nil || size != s.size)
+		// Apply the image and its scale, the subsurfaces' positions and the
+		// role.
+		relayout := s.attached && (buf == nil || size != s.pixels)
 		if s.attached {
 			s.update(buf, size, area, pix)
 		}
+		if s.scale != s.scaleNext {
+			s.scale, relayout = s.scaleNext, true
+		}
+		s.size = s.pixels.Div(s.scale)
 		if s.inputSet {
 			s.input = s.inputNext
 		}
@@ -196,10 +226,17 @@ func (s *surface) commit() error {
 			comp.damage(sp, before.Union(comp.bounds(w)))
 			comp.refocusPointer()
 		case w != nil:
-			comp.damage(sp, area.Add(s.origin()))
+			comp.damage(sp, unscaleRect(area, s.scale).Add(s.origin()))
 		}
 		if s.inputSet {
 			comp.refocusPointer()
+		}
+
+		// Tell a surface showing its first image that it is on the output,
+		// which sets the scale the client draws at.
+		if s.image != nil && !s.entered {
+			s.entered = true
+			s.c.enterOutputs(s)
 		}
 	})
 
@@ -221,10 +258,10 @@ func (s *surface) update(buf *shmBuffer, size image.Point, area image.Rectangle,
 	// Clear or resize the image.
 	switch {
 	case buf == nil:
-		s.size, s.image = image.Point{}, nil
+		s.pixels, s.image = image.Point{}, nil
 		return
-	case size != s.size || s.image == nil:
-		s.size, s.image = size, make([]byte, 4*size.X*size.Y)
+	case size != s.pixels || s.image == nil:
+		s.pixels, s.image = size, make([]byte, 4*size.X*size.Y)
 	}
 	s.opaque = buf.opaque
 
