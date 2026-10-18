@@ -112,7 +112,11 @@ describe('WizardViewer', () => {
   }
 
   function renderViewer() {
-    return render(
+    return render(viewer())
+  }
+
+  function viewer() {
+    return (
       <SpaceContext.Provider
         resource={{
           value: mockSpace as never,
@@ -154,7 +158,7 @@ describe('WizardViewer', () => {
             }}
           />
         </SpaceContainerContext.Provider>
-      </SpaceContext.Provider>,
+      </SpaceContext.Provider>
     )
   }
 
@@ -373,6 +377,31 @@ describe('WizardViewer', () => {
 
     expect(screen.getByText('Wizard deleted')).toBeTruthy()
     expect(screen.queryByText('Loading wizard')).toBeNull()
+  })
+
+  it('does not show the deleted state while Create removes the wizard', async () => {
+    const user = userEvent.setup()
+    let finishDelete = () => {}
+    mocks.deleteObject.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishDelete = () => resolve({ deleted: true })
+        }),
+    )
+    const view = renderViewer()
+
+    await user.click(screen.getByRole('button', { name: /create/i }))
+    await waitFor(() => {
+      expect(mocks.deleteObject).toHaveBeenCalledWith('wizard/test-canvas')
+    })
+    watchedObject = { value: null, loading: false, error: null }
+    view.rerender(viewer())
+    expect(screen.queryByText('Wizard deleted')).toBeNull()
+
+    finishDelete()
+    await waitFor(() => {
+      expect(mocks.navigateToObjects).toHaveBeenCalledWith(['demo-canvas-1'])
+    })
   })
 
   it('keeps loading while the object watch has not settled', () => {

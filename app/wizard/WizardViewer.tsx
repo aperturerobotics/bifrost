@@ -68,8 +68,11 @@ export function WizardViewer(props: ObjectViewerComponentProps) {
 
   // The watched object decides the deleted state: a settled watch that finds
   // no object means the wizard is gone, whatever state was last streamed.
+  // Create deletes the wizard itself before it navigates away, so the watch
+  // can report the object gone while creating; that is not a deletion to show.
   const watched = useObjectQuery(props.worldState, ws.objectKey, objectExists)
-  const deleted = !watched.loading && !watched.error && watched.value === null
+  const deleted =
+    !ws.creating && !watched.loading && !watched.error && watched.value === null
 
   // Resolve configTypeId from the wizard state and use a separate config editor.
   const configEditor = useConfigEditor(
