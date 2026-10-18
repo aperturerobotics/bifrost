@@ -14,8 +14,10 @@ import {
 import {
   WasiVmDisplayFrame,
   WasiVmDisplayInput,
+  WasiVmDownloads,
   WasiVmWindowInput,
   WasiVmWindowList,
+  WatchWasiVmDownloadsRequest,
   WatchWasiVmWindowsRequest,
 } from './wasivm.pb.js'
 
@@ -351,5 +353,100 @@ export class WasiVmDisplayServiceClient implements WasiVmDisplayService {
       abortSignal || undefined,
     )
     return buildDecodeMessageTransform(WasiVmDisplayFrame)(result)
+  }
+}
+/**
+ * WasiVmDownloadService reports what a running WasiVM downloads.
+ *
+ * @generated from service s4wave.vm.WasiVmDownloadService
+ */
+export const WasiVmDownloadServiceDefinition = {
+  typeName: 's4wave.vm.WasiVmDownloadService',
+  methods: {
+    /**
+     * WatchDownloads streams the downloads of the running VM's root filesystem,
+     * then again each time a read starts or finishes. It waits for the VM to
+     * run and ends with the run.
+     *
+     * @generated from rpc s4wave.vm.WasiVmDownloadService.WatchDownloads
+     */
+    WatchDownloads: {
+      name: 'WatchDownloads',
+      I: WatchWasiVmDownloadsRequest,
+      O: WasiVmDownloads,
+      kind: MethodKind.ServerStreaming,
+    },
+  },
+} as const
+
+/**
+ * WasiVmDownloadService reports what a running WasiVM downloads.
+ *
+ * @generated from service s4wave.vm.WasiVmDownloadService
+ */
+export interface WasiVmDownloadService {
+  /**
+   * WatchDownloads streams the downloads of the running VM's root filesystem,
+   * then again each time a read starts or finishes. It waits for the VM to
+   * run and ends with the run.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDownloadService.WatchDownloads
+   */
+  WatchDownloads(
+    request: WatchWasiVmDownloadsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmDownloads>
+}
+
+/**
+ * WasiVmDownloadService reports what a running WasiVM downloads.
+ *
+ * @generated from service s4wave.vm.WasiVmDownloadService
+ */
+export interface WasiVmDownloadServiceHandler {
+  /**
+   * WatchDownloads streams the downloads of the running VM's root filesystem,
+   * then again each time a read starts or finishes. It waits for the VM to
+   * run and ends with the run.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDownloadService.WatchDownloads
+   */
+  WatchDownloads(
+    request: WatchWasiVmDownloadsRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<WasiVmDownloads>
+}
+
+export const WasiVmDownloadServiceServiceName =
+  WasiVmDownloadServiceDefinition.typeName
+
+export class WasiVmDownloadServiceClient implements WasiVmDownloadService {
+  private readonly rpc: ProtoRpc
+  private readonly service: string
+  constructor(rpc: ProtoRpc, opts?: { service?: string }) {
+    this.service = opts?.service || WasiVmDownloadServiceServiceName
+    this.rpc = rpc
+    this.WatchDownloads = this.WatchDownloads.bind(this)
+  }
+  /**
+   * WatchDownloads streams the downloads of the running VM's root filesystem,
+   * then again each time a read starts or finishes. It waits for the VM to
+   * run and ends with the run.
+   *
+   * @generated from rpc s4wave.vm.WasiVmDownloadService.WatchDownloads
+   */
+  WatchDownloads(
+    request: WatchWasiVmDownloadsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmDownloads> {
+    const requestMsg = WatchWasiVmDownloadsRequest.create(request)
+    const result = this.rpc.serverStreamingRequest(
+      this.service,
+      WasiVmDownloadServiceDefinition.methods.WatchDownloads.name,
+      WatchWasiVmDownloadsRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(WasiVmDownloads)(result)
   }
 }

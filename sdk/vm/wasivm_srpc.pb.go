@@ -514,3 +514,149 @@ func (x *srpcWasiVmDisplayService_WindowStream) Recv() (*WasiVmWindowInput, erro
 func (x *srpcWasiVmDisplayService_WindowStream) RecvTo(m *WasiVmWindowInput) error {
 	return x.MsgRecv(m)
 }
+
+type SRPCWasiVmDownloadServiceClient interface {
+	// SRPCClient returns the underlying SRPC client.
+	SRPCClient() srpc.Client
+
+	// WatchDownloads streams the downloads of the running VM's root filesystem,
+	// then again each time a read starts or finishes. It waits for the VM to
+	// run and ends with the run.
+	WatchDownloads(ctx context.Context, in *WatchWasiVmDownloadsRequest) (SRPCWasiVmDownloadService_WatchDownloadsClient, error)
+}
+
+type srpcWasiVmDownloadServiceClient struct {
+	cc        srpc.Client
+	serviceID string
+}
+
+func NewSRPCWasiVmDownloadServiceClient(cc srpc.Client) SRPCWasiVmDownloadServiceClient {
+	return &srpcWasiVmDownloadServiceClient{cc: cc, serviceID: SRPCWasiVmDownloadServiceServiceID}
+}
+
+func NewSRPCWasiVmDownloadServiceClientWithServiceID(cc srpc.Client, serviceID string) SRPCWasiVmDownloadServiceClient {
+	if serviceID == "" {
+		serviceID = SRPCWasiVmDownloadServiceServiceID
+	}
+	return &srpcWasiVmDownloadServiceClient{cc: cc, serviceID: serviceID}
+}
+
+func (c *srpcWasiVmDownloadServiceClient) SRPCClient() srpc.Client { return c.cc }
+
+func (c *srpcWasiVmDownloadServiceClient) WatchDownloads(ctx context.Context, in *WatchWasiVmDownloadsRequest) (SRPCWasiVmDownloadService_WatchDownloadsClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "WatchDownloads", in)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcWasiVmDownloadService_WatchDownloadsClient{stream}
+	// A failed half-close means the call ended; MsgRecv reports its outcome.
+	_ = strm.CloseSend()
+	return strm, nil
+}
+
+type SRPCWasiVmDownloadService_WatchDownloadsClient interface {
+	srpc.Stream
+	Recv() (*WasiVmDownloads, error)
+	RecvTo(*WasiVmDownloads) error
+}
+
+type srpcWasiVmDownloadService_WatchDownloadsClient struct {
+	srpc.Stream
+}
+
+func (x *srpcWasiVmDownloadService_WatchDownloadsClient) Recv() (*WasiVmDownloads, error) {
+	m := new(WasiVmDownloads)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcWasiVmDownloadService_WatchDownloadsClient) RecvTo(m *WasiVmDownloads) error {
+	return x.MsgRecv(m)
+}
+
+type SRPCWasiVmDownloadServiceServer interface {
+	// WatchDownloads streams the downloads of the running VM's root filesystem,
+	// then again each time a read starts or finishes. It waits for the VM to
+	// run and ends with the run.
+	WatchDownloads(*WatchWasiVmDownloadsRequest, SRPCWasiVmDownloadService_WatchDownloadsStream) error
+}
+
+const SRPCWasiVmDownloadServiceServiceID = "s4wave.vm.WasiVmDownloadService"
+
+type SRPCWasiVmDownloadServiceHandler struct {
+	serviceID string
+	impl      SRPCWasiVmDownloadServiceServer
+}
+
+// NewSRPCWasiVmDownloadServiceHandler constructs a new RPC handler.
+// serviceID: if empty, uses default: s4wave.vm.WasiVmDownloadService
+func NewSRPCWasiVmDownloadServiceHandler(impl SRPCWasiVmDownloadServiceServer, serviceID string) srpc.Handler {
+	if serviceID == "" {
+		serviceID = SRPCWasiVmDownloadServiceServiceID
+	}
+	return &SRPCWasiVmDownloadServiceHandler{impl: impl, serviceID: serviceID}
+}
+
+// SRPCRegisterWasiVmDownloadService registers the implementation with the mux.
+// Uses the default serviceID: s4wave.vm.WasiVmDownloadService
+func SRPCRegisterWasiVmDownloadService(mux srpc.Mux, impl SRPCWasiVmDownloadServiceServer) error {
+	return mux.Register(NewSRPCWasiVmDownloadServiceHandler(impl, ""))
+}
+
+func (d *SRPCWasiVmDownloadServiceHandler) GetServiceID() string { return d.serviceID }
+
+func (SRPCWasiVmDownloadServiceHandler) GetMethodIDs() []string {
+	return []string{
+		"WatchDownloads",
+	}
+}
+
+func (d *SRPCWasiVmDownloadServiceHandler) InvokeMethod(
+	serviceID, methodID string,
+	strm srpc.Stream,
+) (bool, error) {
+	if serviceID != "" && serviceID != d.GetServiceID() {
+		return false, nil
+	}
+
+	switch methodID {
+	case "WatchDownloads":
+		return true, d.InvokeMethod_WatchDownloads(d.impl, strm)
+	default:
+		return false, nil
+	}
+}
+
+func (SRPCWasiVmDownloadServiceHandler) InvokeMethod_WatchDownloads(impl SRPCWasiVmDownloadServiceServer, strm srpc.Stream) error {
+	req := new(WatchWasiVmDownloadsRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	serverStrm := &srpcWasiVmDownloadService_WatchDownloadsStream{strm}
+	return impl.WatchDownloads(req, serverStrm)
+}
+
+type SRPCWasiVmDownloadService_WatchDownloadsStream interface {
+	srpc.Stream
+	Send(*WasiVmDownloads) error
+	SendAndClose(*WasiVmDownloads) error
+}
+
+type srpcWasiVmDownloadService_WatchDownloadsStream struct {
+	srpc.Stream
+}
+
+func (x *srpcWasiVmDownloadService_WatchDownloadsStream) Send(m *WasiVmDownloads) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcWasiVmDownloadService_WatchDownloadsStream) SendAndClose(m *WasiVmDownloads) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
+}

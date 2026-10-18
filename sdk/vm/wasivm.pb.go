@@ -470,6 +470,57 @@ func (x *SetWasiVmStateOp) GetState() VmState {
 	return VmState_VmState_STOPPED
 }
 
+// WatchWasiVmDownloadsRequest asks for the downloads of a running WasiVM.
+type WatchWasiVmDownloadsRequest struct {
+	unknownFields []byte
+}
+
+func (x *WatchWasiVmDownloadsRequest) Reset() {
+	*x = WatchWasiVmDownloadsRequest{}
+}
+
+func (*WatchWasiVmDownloadsRequest) ProtoMessage() {}
+
+// WasiVmDownloads is what a run of a WasiVM has downloaded for its root
+// filesystem.
+type WasiVmDownloads struct {
+	unknownFields []byte
+	// Remote is set when the root filesystem is a published image read from
+	// the CDN as it is used. A root filesystem in the Space downloads nothing.
+	Remote bool `protobuf:"varint,1,opt,name=remote,proto3" json:"remote,omitempty"`
+	// InFlight is the number of reads from the CDN waiting on the network.
+	InFlight uint32 `protobuf:"varint,2,opt,name=in_flight,json=inFlight,proto3" json:"inFlight,omitempty"`
+	// Bytes is the number of bytes downloaded since the run began.
+	Bytes uint64 `protobuf:"varint,3,opt,name=bytes,proto3" json:"bytes,omitempty"`
+}
+
+func (x *WasiVmDownloads) Reset() {
+	*x = WasiVmDownloads{}
+}
+
+func (*WasiVmDownloads) ProtoMessage() {}
+
+func (x *WasiVmDownloads) GetRemote() bool {
+	if x != nil {
+		return x.Remote
+	}
+	return false
+}
+
+func (x *WasiVmDownloads) GetInFlight() uint32 {
+	if x != nil {
+		return x.InFlight
+	}
+	return 0
+}
+
+func (x *WasiVmDownloads) GetBytes() uint64 {
+	if x != nil {
+		return x.Bytes
+	}
+	return 0
+}
+
 // WatchWasiVmWindowsRequest asks for the windows of a running WasiVM.
 type WatchWasiVmWindowsRequest struct {
 	unknownFields []byte
@@ -1226,6 +1277,39 @@ func (m *SetWasiVmStateOp) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *WatchWasiVmDownloadsRequest) CloneVT() *WatchWasiVmDownloadsRequest {
+	if m == nil {
+		return (*WatchWasiVmDownloadsRequest)(nil)
+	}
+	r := new(WatchWasiVmDownloadsRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WatchWasiVmDownloadsRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmDownloads) CloneVT() *WasiVmDownloads {
+	if m == nil {
+		return (*WasiVmDownloads)(nil)
+	}
+	r := new(WasiVmDownloads)
+	r.Remote = m.Remote
+	r.InFlight = m.InFlight
+	r.Bytes = m.Bytes
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmDownloads) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *WatchWasiVmWindowsRequest) CloneVT() *WatchWasiVmWindowsRequest {
 	if m == nil {
 		return (*WatchWasiVmWindowsRequest)(nil)
@@ -1803,6 +1887,49 @@ func (this *SetWasiVmStateOp) EqualVT(that *SetWasiVmStateOp) bool {
 
 func (this *SetWasiVmStateOp) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*SetWasiVmStateOp)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WatchWasiVmDownloadsRequest) EqualVT(that *WatchWasiVmDownloadsRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WatchWasiVmDownloadsRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WatchWasiVmDownloadsRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmDownloads) EqualVT(that *WasiVmDownloads) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Remote != that.Remote {
+		return false
+	}
+	if this.InFlight != that.InFlight {
+		return false
+	}
+	if this.Bytes != that.Bytes {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmDownloads) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmDownloads)
 	if !ok {
 		return false
 	}
@@ -2989,6 +3116,94 @@ func (x *SetWasiVmStateOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the SetWasiVmStateOp from JSON.
 func (x *SetWasiVmStateOp) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WatchWasiVmDownloadsRequest message to JSON.
+func (x *WatchWasiVmDownloadsRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WatchWasiVmDownloadsRequest to JSON.
+func (x *WatchWasiVmDownloadsRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WatchWasiVmDownloadsRequest message from JSON.
+func (x *WatchWasiVmDownloadsRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the WatchWasiVmDownloadsRequest from JSON.
+func (x *WatchWasiVmDownloadsRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmDownloads message to JSON.
+func (x *WasiVmDownloads) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Remote || s.HasField("remote") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("remote")
+		s.WriteBool(x.Remote)
+	}
+	if x.InFlight != 0 || s.HasField("inFlight") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("inFlight")
+		s.WriteUint32(x.InFlight)
+	}
+	if x.Bytes != 0 || s.HasField("bytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("bytes")
+		s.WriteUint64(x.Bytes)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmDownloads to JSON.
+func (x *WasiVmDownloads) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmDownloads message from JSON.
+func (x *WasiVmDownloads) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "remote":
+			s.AddField("remote")
+			x.Remote = s.ReadBool()
+		case "in_flight", "inFlight":
+			s.AddField("in_flight")
+			x.InFlight = s.ReadUint32()
+		case "bytes":
+			s.AddField("bytes")
+			x.Bytes = s.ReadUint64()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmDownloads from JSON.
+func (x *WasiVmDownloads) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -4374,6 +4589,85 @@ func (m *SetWasiVmStateOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *WatchWasiVmDownloadsRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchWasiVmDownloadsRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WatchWasiVmDownloadsRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmDownloads) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmDownloads) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmDownloads) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Bytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Bytes))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.InFlight != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.InFlight))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Remote {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Remote)
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *WatchWasiVmWindowsRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -5342,6 +5636,29 @@ func (m *SetWasiVmStateOp) SizeVT() (n int) {
 	return n
 }
 
+func (m *WatchWasiVmDownloadsRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmDownloads) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Remote)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.InFlight)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Bytes)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *WatchWasiVmWindowsRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -5890,6 +6207,38 @@ func (x *SetWasiVmStateOp) MarshalProtoText() string {
 }
 
 func (x *SetWasiVmStateOp) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WatchWasiVmDownloadsRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "WatchWasiVmDownloadsRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WatchWasiVmDownloadsRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmDownloads) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmDownloads")
+	if x.Remote != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "remote")
+		protobuf_go_lite.TextWriteBool(&sb, x.Remote)
+	}
+	if x.InFlight != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "in_flight")
+		protobuf_go_lite.TextWriteUint(&sb, x.InFlight)
+	}
+	if x.Bytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.Bytes)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmDownloads) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -6991,6 +7340,120 @@ func (m *SetWasiVmStateOp) UnmarshalVT(dAtA []byte) error {
 			var _v uint64
 			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
 			m.State = VmState(_v)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WatchWasiVmDownloadsRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchWasiVmDownloadsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchWasiVmDownloadsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmDownloads) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmDownloads: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmDownloads: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Remote", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Remote = bool(v)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InFlight", wireType)
+			}
+			m.InFlight = 0
+			m.InFlight, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Bytes", wireType)
+			}
+			m.Bytes = 0
+			m.Bytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}

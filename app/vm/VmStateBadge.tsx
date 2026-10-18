@@ -4,11 +4,11 @@ import { VmState } from '@s4wave/sdk/vm/v86.pb.js'
 // stateBadge names each observed VM state and picks its badge treatment.
 const stateBadge: Record<
   VmState,
-  { label: string; variant: 'muted' | 'subtle' | 'brand' | 'conflict' }
+  { label: string; variant: 'muted' | 'subtle' | 'success' | 'conflict' }
 > = {
   [VmState.VmState_STOPPED]: { label: 'Stopped', variant: 'muted' },
   [VmState.VmState_STARTING]: { label: 'Starting', variant: 'subtle' },
-  [VmState.VmState_RUNNING]: { label: 'Running', variant: 'brand' },
+  [VmState.VmState_RUNNING]: { label: 'Running', variant: 'success' },
   [VmState.VmState_STOPPING]: { label: 'Stopping', variant: 'subtle' },
   [VmState.VmState_ERROR]: { label: 'Error', variant: 'conflict' },
 }

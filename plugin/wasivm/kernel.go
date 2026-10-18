@@ -44,7 +44,7 @@ func startKernel(
 
 	// Create the kernel with the console as its terminal.
 	stdin, input := io.Pipe()
-	c := &console{input: input}
+	c := &console{input: input, downloads: newDownloads(rootfs.store)}
 	initPath := config.GetInitPath()
 	if initPath == "" {
 		initPath = s4wave_vm.DefaultWasiVmInitPath

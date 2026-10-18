@@ -155,11 +155,11 @@ func hydrateAssetsFromCdn(ctx context.Context, opts AssetOptions) (*AssetSet, er
 	}
 
 	// Hold one published world across image selection and file reads.
-	ws, release, err := cdn_sharedobject.MountWorld(ctx, opts.Le, nil, opts.CdnBaseURL, opts.CdnSpaceID)
+	ws, err := cdn_sharedobject.MountWorld(ctx, opts.Le, nil, opts.CdnBaseURL, opts.CdnSpaceID)
 	if err != nil {
 		return nil, err
 	}
-	defer release()
+	defer ws.Release()
 
 	// Select a published V86Image before following its asset edges.
 	imageKey, err := resolveV86ImageKey(ctx, ws, opts.ImageKey)

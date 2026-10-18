@@ -12,7 +12,6 @@ import { VmV86Controls, type VmView } from './VmV86Controls.js'
 // VmRunningViewProps describes a VM that is running or about to.
 export interface VmRunningViewProps {
   objectKey: string
-  name: string
   state: VmState
   // stopRequested is set once the VM's desired state is stopped.
   stopRequested: boolean
@@ -26,7 +25,6 @@ export interface VmRunningViewProps {
 // where the guest's shell is.
 export function VmRunningView({
   objectKey,
-  name,
   state,
   stopRequested,
   onStop,
@@ -37,7 +35,7 @@ export function VmRunningView({
 
   return (
     <>
-      <VmHeader name={name} state={state}>
+      <VmHeader state={state}>
         <VmV86Controls
           view={view}
           onViewChange={setView}

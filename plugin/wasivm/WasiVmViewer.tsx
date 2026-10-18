@@ -41,8 +41,10 @@ import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import { useVmRequest, watchVmObject } from '@s4wave/app/vm/vm-object.js'
 import { VmErrorBanner } from '@s4wave/app/vm/VmErrorBanner.js'
 import { VmHeader, VmStopButton } from '@s4wave/app/vm/VmHeader.js'
+import { VmViewSwitch } from '@s4wave/app/vm/VmViewSwitch.js'
 
 import { WasiVmDisplay, type WasiVmDisplayConnector } from './WasiVmDisplay.js'
+import { useWasiVmDownloads, WasiVmDownloadChip } from './WasiVmDownloadChip.js'
 import { WasiVmMachineCard } from './WasiVmMachineCard.js'
 import {
   useWasiVmWindowRoute,
@@ -154,32 +156,11 @@ function useWasiVm(
   }
 }
 
-// WasiVmScreenToggleProps configures the switch between console and display.
-interface WasiVmScreenToggleProps {
-  showDisplay: boolean
-  onToggle: () => void
-}
-
-// WasiVmScreenToggle switches a running VM's view between its console and
-// its display. Its label collapses to the icon in a narrow header.
-function WasiVmScreenToggle({
-  showDisplay,
-  onToggle,
-}: WasiVmScreenToggleProps) {
-  return (
-    <Button
-      variant="outline"
-      size="toolbarSm"
-      aria-label={showDisplay ? 'Show console' : 'Show display'}
-      onClick={onToggle}
-    >
-      {showDisplay ? <LuSquareTerminal /> : <LuMonitor />}
-      <span className="hidden @md:inline">
-        {showDisplay ? 'Console' : 'Display'}
-      </span>
-    </Button>
-  )
-}
+// screenViews lists the panels of a running VM.
+const screenViews = [
+  { view: 'console', label: 'Console', icon: LuSquareTerminal },
+  { view: 'display', label: 'Display', icon: LuMonitor },
+] as const
 
 // useWasiVmWindows watches the windows of the VM's Wayland display through
 // its handle, starting again for each run.
@@ -257,7 +238,7 @@ function WasiVmShowDesktopButton({ onClick }: { onClick: () => void }) {
   return (
     <Button
       variant="outline"
-      size="toolbarSm"
+      size="xs"
       aria-label="Show desktop"
       onClick={onClick}
     >
@@ -362,21 +343,21 @@ interface WasiVmHeaderControlsProps {
   windowView: boolean
   windows: WasiVmWindow[]
   showDisplay: boolean
-  onToggleDisplay: () => void
+  onShowDisplay: (showDisplay: boolean) => void
   onOpenWindow: (id: number) => void
   onShowDesktop: () => void
   onStop: () => void
 }
 
 // WasiVmHeaderControls offers Show desktop in a window's view, and in the VM
-// view the windows menu, the screen toggle and Stop in the states they apply.
+// view the windows menu, the panel switch and Stop in the states they apply.
 function WasiVmHeaderControls({
   state,
   stopping,
   windowView,
   windows,
   showDisplay,
-  onToggleDisplay,
+  onShowDisplay,
   onOpenWindow,
   onShowDesktop,
   onStop,
@@ -392,9 +373,10 @@ function WasiVmHeaderControls({
         <WasiVmWindowsMenu windows={windows} onOpen={onOpenWindow} />
       )}
       {running && (
-        <WasiVmScreenToggle
-          showDisplay={showDisplay}
-          onToggle={onToggleDisplay}
+        <VmViewSwitch
+          options={screenViews}
+          view={showDisplay ? 'display' : 'console'}
+          onViewChange={(view) => onShowDisplay(view === 'display')}
         />
       )}
       {active && <VmStopButton disabled={stopping} onStop={onStop} />}
@@ -471,9 +453,9 @@ export default function WasiVmViewer({
     WasiVmTypeID,
   )
   const windows = useWasiVmWindows(handleResource, vm.runGeneration)
+  const downloads = useWasiVmDownloads(handleResource, vm.runGeneration)
   const view = useWasiVmWindowRoute(objectKey, vm.runGeneration, windows)
-  const name = view.shownWindow ? windowLabel(view.shownWindow) : vm.name
-  useObjectName(name)
+  useObjectName(view.shownWindow ? windowLabel(view.shownWindow) : vm.name)
 
   // setVmState requests a target state from the view.
   const setVmState = (target: VmState) => {
@@ -488,14 +470,17 @@ export default function WasiVmViewer({
   const active = running || vm.state === VmState.VmState_STARTING
   return (
     <div className="bg-background-primary flex h-full w-full flex-col overflow-hidden">
-      <VmHeader name={name} state={vm.state}>
+      <VmHeader
+        state={vm.state}
+        activity={running && <WasiVmDownloadChip downloads={downloads} />}
+      >
         <WasiVmHeaderControls
           state={vm.state}
           stopping={vm.desired === VmState.VmState_STOPPED}
           windowView={!!view.route}
           windows={windows}
           showDisplay={showDisplay}
-          onToggleDisplay={() => setShowDisplay(!showDisplay)}
+          onShowDisplay={setShowDisplay}
           onOpenWindow={view.openWindow}
           onShowDesktop={view.showDesktop}
           onStop={() => setVmState(VmState.VmState_STOPPED)}

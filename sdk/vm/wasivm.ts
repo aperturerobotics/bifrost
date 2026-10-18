@@ -6,12 +6,14 @@ import type { TerminalFrame } from '../terminal/terminal.pb.js'
 import type {
   WasiVmDisplayFrame,
   WasiVmDisplayInput,
+  WasiVmDownloads,
   WasiVmWindowInput,
   WasiVmWindowList,
 } from './wasivm.pb.js'
 import {
   WasiVmConsoleServiceClient,
   WasiVmDisplayServiceClient,
+  WasiVmDownloadServiceClient,
 } from './wasivm_srpc.pb.js'
 
 // WasiVmTypeID is the object type identifier for WasiVm objects. Mirrors
@@ -55,11 +57,13 @@ export const DEFAULT_WASIVM_INIT_PATH = '/bin/sh'
 export class WasiVmHandle extends Resource {
   private console: WasiVmConsoleServiceClient
   private display: WasiVmDisplayServiceClient
+  private downloads: WasiVmDownloadServiceClient
 
   constructor(resourceRef: ClientResourceRef) {
     super(resourceRef)
     this.console = new WasiVmConsoleServiceClient(resourceRef.client)
     this.display = new WasiVmDisplayServiceClient(resourceRef.client)
+    this.downloads = new WasiVmDownloadServiceClient(resourceRef.client)
   }
 
   // connectConsole attaches to the console of the running VM. The stream
@@ -103,5 +107,14 @@ export class WasiVmHandle extends Resource {
     abortSignal?: AbortSignal,
   ): MessageStream<WasiVmDisplayFrame> {
     return this.display.Window(input, abortSignal)
+  }
+
+  // watchDownloads streams what the running VM has downloaded for its root
+  // filesystem, then again each time a read from the CDN starts or finishes.
+  // It waits for the VM to start and ends when the run does.
+  public watchDownloads(
+    abortSignal?: AbortSignal,
+  ): MessageStream<WasiVmDownloads> {
+    return this.downloads.WatchDownloads({}, abortSignal)
   }
 }

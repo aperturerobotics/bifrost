@@ -6,6 +6,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/cdn"
+	cdn_bstore "github.com/s4wave/spacewave/core/cdn/bstore"
 	cdn_sharedobject "github.com/s4wave/spacewave/core/cdn/sharedobject"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
@@ -20,6 +21,9 @@ type rootfsSource struct {
 	ws world.WorldState
 	// key is the object key.
 	key string
+	// store is the CDN transport of the mounted CDN Space, or nil when the
+	// object lives in the VM's own Space.
+	store *cdn_bstore.CdnBlockStore
 	// release closes the CDN Space mounted to read the object, if any.
 	release func()
 }
@@ -72,7 +76,7 @@ func resolveRootfs(
 
 	// Mount the CDN Space and find the published image's filesystem in it.
 	baseURL := cdn.BaseURL()
-	cdnWS, release, err := cdn_sharedobject.MountWorld(ctx, le, b, baseURL, src.GetSpaceId())
+	cdnWS, err := cdn_sharedobject.MountWorld(ctx, le, b, baseURL, src.GetSpaceId())
 	if err != nil {
 		return nil, errors.Wrapf(err, "mount the CDN Space %s from %s", src.GetSpaceId(), baseURL)
 	}
@@ -81,10 +85,10 @@ func resolveRootfs(
 		err = errors.Errorf("%s publishes no root filesystem for image %s/%s", baseURL, src.GetSpaceId(), src.GetObjectKey())
 	}
 	if err != nil {
-		release()
+		cdnWS.Release()
 		return nil, err
 	}
-	return &rootfsSource{ws: cdnWS, key: key, release: release}, nil
+	return &rootfsSource{ws: cdnWS, key: key, store: cdnWS.Store, release: cdnWS.Release}, nil
 }
 
 // readImageCdnSource reads the cdn_source of the WasiVmImage at imageKey.

@@ -20,6 +20,7 @@ const badgeVariants = cva(
         subtle: 'bg-foreground/5 font-normal',
         conflict: 'bg-destructive/15 text-destructive',
         brand: 'border-brand/25 bg-brand/5 text-brand',
+        success: 'border-success/25 bg-success/5 text-success',
         muted: 'border-foreground/10 text-foreground-alt/65 font-normal',
         release: 'text-foreground-alt border-foreground/15',
       },

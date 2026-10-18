@@ -70,7 +70,10 @@ func (h *handler) InvokeObjectType(
 		if err := s4wave_vm.SRPCRegisterWasiVmConsoleService(mux, &vmConsole{consoles: h.consoles, objectKey: vm.objectKey}); err != nil {
 			return err
 		}
-		return s4wave_vm.SRPCRegisterWasiVmDisplayService(mux, &vmDisplay{consoles: h.consoles, objectKey: vm.objectKey})
+		if err := s4wave_vm.SRPCRegisterWasiVmDisplayService(mux, &vmDisplay{consoles: h.consoles, objectKey: vm.objectKey}); err != nil {
+			return err
+		}
+		return s4wave_vm.SRPCRegisterWasiVmDownloadService(mux, &vmDownloads{consoles: h.consoles, objectKey: vm.objectKey})
 	})
 	resourceID, err := resourceCtx.AddResource(mux, engine.Release)
 	if err != nil {

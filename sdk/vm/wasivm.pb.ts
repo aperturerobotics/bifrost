@@ -460,6 +460,57 @@ export const SetWasiVmStateOp: MessageType<SetWasiVmStateOp> =
   })
 
 /**
+ * WatchWasiVmDownloadsRequest asks for the downloads of a running WasiVM.
+ *
+ * @generated from message s4wave.vm.WatchWasiVmDownloadsRequest
+ */
+export interface WatchWasiVmDownloadsRequest {}
+
+export const WatchWasiVmDownloadsRequest: MessageType<WatchWasiVmDownloadsRequest> =
+  /* @__PURE__ */ createEmptyMessageType<WatchWasiVmDownloadsRequest>(
+    's4wave.vm.WatchWasiVmDownloadsRequest',
+    true,
+  )
+
+/**
+ * WasiVmDownloads is what a run of a WasiVM has downloaded for its root
+ * filesystem.
+ *
+ * @generated from message s4wave.vm.WasiVmDownloads
+ */
+export interface WasiVmDownloads {
+  /**
+   * Remote is set when the root filesystem is a published image read from
+   * the CDN as it is used. A root filesystem in the Space downloads nothing.
+   *
+   * @generated from field: bool remote = 1;
+   */
+  remote?: boolean
+  /**
+   * InFlight is the number of reads from the CDN waiting on the network.
+   *
+   * @generated from field: uint32 in_flight = 2;
+   */
+  inFlight?: number
+  /**
+   * Bytes is the number of bytes downloaded since the run began.
+   *
+   * @generated from field: uint64 bytes = 3;
+   */
+  bytes?: bigint
+}
+
+export const WasiVmDownloads: MessageType<WasiVmDownloads> =
+  /* @__PURE__ */ createMessageType({
+    typeName: 's4wave.vm.WasiVmDownloads',
+    fields: [
+      { no: 1, name: 'remote', kind: 'scalar', T: ScalarType.BOOL },
+      { no: 2, name: 'in_flight', kind: 'scalar', T: ScalarType.UINT32 },
+      { no: 3, name: 'bytes', kind: 'scalar', T: ScalarType.UINT64 },
+    ] satisfies readonly PartialFieldInfo[],
+  })
+
+/**
  * WatchWasiVmWindowsRequest asks for the windows of a running WasiVM.
  *
  * @generated from message s4wave.vm.WatchWasiVmWindowsRequest

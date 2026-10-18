@@ -2296,10 +2296,10 @@ body,
 /* Indeterminate progress bar sweep */
 @keyframes progress-indeterminate {
   0% {
-    left: -33%;
+    transform: translateX(-100%);
   }
   100% {
-    left: 100%;
+    transform: translateX(300%);
   }
 }
 

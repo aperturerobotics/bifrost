@@ -157,13 +157,13 @@ func (r *v86MountResolver) mountCdnWorld(spaceID string) (world.WorldState, erro
 	}
 
 	// Mount the CDN World and hold it until release.
-	ws, rel, err := cdn_sharedobject.MountWorld(r.ctx, r.le, r.b, cdn.BaseURL(), spaceID)
+	mounted, err := cdn_sharedobject.MountWorld(r.ctx, r.le, r.b, cdn.BaseURL(), spaceID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "mount cdn space %s", spaceID)
 	}
-	r.cdnWorlds[spaceID] = ws
-	r.releases = append(r.releases, rel)
-	return ws, nil
+	r.cdnWorlds[spaceID] = mounted
+	r.releases = append(r.releases, mounted.Release)
+	return mounted, nil
 }
 
 // release closes every mounted CDN World.

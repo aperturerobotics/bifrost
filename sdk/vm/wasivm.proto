@@ -178,6 +178,30 @@ service WasiVmDisplayService {
   rpc Window(stream WasiVmWindowInput) returns (stream WasiVmDisplayFrame);
 }
 
+// WasiVmDownloadService reports what a running WasiVM downloads.
+service WasiVmDownloadService {
+  // WatchDownloads streams the downloads of the running VM's root filesystem,
+  // then again each time a read starts or finishes. It waits for the VM to
+  // run and ends with the run.
+  rpc WatchDownloads(WatchWasiVmDownloadsRequest)
+      returns (stream WasiVmDownloads);
+}
+
+// WatchWasiVmDownloadsRequest asks for the downloads of a running WasiVM.
+message WatchWasiVmDownloadsRequest {}
+
+// WasiVmDownloads is what a run of a WasiVM has downloaded for its root
+// filesystem.
+message WasiVmDownloads {
+  // Remote is set when the root filesystem is a published image read from
+  // the CDN as it is used. A root filesystem in the Space downloads nothing.
+  bool remote = 1;
+  // InFlight is the number of reads from the CDN waiting on the network.
+  uint32 in_flight = 2;
+  // Bytes is the number of bytes downloaded since the run began.
+  uint64 bytes = 3;
+}
+
 // WatchWasiVmWindowsRequest asks for the windows of a running WasiVM.
 message WatchWasiVmWindowsRequest {}
 

@@ -117,7 +117,7 @@ export function WasiVmWindowsMenu({ windows, onOpen }: WasiVmWindowsMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="toolbarSm" aria-label="Windows">
+        <Button variant="outline" size="xs" aria-label="Windows">
           <LuAppWindow />
           <span className="hidden @md:inline">Windows</span>
         </Button>

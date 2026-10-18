@@ -28,6 +28,8 @@ type console struct {
 	input io.Writer
 	// resize sets the size of the kernel's terminal.
 	resize func(cols, rows uint32)
+	// downloads watches the CDN reads of the run's root filesystem.
+	downloads *downloads
 
 	// bcast guards the fields below and wakes viewers when they change.
 	bcast broadcast.Broadcast

@@ -171,6 +171,18 @@ func (s *CdnBlockStore) SetRangeCacheMaxBytes(maxBytes int64) {
 	s.pfs.SetRangeCacheMaxBytes(maxBytes)
 }
 
+// SnapshotStats returns the store's pack reads from the CDN, among them the
+// range reads in flight and the bytes fetched.
+func (s *CdnBlockStore) SnapshotStats() packfile_store.PackfileStoreStats {
+	return s.pfs.SnapshotStats()
+}
+
+// SetStatsChangedCallback sets the one callback invoked after the store's
+// stats change, replacing any earlier one.
+func (s *CdnBlockStore) SetStatsChangedCallback(fn func()) {
+	s.pfs.SetStatsChangedCallback(fn)
+}
+
 // GetBlock reads a block by reference, refreshing the pointer if needed.
 func (s *CdnBlockStore) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
 	// Serve a current decoded-cache hit when available.

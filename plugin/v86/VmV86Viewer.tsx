@@ -229,7 +229,6 @@ export default function VmV86Viewer({
       {running ? (
         <VmRunningView
           objectKey={objectKey}
-          name={vm.name}
           state={vm.state}
           stopRequested={vm.desired === VmState.VmState_STOPPED}
           onStop={() => setVmState(VmState.VmState_STOPPED)}
@@ -237,7 +236,7 @@ export default function VmV86Viewer({
         />
       ) : (
         <>
-          <VmHeader name={vm.name} state={vm.state} />
+          <VmHeader state={vm.state} />
           <VmMachineCard
             {...vm}
             operationError={operationError}

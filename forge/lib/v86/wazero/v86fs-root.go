@@ -90,10 +90,11 @@ func openV86RootLower(ctx context.Context, assets *AssetSet) (unixfs.FSCursor, f
 
 	// Keep the published world mounted for the lifetime of the lazy cursor.
 	opts := assets.cdn.withDefaults()
-	ws, releaseWorld, err := cdn_sharedobject.MountWorld(ctx, opts.Le, nil, opts.CdnBaseURL, opts.CdnSpaceID)
+	ws, err := cdn_sharedobject.MountWorld(ctx, opts.Le, nil, opts.CdnBaseURL, opts.CdnSpaceID)
 	if err != nil {
 		return nil, nil, err
 	}
+	releaseWorld := ws.Release
 	fsType, _, err := unixfs_world.LookupFsType(ctx, ws, assets.RootfsObjectKey)
 	if err != nil {
 		releaseWorld()
