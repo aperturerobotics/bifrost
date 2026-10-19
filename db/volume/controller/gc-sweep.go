@@ -23,7 +23,8 @@ type storageMaintainer interface {
 	Maintenance(ctx context.Context) error
 }
 
-// markIntervals is the number of collection intervals between block passes.
+// markIntervals is the number of collection intervals between block passes,
+// before the collector backs off after passes that find little.
 const markIntervals = 15
 
 // runGCSweep runs the periodic GC sweep goroutine. It waits for the volume to
@@ -60,7 +61,8 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 	}
 
 	// Construct the collector for the volume reference graph. A block pass
-	// reads the whole graph, so it runs every markIntervals intervals.
+	// reads the whole graph, so it runs markIntervals intervals after the
+	// last one ended, or up to 8x that after passes that find little.
 	collector := block_gc.NewCollector(rg, vol, nil)
 	collector.SetMarkInterval(markIntervals * interval)
 	c.le.WithField("interval", interval.String()).Debug("gc sweep routine started")

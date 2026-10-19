@@ -67,10 +67,19 @@ type Collector struct {
 
 	// markInterval spaces the block passes of budgeted collections.
 	markInterval time.Duration
-	// lastMark is when the last block pass started, or when markInterval
-	// was set.
-	lastMark time.Time
+	// markBackoff doubles markInterval once for each consecutive block pass
+	// that found little to sweep, up to maxMarkBackoff.
+	markBackoff uint
+	// nextMark is when the next budgeted block pass is due.
+	nextMark time.Time
 }
+
+// maxMarkBackoff caps the doublings of the mark interval at 8x.
+const maxMarkBackoff = 3
+
+// sparseMarkDivisor sets the yield below which a block pass backs off: one
+// that finds fewer than 1/sparseMarkDivisor of its live blocks unreached.
+const sparseMarkDivisor = 16
 
 // NewCollector constructs a new GC collector.
 // The store is the underlying physical store for block deletion.
@@ -90,10 +99,26 @@ func NewCollector(
 }
 
 // SetMarkInterval spaces the block passes of CollectFor at least interval
-// apart, counting from now, since a mark reads the whole graph. Collect and
-// CollectGraphOnly always run one.
+// apart, counting from now and then from the end of each pass, since a mark
+// reads the whole graph. Each pass that finds fewer than 1/16 of its live
+// blocks unreached doubles the gap before the next, up to 8x; a pass that
+// finds more resets it. Collect and CollectGraphOnly always run one.
 func (c *Collector) SetMarkInterval(interval time.Duration) {
-	c.markInterval, c.lastMark = interval, time.Now()
+	c.markInterval, c.markBackoff, c.nextMark = interval, 0, time.Now().Add(interval)
+}
+
+// scheduleMark backs the mark interval off after a sparse pass, resets it
+// after a productive one, keeps it after a failed one, and counts the next
+// gap from now.
+func (c *Collector) scheduleMark(stats *Stats, err error) {
+	switch {
+	case err != nil:
+	case stats.UnreachedBlocks*sparseMarkDivisor < stats.LiveNodes:
+		c.markBackoff = min(c.markBackoff+1, maxMarkBackoff)
+	default:
+		c.markBackoff = 0
+	}
+	c.nextMark = time.Now().Add(c.markInterval << c.markBackoff)
 }
 
 // collectChunk bounds the candidates a budgeted collection sweeps between
@@ -109,8 +134,8 @@ func (c *Collector) Collect(ctx context.Context) (*Stats, error) {
 // elapsed, and sets Stats.More when it stopped for the budget. It sweeps at
 // least one chunk of candidates, so repeated calls progress however long
 // listing the candidates takes. When the queue is empty and the mark interval
-// has passed, it then runs a block pass, which the budget does not stop: the
-// pass sweeps every block its mark found unreached.
+// has passed since the last pass ended, it then runs a block pass, which the
+// budget does not stop: the pass sweeps every block its mark found unreached.
 func (c *Collector) CollectFor(ctx context.Context, budget time.Duration) (*Stats, error) {
 	return c.collect(ctx, true, budget)
 }
@@ -134,11 +159,15 @@ func (c *Collector) collect(ctx context.Context, removeBlocks bool, budget time.
 	if err := c.collectQueue(ctx, removeBlocks, spent, stats); err != nil || stats.More {
 		return stats, err
 	}
-	if budget != 0 && c.markInterval != 0 && time.Since(c.lastMark) < c.markInterval {
+	if budget == 0 || c.markInterval == 0 {
+		return stats, c.collectBlocks(ctx, removeBlocks, stats)
+	}
+	if time.Now().Before(c.nextMark) {
 		return stats, nil
 	}
-	c.lastMark = time.Now()
-	return stats, c.collectBlocks(ctx, removeBlocks, stats)
+	err := c.collectBlocks(ctx, removeBlocks, stats)
+	c.scheduleMark(stats, err)
+	return stats, err
 }
 
 // collectQueue loops until no unreferenced nodes remain, since removing a node
