@@ -226,6 +226,26 @@ describe('SharedResources', () => {
     shared.clear()
     expect(adopted.released).toBe(true)
   })
+
+  it('keeps a leased entry over an adopted value', async () => {
+    // A tab leases a key whose mount is still in flight.
+    vi.useFakeTimers()
+    const { shared, mount } = setup()
+    shared.acquire('k', mount, null)
+
+    // Adopting under the key disposes the adopted value instead.
+    const adopted = new FakeHandle(7)
+    shared.adopt('k', adopted, [adopted])
+    expect(adopted.released).toBe(true)
+
+    // The lessee's mount lands and outlives the grace period.
+    await flush()
+    vi.advanceTimersByTime(sharedResourceGraceMs)
+    const value = shared.getSnapshot<FakeHandle>('k').value
+    expect(value?.id).toBe(100)
+    expect(value?.released).toBe(false)
+    shared.clear()
+  })
 })
 // SessionProbe renders the shared Session at index under root.
 function SessionProbe({

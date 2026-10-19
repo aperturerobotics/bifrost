@@ -173,18 +173,20 @@ export class SharedResources {
   /**
    * adopt moves a value mounted elsewhere into key, so the first lease uses it
    * instead of mounting. The entry owns handles from then on and disposes
-   * them after the grace period unless a lease arrives. A key that already
-   * holds a live value keeps it and disposes the adopted handles.
+   * them after the grace period unless a lease arrives. A key that is leased
+   * or holds a live value keeps its entry and disposes the adopted handles,
+   * since replacing a leased entry would drop its lessees' leases.
    */
   adopt(key: string, value: unknown, handles: Disposable[]): void {
-    // Keep a live value already mounted under key.
+    // Keep an entry that is leased or holds a live value.
     const existing = this.entries.get(key)
-    if (existing && existing.snapshot.value !== null && !existing.run) {
+    const live = existing?.snapshot.value != null && !existing.run
+    if (existing && (existing.leases > 0 || live)) {
       disposeAll(handles)
       return
     }
 
-    // Replace anything else with the adopted value until a lease arrives.
+    // Replace an idle entry with the adopted value until a lease arrives.
     if (existing) {
       this.deleteEntry(existing)
     }
