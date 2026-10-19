@@ -1,0 +1,76 @@
+syntax = "proto3";
+package s4wave.plugin.prom;
+
+option go_package = "github.com/s4wave/spacewave/plugin/prom;prom_plugin";
+
+// ChunkEncoding identifies how a Chunk encodes its samples.
+enum ChunkEncoding {
+  // CHUNK_ENCODING_UNKNOWN is the zero value; a stored chunk never carries it.
+  CHUNK_ENCODING_UNKNOWN = 0;
+  // CHUNK_ENCODING_XOR is the Prometheus XOR float chunk of tsdb/chunkenc.
+  CHUNK_ENCODING_XOR = 1;
+}
+
+// Label is one name and value of a series.
+message Label {
+  // Name is the label name.
+  string name = 1;
+  // Value is the label value.
+  string value = 2;
+}
+
+// LabelSet is the sorted label set that identifies one series.
+message LabelSet {
+  // Labels holds the labels in ascending name order.
+  repeated Label labels = 1;
+}
+
+// TargetMeta names the target a store holds samples for.
+message TargetMeta {
+  // Labels are the labels, such as job and instance, that every series in the
+  // store carries. A query skips the store when a matcher on one of these names
+  // rejects its value.
+  LabelSet labels = 1;
+}
+
+// SeriesPage appends series to a target's series table.
+// A commit writes a page only when its window introduced series.
+message SeriesPage {
+  // FirstSeries is the series number of the first entry. Numbers are dense and
+  // never reused, so the page covers FirstSeries through
+  // FirstSeries + len(series) - 1.
+  uint64 first_series = 1;
+  // Series holds the label sets of the added series in series number order.
+  repeated LabelSet series = 2;
+}
+
+// Chunk is a run of one series' samples in one encoding.
+message Chunk {
+  // MinTime is the first sample's timestamp in milliseconds.
+  int64 min_time = 1;
+  // MaxTime is the last sample's timestamp in milliseconds.
+  int64 max_time = 2;
+  // Encoding is how Data encodes the samples.
+  ChunkEncoding encoding = 3;
+  // Data holds the encoded samples.
+  bytes data = 4;
+}
+
+// SeriesChunks holds one series' chunks within a segment.
+message SeriesChunks {
+  // Series is the series number in the target's series table.
+  uint64 series = 1;
+  // Chunks are the series' chunks in ascending time order.
+  repeated Chunk chunks = 2;
+}
+
+// Segment is the immutable samples one commit window collected.
+// Segments of one target do not overlap in time.
+message Segment {
+  // MinTime is the earliest sample timestamp in milliseconds, inclusive.
+  int64 min_time = 1;
+  // MaxTime is the latest sample timestamp in milliseconds, inclusive.
+  int64 max_time = 2;
+  // Series holds the window's samples per series in series number order.
+  repeated SeriesChunks series = 3;
+}
