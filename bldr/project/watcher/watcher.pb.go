@@ -30,6 +30,9 @@ type Config struct {
 	// BoundRemotes are caller-supplied World capabilities. These bindings take
 	// precedence over source configuration, including watched configuration edits.
 	BoundRemotes map[string]*project.RemoteConfig `protobuf:"bytes,4,rep,name=bound_remotes,json=boundRemotes,proto3" json:"boundRemotes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Vars are the named inputs a bldr.star reads with var(name, default). They
+	// are the only state the caller passes into the evaluation.
+	Vars map[string]string `protobuf:"bytes,5,rep,name=vars,proto3" json:"vars,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *Config) Reset() {
@@ -66,6 +69,13 @@ func (x *Config) GetBoundRemotes() map[string]*project.RemoteConfig {
 	return nil
 }
 
+func (x *Config) GetVars() map[string]string {
+	if x != nil {
+		return x.Vars
+	}
+	return nil
+}
+
 type Config_BoundRemotesEntry struct {
 	unknownFields []byte
 	Key           string                `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -92,6 +102,32 @@ func (x *Config_BoundRemotesEntry) GetValue() *project.RemoteConfig {
 	return nil
 }
 
+type Config_VarsEntry struct {
+	unknownFields []byte
+	Key           string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *Config_VarsEntry) Reset() {
+	*x = Config_VarsEntry{}
+}
+
+func (*Config_VarsEntry) ProtoMessage() {}
+
+func (x *Config_VarsEntry) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *Config_VarsEntry) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
@@ -101,6 +137,7 @@ func (m *Config) CloneVT() *Config {
 	r.DisableWatch = m.DisableWatch
 	r.ProjectControllerConfig = protobuf_go_lite.CloneVTValue(m.ProjectControllerConfig)
 	r.BoundRemotes = protobuf_go_lite.CloneVTMap(m.BoundRemotes)
+	r.Vars = protobuf_go_lite.CloneMap(m.Vars)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -127,6 +164,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTMapImplicit(this.BoundRemotes, that.BoundRemotes, func() *project.RemoteConfig { return &project.RemoteConfig{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualMap(this.Vars, that.Vars) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -194,6 +234,56 @@ func (x *Config_BoundRemotesEntry) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the Config_VarsEntry message to JSON.
+func (x *Config_VarsEntry) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Key != "" || s.HasField("key") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("key")
+		s.WriteString(x.Key)
+	}
+	if x.Value != "" || s.HasField("value") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("value")
+		s.WriteString(x.Value)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the Config_VarsEntry to JSON.
+func (x *Config_VarsEntry) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the Config_VarsEntry message from JSON.
+func (x *Config_VarsEntry) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "key":
+			s.AddField("key")
+			x.Key = s.ReadString()
+		case "value":
+			s.AddField("value")
+			x.Value = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the Config_VarsEntry from JSON.
+func (x *Config_VarsEntry) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the Config message to JSON.
 func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -227,6 +317,19 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteElement)
 			s.WriteObjectStringField(k)
 			v.MarshalProtoJSON(s.WithField("boundRemotes"))
+		}
+		s.WriteObjectEnd()
+	}
+	if x.Vars != nil || s.HasField("vars") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("vars")
+		s.WriteObjectStart()
+		var wroteElement bool
+		for _, k := range slices.Sorted(maps.Keys(x.Vars)) {
+			v := x.Vars[k]
+			s.WriteMoreIf(&wroteElement)
+			s.WriteObjectStringField(k)
+			s.WriteString(v)
 		}
 		s.WriteObjectEnd()
 	}
@@ -272,6 +375,16 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				v.UnmarshalProtoJSON(s)
 				x.BoundRemotes[key] = &v
 			})
+		case "vars":
+			s.AddField("vars")
+			if s.ReadNil() {
+				x.Vars = nil
+				return
+			}
+			x.Vars = make(map[string]string)
+			s.ReadStringMap(func(key string) {
+				x.Vars[key] = s.ReadString()
+			})
 		}
 	})
 }
@@ -309,6 +422,21 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Vars) > 0 {
+		for k := range m.Vars {
+			v := m.Vars[k]
+			baseI := i
+			i = protobuf_go_lite.EncodeString(dAtA, i, v)
+			i--
+			dAtA[i] = 0x12
+			i = protobuf_go_lite.EncodeString(dAtA, i, k)
+			i--
+			dAtA[i] = 0xa
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
+		}
 	}
 	if len(m.BoundRemotes) > 0 {
 		for k := range m.BoundRemotes {
@@ -375,6 +503,12 @@ func (m *Config) SizeVT() (n int) {
 		mapEntrySize := protobuf_go_lite.SizeStringValue(1, k) + protobuf_go_lite.SizeMessage(1, l)
 		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
 	}
+	for k, v := range m.Vars {
+		_ = k
+		_ = v
+		mapEntrySize := protobuf_go_lite.SizeStringValue(1, k) + protobuf_go_lite.SizeStringValue(1, v)
+		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -394,6 +528,24 @@ func (x *Config_BoundRemotesEntry) MarshalProtoText() string {
 }
 
 func (x *Config_BoundRemotesEntry) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *Config_VarsEntry) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "VarsEntry")
+	if x.Key != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key")
+		protobuf_go_lite.TextWriteString(&sb, x.Key)
+	}
+	if x.Value != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "value")
+		protobuf_go_lite.TextWriteString(&sb, x.Value)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *Config_VarsEntry) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -424,6 +576,17 @@ func (x *Config) MarshalProtoText() string {
 			} else {
 				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
 			}
+		}
+		protobuf_go_lite.TextWriteMapEnd(&sb)
+	}
+	if len(x.Vars) > 0 {
+		protobuf_go_lite.TextWriteMapStart(&sb, initialLen, "vars")
+		for _, k := range slices.Sorted(maps.Keys(x.Vars)) {
+			v := x.Vars[k]
+			protobuf_go_lite.TextWriteMapEntryPrefix(&sb)
+			protobuf_go_lite.TextWriteString(&sb, k)
+			protobuf_go_lite.TextWriteMapKeyValueSeparator(&sb)
+			protobuf_go_lite.TextWriteString(&sb, v)
 		}
 		protobuf_go_lite.TextWriteMapEnd(&sb)
 	}
@@ -535,6 +698,48 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				}
 			}
 			m.BoundRemotes[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Vars", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			iNdEx = msgStart
+			if m.Vars == nil {
+				m.Vars = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+				if err != nil {
+					return err
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					mapkey, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+				} else if fieldNum == 2 {
+					mapvalue, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+				} else {
+					iNdEx = entryPreIndex
+					iNdEx, err = protobuf_go_lite.SkipWithin(dAtA, iNdEx, postIndex)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			m.Vars[mapkey] = mapvalue
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

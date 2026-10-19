@@ -136,6 +136,26 @@ into `PublishConfig`.
 publish("npm", registry="https://registry.npmjs.org")
 ```
 
+## Inputs
+
+### var()
+
+Reads a named input the caller passed with `bldr --var name=value`, which may
+repeat. `var(name, default)` returns the value, or `default` when the name was
+not passed; without a default a missing input is an error. Values are strings.
+Evaluation never reads the process environment, so `--var` is the only way the
+command line selects between configurations. The same value reaches every
+loaded file.
+
+```python
+DEPLOYMENT = var("deployment", "production")
+if DEPLOYMENT not in ["production", "staging"]:
+    fail("unknown deployment " + DEPLOYMENT)
+```
+
+Build staging with `bldr --var deployment=staging build ...`. `--var` is also
+read from `BLDR_VAR`.
+
 ## Convenience Constructors
 
 These return Starlark dicts. Use them as values for registration built-in kwargs.

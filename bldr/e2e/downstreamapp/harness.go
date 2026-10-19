@@ -157,7 +157,7 @@ func boot(ctx context.Context, le *logrus.Entry, config bootConfig) (_ *Harness,
 	}()
 
 	// Build the devtool bus and sync the dist sources into it.
-	d, err := devtool.BuildDevtoolBus(hctx, le, repoRoot, stateRoot, false)
+	d, err := devtool.BuildDevtoolBus(hctx, le, repoRoot, stateRoot, false, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "build devtool bus")
 	}

@@ -84,7 +84,7 @@ func (a *DevtoolArgs) executeWebProject(ctx context.Context, compilerName, goPlu
 	le.Infof("starting with state dir: %s", stateDir)
 
 	// Initialize the storage and bus.
-	d, err := BuildDevtoolBus(ctx, le, repoRoot, stateDir, a.Watch)
+	d, err := a.buildDevtoolBus(ctx, le, repoRoot, stateDir, a.Watch)
 	if err != nil {
 		return err
 	}

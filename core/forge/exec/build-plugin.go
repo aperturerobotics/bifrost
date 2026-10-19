@@ -183,7 +183,7 @@ func (h *buildPluginHandler) Execute(ctx context.Context) error {
 	}
 
 	// Prepare the shipped TypeScript SDK without requiring a Go checkout in the Space.
-	buildBus, err := devtool.BuildDevtoolBus(ctx, h.le, sourceRoot, stateRoot, live)
+	buildBus, err := devtool.BuildDevtoolBus(ctx, h.le, sourceRoot, stateRoot, live, nil)
 	if err != nil {
 		return err
 	}

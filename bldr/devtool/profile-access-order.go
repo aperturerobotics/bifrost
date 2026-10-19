@@ -69,7 +69,7 @@ func (a *DevtoolArgs) ExecuteProfileAccessOrder(ctx context.Context) (err error)
 	}
 
 	// Build the devtool bus and release it when profiling completes.
-	b, err := BuildDevtoolBus(ctx, le, repoRoot, stateDir, false)
+	b, err := BuildDevtoolBus(ctx, le, repoRoot, stateDir, false, nil)
 	if err != nil {
 		return err
 	}

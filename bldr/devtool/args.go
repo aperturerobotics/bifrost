@@ -54,6 +54,9 @@ type DevtoolArgs struct {
 	// Watch indicates we should watch for changes.
 	Watch bool
 
+	// Vars are name=value inputs a bldr.star reads with var(name, default).
+	Vars cli.StringSlice
+
 	// NoTUI disables the live terminal dashboard.
 	NoTUI bool
 
@@ -205,6 +208,12 @@ func (a *DevtoolArgs) BuildFlags() []cli.Flag {
 			EnvVars:     []string{"BLDR_WATCH"},
 			Value:       a.Watch,
 			Destination: &a.Watch,
+		},
+		&cli.StringSliceFlag{
+			Name:        "var",
+			Usage:       "name=value input for var(name, default) in bldr.star, repeatable",
+			EnvVars:     []string{"BLDR_VAR"},
+			Destination: &a.Vars,
 		},
 		&cli.StringFlag{
 			Name:        "state-path",

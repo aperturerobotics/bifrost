@@ -55,6 +55,8 @@ type DevtoolBus struct {
 	sr *static.Resolver
 	// watch enables watching for changes.
 	watch bool
+	// vars are the named inputs a bldr.star reads with var().
+	vars map[string]string
 	// storageID is the storage engine id.
 	storageID string
 	// worldEngineID is the world engine id for the devtool world.
@@ -100,6 +102,7 @@ func BuildDevtoolBus(
 	le *logrus.Entry,
 	repoRoot, stateRoot string,
 	watch bool,
+	vars map[string]string,
 ) (*DevtoolBus, error) {
 	// Derive the devtool context and a release chain that unwinds every
 	// acquired controller, the state lock, and the context.
@@ -344,6 +347,7 @@ func BuildDevtoolBus(
 		le:                  le,
 		sr:                  sr,
 		watch:               watch,
+		vars:                vars,
 		storageID:           storageID,
 		worldEngineID:       engineID,
 		engineBucketID:      engineBucketID,
@@ -598,6 +602,7 @@ func (d *DevtoolBus) startProjectController(ctx context.Context, b bus.Bus, repo
 		DisableWatch:            !d.watch,
 		ProjectControllerConfig: projCtrlConf,
 		BoundRemotes:            remotes,
+		Vars:                    d.vars,
 	}
 
 	// Start the project watcher controller and wait for it to run.

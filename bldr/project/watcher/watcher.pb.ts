@@ -32,6 +32,11 @@ export interface Config {
    * precedence over source configuration, including watched configuration edits.
    */
   boundRemotes?: { [key: string]: RemoteConfig }
+  /**
+   * Vars are the named inputs a bldr.star reads with var(name, default). They
+   * are the only state the caller passes into the evaluation.
+   */
+  vars?: { [key: string]: string }
 }
 
 export const Config: MessageType<Config> =
@@ -42,5 +47,6 @@ export const Config: MessageType<Config> =
       [2, 'project_controller_config', 11, 0, Config$1.codec],
       [3, 'disable_watch', 8],
       [4, 'bound_remotes', 11, 584, RemoteConfig.codec],
+      [5, 'vars', 9, 584],
     ],
   )

@@ -258,7 +258,7 @@ func Boot(ctx context.Context, le *logrus.Entry, opts ...Option) (_ *Harness, re
 	}
 
 	// Build the devtool bus.
-	d, err := devtool.BuildDevtoolBus(hctx, le, repoRoot, stateRoot, false)
+	d, err := devtool.BuildDevtoolBus(hctx, le, repoRoot, stateRoot, false, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "build devtool bus")
 	}
