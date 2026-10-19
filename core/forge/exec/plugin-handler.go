@@ -46,6 +46,9 @@ type pluginExecHandler struct {
 	conf *PluginExecConfig
 	// load retains the plugin service for Execute's lifetime.
 	load pluginExecClientLoader
+	// resourceOpenTimeout bounds the plugin's Resource client open; zero
+	// selects defaultPluginResourceOpenTimeout.
+	resourceOpenTimeout time.Duration
 }
 
 // Execute loads the target plugin, calls its PluginExecService, and forwards
@@ -313,6 +316,12 @@ func NewPluginExecHandler(b bus.Bus) HandlerFactory {
 
 // newPluginExecHandler binds the plugin client loader to validated execution config.
 func newPluginExecHandler(b bus.Bus, load pluginExecClientLoader) HandlerFactory {
+	return newPluginExecHandlerWithOpenTimeout(b, load, defaultPluginResourceOpenTimeout)
+}
+
+// newPluginExecHandlerWithOpenTimeout is newPluginExecHandler with an explicit
+// bound on the plugin's Resource client open.
+func newPluginExecHandlerWithOpenTimeout(b bus.Bus, load pluginExecClientLoader, openTimeout time.Duration) HandlerFactory {
 	return func(
 		ctx context.Context,
 		le *logrus.Entry,
@@ -338,6 +347,8 @@ func newPluginExecHandler(b bus.Bus, load pluginExecClientLoader) HandlerFactory
 			inputs: inputs,
 			conf:   conf,
 			load:   load,
+
+			resourceOpenTimeout: openTimeout,
 		}, nil
 	}
 }
