@@ -32,6 +32,9 @@ message SOSyncMessage {
     SOSyncRecoveryRequired recovery_required = 10;
     // Branch reports that history pages start after an earlier common head.
     SOSyncBranch branch = 11;
+    // ConfigSuffix carries config history to a participant that refused this
+    // sender's admission.
+    SOSyncConfigSuffix config_suffix = 12;
   }
 }
 
@@ -121,6 +124,18 @@ message SOSyncHistoryPage {
   bytes cursor = 2;
   // Changes are contiguous, oldest-first signed transitions.
   repeated .sobject.SOConfigChange changes = 3;
+}
+
+// SOSyncConfigSuffix carries the sender's newest retained config changes after
+// the receiver refused admission that the sender granted. The receiver adopts
+// the changes that follow its held head, each authorized by the config before
+// it, so a participant whose config predates the sender's key can admit it on
+// the next stream. Neither side discloses state, and the refusing receiver
+// discloses nothing.
+message SOSyncConfigSuffix {
+  // Changes are contiguous, oldest-first signed transitions ending at the
+  // sender's held head.
+  repeated .sobject.SOConfigChange changes = 1;
 }
 
 // SOSyncRecoveryRequired ends catch-up without changing receiver-held state.

@@ -244,6 +244,57 @@ func (s *SOHost) ImportPeerSnapshot(
 	return s.commitPeerSnapshot(ctx, lock, candidate, changes, localPeer, validateAccess)
 }
 
+// ImportPeerConfig adopts the changes that follow the held config head, each
+// authorized by the config before it, without adopting any other state. It
+// serves a participant whose config predates the key of a peer that holds a
+// newer one, so it accepts only changes that extend the held head, never a
+// branch to merge. It returns the number of changes adopted, and zero when
+// changes do not extend the held head. A committed local removal returns
+// ErrParticipantRevoked.
+func (s *SOHost) ImportPeerConfig(
+	ctx context.Context,
+	changes []*SOConfigChange,
+	localPeer peer.ID,
+	validateAccess func(context.Context, *SOState) error,
+) (int, error) {
+	// Acquire the provider's import boundary for the bounded changes.
+	lock, err := s.lockPeerImport(ctx, &SOState{}, changes)
+	if err != nil {
+		return 0, err
+	}
+	defer lock.Release()
+
+	// Keep only the changes after the held head, matched by hash before any
+	// signature is checked.
+	previous := lock.GetSOState()
+	head := previous.GetConfig().GetConfigChainHash()
+	changes, err = unappliedConfigChanges(head, changes)
+	if err != nil {
+		return 0, err
+	}
+	if len(head) == 0 || len(changes) == 0 || !bytes.Equal(changes[0].GetPreviousHash(), head) {
+		return 0, nil
+	}
+
+	// Authenticate each change against the config before it.
+	config := previous.GetConfig()
+	for i, change := range changes {
+		if !isPeerConfigChange(change.GetChangeType()) {
+			return 0, errors.Errorf("peer config change[%d]: unsupported change %s", i, change.GetChangeType())
+		}
+		config, err = VerifyConfigChange(s.sharedObjectID, config, change)
+		if err != nil {
+			return 0, errors.Wrapf(err, "peer config change[%d]", i)
+		}
+	}
+
+	// Commit the config alone, as a snapshot that carries nothing else.
+	if err := s.commitPeerSnapshot(ctx, lock, &SOState{Config: config}, changes, localPeer, validateAccess); err != nil {
+		return 0, err
+	}
+	return len(changes), nil
+}
+
 // lockPeerImport bounds untrusted work, then acquires the provider's import
 // boundary, which never publishes remote roots.
 func (s *SOHost) lockPeerImport(ctx context.Context, candidate *SOState, changes []*SOConfigChange) (SOStateLock, error) {

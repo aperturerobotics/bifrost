@@ -29,6 +29,9 @@ const (
 	// carries one whole state, and a history page fills up to the same bound
 	// so a single large record, such as a merge, still fits.
 	maxMessageSize = sobject.MaxSyncStateSize
+	// authMessageSize bounds each authentication frame, including the config
+	// changes offered to a participant that refused admission.
+	authMessageSize = 64 * 1024
 	// syncRetryInitialInterval is the first delay after a recoverable stream
 	// failure.
 	syncRetryInitialInterval = 250 * time.Millisecond
@@ -415,7 +418,7 @@ func (s *SOSync) runStream(
 	if err := strm.SetDeadline(deadline); err != nil {
 		return err
 	}
-	remoteID, err := s.authenticate(ctx, stream_packet.NewSession(strm, 64*1024), localTransport, remoteTransport)
+	remoteID, err := s.authenticate(ctx, stream_packet.NewSession(strm, authMessageSize), localTransport, remoteTransport)
 	defer func() {
 		if remoteID != "" && errors.Is(rerr, sobject.ErrConfigHistoryUnavailable) && s.peerRecovery != nil {
 			s.peerRecovery(remoteID, true)

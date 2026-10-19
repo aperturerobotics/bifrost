@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/core/sobject"
@@ -101,13 +102,77 @@ func (s *SOSync) authenticate(ctx context.Context, sess *stream_packet.Session, 
 	if accepted && s.peerAdmission != nil {
 		s.peerAdmission(remoteID, authorization.GetAccepted())
 	}
+
+	// A participant that refused admission this side granted may hold a
+	// config older than this side's, so offer it the newer changes.
+	if errors.Is(admissionErr, ErrAccessDenied) && authorization.GetAccepted() {
+		s.receiveConfigSuffix(ctx, sess)
+	}
 	if admissionErr != nil {
 		return remoteID, admissionErr
 	}
 	if !authorization.GetAccepted() {
+		s.sendConfigSuffix(ctx, sess, state)
 		return "", ErrAccessDenied
 	}
 	return remoteID, nil
+}
+
+// sendConfigSuffix sends the newest retained config changes, ending at the
+// held head, to an admitted participant that refused this side. It is best
+// effort: the stream ends with the refusal either way.
+func (s *SOSync) sendConfigSuffix(ctx context.Context, sess *stream_packet.Session, state *sobject.SOState) {
+	// Walk back from the held head, newest first, while the frame has room.
+	var changes []*sobject.SOConfigChange
+	size := 0
+	head := state.GetConfig().GetConfigChainHash()
+	for len(head) != 0 && len(changes) < maxHistoryPageEntries {
+		change, err := s.soHost.ReadConfigEntry(ctx, head)
+		if err != nil {
+			break
+		}
+		// Leave room for the field tag and length prefix of each change.
+		size += change.SizeVT() + 8
+		if size > authMessageSize-64 {
+			break
+		}
+		changes = append(changes, change)
+		head = change.GetPreviousHash()
+	}
+	if len(changes) == 0 {
+		return
+	}
+	slices.Reverse(changes)
+
+	// The refusing side may be an older build that has already closed.
+	_ = sess.SendMsg(&SOSyncMessage{
+		Body: &SOSyncMessage_ConfigSuffix{ConfigSuffix: &SOSyncConfigSuffix{Changes: changes}},
+	})
+}
+
+// receiveConfigSuffix adopts config changes from a participant this side
+// refused, so the next stream can admit it if the changes add it. The sender
+// may be an older build that sends nothing and closes the stream.
+func (s *SOSync) receiveConfigSuffix(ctx context.Context, sess *stream_packet.Session) {
+	// Read at most one message, bounded by the authentication deadline.
+	incoming := &SOSyncMessage{}
+	if err := sess.RecvMsg(incoming); err != nil {
+		return
+	}
+	changes := incoming.GetConfigSuffix().GetChanges()
+	if len(changes) == 0 {
+		return
+	}
+
+	// Adopt only changes that extend the held head under its own authority.
+	adopted, err := s.soHost.ImportPeerConfig(ctx, changes, s.localObjectPeerID, s.validateSnapshotAccess)
+	if err != nil {
+		s.le.WithError(err).Warn("refused config changes from a refused participant")
+		return
+	}
+	if adopted != 0 {
+		s.le.WithField("changes", adopted).Info("adopted config changes from a refused participant")
+	}
 }
 
 // verifyParticipantProof verifies the exact directional transcript and returns its signer.

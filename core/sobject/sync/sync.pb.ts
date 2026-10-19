@@ -30,6 +30,7 @@ export interface SOSyncMessage {
     | { value: SOSyncHistoryPage; case: 'historyPage' }
     | { value: SOSyncRecoveryRequired; case: 'recoveryRequired' }
     | { value: SOSyncBranch; case: 'branch' }
+    | { value: SOSyncConfigSuffix; case: 'configSuffix' }
 }
 
 export const SOSyncMessage: MessageType<SOSyncMessage> =
@@ -46,6 +47,7 @@ export const SOSyncMessage: MessageType<SOSyncMessage> =
       [9, 'history_page', 11, 0, SOSyncHistoryPage.codec, 'body'],
       [10, 'recovery_required', 11, 0, SOSyncRecoveryRequired.codec, 'body'],
       [11, 'branch', 11, 0, SOSyncBranch.codec, 'body'],
+      [12, 'config_suffix', 11, 0, SOSyncConfigSuffix.codec, 'body'],
     ],
   )
 
@@ -296,6 +298,30 @@ export const SOSyncHistoryPage: MessageType<SOSyncHistoryPage> =
       [2, 'cursor', 12],
       [3, 'changes', 11, 1, SOConfigChange.codec],
     ],
+  )
+
+/**
+ * SOSyncConfigSuffix carries the sender's newest retained config changes after
+ * the receiver refused admission that the sender granted. The receiver adopts
+ * the changes that follow its held head, each authorized by the config before
+ * it, so a participant whose config predates the sender's key can admit it on
+ * the next stream. Neither side discloses state, and the refusing receiver
+ * discloses nothing.
+ *
+ * @generated from message sobject.sync.SOSyncConfigSuffix
+ */
+export interface SOSyncConfigSuffix {
+  /**
+   * Changes are contiguous, oldest-first signed transitions ending at the
+   * sender's held head.
+   */
+  changes?: SOConfigChange[]
+}
+
+export const SOSyncConfigSuffix: MessageType<SOSyncConfigSuffix> =
+  /* @__PURE__ */ createMessageType<SOSyncConfigSuffix>(
+    'sobject.sync.SOSyncConfigSuffix',
+    () => [[1, 'changes', 11, 1, SOConfigChange.codec]],
   )
 
 /**

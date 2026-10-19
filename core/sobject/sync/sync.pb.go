@@ -31,6 +31,7 @@ type SOSyncMessage struct {
 	//	*SOSyncMessage_HistoryPage
 	//	*SOSyncMessage_RecoveryRequired
 	//	*SOSyncMessage_Branch
+	//	*SOSyncMessage_ConfigSuffix
 	Body isSOSyncMessage_Body `protobuf_oneof:"body"`
 }
 
@@ -117,6 +118,13 @@ func (x *SOSyncMessage) GetBranch() *SOSyncBranch {
 	return nil
 }
 
+func (x *SOSyncMessage) GetConfigSuffix() *SOSyncConfigSuffix {
+	if x, ok := x.GetBody().(*SOSyncMessage_ConfigSuffix); ok {
+		return x.ConfigSuffix
+	}
+	return nil
+}
+
 type isSOSyncMessage_Body interface {
 	isSOSyncMessage_Body()
 }
@@ -171,6 +179,12 @@ type SOSyncMessage_Branch struct {
 	Branch *SOSyncBranch `protobuf:"bytes,11,opt,name=branch,proto3,oneof"`
 }
 
+type SOSyncMessage_ConfigSuffix struct {
+	// ConfigSuffix carries config history to a participant that refused this
+	// sender's admission.
+	ConfigSuffix *SOSyncConfigSuffix `protobuf:"bytes,12,opt,name=config_suffix,json=configSuffix,proto3,oneof"`
+}
+
 func (*SOSyncMessage_Snapshot) isSOSyncMessage_Body() {}
 
 func (*SOSyncMessage_Ack) isSOSyncMessage_Body() {}
@@ -190,6 +204,8 @@ func (*SOSyncMessage_HistoryPage) isSOSyncMessage_Body() {}
 func (*SOSyncMessage_RecoveryRequired) isSOSyncMessage_Body() {}
 
 func (*SOSyncMessage_Branch) isSOSyncMessage_Body() {}
+
+func (*SOSyncMessage_ConfigSuffix) isSOSyncMessage_Body() {}
 
 // SOSyncSnapshot is a full SOState snapshot exchanged after mutual
 // authentication. The receiver merges its checkpoint, key epochs and
@@ -503,6 +519,32 @@ func (x *SOSyncHistoryPage) GetChanges() []*sobject.SOConfigChange {
 	return nil
 }
 
+// SOSyncConfigSuffix carries the sender's newest retained config changes after
+// the receiver refused admission that the sender granted. The receiver adopts
+// the changes that follow its held head, each authorized by the config before
+// it, so a participant whose config predates the sender's key can admit it on
+// the next stream. Neither side discloses state, and the refusing receiver
+// discloses nothing.
+type SOSyncConfigSuffix struct {
+	unknownFields []byte
+	// Changes are contiguous, oldest-first signed transitions ending at the
+	// sender's held head.
+	Changes []*sobject.SOConfigChange `protobuf:"bytes,1,rep,name=changes,proto3" json:"changes,omitempty"`
+}
+
+func (x *SOSyncConfigSuffix) Reset() {
+	*x = SOSyncConfigSuffix{}
+}
+
+func (*SOSyncConfigSuffix) ProtoMessage() {}
+
+func (x *SOSyncConfigSuffix) GetChanges() []*sobject.SOConfigChange {
+	if x != nil {
+		return x.Changes
+	}
+	return nil
+}
+
 // SOSyncRecoveryRequired ends catch-up without changing receiver-held state.
 type SOSyncRecoveryRequired struct {
 	unknownFields []byte
@@ -671,6 +713,19 @@ func (m *SOSyncMessage_Branch) CloneOneofVT() isSOSyncMessage_Body {
 	return m.CloneVT()
 }
 
+func (m *SOSyncMessage_ConfigSuffix) CloneVT() *SOSyncMessage_ConfigSuffix {
+	if m == nil {
+		return (*SOSyncMessage_ConfigSuffix)(nil)
+	}
+	r := new(SOSyncMessage_ConfigSuffix)
+	r.ConfigSuffix = protobuf_go_lite.CloneVTValue(m.ConfigSuffix)
+	return r
+}
+
+func (m *SOSyncMessage_ConfigSuffix) CloneOneofVT() isSOSyncMessage_Body {
+	return m.CloneVT()
+}
+
 func (m *SOSyncSnapshot) CloneVT() *SOSyncSnapshot {
 	if m == nil {
 		return (*SOSyncSnapshot)(nil)
@@ -826,6 +881,22 @@ func (m *SOSyncHistoryPage) CloneVT() *SOSyncHistoryPage {
 }
 
 func (m *SOSyncHistoryPage) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SOSyncConfigSuffix) CloneVT() *SOSyncConfigSuffix {
+	if m == nil {
+		return (*SOSyncConfigSuffix)(nil)
+	}
+	r := new(SOSyncConfigSuffix)
+	r.Changes = protobuf_go_lite.CloneVTSlice(m.Changes)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SOSyncConfigSuffix) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1039,6 +1110,23 @@ func (this *SOSyncMessage_Branch) EqualVT(thatIface isSOSyncMessage_Body) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTImplicit(this.Branch, that.Branch, func() *SOSyncBranch { return &SOSyncBranch{} }) {
+		return false
+	}
+	return true
+}
+
+func (this *SOSyncMessage_ConfigSuffix) EqualVT(thatIface isSOSyncMessage_Body) bool {
+	that, ok := thatIface.(*SOSyncMessage_ConfigSuffix)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.ConfigSuffix, that.ConfigSuffix, func() *SOSyncConfigSuffix { return &SOSyncConfigSuffix{} }) {
 		return false
 	}
 	return true
@@ -1266,6 +1354,26 @@ func (this *SOSyncHistoryPage) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+func (this *SOSyncConfigSuffix) EqualVT(that *SOSyncConfigSuffix) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Changes, that.Changes, func() *sobject.SOConfigChange { return &sobject.SOConfigChange{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SOSyncConfigSuffix) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SOSyncConfigSuffix)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 func (this *SOSyncRecoveryRequired) EqualVT(that *SOSyncRecoveryRequired) bool {
 	if this == that {
 		return true
@@ -1336,6 +1444,10 @@ func (x *SOSyncMessage) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("branch")
 			ov.Branch.MarshalProtoJSON(s.WithField("branch"))
+		case *SOSyncMessage_ConfigSuffix:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("configSuffix")
+			ov.ConfigSuffix.MarshalProtoJSON(s.WithField("configSuffix"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -1445,6 +1557,15 @@ func (x *SOSyncMessage) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.Branch = &SOSyncBranch{}
 			ov.Branch.UnmarshalProtoJSON(s.WithField("branch", true))
+		case "config_suffix", "configSuffix":
+			ov := &SOSyncMessage_ConfigSuffix{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.ConfigSuffix = nil
+				return
+			}
+			ov.ConfigSuffix = &SOSyncConfigSuffix{}
+			ov.ConfigSuffix.UnmarshalProtoJSON(s.WithField("config_suffix", true))
 		}
 	})
 }
@@ -1965,6 +2086,69 @@ func (x *SOSyncHistoryPage) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the SOSyncConfigSuffix message to JSON.
+func (x *SOSyncConfigSuffix) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Changes) > 0 || s.HasField("changes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("changes")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Changes {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("changes"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SOSyncConfigSuffix to JSON.
+func (x *SOSyncConfigSuffix) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SOSyncConfigSuffix message from JSON.
+func (x *SOSyncConfigSuffix) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "changes":
+			s.AddField("changes")
+			if s.ReadNil() {
+				x.Changes = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Changes = append(x.Changes, nil)
+					return
+				}
+				v := &sobject.SOConfigChange{}
+				v.UnmarshalProtoJSON(s.WithField("changes", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Changes = append(x.Changes, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SOSyncConfigSuffix from JSON.
+func (x *SOSyncConfigSuffix) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the SOSyncRecoveryRequired message to JSON.
 func (x *SOSyncRecoveryRequired) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -2284,6 +2468,30 @@ func (m *SOSyncMessage_Branch) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
 		i--
 		dAtA[i] = 0x5a
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SOSyncMessage_ConfigSuffix) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncMessage_ConfigSuffix) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.ConfigSuffix != nil {
+		size, err := m.ConfigSuffix.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x62
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x62
 	}
 	return len(dAtA) - i, nil
 }
@@ -2698,6 +2906,50 @@ func (m *SOSyncHistoryPage) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *SOSyncConfigSuffix) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SOSyncConfigSuffix) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOSyncConfigSuffix) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Changes) > 0 {
+		for iNdEx := len(m.Changes) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Changes[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *SOSyncRecoveryRequired) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -2898,6 +3150,21 @@ func (m *SOSyncMessage_Branch) SizeVT() (n int) {
 	return n
 }
 
+func (m *SOSyncMessage_ConfigSuffix) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ConfigSuffix != nil {
+		l = m.ConfigSuffix.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
 func (m *SOSyncSnapshot) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3014,6 +3281,20 @@ func (m *SOSyncHistoryPage) SizeVT() (n int) {
 	return n
 }
 
+func (m *SOSyncConfigSuffix) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Changes {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *SOSyncRecoveryRequired) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3098,6 +3379,13 @@ func (x *SOSyncMessage) MarshalProtoText() string {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOSyncBranch{})
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.Branch)
+		}
+	case *SOSyncMessage_ConfigSuffix:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "config_suffix")
+		if body.ConfigSuffix == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &SOSyncConfigSuffix{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.ConfigSuffix)
 		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
@@ -3294,6 +3582,28 @@ func (x *SOSyncHistoryPage) MarshalProtoText() string {
 }
 
 func (x *SOSyncHistoryPage) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SOSyncConfigSuffix) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SOSyncConfigSuffix")
+	if len(x.Changes) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "changes")
+		for i, v := range x.Changes {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &sobject.SOConfigChange{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SOSyncConfigSuffix) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -3529,6 +3839,26 @@ func (m *SOSyncMessage) UnmarshalVT(dAtA []byte) error {
 					return err
 				}
 				m.Body = &SOSyncMessage_Branch{Branch: v}
+			}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfigSuffix", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*SOSyncMessage_ConfigSuffix); ok {
+				if err := oneof.ConfigSuffix.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &SOSyncConfigSuffix{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &SOSyncMessage_ConfigSuffix{ConfigSuffix: v}
 			}
 			iNdEx = postIndex
 		default:
@@ -4107,6 +4437,62 @@ func (m *SOSyncHistoryPage) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Changes", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Changes = append(m.Changes, &sobject.SOConfigChange{})
+			if err := m.Changes[len(m.Changes)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SOSyncConfigSuffix) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SOSyncConfigSuffix: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SOSyncConfigSuffix: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Changes", wireType)
 			}
