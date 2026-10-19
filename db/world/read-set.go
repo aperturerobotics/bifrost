@@ -8,8 +8,8 @@ import (
 	"sync"
 )
 
-// readSetChangeLimit bounds the keys and quads WaitChange merges before it
-// treats the changes as unknown.
+// readSetChangeLimit bounds the keys and quads WaitChange keeps to check again
+// after a new read. Past it, a new read counts as touched.
 const readSetChangeLimit = 4096
 
 // ReadSet records what a view read from the World, so a ChangeSet can be
@@ -130,10 +130,12 @@ func (r *ReadSet) waitChange(
 		<-done
 	}()
 
-	// Merge the changes since afterSeqno in the background.
+	// Queue each ChangeSet since afterSeqno in the background. The feed shares
+	// one ChangeSet between its subscribers, so checking each one as delivered
+	// lets a shared set answer every view waiting on it from its memo.
 	var (
 		mtx     sync.Mutex
-		changes *ChangeSet
+		pending []*ChangeSet
 		seqno   uint64
 	)
 	changed := make(chan struct{}, 1)
@@ -141,9 +143,9 @@ func (r *ReadSet) waitChange(
 	go func() {
 		defer close(done)
 		watchErr <- WatchChanges(ctx, w, afterSeqno, func(s uint64, cs *ChangeSet) error {
-			// Merge the change and wake the check without blocking.
+			// Queue the change and wake the check without blocking.
 			mtx.Lock()
-			changes, seqno = MergeChangeSets(changes, cs, readSetChangeLimit), s
+			pending, seqno = append(pending, cs), s
 			mtx.Unlock()
 			select {
 			case changed <- struct{}{}:
@@ -153,7 +155,21 @@ func (r *ReadSet) waitChange(
 		})
 	}()
 
-	// Check the merged changes after each change and each recorded read.
+	// touches checks one ChangeSet against the reads and the shared sets.
+	touches := func(cs *ChangeSet) bool {
+		return r.Touched(cs) || slices.ContainsFunc(shared, func(set *ReadSet) bool { return set.Touched(cs) })
+	}
+
+	// Check each new change once. A read recorded since the last check can
+	// match an earlier change, so then check the earlier ones again too. Past
+	// readSetChangeLimit entries they are no longer kept, and a later read
+	// counts as touched.
+	var (
+		checked   []*ChangeSet
+		entries   int
+		overflow  bool
+		lastAdded chan struct{}
+	)
 	reported := afterSeqno
 	for {
 		// Capture the read signal before checking, so a read recorded after
@@ -162,19 +178,39 @@ func (r *ReadSet) waitChange(
 		added := r.added
 		r.mtx.Unlock()
 		mtx.Lock()
-		cs, s := changes, seqno
+		next, s := pending, seqno
+		pending = nil
 		mtx.Unlock()
-		if cs != nil {
-			if r.Touched(cs) || slices.ContainsFunc(shared, func(set *ReadSet) bool { return set.Touched(cs) }) {
+
+		// Check the earlier changes again after a new read.
+		if added != lastAdded {
+			lastAdded = added
+			if overflow || slices.ContainsFunc(checked, touches) {
 				return s, nil
 			}
+		}
 
-			// Tell the caller about each seqno once.
-			if untouched != nil && s > reported {
-				reported = s
-				if err := untouched(s); err != nil {
-					return 0, err
-				}
+		// Check the new changes, keeping them for a later read.
+		if slices.ContainsFunc(next, touches) {
+			return s, nil
+		}
+		for _, cs := range next {
+			if overflow {
+				break
+			}
+			entries += len(cs.Keys) + len(cs.Quads)
+			if cs.Unknown || entries > readSetChangeLimit {
+				checked, overflow = nil, true
+				break
+			}
+			checked = append(checked, cs)
+		}
+
+		// Tell the caller about each seqno once.
+		if len(next) != 0 && untouched != nil && s > reported {
+			reported = s
+			if err := untouched(s); err != nil {
+				return 0, err
 			}
 		}
 		select {
