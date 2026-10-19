@@ -2,6 +2,7 @@ package bldr_plugin
 
 import (
 	"encoding/base64"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/net/util/labels"
@@ -55,4 +56,11 @@ func (m *PluginStartInfo) MarshalJsonBase64() (string, error) {
 	}
 
 	return base64.StdEncoding.EncodeToString(jdat), nil
+}
+
+// DebugSocketPath returns the Unix socket where the plugin process serves pprof
+// and its identity, inside the host's private pipe directory. The name is
+// shorter than the plugin pipe's, so it fits wherever the pipe does.
+func (m *PluginStartInfo) DebugSocketPath(pipeRoot string) string {
+	return filepath.Join(pipeRoot, ".dbg-"+m.GetInstanceId())
 }

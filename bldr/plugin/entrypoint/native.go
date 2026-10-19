@@ -121,6 +121,9 @@ func Run(
 		pipeRoot = wd
 	}
 
+	// Serve pprof and the process identity for stack reads while running.
+	servePluginDebug(ctx, le, pluginStartInfo, pipeRoot)
+
 	// construct pipe socket
 	instanceID := pluginStartInfo.GetInstanceId()
 	conn, err := bldr_pipesock.Dial(ctx, le, pipeRoot, instanceID)

@@ -237,12 +237,15 @@ func (h *ProcessHost) ExecutePlugin(
 		return err
 	}
 
-	// Pass the start info and state path to the plugin environment.
+	// Pass the start info and state path to the plugin environment, with the
+	// plugin and instance in plain text for reading a process list's environment.
 	// NOTE: the pluginID is validated to be a valid-dns-identifier
 	entrypointProc.Env = append(
 		os.Environ(),
 		"BLDR_PLUGIN_START_INFO="+pluginStartInfoJsonB64,
 		"BLDR_PLUGIN_STATE_PATH="+pluginStateDir,
+		"BLDR_PLUGIN_ID="+pluginID,
+		"BLDR_PLUGIN_INSTANCE_KEY="+instanceKey,
 	)
 	if exe, err := os.Executable(); err == nil {
 		entrypointProc.Env = append(entrypointProc.Env, bldr_plugin.HostExecutableEnv+"="+exe)
@@ -283,6 +286,15 @@ func (h *ProcessHost) ExecutePlugin(
 	if err != nil {
 		return err
 	}
+
+	// Name the process and its debug socket, so a stuck plugin is traceable:
+	// read stacks with curl --unix-socket <socket> http://plugin/debug/pprof/goroutine?debug=2.
+	le.
+		WithField("instance-key", instanceKey).
+		WithField("instance-id", pluginInstanceID).
+		WithField("pid", entrypointProc.Process.Pid).
+		WithField("debug-socket", pluginStartInfo.DebugSocketPath(pipeListener.GetRootDir())).
+		Info("started plugin process")
 
 	// Accept plugin IPC connections until the context is canceled.
 	errCh := make(chan error, 5)
