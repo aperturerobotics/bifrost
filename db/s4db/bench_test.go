@@ -295,3 +295,87 @@ func writeSynced(b *testing.B, path string, data []byte) {
 		b.Fatal(err)
 	}
 }
+
+// BenchmarkChurnSpace keeps about 200k keys live while replacing a twentieth
+// of them per round, as a block store under garbage collection does, and
+// reports how far the file length runs ahead of the pages in use. Most keys
+// are small records held in the index, so each checkpoint rewrites a large
+// part of it.
+func BenchmarkChurnSpace(b *testing.B) {
+	for b.Loop() {
+		// Open with small checkpoints, so the rounds checkpoint often.
+		ctx := context.Background()
+		path := filepath.Join(b.TempDir(), "churn.s4wave")
+		db, err := Open(path, Options{CheckpointMin: 4 << 20, CheckpointMax: 4 << 20})
+		if err != nil {
+			b.Fatal(err)
+		}
+		rng := rand.New(rand.NewPCG(5, 6))
+		buf := make([]byte, 48<<10)
+		var keys [][]byte
+		commit := func(n int, fn func(tx *Tx)) {
+			// Apply fn n times in one transaction.
+			tx, err := db.NewTransaction(ctx, true)
+			if err != nil {
+				b.Fatal(err)
+			}
+			for range n {
+				fn(tx.(*Tx))
+			}
+
+			// Commit it.
+			if err := tx.(*Tx).CommitOrdered(ctx); err != nil {
+				b.Fatal(err)
+			}
+		}
+		set := func(tx *Tx) {
+			// Most keys are small records, the rest blocks of 2 to 48 KiB.
+			n := 64 + rng.IntN(256)
+			if rng.IntN(100) >= 92 {
+				n = 2<<10 + rng.IntN(46<<10)
+			}
+			k := binary.BigEndian.AppendUint64(nil, rng.Uint64())
+			if err := tx.Set(ctx, k, buf[:n]); err != nil {
+				b.Fatal(err)
+			}
+			keys = append(keys, k)
+		}
+
+		// Fill, then replace 10k random keys per round with new ones.
+		for i := 0; i < 200_000; i += 256 {
+			commit(256, set)
+		}
+		for range 60 {
+			for i := 0; i < 10_000; i += 250 {
+				commit(250, func(tx *Tx) {
+					// Delete a random live key.
+					j := rng.IntN(len(keys))
+					if err := tx.Delete(ctx, keys[j]); err != nil {
+						b.Fatal(err)
+					}
+					keys[j] = keys[len(keys)-1]
+					keys = keys[:len(keys)-1]
+
+					// Add a new one in its place.
+					set(tx)
+				})
+			}
+		}
+
+		// Report the length against the pages in use.
+		if err := db.Sync(ctx); err != nil {
+			b.Fatal(err)
+		}
+		u, err := db.Usage(ctx)
+		if err != nil {
+			b.Fatal(err)
+		}
+		used := u.ValuePageBytes + u.IndexBytes + u.LogBytes + u.PendingBytes
+		b.ReportMetric(float64(u.FileBytes)/(1<<20), "file-MiB")
+		b.ReportMetric(float64(used)/(1<<20), "used-MiB")
+		b.ReportMetric(float64(u.FileBytes)/float64(used), "file/used")
+		if err := db.Close(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
