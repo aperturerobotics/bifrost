@@ -724,8 +724,10 @@ func (w *writer) reserve(t *tree, n uint64) (run, error) {
 	}
 
 	// Take n pages from the lowest free run holding them, else the largest
-	// free run of a write batch or more, else from the file end.
-	r, ok := sp.fit(min(n, placeBatch), n)
+	// free run, else from the file end. A checkpoint rewrites much of the
+	// index, so asking for a write batch would put each one at the file end
+	// once values have cut the free space into shorter runs.
+	r, ok := sp.fit(1, n)
 	if !ok {
 		r = sp.alloc(n)
 	}
