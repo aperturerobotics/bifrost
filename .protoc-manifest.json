@@ -3349,7 +3349,7 @@
       ]
     },
     "github.com/s4wave/spacewave/net/transport/common/quic": {
-      "hash": "740e04057545916392ca9eef0fa7cad03204c4a0eda9cfcf2a91eced89d7695d",
+      "hash": "4b1da78b8e9919055ecf817152dce66549afcb247dca9ff4b6f558506267ef0d",
       "generatedFiles": [
         "net/transport/common/quic/quic.pb.go",
         "net/transport/common/quic/quic.pb.ts"

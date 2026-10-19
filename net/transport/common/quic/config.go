@@ -2,6 +2,7 @@ package transport_quic
 
 import (
 	"crypto/tls"
+	"math"
 	"time"
 
 	quic "github.com/quic-go/quic-go"
@@ -43,6 +44,7 @@ func BuildQuicConfig(opts *Opts) *quic.Config {
 		EnableDatagrams:         !opts.GetDisableDatagrams(),
 		KeepAlivePeriod:         keepAlivePeriod,
 		DisablePathMTUDiscovery: opts.GetDisablePathMtuDiscovery(),
+		InitialPacketSize:       uint16(min(opts.GetInitialPacketSize(), math.MaxUint16)),
 
 		MaxIdleTimeout:        maxIdleTimeout,
 		MaxIncomingStreams:    int64(maxIncStreams),

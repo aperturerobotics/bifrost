@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"context"
+	"math"
 	"net"
 	"net/http"
 	"time"
@@ -65,9 +66,11 @@ func NewWebSocket(
 		quicOpts = quicOpts.CloneVT()
 	}
 
-	// Disable QUIC features that WebSocket cannot carry.
+	// Disable QUIC features that WebSocket cannot carry. Each packet is one
+	// WebSocket message, so packets use the largest size QUIC allows.
 	quicOpts.DisableDatagrams = true
 	quicOpts.DisablePathMtuDiscovery = true
+	quicOpts.InitialPacketSize = math.MaxUint16
 
 	// Let WebSocket own connection liveness instead of QUIC.
 	quicOpts.DisableKeepAlive = true
@@ -122,8 +125,8 @@ func NewWebSocket(
 }
 
 // MatchTransportType checks if the given transport type ID matches this transport.
-// If returns true, the transport controller will call DialPeer with that tptaddr.
-// E.x.: "udp-quic" or "ws"
+// If it returns true, the transport controller calls DialPeer with that
+// address, such as "ws".
 func (w *WebSocket) MatchTransportType(transportType string) bool {
 	return transportType == TransportType
 }

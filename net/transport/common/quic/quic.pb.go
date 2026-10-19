@@ -40,6 +40,14 @@ type Opts struct {
 	// Verbose indicates to use verbose logging.
 	// Note: this is VERY verbose, logs every packet sent.
 	Verbose bool `protobuf:"varint,6,opt,name=verbose,proto3" json:"verbose,omitempty"`
+	// InitialPacketSize is the packet size used before path MTU discovery, and
+	// the only size when discovery is disabled. Transports that carry each
+	// packet as one message without an IP path MTU, such as WebSocket, set the
+	// largest size QUIC allows, which is 1452 bytes.
+	//
+	// Values above the largest size use the largest size.
+	// If unset, defaults to 1280.
+	InitialPacketSize uint32 `protobuf:"varint,8,opt,name=initial_packet_size,json=initialPacketSize,proto3" json:"initialPacketSize,omitempty"`
 }
 
 func (x *Opts) Reset() {
@@ -97,6 +105,13 @@ func (x *Opts) GetVerbose() bool {
 	return false
 }
 
+func (x *Opts) GetInitialPacketSize() uint32 {
+	if x != nil {
+		return x.InitialPacketSize
+	}
+	return 0
+}
+
 func (m *Opts) CloneVT() *Opts {
 	if m == nil {
 		return (*Opts)(nil)
@@ -109,6 +124,7 @@ func (m *Opts) CloneVT() *Opts {
 	r.DisableDatagrams = m.DisableDatagrams
 	r.DisablePathMtuDiscovery = m.DisablePathMtuDiscovery
 	r.Verbose = m.Verbose
+	r.InitialPacketSize = m.InitialPacketSize
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -144,6 +160,9 @@ func (this *Opts) EqualVT(that *Opts) bool {
 		return false
 	}
 	if this.KeepAliveDur != that.KeepAliveDur {
+		return false
+	}
+	if this.InitialPacketSize != that.InitialPacketSize {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -200,6 +219,11 @@ func (x *Opts) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("keepAliveDur")
 		s.WriteString(x.KeepAliveDur)
 	}
+	if x.InitialPacketSize != 0 || s.HasField("initialPacketSize") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("initialPacketSize")
+		s.WriteUint32(x.InitialPacketSize)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -238,6 +262,9 @@ func (x *Opts) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "keep_alive_dur", "keepAliveDur":
 			s.AddField("keep_alive_dur")
 			x.KeepAliveDur = s.ReadString()
+		case "initial_packet_size", "initialPacketSize":
+			s.AddField("initial_packet_size")
+			x.InitialPacketSize = s.ReadUint32()
 		}
 	})
 }
@@ -275,6 +302,11 @@ func (m *Opts) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.InitialPacketSize != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.InitialPacketSize))
+		i--
+		dAtA[i] = 0x40
 	}
 	if len(m.KeepAliveDur) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.KeepAliveDur)
@@ -327,6 +359,7 @@ func (m *Opts) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.DisablePathMtuDiscovery)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Verbose)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.KeepAliveDur)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.InitialPacketSize)
 	n += len(m.unknownFields)
 	return n
 }
@@ -361,6 +394,10 @@ func (x *Opts) MarshalProtoText() string {
 	if x.KeepAliveDur != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "keep_alive_dur")
 		protobuf_go_lite.TextWriteString(&sb, x.KeepAliveDur)
+	}
+	if x.InitialPacketSize != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "initial_packet_size")
+		protobuf_go_lite.TextWriteUint(&sb, x.InitialPacketSize)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -458,6 +495,15 @@ func (m *Opts) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.KeepAliveDur = v
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InitialPacketSize", wireType)
+			}
+			m.InitialPacketSize = 0
+			m.InitialPacketSize, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

@@ -47,6 +47,16 @@ export interface Opts {
    * Note: this is VERY verbose, logs every packet sent.
    */
   verbose?: boolean
+  /**
+   * InitialPacketSize is the packet size used before path MTU discovery, and
+   * the only size when discovery is disabled. Transports that carry each
+   * packet as one message without an IP path MTU, such as WebSocket, set the
+   * largest size QUIC allows, which is 1452 bytes.
+   *
+   * Values above the largest size use the largest size.
+   * If unset, defaults to 1280.
+   */
+  initialPacketSize?: number
 }
 
 export const Opts: MessageType<Opts> = /* @__PURE__ */ createMessageType<Opts>(
@@ -59,5 +69,6 @@ export const Opts: MessageType<Opts> = /* @__PURE__ */ createMessageType<Opts>(
     [5, 'disable_path_mtu_discovery', 8],
     [6, 'verbose', 8],
     [7, 'keep_alive_dur', 9],
+    [8, 'initial_packet_size', 13],
   ],
 )

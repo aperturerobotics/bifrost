@@ -82,8 +82,10 @@ func NewTransport(
 		opts.Quic = &transport_quic.Opts{}
 	}
 
-	// Disable QUIC path MTU discovery because this transport fixes the MTU.
-	opts.Quic.DisablePathMtuDiscovery = true // known mtu
+	// Disable QUIC path MTU discovery because this transport fixes the MTU,
+	// and send packets up to that MTU.
+	opts.Quic.DisablePathMtuDiscovery = true
+	opts.Quic.InitialPacketSize = mtu
 
 	// Build the ordered transport state.
 	tpt := &Transport{
