@@ -98,6 +98,15 @@ const members: Member[] = [
     test_js_script: '',
   },
   {
+    name: 'bldr',
+    roots: ['bldr'],
+    build_script: '',
+    lint_go_script: '',
+    lint_js_script: '',
+    test_go_script: 'test:go:bldr',
+    test_js_script: '',
+  },
+  {
     name: 'goscript',
     roots: [],
     build_script: '',

@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/aperturerobotics/fastjson"
-	"github.com/aperturerobotics/util/gitroot"
 	playwright "github.com/mxschmitt/playwright-go"
 	"github.com/sirupsen/logrus"
 )
@@ -132,10 +131,11 @@ func TestRecordBrowserConsoleMessage(t *testing.T) {
 }
 
 func TestFixtureProjectConfig(t *testing.T) {
-	// Load the fixture project config from the repository.
-	repoRoot, err := gitroot.FindRepoRoot()
+	// Load the fixture project config from the module that contains this test.
+	// CI checkouts have no Git metadata, so the module file is the root.
+	repoRoot, err := moduleRoot()
 	if err != nil {
-		t.Fatalf("find repo root: %v", err)
+		t.Fatalf("find module root: %v", err)
 	}
 	conf, err := loadFixtureProjectConfig(repoRoot)
 	if err != nil {
@@ -157,6 +157,27 @@ func TestFixtureProjectConfig(t *testing.T) {
 		if conf.GetManifests()[forbidden] != nil {
 			t.Fatalf("fixture unexpectedly includes product manifest %q", forbidden)
 		}
+	}
+}
+
+// moduleRoot walks up from the working directory to the module file.
+func moduleRoot() (string, error) {
+	// Start at the test process directory, which is the package directory.
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Stop at the first ancestor that contains go.mod.
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", errors.New("go.mod not found")
+		}
+		dir = parent
 	}
 }
 

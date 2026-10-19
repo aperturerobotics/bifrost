@@ -3,6 +3,8 @@ import { access } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { type Alias, type Plugin } from 'vite'
 
+import { resolveGoModuleCachePath } from '../go-module-cache.js'
+
 // readLocalModuleSync reads the module path from projectRoot/go.mod so the
 // @go/<module>/... alias can resolve to local source instead of vendor.
 // Returns null when go.mod is absent or has no `module` line, in which case
@@ -30,6 +32,7 @@ function findGoModule(
   dir: string,
   cache: Map<string, GoModule | null>,
 ): GoModule | null {
+  // Walk upward while collecting directories whose module result needs caching.
   const visited: string[] = []
   let found: GoModule | null = null
   for (let cur = dir; ; cur = dirname(cur)) {
@@ -62,7 +65,8 @@ function vendorRoots(
 
 // resolveGoImportPaths returns the candidate sources of an @go/ import. An
 // import of the project module or of the importer's own module resolves to
-// that module's sources; any other import resolves through the vendor trees.
+// that module's sources; any other import resolves through the vendor trees,
+// then the module cache when the vendor file is absent.
 // The importer's module matters when the build root reaches source outside the
 // project, such as an app startup module bundled into the Bldr renderer.
 function resolveGoImportPaths(
@@ -72,10 +76,12 @@ function resolveGoImportPaths(
   importerModule: GoModule | null,
   source: string,
 ): string[] | null {
+  // Leave non-Go imports for Vite's other resolvers.
   if (!source.startsWith('@go/')) {
     return null
   }
 
+  // Resolve the Go path and check the project's own module first.
   const importPath = source.slice('@go/'.length)
   if (localModule && importPath.startsWith(localModule + '/')) {
     return [resolve(projectRoot, importPath.slice(localModule.length + 1))]
@@ -89,9 +95,15 @@ function resolveGoImportPaths(
     ]
   }
 
-  return vendorRoots(projectRoot, distRoot, importerModule).map((root) =>
-    resolve(root, importPath),
+  // Search vendor trees before falling back to the selected module cache.
+  const vendor = vendorRoots(projectRoot, distRoot, importerModule).map(
+    (root) => resolve(root, importPath),
   )
+  const cached = resolveGoModuleCachePath(
+    [projectRoot, distRoot, importerModule?.root ?? ''],
+    importPath,
+  )
+  return cached ? [...vendor, cached] : vendor
 }
 
 function resolveSourcePaths(
@@ -100,6 +112,7 @@ function resolveSourcePaths(
   source: string,
   importer?: string,
 ): string[] | null {
+  // Let the Go-specific resolver handle Go aliases.
   if (source.startsWith('@go/')) {
     return null
   }
@@ -170,6 +183,7 @@ export function goTsResolver(
         return null
       }
 
+      // Identify the importer's module and candidate source roots.
       const importerModule =
         importer && isAbsolute(importer)
           ? findGoModule(dirname(importer), moduleCache)
@@ -186,9 +200,12 @@ export function goTsResolver(
         return null
       }
 
+      // Return the first existing TypeScript sibling for this import.
       for (const sourcePath of sourcePaths) {
+        // Map the JavaScript path to its TypeScript source.
         const tsPath = resolve(projectRoot, sourcePath).replace(/\.js$/, '.ts')
 
+        // Reuse the asynchronous file check while this Vite graph is active.
         let cached = tsPathCache.get(tsPath)
         if (!cached) {
           cached = access(tsPath).then(

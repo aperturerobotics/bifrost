@@ -3,19 +3,134 @@
 
 // bldr/web/bundler/rolldown/run-build.ts
 import { createHash } from "crypto";
-import { existsSync, readFileSync, realpathSync, statSync } from "fs";
+import { existsSync, readFileSync as readFileSync2, realpathSync, statSync } from "fs";
 import { promises as fs } from "fs";
 import {
   basename,
-  dirname,
-  isAbsolute,
-  join,
+  dirname as dirname2,
+  isAbsolute as isAbsolute2,
+  join as join2,
   normalize,
   relative,
-  resolve,
+  resolve as resolve2,
   sep
 } from "path";
 import { pathToFileURL } from "url";
+
+// bldr/web/bundler/go-module-cache.ts
+import { readFileSync } from "fs";
+import { homedir } from "os";
+import { delimiter, dirname, isAbsolute, join, resolve } from "path";
+var pinsByMod = new Map;
+function goModCacheDir() {
+  if (process.env.GOMODCACHE)
+    return process.env.GOMODCACHE;
+  const gopath = (process.env.GOPATH || join(homedir(), "go")).split(delimiter)[0];
+  return join(gopath, "pkg", "mod");
+}
+function encodeModulePath(path) {
+  return path.replace(/[A-Z]/g, (letter) => "!" + letter.toLowerCase());
+}
+function findGoMod(dir) {
+  let cur = resolve(dir);
+  for (;; ) {
+    const candidate = join(cur, "go.mod");
+    try {
+      readFileSync(candidate);
+      return candidate;
+    } catch {
+      const parent = dirname(cur);
+      if (parent === cur)
+        return null;
+      cur = parent;
+    }
+  }
+}
+function parseGoMod(modPath) {
+  const cached = pinsByMod.get(modPath);
+  if (cached)
+    return cached;
+  const text = readFileSync(modPath, "utf8");
+  const root = dirname(modPath);
+  const pins = new Map;
+  let section = "";
+  for (const raw of text.split(`
+`)) {
+    const line = raw.replace(/\/\/.*$/, "").trim();
+    if (!line)
+      continue;
+    if (line === "require (") {
+      section = "require";
+      continue;
+    }
+    if (line === "replace (") {
+      section = "replace";
+      continue;
+    }
+    if (line === ")") {
+      section = "";
+      continue;
+    }
+    if (line.startsWith("require ") || section === "require") {
+      const body = line.startsWith("require ") ? line.slice("require ".length) : line;
+      const [modulePath, version] = body.split(/\s+/);
+      if (modulePath && version)
+        pins.set(modulePath, { version });
+      continue;
+    }
+    if (line.startsWith("replace ") || section === "replace") {
+      const body = line.startsWith("replace ") ? line.slice("replace ".length) : line;
+      const parts = body.split("=>");
+      if (parts.length !== 2)
+        continue;
+      const modulePath = parts[0].trim().split(/\s+/)[0];
+      const right = parts[1].trim().split(/\s+/);
+      if (!modulePath || right.length === 0)
+        continue;
+      if (right.length === 1) {
+        const dir = isAbsolute(right[0]) ? right[0] : resolve(root, right[0]);
+        pins.set(modulePath, { dir });
+      } else {
+        pins.set(modulePath, { version: right[right.length - 1] });
+      }
+    }
+  }
+  pinsByMod.set(modPath, pins);
+  return pins;
+}
+function resolveGoModuleCachePath(roots, importPath) {
+  const pins = new Map;
+  for (const root of roots) {
+    if (!root)
+      continue;
+    const modPath = findGoMod(root);
+    if (!modPath)
+      continue;
+    for (const [modulePath, pin] of parseGoMod(modPath)) {
+      if (!pins.has(modulePath))
+        pins.set(modulePath, pin);
+    }
+  }
+  let best = "";
+  let pin;
+  for (const [modulePath, candidate] of pins) {
+    const matches = importPath === modulePath || importPath.startsWith(modulePath + "/");
+    if (matches && modulePath.length > best.length) {
+      best = modulePath;
+      pin = candidate;
+    }
+  }
+  if (!pin)
+    return null;
+  const rest = importPath.slice(best.length).replace(/^\//, "");
+  if (pin.dir)
+    return join(pin.dir, rest);
+  if (!pin.version)
+    return null;
+  return join(goModCacheDir(), encodeModulePath(best) + "@" + encodeModulePath(pin.version), rest);
+}
+
+// bldr/web/bundler/rolldown/run-build.ts
 var FORMAT_VALUES = new Set(["es", "cjs", "iife"]);
 var PLATFORM_VALUES = new Set(["browser", "node", "neutral"]);
 var SOURCEMAP_VALUES = new Set(["none", "inline", "external", "both"]);
@@ -88,9 +203,9 @@ function validateBuildRequest(request) {
 }
 async function runBuild(request, dependencyRoot) {
   validateBuildRequest(request);
-  const workingDir = resolve(request.workingDir || process.cwd());
-  const sourceRoot = resolve(workingDir, request.sourceRoot || ".");
-  const outputRoot = resolve(workingDir, request.outputRoot || "dist");
+  const workingDir = resolve2(request.workingDir || process.cwd());
+  const sourceRoot = resolve2(workingDir, request.sourceRoot || ".");
+  const outputRoot = resolve2(workingDir, request.outputRoot || "dist");
   const format = request.format || "es";
   const platform = request.platform || "browser";
   const sourcemap = request.sourcemap || "none";
@@ -101,7 +216,7 @@ async function runBuild(request, dependencyRoot) {
   let hasCssImports = false;
   const virtualModules = new Map;
   const canonicalPath = (filePath) => {
-    const absolute = normalize(resolve(workingDir, filePath));
+    const absolute = normalize(resolve2(workingDir, filePath));
     try {
       return normalize(realpathSync.native(absolute));
     } catch {
@@ -130,9 +245,9 @@ async function runBuild(request, dependencyRoot) {
   for (const [name, source] of Object.entries(request.virtualModules ?? {})) {
     virtualModules.set(name, source);
   }
-  const dependencyModulesRoot = canonicalPath(join(dependencyRoot, "node_modules"));
+  const dependencyModulesRoot = canonicalPath(join2(dependencyRoot, "node_modules"));
   const trackInput = (filePath) => {
-    if (!filePath || filePath.startsWith("\x00") || !isAbsolute(filePath))
+    if (!filePath || filePath.startsWith("\x00") || !isAbsolute2(filePath))
       return;
     if (!existsSync(filePath))
       return;
@@ -145,7 +260,7 @@ async function runBuild(request, dependencyRoot) {
       normalizedPath = normalize(filePath);
     }
     const dependencyRelative = relative(dependencyModulesRoot, normalizedPath);
-    if (dependencyRelative === "" || !isAbsolute(dependencyRelative) && dependencyRelative !== ".." && !dependencyRelative.startsWith(`..${sep}`)) {
+    if (dependencyRelative === "" || !isAbsolute2(dependencyRelative) && dependencyRelative !== ".." && !dependencyRelative.startsWith(`..${sep}`)) {
       return;
     }
     inputs.add(normalizedPath);
@@ -180,25 +295,25 @@ async function runBuild(request, dependencyRoot) {
   const localModule = readLocalModule(sourceRoot);
   const workingModule = readLocalModule(workingDir);
   const goscript = request.goscript;
-  const goScriptOutputRoot = resolve(workingDir, goscript?.outputRoot || outputRoot);
+  const goScriptOutputRoot = resolve2(workingDir, goscript?.outputRoot || outputRoot);
   const bldrDistRoot = canonicalPath(request.bldrDistRoot || sourceRoot);
   for (const configFile of [
-    join(bldrDistRoot, "dist", "deps", "package.json"),
-    join(bldrDistRoot, "dist", "deps", "bun.lock"),
-    join(bldrDistRoot, "bldr", "dist", "deps", "package.json"),
-    join(bldrDistRoot, "bldr", "dist", "deps", "bun.lock")
+    join2(bldrDistRoot, "dist", "deps", "package.json"),
+    join2(bldrDistRoot, "dist", "deps", "bun.lock"),
+    join2(bldrDistRoot, "bldr", "dist", "deps", "package.json"),
+    join2(bldrDistRoot, "bldr", "dist", "deps", "bun.lock")
   ]) {
     trackInput(configFile);
   }
   const resolveBldrSourcePath = (sourceRel) => {
-    return existingSourcePath(join(sourceRoot, "bldr", sourceRel)) ?? existingSourcePath(join(bldrDistRoot, "bldr", sourceRel)) ?? existingSourcePath(join(bldrDistRoot, sourceRel));
+    return existingSourcePath(join2(sourceRoot, "bldr", sourceRel)) ?? existingSourcePath(join2(bldrDistRoot, "bldr", sourceRel)) ?? existingSourcePath(join2(bldrDistRoot, sourceRel));
   };
   const resolveBldrAlias = (source) => {
     if (source === "@aptre/bldr-sdk")
       return resolveBldrSourcePath("sdk/plugin.ts");
     const sdkPrefix = "@aptre/bldr-sdk/";
     if (source.startsWith(sdkPrefix)) {
-      return resolveBldrSourcePath(join("sdk", source.slice(sdkPrefix.length)));
+      return resolveBldrSourcePath(join2("sdk", source.slice(sdkPrefix.length)));
     }
     if (source === "@aptre/bldr")
       return resolveBldrSourcePath("web/bldr/index.js");
@@ -212,19 +327,26 @@ async function runBuild(request, dependencyRoot) {
       return null;
     const importPath = source.slice("@go/".length);
     if (localModule && importPath.startsWith(`${localModule.name}/`)) {
-      return existingSourcePath(join(localModule.root, importPath.slice(localModule.name.length + 1)));
+      return existingSourcePath(join2(localModule.root, importPath.slice(localModule.name.length + 1)));
     }
     if (!localModule && importPath.startsWith(LOCAL_MODULE_PREFIX)) {
-      return existingSourcePath(join(sourceRoot, importPath.slice(LOCAL_MODULE_PREFIX.length)));
+      return existingSourcePath(join2(sourceRoot, importPath.slice(LOCAL_MODULE_PREFIX.length)));
     }
     for (const root of [localModule?.root, workingModule?.root, bldrDistRoot]) {
       if (!root)
         continue;
-      const resolved = existingSourcePath(join(root, "vendor", importPath));
+      const resolved = existingSourcePath(join2(root, "vendor", importPath));
       if (resolved)
         return resolved;
     }
-    return null;
+    const cached = resolveGoModuleCachePath([
+      sourceRoot,
+      workingDir,
+      bldrDistRoot,
+      localModule?.root ?? "",
+      workingModule?.root ?? ""
+    ], importPath);
+    return cached ? existingSourcePath(cached) : null;
   };
   const resolveDistSourceImport = (source) => {
     if (!source.endsWith(".js"))
@@ -232,7 +354,7 @@ async function runBuild(request, dependencyRoot) {
     if (!DIST_SOURCE_PREFIXES.some((prefix) => source.startsWith(prefix))) {
       return null;
     }
-    return existingSourcePath(join(bldrDistRoot, source));
+    return existingSourcePath(join2(bldrDistRoot, source));
   };
   const isConfiguredExternal = (source) => (request.external ?? []).some((specifier) => source === specifier || source.startsWith(`${specifier}/`));
   const configuredAliases = Object.entries(request.aliases ?? {});
@@ -246,7 +368,7 @@ async function runBuild(request, dependencyRoot) {
       if (!source.startsWith(prefix))
         continue;
       const rest = source.slice(prefix.length).replace(/^[/\\]+/, "");
-      const resolved = existingSourcePath(join(canonicalPath(aliasRoot), rest));
+      const resolved = existingSourcePath(join2(canonicalPath(aliasRoot), rest));
       if (resolved)
         return resolved;
     }
@@ -257,7 +379,7 @@ async function runBuild(request, dependencyRoot) {
     return `${prefix}${relativePath.slice(0, -3)}.mjs`;
   };
   const sharedGoScriptRel = (relativePath) => relativePath !== "" && !relativePath.startsWith("github.com/s4wave/");
-  const goScriptRoot = join(goScriptOutputRoot, "@goscript");
+  const goScriptRoot = join2(goScriptOutputRoot, "@goscript");
   const resolveSharedGoScriptImport = (source, importer) => {
     if (!goscript?.sharedExternalImports)
       return null;
@@ -270,20 +392,20 @@ async function runBuild(request, dependencyRoot) {
     if (!importer || importer.startsWith("\x00") || !source.endsWith(".js") || !source.startsWith("./") && !source.startsWith("../")) {
       return null;
     }
-    const targetPath = normalize(join(dirname(importer), source));
+    const targetPath = normalize(join2(dirname2(importer), source));
     const rel = relative(goScriptRoot, targetPath).split(sep).join("/");
-    if (rel === "" || rel.startsWith("..") || isAbsolute(rel))
+    if (rel === "" || rel.startsWith("..") || isAbsolute2(rel))
       return null;
     if (!sharedGoScriptRel(rel) || !existingTypeScriptSibling(targetPath))
       return null;
     return sharedImportURL(rel);
   };
   const resolveGoScriptOverrideSourceImport = (source, importer) => {
-    const targetPath = normalize(join(dirname(importer), source));
+    const targetPath = normalize(join2(dirname2(importer), source));
     const rel = relative(goScriptRoot, targetPath);
-    if (rel === "" || rel.startsWith("..") || isAbsolute(rel))
+    if (rel === "" || rel.startsWith("..") || isAbsolute2(rel))
       return null;
-    return existingSourcePath(join(sourceRoot, "vendor", "github.com", "s4wave", "goscript", "gs", rel));
+    return existingSourcePath(join2(sourceRoot, "vendor", "github.com", "s4wave", "goscript", "gs", rel));
   };
   const resolvedSources = [
     /^@aptre\/bldr(?:-sdk|-react)?(?:\/|$)/,
@@ -352,7 +474,7 @@ async function runBuild(request, dependencyRoot) {
         if (!importer || importer.startsWith("\x00") || !source.startsWith("../")) {
           return null;
         }
-        const sibling = existingTypeScriptSibling(join(dirname(importer), source));
+        const sibling = existingTypeScriptSibling(join2(dirname2(importer), source));
         if (sibling)
           return canonicalPath(sibling);
         return resolveGoScriptOverrideSourceImport(source, importer);
@@ -373,7 +495,7 @@ async function runBuild(request, dependencyRoot) {
         const injects = entryInjects.get(normalizedID);
         if (!injects)
           return overrideSource ?? null;
-        const original = overrideSource ?? readFileSync(normalizedID, "utf8");
+        const original = overrideSource ?? readFileSync2(normalizedID, "utf8");
         const imports = injects.map((filePath) => `import ${JSON.stringify(filePath)};`).join(`
 `);
         return `${imports}
@@ -413,7 +535,7 @@ ${original}`;
     let lineText = "";
     if (file && line > 0 && existsSync(file)) {
       try {
-        lineText = readFileSync(file, "utf8").split(/\r?\n/)[line - 1] || "";
+        lineText = readFileSync2(file, "utf8").split(/\r?\n/)[line - 1] || "";
       } catch {
         lineText = "";
       }
@@ -449,8 +571,8 @@ ${original}`;
       },
       extensionAlias: { ".js": [".ts", ".tsx", ".js"] },
       modules: [
-        join(sourceRoot, "node_modules"),
-        join(dependencyRoot, "node_modules")
+        join2(sourceRoot, "node_modules"),
+        join2(dependencyRoot, "node_modules")
       ]
     },
     transform: {
@@ -492,7 +614,7 @@ ${original}`;
   };
   try {
     await fs.mkdir(outputRoot, { recursive: true });
-    const modulePath = join(dependencyRoot, "node_modules", "rolldown", "dist", "index.mjs");
+    const modulePath = join2(dependencyRoot, "node_modules", "rolldown", "dist", "index.mjs");
     const moduleNamespace = await import(pathToFileURL(modulePath).href);
     const output = await moduleNamespace.build(options);
     await appendBothSourcemaps(outputRoot, output.output, sourcemap === "both");
@@ -543,13 +665,13 @@ function isBarePackageImport(source) {
   return source !== "" && !source.startsWith(".") && !source.startsWith("/") && !source.startsWith("\x00") && !/^[A-Za-z]:[\\/]/.test(source);
 }
 function readLocalModule(sourceRoot) {
-  let root = resolve(sourceRoot);
+  let root = resolve2(sourceRoot);
   for (;; ) {
     let contents;
     try {
-      contents = readFileSync(join(root, "go.mod"), "utf8");
+      contents = readFileSync2(join2(root, "go.mod"), "utf8");
     } catch {
-      const parent = dirname(root);
+      const parent = dirname2(root);
       if (parent === root)
         return null;
       root = parent;
@@ -558,7 +680,7 @@ function readLocalModule(sourceRoot) {
     const name = contents.match(/^\s*module\s+(\S+)/m)?.[1] || "";
     if (name)
       return { name, root };
-    const parent = dirname(root);
+    const parent = dirname2(root);
     if (parent === root)
       return null;
     root = parent;
@@ -576,11 +698,11 @@ async function appendBothSourcemaps(outputRoot, outputs, enabled) {
     if (output.type !== "chunk")
       continue;
     const mapName = output.sourcemapFileName || `${output.fileName}.map`;
-    const mapPath = join(outputRoot, mapName);
+    const mapPath = join2(outputRoot, mapName);
     if (!existsSync(mapPath))
       continue;
     const mapBytes = await fs.readFile(mapPath);
-    const outputPath = join(outputRoot, output.fileName);
+    const outputPath = join2(outputRoot, output.fileName);
     const contents = await fs.readFile(outputPath, "utf8");
     const body = contents.replace(/\s*\/\/# sourceMappingURL=.*$/s, "").replace(/\s*$/, "");
     await fs.writeFile(outputPath, `${body}
@@ -592,7 +714,7 @@ async function collectOutputs(outputRoot, outputs, entrypoints) {
   const result = [];
   for (const output of outputs) {
     const path = normalizeOutputPath(outputRoot, output.fileName);
-    const contents = await fs.readFile(join(outputRoot, path));
+    const contents = await fs.readFile(join2(outputRoot, path));
     const type = output.fileName.endsWith(".map") ? "map" : output.type === "chunk" ? "javascript" : "asset";
     const entrypointName = output.type === "chunk" && output.isEntry ? entrypointForFacade(output.facadeModuleId, entrypoints) : "";
     result.push({
@@ -606,9 +728,9 @@ async function collectOutputs(outputRoot, outputs, entrypoints) {
   return result.sort((left, right) => (left.path ?? "").localeCompare(right.path ?? ""));
 }
 function normalizeOutputPath(outputRoot, outputPath) {
-  const absolute = resolve(outputRoot, outputPath);
+  const absolute = resolve2(outputRoot, outputPath);
   const relativePath = normalize(relative(outputRoot, absolute));
-  if (relativePath === ".." || relativePath.startsWith(`..${sep}`) || isAbsolute(relativePath)) {
+  if (relativePath === ".." || relativePath.startsWith(`..${sep}`) || isAbsolute2(relativePath)) {
     throw new Error(`Rolldown emitted output outside output root: ${outputPath}`);
   }
   return relativePath.split(sep).join("/");
@@ -622,7 +744,7 @@ function entrypointForFacade(facade, entrypoints) {
 function normalizeExistingPath(filePath) {
   if (!filePath)
     return "";
-  const absolute = normalize(resolve(filePath));
+  const absolute = normalize(resolve2(filePath));
   try {
     return normalize(realpathSync.native(absolute));
   } catch {
@@ -641,7 +763,7 @@ function entrypointOutputMap(outputs) {
 async function identifyTool(dependencyRoot) {
   let rolldownVersion = "";
   try {
-    const packageJSON = JSON.parse(await fs.readFile(join(dependencyRoot, "node_modules", "rolldown", "package.json"), "utf8"));
+    const packageJSON = JSON.parse(await fs.readFile(join2(dependencyRoot, "node_modules", "rolldown", "package.json"), "utf8"));
     rolldownVersion = packageJSON.version || "";
   } catch {
     rolldownVersion = "";

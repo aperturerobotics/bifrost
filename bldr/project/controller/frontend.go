@@ -30,6 +30,7 @@ import (
 	vite_compiler "github.com/s4wave/spacewave/bldr/web/bundler/vite/compiler"
 	web_entrypoint_index "github.com/s4wave/spacewave/bldr/web/entrypoint/index"
 	web_fetch "github.com/s4wave/spacewave/bldr/web/fetch"
+	web_pkg "github.com/s4wave/spacewave/bldr/web/pkg"
 	web_pkg_external "github.com/s4wave/spacewave/bldr/web/pkg/external"
 	"github.com/sirupsen/logrus"
 )
@@ -360,7 +361,7 @@ func (f *FrontendService) ServeBootstrap(rw http.ResponseWriter, req *http.Reque
 	case "/bldr-dev/frontend-boot.mjs":
 		refresh := strconv.Quote(refreshPath)
 		entry := strconv.Quote("/" + strings.TrimPrefix(entrypoint, "/"))
-		boot := "import " + refresh + ";" + webPkgBindingScript(env.result.GetWebPkgImports()) + " window.__bldrFrontendEnabled = true;"
+		boot := "import " + refresh + ";" + webPkgBindingScript(f.webPkgImports(env.result.GetWebPkgImports())) + " window.__bldrFrontendEnabled = true;"
 		if startup != "" {
 			boot += " window.__bldrFrontendStartup = " + strconv.Quote(startup) + ";"
 		}
@@ -376,6 +377,31 @@ func (f *FrontendService) ServeBootstrap(rw http.ResponseWriter, req *http.Reque
 	default:
 		http.Error(rw, "frontend session expired", http.StatusGone)
 	}
+}
+
+// webPkgImports returns the boot import map for excluded packages.
+// The compiler map overrides the default /b/pkg route for each id, so a
+// ready graph can serve editable source while an empty result still binds
+// the packages the startup view imports.
+func (f *FrontendService) webPkgImports(compiler map[string]string) map[string]string {
+	// Read the excluded package ids from the configured graph.
+	var ids []string
+	if conf := f.run.GetState(); conf != nil {
+		ids = conf.GetWebPkgIds()
+	}
+	if len(ids) == 0 && len(compiler) == 0 {
+		return nil
+	}
+
+	// Bind each excluded package at the shared route, then overlay the compiler.
+	imports := make(map[string]string, len(ids)+len(compiler))
+	for _, id := range ids {
+		imports[web_pkg.ImportSpecifierPrefix+id+"/"] = "/b/pkg/" + id + "/"
+	}
+	for spec, url := range compiler {
+		imports[spec] = url
+	}
+	return imports
 }
 
 // webPkgBindingScript maps the shared package specifiers the development graph

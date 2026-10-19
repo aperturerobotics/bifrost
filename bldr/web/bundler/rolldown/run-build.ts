@@ -12,6 +12,7 @@ import {
   sep,
 } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { resolveGoModuleCachePath } from '../go-module-cache.js'
 import type {
   BuildOutput,
   BuildRequest,
@@ -193,6 +194,7 @@ export class BuildRequestError extends Error {
 }
 
 export function validateBuildRequest(request: BuildRequest): void {
+  // Validate the requested output format and its required options.
   const format = request.format ?? ''
   if (format && !FORMAT_VALUES.has(format)) {
     throw new BuildRequestError(`unsupported format ${JSON.stringify(format)}`)
@@ -230,11 +232,15 @@ export async function runBuild(
   request: BuildRequest,
   dependencyRoot: string,
 ): Promise<BuildResult> {
+  // Reject invalid request options before preparing the build state.
   validateBuildRequest(request)
 
+  // Resolve the source, working, and output roots for this bundle.
   const workingDir = resolve(request.workingDir || process.cwd())
   const sourceRoot = resolve(workingDir, request.sourceRoot || '.')
   const outputRoot = resolve(workingDir, request.outputRoot || 'dist')
+
+  // Normalize the output settings and entrypoint list.
   const format = (request.format || 'es') as 'es' | 'cjs' | 'iife'
   const platform = (request.platform || 'browser') as
     | 'browser'
@@ -242,6 +248,8 @@ export async function runBuild(
     | 'neutral'
   const sourcemap = request.sourcemap || 'none'
   const entrypoints = request.entrypoints ?? []
+
+  // Initialize the build results and virtual module table.
   const inputs: Set<string> = new Set()
   const diagnostics: Diagnostic[] = []
   const inputEntries: Record<string, string> = {}
@@ -256,13 +264,18 @@ export async function runBuild(
     }
   }
 
+  // Index source overrides by canonical path.
   const sourceOverrides = new Map(
     Object.entries(request.sourceOverrides ?? {}).map(([filePath, source]) => [
       canonicalPath(filePath),
       source,
     ]),
   )
+
+  // Resolve injected module paths before assigning them to entrypoints.
   const injectedPaths = (request.inject ?? []).map(canonicalPath)
+
+  // Associate each canonical entry with its ordered injected imports.
   // entryInjects maps each canonical entry path to its injected module
   // paths in request order.
   const entryInjects = new Map<string, string[]>()
@@ -289,12 +302,16 @@ export async function runBuild(
     virtualModules.set(name, source)
   }
 
+  // Exclude the compiler's locked dependencies from project input tracking.
   const dependencyModulesRoot = canonicalPath(
     join(dependencyRoot, 'node_modules'),
   )
   const trackInput = (filePath: string | undefined) => {
+    // Ignore virtual, absent, or non-absolute inputs.
     if (!filePath || filePath.startsWith('\0') || !isAbsolute(filePath)) return
     if (!existsSync(filePath)) return
+
+    // Normalize a real file path before comparing dependency ownership.
     let normalizedPath: string
     try {
       if (!statSync(filePath).isFile()) return
@@ -302,6 +319,8 @@ export async function runBuild(
     } catch {
       normalizedPath = normalize(filePath)
     }
+
+    // Keep only project inputs outside the dependency tree.
     const dependencyRelative = relative(dependencyModulesRoot, normalizedPath)
     if (
       dependencyRelative === '' ||
@@ -338,6 +357,7 @@ export async function runBuild(
     return existingFile(filePath) ? filePath : null
   }
   const localModule = readLocalModule(sourceRoot)
+
   // The module being built vendors the bindings of its whole import graph,
   // including those of a Bldr source root read from the module cache.
   const workingModule = readLocalModule(workingDir)
@@ -356,6 +376,7 @@ export async function runBuild(
     trackInput(configFile)
   }
 
+  // Find a Bldr source in the application tree or the bundled distribution.
   const resolveBldrSourcePath = (sourceRel: string): string | null => {
     return (
       existingSourcePath(join(sourceRoot, 'bldr', sourceRel)) ??
@@ -363,6 +384,8 @@ export async function runBuild(
       existingSourcePath(join(bldrDistRoot, sourceRel))
     )
   }
+
+  // Map public Bldr specifiers to their source entrypoints.
   const resolveBldrAlias = (source: string): string | null => {
     if (source === '@aptre/bldr-sdk')
       return resolveBldrSourcePath('sdk/plugin.ts')
@@ -377,6 +400,7 @@ export async function runBuild(
     }
     return null
   }
+  // Resolve @go imports from local source, vendor, or the module cache.
   const resolveGoImport = (source: string): string | null => {
     if (!source.startsWith('@go/') || !source.endsWith('.js')) return null
     const importPath = source.slice('@go/'.length)
@@ -395,7 +419,17 @@ export async function runBuild(
       const resolved = existingSourcePath(join(root, 'vendor', importPath))
       if (resolved) return resolved
     }
-    return null
+    const cached = resolveGoModuleCachePath(
+      [
+        sourceRoot,
+        workingDir,
+        bldrDistRoot,
+        localModule?.root ?? '',
+        workingModule?.root ?? '',
+      ],
+      importPath,
+    )
+    return cached ? existingSourcePath(cached) : null
   }
   const resolveDistSourceImport = (source: string): string | null => {
     if (!source.endsWith('.js')) return null
@@ -435,6 +469,7 @@ export async function runBuild(
     source: string,
     importer: string | undefined,
   ): string | null => {
+    // Ignore imports unless this build emits shared GoScript modules.
     if (!goscript?.sharedExternalImports) return null
     if (source.startsWith('@goscript/')) {
       const rel = source.slice('@goscript/'.length)
@@ -500,6 +535,7 @@ export async function runBuild(
   ]
   if (goscript) loadedIds.push(exactPattern(NODE_EVENTS_ID))
 
+  // Resolve Bldr, Go, and GoScript imports before Rolldown's native resolver.
   const internalResolver: Plugin = {
     name: 'bldr-internal-resolver',
     buildStart() {
@@ -519,6 +555,7 @@ export async function runBuild(
         },
       },
       handler(source, importer) {
+        // Return configured virtual modules before resolving package paths.
         if (virtualModules.has(source)) return `\0virtual:${source}`
         if (goscript && source === 'node:events') return NODE_EVENTS_ID
         if (isConfiguredExternal(source)) {
@@ -553,6 +590,7 @@ export async function runBuild(
     load: {
       filter: { id: { include: loadedIds } },
       handler(id) {
+        // Supply the events shim before reading virtual or overridden sources.
         if (id === NODE_EVENTS_ID) {
           return 'export function setMaxListeners() {}\n'
         }
@@ -571,6 +609,7 @@ export async function runBuild(
       },
     },
   }
+
   // Every hook call crosses from Rolldown into JavaScript, so hooks are
   // registered only when the request needs them.
   const plugins: Plugin[] = [internalResolver]
@@ -598,7 +637,9 @@ export async function runBuild(
     })
   }
 
+  // Capture Rolldown diagnostics with their source location and line text.
   const recordLog = (level: string, log: RolldownLog) => {
+    // Normalize the source location before reading its source line.
     const loc = log.loc
     const file = loc?.file || log.id || ''
     const line = loc?.line || 0
@@ -633,6 +674,7 @@ export async function runBuild(
     )
   }
 
+  // Translate the request mode into Rolldown's output option.
   const outputSourcemap: false | true | 'inline' =
     sourcemap === 'none' || sourcemap === 'both'
       ? sourcemap === 'both'
@@ -642,6 +684,7 @@ export async function runBuild(
         ? 'inline'
         : true
 
+  // Build Rolldown options from the normalized request and resolver state.
   const options: BuildOptions = {
     input: inputEntries,
     cwd: workingDir,
@@ -711,6 +754,7 @@ export async function runBuild(
     },
   }
 
+  // Create output, run Rolldown, and collect its result.
   try {
     await fs.mkdir(outputRoot, { recursive: true })
     const modulePath = join(
@@ -1093,6 +1137,7 @@ function failureResult(value: unknown): BuildResult {
 }
 
 async function main(): Promise<void> {
+  // Read the request, result, and dependency paths from the command line.
   const [, , requestPath, resultPath, dependencyRoot] = process.argv
   if (!requestPath || !resultPath || !dependencyRoot) {
     throw new BuildRequestError(

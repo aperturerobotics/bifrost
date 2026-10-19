@@ -662,6 +662,10 @@ func (c *Controller) BuildManifest(
 		}
 	}
 
+	// Keep only inputs under the source root. A dependency resolved from the
+	// module cache is immutable for its pin, so go.mod and go.sum stand in for it.
+	startupInputPaths = keepSourceInputs(builderConf.GetSourcePath(), startupInputPaths)
+
 	// Store all build inputs relative to the plugin source root.
 	if err := fsutil.ConvertPathsToRelative(builderConf.GetSourcePath(), startupInputPaths); err != nil {
 		return nil, err
@@ -742,6 +746,37 @@ func (c *Controller) BuildManifest(
 	}
 
 	return builderResult, nil
+}
+
+// keepSourceInputs returns the paths under sourcePath. A path outside that root
+// is a module-cache file, fixed by the module pin, so go.mod and go.sum replace
+// it. The input manifest stores only source-relative paths.
+func keepSourceInputs(sourcePath string, paths []string) []string {
+	// Keep each path the source root already contains.
+	kept := make([]string, 0, len(paths))
+	outside := false
+	for _, inputPath := range paths {
+		rel, err := filepath.Rel(sourcePath, inputPath)
+		if err != nil || !filepath.IsLocal(rel) {
+			outside = true
+			continue
+		}
+		kept = append(kept, inputPath)
+	}
+	if !outside {
+		return kept
+	}
+
+	// Record the module pins so a version change still invalidates the cache.
+	for _, name := range []string{"go.mod", "go.sum"} {
+		pin := filepath.Join(sourcePath, name)
+		info, err := os.Stat(pin)
+		if err != nil || info.IsDir() {
+			continue
+		}
+		kept = append(kept, pin)
+	}
+	return kept
 }
 
 // CreateEntrypointsFromViteOutputs builds backend and frontend entrypoints from

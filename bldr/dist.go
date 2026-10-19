@@ -150,6 +150,7 @@ import (
 //go:embed web/bundler/vite/development-client.ts
 //go:embed frontend/*.ts
 //go:embed web/bundler/vite/vite-base.config.ts
+//go:embed web/bundler/go-module-cache.ts
 //go:embed web/bundler/vite/go-ts-resolver.ts
 //go:embed plugin/compiler/js/compiler.pb.ts plugin/compiler/js/entrypoint.ts
 //go:embed project/validate/validate.pb.ts
