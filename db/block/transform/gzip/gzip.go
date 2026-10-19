@@ -7,6 +7,7 @@ import (
 	"io"
 	"sync"
 
+	kgzip "github.com/klauspost/compress/gzip"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
@@ -26,7 +27,7 @@ type gzipReader struct {
 	// input releases the completed block when returned to the pool.
 	input bytes.Reader
 	// reader retains the decoder's reusable buffers.
-	reader *gzip.Reader
+	reader *kgzip.Reader
 }
 
 var (
@@ -35,6 +36,9 @@ var (
 	gzipWriters [gzip.BestCompression - gzip.HuffmanOnly + 1]sync.Pool
 	// gzipReaders decodes independently of the encoder's compression level.
 	gzipReaders = sync.Pool{New: func() any { return &gzipReader{} }}
+	// decodeNative decodes a whole block in one call when a native decoder is
+	// built in, and reports false to leave the block to the Go decoder.
+	decodeNative func(data []byte) ([]byte, bool)
 )
 
 // NewGzip constructs the gzip compression step.
@@ -79,6 +83,14 @@ func (g *Gzip) EncodeBlock(data []byte) ([]byte, error) {
 // DecodeBlock decodes the block according to the config.
 // May reuse the same byte slice if possible.
 func (g *Gzip) DecodeBlock(data []byte) ([]byte, error) {
+	// Decode through the native decoder when one is built in. The Go decoder
+	// handles whatever it declines and reports the error for invalid input.
+	if decodeNative != nil {
+		if out, ok := decodeNative(data); ok {
+			return out, nil
+		}
+	}
+
 	// Acquire a pooled gzip reader and release block input after decoding.
 	rd := gzipReaders.Get().(*gzipReader)
 	rd.input.Reset(data)
@@ -93,7 +105,7 @@ func (g *Gzip) DecodeBlock(data []byte) ([]byte, error) {
 	// Initialize or reset the gzip decoder for the current block.
 	var err error
 	if rd.reader == nil {
-		rd.reader, err = gzip.NewReader(&rd.input)
+		rd.reader, err = kgzip.NewReader(&rd.input)
 	} else {
 		err = rd.reader.Reset(&rd.input)
 	}
