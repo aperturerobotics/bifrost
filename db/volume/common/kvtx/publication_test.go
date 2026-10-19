@@ -33,10 +33,19 @@ type publicationTestStore struct {
 	gate                 *publicationGate
 	failSet, errorCommit error
 	afterCommit          bool
+	writersWaiting       bool
 	commits              int
 }
 
 func (s *publicationTestStore) SupportsAtomicCommit() bool { return true }
+
+// WritersWaiting reports the injected writer queue, so a sweep transaction
+// yields after one chunk.
+func (s *publicationTestStore) WritersWaiting() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.writersWaiting
+}
 func (s *publicationTestStore) arm(t *testing.T) *publicationGate {
 	// Arm the publication store gate and register its release.
 	g := &publicationGate{started: make(chan struct{}), release: make(chan struct{})}
@@ -642,13 +651,15 @@ func TestPublicationReadScopeKeepsAdmittedBlocksUntilItsGroupFails(t *testing.T)
 		{name: "failed", failure: errors.New("injected commit failure")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// Admit a gated publication and open a read scope over an empty snapshot.
+			// Gate the next commit and inject the case's commit result.
 			v, s := newPublicationTestVolume(t)
 			v.Store = publicationSnapshotStore{Store: v.Store}
 			g := s.arm(t)
 			s.mu.Lock()
 			s.errorCommit = tc.failure
 			s.mu.Unlock()
+
+			// Admit a gated publication and open a read scope over an empty snapshot.
 			first := publicationFor(t, "world", "", "1")
 			r1 := submitPublication(t, v, first)
 			<-g.started
@@ -684,6 +695,8 @@ func TestPublicationRejectedRequestsLeaveReadsBeforeTheirGroupResolves(t *testin
 	dependent := publicationFor(t, "other", "", "2")
 	dependent.After = r1
 	r2 := submitPublication(t, v, dependent)
+
+	// Hold the validating request until the test releases it.
 	validating, releaseValidate := make(chan struct{}), make(chan struct{})
 	t.Cleanup(func() {
 		select {
@@ -698,6 +711,8 @@ func TestPublicationRejectedRequestsLeaveReadsBeforeTheirGroupResolves(t *testin
 		<-releaseValidate
 		return nil
 	}
+
+	// Submit it, and check that all three read before the group resolves.
 	r3 := submitPublication(t, v, slow)
 	for _, p := range []*block.AtomicPublication{rejected, dependent, slow} {
 		assertReadable(t, v, p, true)

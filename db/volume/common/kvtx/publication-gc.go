@@ -222,7 +222,7 @@ func (v *Volume) SweepUnreferenced(ctx context.Context, graph block_gc.RefGraphO
 // and budgeted as SweepUnreferenced's are. A block a write adopts after the
 // mark is therefore never removed: the write either committed before the
 // transaction, which then rescues it, or waits behind it.
-func (v *Volume) SweepUnreachedBlocks(ctx context.Context, graph block_gc.RefGraphOps, spent func() bool, stats *block_gc.Stats) error {
+func (v *Volume) SweepUnreachedBlocks(ctx context.Context, graph block_gc.RefGraphOps, stats *block_gc.Stats) error {
 	// Require the Volume transaction domain and run one pass at a time.
 	actual, ok := v.refGraph.(*transactionRefGraph)
 	given, sameType := graph.(*transactionRefGraph)
@@ -239,14 +239,14 @@ func (v *Volume) SweepUnreachedBlocks(ctx context.Context, graph block_gc.RefGra
 	if err := actual.write(ctx, func(rg *block_gc.RefGraph) error { return rg.BeginBlockPass(ctx) }); err != nil {
 		return err
 	}
-	err = v.sweepBlockPass(ctx, actual, spent, stats)
+	err = v.sweepBlockPass(ctx, actual, stats)
 	endCtx := context.WithoutCancel(ctx)
 	endErr := actual.write(endCtx, func(rg *block_gc.RefGraph) error { return rg.EndBlockPass(endCtx) })
 	return errors.Join(err, endErr)
 }
 
 // sweepBlockPass marks the blocks of an open pass and sweeps the unreached.
-func (v *Volume) sweepBlockPass(ctx context.Context, actual *transactionRefGraph, spent func() bool, stats *block_gc.Stats) error {
+func (v *Volume) sweepBlockPass(ctx context.Context, actual *transactionRefGraph, stats *block_gc.Stats) error {
 	// Mark the blocks. A block of unknown references may name any
 	// unreached block, so the pass then sweeps nothing.
 	start := time.Now()
@@ -259,12 +259,14 @@ func (v *Volume) sweepBlockPass(ctx context.Context, actual *transactionRefGraph
 	if mark.Unknown != 0 {
 		return nil
 	}
-	return v.sweepUnreached(ctx, mark, spent, stats)
+	return v.sweepUnreached(ctx, mark, stats)
 }
 
-// sweepUnreached removes the blocks mark did not reach in budgeted
+// sweepUnreached removes all the blocks mark did not reach in budgeted
 // transactions, each first rescuing the blocks writes adopted since the last.
-func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, spent func() bool, stats *block_gc.Stats) error {
+// Each transaction yields the writer after its budget or to a waiting writer,
+// and the next continues the same list.
+func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, stats *block_gc.Stats) error {
 	// Time the sweep, starting from the default chunk size.
 	nodes := mark.Unreached
 	size := sweepChunkSize
@@ -310,10 +312,6 @@ func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, s
 		stats.BlocksSwept += len(batch)
 		stats.RemoveNodeRefsCount += len(batch)
 		stats.RemoveBlockCount += len(batch)
-		if len(nodes) != 0 && spent() {
-			stats.More = true
-			return nil
-		}
 	}
 	return nil
 }

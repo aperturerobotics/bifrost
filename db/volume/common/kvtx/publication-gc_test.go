@@ -68,7 +68,7 @@ func TestPublicationSweepRescuesAdoptedBlock(t *testing.T) {
 
 	// The sweep rescues the block and keeps it and its new head.
 	var stats block_gc.Stats
-	if err := v.sweepUnreached(ctx, mark, func() bool { return false }, &stats); err != nil {
+	if err := v.sweepUnreached(ctx, mark, &stats); err != nil {
 		t.Fatal(err)
 	}
 	if stats.RescuedNodes == 0 || stats.BlocksSwept != 0 {
@@ -198,6 +198,40 @@ func TestPublicationCollectorUsesAtomicSweep(t *testing.T) {
 	}
 }
 
+// TestPublicationBlockPassSweepsPastBudget checks that a block pass sweeps
+// every block its mark left unreached, in transactions that yield to waiting
+// writers, after the collection's budget is spent.
+func TestPublicationBlockPassSweepsPastBudget(t *testing.T) {
+	// Orphan more blocks than one sweep chunk holds.
+	v, raw := newPublicationTestVolume(t)
+	var published []*block.AtomicPublication
+	for i := range sweepChunkSize + 1 {
+		p := publicationFor(t, fmt.Sprintf("budget-%d", i), "", "one")
+		if err := v.PublishAtomic(t.Context(), p); err != nil {
+			t.Fatal(err)
+		}
+		node := block_gc.BlockIRI(p.Entries[0].Ref)
+		if err := v.GetRefGraph().ApplyRefBatch(t.Context(), nil, []block_gc.RefEdge{{Subject: block_gc.BucketIRI(p.BucketID), Object: node}}); err != nil {
+			t.Fatal(err)
+		}
+		published = append(published, p)
+	}
+
+	// A writer always waits, so each sweep transaction takes one chunk.
+	raw.mu.Lock()
+	raw.writersWaiting = true
+	raw.mu.Unlock()
+
+	// A spent budget still sweeps the whole pass.
+	stats, err := block_gc.NewCollector(v.GetRefGraph(), v, nil).CollectFor(t.Context(), time.Nanosecond)
+	if err != nil || stats.BlockPasses != 1 || stats.BlocksSwept != len(published) || stats.More {
+		t.Fatalf("collection stats=%+v err=%v", stats, err)
+	}
+	for _, p := range published {
+		assertPublishedBlock(t, v, p, false)
+	}
+}
+
 func TestPublicationCollectorSweepsCandidatesInOneCommit(t *testing.T) {
 	// Publish and orphan a batch of collector candidates.
 	v, raw := newPublicationTestVolume(t)
@@ -253,7 +287,7 @@ func TestPublicationSweepFailureRollsBackGraphAndBlock(t *testing.T) {
 
 	// Verify the failed sweep reports no deleted blocks.
 	var stats block_gc.Stats
-	err := v.sweepUnreached(t.Context(), mark, func() bool { return false }, &stats)
+	err := v.sweepUnreached(t.Context(), mark, &stats)
 	if stats.BlocksSwept != 0 || !errors.Is(err, failure) {
 		t.Fatalf("failed sweep: stats=%+v err=%v", stats, err)
 	}

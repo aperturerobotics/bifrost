@@ -66,7 +66,8 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 	c.le.WithField("interval", interval.String()).Debug("gc sweep routine started")
 
 	// Collect unreferenced volume nodes on each maintenance deadline, for at
-	// most one interval at a time. A collection that stops with candidates
+	// most one interval at a time, then a due block pass, which sweeps all it
+	// marked however long that takes. A collection that stops with candidates
 	// left continues at once.
 	timer := time.NewTimer(interval)
 	defer timer.Stop()

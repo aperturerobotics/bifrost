@@ -196,7 +196,7 @@ func (rejectingSweepStore) SweepUnreferenced(context.Context, RefGraphOps, []str
 	return nil, ErrAtomicSweepUnsupported
 }
 
-func (rejectingSweepStore) SweepUnreachedBlocks(context.Context, RefGraphOps, func() bool, *Stats) error {
+func (rejectingSweepStore) SweepUnreachedBlocks(context.Context, RefGraphOps, *Stats) error {
 	return ErrAtomicSweepUnsupported
 }
 

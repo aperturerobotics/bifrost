@@ -38,9 +38,10 @@ type AtomicSweepStore interface {
 	// graph's blocks, and removes the tracked blocks the mark did not reach
 	// in transactions that each first rescue the blocks writes adopted since
 	// the pass opened. It sweeps nothing when the mark reached a block of
-	// unknown references. It stops between transactions once spent reports
-	// true, setting stats.More, and records the pass in stats.
-	SweepUnreachedBlocks(ctx context.Context, graph RefGraphOps, spent func() bool, stats *Stats) error
+	// unknown references. It removes every unreached block before it
+	// returns, because the mark walks the whole graph and a later pass would
+	// pay for that walk again, and records the pass in stats.
+	SweepUnreachedBlocks(ctx context.Context, graph RefGraphOps, stats *Stats) error
 }
 
 // BlockMarker marks the blocks of a reference graph in one snapshot, as
@@ -104,11 +105,12 @@ func (c *Collector) Collect(ctx context.Context) (*Stats, error) {
 	return c.collect(ctx, true, 0)
 }
 
-// CollectFor sweeps unreferenced nodes, then runs a block pass when the mark
-// interval has passed, until none remain or budget has elapsed, and sets
-// Stats.More when it stopped for the budget. It sweeps at least one chunk of
-// candidates, so repeated calls progress however long listing the candidates
-// takes.
+// CollectFor sweeps unreferenced nodes until none remain or budget has
+// elapsed, and sets Stats.More when it stopped for the budget. It sweeps at
+// least one chunk of candidates, so repeated calls progress however long
+// listing the candidates takes. When the queue is empty and the mark interval
+// has passed, it then runs a block pass, which the budget does not stop: the
+// pass sweeps every block its mark found unreached.
 func (c *Collector) CollectFor(ctx context.Context, budget time.Duration) (*Stats, error) {
 	return c.collect(ctx, true, budget)
 }
@@ -136,7 +138,7 @@ func (c *Collector) collect(ctx context.Context, removeBlocks bool, budget time.
 		return stats, nil
 	}
 	c.lastMark = time.Now()
-	return stats, c.collectBlocks(ctx, removeBlocks, spent, stats)
+	return stats, c.collectBlocks(ctx, removeBlocks, stats)
 }
 
 // collectQueue loops until no unreferenced nodes remain, since removing a node
@@ -296,11 +298,12 @@ func (c *Collector) collectQueue(ctx context.Context, removeBlocks bool, spent f
 // collectBlocks runs a block pass over a graph that supports one: through the
 // store's atomic sweep where available, or else by marking the graph and
 // sweeping the tracked blocks the mark did not reach, which requires the
-// caller to serialize collection with reference publication.
-func (c *Collector) collectBlocks(ctx context.Context, removeBlocks bool, spent func() bool, stats *Stats) error {
+// caller to serialize collection with reference publication. It sweeps every
+// block the mark did not reach.
+func (c *Collector) collectBlocks(ctx context.Context, removeBlocks bool, stats *Stats) error {
 	// Sweep atomically where the store supports it.
 	if atomic, ok := c.store.(AtomicSweepStore); ok && removeBlocks && c.onSwept == nil {
-		err := atomic.SweepUnreachedBlocks(ctx, c.refGraph, spent, stats)
+		err := atomic.SweepUnreachedBlocks(ctx, c.refGraph, stats)
 		if err != nil && ctx.Err() == nil {
 			err = errors.Wrap(err, "sweep unreached blocks")
 		}
@@ -351,10 +354,6 @@ func (c *Collector) collectBlocks(ctx context.Context, removeBlocks bool, spent 
 		stats.RemoveNodeRefsCount++
 		stats.NodesSwept++
 		stats.BlocksSwept++
-		if spent() {
-			stats.More = true
-			return nil
-		}
 	}
 	return nil
 }
