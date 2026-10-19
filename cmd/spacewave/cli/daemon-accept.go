@@ -5,6 +5,8 @@ package spacewave_cli
 import (
 	"context"
 	"net"
+	"runtime/pprof"
+	"strconv"
 	"sync"
 
 	"github.com/aperturerobotics/starpc/srpc"
@@ -22,6 +24,8 @@ type trackedConn struct {
 	net.Conn
 	// peer is the executable name of the connecting process, if known.
 	peer string
+	// pid is the process ID of the connecting process, or zero if unknown.
+	pid int
 	// done closes when the serving goroutine exits.
 	done chan struct{}
 	// closeOnce ensures the idle hold is released once.
@@ -36,6 +40,12 @@ func (c *trackedConn) describe() string {
 		return unnamedClient
 	}
 	return c.peer
+}
+
+// profileLabel names the connection in CPU profiles as "name:pid", so a profile
+// can tell apart several processes running the same executable.
+func (c *trackedConn) profileLabel() string {
+	return c.describe() + ":" + strconv.Itoa(c.pid)
 }
 
 // Close closes the connection and runs the close callback once.
@@ -148,9 +158,11 @@ func acceptDaemonListener(
 
 		// Admit the client under its peer process name, or reject it once
 		// shutdown is claimed.
+		pid, peer := peerProcess(nc)
 		tc := &trackedConn{
 			Conn: nc,
-			peer: peerProcessName(nc),
+			peer: peer,
+			pid:  pid,
 			done: make(chan struct{}),
 		}
 		if idleTracker != nil {
@@ -180,7 +192,11 @@ func acceptDaemonListener(
 				connsMtx.Unlock()
 			}()
 			defer tc.Close()
-			_ = srv.AcceptMuxedConn(connCtx, mc)
+			// Goroutines serving this client inherit the peer label, so a CPU
+			// profile attributes their work with -tagfocus=peer=name:pid.
+			pprof.Do(connCtx, pprof.Labels("peer", tc.profileLabel()), func(ctx context.Context) {
+				_ = srv.AcceptMuxedConn(ctx, mc)
+			})
 		})
 	}
 }

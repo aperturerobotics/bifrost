@@ -4,8 +4,8 @@ package spacewave_cli
 
 import "net"
 
-// peerProcessName returns an empty string: this platform does not report the
+// peerProcess returns zero and an empty name: this platform does not report the
 // process on the other end of a Unix socket.
-func peerProcessName(net.Conn) string {
-	return ""
+func peerProcess(net.Conn) (int, string) {
+	return 0, ""
 }

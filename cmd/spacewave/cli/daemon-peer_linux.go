@@ -12,9 +12,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// peerProcessName returns the executable name of the process on the other end
-// of a Unix socket, or an empty string when the peer cannot be identified.
-func peerProcessName(conn net.Conn) string {
+// peerProcess returns the process ID and executable name of the process on the
+// other end of a Unix socket, or zero and an empty name when the peer cannot be
+// identified.
+func peerProcess(conn net.Conn) (int, string) {
 	// Read the peer process ID from the socket credentials.
 	pid, ok := unixPeerPID(conn, func(fd int) (int, error) {
 		cred, err := unix.GetsockoptUcred(fd, unix.SOL_SOCKET, unix.SO_PEERCRED)
@@ -24,17 +25,17 @@ func peerProcessName(conn net.Conn) string {
 		return int(cred.Pid), nil
 	})
 	if !ok {
-		return ""
+		return 0, ""
 	}
 
 	// Prefer the full executable name over the truncated command name.
 	proc := filepath.Join("/proc", strconv.Itoa(pid))
 	if exe, err := os.Readlink(filepath.Join(proc, "exe")); err == nil {
-		return filepath.Base(exe)
+		return pid, filepath.Base(exe)
 	}
 	comm, err := os.ReadFile(filepath.Join(proc, "comm"))
 	if err != nil {
-		return ""
+		return pid, ""
 	}
-	return strings.TrimSpace(string(comm))
+	return pid, strings.TrimSpace(string(comm))
 }
