@@ -225,21 +225,34 @@ func flowgraphTargetValues(target *forge_target.Target) []*forge_value.Value {
 }
 
 // flowgraphRunKeyFields returns the object keys a run holds: its Flowgraph, its
-// Job, and the Task of each activation, activation input, and arrival. The
-// pinned graph is a child block of the run and moves with the block migration,
+// Job, the Task of each activation and each Task-output arrival, and the World
+// object of each event arrival. The pinned graph is a child block of the run and moves with the block migration,
 // not with the run payload.
 func flowgraphRunKeyFields(run *s4wave_flowgraph.FlowgraphRun) []*string {
 	fields := []*string{&run.FlowgraphKey, &run.JobKey}
 	for _, activation := range run.GetActivations() {
 		fields = append(fields, &activation.TaskKey)
 		for _, input := range activation.GetInputs() {
-			fields = append(fields, &input.TaskKey)
+			fields = append(fields, flowgraphArrivalKeyFields(input)...)
 		}
 	}
 	for _, arrival := range run.GetArrivals() {
-		fields = append(fields, &arrival.TaskKey)
+		fields = append(fields, flowgraphArrivalKeyFields(arrival)...)
 	}
 	return fields
+}
+
+// flowgraphArrivalKeyFields returns the object key an arrival's source names:
+// a Task key for a Task output and a World object key for an event. A start
+// arrival names none.
+func flowgraphArrivalKeyFields(arrival *s4wave_flowgraph.FlowgraphArrival) []*string {
+	if output := arrival.GetTaskOutput(); output != nil {
+		return []*string{&output.TaskKey}
+	}
+	if event := arrival.GetEvent(); event != nil {
+		return []*string{&event.ObjectKey}
+	}
+	return nil
 }
 
 // inspectFlowgraphRunFields collects each distinct object key of a run.

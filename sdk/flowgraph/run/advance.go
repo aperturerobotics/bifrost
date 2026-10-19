@@ -205,22 +205,32 @@ func (r *runner) readSpend(ctx context.Context, output *forge_value.Value) (uint
 // deliver queues an output for each Step input connected to a node's port, in
 // connection ID order, so a port with several connections forks the run.
 func (r *runner) deliver(nodeID, port, taskKey string) {
-	connections := r.graph.GetConnections()
-	for _, id := range slices.Sorted(maps.Keys(connections)) {
-		connection := connections[id]
-		if connection.GetOutputNode() != nodeID || connection.GetOutputPort() != port {
-			continue
-		}
-		if r.graph.GetNodes()[connection.GetInputNode()].GetStep() == nil {
+	for _, connection := range outgoing(r.graph, nodeID) {
+		if connection.GetOutputPort() != port {
 			continue
 		}
 		r.run.Arrivals = append(r.run.Arrivals, &s4wave_flowgraph.FlowgraphArrival{
-			NodeId:     connection.GetInputNode(),
-			Port:       connection.GetInputPort(),
-			TaskKey:    taskKey,
-			OutputName: port,
+			NodeId: connection.GetInputNode(),
+			Port:   connection.GetInputPort(),
+			Source: &s4wave_flowgraph.FlowgraphArrival_TaskOutput{
+				TaskOutput: &s4wave_flowgraph.FlowgraphTaskOutput{TaskKey: taskKey, OutputName: port},
+			},
 		})
 	}
+}
+
+// outgoing returns the connections from a node into Step inputs, in
+// connection ID order.
+func outgoing(graph *s4wave_flowgraph.Flowgraph, nodeID string) []*s4wave_flowgraph.FlowgraphConnection {
+	var out []*s4wave_flowgraph.FlowgraphConnection
+	connections := graph.GetConnections()
+	for _, id := range slices.Sorted(maps.Keys(connections)) {
+		connection := connections[id]
+		if connection.GetOutputNode() == nodeID && graph.GetNodes()[connection.GetInputNode()].GetStep() != nil {
+			out = append(out, connection)
+		}
+	}
+	return out
 }
 
 // start activates each ready Step while the run is running. A Step is ready
@@ -310,30 +320,24 @@ func (r *runner) blocked(nodeID string, step *s4wave_flowgraph.FlowgraphStep) st
 }
 
 // activate adds a Task running the Step to the run's Job, with each input
-// port wired to the output that arrived there.
+// port wired to the output or event object that arrived there.
 func (r *runner) activate(
 	ctx context.Context,
 	nodeID string,
 	step *s4wave_flowgraph.FlowgraphStep,
 	inputs []*s4wave_flowgraph.FlowgraphArrival,
 ) error {
-	// Wire each arrived output as a Task output input named after its port.
+	// Wire each arrival as a Forge input named after its port.
 	target := step.GetTarget().CloneVT()
 	for _, arrival := range inputs {
-		if arrival.GetPort() == "" {
+		input := arrivalInput(arrival)
+		if input == nil {
 			continue
 		}
-		target.Inputs = slices.DeleteFunc(target.Inputs, func(input *forge_target.Input) bool {
-			return input.GetName() == arrival.GetPort()
+		target.Inputs = slices.DeleteFunc(target.Inputs, func(existing *forge_target.Input) bool {
+			return existing.GetName() == input.GetName()
 		})
-		target.Inputs = append(target.Inputs, &forge_target.Input{
-			Name:      arrival.GetPort(),
-			InputType: forge_target.InputType_InputType_TASK_OUTPUT,
-			TaskOutput: &forge_target.InputTaskOutput{
-				TaskKey:    arrival.GetTaskKey(),
-				OutputName: arrival.GetOutputName(),
-			},
-		})
+		target.Inputs = append(target.Inputs, input)
 	}
 
 	// Create the Task with the Job's placement.
@@ -366,6 +370,35 @@ func (r *runner) activate(
 	})
 	r.visits(nodeID).Count++
 	return nil
+}
+
+// arrivalInput returns the Forge input that reads an arrival at its port: the
+// Task output for a Task-output arrival, and the World object for an event
+// arrival, which the Task reads as it reads any WORLD_OBJECT input. The event
+// ID stays in the run's record of the activation's inputs. A start arrival has
+// no port and no input, so it returns nil.
+func arrivalInput(arrival *s4wave_flowgraph.FlowgraphArrival) *forge_target.Input {
+	port := arrival.GetPort()
+	if port == "" {
+		return nil
+	}
+	if event := arrival.GetEvent(); event != nil {
+		return &forge_target.Input{
+			Name:      port,
+			InputType: forge_target.InputType_InputType_WORLD_OBJECT,
+			WorldObject: &forge_target.InputWorldObject{
+				ObjectKey: event.GetObjectKey(),
+			},
+		}
+	}
+	return &forge_target.Input{
+		Name:      port,
+		InputType: forge_target.InputType_InputType_TASK_OUTPUT,
+		TaskOutput: &forge_target.InputTaskOutput{
+			TaskKey:    arrival.GetTaskOutput().GetTaskKey(),
+			OutputName: arrival.GetTaskOutput().GetOutputName(),
+		},
+	}
 }
 
 // settle completes a running run with nothing running or waiting, and pauses

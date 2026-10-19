@@ -381,6 +381,28 @@ func TestFlowgraphHandlerRewritesTargetAndPlacementIdentities(t *testing.T) {
 	}
 }
 
+// taskArrival builds an arrival of a Task output.
+func taskArrival(nodeID, port, taskKey, outputName string) *s4wave_flowgraph.FlowgraphArrival {
+	return &s4wave_flowgraph.FlowgraphArrival{
+		NodeId: nodeID,
+		Port:   port,
+		Source: &s4wave_flowgraph.FlowgraphArrival_TaskOutput{
+			TaskOutput: &s4wave_flowgraph.FlowgraphTaskOutput{TaskKey: taskKey, OutputName: outputName},
+		},
+	}
+}
+
+// eventArrival builds an arrival of an event on a World object.
+func eventArrival(nodeID, port, objectKey, eventID string) *s4wave_flowgraph.FlowgraphArrival {
+	return &s4wave_flowgraph.FlowgraphArrival{
+		NodeId: nodeID,
+		Port:   port,
+		Source: &s4wave_flowgraph.FlowgraphArrival_Event{
+			Event: &s4wave_flowgraph.FlowgraphEvent{ObjectKey: objectKey, EventId: eventID},
+		},
+	}
+}
+
 func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 	// Start the World testbed.
 	ctx := context.Background()
@@ -401,10 +423,11 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 		Activations: []*s4wave_flowgraph.FlowgraphActivation{{
 			NodeId:  "step",
 			TaskKey: "run/job/task-1",
-			Inputs:  []*s4wave_flowgraph.FlowgraphArrival{{NodeId: "step", Port: "in", TaskKey: "run/job/task-0", OutputName: "out"}},
+			Inputs:  []*s4wave_flowgraph.FlowgraphArrival{taskArrival("step", "in", "run/job/task-0", "out")},
 		}},
 		Arrivals: []*s4wave_flowgraph.FlowgraphArrival{
-			{NodeId: "next", Port: "in", TaskKey: "run/job/task-1", OutputName: "out"},
+			taskArrival("next", "in", "run/job/task-1", "out"),
+			eventArrival("next", "events", "events/room", "event-1"),
 			{NodeId: "step"},
 		},
 		Visits: map[string]*s4wave_flowgraph.FlowgraphVisits{"step": {Count: 1, Spend: 3}},
@@ -429,11 +452,12 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job/task-1"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job/task-0"},
+		{Kind: space_migration.ReferenceObjectKey, Value: "events/room"},
 	})
 
 	// Rewrite the run with destination keys.
 	mapping := space_migration.NewIdentityMap()
-	for _, key := range []string{"graph", "run/job", "run/job/task-0", "run/job/task-1"} {
+	for _, key := range []string{"graph", "run/job", "run/job/task-0", "run/job/task-1", "events/room"} {
 		mapping.ObjectKeys[key] = key + "-destination"
 	}
 	result, err := handler.Rewrite(ctx, object, mapping)
@@ -445,6 +469,7 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job-destination"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job/task-1-destination"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job/task-0-destination"},
+		{Kind: space_migration.ReferenceObjectKey, Value: "events/room-destination"},
 	})
 
 	// Decode the rewritten payload.
@@ -458,8 +483,9 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 	want.FlowgraphKey = "graph-destination"
 	want.JobKey = "run/job-destination"
 	want.Activations[0].TaskKey = "run/job/task-1-destination"
-	want.Activations[0].Inputs[0].TaskKey = "run/job/task-0-destination"
-	want.Arrivals[0].TaskKey = "run/job/task-1-destination"
+	want.Activations[0].Inputs[0].GetTaskOutput().TaskKey = "run/job/task-0-destination"
+	want.Arrivals[0].GetTaskOutput().TaskKey = "run/job/task-1-destination"
+	want.Arrivals[1].GetEvent().ObjectKey = "events/room-destination"
 	if !rewritten.EqualVT(want) {
 		t.Fatalf("rewritten run = %v, want %v", &rewritten, want)
 	}
