@@ -99,8 +99,8 @@ func (e *ReadTrackingEngine) WaitObjectRev(ctx context.Context, key string, rev 
 }
 
 // WatchChanges forwards the underlying change feed without replacing it.
-func (e *ReadTrackingEngine) WatchChanges(ctx context.Context, afterSeqno uint64, cb func(uint64, *ChangeSet) error) error {
-	return WatchChanges(ctx, e.inner, afterSeqno, cb)
+func (e *ReadTrackingEngine) WatchChanges(ctx context.Context, afterSeqno uint64, touches ChangeFilter, cb func(uint64, *ChangeSet) error) error {
+	return WatchTouchingChanges(ctx, e.inner, afterSeqno, touches, cb)
 }
 
 // _ checks the tracking engine's public contracts.

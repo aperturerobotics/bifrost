@@ -2,15 +2,16 @@ package world
 
 import (
 	"context"
+	"errors"
 	"maps"
 	"slices"
 	"strings"
 	"sync"
 )
 
-// readSetChangeLimit bounds the keys and quads WaitChange keeps to check again
-// after a new read. Past it, a new read counts as touched.
-const readSetChangeLimit = 4096
+// errReadsTouched ends a wait's change subscription at the first change that
+// touches its reads.
+var errReadsTouched = errors.New("reads touched")
 
 // ReadSet records what a view read from the World, so a ChangeSet can be
 // checked against it. Reads it cannot describe precisely mark it conservative,
@@ -104,123 +105,56 @@ func (r *ReadSet) touchedLocked(changes *ChangeSet) bool {
 
 // WaitChange waits for the first change of w after afterSeqno that touches the
 // reads, and returns its seqno. Record afterSeqno before the reads. Reads may
-// continue while WaitChange runs: it merges the changes since afterSeqno and
-// checks them again whenever a read is recorded, so a change that lands before
-// the read of what it changed still ends the wait.
+// continue while WaitChange runs: each one restarts the wait from afterSeqno,
+// so a change that lands before the read of what it changed still ends it.
 func (r *ReadSet) WaitChange(ctx context.Context, w WorldWaitSeqno, afterSeqno uint64) (uint64, error) {
-	return r.waitChange(ctx, w, afterSeqno, nil, nil)
+	return r.waitChange(ctx, w, afterSeqno, nil)
 }
 
 // waitChange is WaitChange that also ends when a change touches any of the
-// shared finished sets, and calls untouched, if set, with each seqno whose
-// merged changes since afterSeqno touch neither the reads nor a shared set.
-// An untouched error ends the wait.
-func (r *ReadSet) waitChange(
-	ctx context.Context,
-	w WorldWaitSeqno,
-	afterSeqno uint64,
-	shared []*ReadSet,
-	untouched func(uint64) error,
-) (uint64, error) {
-	// Stop and join this wait's subscription before another evaluation starts.
-	done := make(chan struct{})
-	ctx, cancel := context.WithCancel(ctx)
-	defer func() {
-		cancel()
-		<-done
-	}()
-
-	// Queue each ChangeSet since afterSeqno in the background. The feed shares
-	// one ChangeSet between its subscribers, so checking each one as delivered
-	// lets a shared set answer every view waiting on it from its memo.
-	var (
-		mtx     sync.Mutex
-		pending []*ChangeSet
-		seqno   uint64
-	)
-	changed := make(chan struct{}, 1)
-	watchErr := make(chan error, 1)
-	go func() {
-		defer close(done)
-		watchErr <- WatchChanges(ctx, w, afterSeqno, func(s uint64, cs *ChangeSet) error {
-			// Queue the change and wake the check without blocking.
-			mtx.Lock()
-			pending, seqno = append(pending, cs), s
-			mtx.Unlock()
-			select {
-			case changed <- struct{}{}:
-			default:
-			}
-			return nil
-		})
-	}()
-
+// shared finished sets. The change feed tests each change against the sets,
+// so a change that touches none of them never wakes the wait, and a shared
+// set answers every view waiting on it from its memo.
+func (r *ReadSet) waitChange(ctx context.Context, w WorldWaitSeqno, afterSeqno uint64, shared []*ReadSet) (uint64, error) {
 	// touches checks one ChangeSet against the reads and the shared sets.
 	touches := func(cs *ChangeSet) bool {
 		return r.Touched(cs) || slices.ContainsFunc(shared, func(set *ReadSet) bool { return set.Touched(cs) })
 	}
-
-	// Check each new change once. A read recorded since the last check can
-	// match an earlier change, so then check the earlier ones again too. Past
-	// readSetChangeLimit entries they are no longer kept, and a later read
-	// counts as touched.
-	var (
-		checked   []*ChangeSet
-		entries   int
-		overflow  bool
-		lastAdded chan struct{}
-	)
-	reported := afterSeqno
 	for {
-		// Capture the read signal before checking, so a read recorded after
-		// the check wakes the loop.
+		// Capture the read signal before subscribing, so a read recorded
+		// after the subscription starts restarts it.
 		r.mtx.Lock()
 		added := r.added
 		r.mtx.Unlock()
-		mtx.Lock()
-		next, s := pending, seqno
-		pending = nil
-		mtx.Unlock()
 
-		// Check the earlier changes again after a new read.
-		if added != lastAdded {
-			lastAdded = added
-			if overflow || slices.ContainsFunc(checked, touches) {
-				return s, nil
-			}
-		}
+		// Wait in the change feed for the first touching change since
+		// afterSeqno.
+		watchCtx, cancel := context.WithCancel(ctx)
+		done := make(chan error, 1)
+		var seqno uint64
+		go func() {
+			done <- WatchTouchingChanges(watchCtx, w, afterSeqno, touches, func(s uint64, _ *ChangeSet) error {
+				seqno = s
+				return errReadsTouched
+			})
+		}()
 
-		// Check the new changes, keeping them for a later read.
-		if slices.ContainsFunc(next, touches) {
-			return s, nil
-		}
-		for _, cs := range next {
-			if overflow {
-				break
-			}
-			entries += len(cs.Keys) + len(cs.Quads)
-			if cs.Unknown || entries > readSetChangeLimit {
-				checked, overflow = nil, true
-				break
-			}
-			checked = append(checked, cs)
-		}
-
-		// Tell the caller about each seqno once.
-		if len(next) != 0 && untouched != nil && s > reported {
-			reported = s
-			if err := untouched(s); err != nil {
-				return 0, err
-			}
-		}
+		// End at the touching change, or restart from afterSeqno after a new
+		// read so the feed tests the earlier changes against it too.
+		var err error
 		select {
-		case <-ctx.Done():
-			return 0, ctx.Err()
-		case err := <-watchErr:
-			return 0, err
-		case <-changed:
+		case err = <-done:
 		case <-added:
+			cancel()
+			if err = <-done; errors.Is(err, context.Canceled) && ctx.Err() == nil {
+				continue
+			}
 		}
+		cancel()
+		if errors.Is(err, errReadsTouched) {
+			return seqno, nil
+		}
+		return 0, err
 	}
 }
 

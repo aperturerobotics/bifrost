@@ -22,8 +22,10 @@ type watchedHead struct {
 }
 
 // changeSubscriber is one WatchChanges call on the change watch. Its fields
-// are guarded by the Engine bcast lock.
+// other than touches are guarded by the Engine bcast lock.
 type changeSubscriber struct {
+	// touches selects the changes that wake the subscriber.
+	touches world.ChangeFilter
 	// seqno is the seqno of the newest head merged into changes.
 	seqno uint64
 	// changes merges the changes not yet reported, or is nil.
@@ -32,11 +34,13 @@ type changeSubscriber struct {
 	wake chan struct{}
 }
 
-// WatchChanges calls cb with each later seqno and the changes since the
-// previous one. The changes come from the Engine's change watch, which
-// compares each new head with the last compared one once for every watcher,
-// so they need no changelog. Calls coalesce while cb runs. cb must not modify
-// the ChangeSet, which other subscribers share.
+// WatchChanges calls cb with each later seqno whose changes touches accepts,
+// and the accepted changes since the previous call. The changes come from the
+// Engine's change watch, which compares each new head with the last compared
+// one once for every watcher, so they need no changelog, and runs touches on
+// each ChangeSet so a change the subscriber does not watch never wakes it.
+// Calls coalesce while cb runs. cb must not modify the ChangeSet, which other
+// subscribers share.
 //
 // A subscriber that starts behind the change watch merges the ChangeSets the
 // watch recorded since the head at afterSeqno. When the watch did not record
@@ -51,10 +55,11 @@ type changeSubscriber struct {
 func (e *Engine) WatchChanges(
 	ctx context.Context,
 	afterSeqno uint64,
+	touches world.ChangeFilter,
 	cb func(seqno uint64, changes *world.ChangeSet) error,
 ) error {
 	// Subscribe to the change watch.
-	sub := &changeSubscriber{wake: make(chan struct{}, 1)}
+	sub := &changeSubscriber{touches: touches, wake: make(chan struct{}, 1)}
 	locked := e.bcast.Lock()
 	w, err := e.startChangeWatchLocked()
 	if err != nil {
@@ -115,8 +120,9 @@ func (e *Engine) WatchChanges(
 			continue
 		}
 
-		// Skip changes the caller already saw.
-		if seqno <= afterSeqno {
+		// Skip changes the caller already saw, and catch-up changes or
+		// changes merged before the filter ran that it rejects.
+		if seqno <= afterSeqno || !touches.Accepts(changes) {
 			continue
 		}
 		if err := cb(seqno, changes); err != nil {

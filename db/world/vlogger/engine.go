@@ -46,9 +46,10 @@ func (e *Engine) NewTransaction(ctx context.Context, write bool) (world.Tx, erro
 func (e *Engine) WatchChanges(
 	ctx context.Context,
 	afterSeqno uint64,
+	touches world.ChangeFilter,
 	cb func(seqno uint64, changes *world.ChangeSet) error,
 ) error {
-	return world.WatchChanges(ctx, e.Engine, afterSeqno, cb)
+	return world.WatchTouchingChanges(ctx, e.Engine, afterSeqno, touches, cb)
 }
 
 // _ is a type assertion

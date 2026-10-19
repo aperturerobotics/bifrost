@@ -342,65 +342,6 @@ func TestWatchViewAfterSeqno(t *testing.T) {
 	<-errCh
 }
 
-// TestWatchViewUntouched checks the callback for a seqno that leaves the reads
-// untouched, and its silence for one that touches them.
-func TestWatchViewUntouched(t *testing.T) {
-	// Read one key and report untouched seqnos.
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
-	tb := world_testbed.MustDefault(t, ctx)
-
-	// Report each run and each untouched seqno.
-	runs := make(chan struct{}, 4)
-	untouched := make(chan uint64, 4)
-	errCh := make(chan error, 1)
-	opts := world.WatchViewOptions{Untouched: func(seqno uint64) error {
-		untouched <- seqno
-		return nil
-	}}
-
-	// Read one key in the view.
-	go func() {
-		errCh <- world.WatchViewWith(ctx, tb.Engine, opts, func(ctx context.Context, ws world.WorldState) error {
-			_, err := ws.HasObject(ctx, "view/read")
-			runs <- struct{}{}
-			return err
-		})
-	}()
-	<-runs
-
-	// A commit to another key is reported at its seqno, without a rerun.
-	createViewObject(t, ctx, tb.Engine, "view/other")
-	want, err := tb.Engine.GetSeqno(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	select {
-	case got := <-untouched:
-		if got != want {
-			t.Fatalf("untouched seqno = %d, want %d", got, want)
-		}
-	case <-ctx.Done():
-		t.Fatal("untouched callback did not run")
-	}
-	select {
-	case <-runs:
-		t.Fatal("view reran for an untouched change")
-	default:
-	}
-
-	// A commit to the read key reruns the view and is not reported.
-	createViewObject(t, ctx, tb.Engine, "view/read")
-	<-runs
-	select {
-	case got := <-untouched:
-		t.Fatalf("touching seqno %d reported as untouched", got)
-	default:
-	}
-	cancel()
-	<-errCh
-}
-
 // TestWatchViewMinInterval checks that a burst of touching commits reruns the
 // view once, and that the rerun reads the newest head.
 func TestWatchViewMinInterval(t *testing.T) {

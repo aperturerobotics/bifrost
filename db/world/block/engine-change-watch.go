@@ -250,7 +250,8 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 		// Hold the new head while it is compared and while it is the base.
 		next, nextRelease := e.holdHeadLocked()
 		nextSeqno := e.headSeqnoLocked()
-		listChanges := len(w.subs) != 0
+		subs := slices.Collect(maps.Keys(w.subs))
+		listChanges := len(subs) != 0
 		locked.Unlock()
 
 		// Compare the World trees outside the publication lock.
@@ -258,6 +259,7 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 		if err != nil && w.ctx.Err() == nil {
 			e.le.WithError(err).Warn("world change comparison failed; waking every watcher")
 		}
+		skip := filterChangeSubscribers(subs, changes)
 
 		// Wake the changed objects' waiters, or all of them when the
 		// comparison could not list the changes, hand the changes to the
@@ -271,7 +273,9 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 		}
 		w.wakeKeysLocked(keys)
 		for sub := range w.subs {
-			sub.addLocked(nextSeqno, changes)
+			if _, ok := skip[sub]; !ok {
+				sub.addLocked(nextSeqno, changes)
+			}
 		}
 		w.recordLocked(changeSpan{
 			after:    w.baseSeqno,
@@ -284,6 +288,23 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 		locked.Unlock()
 		prevRelease()
 	}
+}
+
+// filterChangeSubscribers runs each subscriber's filter on changes outside the
+// publication lock and returns the subscribers it rejected. A subscriber that
+// joins later is not in subs, so it receives the changes and filters them
+// itself.
+func filterChangeSubscribers(subs []*changeSubscriber, changes *world.ChangeSet) map[*changeSubscriber]struct{} {
+	if changes.Unknown {
+		return nil
+	}
+	skip := make(map[*changeSubscriber]struct{})
+	for _, sub := range subs {
+		if !sub.touches.Accepts(changes) {
+			skip[sub] = struct{}{}
+		}
+	}
+	return skip
 }
 
 // compareChangeWatchHeads compares two held heads. keys lists the changed

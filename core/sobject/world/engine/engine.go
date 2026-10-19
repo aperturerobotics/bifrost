@@ -402,8 +402,8 @@ func (e *soEngine) WaitObjectRev(ctx context.Context, key string, rev uint64, ig
 // WatchChanges calls cb with each later seqno and the changes since the
 // previous one. Replay publishes every World head through the block engine, so
 // its head comparison covers local commits and remote operations alike.
-func (e *soEngine) WatchChanges(ctx context.Context, afterSeqno uint64, cb func(seqno uint64, changes *world.ChangeSet) error) error {
-	return e.bengine.WatchChanges(ctx, afterSeqno, cb)
+func (e *soEngine) WatchChanges(ctx context.Context, afterSeqno uint64, touches world.ChangeFilter, cb func(seqno uint64, changes *world.ChangeSet) error) error {
+	return e.bengine.WatchChanges(ctx, afterSeqno, touches, cb)
 }
 
 // lockReplayed takes the writer lock and installs the World after every

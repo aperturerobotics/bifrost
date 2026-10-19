@@ -57,9 +57,10 @@ func (e *engineWorldState) WaitSeqno(ctx context.Context, value uint64) (uint64,
 func (e *engineWorldState) WatchChanges(
 	ctx context.Context,
 	afterSeqno uint64,
+	touches ChangeFilter,
 	cb func(seqno uint64, changes *ChangeSet) error,
 ) error {
-	return WatchChanges(ctx, e.e, afterSeqno, cb)
+	return WatchTouchingChanges(ctx, e.e, afterSeqno, touches, cb)
 }
 
 // WaitObjectRev waits for the object at key through the Engine's key watch.

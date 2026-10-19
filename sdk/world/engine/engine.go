@@ -125,8 +125,9 @@ func (e *SDKEngine) WaitObjectRev(ctx context.Context, key string, rev uint64, i
 }
 
 // WatchChanges follows the remote engine's change stream, calling cb with each
-// later seqno and the changes since the previous one.
-func (e *SDKEngine) WatchChanges(ctx context.Context, afterSeqno uint64, cb func(seqno uint64, changes *world.ChangeSet) error) error {
+// later seqno touches accepts and the changes since the previous one. The
+// remote engine streams every change, so the filter runs here.
+func (e *SDKEngine) WatchChanges(ctx context.Context, afterSeqno uint64, touches world.ChangeFilter, cb func(seqno uint64, changes *world.ChangeSet) error) error {
 	// Open the stream after afterSeqno.
 	strm, err := e.service.WatchChanges(ctx, &s4wave_world.WatchChangesRequest{AfterSeqno: afterSeqno})
 	if err != nil {
@@ -140,7 +141,11 @@ func (e *SDKEngine) WatchChanges(ctx context.Context, afterSeqno uint64, cb func
 		if err != nil {
 			return err
 		}
-		if err := cb(msg.GetSeqno(), msg.ToChangeSet()); err != nil {
+		changes := msg.ToChangeSet()
+		if !touches.Accepts(changes) {
+			continue
+		}
+		if err := cb(msg.GetSeqno(), changes); err != nil {
 			return err
 		}
 	}

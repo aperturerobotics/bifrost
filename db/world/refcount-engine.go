@@ -212,10 +212,11 @@ func (e *RefCountEngine) WaitObjectRev(ctx context.Context, key string, rev uint
 func (e *RefCountEngine) WatchChanges(
 	ctx context.Context,
 	afterSeqno uint64,
+	touches ChangeFilter,
 	cb func(seqno uint64, changes *ChangeSet) error,
 ) error {
 	return e.rc.Access(ctx, func(ctx context.Context, val *Engine) error {
-		return WatchChanges(ctx, *val, afterSeqno, func(seqno uint64, changes *ChangeSet) error {
+		return WatchTouchingChanges(ctx, *val, afterSeqno, touches, func(seqno uint64, changes *ChangeSet) error {
 			if err := cb(seqno, changes); err != nil {
 				return err
 			}

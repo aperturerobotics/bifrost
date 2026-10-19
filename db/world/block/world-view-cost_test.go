@@ -20,12 +20,12 @@ type viewCostEngine struct {
 	// txs counts the transactions the view opened.
 	txs atomic.Int64
 
-	// bcast guards waitFor, delivered and keyWaits and fires when one rises.
+	// bcast guards waitFor, tested and keyWaits and fires when one rises.
 	bcast broadcast.Broadcast
 	// waitFor is the highest seqno the view has waited for.
 	waitFor uint64
-	// delivered is the highest seqno whose changes the view has received.
-	delivered uint64
+	// tested counts the ChangeSets the feed tested against the view's filter.
+	tested uint64
 	// keyWaits counts the object key waits the view has started.
 	keyWaits int
 }
@@ -42,19 +42,23 @@ func (e *viewCostEngine) WaitSeqno(ctx context.Context, value uint64) (uint64, e
 	return e.Engine.WaitSeqno(ctx, value)
 }
 
-// WatchChanges records the seqno the view waits past and each seqno whose
-// changes it receives, and watches the Engine.
+// WatchChanges records the seqno the view waits past and each ChangeSet the
+// feed tests against its filter, and watches the Engine.
 func (e *viewCostEngine) WatchChanges(
 	ctx context.Context,
 	afterSeqno uint64,
+	touches world.ChangeFilter,
 	cb func(seqno uint64, changes *world.ChangeSet) error,
 ) error {
 	e.raise(&e.waitFor, afterSeqno+1)
-	return world.WatchChanges(ctx, e.Engine, afterSeqno, func(seqno uint64, changes *world.ChangeSet) error {
-		err := cb(seqno, changes)
-		e.raise(&e.delivered, seqno)
-		return err
-	})
+	return world.WatchTouchingChanges(ctx, e.Engine, afterSeqno, func(changes *world.ChangeSet) bool {
+		accepted := touches.Accepts(changes)
+		e.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			e.tested++
+			broadcast()
+		})
+		return accepted
+	}, cb)
 }
 
 // raise raises the field at v to value under bcast.
@@ -78,15 +82,15 @@ func (e *viewCostEngine) WaitObjectRev(ctx context.Context, key string, rev uint
 
 // waitIdle waits until the view waits for a commit after seqno, or, for a
 // view that waits on object keys, until it has started keyWaits key waits.
-// When delivered is set, a view that received the changes up to seqno is also
-// idle, as a view that keeps its change watch never waits again.
+// When tested is set, a view whose filter the feed tested a change against is
+// also idle, as a view that keeps its change watch never waits again.
 func (e *viewCostEngine) waitIdle(
 	ctx context.Context,
 	t *testing.T,
 	name string,
 	seqno uint64,
 	keyWaits int,
-	delivered bool,
+	tested bool,
 ) {
 	t.Helper()
 	timeout := time.After(10 * time.Second)
@@ -96,7 +100,7 @@ func (e *viewCostEngine) waitIdle(
 		e.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
 			idle = e.waitFor > seqno ||
 				(keyWaits != 0 && e.keyWaits >= keyWaits) ||
-				(delivered && e.delivered >= seqno)
+				(tested && e.tested != 0)
 			waitCh = getWaitCh()
 		})
 		if idle {

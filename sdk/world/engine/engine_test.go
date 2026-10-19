@@ -1722,7 +1722,7 @@ func TestSDKEngine_WatchChanges(t *testing.T) {
 	changes := make(chan *world.ChangeSet, 1)
 	watchErr := make(chan error, 1)
 	go func() {
-		watchErr <- engine.WatchChanges(ctx, seqno, func(_ uint64, cs *world.ChangeSet) error {
+		watchErr <- engine.WatchChanges(ctx, seqno, nil, func(_ uint64, cs *world.ChangeSet) error {
 			changes <- cs
 			return errDone
 		})

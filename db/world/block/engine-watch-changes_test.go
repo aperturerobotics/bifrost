@@ -138,7 +138,7 @@ func TestWatchChangesLive(t *testing.T) {
 	errs := make(chan error, 2)
 	for range 2 {
 		go func() {
-			errs <- e.WatchChanges(ctx, after, func(_ uint64, cs *world.ChangeSet) error {
+			errs <- e.WatchChanges(ctx, after, nil, func(_ uint64, cs *world.ChangeSet) error {
 				if cs.Unknown {
 					return errors.New("live changes are unknown")
 				}
@@ -182,7 +182,7 @@ func TestWatchChangesRecorded(t *testing.T) {
 	after := headSeqno(t, ctx, e)
 	reported := make(chan uint64)
 	go func() {
-		_ = e.WatchChanges(ctx, after, func(seqno uint64, _ *world.ChangeSet) error {
+		_ = e.WatchChanges(ctx, after, nil, func(seqno uint64, _ *world.ChangeSet) error {
 			select {
 			case reported <- seqno:
 				return nil
@@ -213,6 +213,86 @@ func TestWatchChangesRecorded(t *testing.T) {
 	}
 	if got := slices.Sorted(slices.Values(changes.Keys)); !slices.Equal(got, keys) {
 		t.Fatalf("changed keys %q, want %q", got, keys)
+	}
+}
+
+// TestWatchChangesFilter checks that the change watch hands a filtered
+// subscriber only the changes its filter accepts, so a commit it does not
+// watch never reaches it.
+func TestWatchChangesFilter(t *testing.T) {
+	// Keep an unfiltered subscriber that reports each compared seqno.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	e := newRetirementTestEngine(t, ctx)
+	ws := world.NewEngineWorldState(e, true)
+	after := headSeqno(t, ctx, e)
+	reported := make(chan uint64, 16)
+	go func() {
+		_ = e.WatchChanges(ctx, after, nil, func(seqno uint64, _ *world.ChangeSet) error {
+			reported <- seqno
+			return nil
+		})
+	}()
+
+	// Start a subscriber that watches one key.
+	type report struct {
+		seqno uint64
+		keys  []string
+	}
+	filtered := make(chan report, 16)
+	touches := func(cs *world.ChangeSet) bool { return slices.Contains(cs.Keys, "filter/watched") }
+	go func() {
+		_ = e.WatchChanges(ctx, after, touches, func(seqno uint64, cs *world.ChangeSet) error {
+			filtered <- report{seqno, slices.Sorted(slices.Values(cs.Keys))}
+			return nil
+		})
+	}()
+
+	// Wait for both subscriptions so each commit reaches them live.
+	for deadline := time.Now().Add(10 * time.Second); ; time.Sleep(time.Millisecond) {
+		locked := e.bcast.Lock()
+		n := 0
+		if e.changeWatch != nil {
+			n = len(e.changeWatch.subs)
+		}
+		locked.Unlock()
+		if n == 2 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("%d of 2 subscribers joined", n)
+		}
+	}
+
+	// Commit an unwatched object and a watched one, each compared before the
+	// next.
+	var watchedSeqno uint64
+	for _, key := range []string{"filter/other", "filter/watched"} {
+		createWatchTestObject(t, ctx, ws, key)
+		want := headSeqno(t, ctx, e)
+		for seqno := uint64(0); seqno < want; {
+			select {
+			case seqno = <-reported:
+			case <-time.After(10 * time.Second):
+				t.Fatalf("watch did not report seqno %d", want)
+			}
+		}
+		watchedSeqno = want
+	}
+
+	// Expect exactly the watched commit at the filtered subscriber.
+	select {
+	case got := <-filtered:
+		if got.seqno != watchedSeqno || !slices.Equal(got.keys, []string{"filter/watched"}) {
+			t.Fatalf("filtered report %d %q, want %d [filter/watched]", got.seqno, got.keys, watchedSeqno)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("no report of the watched commit")
+	}
+	select {
+	case got := <-filtered:
+		t.Fatalf("extra filtered report %d %q", got.seqno, got.keys)
+	case <-time.After(100 * time.Millisecond):
 	}
 }
 
@@ -380,7 +460,7 @@ func readChangeWindow(t *testing.T, ctx context.Context, e *Engine, afterSeqno u
 	t.Helper()
 	var seqno uint64
 	var changes *world.ChangeSet
-	err := e.WatchChanges(ctx, afterSeqno, func(s uint64, cs *world.ChangeSet) error {
+	err := e.WatchChanges(ctx, afterSeqno, nil, func(s uint64, cs *world.ChangeSet) error {
 		seqno, changes = s, cs
 		return errWindowRead
 	})

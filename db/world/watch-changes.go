@@ -7,12 +7,23 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ChangeFilter reports whether a ChangeSet concerns a watcher. A nil filter
+// accepts every change, and an unknown ChangeSet passes every filter.
+type ChangeFilter func(changes *ChangeSet) bool
+
+// Accepts reports whether the filter lets changes through.
+func (f ChangeFilter) Accepts(changes *ChangeSet) bool {
+	return f == nil || changes.Unknown || f(changes)
+}
+
 // ChangeWatcher is an Engine that reports what changed between seqnos.
 type ChangeWatcher interface {
-	// WatchChanges calls cb with each later seqno and the changes since the
-	// previous one, starting after afterSeqno. Calls coalesce while cb runs.
-	// Returns when ctx is canceled or cb returns an error.
-	WatchChanges(ctx context.Context, afterSeqno uint64, cb func(seqno uint64, changes *ChangeSet) error) error
+	// WatchChanges calls cb with each later seqno whose changes touches
+	// accepts, starting after afterSeqno, and the accepted changes since the
+	// previous call. Changes touches rejects never wake the watcher. Calls
+	// coalesce while cb runs. Returns when ctx is canceled or cb returns an
+	// error.
+	WatchChanges(ctx context.Context, afterSeqno uint64, touches ChangeFilter, cb func(seqno uint64, changes *ChangeSet) error) error
 }
 
 // WatchChanges calls cb with each seqno of w after afterSeqno and the changes
@@ -25,12 +36,25 @@ func WatchChanges(
 	afterSeqno uint64,
 	cb func(seqno uint64, changes *ChangeSet) error,
 ) error {
+	return WatchTouchingChanges(ctx, w, afterSeqno, nil, cb)
+}
+
+// WatchTouchingChanges is WatchChanges for the changes touches accepts. A
+// World with a change feed tests each change once on the feed and wakes only
+// the watchers it concerns.
+func WatchTouchingChanges(
+	ctx context.Context,
+	w WorldWaitSeqno,
+	afterSeqno uint64,
+	touches ChangeFilter,
+	cb func(seqno uint64, changes *ChangeSet) error,
+) error {
 	// Prefer the World's own change feed.
 	if watcher, ok := w.(ChangeWatcher); ok {
-		return watcher.WatchChanges(ctx, afterSeqno, cb)
+		return watcher.WatchChanges(ctx, afterSeqno, touches, cb)
 	}
 
-	// Report each seqno advance as unknown.
+	// Report each seqno advance as unknown, which every filter accepts.
 	for {
 		seqno, err := w.WaitSeqno(ctx, afterSeqno+1)
 		if err != nil {
@@ -48,12 +72,6 @@ type WatchViewOptions struct {
 	// AfterSeqno is a seqno the caller already holds the view at. When it is
 	// above zero, the first evaluation waits for the World to pass it.
 	AfterSeqno uint64
-	// Untouched is called with each seqno whose changes leave the last
-	// evaluation's reads untouched, so the caller learns its view still holds at
-	// that seqno. Seqnos that arrive while a rerun waits out MinInterval are
-	// not reported; that rerun reads the newest head. It runs on the watching
-	// goroutine and an error from it ends the watch.
-	Untouched func(seqno uint64) error
 	// MinInterval is the least time between the starts of two evaluations. A
 	// burst of touching commits reruns the view once per interval, and the rerun
 	// reads the newest head. Zero reruns as soon as a change or deadline arrives.
@@ -117,7 +135,7 @@ func WatchViewWith(
 		}
 
 		// Wait for a relevant change, bounded by the evaluation's deadline.
-		if err := reads.wait(ctx, source, seqno, opts.Untouched); err != nil {
+		if err := reads.wait(ctx, source, seqno); err != nil {
 			return err
 		}
 

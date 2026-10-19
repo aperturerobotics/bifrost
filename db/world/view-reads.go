@@ -106,8 +106,7 @@ func (r *viewReads) getDeadline() time.Time {
 }
 
 // wait ends when the evaluation's reads change or its deadline arrives.
-// untouched, when set, is called with each seqno that leaves the reads untouched.
-func (r *viewReads) wait(ctx context.Context, source WorldWaitSeqno, seqno uint64, untouched func(uint64) error) error {
+func (r *viewReads) wait(ctx context.Context, source WorldWaitSeqno, seqno uint64) error {
 	// A deadline belongs only to the wait, not the evaluation's reads.
 	wait := ctx
 	if deadline := r.getDeadline(); !deadline.IsZero() {
@@ -117,7 +116,7 @@ func (r *viewReads) wait(ctx context.Context, source WorldWaitSeqno, seqno uint6
 	}
 
 	// Distinguish our rerun deadline from caller cancellation and watch errors.
-	_, err := r.reads.waitChange(wait, source, seqno, r.getShared(), untouched)
+	_, err := r.reads.waitChange(wait, source, seqno, r.getShared())
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
