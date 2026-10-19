@@ -14,14 +14,19 @@ interface FrameTheme {
   // text and mutedText are the title and icons' color on each.
   text: string
   mutedText: string
+  // border is the color of the edge around each frame.
+  border: string
   // font is the font family.
   font: string
 }
 
-// framePainter returns a painter of title bars in the app's tokens, as the
-// element el resolves them when each title bar is painted.
+// framePainter returns a painter of frames in the app's tokens, as the
+// element el resolves them when each texture is painted.
 export function framePainter(el: Element): FramePainter {
-  return (f, scale) => paintFrame(readTheme(el), f, scale)
+  return {
+    title: (f, scale) => paintFrame(readTheme(el), f, scale),
+    edge: () => paintEdge(readTheme(el)),
+  }
 }
 
 // readTheme reads the title bar's colors and font from the tokens el sees.
@@ -34,6 +39,7 @@ function readTheme(el: Element): FrameTheme {
     inactive: token('--color-background-card', '#2a2a2a'),
     text: token('--color-foreground', '#ffffff'),
     mutedText: token('--color-muted-foreground', '#aaaaaa'),
+    border: token('--color-border', '#555555'),
     font: style.fontFamily || 'sans-serif',
   }
 }
@@ -89,6 +95,24 @@ function paintFrame(
   return {
     width: canvas.width,
     height: canvas.height,
+    pixels: new Uint8Array(image.data.buffer),
+    dirty: null,
+  }
+}
+
+// paintEdge paints the one opaque pixel of a frame's edge.
+function paintEdge(theme: FrameTheme): SceneTexture {
+  // Fill an opaque pixel in the border color and take it.
+  const canvas = new OffscreenCanvas(1, 1)
+  const ctx = canvas.getContext('2d', { alpha: false })
+  if (!ctx)
+    return { width: 0, height: 0, pixels: new Uint8Array(), dirty: null }
+  ctx.fillStyle = theme.border
+  ctx.fillRect(0, 0, 1, 1)
+  const image = ctx.getImageData(0, 0, 1, 1)
+  return {
+    width: 1,
+    height: 1,
     pixels: new Uint8Array(image.data.buffer),
     dirty: null,
   }

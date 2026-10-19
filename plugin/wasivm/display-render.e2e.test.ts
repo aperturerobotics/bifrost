@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { openCanvasRenderer } from './display-canvas.js'
+import { framePainter } from './display-frame.js'
 import { openGpuRenderer } from './display-gpu.js'
 import { Scene, type SceneRenderer } from './display-scene.js'
 
@@ -118,5 +119,70 @@ describe('display renderers', () => {
     }
     expectScene(readPixels(renderer, canvas, testScene()))
     renderer.destroy()
+  })
+
+  it('paints window frames with Canvas 2D', () => {
+    // Give the frame painter known tokens.
+    const el = document.createElement('div')
+    el.style.setProperty('--color-background-panel', 'rgb(40, 50, 60)')
+    el.style.setProperty('--color-border', 'rgb(10, 20, 30)')
+    document.body.append(el)
+
+    // Show a red 20 by 10 window at 5,15 under an 8 unit title bar, with a
+    // 2 unit band, on a 40 by 40 green screen.
+    const scene = new Scene(framePainter(el))
+    scene.apply({
+      screen: { width: 40, height: 40, scale: 1, background: 0x00ff00ff },
+      roots: { roots: [{ id: 1, x: 5, y: 15 }] },
+      layers: {
+        layers: [
+          {
+            id: 1,
+            root: 1,
+            width: 20,
+            height: 10,
+            textureWidth: 20,
+            textureHeight: 10,
+            opaque: true,
+          },
+        ],
+      },
+      patches: [
+        { layer: 1, width: 20, height: 10, rgba: fill(200, [255, 0, 0, 255]) },
+      ],
+      frames: {
+        frames: [
+          {
+            root: 1,
+            active: true,
+            y: -8,
+            width: 20,
+            height: 18,
+            titleHeight: 8,
+            border: 2,
+          },
+        ],
+      },
+    })
+
+    // Draw it.
+    const canvas = document.createElement('canvas')
+    const renderer = openCanvasRenderer(canvas)!
+    const pix = readPixels(renderer, canvas, scene)
+    const pixel = (x: number, y: number) =>
+      Array.from(pix.subarray((y * 40 + x) * 4, (y * 40 + x) * 4 + 3))
+
+    // The edge outlines the frame a unit outside it, the title bar fills its
+    // top, and the window and the screen show elsewhere.
+    expect(pixel(4, 10)).toEqual([10, 20, 30])
+    expect(pixel(15, 6)).toEqual([10, 20, 30])
+    expect(pixel(15, 25)).toEqual([10, 20, 30])
+    expect(pixel(6, 9)).toEqual([40, 50, 60])
+    expect(pixel(10, 20)).toEqual([255, 0, 0])
+    expect(pixel(3, 10)).toEqual([0, 255, 0])
+
+    // Clean up.
+    renderer.destroy()
+    el.remove()
   })
 })

@@ -52,9 +52,14 @@ export interface ScenePoint {
   y: number
 }
 
-// FramePainter draws the title bar of the frame f at scale screen pixels per
-// unit, as a texture of f.width by f.titleHeight units.
-export type FramePainter = (f: WasiVmSceneFrame, scale: number) => SceneTexture
+// FramePainter paints the textures of the desktop's window frames.
+export interface FramePainter {
+  // title paints the title bar of the frame f at scale screen pixels per
+  // unit, as a texture of f.width by f.titleHeight units.
+  title(f: WasiVmSceneFrame, scale: number): SceneTexture
+  // edge paints the one pixel stretched around a frame to outline it.
+  edge(): SceneTexture
+}
 
 // FramePart is the part of a window frame under the pointer: the title bar,
 // a button, or the resize band at some edges.
@@ -106,6 +111,8 @@ export class Scene {
   private frames = new Map<number, WasiVmSceneFrame>()
   // frameTextures maps each framed root's id to its painted title bar.
   private frameTextures = new Map<number, FrameTexture>()
+  // edge is the painted frame edge, or null before a frame is drawn.
+  private edge: SceneTexture | null = null
   // pointer is the viewer's pointer in units, or null before it first moves.
   private pointer: ScenePoint | null = null
   // textures maps each layer's id to its texture.
@@ -321,20 +328,36 @@ export class Scene {
   }
 
   // drawList returns the layers bottom to top with their textures, placed at
-  // their roots' positions, each framed root's title bar below its first
-  // layer. The array is fresh; the textures are the scene's.
+  // their roots' positions, each framed root's edge and title bar below its
+  // first layer. The edge is a unit wider than the frame on each side, so the
+  // window covers all but its outline; a maximized window has none. The
+  // frame's layers take the negated root id. The array is fresh; the textures
+  // are the scene's.
   drawList(): SceneLayer[] {
     // Walk the layers, keeping each title bar painted.
+    const paint = this.paint
     const out: SceneLayer[] = []
     const painted = new Map<number, FrameTexture>()
     for (const l of this.layers) {
-      // Draw the root's title bar first.
+      // Draw the root's edge and title bar first.
       const id = l.root ?? 0
       const root = this.rootAt(id)
       const f = this.frames.get(id)
-      if (f && this.paint && !painted.has(id)) {
-        const ft = this.frameTexture(f)
+      if (f && paint && !painted.has(id)) {
+        const ft = this.frameTexture(paint, f)
         painted.set(id, ft)
+        if (f.border) {
+          this.edge ??= paint.edge()
+          out.push({
+            id: -id,
+            x: root.x + (f.x ?? 0) - 1,
+            y: root.y + (f.y ?? 0) - 1,
+            width: (f.width ?? 0) + 2,
+            height: (f.height ?? 0) + 2,
+            opaque: true,
+            texture: this.edge,
+          })
+        }
         out.push({
           id: -id,
           x: root.x + (f.x ?? 0),
@@ -363,9 +386,9 @@ export class Scene {
     return out
   }
 
-  // frameTexture returns the painted title bar of the frame f, painting it
-  // again only when what it shows changed.
-  private frameTexture(f: WasiVmSceneFrame): FrameTexture {
+  // frameTexture returns the title bar of the frame f, painting it with
+  // paint again only when what it shows changed.
+  private frameTexture(paint: FramePainter, f: WasiVmSceneFrame): FrameTexture {
     const key = JSON.stringify([
       f.title,
       f.active,
@@ -377,7 +400,7 @@ export class Scene {
     ])
     const kept = this.frameTextures.get(f.root ?? 0)
     if (kept?.key === key) return kept
-    return { key, texture: this.paint!(f, this.screen.scale) }
+    return { key, texture: paint.title(f, this.screen.scale) }
   }
 
   // allDirty marks every texture changed, so a renderer that lost its copies

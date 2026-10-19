@@ -152,16 +152,18 @@ describe('Scene', () => {
     // Show a 20x10 window at 5,30 under a 4 unit title bar, with a close
     // button at its right end, and a least top of 6.
     let paints = 0
-    const paint: FramePainter = (f, scale) => {
-      paints++
-      const width = (f.width ?? 0) * scale
-      const height = (f.titleHeight ?? 0) * scale
-      return {
-        width,
-        height,
-        pixels: new Uint8Array(width * height * 4),
-        dirty: null,
-      }
+    const texture = (width: number, height: number) => ({
+      width,
+      height,
+      pixels: new Uint8Array(width * height * 4),
+      dirty: null,
+    })
+    const paint: FramePainter = {
+      title: (f, scale) => {
+        paints++
+        return texture((f.width ?? 0) * scale, (f.titleHeight ?? 0) * scale)
+      },
+      edge: () => texture(1, 1),
     }
     const scene = new Scene(paint)
     scene.apply({
@@ -195,10 +197,12 @@ describe('Scene', () => {
       },
     })
 
-    // The title bar draws below the window, at its frame's place.
+    // The edge and the title bar draw below the window, the edge a unit
+    // outside the frame and the title bar at its top.
     const list = scene.drawList()
-    expect(list.map((l) => l.id)).toEqual([-1, 1])
-    expect(list[0]).toMatchObject({
+    expect(list.map((l) => l.id)).toEqual([-1, -1, 1])
+    expect(list[0]).toMatchObject({ x: 4, y: 25, width: 22, height: 16 })
+    expect(list[1]).toMatchObject({
       x: 5,
       y: 26,
       width: 20,
@@ -230,19 +234,19 @@ describe('Scene', () => {
     scene.point(8, 27)
     expect(scene.press()).toBe(true)
     expect(scene.point(18, 37)).toBe(true)
-    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 40 })
+    expect(scene.drawList()[2]).toMatchObject({ x: 15, y: 40 })
     scene.point(18, 0)
-    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 6 })
-    expect(scene.drawList()[0]).toMatchObject({ x: 15, y: 2 })
+    expect(scene.drawList()[2]).toMatchObject({ x: 15, y: 6 })
+    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 2 })
 
     // After the release the move holds until the roots show where the
     // window went, and the title bar is not painted again.
     scene.release()
     scene.apply({ layers: { layers: [layer(1, 20, 10)] } })
-    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 6 })
+    expect(scene.drawList()[2]).toMatchObject({ x: 15, y: 6 })
     scene.apply({ roots: { roots: [{ id: 1, x: 15, y: 6 }] } })
     expect(scene.point(50, 50)).toBe(false)
-    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 6 })
+    expect(scene.drawList()[2]).toMatchObject({ x: 15, y: 6 })
     expect(paints).toBe(1)
 
     // A released move the compositor never answers settles back.
@@ -251,6 +255,6 @@ describe('Scene', () => {
     scene.point(30, 10)
     scene.release()
     expect(scene.settle()).toBe(true)
-    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 6 })
+    expect(scene.drawList()[2]).toMatchObject({ x: 15, y: 6 })
   })
 })
