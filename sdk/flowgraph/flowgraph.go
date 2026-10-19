@@ -59,8 +59,21 @@ func UnmarshalFlowgraph(ctx context.Context, cursor *block.Cursor) (*Flowgraph, 
 	return block.UnmarshalBlock[Flowgraph](ctx, cursor)
 }
 
-// Validate checks node identities, port contracts, and connection endpoints.
+// Validate checks node identities, port contracts, and connection endpoints
+// against the ports each node authors.
 func (g *Flowgraph) Validate() error {
+	return g.ValidateBound(nil, nil)
+}
+
+// ValidateBound checks the graph as Validate does, except that a node bound to
+// an object also offers the ports the object's type declares while its binding
+// is BOUND, so a connection may name either an authored or a declared port.
+// A declared port wins over an authored port of the same name. A node with no
+// BOUND binding offers its authored ports only, but a connection that is
+// unchanged from previous keeps standing when it names a port that cannot be
+// read now, since the object or its plugin may return. bindings is the
+// snapshot's bindings by node ID; previous is the graph before the edit, or nil.
+func (g *Flowgraph) ValidateBound(bindings map[string]*FlowgraphBinding, previous *Flowgraph) error {
 	// Validate every node before resolving connection endpoints.
 	for id, node := range g.GetNodes() {
 		if !validID(id) {
@@ -76,8 +89,11 @@ func (g *Flowgraph) Validate() error {
 		if !validID(id) {
 			return errors.Errorf("invalid flowgraph connection id %q", id)
 		}
-		out := g.GetNodes()[connection.GetOutputNode()].FindPort(connection.GetOutputPort())
-		in := g.GetNodes()[connection.GetInputNode()].FindPort(connection.GetInputPort())
+		if keepsStanding(g, previous, bindings, id, connection) {
+			continue
+		}
+		out := findNodePort(g, bindings, connection.GetOutputNode(), connection.GetOutputPort())
+		in := findNodePort(g, bindings, connection.GetInputNode(), connection.GetInputPort())
 		if out.GetDirection() != FlowgraphPortDirection_FLOWGRAPH_PORT_DIRECTION_OUTPUT {
 			return errors.Errorf("connection %q requires an output port", id)
 		}
@@ -89,6 +105,35 @@ func (g *Flowgraph) Validate() error {
 		}
 	}
 	return nil
+}
+
+// findNodePort returns a port a connection may name on a node: the declared
+// port of a BOUND binding first, then the authored port.
+func findNodePort(g *Flowgraph, bindings map[string]*FlowgraphBinding, nodeID, name string) *FlowgraphPort {
+	if binding := bindings[nodeID]; binding.GetState() == FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_BOUND {
+		if port := binding.FindPort(name); port != nil {
+			return port
+		}
+	}
+	return g.GetNodes()[nodeID].FindPort(name)
+}
+
+// keepsStanding reports whether a connection is unchanged from previous and
+// ends at a node bound to an object whose declared ports are unreadable, so the
+// connection stays without a check.
+func keepsStanding(g, previous *Flowgraph, bindings map[string]*FlowgraphBinding, id string, connection *FlowgraphConnection) bool {
+	if previous == nil || !connection.EqualVT(previous.GetConnections()[id]) {
+		return false
+	}
+	for _, nodeID := range []string{connection.GetOutputNode(), connection.GetInputNode()} {
+		if g.GetNodes()[nodeID].GetObjectKey() == "" {
+			continue
+		}
+		if bindings[nodeID].GetState() != FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_BOUND {
+			return true
+		}
+	}
+	return false
 }
 
 // _ is a type assertion.

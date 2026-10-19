@@ -87,6 +87,17 @@ func flowgraphPortDirection(direction s4wave_objecttype_registry.ObjectTypePortD
 	}
 }
 
+// FindPort returns a port the bound object's type declares, or nil when the
+// binding declares none by that name.
+func (b *FlowgraphBinding) FindPort(name string) *FlowgraphPort {
+	for _, port := range b.GetPorts() {
+		if port.GetName() == name {
+			return port
+		}
+	}
+	return nil
+}
+
 // boundObjectKeys lists the distinct objects the graph's nodes bind, sorted.
 func boundObjectKeys(graph *Flowgraph) []string {
 	seen := make(map[string]struct{})

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	world_testbed "github.com/s4wave/spacewave/db/world/testbed"
@@ -100,6 +101,84 @@ func TestRegisteredObjectTypeDeclaresPorts(t *testing.T) {
 	}
 	if err := expectMetadataPorts(t, tb.Bus, "test/ported", nil); err != nil {
 		t.Fatalf("lookup after release: %v", err)
+	}
+}
+
+// TestWatchObjectTypeMetadata watches one type's metadata and sees a
+// registration, its release and a later registration, and nothing after the
+// watch is released.
+func TestWatchObjectTypeMetadata(t *testing.T) {
+	// Start the registry and its bridge controller.
+	ctx := t.Context()
+	le := logrus.NewEntry(logrus.New())
+	tb, err := world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(tb.Release)
+	registry, resources, registryClient := newRegistryResourceClient(t, ctx)
+	defer resources.Release()
+	rel, err := tb.Bus.AddController(ctx, NewBridgeController(le, tb.Bus, registry), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rel()
+
+	// Watch a type nothing registers: a registration of another type does not
+	// reach the callback.
+	changes := make(chan *s4wave_objecttype_registry.ObjectTypeMetadata, 8)
+	release, err := s4wave_objecttype_registry.ExWatchObjectTypeMetadata(ctx, tb.Bus, "test/watched", "", func(metadata *s4wave_objecttype_registry.ObjectTypeMetadata) {
+		changes <- metadata
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	register := func(typeID, name string) *s4wave_objecttype_registry.RegisterObjectTypeResponse {
+		registration, err := registryClient.RegisterObjectType(ctx, &s4wave_objecttype_registry.RegisterObjectTypeRequest{
+			TypeId:   typeID,
+			PluginId: "test-plugin",
+			Metadata: &s4wave_objecttype_registry.ObjectTypeMetadata{DisplayName: name},
+		})
+		if err != nil {
+			t.Fatalf("register %s: %v", typeID, err)
+		}
+		return registration
+	}
+	expect := func(want string) {
+		t.Helper()
+		select {
+		case got := <-changes:
+			if want == "" && got != nil || want != "" && got.GetDisplayName() != want {
+				t.Fatalf("metadata = %v, want %q", got, want)
+			}
+		case <-time.After(10 * time.Second):
+			t.Fatalf("no change, want %q", want)
+		}
+	}
+	other := register("test/other", "Other")
+	defer resources.CreateResourceReference(other.GetResourceId()).Release()
+	select {
+	case got := <-changes:
+		t.Fatalf("a registration of another type changed the watch: %v", got)
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	// Registering the watched type reaches the callback, and releasing it sends nil.
+	first := register("test/watched", "First")
+	expect("First")
+	resources.CreateResourceReference(first.GetResourceId()).Release()
+	expect("")
+
+	// Registering it again reaches the callback, and a released watch hears nothing more.
+	second := register("test/watched", "Second")
+	expect("Second")
+	release()
+	resources.CreateResourceReference(second.GetResourceId()).Release()
+	select {
+	case got := <-changes:
+		t.Fatalf("a released watch changed: %v", got)
+	case <-time.After(100 * time.Millisecond):
 	}
 }
 

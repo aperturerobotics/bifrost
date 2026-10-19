@@ -2,6 +2,7 @@ package s4wave_objecttype_registry
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -57,6 +58,74 @@ func ExLookupObjectTypeMetadata(
 	metadata := av.GetValue().CloneVT()
 	avRef.Release()
 	return metadata, nil
+}
+
+// ExWatchObjectTypeMetadata calls onChange with the metadata registered for an
+// object type each time it changes, scoped to engineID the way
+// ExLookupObjectTypeMetadata is scoped by its context. The registry answers the
+// lookup directive for as long as it is held, so the callback runs when a
+// plugin registers the type, replaces its registration, or releases it. It
+// receives nil when no plugin registers the type, and each call gets its own
+// private copy of the metadata.
+//
+// ExWatchObjectTypeMetadata returns once the registry has answered the lookup
+// for the first time, so a change after it returns always calls onChange, and
+// the registration present at that point has already been delivered.
+//
+// onChange runs inside the directive's value callback and must return quickly
+// without calling back into the bus. Call release to stop watching; onChange is
+// not called after release returns.
+func ExWatchObjectTypeMetadata(
+	ctx context.Context,
+	b bus.Bus,
+	typeID, engineID string,
+	onChange func(metadata *ObjectTypeMetadata),
+) (release func(), err error) {
+	var mtx sync.Mutex
+	var released bool
+	di, ref, err := bus.ExecOneOffWatchCb(
+		func(val directive.TypedAttachedValue[LookupObjectTypeMetadataValue]) bool {
+			mtx.Lock()
+			defer mtx.Unlock()
+			if released {
+				return true
+			}
+			var metadata *ObjectTypeMetadata
+			if val != nil {
+				metadata = val.GetValue().CloneVT()
+			}
+			onChange(metadata)
+			return true
+		},
+		b,
+		NewLookupObjectTypeMetadata(typeID, engineID),
+	)
+	if err != nil {
+		return nil, err
+	}
+	release = func() {
+		ref.Release()
+		mtx.Lock()
+		released = true
+		mtx.Unlock()
+	}
+
+	// Wait for the registry's first answer so no change goes unobserved.
+	idle := make(chan struct{})
+	var idleOnce sync.Once
+	relIdle := di.AddIdleCallback(func(isIdle bool, _ []error) {
+		if isIdle {
+			idleOnce.Do(func() { close(idle) })
+		}
+	})
+	defer relIdle()
+	select {
+	case <-idle:
+		return release, nil
+	case <-ctx.Done():
+		release()
+		return nil, context.Cause(ctx)
+	}
 }
 
 // lookupObjectTypeMetadata implements LookupObjectTypeMetadata.

@@ -4,6 +4,7 @@ package s4wave_flowgraph_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -30,6 +31,15 @@ const boundType = "test/ported"
 // registerPortedType registers boundType with an input and an output port for
 // the life of the test.
 func registerPortedType(t *testing.T, ctx context.Context, tb *world_testbed.Testbed) {
+	t.Helper()
+	servePortedRegistry(t, ctx, tb)()
+}
+
+// servePortedRegistry serves the object type registry on the World's bus and
+// returns a function that registers boundType with an input and an output port.
+// The registration function returns a function that releases the registration,
+// which the test also calls when it ends.
+func servePortedRegistry(t *testing.T, ctx context.Context, tb *world_testbed.Testbed) func() (release func()) {
 	t.Helper()
 
 	// Serve the registry through an in-process resource client.
@@ -58,20 +68,26 @@ func registerPortedType(t *testing.T, ctx context.Context, tb *world_testbed.Tes
 	}
 	t.Cleanup(releaseBridge)
 
-	// Register the type.
-	ports := []*s4wave_objecttype_registry.ObjectTypePort{
-		{Name: "in", Direction: s4wave_objecttype_registry.ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_INPUT, TypeId: "test/stream"},
-		{Name: "out", Direction: s4wave_objecttype_registry.ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_OUTPUT, TypeId: "test/event"},
+	return func() func() {
+		ports := []*s4wave_objecttype_registry.ObjectTypePort{
+			{Name: "in", Direction: s4wave_objecttype_registry.ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_INPUT, TypeId: "test/stream"},
+			{Name: "out", Direction: s4wave_objecttype_registry.ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_OUTPUT, TypeId: "test/event"},
+		}
+		registration, err := s4wave_objecttype_registry.NewSRPCObjectTypeRegistryResourceServiceClient(rootClient).RegisterObjectType(ctx, &s4wave_objecttype_registry.RegisterObjectTypeRequest{
+			TypeId:   boundType,
+			PluginId: "test-plugin",
+			Metadata: &s4wave_objecttype_registry.ObjectTypeMetadata{DisplayName: "Ported", Ports: ports},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var once sync.Once
+		release := func() {
+			once.Do(resources.CreateResourceReference(registration.GetResourceId()).Release)
+		}
+		t.Cleanup(release)
+		return release
 	}
-	registration, err := s4wave_objecttype_registry.NewSRPCObjectTypeRegistryResourceServiceClient(rootClient).RegisterObjectType(ctx, &s4wave_objecttype_registry.RegisterObjectTypeRequest{
-		TypeId:   boundType,
-		PluginId: "test-plugin",
-		Metadata: &s4wave_objecttype_registry.ObjectTypeMetadata{DisplayName: "Ported", Ports: ports},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(resources.CreateResourceReference(registration.GetResourceId()).Release)
 }
 
 // createTypedObject creates an object of a type in the World.
@@ -250,4 +266,157 @@ func TestFlowgraphBindsObject(t *testing.T) {
 	}
 	requireBinding(t, reopened.GetSnapshot().GetBindings()["one"], "thing/one", boundType, flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_BOUND)
 	requirePorts(t, reopened.GetSnapshot().GetBindings()["one"])
+}
+
+// authoredPort returns a port a node authors.
+func authoredPort(name string, direction flowgraph.FlowgraphPortDirection, typeID string) *flowgraph.FlowgraphPort {
+	return &flowgraph.FlowgraphPort{Name: name, Direction: direction, TypeId: typeID}
+}
+
+// serveGraph serves one graph of the World on a Resource and returns its client.
+func serveGraph(t *testing.T, tb *world_testbed.Testbed, key string) flowgraph.SRPCFlowgraphResourceServiceClient {
+	t.Helper()
+	mux := srpc.NewMux()
+	if err := flowgraph.SRPCRegisterFlowgraphResourceService(mux, flowgraph.NewFlowgraphResource(tb.WorldState, tb.Engine, tb.Bus, "", key)); err != nil {
+		t.Fatal(err)
+	}
+	return flowgraph.NewSRPCFlowgraphResourceServiceClient(srpc.NewClient(srpc.NewServerPipe(srpc.NewServer(mux))))
+}
+
+// TestFlowgraphConnectsBoundPorts connects a node bound to an object by the
+// ports its type declares, and keeps an unbound node to its authored ports.
+func TestFlowgraphConnectsBoundPorts(t *testing.T) {
+	// Start a World with a registered type, two objects and a graph.
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	tb := world_testbed.MustDefault(t, ctx)
+	registerPortedType(t, ctx, tb)
+	createTypedObject(t, ctx, tb.WorldState, "thing/one", boundType)
+	createTypedObject(t, ctx, tb.WorldState, "thing/plain", "test/unregistered")
+	if _, _, err := tb.WorldState.ApplyWorldOp(ctx, &flowgraph.CreateFlowgraphOp{ObjectKey: "flowgraph/first", Name: "first"}, ""); err != nil {
+		t.Fatal(err)
+	}
+	service := serveGraph(t, tb, "flowgraph/first")
+
+	// Author a source with an output, a sink with an input, an unbound node
+	// with no ports, and nodes bound to both objects.
+	output, input := flowgraph.FlowgraphPortDirection_FLOWGRAPH_PORT_DIRECTION_OUTPUT, flowgraph.FlowgraphPortDirection_FLOWGRAPH_PORT_DIRECTION_INPUT
+	if _, err := service.UpdateFlowgraph(ctx, &flowgraph.UpdateFlowgraphRequest{SetNodes: map[string]*flowgraph.FlowgraphNode{
+		"src":   {TypeId: "object", Ports: []*flowgraph.FlowgraphPort{authoredPort("out", output, "test/stream")}},
+		"sink":  {TypeId: "object", Ports: []*flowgraph.FlowgraphPort{authoredPort("in", input, "test/event")}},
+		"free":  {TypeId: "object"},
+		"one":   {TypeId: "object", ObjectKey: "thing/one"},
+		"plain": {TypeId: "object", ObjectKey: "thing/plain"},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	connect := func(id, outNode, outPort, inNode, inPort string) error {
+		_, err := service.UpdateFlowgraph(ctx, &flowgraph.UpdateFlowgraphRequest{SetConnections: map[string]*flowgraph.FlowgraphConnection{
+			id: {OutputNode: outNode, OutputPort: outPort, InputNode: inNode, InputPort: inPort},
+		}})
+		return err
+	}
+
+	// A bound node's connections name the ports its type declares, though the
+	// node authors none.
+	if err := connect("into", "src", "out", "one", "in"); err != nil {
+		t.Fatalf("connect to a declared input: %v", err)
+	}
+	if err := connect("from", "one", "out", "sink", "in"); err != nil {
+		t.Fatalf("connect from a declared output: %v", err)
+	}
+
+	// A port the type does not declare, a declared port of the wrong direction
+	// or type, an unregistered object's port and an unbound node's port fail.
+	for name, tc := range map[string][4]string{
+		"undeclared port":    {"src", "out", "one", "missing"},
+		"wrong direction":    {"one", "in", "sink", "in"},
+		"wrong type":         {"src", "out", "sink", "in"},
+		"unregistered type":  {"src", "out", "plain", "in"},
+		"unbound node ports": {"src", "out", "free", "in"},
+	} {
+		if err := connect("bad", tc[0], tc[1], tc[2], tc[3]); err == nil {
+			t.Fatalf("%s: connection was accepted", name)
+		}
+	}
+	read, err := service.GetFlowgraph(ctx, &flowgraph.GetFlowgraphRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := len(read.GetSnapshot().GetState().GetConnections()); got != 2 {
+		t.Fatalf("connections = %d, want the two accepted", got)
+	}
+}
+
+// TestFlowgraphWatchFollowsRegistry changes the registration of a bound
+// object's type, with no change to the World, and expects the watch to send the
+// new binding each time. A connection to a declared port stands once the
+// registration is released.
+func TestFlowgraphWatchFollowsRegistry(t *testing.T) {
+	// Start a World that serves a registry with nothing registered, and bind a
+	// node to an object of the type that is not registered yet.
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	tb := world_testbed.MustDefault(t, ctx)
+	register := servePortedRegistry(t, ctx, tb)
+	createTypedObject(t, ctx, tb.WorldState, "thing/one", boundType)
+	if _, _, err := tb.WorldState.ApplyWorldOp(ctx, &flowgraph.CreateFlowgraphOp{ObjectKey: "flowgraph/first", Name: "first"}, ""); err != nil {
+		t.Fatal(err)
+	}
+	service := serveGraph(t, tb, "flowgraph/first")
+	output := flowgraph.FlowgraphPortDirection_FLOWGRAPH_PORT_DIRECTION_OUTPUT
+	if _, err := service.UpdateFlowgraph(ctx, &flowgraph.UpdateFlowgraphRequest{SetNodes: map[string]*flowgraph.FlowgraphNode{
+		"src": {TypeId: "object", Ports: []*flowgraph.FlowgraphPort{authoredPort("out", output, "test/stream")}},
+		"one": {TypeId: "object", ObjectKey: "thing/one"},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	watchCtx, watchCancel := context.WithCancel(ctx)
+	defer watchCancel()
+	stream, err := service.WatchFlowgraph(watchCtx, &flowgraph.WatchFlowgraphRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	watch := &bindingWatch{t: t, stream: stream}
+	requireBinding(t, watch.next("one"), "thing/one", boundType, flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNREGISTERED)
+
+	// Registering the type binds the node, and no World change caused it.
+	release := register()
+	bound := watch.next("one")
+	requireBinding(t, bound, "thing/one", boundType, flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_BOUND)
+	requirePorts(t, bound)
+
+	// A connection to a declared port is accepted while the node is bound.
+	if _, err := service.UpdateFlowgraph(ctx, &flowgraph.UpdateFlowgraphRequest{SetConnections: map[string]*flowgraph.FlowgraphConnection{
+		"into": {OutputNode: "src", OutputPort: "out", InputNode: "one", InputPort: "in"},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	requireBinding(t, watch.next("one"), "thing/one", boundType, flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_BOUND)
+
+	// Releasing the registration leaves the node unregistered.
+	release()
+	requireBinding(t, watch.next("one"), "thing/one", boundType, flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNREGISTERED)
+
+	// The connection stands through an unrelated edit, and a new connection to
+	// the unregistered node's port is refused.
+	edited, err := service.UpdateFlowgraph(ctx, &flowgraph.UpdateFlowgraphRequest{SetNodes: map[string]*flowgraph.FlowgraphNode{
+		"src": {TypeId: "object", Parameters: map[string]string{"edited": "yes"}, Ports: []*flowgraph.FlowgraphPort{authoredPort("out", output, "test/stream")}},
+	}})
+	if err != nil {
+		t.Fatalf("edit while unregistered: %v", err)
+	}
+	if _, ok := edited.GetSnapshot().GetState().GetConnections()["into"]; !ok {
+		t.Fatal("the connection to the unregistered node was dropped")
+	}
+	if _, err := service.UpdateFlowgraph(ctx, &flowgraph.UpdateFlowgraphRequest{SetConnections: map[string]*flowgraph.FlowgraphConnection{
+		"again": {OutputNode: "src", OutputPort: "out", InputNode: "one", InputPort: "in"},
+	}}); err == nil {
+		t.Fatal("a new connection to an unregistered node was accepted")
+	}
+	watch.next("one")
+
+	// Registering again binds the node again.
+	register()
+	requireBinding(t, watch.next("one"), "thing/one", boundType, flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_BOUND)
 }

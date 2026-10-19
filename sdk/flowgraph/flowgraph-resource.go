@@ -97,11 +97,7 @@ func (r *FlowgraphResource) UpdateFlowgraph(ctx context.Context, request *Update
 	defer write.Discard()
 
 	// Apply the edit to the current graph and wait for durable commit.
-	snapshot, err := UpdateFlowgraph(ctx, write, r.key, request)
-	if err != nil {
-		return nil, err
-	}
-	snapshot.Bindings, err = ReadBindings(ctx, write, r.bus, r.engineID, snapshot.GetState())
+	snapshot, err := UpdateBoundFlowgraph(ctx, write, r.bus, r.engineID, r.key, request)
 	if err != nil {
 		return nil, err
 	}
@@ -123,9 +119,12 @@ func (r *FlowgraphResource) ListFlowgraphChanges(ctx context.Context, request *L
 
 // WatchFlowgraph streams committed graph changes until the stream is canceled.
 // It also sends a snapshot when a bound object appears, changes type or is
-// deleted, since each of those changes the node's derived binding.
+// deleted, or when a plugin registers or releases the type of a bound object,
+// since each of those changes the node's derived binding.
 func (r *FlowgraphResource) WatchFlowgraph(_ *WatchFlowgraphRequest, stream SRPCFlowgraphResourceService_WatchFlowgraphStream) error {
 	ctx := stream.Context()
+	watches := newTypeWatches(r.bus, r.engineID)
+	defer watches.close()
 	var sent *FlowgraphSnapshot
 	for {
 		// Read the snapshot and the roots it depends on from one World state,
@@ -143,10 +142,47 @@ func (r *FlowgraphResource) WatchFlowgraph(_ *WatchFlowgraphRequest, stream SRPC
 			}
 			sent = snapshot
 		}
-		if err := world.WaitObjectChange(ctx, r.ws, seen...); err != nil {
+
+		// Watch the registry for the types bound objects have, and read again
+		// after a new watch since it saw no change before it began.
+		added, err := watches.sync(ctx, snapshot)
+		if err != nil {
+			return err
+		}
+		if added {
+			continue
+		}
+		if err := waitGraphChange(ctx, r.ws, watches.wake, seen); err != nil {
 			return err
 		}
 	}
+}
+
+// waitGraphChange returns when a watched World object changes or a registry
+// change arrives on wake, and returns the context's error when ctx ends.
+func waitGraphChange(ctx context.Context, ws world.WorldState, wake <-chan struct{}, seen []*world.ObjectRootRef) error {
+	// End the World wait when the registry wakes the stream.
+	waitCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		select {
+		case <-wake:
+			cancel()
+		case <-waitCtx.Done():
+		}
+	}()
+	err := world.WaitObjectChange(waitCtx, ws, seen...)
+	cancel()
+	<-done
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	if err != nil && waitCtx.Err() == nil {
+		return err
+	}
+	return nil
 }
 
 // readWatched reads a snapshot with the root of the graph and of each object it

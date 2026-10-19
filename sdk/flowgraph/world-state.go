@@ -3,6 +3,7 @@ package s4wave_flowgraph
 import (
 	"context"
 
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
@@ -71,8 +72,17 @@ func ReadFlowgraphRun(ctx context.Context, ws world.WorldState, key string) (*Fl
 }
 
 // UpdateFlowgraph changes the body and placement graph in the caller's transaction.
-// The caller commits on success or discards the transaction on error.
+// The caller commits on success or discards the transaction on error. It has no
+// object type registry, so a bound node offers its authored ports only.
 func UpdateFlowgraph(ctx context.Context, ws world.WorldState, key string, request *UpdateFlowgraphRequest) (*FlowgraphSnapshot, error) {
+	return UpdateBoundFlowgraph(ctx, ws, nil, "", key, request)
+}
+
+// UpdateBoundFlowgraph changes the graph as UpdateFlowgraph does, and checks
+// connections to a node bound to an object against the ports the object's type
+// declares on b, scoped to engineID. The returned snapshot carries the bindings
+// read from the same transaction.
+func UpdateBoundFlowgraph(ctx context.Context, ws world.WorldState, b bus.Bus, engineID, key string, request *UpdateFlowgraphRequest) (*FlowgraphSnapshot, error) {
 	// Read the latest authored state from the write transaction.
 	previous, err := ReadFlowgraph(ctx, ws, key)
 	if err != nil {
@@ -114,9 +124,14 @@ func UpdateFlowgraph(ctx context.Context, ws world.WorldState, key string, reque
 	for _, id := range request.GetRemoveConnectionIds() {
 		delete(state.Connections, id)
 	}
-	if err := state.Validate(); err != nil {
+	bindings, err := ReadBindings(ctx, ws, b, engineID, state)
+	if err != nil {
 		return nil, err
 	}
+	if err := state.ValidateBound(bindings, previous.GetState()); err != nil {
+		return nil, err
+	}
+	next.Bindings = bindings
 
 	// Apply placement edits and validate all remaining placements against the nodes.
 	for id, placement := range request.GetSetPlacements() {
