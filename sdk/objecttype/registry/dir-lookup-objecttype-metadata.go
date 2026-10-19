@@ -1,0 +1,132 @@
+package s4wave_objecttype_registry
+
+import (
+	"context"
+	"time"
+
+	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/s4wave/spacewave/sdk/world/objecttype"
+)
+
+// LookupObjectTypeMetadata is a directive to look up the registered metadata
+// of an object type, including the ports it declares.
+type LookupObjectTypeMetadata interface {
+	// Directive indicates LookupObjectTypeMetadata is a directive.
+	directive.Directive
+
+	// LookupObjectTypeMetadataTypeID returns the object type ID to look up.
+	LookupObjectTypeMetadataTypeID() string
+
+	// LookupObjectTypeMetadataEngineID returns the world engine whose demanded
+	// plugins scope the lookup, matching LookupObjectType.
+	LookupObjectTypeMetadataEngineID() string
+}
+
+// LookupObjectTypeMetadataValue is the result type for
+// LookupObjectTypeMetadata: a private copy of the registered metadata. A type
+// registered without metadata yields an empty, non-nil value.
+type LookupObjectTypeMetadataValue = *ObjectTypeMetadata
+
+// ExLookupObjectTypeMetadata returns the metadata registered for an object type
+// on the bus, scoped to the engine in ctx the way ExLookupObjectType is.
+//
+// Returns nil when no plugin has registered the type, which includes a
+// registration that was released. The caller owns the returned copy.
+func ExLookupObjectTypeMetadata(
+	ctx context.Context,
+	b bus.Bus,
+	typeID string,
+) (*ObjectTypeMetadata, error) {
+	av, _, avRef, err := bus.ExecOneOffTyped[LookupObjectTypeMetadataValue](
+		ctx,
+		b,
+		NewLookupObjectTypeMetadata(typeID, objecttype.EngineIDFromContext(ctx)),
+		bus.ReturnWhenIdle(),
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if av == nil {
+		if avRef != nil {
+			avRef.Release()
+		}
+		return nil, nil
+	}
+	metadata := av.GetValue().CloneVT()
+	avRef.Release()
+	return metadata, nil
+}
+
+// lookupObjectTypeMetadata implements LookupObjectTypeMetadata.
+type lookupObjectTypeMetadata struct {
+	objectTypeID string
+	engineID     string
+}
+
+// NewLookupObjectTypeMetadata constructs a LookupObjectTypeMetadata directive
+// scoped to the demanded plugins of one world engine; empty engineID is unscoped.
+func NewLookupObjectTypeMetadata(objectTypeID, engineID string) LookupObjectTypeMetadata {
+	return &lookupObjectTypeMetadata{
+		objectTypeID: objectTypeID,
+		engineID:     engineID,
+	}
+}
+
+// Validate validates the directive.
+func (d *lookupObjectTypeMetadata) Validate() error {
+	return nil
+}
+
+// GetValueOptions returns options relating to value handling.
+func (d *lookupObjectTypeMetadata) GetValueOptions() directive.ValueOptions {
+	return directive.ValueOptions{
+		UnrefDisposeDur:            time.Millisecond * 100,
+		UnrefDisposeEmptyImmediate: true,
+	}
+}
+
+// LookupObjectTypeMetadataTypeID returns the object type ID to look up.
+func (d *lookupObjectTypeMetadata) LookupObjectTypeMetadataTypeID() string {
+	return d.objectTypeID
+}
+
+// LookupObjectTypeMetadataEngineID returns the world engine scoping the lookup.
+func (d *lookupObjectTypeMetadata) LookupObjectTypeMetadataEngineID() string {
+	return d.engineID
+}
+
+// IsEquivalent checks if the other directive asks for the same type and scope.
+func (d *lookupObjectTypeMetadata) IsEquivalent(other directive.Directive) bool {
+	od, ok := other.(LookupObjectTypeMetadata)
+	if !ok {
+		return false
+	}
+	return d.objectTypeID == od.LookupObjectTypeMetadataTypeID() &&
+		d.engineID == od.LookupObjectTypeMetadataEngineID()
+}
+
+// Superceeds checks if the directive overrides another.
+func (d *lookupObjectTypeMetadata) Superceeds(other directive.Directive) bool {
+	return false
+}
+
+// GetName returns the directive's type name.
+func (d *lookupObjectTypeMetadata) GetName() string {
+	return "LookupObjectTypeMetadata"
+}
+
+// GetDebugVals returns the directive arguments stringified.
+func (d *lookupObjectTypeMetadata) GetDebugVals() directive.DebugValues {
+	vals := directive.DebugValues{}
+	if d.objectTypeID != "" {
+		vals["object-type-id"] = []string{d.objectTypeID}
+	}
+	if d.engineID != "" {
+		vals["engine-id"] = []string{d.engineID}
+	}
+	return vals
+}
+
+var _ LookupObjectTypeMetadata = (*lookupObjectTypeMetadata)(nil)

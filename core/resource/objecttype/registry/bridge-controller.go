@@ -63,6 +63,11 @@ func (c *BridgeController) Execute(ctx context.Context) error {
 
 // HandleDirective asks if the handler can resolve the directive.
 func (c *BridgeController) HandleDirective(ctx context.Context, di directive.Instance) ([]directive.Resolver, error) {
+	// Resolve metadata lookups from the registry's retained registrations.
+	if metaDir, ok := di.GetDirective().(s4wave_objecttype_registry.LookupObjectTypeMetadata); ok {
+		return c.resolveMetadata(metaDir)
+	}
+
 	// Match the object type directive independently of registration visibility.
 	dir, ok := di.GetDirective().(objecttype.LookupObjectType)
 	if !ok {
@@ -99,6 +104,52 @@ func (c *BridgeController) HandleDirective(ctx context.Context, di directive.Ins
 				if next != nil {
 					factory := &registrationFactory{le: c.le, b: c.b, reg: next, instanceKey: instanceKey}
 					valueID, _ = handler.AddValue(factory.objectType())
+				}
+			}
+			handler.MarkIdle(true)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-wait:
+			}
+			handler.MarkIdle(false)
+		}
+	}), nil)
+}
+
+// resolveMetadata resolves LookupObjectTypeMetadata from the registry. The value
+// is a copy of the visible registration's metadata, replaced when the
+// registration changes and removed when it is released.
+func (c *BridgeController) resolveMetadata(dir s4wave_objecttype_registry.LookupObjectTypeMetadata) ([]directive.Resolver, error) {
+	typeID := dir.LookupObjectTypeMetadataTypeID()
+	if typeID == "" {
+		return nil, nil
+	}
+	return directive.R(directive.NewFuncResolver(func(ctx context.Context, handler directive.ResolverHandler) error {
+		var current *objectTypeRegistration
+		var valueID uint32
+		for {
+			// Read visibility and the wakeup position under the same admission lock.
+			var next *objectTypeRegistration
+			var wait <-chan struct{}
+			c.registry.bcast.HoldLock(func(_ func(), getWait func() <-chan struct{}) {
+				next = c.registry.lookupRegistrationLocked(typeID, dir.LookupObjectTypeMetadataEngineID())
+				wait = getWait()
+			})
+
+			// Replace the value only when a different registration is visible.
+			if next != current {
+				if valueID != 0 {
+					handler.RemoveValue(valueID)
+					valueID = 0
+				}
+				current = next
+				if next != nil {
+					metadata := next.registration.GetMetadata().CloneVT()
+					if metadata == nil {
+						metadata = &s4wave_objecttype_registry.ObjectTypeMetadata{}
+					}
+					valueID, _ = handler.AddValue(metadata)
 				}
 			}
 			handler.MarkIdle(true)
