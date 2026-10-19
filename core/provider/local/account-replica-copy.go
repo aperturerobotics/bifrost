@@ -138,10 +138,11 @@ func (a *ProviderAccount) copyAccountWorldHeads(
 }
 
 // copyAccountWorldHead copies cur until it completes or latest holds a newer
-// head. A block that no reachable source holds, or holds only without its
-// refs, does not appear by retrying the same head: the copy logs it once and
-// retries when a peer session starts on exchange. A retry first reads the
-// blocks the walk found missing and walks again only once one of them arrives.
+// head. A block that no reachable source holds or serves, such as one every
+// peer refuses, or holds only without its refs, does not appear by retrying the
+// same head: the copy logs it once and retries when a peer session starts on
+// exchange. A retry first reads the blocks the walk found missing and walks
+// again only once one of them arrives.
 // It returns nil when a newer head arrives first, which the caller copies next.
 func (a *ProviderAccount) copyAccountWorldHead(
 	ctx context.Context,
@@ -160,7 +161,7 @@ func (a *ProviderAccount) copyAccountWorldHead(
 			starts = exchange.GetSessionStarts()
 		}
 		err := a.copyAndPersistAccountWorld(ctx, so, state, local, cur.head)
-		if !errors.Is(err, block.ErrNotFound) && !errors.Is(err, block.ErrRefsUnknown) {
+		if !block.IsNotAvailable(err) && !errors.Is(err, block.ErrRefsUnknown) {
 			return err
 		}
 
@@ -239,10 +240,13 @@ func (e *worldHolesError) Unwrap() error {
 }
 
 // probe reads each missing block through store and reports whether any
-// arrived.
+// arrived. A block no source serves yet has not arrived.
 func (e *worldHolesError) probe(ctx context.Context, store block.StoreOps) (bool, error) {
 	for _, ref := range e.refs {
 		_, found, err := store.GetBlock(ctx, ref)
+		if block.IsNotAvailable(err) {
+			continue
+		}
 		if err != nil || found {
 			return found, err
 		}

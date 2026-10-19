@@ -3,6 +3,7 @@ package provider_local
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -231,45 +232,54 @@ func TestAccountReplicaCopyWaitsOnUnknownRefs(t *testing.T) {
 }
 
 // TestAccountReplicaCopyKeepsProofsAroundHoles copies from a source missing one
-// block. The walk finishes and names the block, and the next walk of the same
-// head reads only the path to it.
+// block, or whose peers all refuse it. The walk finishes and names the block,
+// and the next walk of the same head reads only the path to it.
 func TestAccountReplicaCopyKeepsProofsAroundHoles(t *testing.T) {
-	// Mount a seeded source Space that lacks its leaf payload.
-	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
-	defer cancel()
-	account, so, head, leaf, _ := mountSeededReplicaSource(ctx, t)
-	source := &holeStore{StoreOps: so.GetBlockStore(), hole: leaf}
-	destination := &replicaDestination{SharedObject: so, store: &BlockStore{
-		store: newBatchForwardTestStore(), copyStore: source,
-	}}
+	for name, holeErr := range map[string]error{
+		"missing": block.ErrNotFound,
+		"refused": fmt.Errorf("%w: no peer served block: shared object block access denied", block.ErrUnavailable),
+	} {
+		t.Run(name, func(t *testing.T) {
+			// Mount a seeded source Space that cannot serve its leaf payload.
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+			account, so, head, leaf, _ := mountSeededReplicaSource(ctx, t)
+			source := &holeStore{StoreOps: so.GetBlockStore(), hole: leaf, err: holeErr}
+			destination := &replicaDestination{SharedObject: so, store: &BlockStore{
+				store: newBatchForwardTestStore(), copyStore: source,
+			}}
 
-	// Each walk finishes and names the missing leaf.
-	walk := func() int32 {
-		// Copy the head, counting the source reads.
-		t.Helper()
-		source.reads.Store(0)
-		progress := &AccountReplicaCopyState{ObjectId: so.GetSharedObjectID(), Head: head}
-		err := account.copyAccountWorld(ctx, destination, progress, func() {})
-		var holes *worldHolesError
-		if !errors.As(err, &holes) || !errors.Is(err, block.ErrNotFound) {
-			t.Fatalf("copy returned %v, want the missing leaf", err)
-		}
-		if len(holes.refs) != 1 || !holes.refs[0].EqualVT(leaf) {
-			t.Fatalf("copy named holes %v, want the leaf", holes.refs)
-		}
-		return source.reads.Load()
-	}
-	first, second := walk(), walk()
-	if second >= first {
-		t.Fatalf("second walk read %d blocks, first read %d", second, first)
+			// Each walk finishes and names the leaf.
+			walk := func() int32 {
+				// Copy the head, counting the source reads.
+				t.Helper()
+				source.reads.Store(0)
+				progress := &AccountReplicaCopyState{ObjectId: so.GetSharedObjectID(), Head: head}
+				err := account.copyAccountWorld(ctx, destination, progress, func() {})
+				var holes *worldHolesError
+				if !errors.As(err, &holes) || !errors.Is(err, block.ErrNotFound) {
+					t.Fatalf("copy returned %v, want the leaf as a hole", err)
+				}
+				if len(holes.refs) != 1 || !holes.refs[0].EqualVT(leaf) {
+					t.Fatalf("copy named holes %v, want the leaf", holes.refs)
+				}
+				return source.reads.Load()
+			}
+			first, second := walk(), walk()
+			if second >= first {
+				t.Fatalf("second walk read %d blocks, first read %d", second, first)
+			}
+		})
 	}
 }
 
 // holeStore serves its inner store's blocks except one.
 type holeStore struct {
 	block.StoreOps
-	// hole is the block the store does not hold.
+	// hole is the block the store does not serve.
 	hole *block.BlockRef
+	// err is the error a read of hole returns.
+	err error
 	// reads counts the stored block reads.
 	reads atomic.Int32
 }
@@ -278,7 +288,7 @@ type holeStore struct {
 func (s *holeStore) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
 	s.reads.Add(1)
 	if ref.EqualVT(s.hole) {
-		return nil, block.ErrNotFound
+		return nil, s.err
 	}
 	return s.StoreOps.GetStoredBlock(ctx, ref)
 }

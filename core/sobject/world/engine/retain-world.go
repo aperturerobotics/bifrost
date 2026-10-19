@@ -35,8 +35,8 @@ func (c *Controller) retainPublicationWorld(ctx context.Context, so sobject.Shar
 // types. Completion proofs skip immutable subtrees only after their ownership
 // writes are durable. The caller owns the proof store and serializes calls for
 // it. visited observes newly traversed blocks; cached complete subtrees are
-// omitted. missing, when set, accepts a block no reachable store holds as a
-// hole, which leaves the World without a completion proof.
+// omitted. missing, when set, accepts a block no reachable store holds or
+// serves as a hole, which leaves the World without a completion proof.
 //
 // A volume proof does not own its root, so a sweep may remove an unowned
 // proved root with its graph at any time. A skipped subtree is held under a

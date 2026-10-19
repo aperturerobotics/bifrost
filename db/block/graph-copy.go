@@ -24,9 +24,10 @@ type GraphCopyOptions struct {
 	Complete func(ctx context.Context, ref *BlockRef) error
 	// Visited observes each block after its read.
 	Visited func(ref *BlockRef, data []byte)
-	// Missing handles a block src does not hold. Returning nil leaves a hole:
+	// Missing handles a block src cannot serve now, because it does not hold
+	// it or no source served it (IsNotAvailable). Returning nil leaves a hole:
 	// the copy continues, and writes the hole's ancestors without completing
-	// them. Without Missing, the copy returns ErrNotFound.
+	// them. Without Missing, the copy returns the read error.
 	Missing func(ctx context.Context, ref *BlockRef) error
 }
 
@@ -48,10 +49,10 @@ type CopySource interface {
 // temporary owner hands each child to its parent when the parent lands, and a
 // written parent finds every child present except a hole Missing accepted.
 //
-// Returns ErrNotFound for a missing block, unless Missing accepts it, and
-// ErrRefsUnknown for a block src holds without its refs, each wrapped with the
-// block ref. Known, Complete, Visited and Missing run on the calling
-// goroutine, one at a time.
+// Returns ErrNotFound or ErrUnavailable for a block src cannot serve, unless
+// Missing accepts it, and ErrRefsUnknown for a block src holds without its
+// refs, each wrapped with the block ref. Known, Complete, Visited and Missing
+// run on the calling goroutine, one at a time.
 func CopyGraph(ctx context.Context, src, dst StoreOps, root *BlockRef, opts *GraphCopyOptions) error {
 	// Skip an empty root and fill missing options.
 	if root.GetEmpty() {
@@ -157,7 +158,7 @@ func (c *graphCopy) run(ctx context.Context, root *BlockRef) error {
 		// Consume one result and expand its children.
 		res := <-results
 		inFlight--
-		if res.err != nil && c.opts.Missing != nil && errors.Is(res.err, ErrNotFound) {
+		if res.err != nil && c.opts.Missing != nil && IsNotAvailable(res.err) {
 			if err := c.opts.Missing(ctx, res.node.ref); err != nil {
 				return err
 			}
@@ -291,6 +292,7 @@ func (c *graphCopy) release(ctx context.Context, hole *graphCopyNode) error {
 // finish marks a node done, passes a hole under it to its parents, and returns
 // the parents that no longer wait on a child.
 func (c *graphCopy) finish(node *graphCopyNode) []*graphCopyNode {
+	// Release each parent from this child, carrying its hole up.
 	node.done = true
 	var ready []*graphCopyNode
 	for _, parent := range node.parents {
