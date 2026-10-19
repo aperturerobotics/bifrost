@@ -97,6 +97,56 @@ func (x FlowgraphPlacementKind) String() string {
 	return strconv.Itoa(int(x))
 }
 
+// FlowgraphBindingState is the derived state of a node's bound Space object.
+type FlowgraphBindingState int32
+
+const (
+	// FLOWGRAPH_BINDING_STATE_UNKNOWN is unset.
+	FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNKNOWN FlowgraphBindingState = 0
+	// FLOWGRAPH_BINDING_STATE_UNBOUND means the node names no object.
+	FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNBOUND FlowgraphBindingState = 1
+	// FLOWGRAPH_BINDING_STATE_BOUND means the object exists and its type is
+	// registered, so the declared ports are known.
+	FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_BOUND FlowgraphBindingState = 2
+	// FLOWGRAPH_BINDING_STATE_UNREGISTERED means the object exists but no loaded
+	// plugin registers its type.
+	FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNREGISTERED FlowgraphBindingState = 3
+	// FLOWGRAPH_BINDING_STATE_UNAVAILABLE means the object does not exist.
+	FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNAVAILABLE FlowgraphBindingState = 4
+)
+
+// Enum value maps for FlowgraphBindingState.
+var (
+	FlowgraphBindingState_name = map[int32]string{
+		0: "FLOWGRAPH_BINDING_STATE_UNKNOWN",
+		1: "FLOWGRAPH_BINDING_STATE_UNBOUND",
+		2: "FLOWGRAPH_BINDING_STATE_BOUND",
+		3: "FLOWGRAPH_BINDING_STATE_UNREGISTERED",
+		4: "FLOWGRAPH_BINDING_STATE_UNAVAILABLE",
+	}
+	FlowgraphBindingState_value = map[string]int32{
+		"FLOWGRAPH_BINDING_STATE_UNKNOWN":      0,
+		"FLOWGRAPH_BINDING_STATE_UNBOUND":      1,
+		"FLOWGRAPH_BINDING_STATE_BOUND":        2,
+		"FLOWGRAPH_BINDING_STATE_UNREGISTERED": 3,
+		"FLOWGRAPH_BINDING_STATE_UNAVAILABLE":  4,
+	}
+)
+
+func (x FlowgraphBindingState) Enum() *FlowgraphBindingState {
+	p := new(FlowgraphBindingState)
+	*p = x
+	return p
+}
+
+func (x FlowgraphBindingState) String() string {
+	name, valid := FlowgraphBindingState_name[int32(x)]
+	if valid {
+		return name
+	}
+	return strconv.Itoa(int(x))
+}
+
 // FlowgraphRunState is the lifecycle state of a run.
 type FlowgraphRunState int32
 
@@ -190,6 +240,10 @@ type FlowgraphNode struct {
 	Ports []*FlowgraphPort `protobuf:"bytes,3,rep,name=ports,proto3" json:"ports,omitempty"`
 	// Step holds instructions for a node that runs once per activation.
 	Step *FlowgraphStep `protobuf:"bytes,4,opt,name=step,proto3" json:"step,omitempty"`
+	// ObjectKey binds the node to a Space object, such as a chat room or a
+	// repository. It is empty for an unbound node. The binding state is derived
+	// from the World when the graph is read and is never stored.
+	ObjectKey string `protobuf:"bytes,5,opt,name=object_key,json=objectKey,proto3" json:"objectKey,omitempty"`
 }
 
 func (x *FlowgraphNode) Reset() {
@@ -224,6 +278,13 @@ func (x *FlowgraphNode) GetStep() *FlowgraphStep {
 		return x.Step
 	}
 	return nil
+}
+
+func (x *FlowgraphNode) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
 }
 
 // FlowgraphPort declares a node-local connection endpoint.
@@ -466,6 +527,55 @@ func (x *FlowgraphPlacement) GetObjectKey() string {
 	return ""
 }
 
+// FlowgraphBinding is a readback of a node's bound Space object.
+// This message is never stored in the Flowgraph body.
+type FlowgraphBinding struct {
+	unknownFields []byte
+	// ObjectKey is the bound object, copied from the node.
+	ObjectKey string `protobuf:"bytes,1,opt,name=object_key,json=objectKey,proto3" json:"objectKey,omitempty"`
+	// TypeId is the object's World type, empty when the object is absent.
+	TypeId string `protobuf:"bytes,2,opt,name=type_id,json=typeId,proto3" json:"typeId,omitempty"`
+	// State is the binding state derived from the World and the type registry.
+	State FlowgraphBindingState `protobuf:"varint,3,opt,name=state,proto3" json:"state,omitempty"`
+	// Ports lists the ports the object's registered type declares. The node's
+	// connections may name these ports. It is empty unless the state is BOUND.
+	Ports []*FlowgraphPort `protobuf:"bytes,4,rep,name=ports,proto3" json:"ports,omitempty"`
+}
+
+func (x *FlowgraphBinding) Reset() {
+	*x = FlowgraphBinding{}
+}
+
+func (*FlowgraphBinding) ProtoMessage() {}
+
+func (x *FlowgraphBinding) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *FlowgraphBinding) GetTypeId() string {
+	if x != nil {
+		return x.TypeId
+	}
+	return ""
+}
+
+func (x *FlowgraphBinding) GetState() FlowgraphBindingState {
+	if x != nil {
+		return x.State
+	}
+	return FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNKNOWN
+}
+
+func (x *FlowgraphBinding) GetPorts() []*FlowgraphPort {
+	if x != nil {
+		return x.Ports
+	}
+	return nil
+}
+
 // FlowgraphSnapshot reads authored state and its placement edges together.
 type FlowgraphSnapshot struct {
 	unknownFields []byte
@@ -475,6 +585,9 @@ type FlowgraphSnapshot struct {
 	Placements map[string]*FlowgraphPlacement `protobuf:"bytes,2,rep,name=placements,proto3" json:"placements,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Revision is the object's revision observed by this read.
 	Revision uint64 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
+	// Bindings contains the binding of each node that names an object, keyed by
+	// node ID. An unbound node has no entry.
+	Bindings map[string]*FlowgraphBinding `protobuf:"bytes,4,rep,name=bindings,proto3" json:"bindings,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *FlowgraphSnapshot) Reset() {
@@ -502,6 +615,13 @@ func (x *FlowgraphSnapshot) GetRevision() uint64 {
 		return x.Revision
 	}
 	return 0
+}
+
+func (x *FlowgraphSnapshot) GetBindings() map[string]*FlowgraphBinding {
+	if x != nil {
+		return x.Bindings
+	}
+	return nil
 }
 
 // CreateFlowgraphOp creates one independently addressed Flowgraph.
@@ -1269,6 +1389,32 @@ func (x *FlowgraphSnapshot_PlacementsEntry) GetValue() *FlowgraphPlacement {
 	return nil
 }
 
+type FlowgraphSnapshot_BindingsEntry struct {
+	unknownFields []byte
+	Key           string            `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         *FlowgraphBinding `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *FlowgraphSnapshot_BindingsEntry) Reset() {
+	*x = FlowgraphSnapshot_BindingsEntry{}
+}
+
+func (*FlowgraphSnapshot_BindingsEntry) ProtoMessage() {}
+
+func (x *FlowgraphSnapshot_BindingsEntry) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *FlowgraphSnapshot_BindingsEntry) GetValue() *FlowgraphBinding {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 type UpdateFlowgraphRequest_SetNodesEntry struct {
 	unknownFields []byte
 	Key           string         `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
@@ -1423,6 +1569,7 @@ func (m *FlowgraphNode) CloneVT() *FlowgraphNode {
 	}
 	r := new(FlowgraphNode)
 	r.TypeId = m.TypeId
+	r.ObjectKey = m.ObjectKey
 	r.Parameters = protobuf_go_lite.CloneMap(m.Parameters)
 	r.Ports = protobuf_go_lite.CloneVTSlice(m.Ports)
 	r.Step = protobuf_go_lite.CloneVTValue(m.Step)
@@ -1544,6 +1691,25 @@ func (m *FlowgraphPlacement) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *FlowgraphBinding) CloneVT() *FlowgraphBinding {
+	if m == nil {
+		return (*FlowgraphBinding)(nil)
+	}
+	r := new(FlowgraphBinding)
+	r.ObjectKey = m.ObjectKey
+	r.TypeId = m.TypeId
+	r.State = m.State
+	r.Ports = protobuf_go_lite.CloneVTSlice(m.Ports)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *FlowgraphBinding) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *FlowgraphSnapshot) CloneVT() *FlowgraphSnapshot {
 	if m == nil {
 		return (*FlowgraphSnapshot)(nil)
@@ -1552,6 +1718,7 @@ func (m *FlowgraphSnapshot) CloneVT() *FlowgraphSnapshot {
 	r.Revision = m.Revision
 	r.State = protobuf_go_lite.CloneVTValue(m.State)
 	r.Placements = protobuf_go_lite.CloneVTMap(m.Placements)
+	r.Bindings = protobuf_go_lite.CloneVTMap(m.Bindings)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1922,6 +2089,9 @@ func (this *FlowgraphNode) EqualVT(that *FlowgraphNode) bool {
 	if !protobuf_go_lite.IsEqualVT(this.Step, that.Step) {
 		return false
 	}
+	if this.ObjectKey != that.ObjectKey {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -2089,6 +2259,35 @@ func (this *FlowgraphPlacement) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+func (this *FlowgraphBinding) EqualVT(that *FlowgraphBinding) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.ObjectKey != that.ObjectKey {
+		return false
+	}
+	if this.TypeId != that.TypeId {
+		return false
+	}
+	if this.State != that.State {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Ports, that.Ports, func() *FlowgraphPort { return &FlowgraphPort{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *FlowgraphBinding) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*FlowgraphBinding)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 func (this *FlowgraphSnapshot) EqualVT(that *FlowgraphSnapshot) bool {
 	if this == that {
 		return true
@@ -2102,6 +2301,9 @@ func (this *FlowgraphSnapshot) EqualVT(that *FlowgraphSnapshot) bool {
 		return false
 	}
 	if this.Revision != that.Revision {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTMapImplicit(this.Bindings, that.Bindings, func() *FlowgraphBinding { return &FlowgraphBinding{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -2648,6 +2850,46 @@ func (x *FlowgraphPlacementKind) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the FlowgraphBindingState to JSON.
+func (x FlowgraphBindingState) MarshalProtoJSON(s *json.MarshalState) {
+	s.WriteEnum(int32(x), FlowgraphBindingState_name)
+}
+
+// MarshalText marshals the FlowgraphBindingState to text.
+func (x FlowgraphBindingState) MarshalText() ([]byte, error) {
+	return []byte(json.GetEnumString(int32(x), FlowgraphBindingState_name)), nil
+}
+
+// MarshalJSON marshals the FlowgraphBindingState to JSON.
+func (x FlowgraphBindingState) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the FlowgraphBindingState from JSON.
+func (x *FlowgraphBindingState) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	v := s.ReadEnum(FlowgraphBindingState_value)
+	if err := s.Err(); err != nil {
+		s.SetErrorf("could not read FlowgraphBindingState enum: %v", err)
+		return
+	}
+	*x = FlowgraphBindingState(v)
+}
+
+// UnmarshalText unmarshals the FlowgraphBindingState from text.
+func (x *FlowgraphBindingState) UnmarshalText(b []byte) error {
+	i, err := json.ParseEnumString(string(b), FlowgraphBindingState_value)
+	if err != nil {
+		return err
+	}
+	*x = FlowgraphBindingState(i)
+	return nil
+}
+
+// UnmarshalJSON unmarshals the FlowgraphBindingState from JSON.
+func (x *FlowgraphBindingState) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the FlowgraphRunState to JSON.
 func (x FlowgraphRunState) MarshalProtoJSON(s *json.MarshalState) {
 	s.WriteEnum(int32(x), FlowgraphRunState_name)
@@ -2980,6 +3222,11 @@ func (x *FlowgraphNode) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("step")
 		x.Step.MarshalProtoJSON(s.WithField("step"))
 	}
+	if x.ObjectKey != "" || s.HasField("objectKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("objectKey")
+		s.WriteString(x.ObjectKey)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -3035,6 +3282,9 @@ func (x *FlowgraphNode) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.Step = &FlowgraphStep{}
 			x.Step.UnmarshalProtoJSON(s.WithField("step", true))
+		case "object_key", "objectKey":
+			s.AddField("object_key")
+			x.ObjectKey = s.ReadString()
 		}
 	})
 }
@@ -3486,6 +3736,93 @@ func (x *FlowgraphPlacement) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the FlowgraphBinding message to JSON.
+func (x *FlowgraphBinding) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.ObjectKey != "" || s.HasField("objectKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("objectKey")
+		s.WriteString(x.ObjectKey)
+	}
+	if x.TypeId != "" || s.HasField("typeId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("typeId")
+		s.WriteString(x.TypeId)
+	}
+	if x.State != 0 || s.HasField("state") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("state")
+		x.State.MarshalProtoJSON(s)
+	}
+	if len(x.Ports) > 0 || s.HasField("ports") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("ports")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Ports {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("ports"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the FlowgraphBinding to JSON.
+func (x *FlowgraphBinding) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the FlowgraphBinding message from JSON.
+func (x *FlowgraphBinding) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "object_key", "objectKey":
+			s.AddField("object_key")
+			x.ObjectKey = s.ReadString()
+		case "type_id", "typeId":
+			s.AddField("type_id")
+			x.TypeId = s.ReadString()
+		case "state":
+			s.AddField("state")
+			x.State.UnmarshalProtoJSON(s)
+		case "ports":
+			s.AddField("ports")
+			if s.ReadNil() {
+				x.Ports = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Ports = append(x.Ports, nil)
+					return
+				}
+				v := &FlowgraphPort{}
+				v.UnmarshalProtoJSON(s.WithField("ports", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Ports = append(x.Ports, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the FlowgraphBinding from JSON.
+func (x *FlowgraphBinding) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the FlowgraphSnapshot_PlacementsEntry message to JSON.
 func (x *FlowgraphSnapshot_PlacementsEntry) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -3540,6 +3877,60 @@ func (x *FlowgraphSnapshot_PlacementsEntry) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the FlowgraphSnapshot_BindingsEntry message to JSON.
+func (x *FlowgraphSnapshot_BindingsEntry) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Key != "" || s.HasField("key") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("key")
+		s.WriteString(x.Key)
+	}
+	if x.Value != nil || s.HasField("value") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("value")
+		x.Value.MarshalProtoJSON(s.WithField("value"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the FlowgraphSnapshot_BindingsEntry to JSON.
+func (x *FlowgraphSnapshot_BindingsEntry) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the FlowgraphSnapshot_BindingsEntry message from JSON.
+func (x *FlowgraphSnapshot_BindingsEntry) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "key":
+			s.AddField("key")
+			x.Key = s.ReadString()
+		case "value":
+			if s.ReadNil() {
+				x.Value = nil
+				return
+			}
+			x.Value = &FlowgraphBinding{}
+			x.Value.UnmarshalProtoJSON(s.WithField("value", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the FlowgraphSnapshot_BindingsEntry from JSON.
+func (x *FlowgraphSnapshot_BindingsEntry) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the FlowgraphSnapshot message to JSON.
 func (x *FlowgraphSnapshot) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -3570,6 +3961,19 @@ func (x *FlowgraphSnapshot) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("revision")
 		s.WriteUint64(x.Revision)
+	}
+	if x.Bindings != nil || s.HasField("bindings") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("bindings")
+		s.WriteObjectStart()
+		var wroteElement bool
+		for _, k := range slices.Sorted(maps.Keys(x.Bindings)) {
+			v := x.Bindings[k]
+			s.WriteMoreIf(&wroteElement)
+			s.WriteObjectStringField(k)
+			v.MarshalProtoJSON(s.WithField("bindings"))
+		}
+		s.WriteObjectEnd()
 	}
 	s.WriteObjectEnd()
 }
@@ -3610,6 +4014,18 @@ func (x *FlowgraphSnapshot) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "revision":
 			s.AddField("revision")
 			x.Revision = s.ReadUint64()
+		case "bindings":
+			s.AddField("bindings")
+			if s.ReadNil() {
+				x.Bindings = nil
+				return
+			}
+			x.Bindings = make(map[string]*FlowgraphBinding)
+			s.ReadStringMap(func(key string) {
+				var v FlowgraphBinding
+				v.UnmarshalProtoJSON(s)
+				x.Bindings[key] = &v
+			})
 		}
 	})
 }
@@ -5121,6 +5537,11 @@ func (m *FlowgraphNode) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.ObjectKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ObjectKey)
+		i--
+		dAtA[i] = 0x2a
+	}
 	if m.Step != nil {
 		size, err := m.Step.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -5475,6 +5896,65 @@ func (m *FlowgraphPlacement) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *FlowgraphBinding) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *FlowgraphBinding) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *FlowgraphBinding) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Ports) > 0 {
+		for iNdEx := len(m.Ports) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Ports[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.State != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.State))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.TypeId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.TypeId)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ObjectKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ObjectKey)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *FlowgraphSnapshot) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -5503,6 +5983,26 @@ func (m *FlowgraphSnapshot) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Bindings) > 0 {
+		for k := range m.Bindings {
+			v := m.Bindings[k]
+			baseI := i
+			size, err := v.MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x12
+			i = protobuf_go_lite.EncodeString(dAtA, i, k)
+			i--
+			dAtA[i] = 0xa
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x22
+		}
 	}
 	if m.Revision != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Revision))
@@ -6517,6 +7017,7 @@ func (m *FlowgraphNode) SizeVT() (n int) {
 		l = m.Step.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ObjectKey)
 	n += len(m.unknownFields)
 	return n
 }
@@ -6613,6 +7114,23 @@ func (m *FlowgraphPlacement) SizeVT() (n int) {
 	return n
 }
 
+func (m *FlowgraphBinding) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ObjectKey)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.TypeId)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.State)
+	for _, e := range m.Ports {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *FlowgraphSnapshot) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -6634,6 +7152,16 @@ func (m *FlowgraphSnapshot) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Revision)
+	for k, v := range m.Bindings {
+		_ = k
+		_ = v
+		l = 0
+		if v != nil {
+			l = v.SizeVT()
+		}
+		mapEntrySize := protobuf_go_lite.SizeStringValue(1, k) + protobuf_go_lite.SizeMessage(1, l)
+		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -6952,6 +7480,10 @@ func (x FlowgraphPlacementKind) MarshalProtoText() string {
 	return x.String()
 }
 
+func (x FlowgraphBindingState) MarshalProtoText() string {
+	return x.String()
+}
+
 func (x FlowgraphRunState) MarshalProtoText() string {
 	return x.String()
 }
@@ -7087,6 +7619,10 @@ func (x *FlowgraphNode) MarshalProtoText() string {
 	if x.Step != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "step")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Step)
+	}
+	if x.ObjectKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "object_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ObjectKey)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -7260,6 +7796,40 @@ func (x *FlowgraphPlacement) String() string {
 	return x.MarshalProtoText()
 }
 
+func (x *FlowgraphBinding) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphBinding")
+	if x.ObjectKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "object_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ObjectKey)
+	}
+	if x.TypeId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "type_id")
+		protobuf_go_lite.TextWriteString(&sb, x.TypeId)
+	}
+	if x.State != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "state")
+		protobuf_go_lite.TextWriteStringer(&sb, FlowgraphBindingState(x.State))
+	}
+	if len(x.Ports) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "ports")
+		for i, v := range x.Ports {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &FlowgraphPort{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *FlowgraphBinding) String() string {
+	return x.MarshalProtoText()
+}
+
 func (x *FlowgraphSnapshot_PlacementsEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "PlacementsEntry")
@@ -7275,6 +7845,24 @@ func (x *FlowgraphSnapshot_PlacementsEntry) MarshalProtoText() string {
 }
 
 func (x *FlowgraphSnapshot_PlacementsEntry) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *FlowgraphSnapshot_BindingsEntry) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "BindingsEntry")
+	if x.Key != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key")
+		protobuf_go_lite.TextWriteString(&sb, x.Key)
+	}
+	if x.Value != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "value")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Value)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *FlowgraphSnapshot_BindingsEntry) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -7303,6 +7891,21 @@ func (x *FlowgraphSnapshot) MarshalProtoText() string {
 	if x.Revision != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "revision")
 		protobuf_go_lite.TextWriteUint(&sb, x.Revision)
+	}
+	if len(x.Bindings) > 0 {
+		protobuf_go_lite.TextWriteMapStart(&sb, initialLen, "bindings")
+		for _, k := range slices.Sorted(maps.Keys(x.Bindings)) {
+			v := x.Bindings[k]
+			protobuf_go_lite.TextWriteMapEntryPrefix(&sb)
+			protobuf_go_lite.TextWriteString(&sb, k)
+			protobuf_go_lite.TextWriteMapKeyValueSeparator(&sb)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &FlowgraphBinding{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteMapEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -8099,6 +8702,16 @@ func (m *FlowgraphNode) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ObjectKey = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -8605,6 +9218,93 @@ func (m *FlowgraphPlacement) UnmarshalVT(dAtA []byte) error {
 	return nil
 }
 
+func (m *FlowgraphBinding) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FlowgraphBinding: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FlowgraphBinding: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ObjectKey = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TypeId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.TypeId = v
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
+			}
+			m.State = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.State = FlowgraphBindingState(_v)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ports", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Ports = append(m.Ports, &FlowgraphPort{})
+			if err := m.Ports[len(m.Ports)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
 func (m *FlowgraphSnapshot) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -8696,6 +9396,53 @@ func (m *FlowgraphSnapshot) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Bindings", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			iNdEx = msgStart
+			if m.Bindings == nil {
+				m.Bindings = make(map[string]*FlowgraphBinding)
+			}
+			var mapkey string
+			var mapvalue *FlowgraphBinding
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+				if err != nil {
+					return err
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					mapkey, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+				} else if fieldNum == 2 {
+					msgStartmapvalue, postmsgIndexmapvalue, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+					if err != nil {
+						return err
+					}
+					mapvalue = &FlowgraphBinding{}
+					if err := mapvalue.UnmarshalVT(dAtA[msgStartmapvalue:postmsgIndexmapvalue]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					iNdEx, err = protobuf_go_lite.SkipWithin(dAtA, iNdEx, postIndex)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			m.Bindings[mapkey] = mapvalue
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

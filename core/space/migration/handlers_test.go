@@ -278,6 +278,7 @@ func TestFlowgraphHandlerRewritesTargetAndPlacementIdentities(t *testing.T) {
 	graph := &s4wave_flowgraph.Flowgraph{
 		Name: "graph",
 		Nodes: map[string]*s4wave_flowgraph.FlowgraphNode{
+			"room": {TypeId: "chat/channel", ObjectKey: "bound-object"},
 			"step": {
 				TypeId: s4wave_flowgraph.StepNodeTypeID,
 				Step: &s4wave_flowgraph.FlowgraphStep{
@@ -335,6 +336,7 @@ func TestFlowgraphHandlerRewritesTargetAndPlacementIdentities(t *testing.T) {
 		}
 	}
 	assertForgeReferences(t, "flowgraph inspect", objectKeys, []space_migration.TypedReference{
+		{Kind: space_migration.ReferenceObjectKey, Value: "bound-object"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "input-object"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "snapshot-object"},
 		{Kind: space_migration.ReferenceBlockStore, Value: "source-store"},
@@ -345,7 +347,7 @@ func TestFlowgraphHandlerRewritesTargetAndPlacementIdentities(t *testing.T) {
 	// Rewrite the graph with destination identities.
 	mapping := space_migration.NewIdentityMap()
 	mapping.BlockStoreIDs["source-store"] = "destination-store"
-	for _, key := range []string{"input-object", "snapshot-object", "device", "actor"} {
+	for _, key := range []string{"bound-object", "input-object", "snapshot-object", "device", "actor"} {
 		mapping.ObjectKeys[key] = key + "-destination"
 	}
 	result, err := handler.Rewrite(ctx, object, mapping)
@@ -355,6 +357,7 @@ func TestFlowgraphHandlerRewritesTargetAndPlacementIdentities(t *testing.T) {
 
 	// Verify the rewrite reports the destination identities.
 	assertForgeReferences(t, "flowgraph rewrite", result.References, []space_migration.TypedReference{
+		{Kind: space_migration.ReferenceObjectKey, Value: "bound-object-destination"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "input-object-destination"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "snapshot-object-destination"},
 		{Kind: space_migration.ReferenceBlockStore, Value: "destination-store"},
@@ -375,6 +378,9 @@ func TestFlowgraphHandlerRewritesTargetAndPlacementIdentities(t *testing.T) {
 	snapshot := inputs[1].GetValue().GetWorldObjectSnapshot()
 	if snapshot.GetKey() != "snapshot-object-destination" || snapshot.GetRootRef().GetBucketId() != "destination-store" {
 		t.Fatalf("rewritten snapshot = %v", snapshot)
+	}
+	if got := rewritten.GetNodes()["room"].GetObjectKey(); got != "bound-object-destination" {
+		t.Fatalf("rewritten node object key = %q", got)
 	}
 	if rewritten.GetName() != "graph" || step.GetPrompt() != "unchanged" {
 		t.Fatalf("rewrite changed unreferenced fields: %v", &rewritten)

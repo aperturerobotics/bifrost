@@ -138,7 +138,18 @@ func (a *flowgraphArgs) writeSnapshot(key string, snapshot *flowgraph.FlowgraphS
 		rows := [][]string{{"ID", "TYPE", "PORTS", "PLACEMENT"}}
 		for _, id := range slices.Sorted(maps.Keys(nodes)) {
 			placement := snapshot.GetPlacements()[id]
-			rows = append(rows, []string{id, nodes[id].GetTypeId(), describePorts(nodes[id]), describePlacement(placement)})
+			rows = append(rows, []string{id, nodes[id].GetTypeId(), describePorts(nodes[id].GetPorts()), describePlacement(placement)})
+		}
+		writeTable(w, "  ", rows)
+	}
+
+	// Print the bound objects with their derived state and declared ports.
+	if bindings := snapshot.GetBindings(); len(bindings) != 0 {
+		io.WriteString(w, "\nBINDINGS:\n")
+		rows := [][]string{{"NODE", "OBJECT", "TYPE", "STATE", "PORTS"}}
+		for _, id := range slices.Sorted(maps.Keys(bindings)) {
+			binding := bindings[id]
+			rows = append(rows, []string{id, binding.GetObjectKey(), binding.GetTypeId(), describeBindingState(binding), describePorts(binding.GetPorts())})
 		}
 		writeTable(w, "  ", rows)
 	}
@@ -253,7 +264,7 @@ func buildFlowgraphShowCommand() *cli.Command {
 	args := &flowgraphArgs{}
 	return &cli.Command{
 		Name:  "show",
-		Usage: "show a Flowgraph's nodes, placements, and connections",
+		Usage: "show a Flowgraph's nodes, bound objects, placements, and connections",
 		Flags: args.BuildFlags(),
 		Action: func(c *cli.Context) error {
 			// Read the snapshot through the Flowgraph Resource.
@@ -313,6 +324,8 @@ type flowgraphNodeSetArgs struct {
 	skills  cli.StringSlice
 	device  string
 	actor   string
+	// object is the Space object the node binds.
+	object string
 	// targetFile holds a Target in generated protobuf JSON format.
 	targetFile string
 	// maxVisits bounds this Step's activations.
@@ -342,6 +355,7 @@ func (a *flowgraphNodeSetArgs) BuildFlags() []cli.Flag {
 		&cli.StringSliceFlag{Name: "skill", Usage: "Step skill name (repeatable)", Destination: &a.skills},
 		&cli.StringFlag{Name: "device", Usage: "place the node on this Device object key", Destination: &a.device},
 		&cli.StringFlag{Name: "actor", Usage: "place the Step on this actor object key", Destination: &a.actor},
+		&cli.StringFlag{Name: "object", Usage: "bind the node to this Space object key", Destination: &a.object},
 		&cli.StringFlag{Name: "target-file", Usage: "Step Target file in protobuf JSON format", Destination: &a.targetFile},
 		&cli.UintFlag{Name: "max-visits", Usage: "Step visit bound (zero is unlimited)", Destination: &a.maxVisits},
 		&cli.Uint64Flag{Name: "max-spend", Usage: "Step spend bound (zero is unlimited)", Destination: &a.maxSpend},
@@ -380,7 +394,7 @@ func (a *flowgraphNodeSetArgs) Run(c *cli.Context) error {
 // buildNode converts the flags into a node.
 func (a *flowgraphNodeSetArgs) buildNode() (*flowgraph.FlowgraphNode, error) {
 	// Parse the parameters.
-	node := &flowgraph.FlowgraphNode{TypeId: a.typeID}
+	node := &flowgraph.FlowgraphNode{TypeId: a.typeID, ObjectKey: a.object}
 	for _, param := range a.params.Value() {
 		key, value, found := strings.Cut(param, "=")
 		if !found {
@@ -601,10 +615,22 @@ func appendEdit(parts []string, label string, ids []string) []string {
 	return append(parts, label+" "+strings.Join(ids, ","))
 }
 
-// describePorts lists a node's ports as direction name:type.
-func describePorts(node *flowgraph.FlowgraphNode) string {
+// describeBindingState names a binding's state: BOUND, UNREGISTERED,
+// UNAVAILABLE, or UNBOUND.
+func describeBindingState(binding *flowgraph.FlowgraphBinding) string {
+	if binding.GetObjectKey() == "" {
+		return strings.TrimPrefix(flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNBOUND.String(), bindingStatePrefix)
+	}
+	return strings.TrimPrefix(binding.GetState().String(), bindingStatePrefix)
+}
+
+// bindingStatePrefix starts the name of every FlowgraphBindingState.
+const bindingStatePrefix = "FLOWGRAPH_BINDING_STATE_"
+
+// describePorts lists ports as direction name:type.
+func describePorts(nodePorts []*flowgraph.FlowgraphPort) string {
 	var ports []string
-	for _, port := range node.GetPorts() {
+	for _, port := range nodePorts {
 		prefix := "in "
 		if port.GetDirection() == flowgraph.FlowgraphPortDirection_FLOWGRAPH_PORT_DIRECTION_OUTPUT {
 			prefix = "out "

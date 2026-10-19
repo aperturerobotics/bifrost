@@ -46,3 +46,46 @@ func TestFlowgraphNodeTargetAndBound(t *testing.T) {
 		t.Fatal("Device node accepted a Step Target")
 	}
 }
+
+// TestFlowgraphNodeObjectBinding binds a node to a Space object from its flag
+// and names each binding state and declared port for the show output.
+func TestFlowgraphNodeObjectBinding(t *testing.T) {
+	// Bind a node by flag, and leave a node without the flag unbound.
+	args := &flowgraphNodeSetArgs{typeID: "object", object: "chat/room"}
+	node, err := args.buildNode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if node.GetObjectKey() != "chat/room" {
+		t.Fatalf("node object key = %q", node.GetObjectKey())
+	}
+	if node, err = (&flowgraphNodeSetArgs{typeID: "object"}).buildNode(); err != nil || node.GetObjectKey() != "" {
+		t.Fatalf("node without --object = %v, %v", node, err)
+	}
+
+	// Name each state and the declared ports.
+	bound := &flowgraph.FlowgraphBinding{
+		ObjectKey: "chat/room",
+		State:     flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_BOUND,
+		Ports: []*flowgraph.FlowgraphPort{
+			{Name: "in", Direction: flowgraph.FlowgraphPortDirection_FLOWGRAPH_PORT_DIRECTION_INPUT, TypeId: "stream"},
+			{Name: "out", Direction: flowgraph.FlowgraphPortDirection_FLOWGRAPH_PORT_DIRECTION_OUTPUT, TypeId: "event"},
+		},
+	}
+	if got := describeBindingState(bound); got != "BOUND" {
+		t.Fatalf("bound state = %q", got)
+	}
+	if got := describePorts(bound.GetPorts()); got != "in in:stream, out out:event" {
+		t.Fatalf("declared ports = %q", got)
+	}
+	unavailable := &flowgraph.FlowgraphBinding{ObjectKey: "chat/room", State: flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNAVAILABLE}
+	if got := describeBindingState(unavailable); got != "UNAVAILABLE" {
+		t.Fatalf("unavailable state = %q", got)
+	}
+	if got := describeBindingState(&flowgraph.FlowgraphBinding{State: flowgraph.FlowgraphBindingState_FLOWGRAPH_BINDING_STATE_UNREGISTERED, ObjectKey: "x"}); got != "UNREGISTERED" {
+		t.Fatalf("unregistered state = %q", got)
+	}
+	if got := describeBindingState(&flowgraph.FlowgraphBinding{}); got != "UNBOUND" {
+		t.Fatalf("unbound state = %q", got)
+	}
+}

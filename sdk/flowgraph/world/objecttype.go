@@ -18,7 +18,7 @@ const FlowgraphTypeID = s4wave_flowgraph.FlowgraphTypeID
 var FlowgraphType = objecttype.NewObjectType(s4wave_flowgraph.FlowgraphTypeID, FlowgraphFactory)
 
 // FlowgraphFactory serves a graph through the granting World capability.
-func FlowgraphFactory(ctx context.Context, _ *logrus.Entry, _ bus.Bus, engine world.Engine, ws world.WorldState, key string) (srpc.Invoker, func(), error) {
+func FlowgraphFactory(ctx context.Context, _ *logrus.Entry, b bus.Bus, engine world.Engine, ws world.WorldState, key string) (srpc.Invoker, func(), error) {
 	// Require the granted World state and a decodable graph body.
 	if ws == nil {
 		return nil, nil, objecttype.ErrWorldStateRequired
@@ -28,6 +28,6 @@ func FlowgraphFactory(ctx context.Context, _ *logrus.Entry, _ bus.Bus, engine wo
 	}
 
 	// Expose the stateless Resource without a separate background lifetime.
-	resource := s4wave_flowgraph.NewFlowgraphResource(ws, engine, key)
+	resource := s4wave_flowgraph.NewFlowgraphResource(ws, engine, b, objecttype.EngineIDFromContext(ctx), key)
 	return resource.GetMux(), func() {}, nil
 }

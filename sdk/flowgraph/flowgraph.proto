@@ -27,6 +27,10 @@ message FlowgraphNode {
   repeated FlowgraphPort ports = 3;
   // Step holds instructions for a node that runs once per activation.
   FlowgraphStep step = 4;
+  // ObjectKey binds the node to a Space object, such as a chat room or a
+  // repository. It is empty for an unbound node. The binding state is derived
+  // from the World when the graph is read and is never stored.
+  string object_key = 5;
 }
 
 // FlowgraphPortDirection selects the end of a directed connection.
@@ -121,6 +125,36 @@ message FlowgraphPlacement {
   string object_key = 2;
 }
 
+// FlowgraphBindingState is the derived state of a node's bound Space object.
+enum FlowgraphBindingState {
+  // FLOWGRAPH_BINDING_STATE_UNKNOWN is unset.
+  FLOWGRAPH_BINDING_STATE_UNKNOWN = 0;
+  // FLOWGRAPH_BINDING_STATE_UNBOUND means the node names no object.
+  FLOWGRAPH_BINDING_STATE_UNBOUND = 1;
+  // FLOWGRAPH_BINDING_STATE_BOUND means the object exists and its type is
+  // registered, so the declared ports are known.
+  FLOWGRAPH_BINDING_STATE_BOUND = 2;
+  // FLOWGRAPH_BINDING_STATE_UNREGISTERED means the object exists but no loaded
+  // plugin registers its type.
+  FLOWGRAPH_BINDING_STATE_UNREGISTERED = 3;
+  // FLOWGRAPH_BINDING_STATE_UNAVAILABLE means the object does not exist.
+  FLOWGRAPH_BINDING_STATE_UNAVAILABLE = 4;
+}
+
+// FlowgraphBinding is a readback of a node's bound Space object.
+// This message is never stored in the Flowgraph body.
+message FlowgraphBinding {
+  // ObjectKey is the bound object, copied from the node.
+  string object_key = 1;
+  // TypeId is the object's World type, empty when the object is absent.
+  string type_id = 2;
+  // State is the binding state derived from the World and the type registry.
+  FlowgraphBindingState state = 3;
+  // Ports lists the ports the object's registered type declares. The node's
+  // connections may name these ports. It is empty unless the state is BOUND.
+  repeated FlowgraphPort ports = 4;
+}
+
 // FlowgraphSnapshot reads authored state and its placement edges together.
 message FlowgraphSnapshot {
   // State is the authored object body.
@@ -129,6 +163,9 @@ message FlowgraphSnapshot {
   map<string, FlowgraphPlacement> placements = 2;
   // Revision is the object's revision observed by this read.
   uint64 revision = 3;
+  // Bindings contains the binding of each node that names an object, keyed by
+  // node ID. An unbound node has no entry.
+  map<string, FlowgraphBinding> bindings = 4;
 }
 
 // CreateFlowgraphOp creates one independently addressed Flowgraph.

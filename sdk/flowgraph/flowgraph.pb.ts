@@ -71,6 +71,51 @@ export const FlowgraphPlacementKind_Enum = /* @__PURE__ */ createEnumType(
 )
 
 /**
+ * FlowgraphBindingState is the derived state of a node's bound Space object.
+ *
+ * @generated from enum s4wave.flowgraph.FlowgraphBindingState
+ */
+export enum FlowgraphBindingState {
+  /**
+   * FLOWGRAPH_BINDING_STATE_UNKNOWN is unset.
+   */
+  UNKNOWN = 0,
+
+  /**
+   * FLOWGRAPH_BINDING_STATE_UNBOUND means the node names no object.
+   */
+  UNBOUND = 1,
+
+  /**
+   * FLOWGRAPH_BINDING_STATE_BOUND means the object exists and its type is
+   * registered, so the declared ports are known.
+   */
+  BOUND = 2,
+
+  /**
+   * FLOWGRAPH_BINDING_STATE_UNREGISTERED means the object exists but no loaded
+   * plugin registers its type.
+   */
+  UNREGISTERED = 3,
+
+  /**
+   * FLOWGRAPH_BINDING_STATE_UNAVAILABLE means the object does not exist.
+   */
+  UNAVAILABLE = 4,
+}
+
+export const FlowgraphBindingState_Enum = /* @__PURE__ */ createEnumType(
+  's4wave.flowgraph.FlowgraphBindingState',
+  [
+    [0, 'FLOWGRAPH_BINDING_STATE_UNKNOWN'],
+    [1, 'FLOWGRAPH_BINDING_STATE_UNBOUND'],
+    [2, 'FLOWGRAPH_BINDING_STATE_BOUND'],
+    [3, 'FLOWGRAPH_BINDING_STATE_UNREGISTERED'],
+    [4, 'FLOWGRAPH_BINDING_STATE_UNAVAILABLE'],
+  ],
+)
+
+/**
  * FlowgraphRunState is the lifecycle state of a run.
  *
  * @generated from enum s4wave.flowgraph.FlowgraphRunState
@@ -159,6 +204,12 @@ export interface FlowgraphNode {
    * Step holds instructions for a node that runs once per activation.
    */
   step?: FlowgraphStep
+  /**
+   * ObjectKey binds the node to a Space object, such as a chat room or a
+   * repository. It is empty for an unbound node. The binding state is derived
+   * from the World when the graph is read and is never stored.
+   */
+  objectKey?: string
 }
 
 export const FlowgraphNode: MessageType<FlowgraphNode> =
@@ -169,6 +220,7 @@ export const FlowgraphNode: MessageType<FlowgraphNode> =
       [2, 'parameters', 9, 584],
       [3, 'ports', 11, 1, FlowgraphPort.codec],
       [4, 'step', 11, 0, FlowgraphStep.codec],
+      [5, 'object_key', 9],
     ],
   )
 
@@ -365,6 +417,43 @@ export const FlowgraphPlacement: MessageType<FlowgraphPlacement> =
   )
 
 /**
+ * FlowgraphBinding is a readback of a node's bound Space object.
+ * This message is never stored in the Flowgraph body.
+ *
+ * @generated from message s4wave.flowgraph.FlowgraphBinding
+ */
+export interface FlowgraphBinding {
+  /**
+   * ObjectKey is the bound object, copied from the node.
+   */
+  objectKey?: string
+  /**
+   * TypeId is the object's World type, empty when the object is absent.
+   */
+  typeId?: string
+  /**
+   * State is the binding state derived from the World and the type registry.
+   */
+  state?: FlowgraphBindingState
+  /**
+   * Ports lists the ports the object's registered type declares. The node's
+   * connections may name these ports. It is empty unless the state is BOUND.
+   */
+  ports?: FlowgraphPort[]
+}
+
+export const FlowgraphBinding: MessageType<FlowgraphBinding> =
+  /* @__PURE__ */ createMessageType<FlowgraphBinding>(
+    's4wave.flowgraph.FlowgraphBinding',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'type_id', 9],
+      [3, 'state', 14, 0, FlowgraphBindingState_Enum],
+      [4, 'ports', 11, 1, FlowgraphPort.codec],
+    ],
+  )
+
+/**
  * FlowgraphSnapshot reads authored state and its placement edges together.
  *
  * @generated from message s4wave.flowgraph.FlowgraphSnapshot
@@ -382,6 +471,11 @@ export interface FlowgraphSnapshot {
    * Revision is the object's revision observed by this read.
    */
   revision?: bigint
+  /**
+   * Bindings contains the binding of each node that names an object, keyed by
+   * node ID. An unbound node has no entry.
+   */
+  bindings?: { [key: string]: FlowgraphBinding }
 }
 
 export const FlowgraphSnapshot: MessageType<FlowgraphSnapshot> =
@@ -391,6 +485,7 @@ export const FlowgraphSnapshot: MessageType<FlowgraphSnapshot> =
       [1, 'state', 11, 0, Flowgraph.codec],
       [2, 'placements', 11, 584, FlowgraphPlacement.codec],
       [3, 'revision', 4],
+      [4, 'bindings', 11, 584, FlowgraphBinding.codec],
     ],
   )
 

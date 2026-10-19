@@ -3,6 +3,7 @@ package s4wave_flowgraph
 import (
 	"context"
 
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	"github.com/s4wave/spacewave/db/tx"
@@ -15,6 +16,11 @@ type FlowgraphResource struct {
 	ws world.WorldState
 	// engine opens transactions when the granting mount permits edits.
 	engine world.Engine
+	// bus resolves the object types of bound objects. It may be nil, which
+	// leaves every bound object's type unregistered.
+	bus bus.Bus
+	// engineID scopes the object type lookup to the granting World engine.
+	engineID string
 	// key identifies this independently addressed graph.
 	key string
 	// mux serves the graph's Resource operations.
@@ -22,8 +28,9 @@ type FlowgraphResource struct {
 }
 
 // NewFlowgraphResource constructs a graph Resource without retaining object handles.
-func NewFlowgraphResource(ws world.WorldState, engine world.Engine, key string) *FlowgraphResource {
-	r := &FlowgraphResource{ws: ws, engine: engine, key: key}
+// b and engineID resolve the object types of the nodes' bound objects.
+func NewFlowgraphResource(ws world.WorldState, engine world.Engine, b bus.Bus, engineID, key string) *FlowgraphResource {
+	r := &FlowgraphResource{ws: ws, engine: engine, bus: b, engineID: engineID, key: key}
 	r.mux = resource_server.NewResourceMux(func(mux srpc.Mux) error {
 		return SRPCRegisterFlowgraphResourceService(mux, r)
 	})
@@ -43,11 +50,25 @@ func (r *FlowgraphResource) GetFlowgraph(ctx context.Context, _ *GetFlowgraphReq
 		return nil, err
 	}
 	defer release()
-	snapshot, err := ReadFlowgraph(ctx, ws, r.key)
+	snapshot, err := r.readSnapshot(ctx, ws)
 	if err != nil {
 		return nil, err
 	}
 	return &GetFlowgraphResponse{Snapshot: snapshot}, nil
+}
+
+// readSnapshot reads the graph and derives the binding of each bound node from
+// the same World state.
+func (r *FlowgraphResource) readSnapshot(ctx context.Context, ws world.WorldState) (*FlowgraphSnapshot, error) {
+	snapshot, err := ReadFlowgraph(ctx, ws, r.key)
+	if err != nil {
+		return nil, err
+	}
+	snapshot.Bindings, err = ReadBindings(ctx, ws, r.bus, r.engineID, snapshot.GetState())
+	if err != nil {
+		return nil, err
+	}
+	return snapshot, nil
 }
 
 // readState returns the granted read-only snapshot or a fresh committed read.
@@ -80,6 +101,10 @@ func (r *FlowgraphResource) UpdateFlowgraph(ctx context.Context, request *Update
 	if err != nil {
 		return nil, err
 	}
+	snapshot.Bindings, err = ReadBindings(ctx, write, r.bus, r.engineID, snapshot.GetState())
+	if err != nil {
+		return nil, err
+	}
 	if err := write.Commit(ctx); err != nil {
 		return nil, err
 	}
@@ -97,31 +122,51 @@ func (r *FlowgraphResource) ListFlowgraphChanges(ctx context.Context, request *L
 }
 
 // WatchFlowgraph streams committed graph changes until the stream is canceled.
+// It also sends a snapshot when a bound object appears, changes type or is
+// deleted, since each of those changes the node's derived binding.
 func (r *FlowgraphResource) WatchFlowgraph(_ *WatchFlowgraphRequest, stream SRPCFlowgraphResourceService_WatchFlowgraphStream) error {
-	// Retain a live object handle for key-scoped revision notifications.
 	ctx := stream.Context()
-	obj, found, err := r.ws.GetObject(ctx, r.key)
-	defer world.ReleaseObjectState(obj)
-	if err != nil {
-		return err
-	}
-	if !found {
-		return world.ErrObjectNotFound
-	}
-
-	// Read and emit one consistent snapshot before awaiting its successor.
+	var sent *FlowgraphSnapshot
 	for {
-		response, err := r.GetFlowgraph(ctx, &GetFlowgraphRequest{})
+		// Read the snapshot and the roots it depends on from one World state,
+		// so a change after the read ends the wait below.
+		snapshot, seen, err := r.readWatched(ctx)
 		if err != nil {
 			return err
 		}
-		if err := stream.Send(&WatchFlowgraphResponse{Snapshot: response.GetSnapshot()}); err != nil {
-			return err
+
+		// Send the snapshot only when it differs from the last one sent, since
+		// a bound object's own edits do not change the graph's view of it.
+		if !snapshot.EqualVT(sent) {
+			if err := stream.Send(&WatchFlowgraphResponse{Snapshot: snapshot}); err != nil {
+				return err
+			}
+			sent = snapshot
 		}
-		if _, err := obj.WaitRev(ctx, response.GetSnapshot().GetRevision()+1, false); err != nil {
+		if err := world.WaitObjectChange(ctx, r.ws, seen...); err != nil {
 			return err
 		}
 	}
+}
+
+// readWatched reads a snapshot with the root of the graph and of each object it
+// binds.
+func (r *FlowgraphResource) readWatched(ctx context.Context) (*FlowgraphSnapshot, []*world.ObjectRootRef, error) {
+	ws, release, err := r.readState(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer release()
+	snapshot, err := r.readSnapshot(ctx, ws)
+	if err != nil {
+		return nil, nil, err
+	}
+	keys := append([]string{r.key}, boundObjectKeys(snapshot.GetState())...)
+	seen, err := world.GetObjectRootRefsBatch(ctx, ws, keys)
+	if err != nil {
+		return nil, nil, err
+	}
+	return snapshot, seen, nil
 }
 
 // _ is a type assertion.

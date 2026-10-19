@@ -199,10 +199,11 @@ func inspectChatMessage(ctx context.Context, object *ObjectDescriptor) (*Inspect
 }
 
 // inspectFlowgraphTargets collects the object keys and block stores that the
-// Targets of a Flowgraph's Steps reference.
+// Targets of a Flowgraph's Steps reference, and the object each node binds.
 func inspectFlowgraphTargets(graph *s4wave_flowgraph.Flowgraph) *Inspection {
 	out := &Inspection{}
 	for _, id := range slices.Sorted(maps.Keys(graph.GetNodes())) {
+		appendForgeObjectKey(out, graph.GetNodes()[id].GetObjectKey())
 		target := graph.GetNodes()[id].GetStep().GetTarget()
 		for _, input := range target.GetInputs() {
 			appendForgeObjectKey(out, input.GetWorldObject().GetObjectKey())
@@ -901,8 +902,16 @@ func rewriteFlowgraph(ctx context.Context, object *ObjectDescriptor, mapping *Id
 		return nil, errors.Wrap(ErrPayloadSchemaRefused, "Flowgraph payload is missing")
 	}
 
-	// Remap the object keys and block stores in each Step Target.
+	// Remap each node's bound object and the object keys and block stores in
+	// each Step Target.
 	for _, node := range graph.GetNodes() {
+		if node.GetObjectKey() != "" {
+			mapped, err := remapObjectKey(mapping, node.GetObjectKey())
+			if err != nil {
+				return nil, err
+			}
+			node.ObjectKey = mapped
+		}
 		target := node.GetStep().GetTarget()
 		for _, input := range target.GetInputs() {
 			worldObject := input.GetWorldObject()
