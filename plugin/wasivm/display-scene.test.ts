@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { Scene, takeDirty } from './display-scene.js'
+import { WasiVmSceneFrameButtonKind } from '@s4wave/sdk/vm/wasivm.pb.js'
+
+import {
+  Scene,
+  edgeBottom,
+  edgeRight,
+  takeDirty,
+  type FramePainter,
+} from './display-scene.js'
 
 // layer returns a layer of root 1 at the origin with a texture of w by h
 // pixels covering w by h units.
@@ -138,5 +146,111 @@ describe('Scene', () => {
       ],
     })
     expect(scene.drawList()[0]!.texture.pixels.every((b) => b === 0)).toBe(true)
+  })
+
+  it('draws frames and moves a window from a title bar press', () => {
+    // Show a 20x10 window at 5,30 under a 4 unit title bar, with a close
+    // button at its right end, and a least top of 6.
+    let paints = 0
+    const paint: FramePainter = (f, scale) => {
+      paints++
+      const width = (f.width ?? 0) * scale
+      const height = (f.titleHeight ?? 0) * scale
+      return {
+        width,
+        height,
+        pixels: new Uint8Array(width * height * 4),
+        dirty: null,
+      }
+    }
+    const scene = new Scene(paint)
+    scene.apply({
+      screen: { width: 100, height: 100, scale: 1 },
+      layers: { layers: [layer(1, 20, 10)] },
+      roots: { roots: [{ id: 1, x: 5, y: 30 }] },
+      frames: {
+        frames: [
+          {
+            root: 1,
+            title: 'foot',
+            active: true,
+            x: 0,
+            y: -4,
+            width: 20,
+            height: 14,
+            titleHeight: 4,
+            border: 2,
+            minY: 6,
+            buttons: [
+              {
+                kind: WasiVmSceneFrameButtonKind.CLOSE,
+                x: 16,
+                y: -4,
+                width: 4,
+                height: 4,
+              },
+            ],
+          },
+        ],
+      },
+    })
+
+    // The title bar draws below the window, at its frame's place.
+    const list = scene.drawList()
+    expect(list.map((l) => l.id)).toEqual([-1, 1])
+    expect(list[0]).toMatchObject({
+      x: 5,
+      y: 26,
+      width: 20,
+      height: 4,
+      opaque: true,
+    })
+
+    // The pointer finds the button, the band and the title bar, and the
+    // window's content is not the frame's.
+    scene.point(22, 27)
+    expect(scene.frameAt({ x: 22, y: 27 })).toMatchObject({
+      kind: 'button',
+      button: WasiVmSceneFrameButtonKind.CLOSE,
+    })
+    expect(scene.frameAt({ x: 26, y: 41 })).toMatchObject({
+      kind: 'band',
+      edges: edgeRight | edgeBottom,
+    })
+    expect(scene.frameAt({ x: 10, y: 35 })).toBeNull()
+    scene.point(26, 41)
+    expect(scene.cursorAt()).toBe('nwse-resize')
+
+    // A press on a button starts no move.
+    scene.point(22, 27)
+    expect(scene.press()).toBe(false)
+
+    // One on the title bar does, and the window follows the pointer at
+    // once, its top held at the least.
+    scene.point(8, 27)
+    expect(scene.press()).toBe(true)
+    expect(scene.point(18, 37)).toBe(true)
+    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 40 })
+    scene.point(18, 0)
+    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 6 })
+    expect(scene.drawList()[0]).toMatchObject({ x: 15, y: 2 })
+
+    // After the release the move holds until the roots show where the
+    // window went, and the title bar is not painted again.
+    scene.release()
+    scene.apply({ layers: { layers: [layer(1, 20, 10)] } })
+    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 6 })
+    scene.apply({ roots: { roots: [{ id: 1, x: 15, y: 6 }] } })
+    expect(scene.point(50, 50)).toBe(false)
+    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 6 })
+    expect(paints).toBe(1)
+
+    // A released move the compositor never answers settles back.
+    scene.point(20, 4)
+    expect(scene.press()).toBe(true)
+    scene.point(30, 10)
+    scene.release()
+    expect(scene.settle()).toBe(true)
+    expect(scene.drawList()[1]).toMatchObject({ x: 15, y: 6 })
   })
 })

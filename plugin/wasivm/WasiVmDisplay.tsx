@@ -11,6 +11,7 @@ import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import type { LoadingView } from '@s4wave/web/ui/loading/types.js'
 
 import { openCanvasRenderer } from './display-canvas.js'
+import { framePainter } from './display-frame.js'
 import { openGpuRenderer } from './display-gpu.js'
 import { keysymOf, xButtons } from './display-input.js'
 import { Scene, type SceneRenderer, type SceneScreen } from './display-scene.js'
@@ -79,6 +80,14 @@ type DisplayStatus =
 const wheelUp = 1 << 3
 const wheelDown = 1 << 4
 
+// pressBits is the mask of the X buttons whose press acts on a window frame.
+const pressBits = 7
+
+// settleMs is how long a move the viewer predicted from a title bar press
+// keeps its place after the release when the compositor shows no change,
+// as when the press never reached a title bar there.
+const settleMs = 500
+
 // gpuFailed is set once a WebGPU device is lost and cannot be opened again,
 // after which displays draw with Canvas 2D.
 let gpuFailed = false
@@ -137,13 +146,15 @@ export function WasiVmDisplay({
   onPaneSize,
 }: WasiVmDisplayProps) {
   // Hold the elements, the input stream, the last scene's screen, the
-  // scene's pointer, and each held key's keysym by code, so a release sends
+  // scene's pointer and buttons, and each held key's keysym by code, so a release sends
   // the keysym its press sent after a modifier changes.
   const paneRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const inputRef = useRef<Pushable<WasiVmDisplayInput> | null>(null)
   const screenRef = useRef<SceneScreen>(new Scene().screen)
-  const pointRef = useRef<((x: number, y: number) => void) | null>(null)
+  const pointRef = useRef<
+    ((x: number, y: number, buttons: number) => void) | null
+  >(null)
   const heldKeys = useRef(new Map<string, number>())
 
   // Track the stream's status and the connection attempt Retry advances.
@@ -200,7 +211,7 @@ export function WasiVmDisplay({
 
     // draw draws the scene on the next animation frame, once however many
     // updates arrive before it.
-    const scene = new Scene()
+    const scene = new Scene(framePainter(canvas))
     let renderer: SceneRenderer | null = null
     let frame = 0
     const draw = () => {
@@ -211,10 +222,32 @@ export function WasiVmDisplay({
       })
     }
 
-    // Give the scene each pointer position sent, and redraw when a window
-    // moves with it, without waiting for the compositor.
-    pointRef.current = (x, y) => {
-      if (scene.point(x, y)) draw()
+    // Give the scene each pointer position and button change sent, and
+    // redraw when a window moves with it, without waiting for the
+    // compositor. A first press on a title bar starts the move here; after
+    // the release, the move holds until the compositor shows the result or
+    // settleMs passes.
+    let held = 0
+    let settle = 0
+    pointRef.current = (x, y, buttons) => {
+      // Move the pointer and act on the buttons that changed.
+      buttons &= pressBits
+      let changed = scene.point(x, y)
+      if (!held && buttons) {
+        changed = scene.press() || changed
+      }
+      if (held && !buttons) {
+        scene.release()
+        clearTimeout(settle)
+        settle = window.setTimeout(() => {
+          if (scene.settle()) draw()
+        }, settleMs)
+      }
+      held = buttons
+      if (changed) draw()
+
+      // Show the frame's cursor while no button is held.
+      if (!buttons) canvas.style.cursor = scene.cursorAt()
     }
 
     // Open a renderer. A lost GPU device is reopened once and every
@@ -282,6 +315,7 @@ export function WasiVmDisplay({
       // Stop drawing.
       cancelled = true
       pointRef.current = null
+      clearTimeout(settle)
       cancelAnimationFrame(frame)
       renderer?.destroy()
       renderer = null
@@ -317,11 +351,9 @@ export function WasiVmDisplay({
     )
 
     // Send it, and move a grabbed window there on the next frame.
-    send({
-      case: 'pointer',
-      value: { x, y, buttons: xButtons(e.buttons) | extra },
-    })
-    pointRef.current?.(x, y)
+    const buttons = xButtons(e.buttons) | extra
+    send({ case: 'pointer', value: { x, y, buttons } })
+    pointRef.current?.(x, y, buttons)
   }
 
   // releasePointer releases every button where an interrupted drag left the
