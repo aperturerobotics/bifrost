@@ -10,7 +10,7 @@ import React, {
 import { LuFingerprint, LuGithub, LuKeyRound } from 'react-icons/lu'
 import { FcGoogle } from 'react-icons/fc'
 import { RxArrowRight } from 'react-icons/rx'
-import { PiUserCircleDuotone } from 'react-icons/pi'
+import { PiUserCircleDuotone } from '@s4wave/web/ui/phosphor-icons.js'
 import { isDesktop } from '@aptre/bldr'
 import { useLatestRef } from '@aptre/bldr-react'
 import type { CloudProviderConfig } from '@s4wave/sdk/provider/spacewave/spacewave.pb.js'

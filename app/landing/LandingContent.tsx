@@ -32,7 +32,10 @@ import {
   LuX,
   LuZap,
 } from 'react-icons/lu'
-import { PiRocketLaunchDuotone, PiAppStoreLogoBold } from 'react-icons/pi'
+import {
+  PiRocketLaunchDuotone,
+  PiAppStoreLogoBold,
+} from '@s4wave/web/ui/phosphor-icons.js'
 import { isDesktop } from '@aptre/bldr'
 import { GITHUB_REPO_URL } from '@s4wave/app/github.js'
 import { useNavLinks } from '@s4wave/app/nav-links.js'

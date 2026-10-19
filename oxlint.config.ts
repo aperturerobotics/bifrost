@@ -98,6 +98,18 @@ export default defineConfig({
     'no-case-declarations': 'error',
     'no-empty': 'error',
     'no-fallthrough': 'error',
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [
+          {
+            name: 'react-icons/pi',
+            message:
+              'The development server loads all of react-icons/pi (16 MB) on every page load. Add the icon to web/ui/phosphor-icons.tsx and import it from there.',
+          },
+        ],
+      },
+    ],
     'no-prototype-builtins': 'error',
     'no-redeclare': 'error',
     'no-regex-spaces': 'error',

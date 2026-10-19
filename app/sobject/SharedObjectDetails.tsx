@@ -12,7 +12,7 @@ import {
   LuUserPlus,
   LuX,
 } from 'react-icons/lu'
-import { PiAppStoreLogoBold } from 'react-icons/pi'
+import { PiAppStoreLogoBold } from '@s4wave/web/ui/phosphor-icons.js'
 
 import { SpaceSoMeta } from '@s4wave/core/space/space.pb.js'
 import { useResourceValue } from '@aptre/bldr-sdk/hooks/useResource.js'
