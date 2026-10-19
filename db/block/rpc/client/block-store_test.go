@@ -21,6 +21,8 @@ type testBlockStoreClient struct {
 	existing map[string]bool
 	// shortExisted drops the last existence result from each response.
 	shortExisted bool
+	// getRequest is the last GetBlock request.
+	getRequest *block_rpc.GetBlockRequest
 }
 
 func (c *testBlockStoreClient) SRPCClient() srpc.Client {
@@ -53,6 +55,7 @@ func (c *testBlockStoreClient) PutBlockBatch(
 	ctx context.Context,
 	req *block_rpc.PutBlockBatchRequest,
 ) (*block_rpc.PutBlockBatchResponse, error) {
+	// Record the batch and run the test's hook.
 	c.batchEntries = req.GetEntries()
 	if c.batchHook != nil {
 		if err := c.batchHook(ctx, req); err != nil {
@@ -72,9 +75,10 @@ func (c *testBlockStoreClient) PutBlockBatch(
 }
 
 func (c *testBlockStoreClient) GetBlock(
-	context.Context,
-	*block_rpc.GetBlockRequest,
+	_ context.Context,
+	req *block_rpc.GetBlockRequest,
 ) (*block_rpc.GetBlockResponse, error) {
+	c.getRequest = req
 	return &block_rpc.GetBlockResponse{}, nil
 }
 
@@ -193,3 +197,27 @@ func TestBlockStorePutBlockBatchRejectsWrongExistenceLength(t *testing.T) {
 
 // _ verifies the test client contract.
 var _ block_rpc.SRPCBlockStoreClient = (*testBlockStoreClient)(nil)
+
+func TestBlockStoreGetBlockSendsBackground(t *testing.T) {
+	client := &testBlockStoreClient{}
+	store := NewBlockStore(client, 0, false)
+	for _, background := range []bool{true, false} {
+		// Read through both block read paths with the class on the context.
+		ctx := context.Background()
+		if background {
+			ctx = block.WithBackground(ctx)
+		}
+		if _, _, err := store.GetBlock(ctx, &block.BlockRef{}); err != nil {
+			t.Fatal(err)
+		}
+		gotGet := client.getRequest.GetBackground()
+		if _, err := store.GetStoredBlock(ctx, &block.BlockRef{}); err != nil {
+			t.Fatal(err)
+		}
+
+		// Verify each request carries the class.
+		if gotGet != background || client.getRequest.GetBackground() != background {
+			t.Fatalf("background %v sent as GetBlock %v, GetStoredBlock %v", background, gotGet, client.getRequest.GetBackground())
+		}
+	}
+}

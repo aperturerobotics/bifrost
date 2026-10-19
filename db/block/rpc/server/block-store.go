@@ -91,9 +91,13 @@ func (s *BlockStore) GetBlock(
 	ctx context.Context,
 	req *block_rpc.GetBlockRequest,
 ) (*block_rpc.GetBlockResponse, error) {
-	// Attach this service's policy while retaining the incoming RPC lifetime.
+	// Attach this service's policy and the request's class while retaining
+	// the incoming RPC lifetime.
 	if s.readAheadBytes > 0 {
 		ctx = block.WithReadAhead(ctx, s.readAheadBytes)
+	}
+	if req.GetBackground() {
+		ctx = block.WithBackground(ctx)
 	}
 
 	// Read through the underlying owner and encode its result.

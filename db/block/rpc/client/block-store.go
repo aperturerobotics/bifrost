@@ -187,7 +187,8 @@ func (v *BlockStore) PutBlockBatch(ctx context.Context, entries []*block.PutBatc
 // Note: the block may not be in the specified bucket.
 func (v *BlockStore) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
 	resp, err := v.client.GetBlock(ctx, &block_rpc.GetBlockRequest{
-		Ref: ref.Clone(),
+		Ref:        ref.Clone(),
+		Background: block.IsBackground(ctx),
 	})
 	if err != nil {
 		return nil, false, err
@@ -202,8 +203,9 @@ func (v *BlockStore) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte,
 func (v *BlockStore) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
 	// Read the remote block with its outgoing references.
 	resp, err := v.client.GetBlock(ctx, &block_rpc.GetBlockRequest{
-		Ref:      ref.Clone(),
-		WithRefs: true,
+		Ref:        ref.Clone(),
+		WithRefs:   true,
+		Background: block.IsBackground(ctx),
 	})
 	if err != nil {
 		return nil, err

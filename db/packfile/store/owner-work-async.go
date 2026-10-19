@@ -4,6 +4,10 @@ package store
 
 import "context"
 
+// ownerWorkConcurrent reports that owner work runs beside its caller, so a
+// fetch may wait for another to finish.
+const ownerWorkConcurrent = true
+
 // newPackReaderContext returns the cancellable lifetime of pack reader work.
 func newPackReaderContext() (context.Context, context.CancelFunc) {
 	return context.WithCancel(context.Background())

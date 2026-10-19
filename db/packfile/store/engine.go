@@ -98,6 +98,8 @@ type PackReader struct {
 	residentBytes int64
 	budget        *residentBudget
 	loading       map[fetchKey]*fetchLoad
+	// gate admits this reader's transport fetches by class.
+	gate *demandGate
 
 	// Adaptive window tracking.
 	lastFetchAt            time.Time
@@ -158,6 +160,7 @@ func NewPackReader(packID string, size int64, transport Transport) *PackReader {
 		sparseLocalityDistance: defaultSparseLocalityDistance,
 		writebackWindow:        defaultWritebackWindow,
 		budget:                 newResidentBudget(defaultResidentBudget),
+		gate:                   newDemandGate(),
 		published:              make(map[string]struct{}),
 	}
 	e.budget.attach(e)
@@ -255,6 +258,13 @@ func (e *PackReader) finishOwnerWork() {
 	e.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		e.workCount--
 		broadcast()
+	})
+}
+
+// setDemandGate moves the reader's transport fetches onto a shared gate.
+func (e *PackReader) setDemandGate(gate *demandGate) {
+	e.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		e.gate = gate
 	})
 }
 
@@ -391,6 +401,10 @@ func (k fetchKey) end() int64 { return k.off + int64(k.size) }
 type fetchLoad struct {
 	// done publishes sp and err to every waiter when the fetch finishes.
 	done chan struct{}
+	// promote is closed when a foreground read joins a background fetch, so
+	// the fetch stops waiting behind foreground work. Nil for a foreground
+	// fetch. The reader state lock guards closing it.
+	promote chan struct{}
 	// sp retains the immutable response independently of cache residency.
 	sp *span
 	// err is the transport or reader shutdown error.

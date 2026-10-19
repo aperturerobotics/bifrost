@@ -1576,6 +1576,16 @@
         "core/trace/service/config.proto"
       ]
     },
+    "github.com/s4wave/spacewave/db/background": {
+      "hash": "11e57ebff031649a4200a9cc79939232b74398855f4b0d3ff1d7ca8deccf84e3",
+      "generatedFiles": [
+        "db/background/background.pb.go",
+        "db/background/background.pb.ts"
+      ],
+      "protoFiles": [
+        "db/background/background.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/db/block": {
       "hash": "9292d37e72e44ee63bed1bb4e5b769a845bbfb032a3e9a9aa62aacac17e3a38c",
       "generatedFiles": [
@@ -1669,7 +1679,7 @@
       ]
     },
     "github.com/s4wave/spacewave/db/block/rpc": {
-      "hash": "29feefdb559a5d7e8292a8ee5296f61d963bca67404a6024ec18ffdebf483b4a",
+      "hash": "ada1710b4e1495621ec220e4c4e4e47dbf76b8576f976f2c4ede2596891265cf",
       "generatedFiles": [
         "db/block/rpc/block.pb.go",
         "db/block/rpc/block.pb.ts",

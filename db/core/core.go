@@ -6,6 +6,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver/static"
 	cbc "github.com/aperturerobotics/controllerbus/core"
+	"github.com/s4wave/spacewave/db/background"
 	db_storage "github.com/s4wave/spacewave/db/core/storage"
 	"github.com/s4wave/spacewave/db/dex/psecho"
 	bifrostcore "github.com/s4wave/spacewave/net/core"
@@ -40,6 +41,7 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(nctr.NewFactory(b))
 	db_storage.AddFactories(b, sr)
 
-	// Register the pub-sub exchange factory.
+	// Register the pub-sub exchange and background job factories.
 	sr.AddFactory(psecho.NewFactory(b))
+	sr.AddFactory(background.NewFactory(b))
 }
