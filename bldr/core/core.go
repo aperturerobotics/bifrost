@@ -10,6 +10,7 @@ import (
 	handle_webview_viaplugin "github.com/s4wave/spacewave/bldr/plugin/handle-web-view"
 	bldr_plugin_load "github.com/s4wave/spacewave/bldr/plugin/load"
 	storage_volume "github.com/s4wave/spacewave/bldr/storage/volume"
+	"github.com/s4wave/spacewave/db/background"
 	block_store_bucket "github.com/s4wave/spacewave/db/block/store/bucket"
 	block_store_rpc "github.com/s4wave/spacewave/db/block/store/rpc"
 	block_store_rpc_lookup "github.com/s4wave/spacewave/db/block/store/rpc/lookup"
@@ -69,4 +70,8 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 
 	// Register the server-side streaming lookup.
 	sr.AddFactory(stream_srpc_server_lookup.NewFactory(b))
+
+	// Register background jobs, which the plugin scheduler's manifest copy
+	// loads on demand.
+	sr.AddFactory(background.NewFactory(b))
 }

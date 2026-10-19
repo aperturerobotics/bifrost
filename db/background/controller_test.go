@@ -190,3 +190,31 @@ func TestRunJobOneAtATime(t *testing.T) {
 		t.Fatal("second job finished without running")
 	}
 }
+
+// TestExRunJobLoadsControllerAndWaitsForDone verifies ExRunJob starts the
+// background controller from its factory and returns once a retried job is
+// done.
+func TestExRunJobLoadsControllerAndWaitsForDone(t *testing.T) {
+	// Build a bus that can construct the controller but has not started it.
+	le := logrus.NewEntry(logrus.New())
+	b, sr, err := cbc.NewCoreBus(t.Context(), le)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sr.AddFactory(NewFactory(b))
+
+	// Run a job whose first attempt fails.
+	var attempts atomic.Int32
+	err = ExRunJob(t.Context(), b, "flaky", func(ctx context.Context) error {
+		if attempts.Add(1) == 1 {
+			return errors.New("first attempt fails")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := attempts.Load(); got != 2 {
+		t.Fatalf("job ran %d attempts, want 2", got)
+	}
+}

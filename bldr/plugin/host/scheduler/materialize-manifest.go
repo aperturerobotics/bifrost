@@ -55,10 +55,15 @@ func (c *Controller) materializeManifest(
 
 	// Serve the source encoded blocks over a request-scoped BlockStore RPC
 	// service, reachable only by this plugin for the duration of the copy.
+	// Every read it serves is background work, so the copy yields to
+	// foreground reads on the source store.
 	sourceID := randstring.RandomIdentifier(16)
 	sourceMux := srpc.NewMux()
 	if err := sourceMux.Register(block_rpc.NewSRPCBlockStoreHandler(
-		block_rpc_server.NewBlockStoreWithReadAhead(src.GetBucket(), materializerReadAhead),
+		block_rpc_server.NewBlockStoreWithPolicy(src.GetBucket(), block_rpc_server.ReadPolicy{
+			ReadAheadBytes: materializerReadAhead,
+			Background:     true,
+		}),
 		sourceID,
 	)); err != nil {
 		return nil, stats, errors.Wrap(err, "register source block store rpc handler")

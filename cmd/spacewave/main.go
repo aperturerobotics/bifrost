@@ -54,6 +54,7 @@ import (
 	space_sobject "github.com/s4wave/spacewave/core/space/sobject"
 	space_world_blocktype "github.com/s4wave/spacewave/core/space/world/blocktype"
 	optypes "github.com/s4wave/spacewave/core/space/world/optypes"
+	"github.com/s4wave/spacewave/db/background"
 	block_store_bucket "github.com/s4wave/spacewave/db/block/store/bucket"
 	block_store_rpc "github.com/s4wave/spacewave/db/block/store/rpc"
 	block_store_rpc_lookup "github.com/s4wave/spacewave/db/block/store/rpc/lookup"
@@ -200,7 +201,7 @@ var factories = []cli_entrypoint.AddFactoryFunc{func(b bus.Bus) []controller.Fac
 }, func(b bus.Bus) []controller.Factory {
 	return []controller.Factory{plugin_host_process.NewFactory(b)}
 }, func(b bus.Bus) []controller.Factory {
-	return []controller.Factory{plugin_host_scheduler.NewFactory(b)}
+	return []controller.Factory{plugin_host_scheduler.NewFactory(b), background.NewFactory(b)}
 }, func(b bus.Bus) []controller.Factory {
 	return []controller.Factory{plugin_host_wazero_quickjs.NewFactory(b)}
 }, func(b bus.Bus) []controller.Factory {

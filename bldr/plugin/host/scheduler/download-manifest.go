@@ -2,11 +2,13 @@ package plugin_host_scheduler
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/pkg/errors"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
+	"github.com/s4wave/spacewave/db/background"
 	"github.com/s4wave/spacewave/db/block"
 	bucket "github.com/s4wave/spacewave/db/bucket"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
@@ -38,7 +40,7 @@ const (
 	manifestCopyPhaseWaiting manifestCopyPhase = "waiting-for-running"
 	// manifestCopyPhaseWaitingForStartupGroup waits for startup demand to settle.
 	manifestCopyPhaseWaitingForStartupGroup manifestCopyPhase = "waiting-for-startup-group"
-	// manifestCopyPhaseWaitingForAdmission waits for the aggregate copy permit.
+	// manifestCopyPhaseWaitingForAdmission waits for a background job run slot.
 	manifestCopyPhaseWaitingForAdmission manifestCopyPhase = "waiting-for-admission"
 	// manifestCopyPhaseCopying owns an active materialization attempt.
 	manifestCopyPhaseCopying manifestCopyPhase = "copying"
@@ -240,12 +242,15 @@ func (t *pluginInstance) checkDownloadManifestCurrent(
 	return nil
 }
 
-// execDownloadManifest copies manifest blocks from the source bucket to the world bucket.
+// execDownloadManifest copies manifest blocks from the source bucket to the
+// world bucket. It waits for the copy's readiness class, then runs the copy as
+// a background job and returns once the job is done. The job owns retry of a
+// failed copy; an error here is a rejected snapshot or a failed wait.
 func (t *pluginInstance) execDownloadManifest(
 	ctx context.Context,
 	manifestSnapshot *bldr_manifest.ManifestSnapshot,
 ) (rerr error) {
-	// Report every attempt's terminal error through the plugin status owner.
+	// Report a rejected snapshot or failed wait through the plugin status owner.
 	defer func() {
 		if rerr != nil {
 			trace.Log(ctx, "manifest-copy-phase", "error")
@@ -264,7 +269,6 @@ func (t *pluginInstance) execDownloadManifest(
 	// Validate the selected snapshot before acquiring copy resources.
 	ctx, task := trace.NewTask(ctx, "bldr/plugin-host-scheduler/download-manifest")
 	defer task.End()
-	le := t.le
 	ref := manifestSnapshot.GetManifestRef()
 	blockRef := ref.GetRootRef()
 	if blockRef.GetEmpty() {
@@ -282,12 +286,11 @@ func (t *pluginInstance) execDownloadManifest(
 	class := t.classifyManifestCopy(manifestSnapshot)
 	accounting := t.manifestCopyAccountingForExecution(ctx, manifestSnapshot)
 	trace.Log(ctx, "manifest-copy-phase", "selection")
-	var copyStats bucket_lookup.ObjectCopyStats
 	defer func() {
 		if rerr != nil {
-			copyStats = accounting.apply(copyStats)
-			t.setManifestCopyStatus(manifestCopyPhaseFailed, class, manifestSnapshot, accounting, copyStats)
-			t.emitManifestCopyStartupMark(manifestCopyPhaseFailed, copyStats, accounting)
+			stats := accounting.apply(bucket_lookup.ObjectCopyStats{})
+			t.setManifestCopyStatus(manifestCopyPhaseFailed, class, manifestSnapshot, accounting, stats)
+			t.emitManifestCopyStartupMark(manifestCopyPhaseFailed, stats, accounting)
 		}
 	}()
 	t.logPluginAccountingFields(ctx)
@@ -299,20 +302,44 @@ func (t *pluginInstance) execDownloadManifest(
 		return err
 	}
 
-	// Acquire the aggregate manifest copy allowance. The permit is held
-	// through traversal, local-ref publication, and Sync so the configured
-	// bound covers the copy's total active footprint. The copying phase
-	// starts only after admission.
+	// Run the copy as a background job: it starts when a background run slot
+	// is free, its fetches yield to foreground reads, and the job retries a
+	// failed attempt. The copying phase starts only after admission.
 	t.setManifestCopyStatus(manifestCopyPhaseWaitingForAdmission, class, manifestSnapshot, accounting, bucket_lookup.ObjectCopyStats{})
 	t.emitManifestCopyStartupMark(manifestCopyPhaseWaitingForAdmission, bucket_lookup.ObjectCopyStats{}, accounting)
-	releaseManifestCopy, err := t.c.manifestCopyMtx.Lock(ctx)
-	if err != nil {
+	jobKey := fmt.Sprintf("bldr/plugin-manifest-copy/%p/%s", t, ref.MarshalString())
+	return background.ExRunJob(ctx, t.c.bus, jobKey, func(ctx context.Context) error {
+		err := t.copyManifest(ctx, manifestSnapshot, class, manifestMeta)
+		t.c.recordPluginStatusError(t.pluginID, t.instanceKey, "download plugin manifest", err)
 		return err
-	}
-	defer releaseManifestCopy()
+	})
+}
 
-	// Recheck after admission: another request may have replaced this one
-	// while the allowance was queued.
+// copyManifest runs one attempt of copying the manifest DAG into the World
+// bucket, storing its local reference, and syncing. The job key names the
+// plugin instance and manifest, so no other instance shares the attempt.
+func (t *pluginInstance) copyManifest(
+	ctx context.Context,
+	manifestSnapshot *bldr_manifest.ManifestSnapshot,
+	class manifestCopyClass,
+	manifestMeta *bldr_manifest.ManifestMeta,
+) (rerr error) {
+	// Report a failed attempt against the current selection's accounting.
+	ctx, task := trace.NewTask(ctx, "bldr/plugin-host-scheduler/download-manifest/attempt")
+	defer task.End()
+	le := t.le
+	ref := manifestSnapshot.GetManifestRef()
+	accounting := t.manifestCopyAccountingForExecution(ctx, manifestSnapshot)
+	var copyStats bucket_lookup.ObjectCopyStats
+	defer func() {
+		if rerr != nil {
+			copyStats = accounting.apply(copyStats)
+			t.setManifestCopyStatus(manifestCopyPhaseFailed, class, manifestSnapshot, accounting, copyStats)
+			t.emitManifestCopyStartupMark(manifestCopyPhaseFailed, copyStats, accounting)
+		}
+	}()
+
+	// Another request may have replaced this one while the job waited.
 	if err := t.checkDownloadManifestCurrent(ctx, manifestSnapshot); err != nil {
 		return err
 	}

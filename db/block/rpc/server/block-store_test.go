@@ -132,5 +132,25 @@ func TestBlockStoreGetBlockRestoresBackground(t *testing.T) {
 	}
 }
 
+// TestBlockStoreBackgroundPolicyMarksEveryRead verifies a background service
+// marks a read whose request carries no class.
+func TestBlockStoreBackgroundPolicyMarksEveryRead(t *testing.T) {
+	// Read a block without a class through a background service.
+	store := &testStore{}
+	server := NewBlockStoreWithPolicy(store, ReadPolicy{Background: true})
+	_, err := server.GetBlock(context.Background(), &block_rpc.GetBlockRequest{
+		Ref:      &block.BlockRef{},
+		WithRefs: true,
+	})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// Verify the store read is background work.
+	if !store.background {
+		t.Fatal("background service read reached the store as foreground")
+	}
+}
+
 // _ is a type assertion
 var _ block.StoreOps = (*testStore)(nil)

@@ -14,6 +14,7 @@ import (
 	bldr_plugin_load "github.com/s4wave/spacewave/bldr/plugin/load"
 	storage_default "github.com/s4wave/spacewave/bldr/storage/default"
 	storage_volume "github.com/s4wave/spacewave/bldr/storage/volume"
+	"github.com/s4wave/spacewave/db/background"
 	block_store_bucket "github.com/s4wave/spacewave/db/block/store/bucket"
 	block_store_rpc "github.com/s4wave/spacewave/db/block/store/rpc"
 	block_store_rpc_lookup "github.com/s4wave/spacewave/db/block/store/rpc/lookup"
@@ -55,8 +56,10 @@ func AddFactories(b bus.Bus, sr *static.Resolver) {
 	sr.AddFactory(lookup_concurrent.NewFactory(b))
 	sr.AddFactory(node_controller.NewFactory(b))
 
-	// Keep scheduling and platform hosts on the entrypoint bus.
+	// Keep scheduling and platform hosts on the entrypoint bus. The
+	// scheduler's manifest copy runs as a background job.
 	sr.AddFactory(plugin_host_scheduler.NewFactory(b))
+	sr.AddFactory(background.NewFactory(b))
 	for _, factory := range plugin_host_default.PluginHostControllerFactories {
 		sr.AddFactory(factory(b))
 	}

@@ -515,6 +515,7 @@ func TestWatchWorldManifestUsesStartupManifestRefsAndSkipsBadCandidate(t *testin
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:    tb.Bus,
 			conf:   &Config{},
 			objKey: objKey,
 		},
@@ -605,6 +606,7 @@ func TestWatchWorldManifestFiltersWebPlatformForUnlistedPlugin(t *testing.T) {
 	jsHost := &testPluginHost{id: "js"}
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:    tb.Bus,
 			conf:   webPlatformAllowlistConfig("spacewave-v86"),
 			objKey: objKey,
 		},
@@ -694,6 +696,7 @@ func TestWatchWorldManifestExecutesBootstrapManifestAndRecordsUnreadableRetained
 	// Create the plugin host fixture.
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	ctrl := &Controller{
+		bus:    tb.Bus,
 		conf:   &Config{},
 		objKey: objKey,
 		pluginStatusCtr: ccontainer.NewCContainerWithEqual(
@@ -807,6 +810,7 @@ func TestWatchWorldManifestExecutesReadableLauncherWithUnavailableRetainedReleas
 	// Create the plugin host fixture.
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	ctrl := &Controller{
+		bus:    tb.Bus,
 		conf:   &Config{},
 		objKey: objKey,
 		pluginStatusCtr: ccontainer.NewCContainerWithEqual(
@@ -962,6 +966,7 @@ func TestWatchWorldManifestIgnoresWrongPlatformRetainedRefAndSelectsCurrent(t *t
 	// Create the plugin host fixture.
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	ctrl := &Controller{
+		bus:    tb.Bus,
 		conf:   &Config{},
 		objKey: objKey,
 		pluginStatusCtr: ccontainer.NewCContainerWithEqual(
@@ -1076,6 +1081,7 @@ func TestWatchWorldManifestQuarantinesWrongManifestIDRetainedRef(t *testing.T) {
 	// Create the plugin host fixture.
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	ctrl := &Controller{
+		bus:    tb.Bus,
 		conf:   &Config{},
 		objKey: objKey,
 		pluginStatusCtr: ccontainer.NewCContainerWithEqual(
@@ -1202,6 +1208,7 @@ func TestWatchWorldManifestClearsSkippedRefStatusAfterBucketFix(t *testing.T) {
 	// Create the plugin host fixture.
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	ctrl := &Controller{
+		bus:    tb.Bus,
 		conf:   &Config{},
 		objKey: objKey,
 		pluginStatusCtr: ccontainer.NewCContainerWithEqual(
@@ -1408,6 +1415,7 @@ func TestWatchWorldManifestLauncherStartsAfterPruningUnavailableRetainedReleaseR
 	// Create the plugin host fixture.
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	ctrl := &Controller{
+		bus:    tb.Bus,
 		conf:   &Config{},
 		objKey: objKey,
 		pluginStatusCtr: ccontainer.NewCContainerWithEqual(
@@ -1505,6 +1513,7 @@ func TestWatchWorldManifestRecordsCompactSkippedRefStatusWhenNoCandidate(t *test
 	// Create the plugin host fixture.
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	ctrl := &Controller{
+		bus:    tb.Bus,
 		conf:   &Config{},
 		objKey: objKey,
 		pluginStatusCtr: ccontainer.NewCContainerWithEqual(
@@ -1705,6 +1714,7 @@ func TestWatchWorldManifestSelectsManifestClassPairsByRevision(t *testing.T) {
 			}
 			host := &testPluginHost{id: platformID}
 			ctrl := &Controller{
+				bus: tb.Bus,
 				conf: &Config{
 					NoCopyBucketIds: []string{noCopyBucketID},
 				},
@@ -1848,6 +1858,7 @@ func TestWatchWorldManifestFallsBackToBestDownloadWhenNoLocalExecutable(t *testi
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:    tb.Bus,
 			conf:   &Config{},
 			objKey: objKey,
 		},
@@ -1971,6 +1982,7 @@ func TestProcessManifestWorldStateRunsDownloadAndExecuteForRemoteManifest(t *tes
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:    tb.Bus,
 			conf:   &Config{},
 			objKey: objKey,
 		},
@@ -2126,6 +2138,7 @@ func TestProcessManifestWorldStateSuppressesNoCopyBucketWhileDynamicManifestCopi
 	// Declare the world state wrapper.
 	var wsv world.WorldState = ws
 	c := &Controller{
+		bus: tb.Bus,
 		conf: &Config{
 			NoCopyBucketIds: []string{noCopyBucketID},
 		},
@@ -2779,6 +2792,7 @@ func TestDownloadManifestCopiesRemoteDAGAndStoresLocalWorldRef(t *testing.T) {
 	var wsv world.WorldState = ws
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:             tb.Bus,
 			conf:            &Config{},
 			objKey:          objKey,
 			peerID:          peer.ID("test"),
@@ -2845,6 +2859,7 @@ func TestDownloadManifestCopiesRemoteDAGAndStoresLocalWorldRef(t *testing.T) {
 	host := &testPluginHost{id: "desktop/darwin/arm64"}
 	runningPi := &pluginInstance{
 		c: &Controller{
+			bus:    tb.Bus,
 			conf:   &Config{},
 			objKey: objKey,
 		},
@@ -2872,6 +2887,7 @@ func TestDownloadManifestCopiesRemoteDAGAndStoresLocalWorldRef(t *testing.T) {
 	// Build the plugin instance fixture.
 	watchPi := &pluginInstance{
 		c: &Controller{
+			bus:    tb.Bus,
 			conf:   &Config{},
 			objKey: objKey,
 		},
@@ -2968,6 +2984,7 @@ func TestDownloadManifestRetriesIncompleteCopyBeforePublication(t *testing.T) {
 	var wsv world.WorldState = ws
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:             tb.Bus,
 			conf:            &Config{},
 			objKey:          objKey,
 			peerID:          peer.ID("test"),
@@ -2983,32 +3000,14 @@ func TestDownloadManifestRetriesIncompleteCopyBeforePublication(t *testing.T) {
 		Manifest:    remote.manifest,
 	}
 
-	// Assert the expected state.
-	if err := pi.execDownloadManifest(ctx, snapshot); err == nil {
-		t.Fatal("first copy attempt succeeded despite injected descendant failure")
+	// The background job retries the attempt that hit the injected failure.
+	if err := pi.execDownloadManifest(ctx, snapshot); err != nil {
+		t.Fatalf("copy failed: %v", err)
+	}
+	if !sourceStore.failed.Load() {
+		t.Fatal("copy finished without reaching the injected descendant failure")
 	}
 	got, errs, err := bldr_manifest_world.CollectManifestsForManifestID(
-		ctx,
-		ws,
-		"spacewave-core",
-		[]string{"desktop/darwin/arm64"},
-		objKey,
-	)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	if len(errs) != 0 {
-		t.Fatalf("manifest errors after failed copy = %v", errs)
-	}
-	if len(got) != 0 {
-		t.Fatalf("manifest was published after failed copy: %d", len(got))
-	}
-
-	// Assert the expected state.
-	if err := pi.execDownloadManifest(ctx, snapshot); err != nil {
-		t.Fatalf("retry copy failed: %v", err)
-	}
-	got, errs, err = bldr_manifest_world.CollectManifestsForManifestID(
 		ctx,
 		ws,
 		"spacewave-core",
@@ -3127,6 +3126,7 @@ func TestDownloadManifestCopiesExternalVolumeDAGAndCachesSourceReads(t *testing.
 	var wsv world.WorldState = ws
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:             tb.Bus,
 			conf:            &Config{},
 			objKey:          objKey,
 			peerID:          peer.ID("test"),
@@ -3227,6 +3227,7 @@ func TestDownloadManifestCopiesSeveralRemoteDAGsOutsideWorldAccess(t *testing.T)
 	var wsv world.WorldState = ws
 	pi := &pluginInstance{
 		c: &Controller{
+			bus: tb.Bus,
 			conf: &Config{
 				FetchConcurrency: 1,
 			},
@@ -3516,6 +3517,7 @@ func TestWatchWorldManifestSkipsUnchangedSelectionInputs(t *testing.T) {
 	hostSet := &pluginHostSet{pluginHosts: []bldr_plugin_host.PluginHost{host}}
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:    tb.Bus,
 			conf:   &Config{},
 			objKey: objKey,
 		},
@@ -3614,6 +3616,7 @@ func TestWatchWorldManifestReprocessesReplacementHostWithSamePlatform(t *testing
 	hostSet1 := &pluginHostSet{pluginHosts: []bldr_plugin_host.PluginHost{host1}}
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:    tb.Bus,
 			conf:   &Config{},
 			objKey: objKey,
 		},
@@ -3706,6 +3709,7 @@ func TestWatchWorldManifestReprocessesNestedSelectionGraphChange(t *testing.T) {
 	hostSet := &pluginHostSet{pluginHosts: []bldr_plugin_host.PluginHost{host}}
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:    tb.Bus,
 			conf:   &Config{},
 			objKey: objKey,
 		},
@@ -3801,6 +3805,7 @@ func TestDownloadManifestYieldsColdStartCopyUntilStartupGroupReady(t *testing.T)
 	gate := newTestManifestCopyGate(false)
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:                 tb.Bus,
 			conf:                &Config{},
 			objKey:              objKey,
 			peerID:              peer.ID("test"),
@@ -3993,6 +3998,7 @@ func TestDownloadManifestCopiesTransformedRemoteDAGAndStoresLocalWorldRef(t *tes
 	var wsv world.WorldState = ws
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:             tb.Bus,
 			conf:            &Config{},
 			objKey:          objKey,
 			peerID:          peer.ID("test"),
@@ -4112,6 +4118,7 @@ func TestDownloadManifestRejectsMissingSnapshotMetadataBeforeStore(t *testing.T)
 	var wsv world.WorldState = ws
 	pi := &pluginInstance{
 		c: &Controller{
+			bus:             tb.Bus,
 			conf:            &Config{},
 			objKey:          objKey,
 			peerID:          peer.ID("test"),
