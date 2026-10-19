@@ -335,6 +335,7 @@ func (c *Compositor) startGrab(s *surface, edges uint32) {
 	if edges != 0 {
 		s.xdg.configure()
 	}
+	c.changed = true
 	c.drag()
 }
 
@@ -385,8 +386,10 @@ func clampSize(n, lo, hi int) int {
 // endGrab ends the grab, tells a resized window it no longer resizes and
 // gives the pointer back to the surface under it. The caller holds the lock.
 func (c *Compositor) endGrab() {
+	// Drop the grab, which the viewers' scenes show, and settle a resize.
 	g := c.grab
 	c.grab = nil
+	c.changed = true
 	if g.edges != 0 {
 		g.w.xdg.configure()
 	}

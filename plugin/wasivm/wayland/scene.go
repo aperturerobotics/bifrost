@@ -332,17 +332,43 @@ func (c *Compositor) readScene(sp *space, v *view) *s4wave_vm.WasiVmScene {
 		}
 	}
 
-	// Send the arrangement and the positions when they changed.
+	// Send the arrangement, the positions and the grab when they changed.
 	if !layers.EqualVT(v.layers) {
 		u.Layers, v.layers = layers, layers
 	}
 	if !roots.EqualVT(v.roots) {
 		u.Roots, v.roots = roots, roots
 	}
-	if u.Screen == nil && u.Layers == nil && u.Roots == nil && len(u.Patches) == 0 {
+	if grab := c.sceneGrab(sp); !grab.EqualVT(v.grab) {
+		u.Grab, v.grab = grab, grab
+	}
+	if u.Screen == nil && u.Layers == nil && u.Roots == nil && len(u.Patches) == 0 && u.Grab == nil {
 		return nil
 	}
 	return u
+}
+
+// sceneGrab returns the grab as the space sp shows it: the window move in
+// progress when the window is one of its roots. The caller holds the lock.
+func (c *Compositor) sceneGrab(sp *space) *s4wave_vm.WasiVmSceneGrab {
+	// Check a move holds a window of the space.
+	g := c.grab
+	if g == nil || g.edges != 0 || !slices.Contains(c.spaceRoots(sp), g.w) {
+		return &s4wave_vm.WasiVmSceneGrab{}
+	}
+
+	// Describe the move by the rule drag follows, from the window's
+	// geometry corner to its root's origin and from the screen to the space.
+	off := g.w.origin().Sub(g.w.xdg.toplevel.pos).Sub(sp.area.Min)
+	press, root := g.pointer.Sub(sp.area.Min), g.rect.Min.Add(off)
+	return &s4wave_vm.WasiVmSceneGrab{Move: &s4wave_vm.WasiVmSceneMove{
+		Root:   g.w.sceneID,
+		PressX: int32(press.X),                //nolint:gosec // screen positions are small.
+		PressY: int32(press.Y),                //nolint:gosec // screen positions are small.
+		X:      int32(root.X),                 //nolint:gosec // screen positions are small.
+		Y:      int32(root.Y),                 //nolint:gosec // screen positions are small.
+		MinY:   int32(c.usable.Min.Y + off.Y), //nolint:gosec // screen positions are small.
+	}}
 }
 
 // readTexture returns the area r of the image of s, in its pixels, as a

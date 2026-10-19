@@ -571,6 +571,10 @@ export interface WasiVmScene {
    * Patches draws pixels into the layers' textures, in order.
    */
   patches?: WasiVmScenePatch[]
+  /**
+   * Grab is the window move in progress, when one starts or ends.
+   */
+  grab?: WasiVmSceneGrab
 }
 
 export const WasiVmScene: MessageType<WasiVmScene> =
@@ -581,6 +585,75 @@ export const WasiVmScene: MessageType<WasiVmScene> =
       [2, 'layers', 11, 0, WasiVmSceneLayers.codec],
       [3, 'roots', 11, 0, WasiVmSceneRoots.codec],
       [4, 'patches', 11, 1, WasiVmScenePatch.codec],
+      [5, 'grab', 11, 0, WasiVmSceneGrab.codec],
+    ],
+  )
+
+/**
+ * WasiVmSceneGrab is what the pointer holds.
+ *
+ * @generated from message s4wave.vm.WasiVmSceneGrab
+ */
+export interface WasiVmSceneGrab {
+  /**
+   * Move is the window move in progress, or unset when none is.
+   */
+  move?: WasiVmSceneMove
+}
+
+export const WasiVmSceneGrab: MessageType<WasiVmSceneGrab> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneGrab>(
+    's4wave.vm.WasiVmSceneGrab',
+    () => [[1, 'move', 11, 0, WasiVmSceneMove.codec]],
+  )
+
+/**
+ * WasiVmSceneMove is a window move. Until the grab ends, the root sits at
+ * (x, y) plus the pointer's travel since the press, in units, with its top
+ * at least min_y. The compositor places it by this rule from each pointer
+ * event, so a viewer applying it to its own pointer shows the same position
+ * without waiting for the roots.
+ *
+ * @generated from message s4wave.vm.WasiVmSceneMove
+ */
+export interface WasiVmSceneMove {
+  /**
+   * Root is the id of the root that moves.
+   */
+  root?: number
+  /**
+   * PressX is the pointer's left offset at the press in units.
+   */
+  pressX?: number
+  /**
+   * PressY is the pointer's top offset at the press in units.
+   */
+  pressY?: number
+  /**
+   * X is the root's left edge at the press in units.
+   */
+  x?: number
+  /**
+   * Y is the root's top edge at the press in units.
+   */
+  y?: number
+  /**
+   * MinY is the least top edge the root may move to, which keeps the
+   * window's title in the area the panels leave.
+   */
+  minY?: number
+}
+
+export const WasiVmSceneMove: MessageType<WasiVmSceneMove> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneMove>(
+    's4wave.vm.WasiVmSceneMove',
+    () => [
+      [1, 'root', 13],
+      [2, 'press_x', 5],
+      [3, 'press_y', 5],
+      [4, 'x', 5],
+      [5, 'y', 5],
+      [6, 'min_y', 5],
     ],
   )
 

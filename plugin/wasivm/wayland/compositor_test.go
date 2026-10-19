@@ -3,6 +3,7 @@ package wayland
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"image"
 	"slices"
 	"strings"
@@ -46,7 +47,8 @@ type testView struct {
 	t *testing.T
 	// updates is the viewer's scene updates.
 	updates chan *s4wave_vm.WasiVmScene
-	// scene is the screen, the layers and the roots the updates so far set.
+	// scene is the screen, the layers, the roots and the grab the updates so
+	// far set.
 	scene *s4wave_vm.WasiVmScene
 	// textures is each layer's texture by layer id.
 	textures map[uint32]*image.RGBA
@@ -117,8 +119,34 @@ func (tc *testView) awaitPixel(pt image.Point, want [4]byte) {
 	}
 }
 
+// awaitScene applies the viewer's updates until ok holds for the scene so
+// far, failing with what when it never does.
+func (tc *testView) awaitScene(what string, ok func(*s4wave_vm.WasiVmScene) bool) {
+	tc.t.Helper()
+	deadline := time.After(10 * time.Second)
+	for !ok(tc.scene) {
+		select {
+		case u := <-tc.updates:
+			tc.apply(u)
+		case <-deadline:
+			tc.t.Fatalf("the scene never showed %s: %v", what, tc.scene)
+		}
+	}
+}
+
+// rootAt returns the position of the root id in the scene so far.
+func rootAt(sc *s4wave_vm.WasiVmScene, id uint32) (image.Point, bool) {
+	for _, r := range sc.GetRoots().GetRoots() {
+		if r.GetId() == id {
+			return image.Pt(int(r.GetX()), int(r.GetY())), true
+		}
+	}
+	return image.Point{}, false
+}
+
 // apply applies the update u as the browser viewer does: the screen, the
-// layers and the roots it sets, then its patches, and draws the scene.
+// layers, the roots and the grab it sets, then its patches, and draws the
+// scene.
 func (tc *testView) apply(u *s4wave_vm.WasiVmScene) {
 	// Take the screen, the layers and the roots, dropping the textures of
 	// layers gone and giving a resized layer a new texture.
@@ -127,6 +155,9 @@ func (tc *testView) apply(u *s4wave_vm.WasiVmScene) {
 	}
 	if u.GetRoots() != nil {
 		tc.scene.Roots = u.GetRoots()
+	}
+	if u.GetGrab() != nil {
+		tc.scene.Grab = u.GetGrab()
 	}
 	if u.GetLayers() != nil {
 		tc.scene.Layers = u.GetLayers()
@@ -616,6 +647,56 @@ func TestMoveUnderPanel(t *testing.T) {
 	tc.awaitPattern(to, 32, 16, pix[:4*32*16])
 	tc.awaitPixel(image.Pt(to.X+8, 120-panel+4), red)
 	tc.awaitPixel(image.Pt(cascadeStep, cascadeStep), background)
+}
+
+// TestMoveRule checks the scene's move places the window where the
+// compositor does for each pointer position, including one that would lift
+// the window's top under a panel, so a viewer can draw the move from its own
+// pointer.
+func TestMoveRule(t *testing.T) {
+	// Map a panel along the top and a window below it.
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	const panel = 16
+	c.layerSurface(layerTop, anchorTop|anchorLeft|anchorRight, image.Pt(0, panel), panel, interactivityNone, bufRed)
+	w := c.window(32, 32, bufBlue)
+	at := image.Pt(cascadeStep, panel+cascadeStep)
+	tc.awaitPixel(at, blue)
+
+	// Grab it, and wait for the scene to show the move.
+	press := at.Add(image.Pt(8, 8))
+	tc.grabMove(c, w, press)
+	var move *s4wave_vm.WasiVmSceneMove
+	tc.awaitScene("the move", func(sc *s4wave_vm.WasiVmScene) bool {
+		move = sc.GetGrab().GetMove()
+		return move != nil
+	})
+	if got := image.Pt(int(move.GetPressX()), int(move.GetPressY())); got != press {
+		t.Fatalf("the move's press is %v, want %v", got, press)
+	}
+
+	// Move the pointer down, then up past the panel. The window's root
+	// lands where the rule puts it.
+	for _, to := range []image.Point{{60, 70}, {90, 4}} {
+		tc.pointer(to.X, to.Y, 1)
+		want := image.Pt(
+			int(move.GetX())+to.X-int(move.GetPressX()),
+			max(int(move.GetY())+to.Y-int(move.GetPressY()), int(move.GetMinY())),
+		)
+		tc.awaitScene(fmt.Sprintf("the window at %v", want), func(sc *s4wave_vm.WasiVmScene) bool {
+			got, ok := rootAt(sc, move.GetRoot())
+			return ok && got == want
+		})
+	}
+	if move.GetMinY() != panel {
+		t.Fatalf("the move's least top is %d, want the panel's height %d", move.GetMinY(), panel)
+	}
+
+	// Release. The grab ends.
+	tc.pointer(90, 4, 0)
+	tc.awaitScene("the grab ended", func(sc *s4wave_vm.WasiVmScene) bool {
+		return sc.GetGrab() != nil && sc.GetGrab().GetMove() == nil
+	})
 }
 
 // TestOpaqueRegion checks a window with an alpha channel and an opaque

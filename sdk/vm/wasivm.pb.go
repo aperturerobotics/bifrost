@@ -743,6 +743,8 @@ type WasiVmScene struct {
 	Roots *WasiVmSceneRoots `protobuf:"bytes,3,opt,name=roots,proto3" json:"roots,omitempty"`
 	// Patches draws pixels into the layers' textures, in order.
 	Patches []*WasiVmScenePatch `protobuf:"bytes,4,rep,name=patches,proto3" json:"patches,omitempty"`
+	// Grab is the window move in progress, when one starts or ends.
+	Grab *WasiVmSceneGrab `protobuf:"bytes,5,opt,name=grab,proto3" json:"grab,omitempty"`
 }
 
 func (x *WasiVmScene) Reset() {
@@ -777,6 +779,103 @@ func (x *WasiVmScene) GetPatches() []*WasiVmScenePatch {
 		return x.Patches
 	}
 	return nil
+}
+
+func (x *WasiVmScene) GetGrab() *WasiVmSceneGrab {
+	if x != nil {
+		return x.Grab
+	}
+	return nil
+}
+
+// WasiVmSceneGrab is what the pointer holds.
+type WasiVmSceneGrab struct {
+	unknownFields []byte
+	// Move is the window move in progress, or unset when none is.
+	Move *WasiVmSceneMove `protobuf:"bytes,1,opt,name=move,proto3" json:"move,omitempty"`
+}
+
+func (x *WasiVmSceneGrab) Reset() {
+	*x = WasiVmSceneGrab{}
+}
+
+func (*WasiVmSceneGrab) ProtoMessage() {}
+
+func (x *WasiVmSceneGrab) GetMove() *WasiVmSceneMove {
+	if x != nil {
+		return x.Move
+	}
+	return nil
+}
+
+// WasiVmSceneMove is a window move. Until the grab ends, the root sits at
+// (x, y) plus the pointer's travel since the press, in units, with its top
+// at least min_y. The compositor places it by this rule from each pointer
+// event, so a viewer applying it to its own pointer shows the same position
+// without waiting for the roots.
+type WasiVmSceneMove struct {
+	unknownFields []byte
+	// Root is the id of the root that moves.
+	Root uint32 `protobuf:"varint,1,opt,name=root,proto3" json:"root,omitempty"`
+	// PressX is the pointer's left offset at the press in units.
+	PressX int32 `protobuf:"varint,2,opt,name=press_x,json=pressX,proto3" json:"pressX,omitempty"`
+	// PressY is the pointer's top offset at the press in units.
+	PressY int32 `protobuf:"varint,3,opt,name=press_y,json=pressY,proto3" json:"pressY,omitempty"`
+	// X is the root's left edge at the press in units.
+	X int32 `protobuf:"varint,4,opt,name=x,proto3" json:"x,omitempty"`
+	// Y is the root's top edge at the press in units.
+	Y int32 `protobuf:"varint,5,opt,name=y,proto3" json:"y,omitempty"`
+	// MinY is the least top edge the root may move to, which keeps the
+	// window's title in the area the panels leave.
+	MinY int32 `protobuf:"varint,6,opt,name=min_y,json=minY,proto3" json:"minY,omitempty"`
+}
+
+func (x *WasiVmSceneMove) Reset() {
+	*x = WasiVmSceneMove{}
+}
+
+func (*WasiVmSceneMove) ProtoMessage() {}
+
+func (x *WasiVmSceneMove) GetRoot() uint32 {
+	if x != nil {
+		return x.Root
+	}
+	return 0
+}
+
+func (x *WasiVmSceneMove) GetPressX() int32 {
+	if x != nil {
+		return x.PressX
+	}
+	return 0
+}
+
+func (x *WasiVmSceneMove) GetPressY() int32 {
+	if x != nil {
+		return x.PressY
+	}
+	return 0
+}
+
+func (x *WasiVmSceneMove) GetX() int32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *WasiVmSceneMove) GetY() int32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *WasiVmSceneMove) GetMinY() int32 {
+	if x != nil {
+		return x.MinY
+	}
+	return 0
 }
 
 // WasiVmSceneScreen is the screen's size in units, the viewer's CSS pixels,
@@ -1620,6 +1719,7 @@ func (m *WasiVmScene) CloneVT() *WasiVmScene {
 	r.Layers = protobuf_go_lite.CloneVTValue(m.Layers)
 	r.Roots = protobuf_go_lite.CloneVTValue(m.Roots)
 	r.Patches = protobuf_go_lite.CloneVTSlice(m.Patches)
+	r.Grab = protobuf_go_lite.CloneVTValue(m.Grab)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1627,6 +1727,43 @@ func (m *WasiVmScene) CloneVT() *WasiVmScene {
 }
 
 func (m *WasiVmScene) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmSceneGrab) CloneVT() *WasiVmSceneGrab {
+	if m == nil {
+		return (*WasiVmSceneGrab)(nil)
+	}
+	r := new(WasiVmSceneGrab)
+	r.Move = protobuf_go_lite.CloneVTValue(m.Move)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmSceneGrab) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmSceneMove) CloneVT() *WasiVmSceneMove {
+	if m == nil {
+		return (*WasiVmSceneMove)(nil)
+	}
+	r := new(WasiVmSceneMove)
+	r.Root = m.Root
+	r.PressX = m.PressX
+	r.PressY = m.PressY
+	r.X = m.X
+	r.Y = m.Y
+	r.MinY = m.MinY
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmSceneMove) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -2376,11 +2513,69 @@ func (this *WasiVmScene) EqualVT(that *WasiVmScene) bool {
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.Patches, that.Patches, func() *WasiVmScenePatch { return &WasiVmScenePatch{} }) {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.Grab, that.Grab) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *WasiVmScene) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*WasiVmScene)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmSceneGrab) EqualVT(that *WasiVmSceneGrab) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Move, that.Move) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmSceneGrab) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneGrab)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmSceneMove) EqualVT(that *WasiVmSceneMove) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Root != that.Root {
+		return false
+	}
+	if this.PressX != that.PressX {
+		return false
+	}
+	if this.PressY != that.PressY {
+		return false
+	}
+	if this.X != that.X {
+		return false
+	}
+	if this.Y != that.Y {
+		return false
+	}
+	if this.MinY != that.MinY {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmSceneMove) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneMove)
 	if !ok {
 		return false
 	}
@@ -3915,6 +4110,11 @@ func (x *WasiVmScene) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if x.Grab != nil || s.HasField("grab") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("grab")
+		x.Grab.MarshalProtoJSON(s.WithField("grab"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -3971,12 +4171,147 @@ func (x *WasiVmScene) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.Patches = append(x.Patches, v)
 			})
+		case "grab":
+			if s.ReadNil() {
+				x.Grab = nil
+				return
+			}
+			x.Grab = &WasiVmSceneGrab{}
+			x.Grab.UnmarshalProtoJSON(s.WithField("grab", true))
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the WasiVmScene from JSON.
 func (x *WasiVmScene) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmSceneGrab message to JSON.
+func (x *WasiVmSceneGrab) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Move != nil || s.HasField("move") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("move")
+		x.Move.MarshalProtoJSON(s.WithField("move"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmSceneGrab to JSON.
+func (x *WasiVmSceneGrab) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneGrab message from JSON.
+func (x *WasiVmSceneGrab) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "move":
+			if s.ReadNil() {
+				x.Move = nil
+				return
+			}
+			x.Move = &WasiVmSceneMove{}
+			x.Move.UnmarshalProtoJSON(s.WithField("move", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneGrab from JSON.
+func (x *WasiVmSceneGrab) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmSceneMove message to JSON.
+func (x *WasiVmSceneMove) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Root != 0 || s.HasField("root") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("root")
+		s.WriteUint32(x.Root)
+	}
+	if x.PressX != 0 || s.HasField("pressX") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("pressX")
+		s.WriteInt32(x.PressX)
+	}
+	if x.PressY != 0 || s.HasField("pressY") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("pressY")
+		s.WriteInt32(x.PressY)
+	}
+	if x.X != 0 || s.HasField("x") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("x")
+		s.WriteInt32(x.X)
+	}
+	if x.Y != 0 || s.HasField("y") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("y")
+		s.WriteInt32(x.Y)
+	}
+	if x.MinY != 0 || s.HasField("minY") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("minY")
+		s.WriteInt32(x.MinY)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmSceneMove to JSON.
+func (x *WasiVmSceneMove) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneMove message from JSON.
+func (x *WasiVmSceneMove) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "root":
+			s.AddField("root")
+			x.Root = s.ReadUint32()
+		case "press_x", "pressX":
+			s.AddField("press_x")
+			x.PressX = s.ReadInt32()
+		case "press_y", "pressY":
+			s.AddField("press_y")
+			x.PressY = s.ReadInt32()
+		case "x":
+			s.AddField("x")
+			x.X = s.ReadInt32()
+		case "y":
+			s.AddField("y")
+			x.Y = s.ReadInt32()
+		case "min_y", "minY":
+			s.AddField("min_y")
+			x.MinY = s.ReadInt32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneMove from JSON.
+func (x *WasiVmSceneMove) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -5626,6 +5961,16 @@ func (m *WasiVmScene) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Grab != nil {
+		size, err := m.Grab.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x2a
+	}
 	if len(m.Patches) > 0 {
 		for iNdEx := len(m.Patches) - 1; iNdEx >= 0; iNdEx-- {
 			size, err := m.Patches[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
@@ -5667,6 +6012,110 @@ func (m *WasiVmScene) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmSceneGrab) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmSceneGrab) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmSceneGrab) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Move != nil {
+		size, err := m.Move.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmSceneMove) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmSceneMove) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmSceneMove) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.MinY != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MinY))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.Y != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.X != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.PressY != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.PressY))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.PressX != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.PressX))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Root != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Root))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -6613,6 +7062,40 @@ func (m *WasiVmScene) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	if m.Grab != nil {
+		l = m.Grab.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmSceneGrab) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Move != nil {
+		l = m.Move.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmSceneMove) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Root)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.PressX)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.PressY)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.X)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Y)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.MinY)
 	n += len(m.unknownFields)
 	return n
 }
@@ -7269,10 +7752,62 @@ func (x *WasiVmScene) MarshalProtoText() string {
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
+	if x.Grab != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "grab")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Grab)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *WasiVmScene) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmSceneGrab) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneGrab")
+	if x.Move != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "move")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Move)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmSceneGrab) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmSceneMove) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneMove")
+	if x.Root != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "root")
+		protobuf_go_lite.TextWriteUint(&sb, x.Root)
+	}
+	if x.PressX != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "press_x")
+		protobuf_go_lite.TextWriteInt(&sb, x.PressX)
+	}
+	if x.PressY != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "press_y")
+		protobuf_go_lite.TextWriteInt(&sb, x.PressY)
+	}
+	if x.X != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "x")
+		protobuf_go_lite.TextWriteInt(&sb, x.X)
+	}
+	if x.Y != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "y")
+		protobuf_go_lite.TextWriteInt(&sb, x.Y)
+	}
+	if x.MinY != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "min_y")
+		protobuf_go_lite.TextWriteInt(&sb, x.MinY)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmSceneMove) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -8940,6 +9475,176 @@ func (m *WasiVmScene) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Grab", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Grab == nil {
+				m.Grab = &WasiVmSceneGrab{}
+			}
+			if err := m.Grab.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmSceneGrab) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmSceneGrab: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmSceneGrab: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Move", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Move == nil {
+				m.Move = &WasiVmSceneMove{}
+			}
+			if err := m.Move.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmSceneMove) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmSceneMove: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmSceneMove: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Root", wireType)
+			}
+			m.Root = 0
+			m.Root, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PressX", wireType)
+			}
+			m.PressX = 0
+			m.PressX, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PressY", wireType)
+			}
+			m.PressY = 0
+			m.PressY, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field X", wireType)
+			}
+			m.X = 0
+			m.X, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Y", wireType)
+			}
+			m.Y = 0
+			m.Y, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MinY", wireType)
+			}
+			m.MinY = 0
+			m.MinY, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

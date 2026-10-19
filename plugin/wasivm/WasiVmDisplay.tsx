@@ -136,13 +136,14 @@ export function WasiVmDisplay({
   views = desktopViews,
   onPaneSize,
 }: WasiVmDisplayProps) {
-  // Hold the elements, the input stream, the last scene's screen, and each
-  // held key's keysym by code, so a release sends the keysym its press sent
-  // after a modifier changes.
+  // Hold the elements, the input stream, the last scene's screen, the
+  // scene's pointer, and each held key's keysym by code, so a release sends
+  // the keysym its press sent after a modifier changes.
   const paneRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const inputRef = useRef<Pushable<WasiVmDisplayInput> | null>(null)
   const screenRef = useRef<SceneScreen>(new Scene().screen)
+  const pointRef = useRef<((x: number, y: number) => void) | null>(null)
   const heldKeys = useRef(new Map<string, number>())
 
   // Track the stream's status and the connection attempt Retry advances.
@@ -210,6 +211,12 @@ export function WasiVmDisplay({
       })
     }
 
+    // Give the scene each pointer position sent, and redraw when a window
+    // moves with it, without waiting for the compositor.
+    pointRef.current = (x, y) => {
+      if (scene.point(x, y)) draw()
+    }
+
     // Open a renderer. A lost GPU device is reopened once and every
     // texture uploaded again from the scene; a second loss fails the
     // display, and Retry draws with Canvas 2D on a new canvas.
@@ -272,11 +279,14 @@ export function WasiVmDisplay({
     })()
 
     return () => {
-      // Stop drawing, then close the streams.
+      // Stop drawing.
       cancelled = true
+      pointRef.current = null
       cancelAnimationFrame(frame)
       renderer?.destroy()
       renderer = null
+
+      // Close the streams.
       stopScale()
       abort.abort()
       input.end()
@@ -290,7 +300,7 @@ export function WasiVmDisplay({
   }
 
   // sendPointer sends the pointer's position on the screen and the held
-  // buttons, with extra X buttons added.
+  // buttons, with extra X buttons added, and gives the scene the position.
   const sendPointer = (
     e: { clientX: number; clientY: number; buttons: number },
     extra = 0,
@@ -301,14 +311,17 @@ export function WasiVmDisplay({
     const rect = canvas.getBoundingClientRect()
     if (!rect.width || !rect.height) return
     const { width, height, scale } = screenRef.current
+    const x = Math.floor(((e.clientX - rect.left) * width * scale) / rect.width)
+    const y = Math.floor(
+      ((e.clientY - rect.top) * height * scale) / rect.height,
+    )
+
+    // Send it, and move a grabbed window there on the next frame.
     send({
       case: 'pointer',
-      value: {
-        x: Math.floor(((e.clientX - rect.left) * width * scale) / rect.width),
-        y: Math.floor(((e.clientY - rect.top) * height * scale) / rect.height),
-        buttons: xButtons(e.buttons) | extra,
-      },
+      value: { x, y, buttons: xButtons(e.buttons) | extra },
     })
+    pointRef.current?.(x, y)
   }
 
   // releasePointer releases every button where an interrupted drag left the

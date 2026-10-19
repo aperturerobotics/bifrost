@@ -4231,7 +4231,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/vm": {
-      "hash": "fadba25c5f0b35c7b74aabbf87d1e6e1637d1d2e78d3cafd7fc7ef5f91ea5576",
+      "hash": "43461fdcc8f864d849de29656f29a136ec74d3f30ab9abf46fe805d95b46267c",
       "generatedFiles": [
         "sdk/vm/v86-wizard.pb.go",
         "sdk/vm/v86-wizard.pb.ts",

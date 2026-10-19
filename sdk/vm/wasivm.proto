@@ -277,6 +277,35 @@ message WasiVmScene {
   WasiVmSceneRoots roots = 3;
   // Patches draws pixels into the layers' textures, in order.
   repeated WasiVmScenePatch patches = 4;
+  // Grab is the window move in progress, when one starts or ends.
+  WasiVmSceneGrab grab = 5;
+}
+
+// WasiVmSceneGrab is what the pointer holds.
+message WasiVmSceneGrab {
+  // Move is the window move in progress, or unset when none is.
+  WasiVmSceneMove move = 1;
+}
+
+// WasiVmSceneMove is a window move. Until the grab ends, the root sits at
+// (x, y) plus the pointer's travel since the press, in units, with its top
+// at least min_y. The compositor places it by this rule from each pointer
+// event, so a viewer applying it to its own pointer shows the same position
+// without waiting for the roots.
+message WasiVmSceneMove {
+  // Root is the id of the root that moves.
+  uint32 root = 1;
+  // PressX is the pointer's left offset at the press in units.
+  int32 press_x = 2;
+  // PressY is the pointer's top offset at the press in units.
+  int32 press_y = 3;
+  // X is the root's left edge at the press in units.
+  int32 x = 4;
+  // Y is the root's top edge at the press in units.
+  int32 y = 5;
+  // MinY is the least top edge the root may move to, which keeps the
+  // window's title in the area the panels leave.
+  int32 min_y = 6;
 }
 
 // WasiVmSceneScreen is the screen's size in units, the viewer's CSS pixels,

@@ -1,4 +1,8 @@
-import type { WasiVmScene, WasiVmSceneLayer } from '@s4wave/sdk/vm/wasivm.pb.js'
+import type {
+  WasiVmScene,
+  WasiVmSceneLayer,
+  WasiVmSceneMove,
+} from '@s4wave/sdk/vm/wasivm.pb.js'
 
 // SceneScreen is the screen a scene covers: its size in units, the screen
 // pixels per unit, and the background as RGBA in the high to low bytes.
@@ -40,9 +44,16 @@ export interface SceneLayer {
   texture: SceneTexture
 }
 
+// ScenePoint is a position on the screen in units.
+export interface ScenePoint {
+  x: number
+  y: number
+}
+
 // Scene is the state a display stream builds: the screen, the layers bottom to
-// top, the roots' positions and each layer's texture. apply folds each update
-// into it; the renderer draws it.
+// top, the roots' positions, each layer's texture and the window move in
+// progress. apply folds each update into it and point takes the viewer's own
+// pointer; the renderer draws it.
 export class Scene {
   // screen is the screen's size in units, its scale and its background.
   screen: SceneScreen = {
@@ -55,13 +66,18 @@ export class Scene {
   // gave them.
   private layers: WasiVmSceneLayer[] = []
   // roots maps each root's id to its position in units.
-  private roots = new Map<number, { x: number; y: number }>()
+  private roots = new Map<number, ScenePoint>()
+  // move is the window move in progress, or null.
+  private move: WasiVmSceneMove | null = null
+  // pointer is the viewer's pointer in units, or null before it first moves.
+  private pointer: ScenePoint | null = null
   // textures maps each layer's id to its texture.
   private textures = new Map<number, SceneTexture>()
 
-  // apply folds the update u into the scene: the screen, the layers and the
-  // roots it sets, then its patches. A layer missing from a new list loses its
-  // texture, and a layer whose texture size changed gets an empty one.
+  // apply folds the update u into the scene: the screen, the layers, the
+  // roots and the grab it sets, then its patches. A layer missing from a new
+  // list loses its texture, and a layer whose texture size changed gets an
+  // empty one.
   apply(u: WasiVmScene) {
     // Take the screen and the roots.
     if (u.screen) {
@@ -79,6 +95,9 @@ export class Scene {
           { x: r.x ?? 0, y: r.y ?? 0 },
         ]),
       )
+    }
+    if (u.grab) {
+      this.move = u.grab.move ?? null
     }
 
     // Take the layers, keeping each texture whose size holds.
@@ -134,13 +153,43 @@ export class Scene {
     }
   }
 
+  // point takes the viewer's pointer at the screen pixel x, y, the position
+  // it sends the compositor, and reports whether the scene changed: whether
+  // a window moves with it.
+  point(x: number, y: number): boolean {
+    // Convert to units, keeping the pointer on the screen as the compositor
+    // does.
+    const { width, height, scale } = this.screen
+    this.pointer = {
+      x: Math.max(Math.min(Math.floor(x / scale), width - 1), 0),
+      y: Math.max(Math.min(Math.floor(y / scale), height - 1), 0),
+    }
+    return this.move !== null
+  }
+
+  // rootAt returns the position of the root id: where the move puts it
+  // under the viewer's pointer while it moves, else where the last roots
+  // put it. The compositor places a moving root by the same rule, so the
+  // roots catch up with the prediction rather than correct it.
+  private rootAt(id: number): ScenePoint {
+    const m = this.move
+    const p = this.pointer
+    if (m && p && m.root === id) {
+      return {
+        x: (m.x ?? 0) + p.x - (m.pressX ?? 0),
+        y: Math.max((m.y ?? 0) + p.y - (m.pressY ?? 0), m.minY ?? 0),
+      }
+    }
+    return this.roots.get(id) ?? { x: 0, y: 0 }
+  }
+
   // drawList returns the layers bottom to top with their textures, placed at
   // their roots' positions. The array is fresh; the textures are the scene's.
   drawList(): SceneLayer[] {
     const out: SceneLayer[] = []
     for (const l of this.layers) {
       const texture = this.textures.get(l.id ?? 0)
-      const root = this.roots.get(l.root ?? 0) ?? { x: 0, y: 0 }
+      const root = this.rootAt(l.root ?? 0)
       if (!texture || !texture.width || !texture.height) continue
       out.push({
         id: l.id ?? 0,

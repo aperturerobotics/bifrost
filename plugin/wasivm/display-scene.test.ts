@@ -57,6 +57,48 @@ describe('Scene', () => {
     expect(takeDirty(t)).toEqual([{ x: 1, y: 1, width: 1, height: 1 }])
   })
 
+  it('moves a grabbed root with the local pointer until the grab ends', () => {
+    // Show two roots at scale 2, and a move of root 1 pressed at 10,10 when
+    // it sat at 4,6, whose top stays at 5 or below.
+    const scene = new Scene()
+    const one = { ...layer(1, 2, 2), root: 1 }
+    const two = { ...layer(2, 2, 2), root: 2 }
+    scene.apply({
+      screen: { width: 40, height: 30, scale: 2 },
+      layers: { layers: [one, two] },
+      roots: {
+        roots: [
+          { id: 1, x: 4, y: 6 },
+          { id: 2, x: 20, y: 20 },
+        ],
+      },
+    })
+    const at = (id: number) => scene.drawList().find((l) => l.id === id)
+    expect(scene.point(0, 0)).toBe(false)
+    scene.apply({
+      grab: { move: { root: 1, pressX: 10, pressY: 10, x: 4, y: 6, minY: 5 } },
+    })
+
+    // Moving the pointer, in screen pixels, moves root 1 by its travel in
+    // units and leaves root 2.
+    expect(scene.point(31, 25)).toBe(true)
+    expect(at(1)).toMatchObject({ x: 9, y: 8 })
+    expect(at(2)).toMatchObject({ x: 20, y: 20 })
+
+    // Its top stops at the least, and the pointer stays on the screen.
+    scene.point(-50, 0)
+    expect(at(1)).toMatchObject({ x: -6, y: 5 })
+
+    // Roots that trail the pointer do not pull it back.
+    scene.apply({ roots: { roots: [{ id: 1, x: 7, y: 7 }] } })
+    expect(at(1)).toMatchObject({ x: -6, y: 5 })
+
+    // When the grab ends, the roots place it again.
+    scene.apply({ grab: {}, roots: { roots: [{ id: 1, x: -6, y: 5 }] } })
+    expect(scene.point(100, 100)).toBe(false)
+    expect(at(1)).toMatchObject({ x: -6, y: 5 })
+  })
+
   it('drops gone layers and replaces resized textures', () => {
     // Show two layers, then list only the second, resized.
     const scene = new Scene()
