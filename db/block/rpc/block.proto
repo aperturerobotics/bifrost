@@ -109,6 +109,9 @@ message GetBlockRequest {
   .block.BlockRef ref = 1;
   // WithRefs requests the block's outgoing refs with its data.
   bool with_refs = 2;
+  // Background marks the read as background work: a remote fetch it needs
+  // yields to foreground fetches on the same store.
+  bool background = 3;
 }
 
 // GetBlockResponse is the response to looking up a block in the store.

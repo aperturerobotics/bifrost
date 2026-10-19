@@ -15,6 +15,8 @@ type testStore struct {
 	batchEntries []*block.PutBatchEntry
 	fenced       bool
 	syncCount    int
+	// background records whether the last block read was background work.
+	background bool
 }
 
 func (s *testStore) GetSupportedFeatures() block.StoreFeature {
@@ -24,6 +26,11 @@ func (s *testStore) GetSupportedFeatures() block.StoreFeature {
 func (s *testStore) PutBlockBatch(_ context.Context, entries []*block.PutBatchEntry) ([]bool, error) {
 	s.batchEntries = entries
 	return make([]bool, len(entries)), nil
+}
+
+func (s *testStore) GetStoredBlock(ctx context.Context, _ *block.BlockRef) (*block.StoredBlock, error) {
+	s.background = block.IsBackground(ctx)
+	return nil, nil
 }
 
 func (s *testStore) Sync(context.Context) (bool, error) {
@@ -101,6 +108,27 @@ func TestBlockStoreSyncForwards(t *testing.T) {
 	}
 	if store.syncCount != 1 {
 		t.Fatalf("expected one inner Sync, got %d", store.syncCount)
+	}
+}
+
+func TestBlockStoreGetBlockRestoresBackground(t *testing.T) {
+	store := &testStore{}
+	server := NewBlockStore(store)
+	for _, background := range []bool{true, false} {
+		// Read a block with the request's class.
+		_, err := server.GetBlock(context.Background(), &block_rpc.GetBlockRequest{
+			Ref:        &block.BlockRef{},
+			WithRefs:   true,
+			Background: background,
+		})
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		// Verify the store read carries the same class.
+		if store.background != background {
+			t.Fatalf("background request %v reached the store as %v", background, store.background)
+		}
 	}
 }
 

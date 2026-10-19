@@ -33,8 +33,14 @@ func (s *PackfileStore) ReadPackBlocks(ctx context.Context, packID string, size 
 	}
 	defer rd.Close()
 
-	// Fetch the complete pack and validate its encoded index.
+	// Fetch the complete pack once the gate admits it, and validate its
+	// encoded index.
+	leave, err := s.gate.enter(ctx, block.IsBackground(ctx), nil)
+	if err != nil {
+		return nil, err
+	}
 	data, err := rd.transport.Fetch(ctx, 0, int(size))
+	leave()
 	if err != nil {
 		return nil, errors.Wrapf(err, "fetch packfile %s", packID)
 	}

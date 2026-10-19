@@ -74,6 +74,9 @@ type PackfileStore struct {
 	writebackWindow int64
 	// budget bounds the resident span bytes of every engine.
 	budget *residentBudget
+	// gate admits every engine's transport fetches by class, so background
+	// fetches yield to foreground fetches anywhere in the store.
+	gate *demandGate
 
 	// manifest orders immutable descriptors for lookup, guarded by bcast.
 	manifest *btree.BTreeG[*manifestEntry]
@@ -92,6 +95,7 @@ func NewPackfileStore(opener Opener, cache IndexCache) *PackfileStore {
 		writebackCtx:    context.Background(),
 		writebackWindow: defaultWritebackWindow,
 		budget:          newResidentBudget(defaultResidentBudget),
+		gate:            newDemandGate(),
 	}
 	return s
 }
@@ -767,9 +771,13 @@ func (s *PackfileStore) getOrOpenEngine(packID string, size int64, blockCount ui
 	}
 	eng.packID = packID
 	eng.SetExpectedBlockCount(blockCount)
+
+	// Share the store's index cache, writeback, resident budget, demand gate
+	// and stats callback with the reader.
 	eng.SetIndexCache(cache)
 	eng.SetWriteback(wbCtx, wbTarget, wbWindow)
 	eng.setBudget(s.budget)
+	eng.setDemandGate(s.gate)
 	eng.SetStatsChangedCallback(notify)
 
 	// Publish only into the matching current catalog; old snapshots borrow

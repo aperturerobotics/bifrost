@@ -56,6 +56,8 @@ func (e *PackReader) fetchRange(ctx context.Context, off, readEnd int64, exact b
 	var resident *span
 	var closed, started bool
 	var key fetchKey
+	var gate *demandGate
+	var promote chan struct{}
 	var load *fetchLoad
 	var notifyStart func()
 	e.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
@@ -71,9 +73,14 @@ func (e *PackReader) fetchRange(ctx context.Context, off, readEnd int64, exact b
 			return
 		}
 
-		// Join a transport fetch that already covers the requested offset.
+		// Join a transport fetch that already covers the requested offset. A
+		// foreground read promotes a background fetch it joins.
 		load = e.findLoadingLocked(off)
 		if load != nil {
+			if load.promote != nil && !block.IsBackground(ctx) {
+				close(load.promote)
+				load.promote = nil
+			}
 			return
 		}
 
@@ -92,6 +99,11 @@ func (e *PackReader) fetchRange(ctx context.Context, off, readEnd int64, exact b
 			e.loading = make(map[fetchKey]*fetchLoad)
 		}
 		load = &fetchLoad{done: make(chan struct{})}
+		if block.IsBackground(ctx) {
+			load.promote = make(chan struct{})
+			promote = load.promote
+		}
+		gate = e.gate
 		e.loading[key] = load
 		e.workCount++
 		started = true
@@ -117,7 +129,7 @@ func (e *PackReader) fetchRange(ctx context.Context, off, readEnd int64, exact b
 		trace.Log(ctx, "role", "leader")
 		trace.Logf(ctx, "range-offset", "%d", key.off)
 		trace.Logf(ctx, "range-size", "%d", key.size)
-		e.startFetch(key, load, exact)
+		e.startFetch(key, load, gate, promote, exact)
 	}
 	if !started {
 		trace.Log(ctx, "role", "waiter")
@@ -145,14 +157,21 @@ func (e *PackReader) fetchRange(ctx context.Context, off, readEnd int64, exact b
 	}
 }
 
-// startFetch runs one transport request under the PackReader lifetime.
-func (e *PackReader) startFetch(key fetchKey, load *fetchLoad, indexTail bool) {
+// startFetch runs one transport request under the PackReader lifetime. A
+// non-nil promote marks a background fetch, which the gate admits after
+// foreground fetches unless promote closes first.
+func (e *PackReader) startFetch(key fetchKey, load *fetchLoad, gate *demandGate, promote <-chan struct{}, indexTail bool) {
 	startOwnerWork(func() {
 		// Hold the reader open until this job finishes.
 		defer e.finishOwnerWork()
 
-		// Fetch the range under the reader's lifetime.
-		data, err := e.transport.Fetch(e.ctx, key.off, key.size)
+		// Fetch the range under the reader's lifetime once the gate admits it.
+		var data []byte
+		leave, err := gate.enter(e.ctx, promote != nil, promote)
+		if err == nil {
+			data, err = e.transport.Fetch(e.ctx, key.off, key.size)
+			leave()
+		}
 		var sp *span
 		if len(data) != 0 {
 			sp = newSpan(key.off, data)

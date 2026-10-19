@@ -248,6 +248,9 @@ type GetBlockRequest struct {
 	Ref *block.BlockRef `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
 	// WithRefs requests the block's outgoing refs with its data.
 	WithRefs bool `protobuf:"varint,2,opt,name=with_refs,json=withRefs,proto3" json:"withRefs,omitempty"`
+	// Background marks the read as background work: a remote fetch it needs
+	// yields to foreground fetches on the same store.
+	Background bool `protobuf:"varint,3,opt,name=background,proto3" json:"background,omitempty"`
 }
 
 func (x *GetBlockRequest) Reset() {
@@ -266,6 +269,13 @@ func (x *GetBlockRequest) GetRef() *block.BlockRef {
 func (x *GetBlockRequest) GetWithRefs() bool {
 	if x != nil {
 		return x.WithRefs
+	}
+	return false
+}
+
+func (x *GetBlockRequest) GetBackground() bool {
+	if x != nil {
+		return x.Background
 	}
 	return false
 }
@@ -728,6 +738,7 @@ func (m *GetBlockRequest) CloneVT() *GetBlockRequest {
 	}
 	r := new(GetBlockRequest)
 	r.WithRefs = m.WithRefs
+	r.Background = m.Background
 	r.Ref = protobuf_go_lite.CloneVTValue(m.Ref)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -1129,6 +1140,9 @@ func (this *GetBlockRequest) EqualVT(that *GetBlockRequest) bool {
 		return false
 	}
 	if this.WithRefs != that.WithRefs {
+		return false
+	}
+	if this.Background != that.Background {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1875,6 +1889,11 @@ func (x *GetBlockRequest) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("withRefs")
 		s.WriteBool(x.WithRefs)
 	}
+	if x.Background || s.HasField("background") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("background")
+		s.WriteBool(x.Background)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1902,6 +1921,9 @@ func (x *GetBlockRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "with_refs", "withRefs":
 			s.AddField("with_refs")
 			x.WithRefs = s.ReadBool()
+		case "background":
+			s.AddField("background")
+			x.Background = s.ReadBool()
 		}
 	})
 }
@@ -2922,6 +2944,11 @@ func (m *GetBlockRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Background {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Background)
+		i--
+		dAtA[i] = 0x18
+	}
 	if m.WithRefs {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.WithRefs)
 		i--
@@ -3559,6 +3586,7 @@ func (m *GetBlockRequest) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.WithRefs)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Background)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3887,6 +3915,10 @@ func (x *GetBlockRequest) MarshalProtoText() string {
 	if x.WithRefs != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "with_refs")
 		protobuf_go_lite.TextWriteBool(&sb, x.WithRefs)
+	}
+	if x.Background != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "background")
+		protobuf_go_lite.TextWriteBool(&sb, x.Background)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -4716,6 +4748,16 @@ func (m *GetBlockRequest) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.WithRefs = bool(v)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Background", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Background = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

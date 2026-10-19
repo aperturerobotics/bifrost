@@ -219,6 +219,11 @@ export interface GetBlockRequest {
    * WithRefs requests the block's outgoing refs with its data.
    */
   withRefs?: boolean
+  /**
+   * Background marks the read as background work: a remote fetch it needs
+   * yields to foreground fetches on the same store.
+   */
+  background?: boolean
 }
 
 export const GetBlockRequest: MessageType<GetBlockRequest> =
@@ -227,6 +232,7 @@ export const GetBlockRequest: MessageType<GetBlockRequest> =
     () => [
       [1, 'ref', 11, 0, BlockRef.codec],
       [2, 'with_refs', 8],
+      [3, 'background', 8],
     ],
   )
 

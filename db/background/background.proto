@@ -1,0 +1,52 @@
+syntax = "proto3";
+package background;
+
+import "github.com/aperturerobotics/util/backoff/backoff.proto";
+import "google/protobuf/timestamp.proto";
+
+// Config configures the background job controller.
+message Config {
+  // RunSlots is the number of background jobs that run at once.
+  // Default: 1.
+  uint32 run_slots = 1;
+  // RetryBackoff is the backoff between attempts of a failed job.
+  // Default: exponential.
+  .backoff.Backoff retry_backoff = 2;
+}
+
+// JobState is the state of one background job.
+message JobState {
+  // State is the job's current lifecycle state.
+  oneof state {
+    // Waiting means the job waits for a run slot.
+    JobWaiting waiting = 1;
+    // Running means the job holds a run slot and is running.
+    JobRunning running = 2;
+    // Retrying means the last attempt failed and the job waits to retry.
+    JobRetrying retrying = 3;
+    // Done means the last attempt finished without error.
+    JobDone done = 4;
+  }
+}
+
+// JobWaiting is the state of a job waiting for a run slot.
+message JobWaiting {
+}
+
+// JobRunning is the state of a running job.
+message JobRunning {
+  // Attempt counts the attempts of this job, starting at 1.
+  uint32 attempt = 1;
+}
+
+// JobRetrying is the state of a job waiting to retry after a failure.
+message JobRetrying {
+  // Error is the error of the failed attempt.
+  string error = 1;
+  // RetryAt is when the job next asks for a run slot.
+  google.protobuf.Timestamp retry_at = 2;
+}
+
+// JobDone is the state of a job whose last attempt finished.
+message JobDone {
+}
