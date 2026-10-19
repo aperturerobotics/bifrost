@@ -21,10 +21,17 @@ export interface Config {
    * This is very much slower than better.
    */
   best?: boolean
+  /**
+   * ReadGzip decodes blocks that start with the gzip magic as gzip.
+   * s2 output never starts with it, so a store moving from gzip to s2 can
+   * read the blocks written before the switch.
+   */
+  readGzip?: boolean
 }
 
 export const Config: MessageType<Config> =
   /* @__PURE__ */ createMessageType<Config>('transform.s2.Config', () => [
     [1, 'better', 8],
     [2, 'best', 8],
+    [3, 'read_gzip', 8],
   ])

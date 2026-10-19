@@ -22,6 +22,10 @@ type Config struct {
 	// Best uses the "best" s2 mode.
 	// This is very much slower than better.
 	Best bool `protobuf:"varint,2,opt,name=best,proto3" json:"best,omitempty"`
+	// ReadGzip decodes blocks that start with the gzip magic as gzip.
+	// s2 output never starts with it, so a store moving from gzip to s2 can
+	// read the blocks written before the switch.
+	ReadGzip bool `protobuf:"varint,3,opt,name=read_gzip,json=readGzip,proto3" json:"readGzip,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -44,6 +48,13 @@ func (x *Config) GetBest() bool {
 	return false
 }
 
+func (x *Config) GetReadGzip() bool {
+	if x != nil {
+		return x.ReadGzip
+	}
+	return false
+}
+
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
@@ -51,6 +62,7 @@ func (m *Config) CloneVT() *Config {
 	r := new(Config)
 	r.Better = m.Better
 	r.Best = m.Best
+	r.ReadGzip = m.ReadGzip
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -71,6 +83,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.Best != that.Best {
+		return false
+	}
+	if this.ReadGzip != that.ReadGzip {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -102,6 +117,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("best")
 		s.WriteBool(x.Best)
 	}
+	if x.ReadGzip || s.HasField("readGzip") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("readGzip")
+		s.WriteBool(x.ReadGzip)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -125,6 +145,9 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "best":
 			s.AddField("best")
 			x.Best = s.ReadBool()
+		case "read_gzip", "readGzip":
+			s.AddField("read_gzip")
+			x.ReadGzip = s.ReadBool()
 		}
 	})
 }
@@ -163,6 +186,11 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.ReadGzip {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.ReadGzip)
+		i--
+		dAtA[i] = 0x18
+	}
 	if m.Best {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Best)
 		i--
@@ -184,6 +212,7 @@ func (m *Config) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Better)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Best)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.ReadGzip)
 	n += len(m.unknownFields)
 	return n
 }
@@ -198,6 +227,10 @@ func (x *Config) MarshalProtoText() string {
 	if x.Best != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "best")
 		protobuf_go_lite.TextWriteBool(&sb, x.Best)
+	}
+	if x.ReadGzip != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "read_gzip")
+		protobuf_go_lite.TextWriteBool(&sb, x.ReadGzip)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -246,6 +279,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Best = bool(v)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReadGzip", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ReadGzip = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

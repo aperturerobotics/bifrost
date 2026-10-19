@@ -9,4 +9,8 @@ message Config {
   // Best uses the "best" s2 mode.
   // This is very much slower than better.
   bool best = 2;
+  // ReadGzip decodes blocks that start with the gzip magic as gzip.
+  // s2 output never starts with it, so a store moving from gzip to s2 can
+  // read the blocks written before the switch.
+  bool read_gzip = 3;
 }

@@ -1891,7 +1891,7 @@
       ]
     },
     "github.com/s4wave/spacewave/db/block/transform/s2": {
-      "hash": "ef1ce938d2480a69ccb53594c26102ed44e68bffbcb8a4876f3a0da408d9b6b8",
+      "hash": "7c09b9685073296a777a6b2f7989ff28f43093a02d6519ecc2d68bb6e0675f35",
       "generatedFiles": [
         "db/block/transform/s2/s2.pb.go",
         "db/block/transform/s2/s2.pb.ts"

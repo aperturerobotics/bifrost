@@ -41,6 +41,7 @@ func (f *StepFactory) ConstructMockConfig() []config.Config {
 		&Config{},
 		&Config{Better: true},
 		&Config{Best: true},
+		&Config{ReadGzip: true},
 	}
 }
 
