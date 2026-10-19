@@ -31,6 +31,8 @@ const ControllerID = "flowgraph/run"
 type Controller struct {
 	// le is the root logger.
 	le *logrus.Entry
+	// bus resolves the object types of event sources.
+	bus bus.Bus
 	// conf is the config.
 	conf *Config
 	// engine is the World engine holding the run.
@@ -39,12 +41,15 @@ type Controller struct {
 	loop *world_control.WatchLoop
 	// tasks watches the Task of each running activation.
 	tasks *keyed.Keyed[string, *taskWatcher]
+	// sources reads the events of each event-source node of the standing run.
+	sources *keyed.Keyed[eventSourceKey, *eventSourceWatcher]
 }
 
 // NewController constructs a run controller.
 func NewController(le *logrus.Entry, b bus.Bus, conf *Config) *Controller {
 	c := &Controller{
 		le:     le,
+		bus:    b,
 		conf:   conf,
 		engine: world.NewBusEngine(nil, b, conf.GetEngineId()),
 	}
@@ -57,6 +62,11 @@ func NewController(le *logrus.Entry, b bus.Bus, conf *Config) *Controller {
 		c.newTaskWatcher,
 		le,
 		keyed.WithRetry[string, *taskWatcher](&backoff.Backoff{}),
+	)
+	c.sources = keyed.NewKeyedWithLogger(
+		c.newEventSourceWatcher,
+		le,
+		keyed.WithRetry[eventSourceKey, *eventSourceWatcher](&backoff.Backoff{}),
 	)
 	return c
 }
@@ -93,11 +103,12 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 	return controller.NewInfo(ControllerID, Version, "flowgraph run controller")
 }
 
-// Execute watches the run until the context ends. The Task watchers share
-// the context and stop with it.
+// Execute watches the run until the context ends. The Task and event source
+// watchers share the context and stop with it.
 func (c *Controller) Execute(ctx context.Context) error {
 	// Bind the Task watchers and the World engine to the controller context.
 	c.tasks.SetContext(ctx, true)
+	c.sources.SetContext(ctx, true)
 	c.engine.SetContext(ctx)
 
 	// Watch the run object until the context ends.
@@ -121,6 +132,7 @@ func (c *Controller) processState(
 	if obj == nil {
 		le.Debug("run object does not exist, waiting")
 		c.tasks.SyncKeys(nil, true)
+		c.sources.SyncKeys(nil, true)
 		return true, nil
 	}
 
@@ -137,6 +149,13 @@ func (c *Controller) processState(
 
 	// Watch exactly the Tasks of the running activations.
 	c.tasks.SyncKeys(running, true)
+
+	// Read the events of each event-source node of a standing run.
+	sources, err := eventSourceKeys(ctx, ws, c.conf.GetObjectKey())
+	if err != nil {
+		return true, err
+	}
+	c.sources.SyncKeys(sources, true)
 	return true, nil
 }
 

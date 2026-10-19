@@ -24,6 +24,10 @@ const (
 	ForgeWorkerNodeTypeID = "forge-worker"
 	// StepNodeTypeID selects a node that runs once per activation.
 	StepNodeTypeID = "step"
+	// EventSourceNodeTypeID selects a node bound to an object that serves
+	// EventSourceService. The standing run's controller turns the object's
+	// events into arrivals.
+	EventSourceNodeTypeID = "flowgraph/event-source"
 )
 
 // FlowgraphObjectKey builds an independently addressed Flowgraph key.

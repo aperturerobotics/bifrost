@@ -3773,6 +3773,18 @@
         "sdk/flowgraph/flowgraph.proto"
       ]
     },
+    "github.com/s4wave/spacewave/sdk/flowgraph/eventsource": {
+      "hash": "2a4eda7f4b672463c11a348e490b06c1f104fbd59523b7d53fff1f28094201e0",
+      "generatedFiles": [
+        "sdk/flowgraph/eventsource/eventsource.pb.go",
+        "sdk/flowgraph/eventsource/eventsource.pb.ts",
+        "sdk/flowgraph/eventsource/eventsource_srpc.pb.go",
+        "sdk/flowgraph/eventsource/eventsource_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "sdk/flowgraph/eventsource/eventsource.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/sdk/flowgraph/registry": {
       "hash": "9cc125a3d84905521652852d259f0aa21a1c0e2471545a425a0c4e3b363d8557",
       "generatedFiles": [

@@ -15,7 +15,8 @@ const ControllerID = "spacewave/flowgraph/nodetype"
 var Version = controller.MustParseVersion("0.0.1")
 
 // Controller resolves LookupFlowgraphNodeType for the node types core
-// provides: TCP Port, Local Port, Checkout Root, Remote Shell and Forge Worker.
+// provides: TCP Port, Local Port, Checkout Root, Remote Shell, Forge Worker and
+// Event Source.
 type Controller struct {
 	// types contains the core node types by type ID.
 	types map[string]s4wave_flowgraph.FlowgraphNodeType
@@ -30,6 +31,7 @@ func NewController() *Controller {
 			s4wave_flowgraph.CheckoutRootNodeTypeID: checkoutRoot{},
 			s4wave_flowgraph.RemoteShellNodeTypeID:  remoteShell{},
 			s4wave_flowgraph.ForgeWorkerNodeTypeID:  forgeWorker{},
+			s4wave_flowgraph.EventSourceNodeTypeID:  eventSource{},
 		},
 	}
 }
