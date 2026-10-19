@@ -11,7 +11,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/ccontainer"
-	"github.com/aperturerobotics/util/csync"
 	"github.com/aperturerobotics/util/keyed"
 	frontend "github.com/s4wave/spacewave/bldr/frontend"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
@@ -83,10 +82,6 @@ type Controller struct {
 	manifestStoreReady bool
 	// manifestStoreInit closes when the current initialization attempt completes.
 	manifestStoreInit chan struct{}
-	// manifestCopyMtx serializes manifest copies through one aggregate
-	// allowance, held from after startup readiness until local-ref
-	// publication and Sync complete.
-	manifestCopyMtx csync.Mutex
 
 	// pluginInstances manages the list of running plugins by plugin ID.
 	// key: plugin ID

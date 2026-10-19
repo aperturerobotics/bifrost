@@ -44,7 +44,7 @@ func TestMaterializerReadAheadSharesForegroundCache(t *testing.T) {
 		t.Fatalf("load index: exists=%v err=%v", exists, err)
 	}
 	before := transport.callCount()
-	bulk := block_rpc_server.NewBlockStoreWithReadAhead(store, 10<<20)
+	bulk := block_rpc_server.NewBlockStoreWithPolicy(store, block_rpc_server.ReadPolicy{ReadAheadBytes: 10 << 20})
 	resp, err := bulk.GetBlock(t.Context(), &block_rpc.GetBlockRequest{Ref: block.NewBlockRef(items[0].h)})
 	if err != nil || resp.GetError() != "" || !resp.GetExists() || !bytes.Equal(resp.GetData(), items[0].data) {
 		t.Fatalf("bulk read failed: err=%v response error=%s", err, resp.GetError())

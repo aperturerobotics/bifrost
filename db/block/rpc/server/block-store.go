@@ -11,20 +11,19 @@ import (
 type BlockStore struct {
 	// store owns block storage and its lifetime.
 	store block.StoreOps
-	// readAheadBytes sets the range-fetch hint on this service's reads.
-	readAheadBytes int
+	// policy applies to every read this service serves.
+	policy ReadPolicy
 }
 
 // NewBlockStore constructs a new BlockStore from a Store.
 func NewBlockStore(store block.StoreOps) *BlockStore {
-	return NewBlockStoreWithReadAhead(store, 0)
+	return NewBlockStoreWithPolicy(store, ReadPolicy{})
 }
 
-// NewBlockStoreWithReadAhead constructs a service whose reads request the
-// supplied range-fetch minimum. Configure it before publishing the service;
-// each incoming RPC retains its own cancellation and deadline.
-func NewBlockStoreWithReadAhead(store block.StoreOps, bytes int) *BlockStore {
-	return &BlockStore{store: store, readAheadBytes: max(0, bytes)}
+// NewBlockStoreWithPolicy constructs a service that applies policy to every
+// read. Each incoming RPC retains its own cancellation and deadline.
+func NewBlockStoreWithPolicy(store block.StoreOps, policy ReadPolicy) *BlockStore {
+	return &BlockStore{store: store, policy: policy}
 }
 
 // GetHashType returns the preferred hash type for the store.
@@ -93,10 +92,10 @@ func (s *BlockStore) GetBlock(
 ) (*block_rpc.GetBlockResponse, error) {
 	// Attach this service's policy and the request's class while retaining
 	// the incoming RPC lifetime.
-	if s.readAheadBytes > 0 {
-		ctx = block.WithReadAhead(ctx, s.readAheadBytes)
+	if s.policy.ReadAheadBytes > 0 {
+		ctx = block.WithReadAhead(ctx, s.policy.ReadAheadBytes)
 	}
-	if req.GetBackground() {
+	if s.policy.Background || req.GetBackground() {
 		ctx = block.WithBackground(ctx)
 	}
 
