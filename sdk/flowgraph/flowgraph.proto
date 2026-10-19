@@ -260,6 +260,13 @@ message FlowgraphRun {
   string paused_node = 9;
   // PauseReason says why the run paused.
   string pause_reason = 10;
+  // Standing marks the run a graph's event sources feed. A graph has at most
+  // one standing run.
+  bool standing = 11;
+  // Cursor holds the opaque position after the last event delivered from each
+  // event-source node, by node ID. A delivery applies only when it names the
+  // stored cursor, so two readers of the same events deliver each once.
+  map<string, bytes> cursor = 12;
 }
 
 // FlowgraphActivation is one activation of a Step, run as one Forge Task.
@@ -277,16 +284,39 @@ message FlowgraphActivation {
   string output = 5;
 }
 
-// FlowgraphArrival is an output delivered to a Step's input port.
+// FlowgraphArrival is an output or event delivered to a Step's input port.
 message FlowgraphArrival {
   // NodeId is the receiving Step.
   string node_id = 1;
   // Port is the receiving input port, or empty for a run's start.
   string port = 2;
-  // TaskKey is the Task whose output arrived, or empty for a run's start.
-  string task_key = 3;
+  // Key routes the arrival to a keyed Step activation. It is empty for an
+  // ordinary arrival.
+  string key = 3;
+  // Source is where the arrival came from. It is unset for a run's start.
+  oneof source {
+    // TaskOutput is an output of a completed Task.
+    FlowgraphTaskOutput task_output = 4;
+    // Event is an event on a World object.
+    FlowgraphEvent event = 5;
+  }
+}
+
+// FlowgraphTaskOutput names an output of a Forge Task.
+message FlowgraphTaskOutput {
+  // TaskKey is the Task whose output arrived.
+  string task_key = 1;
   // OutputName is the arriving output of that Task.
-  string output_name = 4;
+  string output_name = 2;
+}
+
+// FlowgraphEvent names one event on a World object.
+message FlowgraphEvent {
+  // ObjectKey is the World object the event happened on. The receiving Step's
+  // Task reads it as a WORLD_OBJECT input.
+  string object_key = 1;
+  // EventId identifies the event within its event source.
+  string event_id = 2;
 }
 
 // FlowgraphVisits counts one Step's activations in a run.

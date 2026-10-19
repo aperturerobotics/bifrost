@@ -1,0 +1,41 @@
+syntax = "proto3";
+package s4wave.flowgraph.run;
+
+option go_package = "github.com/s4wave/spacewave/sdk/flowgraph/run;flowgraph_run";
+
+// DeliveredEvent is one event an event-source node read.
+message DeliveredEvent {
+  // ObjectKey is the World object the event happened on.
+  string object_key = 1;
+  // EventId identifies the event within its event source.
+  string event_id = 2;
+  // Key routes the event to a keyed Step activation, as the node type derives
+  // it. It is empty for an ordinary event.
+  string key = 3;
+}
+
+// DeliverEventsRequest hands a run the events an event-source node read.
+message DeliverEventsRequest {
+  // NodeId is the event-source node that read the events.
+  string node_id = 1;
+  // Cursor is the run's cursor for the node as the caller read it.
+  bytes cursor = 2;
+  // NextCursor is the position after the last event. The run stores it with
+  // the arrivals.
+  bytes next_cursor = 3;
+  // Events are the events read after cursor, in order.
+  repeated DeliveredEvent events = 4;
+}
+
+// DeliverEventsResult is the outcome of a delivery.
+enum DeliverEventsResult {
+  // DELIVER_EVENTS_RESULT_UNKNOWN is unset.
+  DELIVER_EVENTS_RESULT_UNKNOWN = 0;
+  // DELIVER_EVENTS_RESULT_DELIVERED queued the arrivals and stored the next
+  // cursor.
+  DELIVER_EVENTS_RESULT_DELIVERED = 1;
+  // DELIVER_EVENTS_RESULT_STALE_CURSOR changed nothing: the run's cursor for
+  // the node is not the one the request named, so another reader delivered
+  // first. The source resumes from the stored cursor.
+  DELIVER_EVENTS_RESULT_STALE_CURSOR = 2;
+}

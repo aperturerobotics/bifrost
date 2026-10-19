@@ -676,6 +676,17 @@ export interface FlowgraphRun {
    * PauseReason says why the run paused.
    */
   pauseReason?: string
+  /**
+   * Standing marks the run a graph's event sources feed. A graph has at most
+   * one standing run.
+   */
+  standing?: boolean
+  /**
+   * Cursor holds the opaque position after the last event delivered from each
+   * event-source node, by node ID. A delivery applies only when it names the
+   * stored cursor, so two readers of the same events deliver each once.
+   */
+  cursor?: { [key: string]: Uint8Array }
 }
 
 export const FlowgraphRun: MessageType<FlowgraphRun> =
@@ -692,6 +703,8 @@ export const FlowgraphRun: MessageType<FlowgraphRun> =
       [8, 'visits', 11, 584, FlowgraphVisits.codec],
       [9, 'paused_node', 9],
       [10, 'pause_reason', 9],
+      [11, 'standing', 8],
+      [12, 'cursor', 12, 584],
     ],
   )
 
@@ -737,7 +750,7 @@ export const FlowgraphActivation: MessageType<FlowgraphActivation> =
   )
 
 /**
- * FlowgraphArrival is an output delivered to a Step's input port.
+ * FlowgraphArrival is an output or event delivered to a Step's input port.
  *
  * @generated from message s4wave.flowgraph.FlowgraphArrival
  */
@@ -751,13 +764,19 @@ export interface FlowgraphArrival {
    */
   port?: string
   /**
-   * TaskKey is the Task whose output arrived, or empty for a run's start.
+   * Key routes the arrival to a keyed Step activation. It is empty for an
+   * ordinary arrival.
    */
-  taskKey?: string
+  key?: string
   /**
-   * OutputName is the arriving output of that Task.
+   * Source is where the arrival came from. It is unset for a run's start.
+   *
+   * @generated from oneof s4wave.flowgraph.FlowgraphArrival.source
    */
-  outputName?: string
+  source?:
+    | { value?: undefined; case: undefined }
+    | { value: FlowgraphTaskOutput; case: 'taskOutput' }
+    | { value: FlowgraphEvent; case: 'event' }
 }
 
 export const FlowgraphArrival: MessageType<FlowgraphArrival> =
@@ -766,8 +785,60 @@ export const FlowgraphArrival: MessageType<FlowgraphArrival> =
     () => [
       [1, 'node_id', 9],
       [2, 'port', 9],
-      [3, 'task_key', 9],
-      [4, 'output_name', 9],
+      [3, 'key', 9],
+      [4, 'task_output', 11, 0, FlowgraphTaskOutput.codec, 'source'],
+      [5, 'event', 11, 0, FlowgraphEvent.codec, 'source'],
+    ],
+  )
+
+/**
+ * FlowgraphTaskOutput names an output of a Forge Task.
+ *
+ * @generated from message s4wave.flowgraph.FlowgraphTaskOutput
+ */
+export interface FlowgraphTaskOutput {
+  /**
+   * TaskKey is the Task whose output arrived.
+   */
+  taskKey?: string
+  /**
+   * OutputName is the arriving output of that Task.
+   */
+  outputName?: string
+}
+
+export const FlowgraphTaskOutput: MessageType<FlowgraphTaskOutput> =
+  /* @__PURE__ */ createMessageType<FlowgraphTaskOutput>(
+    's4wave.flowgraph.FlowgraphTaskOutput',
+    () => [
+      [1, 'task_key', 9],
+      [2, 'output_name', 9],
+    ],
+  )
+
+/**
+ * FlowgraphEvent names one event on a World object.
+ *
+ * @generated from message s4wave.flowgraph.FlowgraphEvent
+ */
+export interface FlowgraphEvent {
+  /**
+   * ObjectKey is the World object the event happened on. The receiving Step's
+   * Task reads it as a WORLD_OBJECT input.
+   */
+  objectKey?: string
+  /**
+   * EventId identifies the event within its event source.
+   */
+  eventId?: string
+}
+
+export const FlowgraphEvent: MessageType<FlowgraphEvent> =
+  /* @__PURE__ */ createMessageType<FlowgraphEvent>(
+    's4wave.flowgraph.FlowgraphEvent',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'event_id', 9],
     ],
   )
 
