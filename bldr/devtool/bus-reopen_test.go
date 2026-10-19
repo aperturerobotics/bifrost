@@ -27,7 +27,7 @@ func TestBuildDevtoolBusReopenAfterInProcessOpen(t *testing.T) {
 	le := logrus.NewEntry(log)
 
 	// Boot and release the devtool against an isolated retained volume.
-	first, err := BuildDevtoolBus(ctx, le, root, stateRoot, false)
+	first, err := BuildDevtoolBus(ctx, le, root, stateRoot, false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestBuildDevtoolBusReopenAfterInProcessOpen(t *testing.T) {
 	log.AddHook(hook)
 
 	// Reopen through ExecVolumeController and GetVolume inside BuildDevtoolBus.
-	second, err := BuildDevtoolBus(ctx, le, root, stateRoot, false)
+	second, err := BuildDevtoolBus(ctx, le, root, stateRoot, false, nil)
 	if err != nil {
 		t.Fatalf("reopen devtool after conflicting claim: %v", err)
 	}

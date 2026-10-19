@@ -23,6 +23,39 @@ type Result struct {
 	LoadedFiles []string
 }
 
+// Option configures an evaluation.
+type Option func(*options)
+
+// options holds the inputs an evaluation takes besides the project files.
+type options struct {
+	vars map[string]string
+}
+
+// WithVars passes named inputs to the evaluation, which a project reads with
+// var(name, default). They are the only way the caller's state reaches the
+// project: evaluation never reads the process environment.
+func WithVars(vars map[string]string) Option {
+	return func(o *options) { o.vars = vars }
+}
+
+// lookupFunc returns the value of a named input and whether it was passed.
+type lookupFunc func(name string) (string, bool, error)
+
+// newOptions applies opts to the defaults.
+func newOptions(opts []Option) *options {
+	o := &options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+	return o
+}
+
+// lookup reads a named input from the options.
+func (o *options) lookup(name string) (string, bool, error) {
+	value, ok := o.vars[name]
+	return value, ok, nil
+}
+
 // evaluator holds mutable state during .star file evaluation.
 type evaluator struct {
 	config      *bldr_project.ProjectConfig
@@ -30,6 +63,8 @@ type evaluator struct {
 
 	// readFile reads a slash path in the project, for the root file and every load.
 	readFile func(name string) ([]byte, error)
+	// lookupVar reads a named input for var().
+	lookupVar lookupFunc
 	// moduleCache caches loaded modules by resolved path.
 	moduleCache map[string]*moduleEntry
 }
@@ -43,7 +78,7 @@ type moduleEntry struct {
 // Evaluate evaluates a .star file and returns the resulting ProjectConfig.
 // The path is the filesystem path to the .star file. Loads resolve within the
 // directory containing it, and LoadedFiles holds absolute paths.
-func Evaluate(path string) (*Result, error) {
+func Evaluate(path string, opts ...Option) (*Result, error) {
 	// Confine every read to the directory containing the root file.
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -56,7 +91,7 @@ func Evaluate(path string) (*Result, error) {
 	defer root.Close()
 
 	// Evaluate the project and map its loaded files back to the host.
-	result, err := EvaluateFS(context.Background(), root.FS(), filepath.Base(absPath))
+	result, err := EvaluateFS(context.Background(), root.FS(), filepath.Base(absPath), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -69,17 +104,18 @@ func Evaluate(path string) (*Result, error) {
 // EvaluateFS evaluates the .star file name within fsys.
 //
 // Relative loads resolve within fsys and @go/ loads within its vendor
-// directory, so evaluation reads only fsys and has no other effect.
+// directory, so evaluation reads only fsys and the inputs passed with
+// WithVars, and has no other effect.
 // LoadedFiles holds slash paths relative to the root of fsys. Cancelling ctx
 // stops the evaluation. The evaluation runs in this process with no memory
 // limit; use EvaluateFSBounded for a project that is not trusted.
-func EvaluateFS(ctx context.Context, fsys fs.FS, name string) (*Result, error) {
-	return evaluate(ctx, func(name string) ([]byte, error) { return fs.ReadFile(fsys, name) }, name)
+func EvaluateFS(ctx context.Context, fsys fs.FS, name string, opts ...Option) (*Result, error) {
+	return evaluate(ctx, func(name string) ([]byte, error) { return fs.ReadFile(fsys, name) }, newOptions(opts).lookup, name)
 }
 
 // evaluate evaluates the .star file name, reading it and every load with
-// readFile.
-func evaluate(ctx context.Context, readFile func(name string) ([]byte, error), name string) (*Result, error) {
+// readFile and every var() with lookupVar.
+func evaluate(ctx context.Context, readFile func(name string) ([]byte, error), lookupVar lookupFunc, name string) (*Result, error) {
 	// Read the root Starlark project source.
 	data, err := readFile(name)
 	if err != nil {
@@ -91,6 +127,7 @@ func evaluate(ctx context.Context, readFile func(name string) ([]byte, error), n
 		config:      &bldr_project.ProjectConfig{},
 		loadedFiles: []string{name},
 		readFile:    readFile,
+		lookupVar:   lookupVar,
 		moduleCache: make(map[string]*moduleEntry),
 	}
 
@@ -102,6 +139,9 @@ func evaluate(ctx context.Context, readFile func(name string) ([]byte, error), n
 		"build":    starlark.NewBuiltin("build", eval.buildBuiltin),
 		"remote":   starlark.NewBuiltin("remote", eval.remoteBuiltin),
 		"publish":  starlark.NewBuiltin("publish", eval.publishBuiltin),
+
+		// Named inputs from the caller
+		"var": starlark.NewBuiltin("var", eval.varBuiltin),
 
 		// Convenience constructors (return dicts)
 		"config_entry": starlark.NewBuiltin("config_entry", configEntryBuiltin),

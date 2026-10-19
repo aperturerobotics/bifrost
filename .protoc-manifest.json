@@ -456,7 +456,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/project/watcher": {
-      "hash": "068f997dabfd4317dd98359f20b312a934c36ab7af1bbf191a876d69c9f8f6fa",
+      "hash": "48cc43dec4d087d4b4187e019e243d4e5f16f9f250cb9dcc5ea803941e9c7f62",
       "generatedFiles": [
         "bldr/project/watcher/watcher.pb.go",
         "bldr/project/watcher/watcher.pb.ts"

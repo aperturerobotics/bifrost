@@ -22,7 +22,7 @@ func (a *DevtoolArgs) BuildProject(ctx context.Context) (err error) {
 	le.Infof("starting with state dir: %s", stateDir)
 
 	// Retain the build bus and report the command's final result on every exit.
-	b, err := BuildDevtoolBus(ctx, le, repoRoot, stateDir, a.Watch)
+	b, err := a.buildDevtoolBus(ctx, le, repoRoot, stateDir, a.Watch)
 	if err != nil {
 		return err
 	}

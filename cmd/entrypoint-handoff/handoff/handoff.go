@@ -731,7 +731,7 @@ func startDevtoolBus(
 
 	// Build the devtool bus for the repository.
 	stateDir := filepath.Join(repoDir, ".bldr")
-	busHandle, err := bldr_devtool.BuildDevtoolBus(ctx, le, repoDir, stateDir, watch)
+	busHandle, err := bldr_devtool.BuildDevtoolBus(ctx, le, repoDir, stateDir, watch, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "build devtool bus")
 	}

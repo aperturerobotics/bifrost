@@ -213,7 +213,7 @@ func (c *Controller) loadProjectControllerConfig(ctx context.Context) (*bldr_pro
 
 		// Evaluate bldr.star if it exists.
 		if starErr == nil {
-			result, err := bldr_project_starlark.Evaluate(starPath)
+			result, err := bldr_project_starlark.Evaluate(starPath, bldr_project_starlark.WithVars(c.GetConfig().GetVars()))
 			if err != nil {
 				return nil, errors.Wrap(err, "evaluate bldr.star")
 			}

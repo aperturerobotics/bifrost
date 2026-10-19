@@ -37,9 +37,9 @@ var errChildExited = errors.New("evaluation process stopped")
 // does, for a project that is not trusted. It runs the evaluation in a child of
 // the running executable that cannot use more than memoryBytes of memory above
 // its start, and kills the child when ctx ends, so a hostile project is refused
-// and this process survives. The child reads project files through this
-// process, each at most MaxFileSize.
-func EvaluateFSBounded(ctx context.Context, fsys fs.FS, name string, memoryBytes uint64) (*Result, error) {
+// and this process survives. The child reads project files and the inputs
+// passed with WithVars through this process, each file at most MaxFileSize.
+func EvaluateFSBounded(ctx context.Context, fsys fs.FS, name string, memoryBytes uint64, opts ...Option) (*Result, error) {
 	// Refuse to start a child from a child.
 	if os.Getenv(boundedChildEnv) != "" {
 		return nil, errors.New("a bounded evaluation cannot start another")
@@ -74,7 +74,7 @@ func EvaluateFSBounded(ctx context.Context, fsys fs.FS, name string, memoryBytes
 	defer release()
 
 	// Serve the child's reads until it sends the config, then stop it.
-	result, err := serveBounded(fsys, name, memoryBytes, in, out)
+	result, err := serveBounded(fsys, newOptions(opts), name, memoryBytes, in, out)
 	_ = cmd.Process.Kill()
 	_ = cmd.Wait()
 	if err == nil {
@@ -99,8 +99,9 @@ func EvaluateFSBounded(ctx context.Context, fsys fs.FS, name string, memoryBytes
 }
 
 // serveBounded starts the child's evaluation of name over in and out, answers
-// its file reads from fsys, and returns the result it sends.
-func serveBounded(fsys fs.FS, name string, memoryBytes uint64, in io.Writer, out io.Reader) (*Result, error) {
+// its file reads from fsys and its input reads from opts, and returns the
+// result it sends.
+func serveBounded(fsys fs.FS, opts *options, name string, memoryBytes uint64, in io.Writer, out io.Reader) (*Result, error) {
 	// Send the memory budget and the root file name.
 	start := binary.BigEndian.AppendUint64(nil, memoryBytes)
 	if err := writeFrame(in, frameStart, append(start, name...)); err != nil {
@@ -117,6 +118,10 @@ func serveBounded(fsys fs.FS, name string, memoryBytes uint64, in io.Writer, out
 		switch kind {
 		case frameRead:
 			if err := replyRead(fsys, string(body), in); err != nil {
+				return nil, errors.Wrap(errChildExited, err.Error())
+			}
+		case frameVar:
+			if err := replyVar(opts, string(body), in); err != nil {
 				return nil, errors.Wrap(errChildExited, err.Error())
 			}
 		case frameLoaded:
@@ -143,4 +148,14 @@ func replyRead(fsys fs.FS, name string, in io.Writer) error {
 		return writeFrame(in, frameError, []byte(err.Error()))
 	}
 	return writeFrame(in, frameData, data)
+}
+
+// replyVar sends the child the input name, as a byte that is 1 when it was
+// passed followed by its value.
+func replyVar(opts *options, name string, in io.Writer) error {
+	value, ok := opts.vars[name]
+	if !ok {
+		return writeFrame(in, frameData, []byte{0})
+	}
+	return writeFrame(in, frameData, append([]byte{1}, value...))
 }

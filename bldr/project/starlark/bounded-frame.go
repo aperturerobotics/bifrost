@@ -16,8 +16,12 @@ const (
 	frameStart byte = 'S'
 	// frameRead carries a path from the child to the parent.
 	frameRead byte = 'R'
-	// frameData carries the file bytes the parent read for the child.
+	// frameData carries the answer to a frameRead or frameVar.
 	frameData byte = 'D'
+	// frameVar carries an input name from the child to the parent. The answer
+	// is a frameData with a byte that is 1 when the input was passed, followed
+	// by its value, or a frameError.
+	frameVar byte = 'V'
 	// frameLoaded carries the path of a file the evaluation loaded.
 	frameLoaded byte = 'L'
 	// frameConfig carries the marshaled project config, ending the evaluation.

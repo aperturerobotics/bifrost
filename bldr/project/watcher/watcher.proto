@@ -17,4 +17,7 @@ message Config {
   // BoundRemotes are caller-supplied World capabilities. These bindings take
   // precedence over source configuration, including watched configuration edits.
   map<string, .bldr.project.RemoteConfig> bound_remotes = 4;
+  // Vars are the named inputs a bldr.star reads with var(name, default). They
+  // are the only state the caller passes into the evaluation.
+  map<string, string> vars = 5;
 }

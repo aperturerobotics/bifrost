@@ -24,7 +24,7 @@ func TestCachedManifestFetchControllerResolvesImportedExternalManifest(t *testin
 
 	// Build the Devtool bus in an isolated repository.
 	repoRoot := t.TempDir()
-	d, err := BuildDevtoolBus(ctx, logrus.NewEntry(logrus.New()), repoRoot, filepath.Join(repoRoot, ".bldr"), false)
+	d, err := BuildDevtoolBus(ctx, logrus.NewEntry(logrus.New()), repoRoot, filepath.Join(repoRoot, ".bldr"), false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func TestCachedManifestFetchControllerDoesNotEmitEmptyManifestValue(t *testing.T
 
 	// Build the Devtool bus in an isolated repository.
 	repoRoot := t.TempDir()
-	d, err := BuildDevtoolBus(ctx, logrus.NewEntry(logrus.New()), repoRoot, filepath.Join(repoRoot, ".bldr"), false)
+	d, err := BuildDevtoolBus(ctx, logrus.NewEntry(logrus.New()), repoRoot, filepath.Join(repoRoot, ".bldr"), false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
