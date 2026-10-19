@@ -279,6 +279,77 @@ message WasiVmScene {
   repeated WasiVmScenePatch patches = 4;
   // Grab is the window move in progress, when one starts or ends.
   WasiVmSceneGrab grab = 5;
+  // Frames is the frame the desktop draws for each window that has one, when
+  // any changes.
+  WasiVmSceneFrames frames = 6;
+}
+
+// WasiVmSceneFrames is the desktop's window frames.
+message WasiVmSceneFrames {
+  // Frames is the frames, in any order.
+  repeated WasiVmSceneFrame frames = 1;
+}
+
+// WasiVmSceneFrame is the frame the desktop draws for a window that asked
+// for server side decorations: a title bar above its content with buttons,
+// and a band around both that resizes the window. The compositor reads
+// presses on these same rectangles: a press on the title bar moves the
+// window from the press, a press on the band resizes it, and a button acts
+// when released over it. All positions are in units from the root's
+// position.
+message WasiVmSceneFrame {
+  // Root is the id of the window's root.
+  uint32 root = 1;
+  // Title is the window's title.
+  string title = 2;
+  // Active is set while the window holds the keyboard.
+  bool active = 3;
+  // Maximized is set while the window fills the area the panels leave. A
+  // maximized window does not move or resize.
+  bool maximized = 4;
+  // X is the left edge of the window with its title bar.
+  int32 x = 5;
+  // Y is the top edge of the window with its title bar: the title bar's top.
+  int32 y = 6;
+  // Width is the width of the window.
+  uint32 width = 7;
+  // Height is the height of the window with its title bar.
+  uint32 height = 8;
+  // TitleHeight is the height of the title bar at the top of the frame.
+  uint32 title_height = 9;
+  // Border is the width of the band outside the frame that resizes the
+  // window, or zero when it does not resize.
+  uint32 border = 10;
+  // Buttons is the title bar's buttons.
+  repeated WasiVmSceneFrameButton buttons = 11;
+  // MinY is the least top edge of the root a move of the window allows,
+  // which keeps the title bar in the area the panels leave.
+  int32 min_y = 12;
+}
+
+// WasiVmSceneFrameButtonKind is what a title bar button does.
+enum WasiVmSceneFrameButtonKind {
+  // WASI_VM_SCENE_FRAME_BUTTON_KIND_UNKNOWN is not a button.
+  WASI_VM_SCENE_FRAME_BUTTON_KIND_UNKNOWN = 0;
+  // WASI_VM_SCENE_FRAME_BUTTON_KIND_CLOSE asks the window to close.
+  WASI_VM_SCENE_FRAME_BUTTON_KIND_CLOSE = 1;
+  // WASI_VM_SCENE_FRAME_BUTTON_KIND_MAXIMIZE maximizes the window, or
+  // restores a maximized one.
+  WASI_VM_SCENE_FRAME_BUTTON_KIND_MAXIMIZE = 2;
+}
+
+// WasiVmSceneFrameButton is a button on a title bar.
+message WasiVmSceneFrameButton {
+  // Kind is what the button does.
+  WasiVmSceneFrameButtonKind kind = 1;
+  // X is the left edge.
+  int32 x = 2;
+  // Y is the top edge.
+  int32 y = 3;
+  // Width is the width.
+  uint32 width = 4;
+  // Height is the height.
+  uint32 height = 5;
 }
 
 // WasiVmSceneGrab is what the pointer holds.

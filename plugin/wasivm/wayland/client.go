@@ -47,6 +47,7 @@ var globals = []global{
 	{"xdg_wm_base", 1, (*client).bindWmBase},
 	{"zwlr_layer_shell_v1", 4, (*client).bindLayerShell},
 	{"zxdg_output_manager_v1", 3, (*client).bindXdgOutputManager},
+	{"zxdg_decoration_manager_v1", 1, (*client).bindDecorationManager},
 }
 
 // client is one connection to the compositor. Its serve goroutine reads and

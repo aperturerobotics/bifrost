@@ -41,6 +41,38 @@ export const WasiVmWindowPlace_Enum = /* @__PURE__ */ createEnumType(
 )
 
 /**
+ * WasiVmSceneFrameButtonKind is what a title bar button does.
+ *
+ * @generated from enum s4wave.vm.WasiVmSceneFrameButtonKind
+ */
+export enum WasiVmSceneFrameButtonKind {
+  /**
+   * WASI_VM_SCENE_FRAME_BUTTON_KIND_UNKNOWN is not a button.
+   */
+  UNKNOWN = 0,
+
+  /**
+   * WASI_VM_SCENE_FRAME_BUTTON_KIND_CLOSE asks the window to close.
+   */
+  CLOSE = 1,
+
+  /**
+   * WASI_VM_SCENE_FRAME_BUTTON_KIND_MAXIMIZE maximizes the window, or
+   * restores a maximized one.
+   */
+  MAXIMIZE = 2,
+}
+
+export const WasiVmSceneFrameButtonKind_Enum = /* @__PURE__ */ createEnumType(
+  's4wave.vm.WasiVmSceneFrameButtonKind',
+  [
+    [0, 'WASI_VM_SCENE_FRAME_BUTTON_KIND_UNKNOWN'],
+    [1, 'WASI_VM_SCENE_FRAME_BUTTON_KIND_CLOSE'],
+    [2, 'WASI_VM_SCENE_FRAME_BUTTON_KIND_MAXIMIZE'],
+  ],
+)
+
+/**
  * WasiVmConfig configures the init process of a WasiVM.
  *
  * @generated from message s4wave.vm.WasiVmConfig
@@ -575,6 +607,11 @@ export interface WasiVmScene {
    * Grab is the window move in progress, when one starts or ends.
    */
   grab?: WasiVmSceneGrab
+  /**
+   * Frames is the frame the desktop draws for each window that has one, when
+   * any changes.
+   */
+  frames?: WasiVmSceneFrames
 }
 
 export const WasiVmScene: MessageType<WasiVmScene> =
@@ -586,6 +623,149 @@ export const WasiVmScene: MessageType<WasiVmScene> =
       [3, 'roots', 11, 0, WasiVmSceneRoots.codec],
       [4, 'patches', 11, 1, WasiVmScenePatch.codec],
       [5, 'grab', 11, 0, WasiVmSceneGrab.codec],
+      [6, 'frames', 11, 0, WasiVmSceneFrames.codec],
+    ],
+  )
+
+/**
+ * WasiVmSceneFrames is the desktop's window frames.
+ *
+ * @generated from message s4wave.vm.WasiVmSceneFrames
+ */
+export interface WasiVmSceneFrames {
+  /**
+   * Frames is the frames, in any order.
+   */
+  frames?: WasiVmSceneFrame[]
+}
+
+export const WasiVmSceneFrames: MessageType<WasiVmSceneFrames> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneFrames>(
+    's4wave.vm.WasiVmSceneFrames',
+    () => [[1, 'frames', 11, 1, WasiVmSceneFrame.codec]],
+  )
+
+/**
+ * WasiVmSceneFrame is the frame the desktop draws for a window that asked
+ * for server side decorations: a title bar above its content with buttons,
+ * and a band around both that resizes the window. The compositor reads
+ * presses on these same rectangles: a press on the title bar moves the
+ * window from the press, a press on the band resizes it, and a button acts
+ * when released over it. All positions are in units from the root's
+ * position.
+ *
+ * @generated from message s4wave.vm.WasiVmSceneFrame
+ */
+export interface WasiVmSceneFrame {
+  /**
+   * Root is the id of the window's root.
+   */
+  root?: number
+  /**
+   * Title is the window's title.
+   */
+  title?: string
+  /**
+   * Active is set while the window holds the keyboard.
+   */
+  active?: boolean
+  /**
+   * Maximized is set while the window fills the area the panels leave. A
+   * maximized window does not move or resize.
+   */
+  maximized?: boolean
+  /**
+   * X is the left edge of the window with its title bar.
+   */
+  x?: number
+  /**
+   * Y is the top edge of the window with its title bar: the title bar's top.
+   */
+  y?: number
+  /**
+   * Width is the width of the window.
+   */
+  width?: number
+  /**
+   * Height is the height of the window with its title bar.
+   */
+  height?: number
+  /**
+   * TitleHeight is the height of the title bar at the top of the frame.
+   */
+  titleHeight?: number
+  /**
+   * Border is the width of the band outside the frame that resizes the
+   * window, or zero when it does not resize.
+   */
+  border?: number
+  /**
+   * Buttons is the title bar's buttons.
+   */
+  buttons?: WasiVmSceneFrameButton[]
+  /**
+   * MinY is the least top edge of the root a move of the window allows,
+   * which keeps the title bar in the area the panels leave.
+   */
+  minY?: number
+}
+
+export const WasiVmSceneFrame: MessageType<WasiVmSceneFrame> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneFrame>(
+    's4wave.vm.WasiVmSceneFrame',
+    () => [
+      [1, 'root', 13],
+      [2, 'title', 9],
+      [3, 'active', 8],
+      [4, 'maximized', 8],
+      [5, 'x', 5],
+      [6, 'y', 5],
+      [7, 'width', 13],
+      [8, 'height', 13],
+      [9, 'title_height', 13],
+      [10, 'border', 13],
+      [11, 'buttons', 11, 1, WasiVmSceneFrameButton.codec],
+      [12, 'min_y', 5],
+    ],
+  )
+
+/**
+ * WasiVmSceneFrameButton is a button on a title bar.
+ *
+ * @generated from message s4wave.vm.WasiVmSceneFrameButton
+ */
+export interface WasiVmSceneFrameButton {
+  /**
+   * Kind is what the button does.
+   */
+  kind?: WasiVmSceneFrameButtonKind
+  /**
+   * X is the left edge.
+   */
+  x?: number
+  /**
+   * Y is the top edge.
+   */
+  y?: number
+  /**
+   * Width is the width.
+   */
+  width?: number
+  /**
+   * Height is the height.
+   */
+  height?: number
+}
+
+export const WasiVmSceneFrameButton: MessageType<WasiVmSceneFrameButton> =
+  /* @__PURE__ */ createMessageType<WasiVmSceneFrameButton>(
+    's4wave.vm.WasiVmSceneFrameButton',
+    () => [
+      [1, 'kind', 14, 0, WasiVmSceneFrameButtonKind_Enum],
+      [2, 'x', 5],
+      [3, 'y', 5],
+      [4, 'width', 13],
+      [5, 'height', 13],
     ],
   )
 

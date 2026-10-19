@@ -137,7 +137,8 @@ func (c *Compositor) arrange() {
 	c.usable = usable
 	for _, w := range c.windows {
 		if t := w.xdg.toplevel; t.maximized && !t.fullscreen {
-			t.pos, t.size = usable.Min, usable.Size()
+			r := c.maximized(t)
+			t.pos, t.size = r.Min, r.Size()
 			c.changed = true
 			w.xdg.configure()
 		}
@@ -192,7 +193,8 @@ func (c *Compositor) setState(s *surface, maximized, fullscreen bool) {
 	case fullscreen:
 		t.pos, t.size = c.desktop.area.Min, c.desktop.area.Size()
 	case maximized:
-		t.pos, t.size = c.usable.Min, c.usable.Size()
+		r := c.maximized(t)
+		t.pos, t.size = r.Min, r.Size()
 	case !wasNormal:
 		t.pos, t.size = t.restore.Min, t.restore.Size()
 	}
@@ -200,6 +202,21 @@ func (c *Compositor) setState(s *surface, maximized, fullscreen bool) {
 	if s.xdg.configured {
 		s.xdg.configure()
 	}
+}
+
+// maximized returns the screen rectangle of the geometry of the maximized
+// window t: the usable area below its title bar. The caller holds the lock.
+func (c *Compositor) maximized(t *toplevel) image.Rectangle {
+	r := c.usable
+	r.Min.Y = min(r.Min.Y+t.titleHeight(), r.Max.Y-1)
+	return r
+}
+
+// minTop returns the least top edge of the geometry of the window w, which
+// keeps its title bar or its top in the usable area. The caller holds the
+// lock.
+func (c *Compositor) minTop(w *surface) int {
+	return c.usable.Min.Y + w.xdg.toplevel.titleHeight()
 }
 
 // rootOf returns the mapped window or layer surface whose tree holds s, or
@@ -247,9 +264,10 @@ func (c *Compositor) walk(s *surface, at image.Point, fn func(t *surface, at ima
 	return false
 }
 
-// surfaceAt returns the topmost surface under the point pt of the space sp,
-// or nil. The caller holds the lock.
-func (c *Compositor) surfaceAt(sp *space, pt image.Point) *surface {
+// hitAt returns what is under the point pt of the space sp: the topmost
+// surface, or else the frame part of the topmost window whose frame holds
+// pt, or neither. The caller holds the lock.
+func (c *Compositor) hitAt(sp *space, pt image.Point) (*surface, frameHit) {
 	for _, w := range slices.Backward(c.spaceRoots(sp)) {
 		// Note the last surface of the tree, the topmost, under pt.
 		var hit *surface
@@ -260,15 +278,22 @@ func (c *Compositor) surfaceAt(sp *space, pt image.Point) *surface {
 			return false
 		})
 		if hit != nil {
-			return hit
+			return hit, frameHit{}
+		}
+
+		// Then check the window's frame.
+		if w.xdg != nil {
+			if f := frameAt(w, pt); f.w != nil {
+				return nil, f
+			}
 		}
 	}
-	return nil
+	return nil, frameHit{}
 }
 
 // readScene returns what the view v of the space sp lacks as a scene
-// update, or nil when it lacks nothing: the screen, layers and roots when
-// they differ from those last sent, and the damaged areas of each texture,
+// update, or nil when it lacks nothing: the screen, layers, roots, grab and
+// frames when they differ from those last sent, and the damaged areas of each texture,
 // all of a new or resized one. It forgets the textures of the surfaces no
 // longer shown. The caller holds the lock.
 func (c *Compositor) readScene(sp *space, v *view) *s4wave_vm.WasiVmScene {
@@ -284,9 +309,10 @@ func (c *Compositor) readScene(sp *space, v *view) *s4wave_vm.WasiVmScene {
 		u.Screen, v.screen = screen, screen
 	}
 
-	// Describe each root and the layers of its tree, reading the textures
-	// the view lacks.
+	// Describe each root, its frame and the layers of its tree, reading the
+	// textures the view lacks.
 	layers, roots := &s4wave_vm.WasiVmSceneLayers{}, &s4wave_vm.WasiVmSceneRoots{}
+	frames := &s4wave_vm.WasiVmSceneFrames{}
 	shown := make(map[*surface]struct{})
 	for _, w := range c.spaceRoots(sp) {
 		root := w.origin().Sub(sp.area.Min)
@@ -295,6 +321,11 @@ func (c *Compositor) readScene(sp *space, v *view) *s4wave_vm.WasiVmScene {
 			X:  int32(root.X), //nolint:gosec // screen positions are small.
 			Y:  int32(root.Y), //nolint:gosec // screen positions are small.
 		})
+		if w.xdg != nil {
+			if f := c.sceneFrame(sp, w); f != nil {
+				frames.Frames = append(frames.Frames, f)
+			}
+		}
 		c.walk(w, w.origin(), func(s *surface, at image.Point) bool {
 			// Describe the layer.
 			off := at.Sub(w.origin())
@@ -332,7 +363,8 @@ func (c *Compositor) readScene(sp *space, v *view) *s4wave_vm.WasiVmScene {
 		}
 	}
 
-	// Send the arrangement, the positions and the grab when they changed.
+	// Send the arrangement, the positions, the grab and the frames when they
+	// changed.
 	if !layers.EqualVT(v.layers) {
 		u.Layers, v.layers = layers, layers
 	}
@@ -342,7 +374,10 @@ func (c *Compositor) readScene(sp *space, v *view) *s4wave_vm.WasiVmScene {
 	if grab := c.sceneGrab(sp); !grab.EqualVT(v.grab) {
 		u.Grab, v.grab = grab, grab
 	}
-	if u.Screen == nil && u.Layers == nil && u.Roots == nil && len(u.Patches) == 0 && u.Grab == nil {
+	if !frames.EqualVT(v.frames) {
+		u.Frames, v.frames = frames, frames
+	}
+	if u.Screen == nil && u.Layers == nil && u.Roots == nil && len(u.Patches) == 0 && u.Grab == nil && u.Frames == nil {
 		return nil
 	}
 	return u
@@ -363,11 +398,11 @@ func (c *Compositor) sceneGrab(sp *space) *s4wave_vm.WasiVmSceneGrab {
 	press, root := g.pointer.Sub(sp.area.Min), g.rect.Min.Add(off)
 	return &s4wave_vm.WasiVmSceneGrab{Move: &s4wave_vm.WasiVmSceneMove{
 		Root:   g.w.sceneID,
-		PressX: int32(press.X),                //nolint:gosec // screen positions are small.
-		PressY: int32(press.Y),                //nolint:gosec // screen positions are small.
-		X:      int32(root.X),                 //nolint:gosec // screen positions are small.
-		Y:      int32(root.Y),                 //nolint:gosec // screen positions are small.
-		MinY:   int32(c.usable.Min.Y + off.Y), //nolint:gosec // screen positions are small.
+		PressX: int32(press.X),               //nolint:gosec // screen positions are small.
+		PressY: int32(press.Y),               //nolint:gosec // screen positions are small.
+		X:      int32(root.X),                //nolint:gosec // screen positions are small.
+		Y:      int32(root.Y),                //nolint:gosec // screen positions are small.
+		MinY:   int32(c.minTop(g.w) + off.Y), //nolint:gosec // screen positions are small.
 	}}
 }
 

@@ -33,9 +33,18 @@ type xdgSurface struct {
 
 // toplevel is the xdg_toplevel role: a window in the compositor's stack.
 type toplevel struct {
+	// x is the window's xdg_surface.
+	x *xdgSurface
 	// id is the xdg_toplevel's object id.
 	id uint32
 	// The compositor's lock guards the fields below.
+
+	// decoration is the window's zxdg_toplevel_decoration_v1 object id, or
+	// zero without one.
+	decoration uint32
+	// mode is the decoration mode the client asked for, or zero to take the
+	// compositor's.
+	mode uint32
 
 	// title and appID name the window.
 	title, appID string
@@ -228,10 +237,11 @@ func (x *xdgSurface) request(op uint16, m *message) error {
 		if x.toplevel != nil || x.popup != nil {
 			return c.fail(x.id, wmBaseErrRole, "xdg_surface already has a role")
 		}
-		if err := c.add(id, requestFunc(x.toplevelRequest)); err != nil {
+		t := &toplevel{x: x, id: id}
+		if err := c.add(id, t); err != nil {
 			return err
 		}
-		c.comp.update(func() { x.toplevel = &toplevel{id: id} })
+		c.comp.update(func() { x.toplevel = t })
 	case xdgSurfaceGetPopup:
 		id, parentID, posID := m.uint(), m.uint(), m.uint()
 		if m.err != nil {
@@ -347,6 +357,9 @@ func (x *xdgSurface) configure() {
 		if comp.active == x.s {
 			states = append(states, toplevelActivated)
 		}
+		if t.decoration != 0 {
+			c.send(newEvent(t.decoration, decorationConfigure).uint(t.decorationMode()))
+		}
 		c.send(newEvent(t.id, toplevelConfigure).
 			int(int32(t.size.X)).int(int32(t.size.Y)). //nolint:gosec // window sizes are small.
 			uints(states...))
@@ -361,9 +374,10 @@ func (x *xdgSurface) configure() {
 	c.send(newEvent(x.id, xdgSurfaceConfigure).uint(comp.nextSerial()))
 }
 
-// toplevelRequest handles an xdg_toplevel request.
-func (x *xdgSurface) toplevelRequest(op uint16, m *message) error {
-	c, t := x.s.c, x.toplevel
+// request handles an xdg_toplevel request.
+func (t *toplevel) request(op uint16, m *message) error {
+	x := t.x
+	c := x.s.c
 	switch op {
 	case toplevelDestroy:
 		// Unmap the window, then forget the role.
@@ -433,5 +447,6 @@ func (x *xdgSurface) popupRequest(op uint16, _ *message) error {
 // _ is a type assertion.
 var (
 	_ object = (*xdgSurface)(nil)
+	_ object = (*toplevel)(nil)
 	_ object = (*positioner)(nil)
 )

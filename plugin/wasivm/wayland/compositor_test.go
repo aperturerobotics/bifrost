@@ -26,6 +26,7 @@ const (
 	idLayerShell    = 9
 	idOutput        = 10
 	idXdgOutputs    = 11
+	idDecorations   = 12
 	firstFreeID     = 20
 )
 
@@ -145,7 +146,7 @@ func rootAt(sc *s4wave_vm.WasiVmScene, id uint32) (image.Point, bool) {
 }
 
 // apply applies the update u as the browser viewer does: the screen, the
-// layers, the roots and the grab it sets, then its patches, and draws the
+// layers, the roots, the grab and the frames it sets, then its patches, and draws the
 // scene.
 func (tc *testView) apply(u *s4wave_vm.WasiVmScene) {
 	// Take the screen, the layers and the roots, dropping the textures of
@@ -158,6 +159,9 @@ func (tc *testView) apply(u *s4wave_vm.WasiVmScene) {
 	}
 	if u.GetGrab() != nil {
 		tc.scene.Grab = u.GetGrab()
+	}
+	if u.GetFrames() != nil {
+		tc.scene.Frames = u.GetFrames()
 	}
 	if u.GetLayers() != nil {
 		tc.scene.Layers = u.GetLayers()
@@ -302,6 +306,7 @@ func (tc *testCompositor) connect() *testClient {
 		{"zwlr_layer_shell_v1", 4, idLayerShell},
 		{"wl_output", 4, idOutput},
 		{"zxdg_output_manager_v1", 3, idXdgOutputs},
+		{"zxdg_decoration_manager_v1", 1, idDecorations},
 	} {
 		c.request(newEvent(idRegistry, registryBind).uint(names[g.iface]).string(g.iface).uint(g.version).uint(g.id))
 	}
@@ -415,14 +420,48 @@ type testWindow struct {
 // window maps a width by height window of one opaque color, its bytes blue,
 // green and red, after its first configure.
 func (c *testClient) window(width, height int, bgr [3]byte) testWindow {
-	// Make a toplevel and wait for its first configure, which leaves the
-	// size to the client.
 	c.t.Helper()
+	w := c.newWindow()
+	c.mapWindow(w, width, height, bgr, 0)
+	return w
+}
+
+// decoratedWindow maps a window as window does whose client asks for
+// decorations in mode, or leaves the mode to the compositor when mode is 0.
+// It returns the window and the mode the compositor configures.
+func (c *testClient) decoratedWindow(width, height int, bgr [3]byte, mode uint32) (testWindow, uint32) {
+	// Make the window and its decoration before the first commit.
+	c.t.Helper()
+	w := c.newWindow()
+	decoration := c.newID()
+	c.request(newEvent(idDecorations, decorationManagerGetToplevelDecoration).uint(decoration).uint(w.toplevel))
+	if mode != 0 {
+		c.request(newEvent(decoration, decorationSetMode).uint(mode))
+	}
+	return w, c.mapWindow(w, width, height, bgr, decoration)
+}
+
+// newWindow makes a toplevel with no buffer.
+func (c *testClient) newWindow() testWindow {
+	// Make the wl_surface, its xdg_surface and the toplevel.
 	w := testWindow{surface: c.newID(), xdg: c.newID(), toplevel: c.newID()}
 	c.request(newEvent(idCompositor, compositorCreateSurface).uint(w.surface))
 	c.request(newEvent(idWmBase, wmBaseGetXdgSurface).uint(w.xdg).uint(w.surface))
 	c.request(newEvent(w.xdg, xdgSurfaceGetToplevel).uint(w.toplevel))
+	return w
+}
+
+// mapWindow maps the window w at width by height in one opaque color after
+// its first configure, which leaves the size to the client. When decoration
+// is not 0 it returns the mode that decoration's configure gives.
+func (c *testClient) mapWindow(w testWindow, width, height int, bgr [3]byte, decoration uint32) uint32 {
+	// Commit, and wait for the first configure.
+	c.t.Helper()
 	c.request(newEvent(w.surface, surfaceCommit))
+	var mode uint32
+	if decoration != 0 {
+		mode = c.await(decoration, decorationConfigure).uint()
+	}
 	if size, _ := c.awaitStates(w.toplevel); size != (image.Point{}) {
 		c.t.Fatalf("toplevel configured at %v, want 0x0", size)
 	}
@@ -434,7 +473,7 @@ func (c *testClient) window(width, height int, bgr [3]byte) testWindow {
 	c.request(newEvent(w.surface, surfaceDamage).int(0).int(0).int(int32(width)).int(int32(height))) //nolint:gosec // small windows.
 	c.request(newEvent(w.surface, surfaceCommit))
 	c.await(bid, bufferRelease)
-	return w
+	return mode
 }
 
 // layerSurface maps a layer surface of one opaque color in layer, held to

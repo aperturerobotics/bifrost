@@ -4,11 +4,13 @@
 // the guest and turns their pointer and key input into Wayland events.
 //
 // The compositor is a stacking window manager. Windows open on a cascade at
-// the size their clients choose, with the decorations the clients draw, and
-// show over a plain background with their subsurfaces and popups. A press
+// the size their clients choose and show over a plain background with their
+// subsurfaces and popups. A window whose client asks for server side
+// decorations gets a frame the viewers draw: a title bar with close and
+// maximize buttons, and a band around it that resizes the window. A press
 // raises and activates the window under the pointer, which then holds the
-// keyboard, and a client's move or resize request drags its window with the
-// pointer. Layer shell clients draw the rest of the desktop, such as a
+// keyboard. A press on a title bar, or a client's move or resize request,
+// drags the window with the pointer. Layer shell clients draw the rest of the desktop, such as a
 // wallpaper, a panel or a launcher, below or above the windows, and an
 // exclusive zone keeps the windows off a panel's edge.
 package wayland
@@ -81,6 +83,8 @@ type Compositor struct {
 	hover *surface
 	// grab is the window move or resize in progress, or nil.
 	grab *grab
+	// framePress is the frame button the held buttons pressed, or none.
+	framePress frameHit
 	// popupGrabs is the popups that close on a press outside them, oldest
 	// first.
 	popupGrabs []*surface

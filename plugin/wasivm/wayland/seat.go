@@ -54,7 +54,7 @@ func (c *Compositor) activate(w *surface) {
 	if old == w {
 		return
 	}
-	c.active = w
+	c.active, c.changed = w, true
 	if old != nil && old.xdg != nil && old.xdg.configured {
 		old.xdg.configure()
 	}
@@ -107,7 +107,8 @@ func (c *Compositor) refocusPointer() {
 	switch {
 	case c.grab != nil:
 	case c.buttons&buttonBits == 0:
-		c.setHover(c.surfaceAt(c.pointerSpace, c.pointer))
+		s, _ := c.hitAt(c.pointerSpace, c.pointer)
+		c.setHover(s)
 	case c.hover != nil && (c.rootOf(c.hover) == nil || c.hover.image == nil):
 		c.setHover(nil)
 	}
@@ -156,6 +157,9 @@ func (c *Compositor) forget(s *surface) {
 	}
 	if c.grab != nil && c.grab.w == s {
 		c.grab = nil
+	}
+	if c.framePress.w == s {
+		c.framePress = frameHit{}
 	}
 	c.popupGrabs = slices.DeleteFunc(c.popupGrabs, func(p *surface) bool { return p == s })
 }
@@ -217,17 +221,21 @@ func (c *Compositor) pointerInput(sp *space, ev *s4wave_vm.WasiVmPointerEvent) {
 	}
 
 	// Focus the surface under the pointer. A first press dismisses the
-	// popups outside it, then focuses its window or layer surface.
+	// popups outside it, then focuses its window or layer surface, or acts
+	// on the window frame under it.
 	if !held {
-		c.setHover(c.surfaceAt(sp, c.pointer))
+		s, f := c.hitAt(sp, c.pointer)
+		c.setHover(s)
 		if c.buttons&changed&buttonBits != 0 {
-			c.press()
+			c.press(f)
 		}
 	}
 
-	// Send the events, then follow the pointer once the buttons release.
+	// Send the events, then act on a frame button and follow the pointer
+	// once the buttons release.
 	c.sendPointer(changed)
 	if c.buttons&buttonBits == 0 {
+		c.releaseFrame(sp)
 		c.refocusPointer()
 	}
 }
@@ -236,6 +244,7 @@ func (c *Compositor) pointerInput(sp *space, ev *s4wave_vm.WasiVmPointerEvent) {
 // grab, and takes the pointer focus from the surfaces, as when the pointer
 // leaves its space. The caller holds the lock.
 func (c *Compositor) leavePointer() {
+	c.framePress = frameHit{}
 	if changed := c.buttons; changed != 0 {
 		c.buttons = 0
 		if c.grab != nil {
@@ -248,10 +257,11 @@ func (c *Compositor) leavePointer() {
 }
 
 // press dismisses the grabbing popups the hovered surface is outside of.
-// Then it raises and activates the hovered window, or gives the keyboard to
-// a layer surface that takes it on a press. A window in its own space has
+// Then it raises and activates the hovered window or the window of the
+// frame part f, or gives the keyboard to a layer surface that takes it on a
+// press, and starts what a press on f does. A window in its own space has
 // nothing to rise above. The caller holds the lock.
-func (c *Compositor) press() {
+func (c *Compositor) press(f frameHit) {
 	// Dismiss the popups.
 	for n := len(c.popupGrabs); n != 0; n-- {
 		top := c.popupGrabs[n-1]
@@ -262,7 +272,11 @@ func (c *Compositor) press() {
 	}
 
 	// Focus the window or the layer surface.
-	switch w := c.rootOf(c.hover); {
+	w := c.rootOf(c.hover)
+	if f.w != nil {
+		w = f.w
+	}
+	switch {
 	case w == nil:
 	case w.xdg != nil:
 		c.layerFocus = nil
@@ -274,6 +288,9 @@ func (c *Compositor) press() {
 		c.layerFocus = w
 	}
 	c.refocusKeyboard()
+	if f.w != nil {
+		c.pressFrame(f)
+	}
 }
 
 // sendPointer sends the hovered surface's pointers the motion and the
@@ -311,14 +328,23 @@ func (c *Compositor) sendPointer(changed uint32) {
 	}
 }
 
-// startGrab starts moving the window s, or resizing it by edges, when a
-// button pressed on it is still held. A maximized or fullscreen window
-// stays put, as does one in its own space, whose viewer places it. The
-// caller holds the lock.
+// startGrab starts moving the window s, or resizing it by edges, at its
+// client's request while a button pressed on it is still held. The caller
+// holds the lock.
 func (c *Compositor) startGrab(s *surface, edges uint32) {
+	if c.rootOf(c.hover) == s {
+		c.beginGrab(s, edges)
+	}
+}
+
+// beginGrab starts moving the window s, or resizing it by edges, from the
+// press of the held buttons. A maximized or fullscreen window stays put, as
+// does one in its own space, whose viewer places it. The caller holds the
+// lock.
+func (c *Compositor) beginGrab(s *surface, edges uint32) {
 	// Check the press and the window.
 	t := s.xdg.toplevel
-	if c.grab != nil || c.buttons&buttonBits == 0 || c.rootOf(c.hover) != s || t.maximized || t.fullscreen || t.own != nil {
+	if c.grab != nil || c.buttons&buttonBits == 0 || t.maximized || t.fullscreen || t.own != nil {
 		return
 	}
 
@@ -342,12 +368,12 @@ func (c *Compositor) startGrab(s *surface, edges uint32) {
 // drag moves the grabbed window with the pointer, or configures it at the
 // size the pointer drags it to. The caller holds the lock.
 func (c *Compositor) drag() {
-	// Move the window, keeping its top in the usable area.
+	// Move the window, keeping its title in the usable area.
 	g := c.grab
 	t, d := g.w.xdg.toplevel, c.pointer.Sub(g.pointer)
 	if g.edges == 0 {
 		pos := g.rect.Min.Add(d)
-		pos.Y = max(pos.Y, c.usable.Min.Y)
+		pos.Y = max(pos.Y, c.minTop(g.w))
 		c.moveWindow(g.w, pos)
 		return
 	}

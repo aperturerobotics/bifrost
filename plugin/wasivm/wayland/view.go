@@ -11,8 +11,8 @@ import (
 // two areas whose bounding box adds the least area.
 const maxDamage = 16
 
-// view is what one viewer has of a space's scene: the screen, layers, roots
-// and grab last sent, and the texture of each layer. The compositor's lock
+// view is what one viewer has of a space's scene: the screen, layers, roots,
+// grab and frames last sent, and the texture of each layer. The compositor's lock
 // guards it.
 type view struct {
 	// screen is the screen last sent, or nil.
@@ -23,6 +23,8 @@ type view struct {
 	roots *s4wave_vm.WasiVmSceneRoots
 	// grab is the grab last sent, or nil.
 	grab *s4wave_vm.WasiVmSceneGrab
+	// frames is the frames last sent, or nil.
+	frames *s4wave_vm.WasiVmSceneFrames
 	// textures is the texture the viewer holds for each surface shown.
 	textures map[*surface]*texture
 }

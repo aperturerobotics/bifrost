@@ -259,6 +259,7 @@ const (
 	toplevelUnsetFullscreen = 12
 
 	toplevelConfigure = 0
+	toplevelClose     = 1
 )
 
 // xdg_toplevel states.
@@ -275,6 +276,33 @@ const (
 	resizeBottom = 2
 	resizeLeft   = 4
 	resizeRight  = 8
+)
+
+// zxdg_decoration_manager_v1.
+const (
+	decorationManagerDestroy               = 0
+	decorationManagerGetToplevelDecoration = 1
+)
+
+// zxdg_toplevel_decoration_v1.
+const (
+	decorationDestroy   = 0
+	decorationSetMode   = 1
+	decorationUnsetMode = 2
+
+	decorationConfigure = 0
+)
+
+// zxdg_toplevel_decoration_v1 error codes.
+const (
+	decorationErrAlreadyConstructed = 1
+)
+
+// zxdg_toplevel_decoration_v1 modes: the client draws its decorations, or
+// the compositor does.
+const (
+	decorationClientSide = 1
+	decorationServerSide = 2
 )
 
 // xdg_popup.

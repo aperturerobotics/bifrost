@@ -56,6 +56,47 @@ func (x WasiVmWindowPlace) String() string {
 	return strconv.Itoa(int(x))
 }
 
+// WasiVmSceneFrameButtonKind is what a title bar button does.
+type WasiVmSceneFrameButtonKind int32
+
+const (
+	// WASI_VM_SCENE_FRAME_BUTTON_KIND_UNKNOWN is not a button.
+	WasiVmSceneFrameButtonKind_WASI_VM_SCENE_FRAME_BUTTON_KIND_UNKNOWN WasiVmSceneFrameButtonKind = 0
+	// WASI_VM_SCENE_FRAME_BUTTON_KIND_CLOSE asks the window to close.
+	WasiVmSceneFrameButtonKind_WASI_VM_SCENE_FRAME_BUTTON_KIND_CLOSE WasiVmSceneFrameButtonKind = 1
+	// WASI_VM_SCENE_FRAME_BUTTON_KIND_MAXIMIZE maximizes the window, or
+	// restores a maximized one.
+	WasiVmSceneFrameButtonKind_WASI_VM_SCENE_FRAME_BUTTON_KIND_MAXIMIZE WasiVmSceneFrameButtonKind = 2
+)
+
+// Enum value maps for WasiVmSceneFrameButtonKind.
+var (
+	WasiVmSceneFrameButtonKind_name = map[int32]string{
+		0: "WASI_VM_SCENE_FRAME_BUTTON_KIND_UNKNOWN",
+		1: "WASI_VM_SCENE_FRAME_BUTTON_KIND_CLOSE",
+		2: "WASI_VM_SCENE_FRAME_BUTTON_KIND_MAXIMIZE",
+	}
+	WasiVmSceneFrameButtonKind_value = map[string]int32{
+		"WASI_VM_SCENE_FRAME_BUTTON_KIND_UNKNOWN":  0,
+		"WASI_VM_SCENE_FRAME_BUTTON_KIND_CLOSE":    1,
+		"WASI_VM_SCENE_FRAME_BUTTON_KIND_MAXIMIZE": 2,
+	}
+)
+
+func (x WasiVmSceneFrameButtonKind) Enum() *WasiVmSceneFrameButtonKind {
+	p := new(WasiVmSceneFrameButtonKind)
+	*p = x
+	return p
+}
+
+func (x WasiVmSceneFrameButtonKind) String() string {
+	name, valid := WasiVmSceneFrameButtonKind_name[int32(x)]
+	if valid {
+		return name
+	}
+	return strconv.Itoa(int(x))
+}
+
 // WasiVmConfig configures the init process of a WasiVM.
 type WasiVmConfig struct {
 	unknownFields []byte
@@ -745,6 +786,9 @@ type WasiVmScene struct {
 	Patches []*WasiVmScenePatch `protobuf:"bytes,4,rep,name=patches,proto3" json:"patches,omitempty"`
 	// Grab is the window move in progress, when one starts or ends.
 	Grab *WasiVmSceneGrab `protobuf:"bytes,5,opt,name=grab,proto3" json:"grab,omitempty"`
+	// Frames is the frame the desktop draws for each window that has one, when
+	// any changes.
+	Frames *WasiVmSceneFrames `protobuf:"bytes,6,opt,name=frames,proto3" json:"frames,omitempty"`
 }
 
 func (x *WasiVmScene) Reset() {
@@ -786,6 +830,217 @@ func (x *WasiVmScene) GetGrab() *WasiVmSceneGrab {
 		return x.Grab
 	}
 	return nil
+}
+
+func (x *WasiVmScene) GetFrames() *WasiVmSceneFrames {
+	if x != nil {
+		return x.Frames
+	}
+	return nil
+}
+
+// WasiVmSceneFrames is the desktop's window frames.
+type WasiVmSceneFrames struct {
+	unknownFields []byte
+	// Frames is the frames, in any order.
+	Frames []*WasiVmSceneFrame `protobuf:"bytes,1,rep,name=frames,proto3" json:"frames,omitempty"`
+}
+
+func (x *WasiVmSceneFrames) Reset() {
+	*x = WasiVmSceneFrames{}
+}
+
+func (*WasiVmSceneFrames) ProtoMessage() {}
+
+func (x *WasiVmSceneFrames) GetFrames() []*WasiVmSceneFrame {
+	if x != nil {
+		return x.Frames
+	}
+	return nil
+}
+
+// WasiVmSceneFrame is the frame the desktop draws for a window that asked
+// for server side decorations: a title bar above its content with buttons,
+// and a band around both that resizes the window. The compositor reads
+// presses on these same rectangles: a press on the title bar moves the
+// window from the press, a press on the band resizes it, and a button acts
+// when released over it. All positions are in units from the root's
+// position.
+type WasiVmSceneFrame struct {
+	unknownFields []byte
+	// Root is the id of the window's root.
+	Root uint32 `protobuf:"varint,1,opt,name=root,proto3" json:"root,omitempty"`
+	// Title is the window's title.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// Active is set while the window holds the keyboard.
+	Active bool `protobuf:"varint,3,opt,name=active,proto3" json:"active,omitempty"`
+	// Maximized is set while the window fills the area the panels leave. A
+	// maximized window does not move or resize.
+	Maximized bool `protobuf:"varint,4,opt,name=maximized,proto3" json:"maximized,omitempty"`
+	// X is the left edge of the window with its title bar.
+	X int32 `protobuf:"varint,5,opt,name=x,proto3" json:"x,omitempty"`
+	// Y is the top edge of the window with its title bar: the title bar's top.
+	Y int32 `protobuf:"varint,6,opt,name=y,proto3" json:"y,omitempty"`
+	// Width is the width of the window.
+	Width uint32 `protobuf:"varint,7,opt,name=width,proto3" json:"width,omitempty"`
+	// Height is the height of the window with its title bar.
+	Height uint32 `protobuf:"varint,8,opt,name=height,proto3" json:"height,omitempty"`
+	// TitleHeight is the height of the title bar at the top of the frame.
+	TitleHeight uint32 `protobuf:"varint,9,opt,name=title_height,json=titleHeight,proto3" json:"titleHeight,omitempty"`
+	// Border is the width of the band outside the frame that resizes the
+	// window, or zero when it does not resize.
+	Border uint32 `protobuf:"varint,10,opt,name=border,proto3" json:"border,omitempty"`
+	// Buttons is the title bar's buttons.
+	Buttons []*WasiVmSceneFrameButton `protobuf:"bytes,11,rep,name=buttons,proto3" json:"buttons,omitempty"`
+	// MinY is the least top edge of the root a move of the window allows,
+	// which keeps the title bar in the area the panels leave.
+	MinY int32 `protobuf:"varint,12,opt,name=min_y,json=minY,proto3" json:"minY,omitempty"`
+}
+
+func (x *WasiVmSceneFrame) Reset() {
+	*x = WasiVmSceneFrame{}
+}
+
+func (*WasiVmSceneFrame) ProtoMessage() {}
+
+func (x *WasiVmSceneFrame) GetRoot() uint32 {
+	if x != nil {
+		return x.Root
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrame) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *WasiVmSceneFrame) GetActive() bool {
+	if x != nil {
+		return x.Active
+	}
+	return false
+}
+
+func (x *WasiVmSceneFrame) GetMaximized() bool {
+	if x != nil {
+		return x.Maximized
+	}
+	return false
+}
+
+func (x *WasiVmSceneFrame) GetX() int32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrame) GetY() int32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrame) GetWidth() uint32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrame) GetHeight() uint32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrame) GetTitleHeight() uint32 {
+	if x != nil {
+		return x.TitleHeight
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrame) GetBorder() uint32 {
+	if x != nil {
+		return x.Border
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrame) GetButtons() []*WasiVmSceneFrameButton {
+	if x != nil {
+		return x.Buttons
+	}
+	return nil
+}
+
+func (x *WasiVmSceneFrame) GetMinY() int32 {
+	if x != nil {
+		return x.MinY
+	}
+	return 0
+}
+
+// WasiVmSceneFrameButton is a button on a title bar.
+type WasiVmSceneFrameButton struct {
+	unknownFields []byte
+	// Kind is what the button does.
+	Kind WasiVmSceneFrameButtonKind `protobuf:"varint,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	// X is the left edge.
+	X int32 `protobuf:"varint,2,opt,name=x,proto3" json:"x,omitempty"`
+	// Y is the top edge.
+	Y int32 `protobuf:"varint,3,opt,name=y,proto3" json:"y,omitempty"`
+	// Width is the width.
+	Width uint32 `protobuf:"varint,4,opt,name=width,proto3" json:"width,omitempty"`
+	// Height is the height.
+	Height uint32 `protobuf:"varint,5,opt,name=height,proto3" json:"height,omitempty"`
+}
+
+func (x *WasiVmSceneFrameButton) Reset() {
+	*x = WasiVmSceneFrameButton{}
+}
+
+func (*WasiVmSceneFrameButton) ProtoMessage() {}
+
+func (x *WasiVmSceneFrameButton) GetKind() WasiVmSceneFrameButtonKind {
+	if x != nil {
+		return x.Kind
+	}
+	return WasiVmSceneFrameButtonKind_WASI_VM_SCENE_FRAME_BUTTON_KIND_UNKNOWN
+}
+
+func (x *WasiVmSceneFrameButton) GetX() int32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrameButton) GetY() int32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrameButton) GetWidth() uint32 {
+	if x != nil {
+		return x.Width
+	}
+	return 0
+}
+
+func (x *WasiVmSceneFrameButton) GetHeight() uint32 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
 }
 
 // WasiVmSceneGrab is what the pointer holds.
@@ -1720,6 +1975,7 @@ func (m *WasiVmScene) CloneVT() *WasiVmScene {
 	r.Roots = protobuf_go_lite.CloneVTValue(m.Roots)
 	r.Patches = protobuf_go_lite.CloneVTSlice(m.Patches)
 	r.Grab = protobuf_go_lite.CloneVTValue(m.Grab)
+	r.Frames = protobuf_go_lite.CloneVTValue(m.Frames)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1727,6 +1983,69 @@ func (m *WasiVmScene) CloneVT() *WasiVmScene {
 }
 
 func (m *WasiVmScene) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmSceneFrames) CloneVT() *WasiVmSceneFrames {
+	if m == nil {
+		return (*WasiVmSceneFrames)(nil)
+	}
+	r := new(WasiVmSceneFrames)
+	r.Frames = protobuf_go_lite.CloneVTSlice(m.Frames)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmSceneFrames) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmSceneFrame) CloneVT() *WasiVmSceneFrame {
+	if m == nil {
+		return (*WasiVmSceneFrame)(nil)
+	}
+	r := new(WasiVmSceneFrame)
+	r.Root = m.Root
+	r.Title = m.Title
+	r.Active = m.Active
+	r.Maximized = m.Maximized
+	r.X = m.X
+	r.Y = m.Y
+	r.Width = m.Width
+	r.Height = m.Height
+	r.TitleHeight = m.TitleHeight
+	r.Border = m.Border
+	r.MinY = m.MinY
+	r.Buttons = protobuf_go_lite.CloneVTSlice(m.Buttons)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmSceneFrame) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WasiVmSceneFrameButton) CloneVT() *WasiVmSceneFrameButton {
+	if m == nil {
+		return (*WasiVmSceneFrameButton)(nil)
+	}
+	r := new(WasiVmSceneFrameButton)
+	r.Kind = m.Kind
+	r.X = m.X
+	r.Y = m.Y
+	r.Width = m.Width
+	r.Height = m.Height
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WasiVmSceneFrameButton) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -2516,11 +2835,119 @@ func (this *WasiVmScene) EqualVT(that *WasiVmScene) bool {
 	if !protobuf_go_lite.IsEqualVT(this.Grab, that.Grab) {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.Frames, that.Frames) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *WasiVmScene) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*WasiVmScene)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmSceneFrames) EqualVT(that *WasiVmSceneFrames) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Frames, that.Frames, func() *WasiVmSceneFrame { return &WasiVmSceneFrame{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmSceneFrames) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneFrames)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmSceneFrame) EqualVT(that *WasiVmSceneFrame) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Root != that.Root {
+		return false
+	}
+	if this.Title != that.Title {
+		return false
+	}
+	if this.Active != that.Active {
+		return false
+	}
+	if this.Maximized != that.Maximized {
+		return false
+	}
+	if this.X != that.X {
+		return false
+	}
+	if this.Y != that.Y {
+		return false
+	}
+	if this.Width != that.Width {
+		return false
+	}
+	if this.Height != that.Height {
+		return false
+	}
+	if this.TitleHeight != that.TitleHeight {
+		return false
+	}
+	if this.Border != that.Border {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Buttons, that.Buttons, func() *WasiVmSceneFrameButton { return &WasiVmSceneFrameButton{} }) {
+		return false
+	}
+	if this.MinY != that.MinY {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmSceneFrame) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneFrame)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WasiVmSceneFrameButton) EqualVT(that *WasiVmSceneFrameButton) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Kind != that.Kind {
+		return false
+	}
+	if this.X != that.X {
+		return false
+	}
+	if this.Y != that.Y {
+		return false
+	}
+	if this.Width != that.Width {
+		return false
+	}
+	if this.Height != that.Height {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WasiVmSceneFrameButton) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WasiVmSceneFrameButton)
 	if !ok {
 		return false
 	}
@@ -2976,6 +3403,46 @@ func (x *WasiVmWindowPlace) UnmarshalText(b []byte) error {
 
 // UnmarshalJSON unmarshals the WasiVmWindowPlace from JSON.
 func (x *WasiVmWindowPlace) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmSceneFrameButtonKind to JSON.
+func (x WasiVmSceneFrameButtonKind) MarshalProtoJSON(s *json.MarshalState) {
+	s.WriteEnum(int32(x), WasiVmSceneFrameButtonKind_name)
+}
+
+// MarshalText marshals the WasiVmSceneFrameButtonKind to text.
+func (x WasiVmSceneFrameButtonKind) MarshalText() ([]byte, error) {
+	return []byte(json.GetEnumString(int32(x), WasiVmSceneFrameButtonKind_name)), nil
+}
+
+// MarshalJSON marshals the WasiVmSceneFrameButtonKind to JSON.
+func (x WasiVmSceneFrameButtonKind) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneFrameButtonKind from JSON.
+func (x *WasiVmSceneFrameButtonKind) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	v := s.ReadEnum(WasiVmSceneFrameButtonKind_value)
+	if err := s.Err(); err != nil {
+		s.SetErrorf("could not read WasiVmSceneFrameButtonKind enum: %v", err)
+		return
+	}
+	*x = WasiVmSceneFrameButtonKind(v)
+}
+
+// UnmarshalText unmarshals the WasiVmSceneFrameButtonKind from text.
+func (x *WasiVmSceneFrameButtonKind) UnmarshalText(b []byte) error {
+	i, err := json.ParseEnumString(string(b), WasiVmSceneFrameButtonKind_value)
+	if err != nil {
+		return err
+	}
+	*x = WasiVmSceneFrameButtonKind(i)
+	return nil
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneFrameButtonKind from JSON.
+func (x *WasiVmSceneFrameButtonKind) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -4115,6 +4582,11 @@ func (x *WasiVmScene) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("grab")
 		x.Grab.MarshalProtoJSON(s.WithField("grab"))
 	}
+	if x.Frames != nil || s.HasField("frames") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("frames")
+		x.Frames.MarshalProtoJSON(s.WithField("frames"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -4178,12 +4650,307 @@ func (x *WasiVmScene) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.Grab = &WasiVmSceneGrab{}
 			x.Grab.UnmarshalProtoJSON(s.WithField("grab", true))
+		case "frames":
+			if s.ReadNil() {
+				x.Frames = nil
+				return
+			}
+			x.Frames = &WasiVmSceneFrames{}
+			x.Frames.UnmarshalProtoJSON(s.WithField("frames", true))
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the WasiVmScene from JSON.
 func (x *WasiVmScene) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmSceneFrames message to JSON.
+func (x *WasiVmSceneFrames) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Frames) > 0 || s.HasField("frames") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("frames")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Frames {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("frames"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmSceneFrames to JSON.
+func (x *WasiVmSceneFrames) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneFrames message from JSON.
+func (x *WasiVmSceneFrames) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "frames":
+			s.AddField("frames")
+			if s.ReadNil() {
+				x.Frames = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Frames = append(x.Frames, nil)
+					return
+				}
+				v := &WasiVmSceneFrame{}
+				v.UnmarshalProtoJSON(s.WithField("frames", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Frames = append(x.Frames, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneFrames from JSON.
+func (x *WasiVmSceneFrames) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmSceneFrame message to JSON.
+func (x *WasiVmSceneFrame) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Root != 0 || s.HasField("root") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("root")
+		s.WriteUint32(x.Root)
+	}
+	if x.Title != "" || s.HasField("title") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("title")
+		s.WriteString(x.Title)
+	}
+	if x.Active || s.HasField("active") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("active")
+		s.WriteBool(x.Active)
+	}
+	if x.Maximized || s.HasField("maximized") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("maximized")
+		s.WriteBool(x.Maximized)
+	}
+	if x.X != 0 || s.HasField("x") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("x")
+		s.WriteInt32(x.X)
+	}
+	if x.Y != 0 || s.HasField("y") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("y")
+		s.WriteInt32(x.Y)
+	}
+	if x.Width != 0 || s.HasField("width") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("width")
+		s.WriteUint32(x.Width)
+	}
+	if x.Height != 0 || s.HasField("height") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("height")
+		s.WriteUint32(x.Height)
+	}
+	if x.TitleHeight != 0 || s.HasField("titleHeight") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("titleHeight")
+		s.WriteUint32(x.TitleHeight)
+	}
+	if x.Border != 0 || s.HasField("border") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("border")
+		s.WriteUint32(x.Border)
+	}
+	if len(x.Buttons) > 0 || s.HasField("buttons") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("buttons")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Buttons {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("buttons"))
+		}
+		s.WriteArrayEnd()
+	}
+	if x.MinY != 0 || s.HasField("minY") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("minY")
+		s.WriteInt32(x.MinY)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmSceneFrame to JSON.
+func (x *WasiVmSceneFrame) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneFrame message from JSON.
+func (x *WasiVmSceneFrame) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "root":
+			s.AddField("root")
+			x.Root = s.ReadUint32()
+		case "title":
+			s.AddField("title")
+			x.Title = s.ReadString()
+		case "active":
+			s.AddField("active")
+			x.Active = s.ReadBool()
+		case "maximized":
+			s.AddField("maximized")
+			x.Maximized = s.ReadBool()
+		case "x":
+			s.AddField("x")
+			x.X = s.ReadInt32()
+		case "y":
+			s.AddField("y")
+			x.Y = s.ReadInt32()
+		case "width":
+			s.AddField("width")
+			x.Width = s.ReadUint32()
+		case "height":
+			s.AddField("height")
+			x.Height = s.ReadUint32()
+		case "title_height", "titleHeight":
+			s.AddField("title_height")
+			x.TitleHeight = s.ReadUint32()
+		case "border":
+			s.AddField("border")
+			x.Border = s.ReadUint32()
+		case "buttons":
+			s.AddField("buttons")
+			if s.ReadNil() {
+				x.Buttons = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Buttons = append(x.Buttons, nil)
+					return
+				}
+				v := &WasiVmSceneFrameButton{}
+				v.UnmarshalProtoJSON(s.WithField("buttons", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Buttons = append(x.Buttons, v)
+			})
+		case "min_y", "minY":
+			s.AddField("min_y")
+			x.MinY = s.ReadInt32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneFrame from JSON.
+func (x *WasiVmSceneFrame) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WasiVmSceneFrameButton message to JSON.
+func (x *WasiVmSceneFrameButton) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Kind != 0 || s.HasField("kind") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("kind")
+		x.Kind.MarshalProtoJSON(s)
+	}
+	if x.X != 0 || s.HasField("x") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("x")
+		s.WriteInt32(x.X)
+	}
+	if x.Y != 0 || s.HasField("y") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("y")
+		s.WriteInt32(x.Y)
+	}
+	if x.Width != 0 || s.HasField("width") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("width")
+		s.WriteUint32(x.Width)
+	}
+	if x.Height != 0 || s.HasField("height") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("height")
+		s.WriteUint32(x.Height)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WasiVmSceneFrameButton to JSON.
+func (x *WasiVmSceneFrameButton) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WasiVmSceneFrameButton message from JSON.
+func (x *WasiVmSceneFrameButton) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "kind":
+			s.AddField("kind")
+			x.Kind.UnmarshalProtoJSON(s)
+		case "x":
+			s.AddField("x")
+			x.X = s.ReadInt32()
+		case "y":
+			s.AddField("y")
+			x.Y = s.ReadInt32()
+		case "width":
+			s.AddField("width")
+			x.Width = s.ReadUint32()
+		case "height":
+			s.AddField("height")
+			x.Height = s.ReadUint32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WasiVmSceneFrameButton from JSON.
+func (x *WasiVmSceneFrameButton) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -5961,6 +6728,16 @@ func (m *WasiVmScene) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Frames != nil {
+		size, err := m.Frames.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x32
+	}
 	if m.Grab != nil {
 		size, err := m.Grab.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -6012,6 +6789,206 @@ func (m *WasiVmScene) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmSceneFrames) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmSceneFrames) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmSceneFrames) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Frames) > 0 {
+		for iNdEx := len(m.Frames) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Frames[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmSceneFrame) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmSceneFrame) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmSceneFrame) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.MinY != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MinY))
+		i--
+		dAtA[i] = 0x60
+	}
+	if len(m.Buttons) > 0 {
+		for iNdEx := len(m.Buttons) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Buttons[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x5a
+		}
+	}
+	if m.Border != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Border))
+		i--
+		dAtA[i] = 0x50
+	}
+	if m.TitleHeight != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.TitleHeight))
+		i--
+		dAtA[i] = 0x48
+	}
+	if m.Height != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x40
+	}
+	if m.Width != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Width))
+		i--
+		dAtA[i] = 0x38
+	}
+	if m.Y != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.X != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.Maximized {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Maximized)
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.Active {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Active)
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Title) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Title)
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Root != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Root))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WasiVmSceneFrameButton) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WasiVmSceneFrameButton) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WasiVmSceneFrameButton) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Height != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.Width != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Width))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.Y != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Y))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.X != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.X))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Kind != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Kind))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -7066,6 +8043,64 @@ func (m *WasiVmScene) SizeVT() (n int) {
 		l = m.Grab.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	if m.Frames != nil {
+		l = m.Frames.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmSceneFrames) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Frames {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmSceneFrame) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Root)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Title)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Active)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Maximized)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.X)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Y)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Width)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Height)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.TitleHeight)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Border)
+	for _, e := range m.Buttons {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.MinY)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WasiVmSceneFrameButton) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Kind)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.X)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Y)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Width)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Height)
 	n += len(m.unknownFields)
 	return n
 }
@@ -7310,6 +8345,10 @@ func (m *WasiVmKeyEvent) SizeVT() (n int) {
 }
 
 func (x WasiVmWindowPlace) MarshalProtoText() string {
+	return x.String()
+}
+
+func (x WasiVmSceneFrameButtonKind) MarshalProtoText() string {
 	return x.String()
 }
 
@@ -7756,10 +8795,132 @@ func (x *WasiVmScene) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "grab")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Grab)
 	}
+	if x.Frames != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "frames")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Frames)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *WasiVmScene) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmSceneFrames) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneFrames")
+	if len(x.Frames) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "frames")
+		for i, v := range x.Frames {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmSceneFrame{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmSceneFrames) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmSceneFrame) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneFrame")
+	if x.Root != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "root")
+		protobuf_go_lite.TextWriteUint(&sb, x.Root)
+	}
+	if x.Title != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "title")
+		protobuf_go_lite.TextWriteString(&sb, x.Title)
+	}
+	if x.Active != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "active")
+		protobuf_go_lite.TextWriteBool(&sb, x.Active)
+	}
+	if x.Maximized != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "maximized")
+		protobuf_go_lite.TextWriteBool(&sb, x.Maximized)
+	}
+	if x.X != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "x")
+		protobuf_go_lite.TextWriteInt(&sb, x.X)
+	}
+	if x.Y != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "y")
+		protobuf_go_lite.TextWriteInt(&sb, x.Y)
+	}
+	if x.Width != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "width")
+		protobuf_go_lite.TextWriteUint(&sb, x.Width)
+	}
+	if x.Height != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "height")
+		protobuf_go_lite.TextWriteUint(&sb, x.Height)
+	}
+	if x.TitleHeight != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "title_height")
+		protobuf_go_lite.TextWriteUint(&sb, x.TitleHeight)
+	}
+	if x.Border != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "border")
+		protobuf_go_lite.TextWriteUint(&sb, x.Border)
+	}
+	if len(x.Buttons) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "buttons")
+		for i, v := range x.Buttons {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &WasiVmSceneFrameButton{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.MinY != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "min_y")
+		protobuf_go_lite.TextWriteInt(&sb, x.MinY)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmSceneFrame) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WasiVmSceneFrameButton) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WasiVmSceneFrameButton")
+	if x.Kind != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "kind")
+		protobuf_go_lite.TextWriteStringer(&sb, WasiVmSceneFrameButtonKind(x.Kind))
+	}
+	if x.X != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "x")
+		protobuf_go_lite.TextWriteInt(&sb, x.X)
+	}
+	if x.Y != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "y")
+		protobuf_go_lite.TextWriteInt(&sb, x.Y)
+	}
+	if x.Width != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "width")
+		protobuf_go_lite.TextWriteUint(&sb, x.Width)
+	}
+	if x.Height != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "height")
+		protobuf_go_lite.TextWriteUint(&sb, x.Height)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WasiVmSceneFrameButton) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -9490,6 +10651,325 @@ func (m *WasiVmScene) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Frames", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Frames == nil {
+				m.Frames = &WasiVmSceneFrames{}
+			}
+			if err := m.Frames.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmSceneFrames) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmSceneFrames: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmSceneFrames: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Frames", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Frames = append(m.Frames, &WasiVmSceneFrame{})
+			if err := m.Frames[len(m.Frames)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmSceneFrame) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmSceneFrame: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmSceneFrame: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Root", wireType)
+			}
+			m.Root = 0
+			m.Root, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Title", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Title = v
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Active", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Active = bool(v)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Maximized", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Maximized = bool(v)
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field X", wireType)
+			}
+			m.X = 0
+			m.X, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Y", wireType)
+			}
+			m.Y = 0
+			m.Y, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Width", wireType)
+			}
+			m.Width = 0
+			m.Width, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			m.Height, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TitleHeight", wireType)
+			}
+			m.TitleHeight = 0
+			m.TitleHeight, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Border", wireType)
+			}
+			m.Border = 0
+			m.Border, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Buttons", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Buttons = append(m.Buttons, &WasiVmSceneFrameButton{})
+			if err := m.Buttons[len(m.Buttons)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MinY", wireType)
+			}
+			m.MinY = 0
+			m.MinY, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WasiVmSceneFrameButton) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WasiVmSceneFrameButton: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WasiVmSceneFrameButton: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
+			}
+			m.Kind = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.Kind = WasiVmSceneFrameButtonKind(_v)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field X", wireType)
+			}
+			m.X = 0
+			m.X, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Y", wireType)
+			}
+			m.Y = 0
+			m.Y, iNdEx, err = protobuf_go_lite.DecodeVarintInt32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Width", wireType)
+			}
+			m.Width = 0
+			m.Width, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			m.Height, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
