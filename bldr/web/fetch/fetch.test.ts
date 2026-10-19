@@ -76,6 +76,48 @@ describe('proxyFetch', () => {
     }
   })
 
+  it('returns a 304 response with a null body and closes the stream', async () => {
+    // The service answers with response info for a 304 and nothing else.
+    const closed = vi.fn()
+    const svc: FetchService = {
+      Fetch() {
+        return {
+          [Symbol.asyncIterator]() {
+            return {
+              next: () =>
+                Promise.resolve({
+                  done: false,
+                  value: {
+                    body: {
+                      case: 'responseInfo',
+                      value: { status: 304, headers: { etag: '"a"' } },
+                    },
+                  },
+                }),
+              return: () => {
+                closed()
+                return Promise.resolve({ done: true, value: undefined })
+              },
+            }
+          },
+        }
+      },
+    }
+
+    // Proxy a conditional module request.
+    const resp = await proxyFetch(
+      svc,
+      new Request('https://example.test/b/fe/s/a.ts'),
+      'client-1',
+    )
+
+    // The response has no body and the stream is closed.
+    expect(resp.status).toBe(304)
+    expect(resp.body).toBeNull()
+    expect(resp.headers.get('etag')).toBe('"a"')
+    expect(closed).toHaveBeenCalled()
+  })
+
   it('aborts the proxied fetch when the caller-owned signal aborts', async () => {
     const outerAbort = new AbortController()
     let observedSignal: AbortSignal | undefined

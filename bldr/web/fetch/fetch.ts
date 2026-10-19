@@ -104,6 +104,9 @@ async function waitForFirstPacket(
   )
 }
 
+// nullBodyStatuses are the statuses whose Response must have a null body.
+const nullBodyStatuses = new Set([101, 103, 204, 205, 304])
+
 // buildFetchHeaders builds a Headers map from a Headers object.
 export function buildFetchHeaders(headers: Headers): Record<string, string> {
   const result: Record<string, string> = {}
@@ -205,9 +208,7 @@ export function buildResponseStream(
         // transport or remote ended early: the body is incomplete and must
         // error instead of closing as a clean (truncated) response.
         controller.error(
-          new Error(
-            'fetch response stream ended before the final done packet',
-          ),
+          new Error('fetch response stream ended before the final done packet'),
         )
         return
       }
@@ -324,10 +325,15 @@ export async function proxyFetch(
     // responseInit is the headers and other immediate information.
     const responseInfo = firstPktBody.value
     const responseInit = buildResponseInit(responseInfo)
-    const responseBody = buildResponseStream(resultIt)
+
+    // A null body status such as 304 Not Modified cannot carry a body.
+    if (nullBodyStatuses.has(responseInfo.status ?? 0)) {
+      void resultIt.return?.()
+      return new Response(null, responseInit)
+    }
 
     // return the streaming response
-    return new Response(responseBody, responseInit)
+    return new Response(buildResponseStream(resultIt), responseInit)
   } catch (err) {
     if (resultIt?.return) {
       void resultIt.return(err)

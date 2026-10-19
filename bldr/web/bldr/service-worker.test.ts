@@ -12,6 +12,7 @@ import {
   getBrowserControlCacheRow,
   handleBrowserReleaseRequest,
   handleServiceWorkerMessage,
+  parseDevFrontendSession,
   refreshBrowserIndexCache,
   resetServiceWorkerTestState,
   resolveBrowserRuntimeFetchClientId,
@@ -1968,6 +1969,81 @@ describe('service worker fetch release cache routing', () => {
     )
     expect(handoverResponse.status).toBe(200)
     expect(await handoverResponse.text()).toBe(body)
+  })
+
+  it('serves an immutable dev frontend module from the session cache', async () => {
+    // The dev server marks optimized dependencies immutable.
+    const path = '/b/fe/sess1/.bldr/frontend/vite-cache/deps/react.js?v=1a2b'
+    const body = 'export default {}\n'
+    vi.mocked(proxyFetch).mockResolvedValue(
+      new Response(body, {
+        status: 200,
+        headers: { 'Cache-Control': 'max-age=31536000, immutable' },
+      }),
+    )
+
+    // The first load stores the module.
+    const cold = buildClientFetchEvent(path, 'client-a')
+    expect(await (await swFetch(cold.ev)).text()).toBe(body)
+    await Promise.all(cold.waitUntilPromises)
+
+    // The next load serves it without a runtime request.
+    vi.mocked(proxyFetch).mockClear()
+    const warm = await swFetch(buildClientFetchEvent(path, 'client-a').ev)
+    expect(await warm.text()).toBe(body)
+    expect(proxyFetch).not.toHaveBeenCalled()
+  })
+
+  it('revalidates a cached dev frontend module by its ETag', async () => {
+    // The first load stores a source module with its ETag.
+    const path = '/b/fe/sess1/app/App.tsx'
+    const body = 'export const App = () => null\n'
+    vi.mocked(proxyFetch).mockResolvedValueOnce(
+      new Response(body, {
+        status: 200,
+        headers: { 'Cache-Control': 'no-cache', ETag: 'W/"1-a"' },
+      }),
+    )
+    const cold = buildClientFetchEvent(path, 'client-a')
+    expect(await (await swFetch(cold.ev)).text()).toBe(body)
+    await Promise.all(cold.waitUntilPromises)
+
+    // The next load sends the ETag and serves the cached body on 304.
+    vi.mocked(proxyFetch).mockResolvedValueOnce(
+      new Response(null, { status: 304 }),
+    )
+    const warm = await swFetch(buildClientFetchEvent(path, 'client-a').ev)
+    expect(warm.status).toBe(200)
+    expect(await warm.text()).toBe(body)
+    const forwarded = vi.mocked(proxyFetch).mock.calls[1][1]
+    expect(forwarded.headers.get('If-None-Match')).toBe('W/"1-a"')
+  })
+
+  it('drops the module cache of an earlier dev frontend session', async () => {
+    // Load one module in each of two sessions.
+    const caches = globalThis.caches as unknown as FakeCacheStorage
+    vi.mocked(proxyFetch).mockImplementation(
+      async () => new Response('m', { status: 200, headers: { ETag: '"m"' } }),
+    )
+    for (const session of ['sess1', 'sess2']) {
+      const ev = buildClientFetchEvent(`/b/fe/${session}/a.ts`, 'client-a')
+      await swFetch(ev.ev)
+      await Promise.all(ev.waitUntilPromises)
+    }
+
+    // Only the later session's cache remains.
+    expect(await caches.keys()).toEqual(['bldr-dev-frontend-sess2'])
+  })
+})
+
+describe('parseDevFrontendSession', () => {
+  it('returns the session of a module path and null otherwise', () => {
+    // Session module paths name a session; other Bldr paths do not.
+    expect(parseDevFrontendSession('/b/fe/sess1/src/a.ts')).toBe('sess1')
+    expect(parseDevFrontendSession('/b/fe/sess1/')).toBeNull()
+    expect(parseDevFrontendSession('/b/fe/rpc/c2Vydg/a.ts')).toBeNull()
+    expect(parseDevFrontendSession('/b/fe/entrypoint/app.tsx')).toBeNull()
+    expect(parseDevFrontendSession('/b/pd/plugin/a.mjs')).toBeNull()
   })
 })
 

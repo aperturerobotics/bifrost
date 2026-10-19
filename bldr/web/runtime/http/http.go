@@ -69,8 +69,8 @@ func (h *Handler) ServeBldrHTTP(rw http.ResponseWriter, req *http.Request) bool 
 
 // serveFrontend proxies a frontend module request to its frontend service.
 func (h *Handler) serveFrontend(rw http.ResponseWriter, req *http.Request) {
-	// Resolve the frontend service that owns the module path.
-	setNoCacheHeaders(rw.Header())
+	// Resolve the frontend service that owns the module path. The service's
+	// own caching headers reach the browser, which revalidates modules by ETag.
 	serviceID, err := frontend.RouteService(req.URL.Path)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)

@@ -53,6 +53,10 @@ const pluginDistPathPrefix = '/b/pd/'
 const pluginAssetsPathPrefix = '/b/pa/'
 const pluginWebPkgPathPrefix = '/b/pkg/'
 const pluginHttpPathPrefix = '/p/'
+const frontendPathPrefix = '/b/fe/'
+// devFrontendCachePrefix starts the name of a development frontend session's
+// module cache.
+const devFrontendCachePrefix = 'bldr-dev-frontend-'
 const browserRuntimeFetchHeaderTimeoutMs = 30000
 // browserRuntimeFetchRelayWaitMs bounds how long a static plugin asset fetch
 // waits for the next runtime relay across a page-client close gap before failing.
@@ -199,6 +203,7 @@ export interface BrowserRuntimeFetchClientTracker {
 // resetServiceWorkerTestState clears module-level state for unit tests.
 export function resetServiceWorkerTestState(): void {
   CACHES[controlCacheName] = undefined
+  devFrontendCache = null
   browserReleaseSyncInFlight = null
   browserReleaseLifecycleSyncLastSuccessMs = Number.NEGATIVE_INFINITY
   firstWebDocumentMessageMarked = false
@@ -570,6 +575,9 @@ async function stageBrowserRelease(
 
 async function pruneReleaseCaches(state: BrowserReleaseState): Promise<void> {
   const retainedCaches = new Set<string>([controlCacheName])
+  if (devFrontendCache) {
+    retainedCaches.add(devFrontendCache.name)
+  }
   for (const generationId of retainedGenerationIds(state)) {
     retainedCaches.add(buildGenerationCacheName(generationId))
   }
@@ -1813,6 +1821,107 @@ function isSwOrigin(origin: string): boolean {
   return origin === self.location.origin
 }
 
+// parseDevFrontendSession returns the compiler session that names a
+// development frontend module path, such as abc123 in /b/fe/abc123/src/a.ts,
+// or null for other paths. Attached frontend services and entrypoint
+// redirects are not session module paths.
+export function parseDevFrontendSession(path: string): string | null {
+  // Split the session segment from the module path after the prefix.
+  const rest = path.startsWith(frontendPathPrefix)
+    ? path.slice(frontendPathPrefix.length)
+    : ''
+  const slash = rest.indexOf('/')
+  if (slash <= 0 || slash === rest.length - 1) {
+    return null
+  }
+  const session = rest.slice(0, slash)
+  if (session === 'rpc' || session === 'entrypoint') {
+    return null
+  }
+  return session
+}
+
+// isDevFrontendResponseCacheable reports whether the dev server's caching
+// headers let a module response be reused: immutable, or revalidated by ETag.
+function isDevFrontendResponseCacheable(response: Response): boolean {
+  if (response.status !== 200) {
+    return false
+  }
+  const cacheControl = response.headers.get('Cache-Control') ?? ''
+  if (cacheControl.includes('no-store')) {
+    return false
+  }
+  return cacheControl.includes('immutable') || response.headers.has('ETag')
+}
+
+// devFrontendCache is the cache for the current development frontend session.
+let devFrontendCache: { name: string; cache: Promise<Cache> } | null = null
+
+// openDevFrontendCache opens the module cache for a compiler session and
+// deletes the caches of earlier sessions, whose URLs no page requests again.
+function openDevFrontendCache(session: string): Promise<Cache> {
+  // Reuse the open cache while the session stays the same.
+  const name = devFrontendCachePrefix + session
+  if (devFrontendCache?.name === name) {
+    return devFrontendCache.cache
+  }
+
+  // Replace the earlier session's cache with this session's.
+  const cache = (async () => {
+    for (const cacheName of await caches.keys()) {
+      if (cacheName.startsWith(devFrontendCachePrefix) && cacheName !== name) {
+        await caches.delete(cacheName)
+      }
+    }
+    return caches.open(name)
+  })()
+  devFrontendCache = { name, cache }
+  return cache
+}
+
+// fetchDevFrontendModule serves a development frontend module, reusing the
+// session cache as the dev server's headers allow: an immutable module without
+// a request, and any other cached module after an ETag revalidation that
+// answers 304 instead of sending the module again.
+async function fetchDevFrontendModule(
+  ev: FetchEvent,
+  request: Request,
+  session: string,
+  fetchRuntime: (request: Request) => Promise<Response>,
+): Promise<Response> {
+  // Serve an immutable cached module without a request; a reload skips it.
+  const cache = await openDevFrontendCache(session)
+  const cached =
+    request.cache === 'reload' || request.cache === 'no-store'
+      ? undefined
+      : await cache.match(request)
+  if (cached?.headers.get('Cache-Control')?.includes('immutable')) {
+    return cached
+  }
+
+  // Revalidate a cached module by its ETag.
+  const etag = cached?.headers.get('ETag')
+  let forwarded = request
+  if (etag) {
+    const headers = new Headers(request.headers)
+    headers.set('If-None-Match', etag)
+    forwarded = new Request(request, { headers })
+  }
+  const response = await fetchRuntime(forwarded)
+  if (response.status === 304 && cached) {
+    return cached
+  }
+  if (isDevFrontendResponseCacheable(response)) {
+    ev.waitUntil(
+      putCacheResponse(cache, request, response.clone(), {
+        cacheName: devFrontendCachePrefix + session,
+        operation: 'dev-frontend-module',
+      }),
+    )
+  }
+  return response
+}
+
 // swFetch is called when the page attempts to fetch a resource.
 export async function swFetch(
   ev: FetchEvent,
@@ -1934,6 +2043,28 @@ export async function swFetch(
     return response!
   }
 
+  // Development frontend modules go through the session module cache.
+  const devFrontendSession = parseDevFrontendSession(requestPath)
+  if (
+    devFrontendSession &&
+    request.method === 'GET' &&
+    isBrowserCacheSupportedURL(requestURL)
+  ) {
+    return fetchDevFrontendModule(ev, request, devFrontendSession, (req) =>
+      fetchFromRuntime(ev, req, source),
+    )
+  }
+  return fetchFromRuntime(ev, request, source)
+}
+
+// fetchFromRuntime forwards a same-origin Bldr request to the runtime.
+async function fetchFromRuntime(
+  ev: FetchEvent,
+  request: Request,
+  source: BrowserFetchSource,
+): Promise<Response> {
+  // Log the forwarded request in debug builds.
+  const requestPath = source.path
   if (BLDR_DEBUG) {
     console.log(
       'ServiceWorker: %s: forwarding fetch to runtime: %s',
@@ -1941,6 +2072,8 @@ export async function swFetch(
       request.url.toString(),
     )
   }
+
+  // The browser index falls back to its cached copy when the runtime fails.
   if (requestPath === browserIndexPath) {
     const response = await proxyBrowserRuntimeFetch(
       source,
@@ -1957,6 +2090,8 @@ export async function swFetch(
     }
     return response
   }
+
+  // Resolve the manifest-pinned plugin asset this request names, if any.
   const staticPluginAssetSource =
     source.path.startsWith(pluginDistPathPrefix) ||
     source.path.startsWith(pluginAssetsPathPrefix)

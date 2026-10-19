@@ -318,9 +318,9 @@ func (f *FrontendService) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, "frontend session expired", http.StatusGone)
 		return
 	}
-	rw.Header().Set("Cache-Control", "no-store")
 	if req.URL.Path == env.result.GetSession().GetRoutePrefix()+"@react-refresh" {
 		rw.Header().Set("Content-Type", "text/javascript")
+		rw.Header().Set("Cache-Control", "no-store")
 		_, _ = io.WriteString(rw, "const runtime = globalThis.__bldrReactRefresh;\n"+
 			"if (!runtime) throw new Error('Live React editing requires a Bldr development client');\n"+
 			"export const {"+refreshExports+"} = runtime; export default runtime;\n")
@@ -328,6 +328,9 @@ func (f *FrontendService) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// Forward all other requests through the environment's reverse proxy.
+	// Vite's caching headers pass through: sources revalidate by ETag, and
+	// optimized dependencies are immutable under their version query. The
+	// route prefix names the compiler session, so cached URLs never span sessions.
 	env.proxy.ServeHTTP(rw, req)
 }
 
