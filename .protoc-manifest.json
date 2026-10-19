@@ -3847,7 +3847,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/objecttype/registry": {
-      "hash": "50c6c4512823d67ebcf5f98c29606dee7423bde3de4ef121d82a9ec453d5c57f",
+      "hash": "984536a9a020bafa3892ceb3a75ee75fb39d8ad1999488b03a4a47244b94f703",
       "generatedFiles": [
         "sdk/objecttype/registry/registry.pb.go",
         "sdk/objecttype/registry/registry.pb.ts",

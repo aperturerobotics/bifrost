@@ -1,0 +1,136 @@
+package resource_objecttype_registry
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"testing"
+
+	"github.com/aperturerobotics/controllerbus/bus"
+	world_testbed "github.com/s4wave/spacewave/db/world/testbed"
+	s4wave_objecttype_registry "github.com/s4wave/spacewave/sdk/objecttype/registry"
+	"github.com/sirupsen/logrus"
+)
+
+// TestRegisteredObjectTypeDeclaresPorts registers a type with two ports through
+// the registry resource, reads the ports back through the bus lookup and
+// WatchObjectTypes, and checks the lookup is empty once the registration is
+// released.
+func TestRegisteredObjectTypeDeclaresPorts(t *testing.T) {
+	// Start the registry, its bridge controller, and a caller resource client.
+	ctx := t.Context()
+	le := logrus.NewEntry(logrus.New())
+	tb, err := world_testbed.Default(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(tb.Release)
+	registry, resources, registryClient := newRegistryResourceClient(t, ctx)
+	defer resources.Release()
+	rel, err := tb.Bus.AddController(ctx, NewBridgeController(le, tb.Bus, registry), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rel()
+
+	// Nothing is registered yet, so the lookup is empty.
+	if err := expectMetadataPorts(t, tb.Bus, "test/ported", nil); err != nil {
+		t.Fatalf("lookup before registration: %v", err)
+	}
+
+	// Register a type that declares one input and one output port.
+	ports := []*s4wave_objecttype_registry.ObjectTypePort{
+		{Name: "in", Direction: s4wave_objecttype_registry.ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_INPUT, TypeId: "test/stream"},
+		{Name: "out", Direction: s4wave_objecttype_registry.ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_OUTPUT, TypeId: "test/event"},
+	}
+	registration, err := registryClient.RegisterObjectType(ctx, &s4wave_objecttype_registry.RegisterObjectTypeRequest{
+		TypeId:   "test/ported",
+		PluginId: "test-plugin",
+		Metadata: &s4wave_objecttype_registry.ObjectTypeMetadata{DisplayName: "Ported", Ports: ports},
+	})
+	if err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	// Read the ports back through the bus lookup.
+	if err := expectMetadataPorts(t, tb.Bus, "test/ported", ports); err != nil {
+		t.Fatalf("lookup after registration: %v", err)
+	}
+	other, err := s4wave_objecttype_registry.ExLookupObjectTypeMetadata(ctx, tb.Bus, "test/other")
+	if err != nil || other != nil {
+		t.Fatalf("lookup of an unregistered type = %v, %v; want nil", other, err)
+	}
+
+	// A mutated lookup result does not change the stored registration.
+	got, err := s4wave_objecttype_registry.ExLookupObjectTypeMetadata(ctx, tb.Bus, "test/ported")
+	if err != nil || got == nil {
+		t.Fatalf("lookup: %v, %v", got, err)
+	}
+	got.Ports[0].Name = "mutated"
+	if err := expectMetadataPorts(t, tb.Bus, "test/ported", ports); err != nil {
+		t.Fatalf("lookup after mutating a result: %v", err)
+	}
+
+	// Read the same ports from the first WatchObjectTypes message.
+	watchCtx, watchCancel := context.WithCancel(ctx)
+	defer watchCancel()
+	strm, err := registryClient.WatchObjectTypes(watchCtx, &s4wave_objecttype_registry.WatchObjectTypesRequest{})
+	if err != nil {
+		t.Fatalf("watch: %v", err)
+	}
+	msg, err := strm.Recv()
+	if err != nil {
+		t.Fatalf("watch recv: %v", err)
+	}
+	if len(msg.GetRegistrations()) != 1 {
+		t.Fatalf("watched registrations = %d, want 1", len(msg.GetRegistrations()))
+	}
+	if err := comparePorts(msg.GetRegistrations()[0].GetMetadata().GetPorts(), ports); err != nil {
+		t.Fatalf("watched ports: %v", err)
+	}
+
+	// Release the registration resource and wait for the watch to show it gone.
+	resources.CreateResourceReference(registration.GetResourceId()).Release()
+	msg, err = strm.Recv()
+	if err != nil {
+		t.Fatalf("watch recv after release: %v", err)
+	}
+	if len(msg.GetRegistrations()) != 0 {
+		t.Fatalf("watched registrations after release = %d, want 0", len(msg.GetRegistrations()))
+	}
+	if err := expectMetadataPorts(t, tb.Bus, "test/ported", nil); err != nil {
+		t.Fatalf("lookup after release: %v", err)
+	}
+}
+
+// expectMetadataPorts checks the bus lookup returns want, or nothing when want is nil.
+func expectMetadataPorts(t *testing.T, b bus.Bus, typeID string, want []*s4wave_objecttype_registry.ObjectTypePort) error {
+	t.Helper()
+	got, err := s4wave_objecttype_registry.ExLookupObjectTypeMetadata(t.Context(), b, typeID)
+	if err != nil {
+		return err
+	}
+	if want == nil {
+		if got != nil {
+			return fmt.Errorf("metadata = %v, want none", got)
+		}
+		return nil
+	}
+	if got == nil {
+		return errors.New("metadata is nil, want registered metadata")
+	}
+	return comparePorts(got.GetPorts(), want)
+}
+
+// comparePorts reports the first difference between two port lists.
+func comparePorts(got, want []*s4wave_objecttype_registry.ObjectTypePort) error {
+	if len(got) != len(want) {
+		return fmt.Errorf("ports = %d, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if !got[i].EqualVT(want[i]) {
+			return fmt.Errorf("port %d = %v, want %v", i, got[i], want[i])
+		}
+	}
+	return nil
+}

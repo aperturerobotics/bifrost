@@ -25,6 +25,26 @@ enum ObjectTypeVisibility {
   OBJECT_TYPE_VISIBILITY_INTERNAL = 3;
 }
 
+// ObjectTypePortDirection selects the end of a connection an ObjectType port is.
+enum ObjectTypePortDirection {
+  // OBJECT_TYPE_PORT_DIRECTION_UNKNOWN is unset.
+  OBJECT_TYPE_PORT_DIRECTION_UNKNOWN = 0;
+  // OBJECT_TYPE_PORT_DIRECTION_INPUT accepts data or an activation.
+  OBJECT_TYPE_PORT_DIRECTION_INPUT = 1;
+  // OBJECT_TYPE_PORT_DIRECTION_OUTPUT supplies data or an activation.
+  OBJECT_TYPE_PORT_DIRECTION_OUTPUT = 2;
+}
+
+// ObjectTypePort declares a connection endpoint of every object of an ObjectType.
+message ObjectTypePort {
+  // Name is unique among the ObjectType's ports.
+  string name = 1;
+  // Direction selects whether the port accepts or supplies.
+  ObjectTypePortDirection direction = 2;
+  // TypeId is the data contract of the port, such as stream or activation.
+  string type_id = 3;
+}
+
 // ObjectTypeMetadata is user-facing metadata for an ObjectType.
 message ObjectTypeMetadata {
   // DisplayName is the readable label for the ObjectType.
@@ -35,6 +55,8 @@ message ObjectTypeMetadata {
   ObjectTypeVisibility visibility = 3;
   // Description is optional supporting copy for browsers and links.
   string description = 4;
+  // Ports declares the connection endpoints of the ObjectType's objects.
+  repeated ObjectTypePort ports = 5;
 }
 
 // ObjectTypeRegistration is a registered ObjectType.

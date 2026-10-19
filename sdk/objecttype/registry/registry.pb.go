@@ -58,6 +58,84 @@ func (x ObjectTypeVisibility) String() string {
 	return strconv.Itoa(int(x))
 }
 
+// ObjectTypePortDirection selects the end of a connection an ObjectType port is.
+type ObjectTypePortDirection int32
+
+const (
+	// OBJECT_TYPE_PORT_DIRECTION_UNKNOWN is unset.
+	ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_UNKNOWN ObjectTypePortDirection = 0
+	// OBJECT_TYPE_PORT_DIRECTION_INPUT accepts data or an activation.
+	ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_INPUT ObjectTypePortDirection = 1
+	// OBJECT_TYPE_PORT_DIRECTION_OUTPUT supplies data or an activation.
+	ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_OUTPUT ObjectTypePortDirection = 2
+)
+
+// Enum value maps for ObjectTypePortDirection.
+var (
+	ObjectTypePortDirection_name = map[int32]string{
+		0: "OBJECT_TYPE_PORT_DIRECTION_UNKNOWN",
+		1: "OBJECT_TYPE_PORT_DIRECTION_INPUT",
+		2: "OBJECT_TYPE_PORT_DIRECTION_OUTPUT",
+	}
+	ObjectTypePortDirection_value = map[string]int32{
+		"OBJECT_TYPE_PORT_DIRECTION_UNKNOWN": 0,
+		"OBJECT_TYPE_PORT_DIRECTION_INPUT":   1,
+		"OBJECT_TYPE_PORT_DIRECTION_OUTPUT":  2,
+	}
+)
+
+func (x ObjectTypePortDirection) Enum() *ObjectTypePortDirection {
+	p := new(ObjectTypePortDirection)
+	*p = x
+	return p
+}
+
+func (x ObjectTypePortDirection) String() string {
+	name, valid := ObjectTypePortDirection_name[int32(x)]
+	if valid {
+		return name
+	}
+	return strconv.Itoa(int(x))
+}
+
+// ObjectTypePort declares a connection endpoint of every object of an ObjectType.
+type ObjectTypePort struct {
+	unknownFields []byte
+	// Name is unique among the ObjectType's ports.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Direction selects whether the port accepts or supplies.
+	Direction ObjectTypePortDirection `protobuf:"varint,2,opt,name=direction,proto3" json:"direction,omitempty"`
+	// TypeId is the data contract of the port, such as stream or activation.
+	TypeId string `protobuf:"bytes,3,opt,name=type_id,json=typeId,proto3" json:"typeId,omitempty"`
+}
+
+func (x *ObjectTypePort) Reset() {
+	*x = ObjectTypePort{}
+}
+
+func (*ObjectTypePort) ProtoMessage() {}
+
+func (x *ObjectTypePort) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ObjectTypePort) GetDirection() ObjectTypePortDirection {
+	if x != nil {
+		return x.Direction
+	}
+	return ObjectTypePortDirection_OBJECT_TYPE_PORT_DIRECTION_UNKNOWN
+}
+
+func (x *ObjectTypePort) GetTypeId() string {
+	if x != nil {
+		return x.TypeId
+	}
+	return ""
+}
+
 // ObjectTypeMetadata is user-facing metadata for an ObjectType.
 type ObjectTypeMetadata struct {
 	unknownFields []byte
@@ -69,6 +147,8 @@ type ObjectTypeMetadata struct {
 	Visibility ObjectTypeVisibility `protobuf:"varint,3,opt,name=visibility,proto3" json:"visibility,omitempty"`
 	// Description is optional supporting copy for browsers and links.
 	Description string `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	// Ports declares the connection endpoints of the ObjectType's objects.
+	Ports []*ObjectTypePort `protobuf:"bytes,5,rep,name=ports,proto3" json:"ports,omitempty"`
 }
 
 func (x *ObjectTypeMetadata) Reset() {
@@ -103,6 +183,13 @@ func (x *ObjectTypeMetadata) GetDescription() string {
 		return x.Description
 	}
 	return ""
+}
+
+func (x *ObjectTypeMetadata) GetPorts() []*ObjectTypePort {
+	if x != nil {
+		return x.Ports
+	}
+	return nil
 }
 
 // ObjectTypeRegistration is a registered ObjectType.
@@ -319,6 +406,24 @@ func (x *InvokeObjectTypeResponse) GetResourceId() uint32 {
 	return 0
 }
 
+func (m *ObjectTypePort) CloneVT() *ObjectTypePort {
+	if m == nil {
+		return (*ObjectTypePort)(nil)
+	}
+	r := new(ObjectTypePort)
+	r.Name = m.Name
+	r.Direction = m.Direction
+	r.TypeId = m.TypeId
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ObjectTypePort) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *ObjectTypeMetadata) CloneVT() *ObjectTypeMetadata {
 	if m == nil {
 		return (*ObjectTypeMetadata)(nil)
@@ -328,6 +433,7 @@ func (m *ObjectTypeMetadata) CloneVT() *ObjectTypeMetadata {
 	r.IconName = m.IconName
 	r.Visibility = m.Visibility
 	r.Description = m.Description
+	r.Ports = protobuf_go_lite.CloneVTSlice(m.Ports)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -458,6 +564,32 @@ func (m *InvokeObjectTypeResponse) CloneMessageVT() protobuf_go_lite.CloneMessag
 	return m.CloneVT()
 }
 
+func (this *ObjectTypePort) EqualVT(that *ObjectTypePort) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Name != that.Name {
+		return false
+	}
+	if this.Direction != that.Direction {
+		return false
+	}
+	if this.TypeId != that.TypeId {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ObjectTypePort) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ObjectTypePort)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 func (this *ObjectTypeMetadata) EqualVT(that *ObjectTypeMetadata) bool {
 	if this == that {
 		return true
@@ -474,6 +606,9 @@ func (this *ObjectTypeMetadata) EqualVT(that *ObjectTypeMetadata) bool {
 		return false
 	}
 	if this.Description != that.Description {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Ports, that.Ports, func() *ObjectTypePort { return &ObjectTypePort{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -691,6 +826,104 @@ func (x *ObjectTypeVisibility) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the ObjectTypePortDirection to JSON.
+func (x ObjectTypePortDirection) MarshalProtoJSON(s *json.MarshalState) {
+	s.WriteEnum(int32(x), ObjectTypePortDirection_name)
+}
+
+// MarshalText marshals the ObjectTypePortDirection to text.
+func (x ObjectTypePortDirection) MarshalText() ([]byte, error) {
+	return []byte(json.GetEnumString(int32(x), ObjectTypePortDirection_name)), nil
+}
+
+// MarshalJSON marshals the ObjectTypePortDirection to JSON.
+func (x ObjectTypePortDirection) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ObjectTypePortDirection from JSON.
+func (x *ObjectTypePortDirection) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	v := s.ReadEnum(ObjectTypePortDirection_value)
+	if err := s.Err(); err != nil {
+		s.SetErrorf("could not read ObjectTypePortDirection enum: %v", err)
+		return
+	}
+	*x = ObjectTypePortDirection(v)
+}
+
+// UnmarshalText unmarshals the ObjectTypePortDirection from text.
+func (x *ObjectTypePortDirection) UnmarshalText(b []byte) error {
+	i, err := json.ParseEnumString(string(b), ObjectTypePortDirection_value)
+	if err != nil {
+		return err
+	}
+	*x = ObjectTypePortDirection(i)
+	return nil
+}
+
+// UnmarshalJSON unmarshals the ObjectTypePortDirection from JSON.
+func (x *ObjectTypePortDirection) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the ObjectTypePort message to JSON.
+func (x *ObjectTypePort) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Name != "" || s.HasField("name") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("name")
+		s.WriteString(x.Name)
+	}
+	if x.Direction != 0 || s.HasField("direction") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("direction")
+		x.Direction.MarshalProtoJSON(s)
+	}
+	if x.TypeId != "" || s.HasField("typeId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("typeId")
+		s.WriteString(x.TypeId)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ObjectTypePort to JSON.
+func (x *ObjectTypePort) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ObjectTypePort message from JSON.
+func (x *ObjectTypePort) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "name":
+			s.AddField("name")
+			x.Name = s.ReadString()
+		case "direction":
+			s.AddField("direction")
+			x.Direction.UnmarshalProtoJSON(s)
+		case "type_id", "typeId":
+			s.AddField("type_id")
+			x.TypeId = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ObjectTypePort from JSON.
+func (x *ObjectTypePort) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the ObjectTypeMetadata message to JSON.
 func (x *ObjectTypeMetadata) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -718,6 +951,17 @@ func (x *ObjectTypeMetadata) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("description")
 		s.WriteString(x.Description)
+	}
+	if len(x.Ports) > 0 || s.HasField("ports") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("ports")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Ports {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("ports"))
+		}
+		s.WriteArrayEnd()
 	}
 	s.WriteObjectEnd()
 }
@@ -748,6 +992,24 @@ func (x *ObjectTypeMetadata) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "description":
 			s.AddField("description")
 			x.Description = s.ReadString()
+		case "ports":
+			s.AddField("ports")
+			if s.ReadNil() {
+				x.Ports = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Ports = append(x.Ports, nil)
+					return
+				}
+				v := &ObjectTypePort{}
+				v.UnmarshalProtoJSON(s.WithField("ports", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Ports = append(x.Ports, v)
+			})
 		}
 	})
 }
@@ -1144,6 +1406,53 @@ func (x *InvokeObjectTypeResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+func (m *ObjectTypePort) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ObjectTypePort) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ObjectTypePort) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.TypeId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.TypeId)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Direction != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Direction))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Name) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Name)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *ObjectTypeMetadata) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -1172,6 +1481,18 @@ func (m *ObjectTypeMetadata) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Ports) > 0 {
+		for iNdEx := len(m.Ports) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Ports[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x2a
+		}
 	}
 	if len(m.Description) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Description)
@@ -1512,6 +1833,19 @@ func (m *InvokeObjectTypeResponse) MarshalToSizedBufferVT(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
+func (m *ObjectTypePort) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Name)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Direction)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.TypeId)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *ObjectTypeMetadata) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -1522,6 +1856,10 @@ func (m *ObjectTypeMetadata) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.IconName)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Visibility)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Description)
+	for _, e := range m.Ports {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -1624,6 +1962,32 @@ func (x ObjectTypeVisibility) MarshalProtoText() string {
 	return x.String()
 }
 
+func (x ObjectTypePortDirection) MarshalProtoText() string {
+	return x.String()
+}
+
+func (x *ObjectTypePort) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ObjectTypePort")
+	if x.Name != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "name")
+		protobuf_go_lite.TextWriteString(&sb, x.Name)
+	}
+	if x.Direction != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "direction")
+		protobuf_go_lite.TextWriteStringer(&sb, ObjectTypePortDirection(x.Direction))
+	}
+	if x.TypeId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "type_id")
+		protobuf_go_lite.TextWriteString(&sb, x.TypeId)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ObjectTypePort) String() string {
+	return x.MarshalProtoText()
+}
+
 func (x *ObjectTypeMetadata) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ObjectTypeMetadata")
@@ -1642,6 +2006,18 @@ func (x *ObjectTypeMetadata) MarshalProtoText() string {
 	if x.Description != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "description")
 		protobuf_go_lite.TextWriteString(&sb, x.Description)
+	}
+	if len(x.Ports) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "ports")
+		for i, v := range x.Ports {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &ObjectTypePort{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1788,6 +2164,80 @@ func (x *InvokeObjectTypeResponse) String() string {
 	return x.MarshalProtoText()
 }
 
+func (m *ObjectTypePort) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ObjectTypePort: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ObjectTypePort: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Name = v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Direction", wireType)
+			}
+			m.Direction = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.Direction = ObjectTypePortDirection(_v)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TypeId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.TypeId = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
 func (m *ObjectTypeMetadata) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1849,6 +2299,19 @@ func (m *ObjectTypeMetadata) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Description = v
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ports", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Ports = append(m.Ports, &ObjectTypePort{})
+			if err := m.Ports[len(m.Ports)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

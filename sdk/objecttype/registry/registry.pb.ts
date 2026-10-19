@@ -44,6 +44,67 @@ export const ObjectTypeVisibility_Enum = /* @__PURE__ */ createEnumType(
 )
 
 /**
+ * ObjectTypePortDirection selects the end of a connection an ObjectType port is.
+ *
+ * @generated from enum s4wave.objecttype.registry.ObjectTypePortDirection
+ */
+export enum ObjectTypePortDirection {
+  /**
+   * OBJECT_TYPE_PORT_DIRECTION_UNKNOWN is unset.
+   */
+  UNKNOWN = 0,
+
+  /**
+   * OBJECT_TYPE_PORT_DIRECTION_INPUT accepts data or an activation.
+   */
+  INPUT = 1,
+
+  /**
+   * OBJECT_TYPE_PORT_DIRECTION_OUTPUT supplies data or an activation.
+   */
+  OUTPUT = 2,
+}
+
+export const ObjectTypePortDirection_Enum = /* @__PURE__ */ createEnumType(
+  's4wave.objecttype.registry.ObjectTypePortDirection',
+  [
+    [0, 'OBJECT_TYPE_PORT_DIRECTION_UNKNOWN'],
+    [1, 'OBJECT_TYPE_PORT_DIRECTION_INPUT'],
+    [2, 'OBJECT_TYPE_PORT_DIRECTION_OUTPUT'],
+  ],
+)
+
+/**
+ * ObjectTypePort declares a connection endpoint of every object of an ObjectType.
+ *
+ * @generated from message s4wave.objecttype.registry.ObjectTypePort
+ */
+export interface ObjectTypePort {
+  /**
+   * Name is unique among the ObjectType's ports.
+   */
+  name?: string
+  /**
+   * Direction selects whether the port accepts or supplies.
+   */
+  direction?: ObjectTypePortDirection
+  /**
+   * TypeId is the data contract of the port, such as stream or activation.
+   */
+  typeId?: string
+}
+
+export const ObjectTypePort: MessageType<ObjectTypePort> =
+  /* @__PURE__ */ createMessageType<ObjectTypePort>(
+    's4wave.objecttype.registry.ObjectTypePort',
+    () => [
+      [1, 'name', 9],
+      [2, 'direction', 14, 0, ObjectTypePortDirection_Enum],
+      [3, 'type_id', 9],
+    ],
+  )
+
+/**
  * ObjectTypeMetadata is user-facing metadata for an ObjectType.
  *
  * @generated from message s4wave.objecttype.registry.ObjectTypeMetadata
@@ -65,6 +126,10 @@ export interface ObjectTypeMetadata {
    * Description is optional supporting copy for browsers and links.
    */
   description?: string
+  /**
+   * Ports declares the connection endpoints of the ObjectType's objects.
+   */
+  ports?: ObjectTypePort[]
 }
 
 export const ObjectTypeMetadata: MessageType<ObjectTypeMetadata> =
@@ -75,6 +140,7 @@ export const ObjectTypeMetadata: MessageType<ObjectTypeMetadata> =
       [2, 'icon_name', 9],
       [3, 'visibility', 14, 0, ObjectTypeVisibility_Enum],
       [4, 'description', 9],
+      [5, 'ports', 11, 1, ObjectTypePort.codec],
     ],
   )
 
