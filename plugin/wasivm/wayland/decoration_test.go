@@ -88,7 +88,10 @@ func TestFrameButtons(t *testing.T) {
 		t.Fatalf("restored at %v, want 48x32", size)
 	}
 	c.draw(w, 48, 32, bufRed)
-	tc.awaitPixel(image.Pt(4, titleHeight), background)
+	tc.awaitScene("the restored frame", func(sc *s4wave_vm.WasiVmScene) bool {
+		f := sc.GetFrames().GetFrames()
+		return len(f) == 1 && !f[0].GetMaximized() && f[0].GetWidth() == 48
+	})
 	tc.awaitPixel(at, red)
 
 	// A press on close released off it does nothing; a click on it asks
@@ -156,6 +159,42 @@ func TestClientSideDecorations(t *testing.T) {
 	tc.pointer(at.X+24, at.Y, 0)
 	c.roundtrip()
 	tc.awaitPixel(at, red)
+}
+
+// TestOrphanedDecoration checks a decoration kept after its toplevel is
+// destroyed no longer acts, so it cannot configure the surface's next
+// toplevel.
+func TestOrphanedDecoration(t *testing.T) {
+	// Map a decorated window, then destroy its toplevel and keep the
+	// decoration.
+	tc := newTestCompositor(t, 160, 120)
+	c := tc.connect()
+	w := c.newWindow()
+	decoration := c.newID()
+	c.request(newEvent(idDecorations, decorationManagerGetToplevelDecoration).uint(decoration).uint(w.toplevel))
+	c.mapWindow(w, 48, 32, bufRed, decoration)
+	c.request(newEvent(w.toplevel, toplevelDestroy))
+
+	// Give the surface a new toplevel and wait for its first configure.
+	next := c.newID()
+	c.request(newEvent(w.xdg, xdgSurfaceGetToplevel).uint(next))
+	c.request(newEvent(w.surface, surfaceCommit))
+	c.awaitStates(next)
+	c.await(w.xdg, xdgSurfaceConfigure)
+
+	// A mode set on the old decoration configures nothing.
+	c.request(newEvent(decoration, decorationSetMode).uint(decorationClientSide))
+	sync := c.newID()
+	c.request(newEvent(1, displaySync).uint(sync))
+	for {
+		id, op, _ := c.next()
+		if id == sync && op == callbackDone {
+			break
+		}
+		if id == next || id == w.xdg || id == decoration {
+			t.Fatalf("object %d got event %d after its old decoration set a mode", id, op)
+		}
+	}
 }
 
 // awaitFrame applies the viewer's updates until the scene shows one frame,

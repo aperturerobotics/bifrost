@@ -380,11 +380,17 @@ func (t *toplevel) request(op uint16, m *message) error {
 	c := x.s.c
 	switch op {
 	case toplevelDestroy:
-		// Unmap the window, then forget the role.
+		// Unmap the window, then forget the role. A decoration the client
+		// keeps no longer acts, so it cannot configure a later role.
+		var decoration uint32
 		c.comp.update(func() {
 			c.comp.unmap(x.s)
 			x.toplevel, x.configured = nil, false
+			decoration = t.decoration
 		})
+		if decoration != 0 {
+			c.objects[decoration] = c.inert(decoration, decorationDestroy)
+		}
 		c.destroy(t.id)
 	case toplevelSetTitle:
 		title := m.string()

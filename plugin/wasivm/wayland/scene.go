@@ -293,9 +293,9 @@ func (c *Compositor) hitAt(sp *space, pt image.Point) (*surface, frameHit) {
 
 // readScene returns what the view v of the space sp lacks as a scene
 // update, or nil when it lacks nothing: the screen, layers, roots, grab and
-// frames when they differ from those last sent, and the damaged areas of each texture,
-// all of a new or resized one. It forgets the textures of the surfaces no
-// longer shown. The caller holds the lock.
+// frames when they differ from those last sent, and the damaged areas of
+// each texture, all of a new or resized one. It forgets the textures of the
+// surfaces no longer shown. The caller holds the lock.
 func (c *Compositor) readScene(sp *space, v *view) *s4wave_vm.WasiVmScene {
 	// Describe the screen.
 	u := &s4wave_vm.WasiVmScene{}

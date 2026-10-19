@@ -12,8 +12,8 @@ import (
 const maxDamage = 16
 
 // view is what one viewer has of a space's scene: the screen, layers, roots,
-// grab and frames last sent, and the texture of each layer. The compositor's lock
-// guards it.
+// grab and frames last sent, and the texture of each layer. The
+// compositor's lock guards it.
 type view struct {
 	// screen is the screen last sent, or nil.
 	screen *s4wave_vm.WasiVmSceneScreen

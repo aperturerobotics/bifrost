@@ -10,9 +10,9 @@
 // maximize buttons, and a band around it that resizes the window. A press
 // raises and activates the window under the pointer, which then holds the
 // keyboard. A press on a title bar, or a client's move or resize request,
-// drags the window with the pointer. Layer shell clients draw the rest of the desktop, such as a
-// wallpaper, a panel or a launcher, below or above the windows, and an
-// exclusive zone keeps the windows off a panel's edge.
+// drags the window with the pointer. Layer shell clients draw the rest of
+// the desktop, such as a wallpaper, a panel or a launcher, below or above
+// the windows, and an exclusive zone keeps the windows off a panel's edge.
 package wayland
 
 import (

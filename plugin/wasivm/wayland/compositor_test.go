@@ -146,8 +146,8 @@ func rootAt(sc *s4wave_vm.WasiVmScene, id uint32) (image.Point, bool) {
 }
 
 // apply applies the update u as the browser viewer does: the screen, the
-// layers, the roots, the grab and the frames it sets, then its patches, and draws the
-// scene.
+// layers, the roots, the grab and the frames it sets, then its patches, and
+// draws the scene.
 func (tc *testView) apply(u *s4wave_vm.WasiVmScene) {
 	// Take the screen, the layers and the roots, dropping the textures of
 	// layers gone and giving a resized layer a new texture.

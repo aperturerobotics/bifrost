@@ -146,8 +146,8 @@ export function WasiVmDisplay({
   onPaneSize,
 }: WasiVmDisplayProps) {
   // Hold the elements, the input stream, the last scene's screen, the
-  // scene's pointer and buttons, and each held key's keysym by code, so a release sends
-  // the keysym its press sent after a modifier changes.
+  // scene's pointer and buttons, and each held key's keysym by code, so a
+  // release sends the keysym its press sent after a modifier changes.
   const paneRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const inputRef = useRef<Pushable<WasiVmDisplayInput> | null>(null)
