@@ -22,6 +22,70 @@ func JobKey(runKey string) string {
 	return runKey + "/job"
 }
 
+// StandingRunKey returns the object key of a Flowgraph's standing run. It is
+// derived from the Flowgraph key alone, so every Device finds the same run.
+func StandingRunKey(flowgraphKey string) string {
+	return flowgraphKey + "/standing-run"
+}
+
+// StartOption changes how StartRun creates a run.
+type StartOption func(*startOptions)
+
+// startOptions holds the options of one StartRun call.
+type startOptions struct {
+	// standing creates the graph's standing run.
+	standing bool
+}
+
+// Standing makes StartRun create the Flowgraph's standing run: the one run
+// its event sources feed. The run is never COMPLETE and keeps no done
+// activation. A graph has at most one, under StandingRunKey, so StartRun
+// requires that key and fails when the run exists. Use StandingRun to find or
+// create it.
+func Standing() StartOption {
+	return func(o *startOptions) { o.standing = true }
+}
+
+// StandingRun returns the key of a Flowgraph's standing run, creating the run
+// when it does not exist yet. Call it in a write transaction: Devices that
+// race to create the run commit one transaction after another, and the later
+// one replays and finds the run the first made. Only the creating call reads
+// clusterKey and placement.
+func StandingRun(
+	ctx context.Context,
+	ws world.WorldState,
+	sender peer.ID,
+	flowgraphKey, clusterKey string,
+	placement *forge_worker.Placement,
+) (string, error) {
+	runKey, found, err := FindStandingRun(ctx, ws, flowgraphKey)
+	if err != nil || found {
+		return runKey, err
+	}
+	err = StartRun(ctx, ws, sender, runKey, flowgraphKey, clusterKey, placement, Standing())
+	return runKey, err
+}
+
+// FindStandingRun looks up a Flowgraph's standing run. It returns the key the
+// run has or would have, and whether the run exists. An object under that key
+// that is not a standing run is an error.
+func FindStandingRun(ctx context.Context, ws world.WorldState, flowgraphKey string) (string, bool, error) {
+	runKey := StandingRunKey(flowgraphKey)
+	_, found, err := ws.GetObject(ctx, runKey)
+	if err != nil || !found {
+		return runKey, false, err
+	}
+	obj, run, _, err := readRun(ctx, ws, runKey)
+	world.ReleaseObjectState(obj)
+	if err != nil {
+		return runKey, false, err
+	}
+	if !run.GetStanding() || run.GetFlowgraphKey() != flowgraphKey {
+		return runKey, false, errors.Errorf("object %q is not the standing run of flowgraph %q", runKey, flowgraphKey)
+	}
+	return runKey, true, nil
+}
+
 // StartRun creates a run of a Flowgraph's current revision. The run gets a new
 // Job assigned to the Cluster, and each Step without connected inputs gets a
 // start arrival. Call it in a write transaction; the run controller for runKey
@@ -32,7 +96,17 @@ func StartRun(
 	sender peer.ID,
 	runKey, flowgraphKey, clusterKey string,
 	placement *forge_worker.Placement,
+	opts ...StartOption,
 ) error {
+	// Require the standing run's derived key.
+	var options startOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+	if options.standing && runKey != StandingRunKey(flowgraphKey) {
+		return errors.Errorf("standing run key %q, want %q", runKey, StandingRunKey(flowgraphKey))
+	}
+
 	// Read the Flowgraph revision the run pins.
 	snapshot, err := s4wave_flowgraph.ReadFlowgraph(ctx, ws, flowgraphKey)
 	if err != nil {
@@ -56,6 +130,7 @@ func StartRun(
 		FlowgraphKey: flowgraphKey,
 		JobKey:       jobKey,
 		State:        s4wave_flowgraph.FlowgraphRunState_FLOWGRAPH_RUN_STATE_RUNNING,
+		Standing:     options.standing,
 	}
 	for _, id := range slices.Sorted(maps.Keys(graph.GetNodes())) {
 		if graph.GetNodes()[id].GetStep() != nil && len(inputPorts(graph, id)) == 0 {

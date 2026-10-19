@@ -102,8 +102,15 @@ func readRun(ctx context.Context, ws world.WorldState, runKey string) (
 
 // route marks each completed activation done and delivers its chosen output
 // along the chosen port's connections. A failed activation requeues its inputs
-// and pauses the run at its Step.
+// and pauses the run at its Step. A standing run then drops the activations it
+// routed: their Tasks and the Job keep the record, so the run holds only the
+// activations still running.
 func (r *runner) route(ctx context.Context) error {
+	if r.run.GetStanding() {
+		defer func() {
+			r.run.Activations = slices.DeleteFunc(r.run.Activations, (*s4wave_flowgraph.FlowgraphActivation).GetDone)
+		}()
+	}
 	for _, activation := range r.run.GetActivations() {
 		// Skip routed activations and Tasks that are still running.
 		if activation.GetDone() {
@@ -346,8 +353,10 @@ func (r *runner) activate(
 	if err != nil {
 		return err
 	}
-	name := "a" + strconv.Itoa(len(r.run.GetActivations()))
-	taskKey := forge_job.NewJobTaskKey(jobKey, name)
+	name, taskKey, err := r.newTaskName(ctx, jobKey)
+	if err != nil {
+		return err
+	}
 	obj, _, err := forge_task.CreateTaskWithTarget(ctx, r.ws, "", taskKey, name, target, "", 1, job.GetPlacement(), timestamp.Now())
 	world.ReleaseObjectState(obj)
 	if err != nil {
@@ -370,6 +379,32 @@ func (r *runner) activate(
 	})
 	r.visits(nodeID).Count++
 	return nil
+}
+
+// newTaskName returns the name and key of the Job's next Task. A standing run
+// drops routed activations, so the count of activations alone would reuse a
+// name: the search starts at the larger of that count and the visits, and
+// skips names whose Task exists.
+func (r *runner) newTaskName(ctx context.Context, jobKey string) (string, string, error) {
+	n := len(r.run.GetActivations())
+	var visits int
+	for _, v := range r.run.GetVisits() {
+		visits += int(v.GetCount())
+	}
+	n = max(n, visits)
+	for {
+		name := "a" + strconv.Itoa(n)
+		taskKey := forge_job.NewJobTaskKey(jobKey, name)
+		obj, found, err := r.ws.GetObject(ctx, taskKey)
+		world.ReleaseObjectState(obj)
+		if err != nil {
+			return "", "", err
+		}
+		if !found {
+			return name, taskKey, nil
+		}
+		n++
+	}
 }
 
 // arrivalInput returns the Forge input that reads an arrival at its port: the
@@ -402,9 +437,11 @@ func arrivalInput(arrival *s4wave_flowgraph.FlowgraphArrival) *forge_target.Inpu
 }
 
 // settle completes a running run with nothing running or waiting, and pauses
-// one whose waiting inputs can no longer meet.
+// one whose waiting inputs can no longer meet. A standing run does neither:
+// it is never COMPLETE, and an arrival waiting at a joined Step is the next
+// event's partner, not a stuck input.
 func (r *runner) settle() {
-	if r.run.GetState() != s4wave_flowgraph.FlowgraphRunState_FLOWGRAPH_RUN_STATE_RUNNING || len(r.running()) != 0 {
+	if r.run.GetStanding() || r.run.GetState() != s4wave_flowgraph.FlowgraphRunState_FLOWGRAPH_RUN_STATE_RUNNING || len(r.running()) != 0 {
 		return
 	}
 	if arrivals := r.run.GetArrivals(); len(arrivals) != 0 {
