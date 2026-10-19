@@ -433,10 +433,14 @@ func leanSyncHandshake(t *testing.T, seed uint64, variant int, keys []crypto.Pri
 			}
 			_, err = exchangeMessage(session, remoteTransport < localTransport, authorization)
 			if err != nil || !run.stream {
+				right.Close()
 				return err
 			}
 
 			// A successful owner emits its initial head; any rejected startup closes instead.
+			// A refusing owner may wait for a config suffix from this side, so bound the read
+			// and close like a peer that has no newer config to offer.
+			_ = right.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
 			message := &SOSyncMessage{}
 			err = session.RecvMsg(message)
 			right.Close()
