@@ -57,7 +57,10 @@ message ChatMessageInfo {
   .google.protobuf.Timestamp created_at = 4;
   // ReplyToKey is the key of the message being replied to.
   string reply_to_key = 5;
-  // Index is the immutable zero-based position in the channel history.
+  // Index is the zero-based position in the channel history as this replica
+  // has replayed it. A write from another member that settles earlier in the
+  // history moves later messages to higher indexes, so object_key identifies a
+  // message and an index holds only until the history order changes.
   uint64 index = 6;
   // Content is the full typed message content, including ciphertext envelopes.
   .spacewave.chat.ChatMessageContent content = 7;

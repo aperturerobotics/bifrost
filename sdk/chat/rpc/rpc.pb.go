@@ -62,7 +62,10 @@ type ChatMessageInfo struct {
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"createdAt,omitempty"`
 	// ReplyToKey is the key of the message being replied to.
 	ReplyToKey string `protobuf:"bytes,5,opt,name=reply_to_key,json=replyToKey,proto3" json:"replyToKey,omitempty"`
-	// Index is the immutable zero-based position in the channel history.
+	// Index is the zero-based position in the channel history as this replica
+	// has replayed it. A write from another member that settles earlier in the
+	// history moves later messages to higher indexes, so object_key identifies a
+	// message and an index holds only until the history order changes.
 	Index uint64 `protobuf:"varint,6,opt,name=index,proto3" json:"index,omitempty"`
 	// Content is the full typed message content, including ciphertext envelopes.
 	Content *content.ChatMessageContent `protobuf:"bytes,7,opt,name=content,proto3" json:"content,omitempty"`

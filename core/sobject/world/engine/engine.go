@@ -226,6 +226,9 @@ type soEngine struct {
 // newSoEngine constructs the shared object engine. lifetime bounds the commits
 // the engine finishes after their callers stop waiting.
 func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObject, engine *blkEngine, replay *replayer) *soEngine {
+	// The engine serves the World the replay reached, and replay must not
+	// leave it for a World behind it.
+	replay.served = true
 	e := &soEngine{
 		lifetime:       lifetime,
 		c:              c,
@@ -459,8 +462,10 @@ func (e *soEngine) advance(ctx context.Context, snap sobject.SharedObjectStateSn
 // leader's checkpoint instead of replaying. fork, when set, supplies the World
 // after a local write. When replay stops at an operation whose block is not
 // available, install installs the World before it and returns the replay's
-// error, so the next advance resumes at that operation. The caller holds the
-// writer lock.
+// error, so the next advance resumes at that operation. It installs nothing
+// when that World would lack an operation the installed World applied: the
+// installed World stays until replay places every such operation. The caller
+// holds the writer lock.
 func (e *soEngine) install(ctx context.Context, snap sobject.SharedObjectStateSnapshot, fork *replayFork, follow bool) ([]replayOutcome, error) {
 	// Reach and install the World.
 	state, outcomes, err := e.reach(ctx, snap, fork, follow)

@@ -124,6 +124,11 @@ type replayer struct {
 	// it holds. saved makes them span and spanLen.
 	next    *block.BlockRef
 	nextLen int
+	// served is set when positions are the replay of the World an engine
+	// serves. A replay that stops at an unavailable block then keeps that
+	// World and its positions when the stop would leave out an operation the
+	// World applied, instead of serving a World behind it.
+	served bool
 }
 
 // newReplayer constructs a replayer for the World of so.
@@ -136,7 +141,9 @@ func newReplayer(c *Controller, so sobject.SharedObject) *replayer {
 // supplies the World after a local write in place of replaying it. When a block
 // an operation needs is not available, replay stops at that operation and sync
 // returns the World before it with an error block.IsNotAvailable reports; the
-// next sync resumes at the same operation. Reads do not wait for a peer to
+// next sync resumes at the same operation. A served replay that would return a
+// World behind the one it serves returns no World instead, and keeps its
+// positions. Reads do not wait for a peer to
 // connect, since the caller holds the writer lock: a block only an absent peer
 // holds stops replay and is recorded in missing.
 func (r *replayer) sync(ctx context.Context, snap sobject.SharedObjectStateSnapshot, fork *replayFork) (*InnerState, []replayOutcome, error) {
@@ -596,6 +603,13 @@ func (r *replayer) replay(
 	for n < len(order) && n < len(r.positions) && bytes.Equal(order[n], r.positions[n].outcome.hash) {
 		n++
 	}
+
+	// Remember the rest of a served replay, which a stop behind it restores.
+	var dropped []replayPosition
+	changed, deferred, span, spanLen := r.changed, r.deferred, r.span, r.spanLen
+	if r.served {
+		dropped = slices.Clone(r.positions[n:])
+	}
 	if n != len(r.positions) || n != len(order) {
 		// Defer the save of a published fork appended to a saved replay.
 		adopted := fork != nil && fork.published && fork.base == r.base &&
@@ -643,7 +657,15 @@ func (r *replayer) replay(
 					r.positions = nil
 					return r.replay(ctx, snap, set, nil)
 				}
-				return state, nil, errors.Wrapf(opErr, "replay stopped at operation %d (nonce %d of %s)", n+i, inner.GetNonce(), inner.GetPeerId())
+				stopErr := errors.Wrapf(opErr, "replay stopped at operation %d (nonce %d of %s)", n+i, inner.GetNonce(), inner.GetPeerId())
+				if r.leavesOut(set, dropped, n) {
+					r.c.le.WithError(stopErr).Warn("replay stopped behind the served World, keeping the served World")
+					r.positions = append(r.positions[:n], dropped...)
+					r.changed, r.deferred, r.span, r.spanLen = changed, deferred, span, spanLen
+					return nil, nil, stopErr
+				}
+				r.c.le.WithError(stopErr).Warn("replay stopped at an operation whose block is not available")
+				return state, nil, stopErr
 			}
 			if opErr != nil {
 				return nil, nil, opErr
@@ -668,6 +690,30 @@ func (r *replayer) replay(
 		outcomes[i] = pos.outcome
 	}
 	return state, outcomes, nil
+}
+
+// leavesOut reports whether the positions placed from index n lack an
+// operation that dropped, the positions the replay held from n, applied. The
+// World after them is then behind the World of dropped: the operation's effect
+// is missing from it until replay places the operation again. An
+// acknowledgment applies nothing.
+func (r *replayer) leavesOut(set *sobject.SOOperationSet, dropped []replayPosition, n int) bool {
+	if len(dropped) == 0 {
+		return false
+	}
+	placed := make(map[string]struct{}, len(r.positions)-n)
+	for _, pos := range r.positions[n:] {
+		placed[string(pos.outcome.hash)] = struct{}{}
+	}
+	for _, pos := range dropped {
+		if pos.outcome.reason != "" || set.Get(pos.outcome.hash).IsAcknowledgment() {
+			continue
+		}
+		if _, ok := placed[string(pos.outcome.hash)]; !ok {
+			return true
+		}
+	}
+	return false
 }
 
 // worldLost reports whether the root block of the World state is missing from

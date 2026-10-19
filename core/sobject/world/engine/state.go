@@ -138,7 +138,6 @@ func (c *Controller) executeWatchSOStateOnce(
 	// Replay, waiting out a block that is not available.
 	_, err := soEngine.advance(ctx, snap, nil)
 	if block.IsNotAvailable(err) {
-		c.le.WithError(err).Warn("replay waits for a block that is not available")
 		return nil
 	}
 	return err

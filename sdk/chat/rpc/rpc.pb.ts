@@ -67,7 +67,10 @@ export interface ChatMessageInfo {
    */
   replyToKey?: string
   /**
-   * Index is the immutable zero-based position in the channel history.
+   * Index is the zero-based position in the channel history as this replica
+   * has replayed it. A write from another member that settles earlier in the
+   * history moves later messages to higher indexes, so object_key identifies a
+   * message and an index holds only until the history order changes.
    */
   index?: bigint
   /**

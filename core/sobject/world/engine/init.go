@@ -48,9 +48,7 @@ func (c *Controller) waitWorldInit(
 		}
 		state, _, err := replay.sync(ctx, snap, nil)
 		stalled := state != nil && block.IsNotAvailable(err)
-		if stalled {
-			c.le.WithError(err).Warn("replay waits for a block that is not available")
-		} else if err != nil {
+		if err != nil && !stalled {
 			return nil, err
 		}
 		if head := state.GetHeadRef(); !head.GetEmpty() {
