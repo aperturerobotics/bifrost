@@ -89,3 +89,22 @@ func TestFlowgraphNodeObjectBinding(t *testing.T) {
 		t.Fatalf("unbound state = %q", got)
 	}
 }
+
+// TestFlowgraphNodeKeyed sets a Step keyed from its flag and rejects the flag
+// on a node that is not a Step.
+func TestFlowgraphNodeKeyed(t *testing.T) {
+	// A Step is unkeyed unless the flag is set.
+	node, err := (&flowgraphNodeSetArgs{typeID: flowgraph.StepNodeTypeID}).buildNode()
+	if err != nil || node.GetStep().GetKeyed() {
+		t.Fatalf("Step without --keyed = %v, %v", node, err)
+	}
+	node, err = (&flowgraphNodeSetArgs{typeID: flowgraph.StepNodeTypeID, keyed: true}).buildNode()
+	if err != nil || !node.GetStep().GetKeyed() {
+		t.Fatalf("Step with --keyed = %v, %v", node, err)
+	}
+
+	// A Device node has no Step to key.
+	if _, err := (&flowgraphNodeSetArgs{typeID: flowgraph.TCPPortNodeTypeID, keyed: true}).buildNode(); err == nil {
+		t.Fatal("Device node accepted --keyed")
+	}
+}

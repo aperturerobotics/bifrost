@@ -102,9 +102,11 @@ func readRun(ctx context.Context, ws world.WorldState, runKey string) (
 
 // route marks each completed activation done and delivers its chosen output
 // along the chosen port's connections. A failed activation requeues its inputs
-// and pauses the run at its Step. A standing run then drops the activations it
-// routed: their Tasks and the Job keep the record, so the run holds only the
-// activations still running.
+// and pauses the run at its Step. Either way, the live inputs the activation
+// never acknowledged return to the arrivals with their keys, so the next
+// readiness pass starts a successor that receives them. A standing run then
+// drops the activations it routed: their Tasks and the Job keep the record, so
+// the run holds only the activations still running.
 func (r *runner) route(ctx context.Context) error {
 	if r.run.GetStanding() {
 		defer func() {
@@ -132,9 +134,11 @@ func (r *runner) route(ctx context.Context) error {
 		activation.Done = true
 		if failure != "" {
 			r.run.Arrivals = append(r.run.Arrivals, activation.GetInputs()...)
+			r.returnInbox(activation)
 			r.pause(activation.GetNodeId(), failure)
 			continue
 		}
+		r.returnInbox(activation)
 
 		// Record the spend and deliver the chosen output.
 		activation.Output = port
@@ -242,7 +246,10 @@ func outgoing(graph *s4wave_flowgraph.Flowgraph, nodeID string) []*s4wave_flowgr
 
 // start activates each ready Step while the run is running. A Step is ready
 // when every connected input port has an arrival, so a Step joins its inbound
-// branches; a Step with no connected input is ready on a start arrival.
+// branches; a Step with no connected input is ready on a start arrival. A
+// keyed Step is ready per key: its ports are met by arrivals that carry one
+// key, and an arrival for a key with a running activation goes to that
+// activation's inbox, in any run state.
 func (r *runner) start(ctx context.Context) error {
 	nodes := r.graph.GetNodes()
 	for _, id := range slices.Sorted(maps.Keys(nodes)) {
@@ -254,16 +261,22 @@ func (r *runner) start(ctx context.Context) error {
 
 		// Activate the Step once per complete set of inputs.
 		ports := inputPorts(r.graph, id)
-		for r.run.GetState() == s4wave_flowgraph.FlowgraphRunState_FLOWGRAPH_RUN_STATE_RUNNING {
-			taken := r.ready(id, ports)
+		for {
+			if step.GetKeyed() {
+				r.deliverLive(id)
+			}
+			if r.run.GetState() != s4wave_flowgraph.FlowgraphRunState_FLOWGRAPH_RUN_STATE_RUNNING {
+				break
+			}
+			taken, key := r.ready(id, ports, step.GetKeyed())
 			if taken == nil {
 				break
 			}
 			if reason := r.blocked(id, step); reason != "" {
 				r.pause(id, reason)
-				return nil
+				break
 			}
-			if err := r.activate(ctx, id, step, r.consume(taken)); err != nil {
+			if err := r.activate(ctx, id, step, key, r.consume(taken)); err != nil {
 				return err
 			}
 		}
@@ -271,26 +284,47 @@ func (r *runner) start(ctx context.Context) error {
 	return nil
 }
 
-// ready returns the indexes of the arrivals that activate a Step, or nil when
-// an input port has none.
-func (r *runner) ready(nodeID string, ports []string) []int {
+// ready returns the indexes of the arrivals that activate a Step and the key
+// they share, or nil when an input port has none. An unkeyed Step takes the
+// earliest arrival at each port, whatever its key, and returns no key. A
+// keyed Step takes the earliest key, in arrival order, that has an arrival at
+// every port.
+func (r *runner) ready(nodeID string, ports []string, keyed bool) ([]int, string) {
 	// A Step without connected inputs takes one start arrival.
 	if len(ports) == 0 {
 		ports = []string{""}
 	}
 
-	// Take the earliest arrival at each port.
-	taken := make([]int, 0, len(ports))
-	for _, port := range ports {
-		i := slices.IndexFunc(r.run.GetArrivals(), func(arrival *s4wave_flowgraph.FlowgraphArrival) bool {
-			return arrival.GetNodeId() == nodeID && arrival.GetPort() == port
-		})
-		if i < 0 {
-			return nil
+	// Collect the keys to try: the arrivals' keys for a keyed Step, otherwise
+	// one pass that matches any key.
+	var tries []string
+	if keyed {
+		for _, arrival := range r.run.GetArrivals() {
+			if arrival.GetNodeId() == nodeID && !slices.Contains(tries, arrival.GetKey()) {
+				tries = append(tries, arrival.GetKey())
+			}
 		}
-		taken = append(taken, i)
+	} else {
+		tries = []string{""}
 	}
-	return taken
+
+	// Take the earliest arrival at each port.
+	for _, key := range tries {
+		taken := make([]int, 0, len(ports))
+		for _, port := range ports {
+			i := slices.IndexFunc(r.run.GetArrivals(), func(arrival *s4wave_flowgraph.FlowgraphArrival) bool {
+				return arrival.GetNodeId() == nodeID && arrival.GetPort() == port && (!keyed || arrival.GetKey() == key)
+			})
+			if i < 0 {
+				break
+			}
+			taken = append(taken, i)
+		}
+		if len(taken) == len(ports) {
+			return taken, key
+		}
+	}
+	return nil, ""
 }
 
 // consume removes the arrivals at the given indexes and returns them.
@@ -327,11 +361,13 @@ func (r *runner) blocked(nodeID string, step *s4wave_flowgraph.FlowgraphStep) st
 }
 
 // activate adds a Task running the Step to the run's Job, with each input
-// port wired to the output or event object that arrived there.
+// port wired to the output or event object that arrived there. key is the key
+// of a keyed Step's activation, and empty for an unkeyed Step.
 func (r *runner) activate(
 	ctx context.Context,
 	nodeID string,
 	step *s4wave_flowgraph.FlowgraphStep,
+	key string,
 	inputs []*s4wave_flowgraph.FlowgraphArrival,
 ) error {
 	// Wire each arrival as a Forge input named after its port.
@@ -376,6 +412,7 @@ func (r *runner) activate(
 		NodeId:  nodeID,
 		TaskKey: taskKey,
 		Inputs:  inputs,
+		Key:     key,
 	})
 	r.visits(nodeID).Count++
 	return nil

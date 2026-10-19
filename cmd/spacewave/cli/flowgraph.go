@@ -332,6 +332,8 @@ type flowgraphNodeSetArgs struct {
 	maxVisits uint
 	// maxSpend bounds this Step's reported spend.
 	maxSpend uint64
+	// keyed makes the Step hold one running activation per arrival key.
+	keyed bool
 }
 
 // BuildFlags returns the node set flags.
@@ -359,6 +361,7 @@ func (a *flowgraphNodeSetArgs) BuildFlags() []cli.Flag {
 		&cli.StringFlag{Name: "target-file", Usage: "Step Target file in protobuf JSON format", Destination: &a.targetFile},
 		&cli.UintFlag{Name: "max-visits", Usage: "Step visit bound (zero is unlimited)", Destination: &a.maxVisits},
 		&cli.Uint64Flag{Name: "max-spend", Usage: "Step spend bound (zero is unlimited)", Destination: &a.maxSpend},
+		&cli.BoolFlag{Name: "keyed", Usage: "Step holds one running activation per arrival key", Destination: &a.keyed},
 	)
 }
 
@@ -424,7 +427,7 @@ func (a *flowgraphNodeSetArgs) buildNode() (*flowgraph.FlowgraphNode, error) {
 
 	// Attach the Step instructions to a Step node.
 	if a.typeID == flowgraph.StepNodeTypeID {
-		node.Step = &flowgraph.FlowgraphStep{Prompt: a.prompt}
+		node.Step = &flowgraph.FlowgraphStep{Prompt: a.prompt, Keyed: a.keyed}
 		if a.maxVisits > uint(^uint32(0)) {
 			return nil, errors.New("--max-visits exceeds uint32")
 		}
@@ -434,6 +437,10 @@ func (a *flowgraphNodeSetArgs) buildNode() (*flowgraph.FlowgraphNode, error) {
 		for _, skill := range a.skills.Value() {
 			node.Step.Skills = append(node.Step.Skills, &flowgraph.FlowgraphSkill{Name: skill})
 		}
+	}
+
+	if a.keyed && node.GetStep() == nil {
+		return nil, errors.New("--keyed requires --type step")
 	}
 
 	// Decode the execution definition without rebuilding its controller config.

@@ -227,14 +227,18 @@ func flowgraphTargetValues(target *forge_target.Target) []*forge_value.Value {
 
 // flowgraphRunKeyFields returns the object keys a run holds: its Flowgraph, its
 // Job, the Task of each activation and each Task-output arrival, and the World
-// object of each event arrival. The pinned graph is a child block of the run and moves with the block migration,
-// not with the run payload.
+// object of each event arrival, including the live inputs in an activation's
+// inbox. The pinned graph is a child block of the run and moves with the block
+// migration, not with the run payload.
 func flowgraphRunKeyFields(run *s4wave_flowgraph.FlowgraphRun) []*string {
 	fields := []*string{&run.FlowgraphKey, &run.JobKey}
 	for _, activation := range run.GetActivations() {
 		fields = append(fields, &activation.TaskKey)
 		for _, input := range activation.GetInputs() {
 			fields = append(fields, flowgraphArrivalKeyFields(input)...)
+		}
+		for _, input := range activation.GetInbox() {
+			fields = append(fields, flowgraphArrivalKeyFields(input.GetArrival())...)
 		}
 	}
 	for _, arrival := range run.GetArrivals() {

@@ -430,6 +430,11 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 			NodeId:  "step",
 			TaskKey: "run/job/task-1",
 			Inputs:  []*s4wave_flowgraph.FlowgraphArrival{taskArrival("step", "in", "run/job/task-0", "out")},
+			Key:     "k",
+			Inbox: []*s4wave_flowgraph.FlowgraphLiveInput{
+				{Seq: 1, Arrival: eventArrival("step", "in", "events/live", "event-0")},
+			},
+			LastInputSeq: 1,
 		}},
 		Arrivals: []*s4wave_flowgraph.FlowgraphArrival{
 			taskArrival("next", "in", "run/job/task-1", "out"),
@@ -458,12 +463,13 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job/task-1"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job/task-0"},
+		{Kind: space_migration.ReferenceObjectKey, Value: "events/live"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "events/room"},
 	})
 
 	// Rewrite the run with destination keys.
 	mapping := space_migration.NewIdentityMap()
-	for _, key := range []string{"graph", "run/job", "run/job/task-0", "run/job/task-1", "events/room"} {
+	for _, key := range []string{"graph", "run/job", "run/job/task-0", "run/job/task-1", "events/live", "events/room"} {
 		mapping.ObjectKeys[key] = key + "-destination"
 	}
 	result, err := handler.Rewrite(ctx, object, mapping)
@@ -475,6 +481,7 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job-destination"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job/task-1-destination"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "run/job/task-0-destination"},
+		{Kind: space_migration.ReferenceObjectKey, Value: "events/live-destination"},
 		{Kind: space_migration.ReferenceObjectKey, Value: "events/room-destination"},
 	})
 
@@ -490,6 +497,7 @@ func TestFlowgraphRunHandlerRewritesFlowgraphJobAndTaskKeys(t *testing.T) {
 	want.JobKey = "run/job-destination"
 	want.Activations[0].TaskKey = "run/job/task-1-destination"
 	want.Activations[0].Inputs[0].GetTaskOutput().TaskKey = "run/job/task-0-destination"
+	want.Activations[0].Inbox[0].GetArrival().GetEvent().ObjectKey = "events/live-destination"
 	want.Arrivals[0].GetTaskOutput().TaskKey = "run/job/task-1-destination"
 	want.Arrivals[1].GetEvent().ObjectKey = "events/room-destination"
 	if !rewritten.EqualVT(want) {

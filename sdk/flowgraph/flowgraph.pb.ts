@@ -291,6 +291,13 @@ export interface FlowgraphStep {
    * Bound limits this Step's activations within one run.
    */
   bound?: FlowgraphBound
+  /**
+   * Keyed makes the Step hold one running activation per arrival key. Its
+   * input ports are satisfied by arrivals that carry the same key, and an
+   * arrival for a key that has a running activation reaches that activation's
+   * inbox. An unkeyed Step ignores the key.
+   */
+  keyed?: boolean
 }
 
 export const FlowgraphStep: MessageType<FlowgraphStep> =
@@ -301,6 +308,7 @@ export const FlowgraphStep: MessageType<FlowgraphStep> =
       [2, 'skills', 11, 1, FlowgraphSkill.codec],
       [3, 'target', 11, 0, Target.codec],
       [4, 'bound', 11, 0, FlowgraphBound.codec],
+      [5, 'keyed', 8],
     ],
   )
 
@@ -830,6 +838,22 @@ export interface FlowgraphActivation {
    * Output is the Step output port the activation chose.
    */
   output?: string
+  /**
+   * Key is the arrival key of a keyed Step's activation, empty for an unkeyed
+   * Step. A run holds at most one running activation per Step and key.
+   */
+  key?: string
+  /**
+   * Inbox holds the live inputs delivered to the running activation and not
+   * yet acknowledged, in sequence order. When the activation ends, the run
+   * returns them to its arrivals.
+   */
+  inbox?: FlowgraphLiveInput[]
+  /**
+   * LastInputSeq is the sequence number of the latest live input. It only
+   * grows, so a sequence number is never reused after an acknowledgement.
+   */
+  lastInputSeq?: bigint
 }
 
 export const FlowgraphActivation: MessageType<FlowgraphActivation> =
@@ -841,6 +865,34 @@ export const FlowgraphActivation: MessageType<FlowgraphActivation> =
       [3, 'inputs', 11, 1, FlowgraphArrival.codec],
       [4, 'done', 8],
       [5, 'output', 9],
+      [6, 'key', 9],
+      [7, 'inbox', 11, 1, FlowgraphLiveInput.codec],
+      [8, 'last_input_seq', 4],
+    ],
+  )
+
+/**
+ * FlowgraphLiveInput is an arrival delivered to a running keyed activation.
+ *
+ * @generated from message s4wave.flowgraph.FlowgraphLiveInput
+ */
+export interface FlowgraphLiveInput {
+  /**
+   * Seq orders the activation's live inputs, from one.
+   */
+  seq?: bigint
+  /**
+   * Arrival is the arrival that reached the activation, with its key.
+   */
+  arrival?: FlowgraphArrival
+}
+
+export const FlowgraphLiveInput: MessageType<FlowgraphLiveInput> =
+  /* @__PURE__ */ createMessageType<FlowgraphLiveInput>(
+    's4wave.flowgraph.FlowgraphLiveInput',
+    () => [
+      [1, 'seq', 4],
+      [2, 'arrival', 11, 0, FlowgraphArrival.codec],
     ],
   )
 

@@ -75,6 +75,11 @@ message FlowgraphStep {
   .forge.target.Target target = 3;
   // Bound limits this Step's activations within one run.
   FlowgraphBound bound = 4;
+  // Keyed makes the Step hold one running activation per arrival key. Its
+  // input ports are satisfied by arrivals that carry the same key, and an
+  // arrival for a key that has a running activation reaches that activation's
+  // inbox. An unkeyed Step ignores the key.
+  bool keyed = 5;
 }
 
 // FlowgraphBound limits the visits and the reported spend of a Step in a run.
@@ -319,6 +324,24 @@ message FlowgraphActivation {
   bool done = 4;
   // Output is the Step output port the activation chose.
   string output = 5;
+  // Key is the arrival key of a keyed Step's activation, empty for an unkeyed
+  // Step. A run holds at most one running activation per Step and key.
+  string key = 6;
+  // Inbox holds the live inputs delivered to the running activation and not
+  // yet acknowledged, in sequence order. When the activation ends, the run
+  // returns them to its arrivals.
+  repeated FlowgraphLiveInput inbox = 7;
+  // LastInputSeq is the sequence number of the latest live input. It only
+  // grows, so a sequence number is never reused after an acknowledgement.
+  uint64 last_input_seq = 8;
+}
+
+// FlowgraphLiveInput is an arrival delivered to a running keyed activation.
+message FlowgraphLiveInput {
+  // Seq orders the activation's live inputs, from one.
+  uint64 seq = 1;
+  // Arrival is the arrival that reached the activation, with its key.
+  FlowgraphArrival arrival = 2;
 }
 
 // FlowgraphArrival is an output or event delivered to a Step's input port.

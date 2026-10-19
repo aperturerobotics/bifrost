@@ -355,6 +355,11 @@ type FlowgraphStep struct {
 	Target *target.Target `protobuf:"bytes,3,opt,name=target,proto3" json:"target,omitempty"`
 	// Bound limits this Step's activations within one run.
 	Bound *FlowgraphBound `protobuf:"bytes,4,opt,name=bound,proto3" json:"bound,omitempty"`
+	// Keyed makes the Step hold one running activation per arrival key. Its
+	// input ports are satisfied by arrivals that carry the same key, and an
+	// arrival for a key that has a running activation reaches that activation's
+	// inbox. An unkeyed Step ignores the key.
+	Keyed bool `protobuf:"varint,5,opt,name=keyed,proto3" json:"keyed,omitempty"`
 }
 
 func (x *FlowgraphStep) Reset() {
@@ -389,6 +394,13 @@ func (x *FlowgraphStep) GetBound() *FlowgraphBound {
 		return x.Bound
 	}
 	return nil
+}
+
+func (x *FlowgraphStep) GetKeyed() bool {
+	if x != nil {
+		return x.Keyed
+	}
+	return false
 }
 
 // FlowgraphBound limits the visits and the reported spend of a Step in a run.
@@ -1044,6 +1056,16 @@ type FlowgraphActivation struct {
 	Done bool `protobuf:"varint,4,opt,name=done,proto3" json:"done,omitempty"`
 	// Output is the Step output port the activation chose.
 	Output string `protobuf:"bytes,5,opt,name=output,proto3" json:"output,omitempty"`
+	// Key is the arrival key of a keyed Step's activation, empty for an unkeyed
+	// Step. A run holds at most one running activation per Step and key.
+	Key string `protobuf:"bytes,6,opt,name=key,proto3" json:"key,omitempty"`
+	// Inbox holds the live inputs delivered to the running activation and not
+	// yet acknowledged, in sequence order. When the activation ends, the run
+	// returns them to its arrivals.
+	Inbox []*FlowgraphLiveInput `protobuf:"bytes,7,rep,name=inbox,proto3" json:"inbox,omitempty"`
+	// LastInputSeq is the sequence number of the latest live input. It only
+	// grows, so a sequence number is never reused after an acknowledgement.
+	LastInputSeq uint64 `protobuf:"varint,8,opt,name=last_input_seq,json=lastInputSeq,proto3" json:"lastInputSeq,omitempty"`
 }
 
 func (x *FlowgraphActivation) Reset() {
@@ -1085,6 +1107,56 @@ func (x *FlowgraphActivation) GetOutput() string {
 		return x.Output
 	}
 	return ""
+}
+
+func (x *FlowgraphActivation) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *FlowgraphActivation) GetInbox() []*FlowgraphLiveInput {
+	if x != nil {
+		return x.Inbox
+	}
+	return nil
+}
+
+func (x *FlowgraphActivation) GetLastInputSeq() uint64 {
+	if x != nil {
+		return x.LastInputSeq
+	}
+	return 0
+}
+
+// FlowgraphLiveInput is an arrival delivered to a running keyed activation.
+type FlowgraphLiveInput struct {
+	unknownFields []byte
+	// Seq orders the activation's live inputs, from one.
+	Seq uint64 `protobuf:"varint,1,opt,name=seq,proto3" json:"seq,omitempty"`
+	// Arrival is the arrival that reached the activation, with its key.
+	Arrival *FlowgraphArrival `protobuf:"bytes,2,opt,name=arrival,proto3" json:"arrival,omitempty"`
+}
+
+func (x *FlowgraphLiveInput) Reset() {
+	*x = FlowgraphLiveInput{}
+}
+
+func (*FlowgraphLiveInput) ProtoMessage() {}
+
+func (x *FlowgraphLiveInput) GetSeq() uint64 {
+	if x != nil {
+		return x.Seq
+	}
+	return 0
+}
+
+func (x *FlowgraphLiveInput) GetArrival() *FlowgraphArrival {
+	if x != nil {
+		return x.Arrival
+	}
+	return nil
 }
 
 // FlowgraphArrival is an output or event delivered to a Step's input port.
@@ -1608,6 +1680,7 @@ func (m *FlowgraphStep) CloneVT() *FlowgraphStep {
 	}
 	r := new(FlowgraphStep)
 	r.Prompt = m.Prompt
+	r.Keyed = m.Keyed
 	r.Skills = protobuf_go_lite.CloneVTSlice(m.Skills)
 	r.Target = protobuf_go_lite.CloneVTValue(m.Target)
 	r.Bound = protobuf_go_lite.CloneVTValue(m.Bound)
@@ -1934,7 +2007,10 @@ func (m *FlowgraphActivation) CloneVT() *FlowgraphActivation {
 	r.TaskKey = m.TaskKey
 	r.Done = m.Done
 	r.Output = m.Output
+	r.Key = m.Key
+	r.LastInputSeq = m.LastInputSeq
 	r.Inputs = protobuf_go_lite.CloneVTSlice(m.Inputs)
+	r.Inbox = protobuf_go_lite.CloneVTSlice(m.Inbox)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1942,6 +2018,23 @@ func (m *FlowgraphActivation) CloneVT() *FlowgraphActivation {
 }
 
 func (m *FlowgraphActivation) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *FlowgraphLiveInput) CloneVT() *FlowgraphLiveInput {
+	if m == nil {
+		return (*FlowgraphLiveInput)(nil)
+	}
+	r := new(FlowgraphLiveInput)
+	r.Seq = m.Seq
+	r.Arrival = protobuf_go_lite.CloneVTValue(m.Arrival)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *FlowgraphLiveInput) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -2070,7 +2163,6 @@ func (this *Flowgraph) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphNode) EqualVT(that *FlowgraphNode) bool {
 	if this == that {
 		return true
@@ -2102,7 +2194,6 @@ func (this *FlowgraphNode) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphPort) EqualVT(that *FlowgraphPort) bool {
 	if this == that {
 		return true
@@ -2131,7 +2222,6 @@ func (this *FlowgraphPort) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphStep) EqualVT(that *FlowgraphStep) bool {
 	if this == that {
 		return true
@@ -2150,6 +2240,9 @@ func (this *FlowgraphStep) EqualVT(that *FlowgraphStep) bool {
 	if !protobuf_go_lite.IsEqualVT(this.Bound, that.Bound) {
 		return false
 	}
+	if this.Keyed != that.Keyed {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -2160,7 +2253,6 @@ func (this *FlowgraphStep) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphBound) EqualVT(that *FlowgraphBound) bool {
 	if this == that {
 		return true
@@ -2183,7 +2275,6 @@ func (this *FlowgraphBound) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphSkill) EqualVT(that *FlowgraphSkill) bool {
 	if this == that {
 		return true
@@ -2206,7 +2297,6 @@ func (this *FlowgraphSkill) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphConnection) EqualVT(that *FlowgraphConnection) bool {
 	if this == that {
 		return true
@@ -2235,7 +2325,6 @@ func (this *FlowgraphConnection) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphPlacement) EqualVT(that *FlowgraphPlacement) bool {
 	if this == that {
 		return true
@@ -2258,7 +2347,6 @@ func (this *FlowgraphPlacement) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphBinding) EqualVT(that *FlowgraphBinding) bool {
 	if this == that {
 		return true
@@ -2287,7 +2375,6 @@ func (this *FlowgraphBinding) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphSnapshot) EqualVT(that *FlowgraphSnapshot) bool {
 	if this == that {
 		return true
@@ -2316,7 +2403,6 @@ func (this *FlowgraphSnapshot) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *CreateFlowgraphOp) EqualVT(that *CreateFlowgraphOp) bool {
 	if this == that {
 		return true
@@ -2339,7 +2425,6 @@ func (this *CreateFlowgraphOp) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *GetFlowgraphRequest) EqualVT(that *GetFlowgraphRequest) bool {
 	if this == that {
 		return true
@@ -2356,7 +2441,6 @@ func (this *GetFlowgraphRequest) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *GetFlowgraphResponse) EqualVT(that *GetFlowgraphResponse) bool {
 	if this == that {
 		return true
@@ -2376,7 +2460,6 @@ func (this *GetFlowgraphResponse) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *UpdateFlowgraphRequest) EqualVT(that *UpdateFlowgraphRequest) bool {
 	if this == that {
 		return true
@@ -2414,7 +2497,6 @@ func (this *UpdateFlowgraphRequest) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *UpdateFlowgraphResponse) EqualVT(that *UpdateFlowgraphResponse) bool {
 	if this == that {
 		return true
@@ -2434,7 +2516,6 @@ func (this *UpdateFlowgraphResponse) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *WatchFlowgraphRequest) EqualVT(that *WatchFlowgraphRequest) bool {
 	if this == that {
 		return true
@@ -2451,7 +2532,6 @@ func (this *WatchFlowgraphRequest) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *WatchFlowgraphResponse) EqualVT(that *WatchFlowgraphResponse) bool {
 	if this == that {
 		return true
@@ -2471,7 +2551,6 @@ func (this *WatchFlowgraphResponse) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphChange) EqualVT(that *FlowgraphChange) bool {
 	if this == that {
 		return true
@@ -2497,7 +2576,6 @@ func (this *FlowgraphChange) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *ListFlowgraphChangesRequest) EqualVT(that *ListFlowgraphChangesRequest) bool {
 	if this == that {
 		return true
@@ -2517,7 +2595,6 @@ func (this *ListFlowgraphChangesRequest) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *ListFlowgraphChangesResponse) EqualVT(that *ListFlowgraphChangesResponse) bool {
 	if this == that {
 		return true
@@ -2543,7 +2620,6 @@ func (this *ListFlowgraphChangesResponse) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphRun) EqualVT(that *FlowgraphRun) bool {
 	if this == that {
 		return true
@@ -2596,7 +2672,6 @@ func (this *FlowgraphRun) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphActivation) EqualVT(that *FlowgraphActivation) bool {
 	if this == that {
 		return true
@@ -2618,6 +2693,15 @@ func (this *FlowgraphActivation) EqualVT(that *FlowgraphActivation) bool {
 	if this.Output != that.Output {
 		return false
 	}
+	if this.Key != that.Key {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Inbox, that.Inbox, func() *FlowgraphLiveInput { return &FlowgraphLiveInput{} }) {
+		return false
+	}
+	if this.LastInputSeq != that.LastInputSeq {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -2628,7 +2712,28 @@ func (this *FlowgraphActivation) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
+func (this *FlowgraphLiveInput) EqualVT(that *FlowgraphLiveInput) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Seq != that.Seq {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Arrival, that.Arrival) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
 
+func (this *FlowgraphLiveInput) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*FlowgraphLiveInput)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
 func (this *FlowgraphArrival) EqualVT(that *FlowgraphArrival) bool {
 	if this == that {
 		return true
@@ -2666,7 +2771,6 @@ func (this *FlowgraphArrival) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphArrival_TaskOutput) EqualVT(thatIface isFlowgraphArrival_Source) bool {
 	that, ok := thatIface.(*FlowgraphArrival_TaskOutput)
 	if !ok {
@@ -2723,7 +2827,6 @@ func (this *FlowgraphTaskOutput) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphEvent) EqualVT(that *FlowgraphEvent) bool {
 	if this == that {
 		return true
@@ -2746,7 +2849,6 @@ func (this *FlowgraphEvent) EqualMessageVT(thatMsg any) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *FlowgraphVisits) EqualVT(that *FlowgraphVisits) bool {
 	if this == that {
 		return true
@@ -3394,6 +3496,11 @@ func (x *FlowgraphStep) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("bound")
 		x.Bound.MarshalProtoJSON(s.WithField("bound"))
 	}
+	if x.Keyed || s.HasField("keyed") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("keyed")
+		s.WriteBool(x.Keyed)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -3446,6 +3553,9 @@ func (x *FlowgraphStep) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.Bound = &FlowgraphBound{}
 			x.Bound.UnmarshalProtoJSON(s.WithField("bound", true))
+		case "keyed":
+			s.AddField("keyed")
+			x.Keyed = s.ReadBool()
 		}
 	})
 }
@@ -5137,6 +5247,27 @@ func (x *FlowgraphActivation) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("output")
 		s.WriteString(x.Output)
 	}
+	if x.Key != "" || s.HasField("key") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("key")
+		s.WriteString(x.Key)
+	}
+	if len(x.Inbox) > 0 || s.HasField("inbox") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("inbox")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Inbox {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("inbox"))
+		}
+		s.WriteArrayEnd()
+	}
+	if x.LastInputSeq != 0 || s.HasField("lastInputSeq") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("lastInputSeq")
+		s.WriteUint64(x.LastInputSeq)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -5184,12 +5315,90 @@ func (x *FlowgraphActivation) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "output":
 			s.AddField("output")
 			x.Output = s.ReadString()
+		case "key":
+			s.AddField("key")
+			x.Key = s.ReadString()
+		case "inbox":
+			s.AddField("inbox")
+			if s.ReadNil() {
+				x.Inbox = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Inbox = append(x.Inbox, nil)
+					return
+				}
+				v := &FlowgraphLiveInput{}
+				v.UnmarshalProtoJSON(s.WithField("inbox", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Inbox = append(x.Inbox, v)
+			})
+		case "last_input_seq", "lastInputSeq":
+			s.AddField("last_input_seq")
+			x.LastInputSeq = s.ReadUint64()
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the FlowgraphActivation from JSON.
 func (x *FlowgraphActivation) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the FlowgraphLiveInput message to JSON.
+func (x *FlowgraphLiveInput) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Seq != 0 || s.HasField("seq") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("seq")
+		s.WriteUint64(x.Seq)
+	}
+	if x.Arrival != nil || s.HasField("arrival") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("arrival")
+		x.Arrival.MarshalProtoJSON(s.WithField("arrival"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the FlowgraphLiveInput to JSON.
+func (x *FlowgraphLiveInput) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the FlowgraphLiveInput message from JSON.
+func (x *FlowgraphLiveInput) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "seq":
+			s.AddField("seq")
+			x.Seq = s.ReadUint64()
+		case "arrival":
+			if s.ReadNil() {
+				x.Arrival = nil
+				return
+			}
+			x.Arrival = &FlowgraphArrival{}
+			x.Arrival.UnmarshalProtoJSON(s.WithField("arrival", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the FlowgraphLiveInput from JSON.
+func (x *FlowgraphLiveInput) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -5667,6 +5876,11 @@ func (m *FlowgraphStep) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Keyed {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Keyed)
+		i--
+		dAtA[i] = 0x28
 	}
 	if m.Bound != nil {
 		size, err := m.Bound.MarshalToSizedBufferVT(dAtA[:i])
@@ -6700,6 +6914,28 @@ func (m *FlowgraphActivation) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.LastInputSeq != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.LastInputSeq))
+		i--
+		dAtA[i] = 0x40
+	}
+	if len(m.Inbox) > 0 {
+		for iNdEx := len(m.Inbox) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Inbox[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
+	if len(m.Key) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Key)
+		i--
+		dAtA[i] = 0x32
+	}
 	if len(m.Output) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Output)
 		i--
@@ -6731,6 +6967,53 @@ func (m *FlowgraphActivation) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.NodeId)
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *FlowgraphLiveInput) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *FlowgraphLiveInput) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *FlowgraphLiveInput) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Arrival != nil {
+		size, err := m.Arrival.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Seq != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Seq))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -6814,7 +7097,6 @@ func (m *FlowgraphArrival_TaskOutput) MarshalToSizedBufferVT(dAtA []byte) (int, 
 	}
 	return len(dAtA) - i, nil
 }
-
 func (m *FlowgraphArrival_Event) MarshalToVT(dAtA []byte) (int, error) {
 	size := m.SizeVT()
 	return m.MarshalToSizedBufferVT(dAtA[:size])
@@ -6838,7 +7120,6 @@ func (m *FlowgraphArrival_Event) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	}
 	return len(dAtA) - i, nil
 }
-
 func (m *FlowgraphTaskOutput) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -7055,6 +7336,7 @@ func (m *FlowgraphStep) SizeVT() (n int) {
 		l = m.Bound.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Keyed)
 	n += len(m.unknownFields)
 	return n
 }
@@ -7386,6 +7668,27 @@ func (m *FlowgraphActivation) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Done)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Output)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Key)
+	for _, e := range m.Inbox {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.LastInputSeq)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *FlowgraphLiveInput) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Seq)
+	if m.Arrival != nil {
+		l = m.Arrival.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -7420,7 +7723,6 @@ func (m *FlowgraphArrival_TaskOutput) SizeVT() (n int) {
 	}
 	return n
 }
-
 func (m *FlowgraphArrival_Event) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -7435,7 +7737,6 @@ func (m *FlowgraphArrival_Event) SizeVT() (n int) {
 	}
 	return n
 }
-
 func (m *FlowgraphTaskOutput) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -7475,19 +7776,15 @@ func (m *FlowgraphVisits) SizeVT() (n int) {
 func (x FlowgraphPortDirection) MarshalProtoText() string {
 	return x.String()
 }
-
 func (x FlowgraphPlacementKind) MarshalProtoText() string {
 	return x.String()
 }
-
 func (x FlowgraphBindingState) MarshalProtoText() string {
 	return x.String()
 }
-
 func (x FlowgraphRunState) MarshalProtoText() string {
 	return x.String()
 }
-
 func (x *Flowgraph_NodesEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "NodesEntry")
@@ -7505,7 +7802,6 @@ func (x *Flowgraph_NodesEntry) MarshalProtoText() string {
 func (x *Flowgraph_NodesEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *Flowgraph_ConnectionsEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ConnectionsEntry")
@@ -7523,7 +7819,6 @@ func (x *Flowgraph_ConnectionsEntry) MarshalProtoText() string {
 func (x *Flowgraph_ConnectionsEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *Flowgraph) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "Flowgraph")
@@ -7567,7 +7862,6 @@ func (x *Flowgraph) MarshalProtoText() string {
 func (x *Flowgraph) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphNode_ParametersEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ParametersEntry")
@@ -7585,7 +7879,6 @@ func (x *FlowgraphNode_ParametersEntry) MarshalProtoText() string {
 func (x *FlowgraphNode_ParametersEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphNode) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphNode")
@@ -7630,7 +7923,6 @@ func (x *FlowgraphNode) MarshalProtoText() string {
 func (x *FlowgraphNode) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphPort) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphPort")
@@ -7656,7 +7948,6 @@ func (x *FlowgraphPort) MarshalProtoText() string {
 func (x *FlowgraphPort) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphStep) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphStep")
@@ -7684,13 +7975,16 @@ func (x *FlowgraphStep) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "bound")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Bound)
 	}
+	if x.Keyed != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "keyed")
+		protobuf_go_lite.TextWriteBool(&sb, x.Keyed)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *FlowgraphStep) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphBound) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphBound")
@@ -7708,7 +8002,6 @@ func (x *FlowgraphBound) MarshalProtoText() string {
 func (x *FlowgraphBound) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphSkill_ParametersEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ParametersEntry")
@@ -7726,7 +8019,6 @@ func (x *FlowgraphSkill_ParametersEntry) MarshalProtoText() string {
 func (x *FlowgraphSkill_ParametersEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphSkill) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphSkill")
@@ -7751,7 +8043,6 @@ func (x *FlowgraphSkill) MarshalProtoText() string {
 func (x *FlowgraphSkill) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphConnection) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphConnection")
@@ -7777,7 +8068,6 @@ func (x *FlowgraphConnection) MarshalProtoText() string {
 func (x *FlowgraphConnection) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphPlacement) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphPlacement")
@@ -7795,7 +8085,6 @@ func (x *FlowgraphPlacement) MarshalProtoText() string {
 func (x *FlowgraphPlacement) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphBinding) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphBinding")
@@ -7829,7 +8118,6 @@ func (x *FlowgraphBinding) MarshalProtoText() string {
 func (x *FlowgraphBinding) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphSnapshot_PlacementsEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "PlacementsEntry")
@@ -7847,7 +8135,6 @@ func (x *FlowgraphSnapshot_PlacementsEntry) MarshalProtoText() string {
 func (x *FlowgraphSnapshot_PlacementsEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphSnapshot_BindingsEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "BindingsEntry")
@@ -7865,7 +8152,6 @@ func (x *FlowgraphSnapshot_BindingsEntry) MarshalProtoText() string {
 func (x *FlowgraphSnapshot_BindingsEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphSnapshot) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphSnapshot")
@@ -7913,7 +8199,6 @@ func (x *FlowgraphSnapshot) MarshalProtoText() string {
 func (x *FlowgraphSnapshot) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *CreateFlowgraphOp) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "CreateFlowgraphOp")
@@ -7931,7 +8216,6 @@ func (x *CreateFlowgraphOp) MarshalProtoText() string {
 func (x *CreateFlowgraphOp) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *GetFlowgraphRequest) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	protobuf_go_lite.TextStartMessage(&sb, "GetFlowgraphRequest")
@@ -7941,7 +8225,6 @@ func (x *GetFlowgraphRequest) MarshalProtoText() string {
 func (x *GetFlowgraphRequest) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *GetFlowgraphResponse) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "GetFlowgraphResponse")
@@ -7955,7 +8238,6 @@ func (x *GetFlowgraphResponse) MarshalProtoText() string {
 func (x *GetFlowgraphResponse) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *UpdateFlowgraphRequest_SetNodesEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SetNodesEntry")
@@ -7973,7 +8255,6 @@ func (x *UpdateFlowgraphRequest_SetNodesEntry) MarshalProtoText() string {
 func (x *UpdateFlowgraphRequest_SetNodesEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *UpdateFlowgraphRequest_SetConnectionsEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SetConnectionsEntry")
@@ -7991,7 +8272,6 @@ func (x *UpdateFlowgraphRequest_SetConnectionsEntry) MarshalProtoText() string {
 func (x *UpdateFlowgraphRequest_SetConnectionsEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *UpdateFlowgraphRequest_SetPlacementsEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SetPlacementsEntry")
@@ -8009,7 +8289,6 @@ func (x *UpdateFlowgraphRequest_SetPlacementsEntry) MarshalProtoText() string {
 func (x *UpdateFlowgraphRequest_SetPlacementsEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *UpdateFlowgraphRequest) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "UpdateFlowgraphRequest")
@@ -8092,7 +8371,6 @@ func (x *UpdateFlowgraphRequest) MarshalProtoText() string {
 func (x *UpdateFlowgraphRequest) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *UpdateFlowgraphResponse) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "UpdateFlowgraphResponse")
@@ -8106,7 +8384,6 @@ func (x *UpdateFlowgraphResponse) MarshalProtoText() string {
 func (x *UpdateFlowgraphResponse) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *WatchFlowgraphRequest) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	protobuf_go_lite.TextStartMessage(&sb, "WatchFlowgraphRequest")
@@ -8116,7 +8393,6 @@ func (x *WatchFlowgraphRequest) MarshalProtoText() string {
 func (x *WatchFlowgraphRequest) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *WatchFlowgraphResponse) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WatchFlowgraphResponse")
@@ -8130,7 +8406,6 @@ func (x *WatchFlowgraphResponse) MarshalProtoText() string {
 func (x *WatchFlowgraphResponse) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphChange) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphChange")
@@ -8152,7 +8427,6 @@ func (x *FlowgraphChange) MarshalProtoText() string {
 func (x *FlowgraphChange) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *ListFlowgraphChangesRequest) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ListFlowgraphChangesRequest")
@@ -8166,7 +8440,6 @@ func (x *ListFlowgraphChangesRequest) MarshalProtoText() string {
 func (x *ListFlowgraphChangesRequest) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *ListFlowgraphChangesResponse) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ListFlowgraphChangesResponse")
@@ -8196,7 +8469,6 @@ func (x *ListFlowgraphChangesResponse) MarshalProtoText() string {
 func (x *ListFlowgraphChangesResponse) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphRun_VisitsEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "VisitsEntry")
@@ -8214,7 +8486,6 @@ func (x *FlowgraphRun_VisitsEntry) MarshalProtoText() string {
 func (x *FlowgraphRun_VisitsEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphRun_CursorEntry) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "CursorEntry")
@@ -8232,7 +8503,6 @@ func (x *FlowgraphRun_CursorEntry) MarshalProtoText() string {
 func (x *FlowgraphRun_CursorEntry) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphRun) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphRun")
@@ -8324,7 +8594,6 @@ func (x *FlowgraphRun) MarshalProtoText() string {
 func (x *FlowgraphRun) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphActivation) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphActivation")
@@ -8356,13 +8625,49 @@ func (x *FlowgraphActivation) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "output")
 		protobuf_go_lite.TextWriteString(&sb, x.Output)
 	}
+	if x.Key != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "key")
+		protobuf_go_lite.TextWriteString(&sb, x.Key)
+	}
+	if len(x.Inbox) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "inbox")
+		for i, v := range x.Inbox {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &FlowgraphLiveInput{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if x.LastInputSeq != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "last_input_seq")
+		protobuf_go_lite.TextWriteUint(&sb, x.LastInputSeq)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *FlowgraphActivation) String() string {
 	return x.MarshalProtoText()
 }
+func (x *FlowgraphLiveInput) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphLiveInput")
+	if x.Seq != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "seq")
+		protobuf_go_lite.TextWriteUint(&sb, x.Seq)
+	}
+	if x.Arrival != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "arrival")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Arrival)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
 
+func (x *FlowgraphLiveInput) String() string {
+	return x.MarshalProtoText()
+}
 func (x *FlowgraphArrival) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphArrival")
@@ -8400,7 +8705,6 @@ func (x *FlowgraphArrival) MarshalProtoText() string {
 func (x *FlowgraphArrival) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphTaskOutput) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphTaskOutput")
@@ -8418,7 +8722,6 @@ func (x *FlowgraphTaskOutput) MarshalProtoText() string {
 func (x *FlowgraphTaskOutput) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphEvent) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphEvent")
@@ -8436,7 +8739,6 @@ func (x *FlowgraphEvent) MarshalProtoText() string {
 func (x *FlowgraphEvent) String() string {
 	return x.MarshalProtoText()
 }
-
 func (x *FlowgraphVisits) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "FlowgraphVisits")
@@ -8454,7 +8756,6 @@ func (x *FlowgraphVisits) MarshalProtoText() string {
 func (x *FlowgraphVisits) String() string {
 	return x.MarshalProtoText()
 }
-
 func (m *Flowgraph) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -8601,7 +8902,6 @@ func (m *Flowgraph) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphNode) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -8734,7 +9034,6 @@ func (m *FlowgraphNode) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphPort) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -8818,7 +9117,6 @@ func (m *FlowgraphPort) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphStep) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -8892,6 +9190,16 @@ func (m *FlowgraphStep) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Keyed", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Keyed = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -8914,7 +9222,6 @@ func (m *FlowgraphStep) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphBound) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -8975,7 +9282,6 @@ func (m *FlowgraphBound) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphSkill) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9070,7 +9376,6 @@ func (m *FlowgraphSkill) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphConnection) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9153,7 +9458,6 @@ func (m *FlowgraphConnection) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphPlacement) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9217,7 +9521,6 @@ func (m *FlowgraphPlacement) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphBinding) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9304,7 +9607,6 @@ func (m *FlowgraphBinding) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphSnapshot) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9465,7 +9767,6 @@ func (m *FlowgraphSnapshot) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *CreateFlowgraphOp) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9528,7 +9829,6 @@ func (m *CreateFlowgraphOp) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *GetFlowgraphRequest) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9571,7 +9871,6 @@ func (m *GetFlowgraphRequest) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *GetFlowgraphResponse) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9629,7 +9928,6 @@ func (m *GetFlowgraphResponse) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *UpdateFlowgraphRequest) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9853,7 +10151,6 @@ func (m *UpdateFlowgraphRequest) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *UpdateFlowgraphResponse) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9911,7 +10208,6 @@ func (m *UpdateFlowgraphResponse) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *WatchFlowgraphRequest) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -9954,7 +10250,6 @@ func (m *WatchFlowgraphRequest) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *WatchFlowgraphResponse) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10012,7 +10307,6 @@ func (m *WatchFlowgraphResponse) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphChange) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10089,7 +10383,6 @@ func (m *FlowgraphChange) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *ListFlowgraphChangesRequest) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10141,7 +10434,6 @@ func (m *ListFlowgraphChangesRequest) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *ListFlowgraphChangesResponse) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10217,7 +10509,6 @@ func (m *ListFlowgraphChangesResponse) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphRun) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10460,7 +10751,6 @@ func (m *FlowgraphRun) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphActivation) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10534,6 +10824,38 @@ func (m *FlowgraphActivation) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Output = v
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Key = v
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Inbox", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Inbox = append(m.Inbox, &FlowgraphLiveInput{})
+			if err := m.Inbox[len(m.Inbox)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastInputSeq", wireType)
+			}
+			m.LastInputSeq = 0
+			m.LastInputSeq, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -10556,7 +10878,72 @@ func (m *FlowgraphActivation) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *FlowgraphLiveInput) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FlowgraphLiveInput: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FlowgraphLiveInput: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Seq", wireType)
+			}
+			m.Seq = 0
+			m.Seq, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Arrival", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Arrival == nil {
+				m.Arrival = &FlowgraphArrival{}
+			}
+			if err := m.Arrival.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
 
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *FlowgraphArrival) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10669,7 +11056,6 @@ func (m *FlowgraphArrival) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphTaskOutput) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10732,7 +11118,6 @@ func (m *FlowgraphTaskOutput) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphEvent) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10795,7 +11180,6 @@ func (m *FlowgraphEvent) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *FlowgraphVisits) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
