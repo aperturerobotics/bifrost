@@ -3419,19 +3419,6 @@ func assertReturnVisitorBodyRouteStartupMarks(t testing.TB, page playwright.Page
 		}
 	}
 
-	// Verify the return visitor did not consume quickstart handoffs.
-	for _, label := range []string{
-		"quickstart.session-handoff-used",
-		"quickstart.shared-object-handoff-used",
-		"quickstart.shared-object-body-handoff-used",
-		"quickstart.space-handoff-used",
-		"quickstart.space-world-handoff-used",
-		"quickstart.space-contents-handoff-used",
-	} {
-		if slices.Contains(labels, label) {
-			t.Fatalf("return visitor body route unexpectedly used Quickstart handoff mark %q; labels=%v", label, labels)
-		}
-	}
 }
 
 func assertReturnVisitorBodyRouteSpaceState(t testing.TB, page playwright.Page) {

@@ -1,403 +1,110 @@
+// Quickstart hands the Session and Space it mounted to the route it opens.
+//
+// The mounts move into the shared mounts under the keys the route's hooks
+// use, so the route reuses them instead of mounting again. The route facts,
+// the initial object and whether the Space is still missing from the
+// resources list, stay here under the route's Session and SharedObject.
+
 import type { RegisterCleanup } from '@aptre/bldr-sdk/hooks/useResource.js'
+import {
+  sharedResourceKey,
+  type SharedResources,
+} from '@aptre/bldr-sdk/hooks/SharedResources.js'
+import type { Root } from '@s4wave/sdk/root/root.js'
 import { Session } from '@s4wave/sdk/session/session.js'
 import { SharedObject, SharedObjectBody } from '@s4wave/sdk/sobject/sobject.js'
 import { Space } from '@s4wave/sdk/space/space.js'
 import { SpaceContents } from '@s4wave/sdk/space/contents.js'
-import { Engine } from '@s4wave/sdk/world/engine.js'
 import { EngineWorldState } from '@s4wave/sdk/world/engine-state.js'
-
-export interface QuickstartSessionHandoff {
-  sessionIndex: number
-  session: Session
-}
+import {
+  bodyMountName,
+  sessionMountName,
+  sharedObjectMountName,
+  spaceContentsMountName,
+  spaceMountName,
+  spaceWorldMountName,
+} from '@s4wave/app/hooks/useSharedMounts.js'
 
 export interface QuickstartInitialObjectHandoff {
   objectKey: string
   objectType: string
 }
 
-const handoffsBySessionIndex = new Map<string, QuickstartSessionHandoff>()
-
-// QuickstartHandoffRecord is every fact and resource staged under one
-// session+shared-object key. releaseQuickstartSharedObjectHandoffNow walks
-// the resource fields child-before-parent.
-interface QuickstartHandoffRecord {
-  sharedObject?: SharedObject
-  sharedObjectBody?: SharedObjectBody
-  space?: Space
-  spaceContents?: SpaceContents
-  spaceWorld?: EngineWorldState
+// QuickstartRouteRecord holds the facts Quickstart staged for one route.
+interface QuickstartRouteRecord {
   initialObject?: QuickstartInitialObjectHandoff
-  awaitingResourcesList?: boolean
+  awaitingResourcesList: boolean
   releaseTimer?: ReturnType<typeof setTimeout>
 }
 
-const sharedObjectHandoffsByKey = new Map<string, QuickstartHandoffRecord>()
+const routeRecords = new Map<string, QuickstartRouteRecord>()
 
-const handoffReleaseGraceMs = 5000
+// routeReleaseGraceMs keeps route facts across a remount of the route.
+const routeReleaseGraceMs = 5000
 
-function sharedObjectHandoffKey(
+function routeKey(
   sessionIndex: number,
   sharedObjectId: string,
-  scope = '',
+  scope: string,
 ): string {
   return `${scope}/${sessionIndex}/${sharedObjectId}`
 }
 
-function releaseSession(session: Session): void {
-  if (!session.released) {
-    session.release()
-  }
-}
-
-function releaseHandoff(handoff: QuickstartSessionHandoff): void {
-  releaseSession(handoff.session)
-}
-
-function releaseSharedObject(sharedObject: SharedObject): void {
-  if (!sharedObject.released) {
-    sharedObject.release()
-  }
-}
-
-function releaseSharedObjectBody(body: SharedObjectBody): void {
-  if (!body.released) {
-    body.release()
-  }
-}
-
-function releaseSpace(space: Space): void {
-  if (!space.released) {
-    space.release()
-  }
-}
-
-function releaseSpaceContents(contents: SpaceContents): void {
-  if (!contents.released) {
-    contents.release()
-  }
-}
-
-function releaseSpaceWorld(world: EngineWorldState): void {
-  world.release()
-}
-
-// handoffRecordAt returns the record for key, creating one when create is set.
-function handoffRecordAt(
-  key: string,
-  create: boolean,
-): QuickstartHandoffRecord | undefined {
-  let record = sharedObjectHandoffsByKey.get(key)
-  if (!record && create) {
-    record = {}
-    sharedObjectHandoffsByKey.set(key, record)
-  }
-  return record
-}
-
-// deleteHandoffRecordIfEmpty drops records with no staged state left.
-function deleteHandoffRecordIfEmpty(
-  key: string,
-  record: QuickstartHandoffRecord,
-): void {
-  if (
-    !record.sharedObject &&
-    !record.sharedObjectBody &&
-    !record.space &&
-    !record.spaceContents &&
-    !record.spaceWorld &&
-    !record.initialObject &&
-    !record.awaitingResourcesList &&
-    !record.releaseTimer
-  ) {
-    sharedObjectHandoffsByKey.delete(key)
-  }
-}
-
-function cancelScheduledRelease(key: string): void {
-  const record = handoffRecordAt(key, false)
-  if (!record?.releaseTimer) {
-    return
-  }
-  clearTimeout(record.releaseTimer)
-  record.releaseTimer = undefined
-  deleteHandoffRecordIfEmpty(key, record)
-}
-
-function scheduleSharedObjectHandoffRelease(key: string): void {
-  cancelScheduledRelease(key)
-  const record = handoffRecordAt(key, true)
-  if (!record) return
-  const timer = setTimeout(() => {
-    if (record.releaseTimer !== timer) {
-      return
-    }
+// cancelRouteRelease stops a scheduled release of the record at key.
+function cancelRouteRelease(key: string): void {
+  const record = routeRecords.get(key)
+  if (record?.releaseTimer) {
+    clearTimeout(record.releaseTimer)
     record.releaseTimer = undefined
-    releaseQuickstartSharedObjectHandoffNow(key)
-  }, handoffReleaseGraceMs)
-  record.releaseTimer = timer
-}
-
-function cloneSharedObject(sharedObject: SharedObject): SharedObject {
-  return new SharedObject(
-    sharedObject.resourceRef.createRef(sharedObject.id),
-    sharedObject.meta,
-  )
-}
-
-function cloneSharedObjectBody(body: SharedObjectBody): SharedObjectBody {
-  return new SharedObjectBody(body.resourceRef.createRef(body.id))
-}
-
-function cloneSpace(space: Space): Space {
-  return new Space(space.resourceRef.createRef(space.id))
-}
-
-function cloneSpaceContents(contents: SpaceContents): SpaceContents {
-  return new SpaceContents(contents.resourceRef.createRef(contents.id))
-}
-
-function cloneSpaceWorld(world: EngineWorldState): EngineWorldState {
-  const engine = world.getEngine()
-  return new EngineWorldState(
-    new Engine(engine.resourceRef.createRef(engine.id)),
-    !world.getReadOnly(),
-    true,
-  )
-}
-
-// HandoffField projects one resource field of a handoff record: how to read
-// and write it, detect release, clone it for a consumer, and release it.
-interface HandoffField<T> {
-  get(record: QuickstartHandoffRecord): T | undefined
-  set(record: QuickstartHandoffRecord, value: T | undefined): void
-  released(resource: T): boolean
-  clone(resource: T): T
-  release(resource: T): void
-}
-
-const SHARED_OBJECT_FIELD: HandoffField<SharedObject> = {
-  get: (record) => record.sharedObject,
-  set: (record, value) => {
-    record.sharedObject = value
-  },
-  released: (sharedObject) => sharedObject.released,
-  clone: cloneSharedObject,
-  release: releaseSharedObject,
-}
-
-const SHARED_OBJECT_BODY_FIELD: HandoffField<SharedObjectBody> = {
-  get: (record) => record.sharedObjectBody,
-  set: (record, value) => {
-    record.sharedObjectBody = value
-  },
-  released: (body) => body.released,
-  clone: cloneSharedObjectBody,
-  release: releaseSharedObjectBody,
-}
-
-const SPACE_FIELD: HandoffField<Space> = {
-  get: (record) => record.space,
-  set: (record, value) => {
-    record.space = value
-  },
-  released: (space) => space.released,
-  clone: cloneSpace,
-  release: releaseSpace,
-}
-
-const SPACE_CONTENTS_FIELD: HandoffField<SpaceContents> = {
-  get: (record) => record.spaceContents,
-  set: (record, value) => {
-    record.spaceContents = value
-  },
-  released: (contents) => contents.released,
-  clone: cloneSpaceContents,
-  release: releaseSpaceContents,
-}
-
-const SPACE_WORLD_FIELD: HandoffField<EngineWorldState> = {
-  get: (record) => record.spaceWorld,
-  set: (record, value) => {
-    record.spaceWorld = value
-  },
-  released: (world) => world.getEngine().released,
-  clone: cloneSpaceWorld,
-  release: releaseSpaceWorld,
-}
-
-// consumeHandoffField returns a clone of the staged resource for key,
-// canceling any scheduled release and re-arming the grace timer.
-function consumeHandoffField<T>(key: string, field: HandoffField<T>): T | null {
-  cancelScheduledRelease(key)
-  const record = handoffRecordAt(key, false)
-  if (!record) return null
-  const resource = field.get(record)
-  if (!resource) return null
-  if (field.released(resource)) {
-    field.set(record, undefined)
-    deleteHandoffRecordIfEmpty(key, record)
-    return null
   }
-  scheduleSharedObjectHandoffRelease(key)
-  return field.clone(resource)
 }
 
-// stageHandoffResource moves one held resource into the handoff record,
-// releasing the previously staged value when it differs.
-function stageHandoffResource<T>(
-  key: string,
-  held: T[],
-  field: HandoffField<T>,
-): void {
-  const resource = held.pop()
-  if (!resource) return
-  const record = handoffRecordAt(key, true)
-  if (!record) return
-  const existing = field.get(record)
-  if (existing && existing !== resource) {
-    field.release(existing)
-  }
-  field.set(record, resource)
-}
-
-export function stageQuickstartSessionHandoff(
-  handoff: QuickstartSessionHandoff,
-  scope = '',
-): void {
-  const existing = handoffsBySessionIndex.get(
-    `${scope}/${handoff.sessionIndex}`,
-  )
-  if (existing?.session === handoff.session) {
-    handoffsBySessionIndex.set(`${scope}/${handoff.sessionIndex}`, handoff)
-    return
-  }
-  if (existing) {
-    releaseHandoff(existing)
-  }
-  handoffsBySessionIndex.set(`${scope}/${handoff.sessionIndex}`, handoff)
-}
-
-export function consumeQuickstartSessionHandoff(
-  sessionIndex: number,
-  scope = '',
-): QuickstartSessionHandoff | null {
-  const handoff = handoffsBySessionIndex.get(`${scope}/${sessionIndex}`)
-  if (!handoff) return null
-  handoffsBySessionIndex.delete(`${scope}/${sessionIndex}`)
-  if (handoff.session.released) return null
-  return handoff
-}
-
-export function consumeQuickstartSharedObjectHandoff(
+/**
+ * retainQuickstartRoute keeps the route facts while the route is mounted and
+ * returns the function that releases them after a grace period.
+ */
+export function retainQuickstartRoute(
   sessionIndex: number,
   sharedObjectId: string,
   scope = '',
-): SharedObject | null {
-  return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-    SHARED_OBJECT_FIELD,
-  )
+): () => void {
+  const key = routeKey(sessionIndex, sharedObjectId, scope)
+  cancelRouteRelease(key)
+  return () => {
+    const record = routeRecords.get(key)
+    if (!record) return
+    cancelRouteRelease(key)
+    record.releaseTimer = setTimeout(() => {
+      if (routeRecords.get(key) === record) {
+        routeRecords.delete(key)
+      }
+    }, routeReleaseGraceMs)
+  }
 }
 
-export function hasQuickstartSharedObjectHandoff(
+/**
+ * isQuickstartRouteAwaitingResourcesList reports whether Quickstart opened
+ * this route before the resources list published its Space.
+ */
+export function isQuickstartRouteAwaitingResourcesList(
   sessionIndex: number,
   sharedObjectId: string,
   scope = '',
 ): boolean {
-  const record = sharedObjectHandoffsByKey.get(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-  )
-  return (
-    !!record &&
-    !!(
-      record.sharedObject ||
-      record.sharedObjectBody ||
-      record.space ||
-      record.spaceContents ||
-      record.spaceWorld
-    )
-  )
+  return !!routeRecords.get(routeKey(sessionIndex, sharedObjectId, scope))
+    ?.awaitingResourcesList
 }
 
-export function markQuickstartSharedObjectHandoffAwaitingResourcesList(
+/** clearQuickstartRouteAwaitingResourcesList records the Space as listed. */
+export function clearQuickstartRouteAwaitingResourcesList(
   sessionIndex: number,
   sharedObjectId: string,
   scope = '',
 ): void {
-  const record = handoffRecordAt(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-    true,
-  )
+  const record = routeRecords.get(routeKey(sessionIndex, sharedObjectId, scope))
   if (record) {
-    record.awaitingResourcesList = true
+    record.awaitingResourcesList = false
   }
-}
-
-export function clearQuickstartSharedObjectHandoffAwaitingResourcesList(
-  sessionIndex: number,
-  sharedObjectId: string,
-  scope = '',
-): void {
-  const key = sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope)
-  const record = handoffRecordAt(key, false)
-  if (!record) return
-  record.awaitingResourcesList = false
-  deleteHandoffRecordIfEmpty(key, record)
-}
-
-export function isQuickstartSharedObjectHandoffAwaitingResourcesList(
-  sessionIndex: number,
-  sharedObjectId: string,
-  scope = '',
-): boolean {
-  return !!sharedObjectHandoffsByKey.get(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-  )?.awaitingResourcesList
-}
-
-export function consumeQuickstartSharedObjectBodyHandoff(
-  sessionIndex: number,
-  sharedObjectId: string,
-  scope = '',
-): SharedObjectBody | null {
-  return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-    SHARED_OBJECT_BODY_FIELD,
-  )
-}
-
-export function consumeQuickstartSpaceHandoff(
-  sessionIndex: number,
-  sharedObjectId: string,
-  scope = '',
-): Space | null {
-  return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-    SPACE_FIELD,
-  )
-}
-
-export function consumeQuickstartSpaceContentsHandoff(
-  sessionIndex: number,
-  sharedObjectId: string,
-  scope = '',
-): SpaceContents | null {
-  return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-    SPACE_CONTENTS_FIELD,
-  )
-}
-
-export function consumeQuickstartSpaceWorldHandoff(
-  sessionIndex: number,
-  sharedObjectId: string,
-  scope = '',
-): EngineWorldState | null {
-  return consumeHandoffField(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-    SPACE_WORLD_FIELD,
-  )
 }
 
 export function getQuickstartInitialObjectHandoff(
@@ -407,61 +114,26 @@ export function getQuickstartInitialObjectHandoff(
   scope = '',
 ): QuickstartInitialObjectHandoff | null {
   if (sessionIndex == null || !sharedObjectId || !objectKey) return null
-  const record = sharedObjectHandoffsByKey.get(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-  )
-  const handoff = record?.initialObject
+  const handoff = routeRecords.get(
+    routeKey(sessionIndex, sharedObjectId, scope),
+  )?.initialObject
   if (!handoff || handoff.objectKey !== objectKey) return null
   return handoff
 }
 
-function releaseQuickstartSharedObjectHandoffNow(key: string): void {
-  const record = handoffRecordAt(key, false)
-  if (!record) return
-  record.awaitingResourcesList = false
-  record.initialObject = undefined
-  const world = record.spaceWorld
-  if (world) {
-    record.spaceWorld = undefined
-    releaseSpaceWorld(world)
-  }
-  const contents = record.spaceContents
-  if (contents) {
-    record.spaceContents = undefined
-    releaseSpaceContents(contents)
-  }
-  const space = record.space
-  if (space) {
-    record.space = undefined
-    releaseSpace(space)
-  }
-  const body = record.sharedObjectBody
-  if (body) {
-    record.sharedObjectBody = undefined
-    releaseSharedObjectBody(body)
-  }
-  const sharedObject = record.sharedObject
-  if (sharedObject) {
-    record.sharedObject = undefined
-    releaseSharedObject(sharedObject)
-  }
-  deleteHandoffRecordIfEmpty(key, record)
-}
+type Disposable = { [Symbol.dispose](): void }
 
-export function releaseQuickstartSharedObjectHandoff(
-  sessionIndex: number,
-  sharedObjectId: string,
-  scope = '',
-): void {
-  scheduleSharedObjectHandoffRelease(
-    sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope),
-  )
-}
-
-export interface QuickstartSessionHandoffCleanup {
+// QuickstartHandoff collects what a Quickstart setup mounts.
+export interface QuickstartHandoff {
+  // cleanup holds Session and Space resources for the handoff and passes
+  // anything else to the setup's own cleanup.
   cleanup: RegisterCleanup
+  // releaseHeldResources disposes what the handoff holds.
   releaseHeldResources(): void
+  // stage moves the held Session and Space resources into the shared mounts
+  // and records the route facts.
   stage(
+    root: Root,
     sessionIndex: number,
     session: Session,
     sharedObjectId?: string,
@@ -469,177 +141,117 @@ export interface QuickstartSessionHandoffCleanup {
   ): void
 }
 
-export function createQuickstartSessionHandoffCleanup(
-  cleanup: RegisterCleanup,
-  scope = '',
-): QuickstartSessionHandoffCleanup {
-  const heldSessions: Session[] = []
-  const heldSharedObjects: SharedObject[] = []
-  const heldSharedObjectBodies: SharedObjectBody[] = []
-  const heldSpaces: Space[] = []
-  const heldSpaceContents: SpaceContents[] = []
-  const heldSpaceWorlds: EngineWorldState[] = []
+// isHandoffResource reports whether resource is one the route mounts.
+function isHandoffResource(resource: unknown): resource is Disposable {
+  return (
+    resource instanceof Session ||
+    resource instanceof SharedObject ||
+    resource instanceof SharedObjectBody ||
+    resource instanceof Space ||
+    resource instanceof SpaceContents ||
+    resource instanceof EngineWorldState
+  )
+}
 
-  const handoffCleanup: RegisterCleanup = (resource) => {
-    if (resource instanceof Session) {
-      heldSessions.push(resource)
-      return resource
+// takeHeld removes and returns the last held resource of type ctor.
+function takeHeld<T>(
+  held: Disposable[],
+  ctor: abstract new (...args: never[]) => T,
+): (T & Disposable) | null {
+  for (let i = held.length - 1; i >= 0; i--) {
+    const resource = held[i]
+    if (resource instanceof ctor) {
+      held.splice(i, 1)
+      return resource as T & Disposable
     }
-    if (resource instanceof SharedObject) {
-      heldSharedObjects.push(resource)
-      return resource
-    }
-    if (resource instanceof SharedObjectBody) {
-      heldSharedObjectBodies.push(resource)
-      return resource
-    }
-    if (resource instanceof Space) {
-      heldSpaces.push(resource)
-      return resource
-    }
-    if (resource instanceof SpaceContents) {
-      heldSpaceContents.push(resource)
-      return resource
-    }
-    if (resource instanceof EngineWorldState) {
-      heldSpaceWorlds.push(resource)
-      return resource
-    }
-    return cleanup(resource)
   }
+  return null
+}
 
-  function releaseHeldSpaceResources(): void {
-    while (heldSpaceWorlds.length) {
-      const world = heldSpaceWorlds.pop()
-      if (world) {
-        releaseSpaceWorld(world)
-      }
-    }
-    while (heldSpaceContents.length) {
-      const contents = heldSpaceContents.pop()
-      if (contents) {
-        releaseSpaceContents(contents)
-      }
-    }
-    while (heldSpaces.length) {
-      const space = heldSpaces.pop()
-      if (space) {
-        releaseSpace(space)
-      }
-    }
-    while (heldSharedObjectBodies.length) {
-      const body = heldSharedObjectBodies.pop()
-      if (body) {
-        releaseSharedObjectBody(body)
-      }
-    }
-    while (heldSharedObjects.length) {
-      const sharedObject = heldSharedObjects.pop()
-      if (sharedObject) {
-        releaseSharedObject(sharedObject)
-      }
+/** createQuickstartHandoff starts collecting a setup's mounts. */
+export function createQuickstartHandoff(
+  cleanup: RegisterCleanup,
+  shared: SharedResources,
+  scope = '',
+): QuickstartHandoff {
+  const held: Disposable[] = []
+
+  const releaseHeldResources = () => {
+    while (held.length) {
+      held.pop()?.[Symbol.dispose]()
     }
   }
 
   return {
-    cleanup: handoffCleanup,
-    releaseHeldResources() {
-      releaseHeldSpaceResources()
-      while (heldSessions.length) {
-        const session = heldSessions.pop()
-        if (session) {
-          releaseSession(session)
-        }
+    cleanup: (resource) => {
+      if (isHandoffResource(resource)) {
+        held.push(resource)
+        return resource
       }
+      return cleanup(resource)
     },
-    stage(sessionIndex, session, sharedObjectId, initialObject) {
-      const index = heldSessions.indexOf(session)
-      if (index >= 0) {
-        heldSessions.splice(index, 1)
-      }
-      stageQuickstartSessionHandoff({ sessionIndex, session }, scope)
-
-      if (!sharedObjectId) {
-        releaseHeldSpaceResources()
-        return
-      }
-      const key = sharedObjectHandoffKey(sessionIndex, sharedObjectId, scope)
-      cancelScheduledRelease(key)
-      const record = handoffRecordAt(key, true)
-      if (!record) return
-      record.initialObject = initialObject
-      stageHandoffResource(key, heldSharedObjects, SHARED_OBJECT_FIELD)
-      stageHandoffResource(
-        key,
-        heldSharedObjectBodies,
-        SHARED_OBJECT_BODY_FIELD,
+    releaseHeldResources,
+    stage(root, sessionIndex, session, sharedObjectId, initialObject) {
+      // Adopt each mount under the key its route hook reads, parent first.
+      const sessionIdx = held.indexOf(session)
+      if (sessionIdx >= 0) held.splice(sessionIdx, 1)
+      shared.adopt(
+        sharedResourceKey(root, sessionMountName(sessionIndex)),
+        session,
+        [session],
       )
-      stageHandoffResource(key, heldSpaces, SPACE_FIELD)
-      stageHandoffResource(key, heldSpaceContents, SPACE_CONTENTS_FIELD)
-      stageHandoffResource(key, heldSpaceWorlds, SPACE_WORLD_FIELD)
-      while (heldSharedObjects.length) {
-        const extra = heldSharedObjects.pop()
-        if (extra) {
-          releaseSharedObject(extra)
+      const sharedObject = sharedObjectId && takeHeld(held, SharedObject)
+      const body = sharedObject && takeHeld(held, SharedObjectBody)
+      const space = body && takeHeld(held, Space)
+      if (sharedObjectId && sharedObject && body && space) {
+        shared.adopt(
+          sharedResourceKey(session, sharedObjectMountName(sharedObjectId)),
+          sharedObject,
+          [sharedObject],
+        )
+        shared.adopt(sharedResourceKey(sharedObject, bodyMountName), body, [
+          body,
+        ])
+        shared.adopt(sharedResourceKey(body, spaceMountName), space, [space])
+        const world = takeHeld(held, EngineWorldState)
+        if (world) {
+          shared.adopt(sharedResourceKey(space, spaceWorldMountName), world, [
+            world,
+          ])
         }
-      }
-      while (heldSharedObjectBodies.length) {
-        const extra = heldSharedObjectBodies.pop()
-        if (extra) {
-          releaseSharedObjectBody(extra)
+        const contents = takeHeld(held, SpaceContents)
+        if (contents) {
+          shared.adopt(
+            sharedResourceKey(space, spaceContentsMountName),
+            contents,
+            [contents],
+          )
         }
+
+        // Record the route facts until the route mounts and retains them.
+        const key = routeKey(sessionIndex, sharedObjectId, scope)
+        routeRecords.set(key, { initialObject, awaitingResourcesList: true })
+        retainQuickstartRoute(sessionIndex, sharedObjectId, scope)()
       }
-      while (heldSpaces.length) {
-        const extra = heldSpaces.pop()
-        if (extra) {
-          releaseSpace(extra)
-        }
-      }
-      while (heldSpaceContents.length) {
-        const extra = heldSpaceContents.pop()
-        if (extra) {
-          releaseSpaceContents(extra)
-        }
-      }
-      while (heldSpaceWorlds.length) {
-        const extra = heldSpaceWorlds.pop()
-        if (extra) {
-          releaseSpaceWorld(extra)
-        }
-      }
+      releaseHeldResources()
     },
   }
 }
 
+/** releaseQuickstartAppHandoffs drops the route facts of an app scope. */
 export function releaseQuickstartAppHandoffs(scope: string): void {
-  releaseMatchingHandoffs(scope)
+  releaseMatchingRoutes(scope)
 }
 
+/** releaseQuickstartSessionHandoffsForTests drops every route fact. */
 export function releaseQuickstartSessionHandoffsForTests(): void {
-  releaseMatchingHandoffs()
+  releaseMatchingRoutes()
 }
 
-function releaseMatchingHandoffs(scope?: string): void {
-  for (const [key, record] of sharedObjectHandoffsByKey) {
+function releaseMatchingRoutes(scope?: string): void {
+  for (const [key, record] of routeRecords) {
     if (scope !== undefined && !key.startsWith(scope + '/')) continue
-    if (record.releaseTimer) {
-      clearTimeout(record.releaseTimer)
-      record.releaseTimer = undefined
-    }
-    record.awaitingResourcesList = false
-    record.initialObject = undefined
-    if (record.spaceWorld) releaseSpaceWorld(record.spaceWorld)
-    if (record.spaceContents) releaseSpaceContents(record.spaceContents)
-    if (record.space) releaseSpace(record.space)
-    if (record.sharedObjectBody)
-      releaseSharedObjectBody(record.sharedObjectBody)
-    if (record.sharedObject) releaseSharedObject(record.sharedObject)
-    deleteHandoffRecordIfEmpty(key, record)
-  }
-
-  for (const [key, handoff] of handoffsBySessionIndex) {
-    if (scope !== undefined && !key.startsWith(scope + '/')) continue
-    releaseHandoff(handoff)
-    handoffsBySessionIndex.delete(key)
+    if (record.releaseTimer) clearTimeout(record.releaseTimer)
+    routeRecords.delete(key)
   }
 }

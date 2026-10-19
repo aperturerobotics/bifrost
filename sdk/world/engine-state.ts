@@ -369,6 +369,11 @@ export class EngineWorldState implements IWorldState {
     return this.engine
   }
 
+  // released reports whether the underlying Engine resource was released.
+  public get released(): boolean {
+    return this.engine.released
+  }
+
   // release releases the owned Engine resource, when this wrapper created it.
   public release(): void {
     if (this.ownsEngine && !this.engine.released) {

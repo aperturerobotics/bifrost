@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useWatchStateRpc } from '@aptre/bldr-react'
 import {
-  useResource,
   useResourceValue,
   type Resource,
 } from '@aptre/bldr-sdk/hooks/useResource.js'
@@ -9,7 +8,14 @@ import {
 import { useSessionList } from '@s4wave/app/hooks/useSessionList.js'
 import { pluginPathPrefix } from '@s4wave/app/urls.js'
 import { parseObjectUri } from '@s4wave/sdk/space/object-uri.js'
-import { Space } from '@s4wave/sdk/space/space.js'
+import {
+  useSessionMount,
+  useSharedObjectBodyMount,
+  useSharedObjectMount,
+  useSpaceContentsMount,
+  useSpaceMount,
+  useSpaceWorldMount,
+} from '@s4wave/app/hooks/useSharedMounts.js'
 import {
   SpaceState,
   WatchSpaceStateRequest,
@@ -193,6 +199,7 @@ function useDisplayLocation(): [DisplayLocation, () => void] {
 
 /** useKioskSession mounts the first local session for kiosk display. */
 function useKioskSession() {
+  // Pick the first session in the list.
   const rootResource = useRootResource()
   const sessionList = useSessionList()
   const firstSession = sessionList.value?.sessions?.[0]
@@ -200,21 +207,10 @@ function useKioskSession() {
     ? (firstSession.sessionIndex ?? 1)
     : undefined
 
-  const sessionResource = useResource(
+  // Share its mount with any tab on the same session.
+  const sessionResource = useSessionMount(
     rootResource,
-    async (root, signal, cleanup) => {
-      if (selectedSessionIndex == null) return null
-      const result = await root.mountSessionByIdx(
-        { sessionIdx: selectedSessionIndex },
-        signal,
-      )
-      return result ? cleanup(result.session) : null
-    },
-    [
-      selectedSessionIndex,
-      firstSession?.sessionRef?.providerResourceRef?.providerId,
-      firstSession?.sessionRef?.providerResourceRef?.providerAccountId,
-    ],
+    selectedSessionIndex ?? null,
   )
 
   return { sessionList, selectedSessionIndex, sessionResource }
@@ -224,7 +220,8 @@ function useKioskSession() {
  * useKioskSpace mounts the first Space of the session with its shared object
  * body, world state, and contents.
  */
-function useKioskSpace(sessionResource: Resource<Session | null>) {
+function useKioskSpace(sessionResource: Resource<Session>) {
+  // Pick the first Space the session lists.
   const session = useResourceValue(sessionResource)
   const resourcesList = useWatchStateRpc(
     useCallback(
@@ -238,57 +235,20 @@ function useKioskSpace(sessionResource: Resource<Session | null>) {
   )
   const sharedObjectId =
     resourcesList?.spacesList?.[0]?.entry?.ref?.providerResourceRef?.id ?? ''
-  const sharedObjectResource = useResource(
+
+  // Mount the Space chain through the shared mounts.
+  const sharedObjectResource = useSharedObjectMount(
     sessionResource,
-    async (mountedSession: Session | null, signal, cleanup) => {
-      if (!mountedSession || !sharedObjectId) return null
-      const result = await mountedSession.mountSharedObject(
-        { sharedObjectId },
-        signal,
-      )
-      return result ? cleanup(result) : null
-    },
-    [sharedObjectId],
+    sharedObjectId,
   )
-  const sharedObjectBodyResource = useResource(
-    sharedObjectResource,
-    async (sharedObject, signal, cleanup) => {
-      if (!sharedObject) return null
-      return cleanup(await sharedObject.mountSharedObjectBody({}, signal))
-    },
-    [sharedObjectId],
-  )
-  const spaceResource = useResource(
-    sharedObjectBodyResource,
-    (sharedObjectBody, _signal, cleanup) => {
-      if (!sharedObjectBody) return Promise.resolve(null)
-      return Promise.resolve(
-        cleanup(
-          new Space(
-            sharedObjectBody.resourceRef.createRef(sharedObjectBody.id),
-          ),
-        ),
-      )
-    },
-    [sharedObjectId],
-  )
+  const sharedObjectBodyResource =
+    useSharedObjectBodyMount(sharedObjectResource)
+  const spaceResource = useSpaceMount(sharedObjectBodyResource)
   const space = useResourceValue(spaceResource)
-  const spaceWorldResource = useResource(
-    spaceResource,
-    async (mountedSpace, signal, cleanup) => {
-      if (!mountedSpace) return null
-      return cleanup(await mountedSpace.accessWorldState(true, signal))
-    },
-    [sharedObjectId],
-  )
-  const spaceContentsResource = useResource(
-    spaceResource,
-    async (mountedSpace, signal, cleanup) => {
-      if (!mountedSpace) return null
-      return cleanup(await mountedSpace.mountSpaceContents(signal))
-    },
-    [sharedObjectId],
-  )
+  const spaceWorldResource = useSpaceWorldMount(spaceResource)
+  const spaceContentsResource = useSpaceContentsMount(spaceResource)
+
+  // Watch the Space state and read the world.
   const spaceState = useWatchStateRpc(
     useCallback(
       (req: WatchSpaceStateRequest, signal: AbortSignal) =>
@@ -412,14 +372,20 @@ function useDisplayController() {
   const space = useKioskSpace(sessionResource)
   const { sharedObjectId, spaceWorldResource } = space
 
+  // Retry the outermost failed mount; the mounts keyed under it follow. With
+  // no failure, reload the session list to look for a session again.
   const retryDisplay = useCallback(() => {
-    sessionList.retry()
-    sessionResource.retry()
-    space.sharedObjectResource.retry()
-    space.sharedObjectBodyResource.retry()
-    space.spaceResource.retry()
-    space.spaceWorldResource.retry()
-    space.spaceContentsResource.retry()
+    const target =
+      [
+        sessionList,
+        sessionResource,
+        space.sharedObjectResource,
+        space.sharedObjectBodyResource,
+        space.spaceResource,
+        space.spaceWorldResource,
+        space.spaceContentsResource,
+      ].find((resource) => resource.error) ?? sessionList
+    target.retry()
   }, [sessionList, sessionResource, space])
 
   const objectEntryResource = useObjectMetadata(

@@ -1,4 +1,3 @@
-import { useAppEnvironment } from '@s4wave/web/sdk/app/environment.js'
 import {
   type ReactNode,
   useMemo,
@@ -24,17 +23,13 @@ import {
 } from '@s4wave/web/contexts/contexts.js'
 import { useIsTabActive } from '@s4wave/web/contexts/TabActiveContext.js'
 import { SpacewaveOrgListContext } from '@s4wave/web/contexts/SpacewaveOrgListContext.js'
-import {
-  useResource,
-  useResourceValue,
-} from '@aptre/bldr-sdk/hooks/useResource.js'
+import { useResourceValue } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { StateNamespaceProvider } from '@s4wave/web/state/index.js'
 import {
   parseObjectUri,
   SUBPATH_DELIMITER,
 } from '@s4wave/sdk/space/object-uri.js'
 import { SpaceSoMeta } from '@s4wave/core/space/space.pb.js'
-import { Space } from '@s4wave/sdk/space/space.js'
 import {
   SpaceSharingState,
   SpaceState,
@@ -93,50 +88,17 @@ import { useWorldQuery } from '@s4wave/web/hooks/useWorldQuery.js'
 import { downloadURL } from '@s4wave/web/download.js'
 import { canDeleteSpaceObject, canRenameSpace } from './permissions.js'
 import {
-  consumeQuickstartSpaceContentsHandoff,
-  consumeQuickstartSpaceHandoff,
-  consumeQuickstartSpaceWorldHandoff,
-  releaseQuickstartSharedObjectHandoff,
-} from '@s4wave/app/quickstart/session-handoff.js'
-import { markQuickstartStartupBoundary } from '@s4wave/app/quickstart/startup-boundary.js'
+  useSpaceContentsMount,
+  useSpaceMount,
+  useSpaceWorldMount,
+} from '@s4wave/app/hooks/useSharedMounts.js'
 
 // noSpaceObjectTargets stands in for the object targets while they load.
 const noSpaceObjectTargets: SpaceObjectTargets = { targets: [], more: false }
 
-const quickstartSpaceStartupLabels: Record<string, string> = {
-  'quickstart route using space handoff': 'quickstart.space-handoff-used',
-  'quickstart space resource created': 'quickstart.space-resource-created',
-  'quickstart route using space world handoff':
-    'quickstart.space-world-handoff-used',
-  'quickstart access world start': 'quickstart.space-world-access-start',
-  'quickstart access world finish': 'quickstart.space-world-access-ready',
-  'quickstart route using space contents handoff':
-    'quickstart.space-contents-handoff-used',
-  'quickstart mount contents start': 'quickstart.space-contents-mount-start',
-  'quickstart mount contents finish': 'quickstart.space-contents-mount-ready',
-}
-
-function logQuickstartSpaceDiagnostic(
-  message: string,
-  fields: Record<string, unknown>,
-): void {
-  const startupLabel = quickstartSpaceStartupLabels[message]
-  if (startupLabel) {
-    markQuickstartStartupBoundary(startupLabel, fields)
-  }
-  if (
-    !(globalThis as { __s4waveLogQuickstartTiming?: boolean })
-      .__s4waveLogQuickstartTiming
-  ) {
-    return
-  }
-  console.log(message + ': ' + JSON.stringify(fields))
-}
-
 // useSpaceContainerController owns Space mounting, route projection, object
 // navigation, sharing policy, and destructive mutations.
 function useSpaceContainerController() {
-  const environment = useAppEnvironment()
   const { setAppPath } = useAppNavigation()
   const rootResource = RootContext.useContext()
   const root = useResourceValue(rootResource)
@@ -164,71 +126,10 @@ function useSpaceContainerController() {
   )
 
   const sharedObjectBodyResource = SharedObjectBodyContext.useContext()
-  const spaceResource = useResource(
-    sharedObjectBodyResource,
-    (parentSharedObjectBody, _signal, cleanup) => {
-      if (!parentSharedObjectBody) {
-        return Promise.resolve(null)
-      }
-      const handoff = consumeQuickstartSpaceHandoff(
-        sessionIndex,
-        sharedObjectId,
-        environment.instanceKey,
-      )
-      if (handoff) {
-        logQuickstartSpaceDiagnostic('quickstart route using space handoff', {
-          sharedObjectId,
-          spaceResourceId: handoff.id,
-          released: handoff.released,
-        })
-        return Promise.resolve(cleanup(handoff))
-      }
-      const space = new Space(
-        parentSharedObjectBody.resourceRef.createRef(parentSharedObjectBody.id),
-      )
-      logQuickstartSpaceDiagnostic('quickstart space resource created', {
-        sharedObjectId,
-        bodyResourceId: parentSharedObjectBody.id,
-      })
-      return Promise.resolve(cleanup(space))
-    },
-    [sessionIndex, sharedObjectId],
-  )
+  const spaceResource = useSpaceMount(sharedObjectBodyResource)
   const space = useResourceValue(spaceResource)
 
-  const spaceWorldResource = useResource(
-    spaceResource,
-    async (space, signal, cleanup) => {
-      if (!space) {
-        return null
-      }
-      const handoff = consumeQuickstartSpaceWorldHandoff(
-        sessionIndex,
-        sharedObjectId,
-        environment.instanceKey,
-      )
-      if (handoff) {
-        logQuickstartSpaceDiagnostic(
-          'quickstart route using space world handoff',
-          {
-            sharedObjectId,
-          },
-        )
-        return cleanup(handoff)
-      }
-      logQuickstartSpaceDiagnostic('quickstart access world start', {
-        sharedObjectId,
-        spaceResourceId: space.id,
-      })
-      const state = await space.accessWorldState(true, signal)
-      logQuickstartSpaceDiagnostic('quickstart access world finish', {
-        sharedObjectId,
-        spaceResourceId: space.id,
-      })
-      return cleanup(state)
-    },
-    [sessionIndex, sharedObjectId],
-  )
+  const spaceWorldResource = useSpaceWorldMount(spaceResource)
   const spaceWorld = useResourceValue(spaceWorldResource)
 
   // watch the space state
@@ -242,39 +143,7 @@ function useSpaceContainerController() {
     WatchSpaceStateRequest.equals,
     SpaceState.equals,
   )
-  const spaceContentsResource = useResource(
-    spaceResource,
-    async (space, signal, cleanup) => {
-      if (!space) {
-        return null
-      }
-      const handoff = consumeQuickstartSpaceContentsHandoff(
-        sessionIndex,
-        sharedObjectId,
-        environment.instanceKey,
-      )
-      if (handoff) {
-        logQuickstartSpaceDiagnostic(
-          'quickstart route using space contents handoff',
-          {
-            sharedObjectId,
-          },
-        )
-        return cleanup(handoff)
-      }
-      logQuickstartSpaceDiagnostic('quickstart mount contents start', {
-        sharedObjectId,
-        spaceResourceId: space.id,
-      })
-      const contents = await space.mountSpaceContents(signal)
-      logQuickstartSpaceDiagnostic('quickstart mount contents finish', {
-        sharedObjectId,
-        spaceResourceId: space.id,
-      })
-      return cleanup(contents)
-    },
-    [sessionIndex, sharedObjectId],
-  )
+  const spaceContentsResource = useSpaceContentsMount(spaceResource)
   // Subscribe this component to contents resource updates; consumers read
   // the resource through SpaceContentsContext.
   const _spaceContents = useResourceValue(spaceContentsResource)
@@ -298,16 +167,6 @@ function useSpaceContainerController() {
     WatchSpaceSharingStateRequest.equals,
     SpaceSharingState.equals,
   )
-
-  useEffect(() => {
-    return () => {
-      releaseQuickstartSharedObjectHandoff(
-        sessionIndex,
-        sharedObjectId,
-        environment.instanceKey,
-      )
-    }
-  }, [sessionIndex, sharedObjectId, environment.instanceKey])
 
   const canManageSharing = spaceSharingState?.canManage ?? false
   const spaceOrgId = useMemo(() => {

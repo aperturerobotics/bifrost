@@ -8,30 +8,32 @@ import { SpaceContents } from '@s4wave/sdk/space/contents.js'
 import { Engine } from '@s4wave/sdk/world/engine.js'
 import { EngineWorldState } from '@s4wave/sdk/world/engine-state.js'
 
+import { SharedResources } from '@aptre/bldr-sdk/hooks/SharedResources.js'
+import type { Root } from '@s4wave/sdk/root/root.js'
+
 import {
-  consumeQuickstartSpaceContentsHandoff,
-  consumeQuickstartSharedObjectBodyHandoff,
-  consumeQuickstartSharedObjectHandoff,
-  consumeQuickstartSpaceHandoff,
-  consumeQuickstartSpaceWorldHandoff,
-  consumeQuickstartSessionHandoff,
-  createQuickstartSessionHandoffCleanup,
+  createQuickstartHandoff,
   getQuickstartInitialObjectHandoff,
-  releaseQuickstartSharedObjectHandoff,
+  isQuickstartRouteAwaitingResourcesList,
   releaseQuickstartAppHandoffs,
   releaseQuickstartSessionHandoffsForTests,
-  stageQuickstartSessionHandoff,
+  retainQuickstartRoute,
 } from './session-handoff.js'
+
+// testRoot stands in for the Root the Session entry is keyed under.
+const testRoot = { id: 1, released: false } as unknown as Root
 
 function createTestSession(): {
   session: Session
   release: ReturnType<typeof vi.fn>
 } {
+  // Build a Session with id 10 that records its release.
   let released = false
   const release = vi.fn(() => {
     released = true
   })
   const session = Object.create(Session.prototype) as Session
+  Object.defineProperty(session, 'id', { get: () => 10 })
   Object.defineProperty(session, 'released', {
     get: () => released,
   })
@@ -127,6 +129,37 @@ function createTestSpaceWorld(): {
   }
 }
 
+// noCleanup records resources passed to the setup's own cleanup.
+function createCleanup(): { cleanup: RegisterCleanup; calls: unknown[] } {
+  const calls: unknown[] = []
+  return {
+    cleanup: (resource) => {
+      calls.push(resource)
+      return resource
+    },
+    calls,
+  }
+}
+
+// stageSpaceRoute stages Session 1 and Space space-1 from a setup in scope.
+function stageSpaceRoute(shared: SharedResources, scope = ''): void {
+  // Hold the chain a setup mounts, then stage it with an initial object.
+  const { session } = createTestSession()
+  const handoff = createQuickstartHandoff(
+    createCleanup().cleanup,
+    shared,
+    scope,
+  )
+  handoff.cleanup(session)
+  handoff.cleanup(createTestSharedObject('space-1').resource)
+  handoff.cleanup(createTestSharedObjectBody().resource)
+  handoff.cleanup(createTestSpace().resource)
+  handoff.stage(testRoot, 1, session, 'space-1', {
+    objectKey: 'files',
+    objectType: 'unixfs/fs-node',
+  })
+}
+
 describe('quickstart session handoff', () => {
   afterEach(() => {
     releaseQuickstartSessionHandoffsForTests()
@@ -134,195 +167,130 @@ describe('quickstart session handoff', () => {
     vi.clearAllMocks()
   })
 
-  it('stages and consumes a mounted session without releasing it', () => {
+  it('moves the session into the shared mounts without releasing it', () => {
+    // Hold a Session in the handoff and stage it.
+    const shared = new SharedResources(null)
     const { session, release } = createTestSession()
-
-    stageQuickstartSessionHandoff({ sessionIndex: 1, session })
-
-    expect(consumeQuickstartSessionHandoff(1)?.session).toBe(session)
-    expect(consumeQuickstartSessionHandoff(1)).toBeNull()
-    expect(release).not.toHaveBeenCalled()
-  })
-
-  it('isolates equal Session indexes and releases only the reset app', () => {
-    const outer = createTestSession()
-    const left = createTestSession()
-    const right = createTestSession()
-    stageQuickstartSessionHandoff({ sessionIndex: 1, session: outer.session })
-    stageQuickstartSessionHandoff(
-      { sessionIndex: 1, session: left.session },
-      'left',
-    )
-    stageQuickstartSessionHandoff(
-      { sessionIndex: 1, session: right.session },
-      'right',
-    )
-
-    releaseQuickstartAppHandoffs('left')
-
-    expect(left.release).toHaveBeenCalledOnce()
-    expect(consumeQuickstartSessionHandoff(1, 'left')).toBeNull()
-    expect(consumeQuickstartSessionHandoff(1, 'right')?.session).toBe(
-      right.session,
-    )
-    expect(consumeQuickstartSessionHandoff(1)?.session).toBe(outer.session)
-    expect(outer.release).not.toHaveBeenCalled()
-    expect(right.release).not.toHaveBeenCalled()
-  })
-
-  it('releases stale staged sessions when a later handoff replaces them', () => {
-    const first = createTestSession()
-    const second = createTestSession()
-
-    stageQuickstartSessionHandoff({ sessionIndex: 1, session: first.session })
-    stageQuickstartSessionHandoff({ sessionIndex: 1, session: second.session })
-
-    expect(first.release).toHaveBeenCalledOnce()
-    expect(consumeQuickstartSessionHandoff(1)?.session).toBe(second.session)
-    expect(second.release).not.toHaveBeenCalled()
-  })
-
-  it('keeps quickstart-owned sessions out of the normal cleanup stack', () => {
-    const { session, release } = createTestSession()
-    const cleanupCall = vi.fn()
-    const cleanup: RegisterCleanup = (resource) => {
-      cleanupCall(resource)
-      return resource
-    }
-    const handoff = createQuickstartSessionHandoffCleanup(cleanup)
-
+    const { cleanup, calls } = createCleanup()
+    const handoff = createQuickstartHandoff(cleanup, shared)
     expect(handoff.cleanup(session)).toBe(session)
-    handoff.stage(1, session)
+    handoff.stage(testRoot, 1, session)
 
-    expect(cleanupCall).not.toHaveBeenCalled()
-    expect(consumeQuickstartSessionHandoff(1)?.session).toBe(session)
+    // The shared mounts own it under the route's Session key.
+    expect(calls).toEqual([])
+    expect(shared.getSnapshot('1/session/1').value).toBe(session)
     expect(release).not.toHaveBeenCalled()
   })
 
-  it('keeps staged quickstart shared object resources reusable during route handoff', () => {
+  it('adopts the space chain and releases it when no route leases it', () => {
+    // Start a handoff.
     vi.useFakeTimers()
+    const shared = new SharedResources(null)
+    const { cleanup, calls } = createCleanup()
+    const handoff = createQuickstartHandoff(cleanup, shared)
+
+    // Build the Space chain a Quickstart setup mounts.
     const { session } = createTestSession()
     const sharedObject = createTestSharedObject('space-1')
     const body = createTestSharedObjectBody()
     const space = createTestSpace()
     const contents = createTestSpaceContents()
     const world = createTestSpaceWorld()
-    const cleanupCall = vi.fn()
-    const cleanup: RegisterCleanup = (resource) => {
-      cleanupCall(resource)
-      return resource
-    }
-    const handoff = createQuickstartSessionHandoffCleanup(cleanup)
 
-    handoff.cleanup(session)
-    handoff.cleanup(sharedObject.resource)
-    handoff.cleanup(body.resource)
-    handoff.cleanup(space.resource)
-    handoff.cleanup(contents.resource)
-    handoff.cleanup(world.resource)
-    handoff.stage(1, session, 'space-1', {
+    // Hold each mount in the handoff, then stage the route.
+    for (const resource of [
+      session,
+      sharedObject.resource,
+      body.resource,
+      space.resource,
+      contents.resource,
+      world.resource,
+    ]) {
+      handoff.cleanup(resource)
+    }
+    handoff.stage(testRoot, 1, session, 'space-1', {
       objectKey: 'files',
       objectType: 'unixfs/fs-node',
     })
 
-    expect(cleanupCall).not.toHaveBeenCalled()
-    expect(consumeQuickstartSessionHandoff(1)?.session).toBe(session)
-    const consumedSharedObject = consumeQuickstartSharedObjectHandoff(
-      1,
-      'space-1',
+    // Each mount sits under the key its route hook reads.
+    expect(calls).toEqual([])
+    expect(shared.getSnapshot('10/so/space-1').value).toBe(
+      sharedObject.resource,
     )
-    const consumedBody = consumeQuickstartSharedObjectBodyHandoff(1, 'space-1')
-    const consumedSpace = consumeQuickstartSpaceHandoff(1, 'space-1')
-    const consumedContents = consumeQuickstartSpaceContentsHandoff(1, 'space-1')
-    const consumedWorld = consumeQuickstartSpaceWorldHandoff(1, 'space-1')
-    expect(consumedSharedObject).toBeInstanceOf(SharedObject)
-    expect(consumedSharedObject).not.toBe(sharedObject.resource)
-    expect(consumedBody).toBeInstanceOf(SharedObjectBody)
-    expect(consumedBody).not.toBe(body.resource)
-    expect(consumedSpace).toBeInstanceOf(Space)
-    expect(consumedSpace).not.toBe(space.resource)
-    expect(consumedContents).toBeInstanceOf(SpaceContents)
-    expect(consumedContents).not.toBe(contents.resource)
-    expect(consumedWorld).toBeInstanceOf(EngineWorldState)
-    expect(consumedWorld).not.toBe(world.resource)
-    expect(sharedObject.release).not.toHaveBeenCalled()
-    expect(body.release).not.toHaveBeenCalled()
-    expect(space.release).not.toHaveBeenCalled()
-    expect(contents.release).not.toHaveBeenCalled()
-    expect(world.release).not.toHaveBeenCalled()
+    expect(shared.getSnapshot('11/body').value).toBe(body.resource)
+    expect(shared.getSnapshot('12/space').value).toBe(space.resource)
+    expect(shared.getSnapshot('13/world').value).toBe(world.resource)
+    expect(shared.getSnapshot('13/contents').value).toBe(contents.resource)
+
+    // The route facts wait for the route.
     expect(getQuickstartInitialObjectHandoff(1, 'space-1', 'files')).toEqual({
       objectKey: 'files',
       objectType: 'unixfs/fs-node',
     })
+    expect(isQuickstartRouteAwaitingResourcesList(1, 'space-1')).toBe(true)
 
-    const secondSharedObject = consumeQuickstartSharedObjectHandoff(
-      1,
-      'space-1',
-    )
-    const secondBody = consumeQuickstartSharedObjectBodyHandoff(1, 'space-1')
-    const secondSpace = consumeQuickstartSpaceHandoff(1, 'space-1')
-    const secondContents = consumeQuickstartSpaceContentsHandoff(1, 'space-1')
-    const secondWorld = consumeQuickstartSpaceWorldHandoff(1, 'space-1')
-
-    expect(secondSharedObject).toBeInstanceOf(SharedObject)
-    expect(secondSharedObject).not.toBe(consumedSharedObject)
-    expect(secondBody).toBeInstanceOf(SharedObjectBody)
-    expect(secondBody).not.toBe(consumedBody)
-    expect(secondSpace).toBeInstanceOf(Space)
-    expect(secondSpace).not.toBe(consumedSpace)
-    expect(secondContents).toBeInstanceOf(SpaceContents)
-    expect(secondContents).not.toBe(consumedContents)
-    expect(secondWorld).toBeInstanceOf(EngineWorldState)
-    expect(secondWorld).not.toBe(consumedWorld)
-
-    releaseQuickstartSharedObjectHandoff(1, 'space-1')
+    // Unleased mounts and facts last the grace period.
     vi.advanceTimersByTime(4999)
-
     expect(sharedObject.release).not.toHaveBeenCalled()
-    expect(body.release).not.toHaveBeenCalled()
-    expect(space.release).not.toHaveBeenCalled()
-    expect(contents.release).not.toHaveBeenCalled()
     expect(world.release).not.toHaveBeenCalled()
 
+    // Then the shared mounts release them.
     vi.advanceTimersByTime(1)
-
     expect(sharedObject.release).toHaveBeenCalledOnce()
     expect(body.release).toHaveBeenCalledOnce()
     expect(space.release).toHaveBeenCalledOnce()
     expect(contents.release).toHaveBeenCalledOnce()
     expect(world.release).toHaveBeenCalledOnce()
-    expect(consumeQuickstartSharedObjectHandoff(1, 'space-1')).toBeNull()
-    expect(consumeQuickstartSharedObjectBodyHandoff(1, 'space-1')).toBeNull()
-    expect(consumeQuickstartSpaceHandoff(1, 'space-1')).toBeNull()
-    expect(consumeQuickstartSpaceContentsHandoff(1, 'space-1')).toBeNull()
-    expect(consumeQuickstartSpaceWorldHandoff(1, 'space-1')).toBeNull()
     expect(getQuickstartInitialObjectHandoff(1, 'space-1', 'files')).toBeNull()
-
-    consumedSharedObject?.release()
-    consumedBody?.release()
-    consumedSpace?.release()
-    consumedContents?.release()
-    consumedWorld?.release()
-    secondSharedObject?.release()
-    secondBody?.release()
-    secondSpace?.release()
-    secondContents?.release()
-    secondWorld?.release()
   })
 
-  it('releases held sessions when setup fails before staging', () => {
-    const { session, release } = createTestSession()
-    const cleanupCall = vi.fn()
-    const cleanup: RegisterCleanup = (resource) => {
-      cleanupCall(resource)
-      return resource
-    }
-    const handoff = createQuickstartSessionHandoffCleanup(cleanup)
+  it('keeps route facts while the route retains them', () => {
+    // Stage a route.
+    vi.useFakeTimers()
+    const shared = new SharedResources(null)
+    stageSpaceRoute(shared)
 
+    // A mounted route keeps its facts past the grace period.
+    const release = retainQuickstartRoute(1, 'space-1')
+    vi.advanceTimersByTime(10000)
+    expect(isQuickstartRouteAwaitingResourcesList(1, 'space-1')).toBe(true)
+
+    // Leaving the route drops them after the grace period.
+    release()
+    vi.advanceTimersByTime(5000)
+    expect(isQuickstartRouteAwaitingResourcesList(1, 'space-1')).toBe(false)
+    shared.clear()
+  })
+
+  it('isolates equal Session indexes and drops only the reset app', () => {
+    // Stage the same route in two app scopes.
+    const shared = new SharedResources(null)
+    stageSpaceRoute(shared, 'left')
+    stageSpaceRoute(shared, 'right')
+
+    // Resetting one app drops only its facts.
+    releaseQuickstartAppHandoffs('left')
+    expect(isQuickstartRouteAwaitingResourcesList(1, 'space-1', 'left')).toBe(
+      false,
+    )
+    expect(isQuickstartRouteAwaitingResourcesList(1, 'space-1', 'right')).toBe(
+      true,
+    )
+    shared.clear()
+  })
+
+  it('releases held resources when setup fails before staging', () => {
+    // Hold a Session, then fail the setup.
+    const shared = new SharedResources(null)
+    const { session, release } = createTestSession()
+    const { cleanup, calls } = createCleanup()
+    const handoff = createQuickstartHandoff(cleanup, shared)
     handoff.cleanup(session)
     handoff.releaseHeldResources()
 
+    // The Session is released without reaching the setup's cleanup.
     expect(release).toHaveBeenCalledOnce()
-    expect(cleanupCall).not.toHaveBeenCalled()
+    expect(calls).toEqual([])
   })
 })

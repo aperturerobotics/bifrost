@@ -58,7 +58,7 @@ func TestLocalCDNCanvasReopen(t *testing.T) {
 
 	// Keep one document and browser cache across the first and three later reopens.
 	for sample := 1; sample <= 4; sample++ {
-		// A six-second visit exceeds Quickstart's five-second handoff grace.
+		// A six-second visit exceeds the five-second grace of shared mounts.
 		// It is workload dwell, not a substitute for the Changelog readiness check.
 		if _, err := page.Evaluate(`() => { location.hash = '/changelog' }`); err != nil {
 			t.Fatal(err)
@@ -96,9 +96,6 @@ func TestLocalCDNCanvasReopen(t *testing.T) {
 		}
 		if !result.GetBool("sameDocument") {
 			t.Fatal("reopen replaced the setup document")
-		}
-		if result.GetInt("handoffs") != 0 {
-			t.Fatal("ordinary reopen consumed a Quickstart handoff")
 		}
 		if result.GetInt("workerStarts") != 0 {
 			t.Fatal("reopen constructed a new runtime or plugin worker")
@@ -159,7 +156,6 @@ const measureCanvasReopen = `async route => {
 	return JSON.stringify({ route, ready, error, timeOrigin: origin, startMs: start, endMs: end,
 		sameDocument: globalThis.__canvasReopenDocument === document,
 		elapsedMs: end - start, phases, marks, resources,
-		handoffs: marks.filter(mark => mark.name.includes('-handoff-used')).length,
 		workerStarts: marks.filter(mark => /worker.construct-start|runtime.worker-created/.test(mark.name)).length,
 		body: ready ? undefined : document.body.innerText })
 }`

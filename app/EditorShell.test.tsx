@@ -28,6 +28,7 @@ interface MockResource {
 
 const h = vi.hoisted(() => {
   const session = { id: 'session-1' }
+  const mountSessionByIdx = vi.fn<MockRootResource['mountSessionByIdx']>()
   return {
     appPath: '/',
     currentSessionResource: null as MockResource | null,
@@ -41,7 +42,13 @@ const h = vi.hoisted(() => {
       loading: false,
       error: null,
     },
-    mountSessionByIdx: vi.fn<MockRootResource['mountSessionByIdx']>(),
+    mountSessionByIdx,
+    rootResource: {
+      value: { id: 1, released: false, mountSessionByIdx },
+      loading: false,
+      error: null,
+      retry: () => {},
+    },
     setOpenMenu: vi.fn(),
     shellTabs: {
       tabs: [{ id: 'tab-active', name: 'Home', path: '/' }],
@@ -99,38 +106,11 @@ vi.mock('@s4wave/web/state/index.js', () => ({
 }))
 
 vi.mock('@s4wave/web/hooks/useRootResource.js', () => ({
-  useRootResource: () => ({
-    value: { mountSessionByIdx: h.mountSessionByIdx },
-    loading: false,
-    error: null,
-  }),
+  useRootResource: () => h.rootResource,
 }))
 
 vi.mock('@s4wave/app/hooks/useSessionMetadata.js', () => ({
   useSessionMetadata: () => null,
-}))
-
-vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
-  useResource: (
-    parentResource: { value?: MockRootResource | null } | null,
-    factory: (
-      root: MockRootResource,
-      signal: AbortSignal,
-      cleanup: (session: MockSession) => MockSession,
-    ) => Promise<MockSession | null> | MockSession | null,
-    dependencies: unknown[],
-  ) => {
-    if (parentResource?.value) {
-      void factory(
-        parentResource.value,
-        new AbortController().signal,
-        (session) => session,
-      )
-    }
-    return dependencies[0] === null
-      ? h.emptySessionResource
-      : h.mountedSessionResource
-  },
 }))
 
 vi.mock('@s4wave/web/contexts/contexts.js', () => ({
@@ -261,18 +241,19 @@ describe('EditorShell command session scope', () => {
     cleanup()
   })
 
-  it('mounts the active /u session for shell-level command UI', () => {
+  it('mounts the active /u session for shell-level command UI', async () => {
     // Render command UI for a tab that references a session.
     setActiveTabPath('/u/1/settings/keybindings')
     render(<EditorShell />)
 
-    // The command palette receives the mounted session resource.
+    // The command session scope provides the mounted session resource.
+    await waitFor(() =>
+      expect(h.sessionProviderResources.at(-1)).toMatchObject(
+        h.mountedSessionResource,
+      ),
+    )
     expect(h.mountSessionByIdx).toHaveBeenCalledTimes(1)
     expect(h.mountSessionByIdx.mock.calls[0]?.[0]).toEqual({ sessionIdx: 1 })
-    expect(h.sessionProviderResources).toEqual([h.mountedSessionResource])
-    expect(screen.getByTestId('command-palette-session').textContent).toBe(
-      'session-1',
-    )
   })
 
   it('does not mount a session for non-session shell tabs', () => {
@@ -282,7 +263,9 @@ describe('EditorShell command session scope', () => {
 
     // The command palette receives an empty resource without mounting a session.
     expect(h.mountSessionByIdx).not.toHaveBeenCalled()
-    expect(h.sessionProviderResources).toEqual([h.emptySessionResource])
+    expect(h.sessionProviderResources.at(-1)).toMatchObject(
+      h.emptySessionResource,
+    )
     expect(screen.getByTestId('command-palette-session').textContent).toBe(
       'no-session',
     )

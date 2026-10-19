@@ -171,7 +171,7 @@ import (
 //go:embed sdk/hooks/*.tsx
 //go:embed sdk/hooks/index.ts sdk/hooks/useMappedResource.ts
 //go:embed sdk/hooks/useStreamingResource.ts
-//go:embed sdk/hooks/resourceTransitionState.ts
+//go:embed sdk/hooks/resourceTransitionState.ts sdk/hooks/SharedResources.ts
 //go:embed README.md global.d.ts
 var DistSources embed.FS
 

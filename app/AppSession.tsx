@@ -8,7 +8,6 @@ import {
   usePath,
   type To,
 } from '@s4wave/web/router/router.js'
-import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import { useRootResource } from '@s4wave/web/hooks/useRootResource.js'
 import { markInteracted } from '@s4wave/web/state/interaction.js'
@@ -22,10 +21,12 @@ import { PinUnlockOverlay } from './session/PinUnlockOverlay.js'
 import {
   SessionLockMode,
   type EntityCredential,
+  type SessionMetadata,
 } from '@s4wave/core/session/session.pb.js'
+import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
 import type { Root } from '@s4wave/sdk/root/root.js'
-import { consumeQuickstartSessionHandoff } from './quickstart/session-handoff.js'
-import { markQuickstartStartupBoundary } from './quickstart/startup-boundary.js'
+import type { Session } from '@s4wave/sdk/session/session.js'
+import { useSessionMount } from './hooks/useSharedMounts.js'
 
 // useSessionAttachmentVersion changes only when an established Session moves
 // between provider accounts. Initial metadata hydration describes the Session
@@ -73,19 +74,19 @@ function useSessionAttachmentVersion(
   return version
 }
 
-// AppSession handles the /u/{session-idx}/* path.
-export function AppSession() {
-  const environment = useAppEnvironment()
-  const navigate = useNavigate()
-  const { sessionIndex: sessionIndexParam } = useParams()
-
-  const sessionIdx = parseInt(sessionIndexParam ?? '') || null
-  const sessionBasePath = sessionIdx ? `/u/${sessionIdx}` : '/u'
-
-  const rootResource = useRootResource()
-  const metadata = useSessionMetadata(sessionIdx)
-  const path = usePath()
-
+// useAttachedSession mounts the Session at sessionIdx and leaves an index
+// that does not exist.
+//
+// Always try to mount. If the session is already unlocked (or auto-unlock),
+// mount succeeds immediately. If PIN-locked, mount blocks until unlock.
+// Tabs on the same Session share the mount; a tab that saw the Session move
+// to another account remounts it once under the new attachment.
+function useAttachedSession(
+  rootResource: Resource<Root>,
+  sessionIdx: number | null,
+  metadata: SessionMetadata | null,
+  path: string,
+): Resource<Session> {
   // Pairing keeps its original Session until the user leaves the flow so its
   // approval and completion remain available through an account transition.
   const isPairing = /\/(?:pair|setup\/link-device)(?:\/|$)/.test(path)
@@ -99,6 +100,44 @@ export function AppSession() {
     isPairing,
   )
 
+  // Mount the Session, under the new account once it moves.
+  const environment = useAppEnvironment()
+  const sessionResource = useSessionMount(rootResource, sessionIdx, {
+    generation: attachmentVersion > 0 ? (attachmentKey ?? '') : '',
+    onSuccess: () => {
+      markInteracted(environment.storage)
+    },
+  })
+
+  // Leave a Session index that does not exist.
+  const navigate = useNavigate()
+  const sessionMissing =
+    !!sessionIdx &&
+    !!rootResource.value &&
+    !sessionResource.loading &&
+    !sessionResource.error &&
+    !sessionResource.value
+  useEffect(() => {
+    if (!sessionMissing) return
+    console.warn('session idx returned not found, redirecting to /', sessionIdx)
+    navigate({ path: '/', replace: true })
+  }, [navigate, sessionIdx, sessionMissing])
+
+  return sessionResource
+}
+
+// AppSession handles the /u/{session-idx}/* path.
+export function AppSession() {
+  const navigate = useNavigate()
+  const { sessionIndex: sessionIndexParam } = useParams()
+
+  const sessionIdx = parseInt(sessionIndexParam ?? '') || null
+  const sessionBasePath = sessionIdx ? `/u/${sessionIdx}` : '/u'
+
+  const rootResource = useRootResource()
+  const metadata = useSessionMetadata(sessionIdx)
+  const path = usePath()
+
   const isPinLocked = metadata?.lockMode === SessionLockMode.PIN_ENCRYPTED
 
   const handleUnlock = useCallback(
@@ -110,68 +149,11 @@ export function AppSession() {
     [rootResource.value, sessionIdx],
   )
 
-  // Always try to mount. If the session is already unlocked (or auto-unlock),
-  // mount succeeds immediately. If PIN-locked, mount blocks until unlock.
-  const sessionResource = useResource(
+  const sessionResource = useAttachedSession(
     rootResource,
-    async (root: Root, signal, cleanup) => {
-      if (!sessionIdx) return null
-      const handoff = consumeQuickstartSessionHandoff(
-        sessionIdx,
-        environment.instanceKey,
-      )
-      if (handoff) {
-        markQuickstartStartupBoundary('quickstart.session-handoff-used', {
-          sessionIdx,
-          released: handoff.session.released,
-        })
-        if (
-          (globalThis as { __s4waveLogQuickstartTiming?: boolean })
-            .__s4waveLogQuickstartTiming
-        ) {
-          console.log(
-            'quickstart route consuming session handoff: ' +
-              JSON.stringify({
-                sessionIdx,
-                released: handoff.session.released,
-              }),
-          )
-        }
-        return cleanup(handoff.session)
-      }
-      if (
-        (globalThis as { __s4waveLogQuickstartTiming?: boolean })
-          .__s4waveLogQuickstartTiming
-      ) {
-        console.log(
-          'quickstart route mounting session by index: ' +
-            JSON.stringify({ sessionIdx }),
-        )
-      }
-      markQuickstartStartupBoundary('quickstart.session-mount-start', {
-        sessionIdx,
-      })
-      const result = await root.mountSessionByIdx({ sessionIdx }, signal)
-      if (result === null) {
-        console.warn(
-          'session idx returned not found, redirecting to /',
-          sessionIdx,
-        )
-        queueMicrotask(() => navigate({ path: '/', replace: true }))
-        return null
-      }
-      markQuickstartStartupBoundary('quickstart.session-mount-ready', {
-        sessionIdx,
-        released: result.session.released,
-      })
-      return cleanup(result.session)
-    },
-    [sessionIdx, attachmentVersion],
-    {
-      onSuccess: () => {
-        markInteracted(environment.storage)
-      },
-    },
+    sessionIdx,
+    metadata,
+    path,
   )
 
   const handleReset = useCallback(
@@ -209,10 +191,9 @@ export function AppSession() {
 
   // Wrap all session-level renders in SessionIndexContext so children
   // can access the session index without parsing the URL.
-  // useResource keeps the previous value while reloading, so a switch to a
-  // PIN-locked session shows as loading with the old session's value. The
-  // mount blocks until unlock, so treat any pending mount as locked, matching
-  // the initial mount where the value is still null.
+  // A remount keeps the previous value while loading. The mount of a
+  // PIN-locked session blocks until unlock, so treat any pending mount as
+  // locked, matching the initial mount where the value is still null.
   let content: React.ReactNode
   if (
     isPinLocked &&

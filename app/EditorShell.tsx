@@ -1,6 +1,5 @@
 /* eslint-disable react-doctor/rerender-state-only-in-handlers */
 import { useState, useEffect, useMemo, type ReactNode } from 'react'
-import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
 
 import {
   useAppEnvironment,
@@ -14,7 +13,7 @@ import { WhichKeyPanel } from '@s4wave/web/command/WhichKeyPanel.js'
 import { ShellTabFocusContextProvider } from '@s4wave/web/command/FocusContext.js'
 import { SessionContext } from '@s4wave/web/contexts/contexts.js'
 import { useRootResource } from '@s4wave/web/hooks/useRootResource.js'
-import { useSessionMetadata } from '@s4wave/app/hooks/useSessionMetadata.js'
+import { useSessionMount } from '@s4wave/app/hooks/useSharedMounts.js'
 import {
   DocumentTitleProvider,
   getRouteDocumentTitleParts,
@@ -49,20 +48,9 @@ function CommandSessionScope({ children }: { children: ReactNode }) {
     return sessionIndex > 0 ? sessionIndex : null
   }, [tabs, activeTabId])
 
-  // Mount the session resource as its metadata becomes available.
-  const metadata = useSessionMetadata(activeSessionIndex)
-  const sessionResource = useResource(
-    rootResource,
-    async (root, signal, cleanup) => {
-      if (activeSessionIndex === null) return null
-      const result = await root.mountSessionByIdx(
-        { sessionIdx: activeSessionIndex },
-        signal,
-      )
-      return result ? cleanup(result.session) : null
-    },
-    [activeSessionIndex, metadata?.providerId, metadata?.providerAccountId],
-  )
+  // Share the active tab's Session mount; the tab remounts it when the
+  // Session moves to another account.
+  const sessionResource = useSessionMount(rootResource, activeSessionIndex)
 
   // Keep command UI mounted when a tab enters or leaves a session.
   return (

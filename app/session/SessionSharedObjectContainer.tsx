@@ -48,13 +48,11 @@ import {
 } from '@s4wave/web/contexts/contexts.js'
 import { SpacewaveOrgListContext } from '@s4wave/web/contexts/SpacewaveOrgListContext.js'
 import {
-  useResource,
   useResourceValue,
   type Resource,
 } from '@aptre/bldr-sdk/hooks/useResource.js'
 import type { OrganizationInfo } from '@s4wave/sdk/provider/spacewave/spacewave.pb.js'
 import {
-  MountSharedObjectRequest,
   MountSharedObjectResponse,
   WatchSharedObjectHealthRequest,
   WatchSharedObjectHealthResponse,
@@ -86,47 +84,14 @@ import {
   getSharedObjectRouteHealth,
 } from './sharedObjectHealthFallback.js'
 import {
-  clearQuickstartSharedObjectHandoffAwaitingResourcesList,
-  consumeQuickstartSharedObjectBodyHandoff,
-  consumeQuickstartSharedObjectHandoff,
-  hasQuickstartSharedObjectHandoff,
-  isQuickstartSharedObjectHandoffAwaitingResourcesList,
-  markQuickstartSharedObjectHandoffAwaitingResourcesList,
-  releaseQuickstartSharedObjectHandoff,
+  clearQuickstartRouteAwaitingResourcesList,
+  isQuickstartRouteAwaitingResourcesList,
+  retainQuickstartRoute,
 } from '@s4wave/app/quickstart/session-handoff.js'
-import { markQuickstartStartupBoundary } from '@s4wave/app/quickstart/startup-boundary.js'
-
-const quickstartRouteStartupLabels: Record<string, string> = {
-  'quickstart route using shared object handoff':
-    'quickstart.shared-object-handoff-used',
-  'quickstart route mount shared object start':
-    'quickstart.shared-object-mount-start',
-  'quickstart route mount shared object finish':
-    'quickstart.shared-object-mount-ready',
-  'quickstart route using shared object body handoff':
-    'quickstart.shared-object-body-handoff-used',
-  'quickstart route mount body start':
-    'quickstart.shared-object-body-mount-start',
-  'quickstart route mount body finish':
-    'quickstart.shared-object-body-mount-ready',
-}
-
-function logQuickstartRouteDiagnostic(
-  message: string,
-  fields: Record<string, unknown>,
-): void {
-  const startupLabel = quickstartRouteStartupLabels[message]
-  if (startupLabel) {
-    markQuickstartStartupBoundary(startupLabel, fields)
-  }
-  if (
-    !(globalThis as { __s4waveLogQuickstartTiming?: boolean })
-      .__s4waveLogQuickstartTiming
-  ) {
-    return
-  }
-  console.log(message + ': ' + JSON.stringify(fields))
-}
+import {
+  useSharedObjectBodyMount,
+  useSharedObjectMount,
+} from '@s4wave/app/hooks/useSharedMounts.js'
 
 interface SharedObjectMutationPermission {
   canMutate: boolean
@@ -778,108 +743,36 @@ function useSpaceOrgRedirect(sharedObjectId: string) {
   }, [navigateSession, orgRedirectId, sharedObjectId])
 }
 
-// useMountedSharedObject mounts the shared object and then its body, preferring
-// the quickstart handoffs over a fresh mount. A shared object that is not found
-// redirects to the session root.
+// useMountedSharedObject mounts the shared object and then its body through
+// the shared mounts, so tabs on the same shared object share one mount. A
+// shared object that is not found redirects to the session root.
 function useMountedSharedObject(
   session: Resource<Session>,
   sharedObjectId: string,
   navigateSession: SessionNavigate,
 ) {
-  const environment = useAppEnvironment()
-  const sessionIndex = useSessionIndex()
+  const sharedObjectResource = useSharedObjectMount(session, sharedObjectId)
+  const sharedObjectBodyResource =
+    useSharedObjectBodyMount(sharedObjectResource)
 
-  const sharedObjectResource = useResource(
-    session,
-    async (session, signal, cleanup) => {
-      if (!session || !sharedObjectId) {
-        return null
-      }
-
-      const handoff = consumeQuickstartSharedObjectHandoff(
-        sessionIndex,
-        sharedObjectId,
-        environment.instanceKey,
-      )
-      if (handoff) {
-        logQuickstartRouteDiagnostic(
-          'quickstart route using shared object handoff',
-          {
-            sessionIndex,
-            sharedObjectId,
-            released: handoff.released,
-          },
-        )
-        return cleanup(handoff)
-      }
-
-      const req: MountSharedObjectRequest = { sharedObjectId }
-      logQuickstartRouteDiagnostic(
-        'quickstart route mount shared object start',
-        {
-          sessionIndex,
-          sharedObjectId,
-        },
-      )
-      const result = await session.mountSharedObject(req, signal)
-      logQuickstartRouteDiagnostic(
-        'quickstart route mount shared object finish',
-        {
-          sessionIndex,
-          sharedObjectId,
-          found: !!result,
-        },
-      )
-      if (!result) {
-        console.warn(
-          'mount shared object returned not found, redirecting to session',
-          req,
-        )
-        queueMicrotask(() => navigateSession({ path: '', replace: true }))
-        return null
-      }
-
-      return cleanup(result)
-    },
-    // The mounted shared object is keyed by session + sharedObjectId.
-    // Including navigation callbacks here causes path-only route changes to
-    // reload the mount because the outer shell router recreates navigate
-    // functions as the current path changes.
-    [sessionIndex, sharedObjectId],
-  )
-
-  const sharedObjectBodyResource = useResource(
-    sharedObjectResource,
-    async (sobject, signal, cleanup) => {
-      if (!sobject) return null
-      const handoff = consumeQuickstartSharedObjectBodyHandoff(
-        sessionIndex,
-        sharedObjectId,
-        environment.instanceKey,
-      )
-      if (handoff) {
-        logQuickstartRouteDiagnostic(
-          'quickstart route using shared object body handoff',
-          {
-            sessionIndex,
-            sharedObjectId,
-          },
-        )
-        return cleanup(handoff)
-      }
-      logQuickstartRouteDiagnostic('quickstart route mount body start', {
-        sessionIndex,
-        sharedObjectId,
-      })
-      const body = await sobject.mountSharedObjectBody({}, signal)
-      logQuickstartRouteDiagnostic('quickstart route mount body finish', {
-        sessionIndex,
-        sharedObjectId,
-      })
-      return cleanup(body)
-    },
-    [sessionIndex, sharedObjectId],
-  )
+  // Leave a shared object the session does not have.
+  const sharedObjectMissing =
+    !!session.value &&
+    !!sharedObjectId &&
+    !sharedObjectResource.loading &&
+    !sharedObjectResource.error &&
+    !sharedObjectResource.value
+  useEffect(() => {
+    if (!sharedObjectMissing) return
+    console.warn(
+      'mount shared object returned not found, redirecting to session',
+      sharedObjectId,
+    )
+    navigateSession({ path: '', replace: true })
+    // The outer shell router recreates navigate functions as the current
+    // path changes; only a new miss should redirect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedObjectId, sharedObjectMissing])
 
   return { sharedObjectResource, sharedObjectBodyResource }
 }
@@ -887,9 +780,9 @@ function useMountedSharedObject(
 // useMissingSpaceGuard reports whether a mounted shared object is absent from
 // the published resources list and should redirect to the session root.
 //
-// Quickstart handoff can mount this SharedObject before WatchResourcesList
-// publishes the new Space. Keep the guard event-driven; background tabs
-// throttle timers, so a timeout would reintroduce the false redirect.
+// Quickstart can open this route before WatchResourcesList publishes the new
+// Space. Keep the guard event-driven; background tabs throttle timers, so a
+// timeout would reintroduce the false redirect.
 function useMissingSpaceGuard(
   sharedObjectId: string,
   mounted: boolean,
@@ -898,26 +791,11 @@ function useMissingSpaceGuard(
   const environment = useAppEnvironment()
   const sessionIndex = useSessionIndex()
   const instanceKey = environment.instanceKey
-  const handoffPresent = hasQuickstartSharedObjectHandoff(
-    sessionIndex,
-    sharedObjectId,
-    instanceKey,
-  )
 
-  useEffect(() => {
-    return () => {
-      clearQuickstartSharedObjectHandoffAwaitingResourcesList(
-        sessionIndex,
-        sharedObjectId,
-        instanceKey,
-      )
-      releaseQuickstartSharedObjectHandoff(
-        sessionIndex,
-        sharedObjectId,
-        instanceKey,
-      )
-    }
-  }, [sessionIndex, sharedObjectId, instanceKey])
+  useEffect(
+    () => retainQuickstartRoute(sessionIndex, sharedObjectId, instanceKey),
+    [sessionIndex, sharedObjectId, instanceKey],
+  )
 
   const inResourcesList = useMemo(
     () =>
@@ -929,38 +807,25 @@ function useMissingSpaceGuard(
 
   useEffect(() => {
     if (inResourcesList) {
-      clearQuickstartSharedObjectHandoffAwaitingResourcesList(
-        sessionIndex,
-        sharedObjectId,
-        instanceKey,
-      )
-      return
-    }
-    if (handoffPresent) {
-      markQuickstartSharedObjectHandoffAwaitingResourcesList(
+      clearQuickstartRouteAwaitingResourcesList(
         sessionIndex,
         sharedObjectId,
         instanceKey,
       )
     }
-  }, [
-    handoffPresent,
-    sessionIndex,
-    inResourcesList,
-    sharedObjectId,
-    instanceKey,
-  ])
+  }, [sessionIndex, inResourcesList, sharedObjectId, instanceKey])
 
-  const handoffActive =
+  const awaitingResourcesList =
     !inResourcesList &&
-    (handoffPresent ||
-      isQuickstartSharedObjectHandoffAwaitingResourcesList(
-        sessionIndex,
-        sharedObjectId,
-        instanceKey,
-      ))
+    isQuickstartRouteAwaitingResourcesList(
+      sessionIndex,
+      sharedObjectId,
+      instanceKey,
+    )
 
-  return mounted && !!resourcesList && !handoffActive && !inResourcesList
+  return (
+    mounted && !!resourcesList && !awaitingResourcesList && !inResourcesList
+  )
 }
 
 // useSharedObjectRemediation owns the repair and reinitialize mutations, the
@@ -1356,9 +1221,14 @@ export function SessionSharedObjectContainer() {
     queueMicrotask(() => navigateSession({ path: '', replace: true }))
   }
 
+  // Remount the shared object, which remounts its body, unless only the body
+  // failed.
   const handleRetry = useCallback(() => {
+    if (sharedObjectBodyResource.error && !sharedObjectResource.error) {
+      sharedObjectBodyResource.retry()
+      return
+    }
     sharedObjectResource.retry()
-    sharedObjectBodyResource.retry()
   }, [sharedObjectBodyResource, sharedObjectResource])
 
   const handleBack = useCallback(() => {

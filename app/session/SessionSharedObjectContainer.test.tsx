@@ -25,7 +25,6 @@ const mockUseParentPaths = vi.hoisted(() => vi.fn())
 const mockNavigate = vi.hoisted(() => vi.fn())
 const mockNavigateSession = vi.hoisted(() => vi.fn())
 const mockUseWatchStateRpc = vi.hoisted(() => vi.fn())
-const mockUseResource = vi.hoisted(() => vi.fn())
 const mockUseResourceValue = vi.hoisted(() => vi.fn())
 const mockSessionUseContext = vi.hoisted(() => vi.fn())
 const mockOrgListUseContextSafe = vi.hoisted(() => vi.fn())
@@ -33,19 +32,9 @@ const mockRepairSharedObject = vi.hoisted(() => vi.fn())
 const mockSessionInfo = vi.hoisted(() => ({ providerId: '', accountId: '' }))
 const mockReinitializeSharedObject = vi.hoisted(() => vi.fn())
 const mockSelfEnrollmentStart = vi.hoisted(() => vi.fn())
-const mockConsumeQuickstartSharedObjectHandoff = vi.hoisted(() => vi.fn())
-const mockConsumeQuickstartSharedObjectBodyHandoff = vi.hoisted(() => vi.fn())
-const mockHasQuickstartSharedObjectHandoff = vi.hoisted(() => vi.fn())
-const mockIsQuickstartSharedObjectHandoffAwaitingResourcesList = vi.hoisted(
-  () => vi.fn(),
-)
-const mockMarkQuickstartSharedObjectHandoffAwaitingResourcesList = vi.hoisted(
-  () => vi.fn(),
-)
-const mockClearQuickstartSharedObjectHandoffAwaitingResourcesList = vi.hoisted(
-  () => vi.fn(),
-)
-const mockReleaseQuickstartSharedObjectHandoff = vi.hoisted(() => vi.fn())
+const mockIsQuickstartRouteAwaitingResourcesList = vi.hoisted(() => vi.fn())
+const mockUseSharedObjectMount = vi.hoisted(() => vi.fn())
+const mockUseSharedObjectBodyMount = vi.hoisted(() => vi.fn())
 const mockSelfEnrollmentStatus = vi.hoisted(() => ({
   value: {
     resource: null as null | { start: () => Promise<void> },
@@ -87,7 +76,6 @@ vi.mock('@s4wave/web/contexts/SpacewaveOrgListContext.js', () => ({
 }))
 
 vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
-  useResource: mockUseResource,
   useResourceValue: mockUseResourceValue,
 }))
 
@@ -169,19 +157,15 @@ vi.mock('./SessionSelfEnrollmentStatusContext.js', () => ({
 }))
 
 vi.mock('@s4wave/app/quickstart/session-handoff.js', () => ({
-  consumeQuickstartSharedObjectHandoff:
-    mockConsumeQuickstartSharedObjectHandoff,
-  consumeQuickstartSharedObjectBodyHandoff:
-    mockConsumeQuickstartSharedObjectBodyHandoff,
-  hasQuickstartSharedObjectHandoff: mockHasQuickstartSharedObjectHandoff,
-  isQuickstartSharedObjectHandoffAwaitingResourcesList:
-    mockIsQuickstartSharedObjectHandoffAwaitingResourcesList,
-  markQuickstartSharedObjectHandoffAwaitingResourcesList:
-    mockMarkQuickstartSharedObjectHandoffAwaitingResourcesList,
-  clearQuickstartSharedObjectHandoffAwaitingResourcesList:
-    mockClearQuickstartSharedObjectHandoffAwaitingResourcesList,
-  releaseQuickstartSharedObjectHandoff:
-    mockReleaseQuickstartSharedObjectHandoff,
+  isQuickstartRouteAwaitingResourcesList:
+    mockIsQuickstartRouteAwaitingResourcesList,
+  clearQuickstartRouteAwaitingResourcesList: vi.fn(),
+  retainQuickstartRoute: () => () => {},
+}))
+
+vi.mock('@s4wave/app/hooks/useSharedMounts.js', () => ({
+  useSharedObjectMount: mockUseSharedObjectMount,
+  useSharedObjectBodyMount: mockUseSharedObjectBodyMount,
 }))
 
 vi.mock('./SessionFrame.js', () => ({
@@ -213,12 +197,10 @@ function buildSpaceListEntry(source: string) {
 }
 
 function setResourceMocks(sharedObject: unknown, body: unknown) {
-  mockUseResource.mockReset()
-  let callCount = 0
-  mockUseResource.mockImplementation(() => {
-    callCount += 1
-    return callCount % 2 === 1 ? sharedObject : body
-  })
+  mockUseSharedObjectMount.mockReset()
+  mockUseSharedObjectMount.mockReturnValue(sharedObject)
+  mockUseSharedObjectBodyMount.mockReset()
+  mockUseSharedObjectBodyMount.mockReturnValue(body)
 }
 
 // setOwnerWithRejectedState opens a rejected org Space as its owner.
@@ -260,24 +242,13 @@ describe('SessionSharedObjectContainer', () => {
     mockRepairSharedObject.mockReset()
     mockReinitializeSharedObject.mockReset()
     mockSelfEnrollmentStart.mockReset()
-    mockConsumeQuickstartSharedObjectHandoff.mockReset()
-    mockConsumeQuickstartSharedObjectBodyHandoff.mockReset()
-    mockHasQuickstartSharedObjectHandoff.mockReset()
-    mockIsQuickstartSharedObjectHandoffAwaitingResourcesList.mockReset()
-    mockMarkQuickstartSharedObjectHandoffAwaitingResourcesList.mockReset()
-    mockClearQuickstartSharedObjectHandoffAwaitingResourcesList.mockReset()
-    mockReleaseQuickstartSharedObjectHandoff.mockReset()
+    mockIsQuickstartRouteAwaitingResourcesList.mockReset()
     mockRepairSharedObject.mockResolvedValue({})
     mockSessionInfo.providerId = ''
     mockSessionInfo.accountId = ''
     mockReinitializeSharedObject.mockResolvedValue(undefined)
     mockSelfEnrollmentStart.mockResolvedValue(undefined)
-    mockConsumeQuickstartSharedObjectHandoff.mockReturnValue(null)
-    mockConsumeQuickstartSharedObjectBodyHandoff.mockReturnValue(null)
-    mockHasQuickstartSharedObjectHandoff.mockReturnValue(false)
-    mockIsQuickstartSharedObjectHandoffAwaitingResourcesList.mockReturnValue(
-      false,
-    )
+    mockIsQuickstartRouteAwaitingResourcesList.mockReturnValue(false)
     mockSelfEnrollmentStatus.value = {
       resource: null,
       snapshot: null,
@@ -288,10 +259,11 @@ describe('SessionSharedObjectContainer', () => {
     mockUseParams.mockReturnValue({ sharedObjectId: SPACE_ID })
     mockUseParentPaths.mockReturnValue([])
     setWatchMocks({ spacesList: [] }, null)
+    // The SharedObject mount is in flight; a settled null means not found.
     setResourceMocks(
       {
         value: null,
-        loading: false,
+        loading: true,
         error: null,
         retry: vi.fn(),
       },
@@ -381,7 +353,7 @@ describe('SessionSharedObjectContainer', () => {
   })
 
   it('waits for the resources list after a quickstart handoff mount', async () => {
-    mockHasQuickstartSharedObjectHandoff.mockReturnValue(true)
+    mockIsQuickstartRouteAwaitingResourcesList.mockReturnValue(true)
     setResourceMocks(
       {
         value: { meta: { sharedObjectId: SPACE_ID } },
@@ -749,8 +721,10 @@ describe('SessionSharedObjectContainer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
 
+    // Remounting the SharedObject gives the body a new key, so the body
+    // remounts without its own retry.
     expect(sharedRetry).toHaveBeenCalledTimes(1)
-    expect(bodyRetry).toHaveBeenCalledTimes(1)
+    expect(bodyRetry).not.toHaveBeenCalled()
   })
 
   it('renders remediation guidance for revoked access', () => {
@@ -1014,7 +988,9 @@ describe('SessionSharedObjectContainer', () => {
     await waitFor(() => {
       expect(mockSelfEnrollmentStart).toHaveBeenCalledTimes(1)
     })
+    // Remounting the SharedObject gives the body a new key, so the body
+    // remounts without its own retry.
     expect(sharedRetry).toHaveBeenCalledTimes(1)
-    expect(bodyRetry).toHaveBeenCalledTimes(1)
+    expect(bodyRetry).not.toHaveBeenCalled()
   })
 })

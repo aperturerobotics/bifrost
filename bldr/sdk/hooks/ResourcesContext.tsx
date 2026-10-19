@@ -1,14 +1,18 @@
 import React, {
   createContext,
   use,
+  useEffect,
   useMemo,
   useSyncExternalStore,
   ReactNode,
 } from 'react'
 import { Client as ResourceClient } from '../resource/client.js'
+import { SharedResources } from './SharedResources.js'
 
 interface ResourcesContextValue {
   client: ResourceClient | null
+  // shared holds the mounts components share through the client.
+  shared: SharedResources
 }
 
 const ResourcesContext = createContext<ResourcesContextValue | undefined>(
@@ -49,7 +53,15 @@ export function ResourcesProvider({
   children,
   client,
 }: ResourcesProviderProps) {
-  const value = useMemo(() => ({ client }), [client])
+  const value = useMemo(
+    () => ({ client, shared: new SharedResources(client) }),
+    [client],
+  )
+
+  // Dispose the shared mounts of a client this provider no longer serves.
+  useEffect(() => {
+    return () => value.shared.clear()
+  }, [value])
 
   return (
     <ResourcesContext.Provider value={value}>

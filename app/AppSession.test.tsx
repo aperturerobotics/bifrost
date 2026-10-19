@@ -1,19 +1,14 @@
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
-import type { RegisterCleanup } from '@aptre/bldr-sdk/hooks/useResource.js'
 
 import { AppSession } from './AppSession.js'
 import { SessionLockMode } from '@s4wave/core/session/session.pb.js'
-import {
-  releaseQuickstartSessionHandoffsForTests,
-  stageQuickstartSessionHandoff,
-} from './quickstart/session-handoff.js'
 
 const mockUseParams = vi.hoisted(() => vi.fn())
 const mockUsePath = vi.hoisted(() => vi.fn(() => '/u/1'))
 const mockUseNavigate = vi.hoisted(() => vi.fn())
-const mockUseResource = vi.hoisted(() => vi.fn())
+const mockUseSessionMount = vi.hoisted(() => vi.fn())
 const mockUseRootResource = vi.hoisted(() => vi.fn())
 const mockUseSessionMetadata = vi.hoisted(() => vi.fn())
 
@@ -24,8 +19,8 @@ vi.mock('@s4wave/web/router/router.js', () => ({
   usePath: mockUsePath,
 }))
 
-vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
-  useResource: mockUseResource,
+vi.mock('./hooks/useSharedMounts.js', () => ({
+  useSessionMount: mockUseSessionMount,
 }))
 
 vi.mock('@s4wave/web/hooks/useRootResource.js', () => ({
@@ -60,7 +55,6 @@ vi.mock('./session/PinUnlockOverlay.js', () => ({
 describe('AppSession', () => {
   afterEach(() => {
     cleanup()
-    releaseQuickstartSessionHandoffsForTests()
     vi.clearAllMocks()
     mockUsePath.mockReturnValue('/u/1')
   })
@@ -69,7 +63,7 @@ describe('AppSession', () => {
     mockUseParams.mockReturnValue({ sessionIndex: '1' })
     mockUseRootResource.mockReturnValue({ value: null })
     mockUseSessionMetadata.mockReturnValue(null)
-    mockUseResource.mockReturnValue({
+    mockUseSessionMount.mockReturnValue({
       value: null,
       loading: true,
       error: null,
@@ -88,7 +82,7 @@ describe('AppSession', () => {
       lockMode: SessionLockMode.PIN_ENCRYPTED,
       displayName: 'Cloud Session',
     })
-    mockUseResource.mockReturnValue({
+    mockUseSessionMount.mockReturnValue({
       value: null,
       loading: false,
       error: null,
@@ -109,8 +103,8 @@ describe('AppSession', () => {
       lockMode: SessionLockMode.PIN_ENCRYPTED,
       displayName: 'Cloud Session',
     })
-    // useResource retains the previous session's value while reloading.
-    mockUseResource.mockReturnValue({
+    // A remount retains the previous session's value while loading.
+    mockUseSessionMount.mockReturnValue({
       value: {} as never,
       loading: true,
       error: null,
@@ -130,7 +124,7 @@ describe('AppSession', () => {
       lockMode: SessionLockMode.PIN_ENCRYPTED,
       displayName: 'Cloud Session',
     })
-    mockUseResource.mockReturnValue({
+    mockUseSessionMount.mockReturnValue({
       value: {} as never,
       loading: false,
       error: null,
@@ -143,128 +137,85 @@ describe('AppSession', () => {
     expect(screen.queryByTestId('pin-unlock-overlay')).toBeNull()
   })
 
-  it('adopts a staged quickstart session before mounting by index', async () => {
-    type TestRoot = {
-      mountSessionByIdx: ReturnType<typeof vi.fn>
-    }
-    const session = {
-      released: false,
-      release: vi.fn(),
-      [Symbol.dispose]: vi.fn(),
-    }
-    const root: TestRoot = {
-      mountSessionByIdx: vi.fn(),
-    }
-    type SessionFactory = (
-      root: TestRoot,
-      signal: AbortSignal,
-      cleanup: RegisterCleanup,
-    ) => Promise<unknown>
-    const factoryRef: { current: SessionFactory | null } = { current: null }
-
-    stageQuickstartSessionHandoff({
-      sessionIndex: 1,
-      session: session as never,
-    })
-    mockUseParams.mockReturnValue({ sessionIndex: '1' })
-    mockUseRootResource.mockReturnValue({ value: root })
+  it('leaves a Session index that does not exist', () => {
+    mockUseParams.mockReturnValue({ sessionIndex: '9' })
+    mockUsePath.mockReturnValue('/u/9')
+    mockUseRootResource.mockReturnValue({ value: {} })
     mockUseSessionMetadata.mockReturnValue(null)
-    mockUseResource.mockImplementation(
-      (_rootResource: unknown, resourceFactory: SessionFactory) => {
-        factoryRef.current = resourceFactory
-        return {
-          value: null,
-          loading: true,
-          error: null,
-          retry: vi.fn(),
-        }
-      },
-    )
+    mockUseSessionMount.mockReturnValue({
+      value: null,
+      loading: false,
+      error: null,
+      retry: vi.fn(),
+    })
 
     render(<AppSession />)
 
-    const cleanupCalls: unknown[] = []
-    const cleanupResource: RegisterCleanup = (resource) => {
-      cleanupCalls.push(resource)
-      return resource
-    }
-    const factory = factoryRef.current
-    if (!factory) {
-      throw new Error('session factory was not registered')
-    }
-    const loaded = await factory(
-      root,
-      new AbortController().signal,
-      cleanupResource,
-    )
-    expect(loaded).toBe(session)
-
-    expect(root.mountSessionByIdx).not.toHaveBeenCalled()
-    expect(cleanupCalls).toEqual([session])
+    expect(mockUseNavigate).toHaveBeenCalledWith({ path: '/', replace: true })
   })
 
   it('refreshes a moved account after leaving the pairing flow', () => {
     mockUseParams.mockReturnValue({ sessionIndex: '1' })
     mockUseRootResource.mockReturnValue({ value: null })
-    mockUseResource.mockReturnValue({ value: null, loading: true })
+    mockUseSessionMount.mockReturnValue({ value: null, loading: true })
     mockUseSessionMetadata.mockReturnValue({
       providerId: 'local',
       providerAccountId: 'source',
     })
     mockUsePath.mockReturnValue('/u/1/setup/link-device')
     const { rerender } = render(<AppSession />)
-    const dependencies = () => mockUseResource.mock.lastCall?.[2]
-    const pairingDependencies = dependencies()
+    const generation = () => mockUseSessionMount.mock.lastCall?.[2]?.generation
+    const pairingGeneration = generation()
 
     mockUseSessionMetadata.mockReturnValue({
       providerId: 'local',
       providerAccountId: 'destination',
     })
     rerender(<AppSession />)
-    expect(dependencies()).toEqual(pairingDependencies)
+    expect(generation()).toEqual(pairingGeneration)
 
     mockUsePath.mockReturnValue('/u/1/so/drive')
     rerender(<AppSession />)
-    expect(dependencies()).toEqual([1, 1])
+    expect(generation()).toEqual('local/destination')
     mockUsePath.mockReturnValue('/u/1/so/another-drive')
     rerender(<AppSession />)
-    expect(dependencies()).toEqual([1, 1])
+    expect(generation()).toEqual('local/destination')
   })
 
   it('does not remount when initial Session metadata arrives', () => {
     mockUseParams.mockReturnValue({ sessionIndex: '1' })
     mockUseRootResource.mockReturnValue({ value: null })
-    mockUseResource.mockReturnValue({ value: null, loading: true })
+    mockUseSessionMount.mockReturnValue({ value: null, loading: true })
     mockUseSessionMetadata.mockReturnValue(null)
     const { rerender } = render(<AppSession />)
-    const dependencies = () => mockUseResource.mock.lastCall?.[2]
-    expect(dependencies()).toEqual([1, 0])
+    const generation = () => mockUseSessionMount.mock.lastCall?.[2]?.generation
+    expect(generation()).toEqual('')
 
     mockUseSessionMetadata.mockReturnValue({
       providerId: 'local',
       providerAccountId: 'source',
     })
     rerender(<AppSession />)
-    expect(dependencies()).toEqual([1, 0])
+    expect(generation()).toEqual('')
   })
 
   it('remounts when an established Session moves accounts', () => {
     mockUseParams.mockReturnValue({ sessionIndex: '1' })
     mockUseRootResource.mockReturnValue({ value: null })
-    mockUseResource.mockReturnValue({ value: null, loading: true })
+    mockUseSessionMount.mockReturnValue({ value: null, loading: true })
     mockUseSessionMetadata.mockReturnValue({
       providerId: 'local',
       providerAccountId: 'source',
     })
     const { rerender } = render(<AppSession />)
-    const dependencies = () => mockUseResource.mock.lastCall?.[2]
-    expect(dependencies()).toEqual([1, 0])
+    const generation = () => mockUseSessionMount.mock.lastCall?.[2]?.generation
+    expect(generation()).toEqual('')
 
     mockUseSessionMetadata.mockReturnValue({
       providerId: 'local',
       providerAccountId: 'destination',
     })
     rerender(<AppSession />)
-    expect(dependencies()).toEqual([1, 1])
+    expect(generation()).toEqual('local/destination')
   })
 })

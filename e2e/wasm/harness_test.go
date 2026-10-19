@@ -1295,7 +1295,7 @@ func TestGoScriptQuickstartDriveDirectRouteMountGate(t *testing.T) {
 
 // TestGoScriptSharedObjectDirectRouteBodyMountGate verifies a fresh page can
 // open an existing SharedObject route through Resource SDK mounts without
-// reusing quickstart handoff resources.
+// reusing mounts Quickstart made.
 func TestGoScriptSharedObjectDirectRouteBodyMountGate(t *testing.T) {
 	// Resolve the e2e wasm compiler and require GoScript.
 	compiler, err := ResolveE2EWasmCompiler()
@@ -1525,20 +1525,6 @@ func assertDirectRouteStartupMarks(t testing.TB, page playwright.Page, required 
 	for _, label := range required {
 		if !slices.Contains(labels, label) {
 			t.Fatalf("direct route missing startup mark %q; labels=%v", label, labels)
-		}
-	}
-
-	// Assert no quickstart handoff marks are present.
-	for _, label := range []string{
-		"quickstart.session-handoff-used",
-		"quickstart.shared-object-handoff-used",
-		"quickstart.shared-object-body-handoff-used",
-		"quickstart.space-handoff-used",
-		"quickstart.space-world-handoff-used",
-		"quickstart.space-contents-handoff-used",
-	} {
-		if slices.Contains(labels, label) {
-			t.Fatalf("direct route used quickstart handoff mark %q; labels=%v", label, labels)
 		}
 	}
 }

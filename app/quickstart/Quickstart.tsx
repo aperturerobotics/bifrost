@@ -7,6 +7,7 @@ import { Redirect } from '@s4wave/web/router/Redirect.js'
 import { useRootResource } from '@s4wave/web/hooks/useRootResource.js'
 import { useNavigate } from '@s4wave/web/router/router.js'
 import { useResource } from '@aptre/bldr-sdk/hooks/useResource.js'
+import { useSharedResources } from '@aptre/bldr-sdk/hooks/useSharedResource.js'
 import { BackButton } from '@s4wave/web/ui/BackButton.js'
 import { ErrorState } from '@s4wave/web/ui/ErrorState.js'
 
@@ -20,7 +21,7 @@ import {
 import { LoadingScreen } from './LoadingScreen.js'
 import { isQuickstartCreateId, type QuickstartId } from './options.js'
 import { NavigatePath } from '@s4wave/web/router/NavigatePath.js'
-import { createQuickstartSessionHandoffCleanup } from './session-handoff.js'
+import { createQuickstartHandoff } from './session-handoff.js'
 import { markQuickstartStartupBoundary } from './startup-boundary.js'
 
 interface QuickstartProps {
@@ -58,6 +59,7 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
   const isCreate = isQuickstartCreateId(quickstartId)
   const isLocal = quickstartId === 'local'
   const rootResource = useRootResource()
+  const shared = useSharedResources()
   const [progress, setProgress] = useState<QuickstartProgressState | null>(null)
   const reportProgress = useCallback((state: QuickstartProgressState) => {
     setProgress(state)
@@ -67,8 +69,9 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
   const localSessionResource = useResource(
     rootResource,
     async (root, signal, cleanup) => {
-      const handoff = createQuickstartSessionHandoffCleanup(
+      const handoff = createQuickstartHandoff(
         cleanup,
+        shared,
         environment.instanceKey,
       )
       try {
@@ -84,14 +87,14 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
           handoff.releaseHeldResources()
           return setup
         }
-        handoff.stage(setup.sessionIndex, setup.session)
+        handoff.stage(root, setup.sessionIndex, setup.session)
         return setup
       } catch (err) {
         handoff.releaseHeldResources()
         throw err
       }
     },
-    [reportProgress],
+    [reportProgress, shared],
     { enabled: isLocal },
   )
 
@@ -100,8 +103,9 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
     rootResource,
     async (root, signal, cleanup) => {
       if (!isCreate || isLocal) return null
-      const handoff = createQuickstartSessionHandoffCleanup(
+      const handoff = createQuickstartHandoff(
         cleanup,
+        shared,
         environment.instanceKey,
       )
       try {
@@ -120,6 +124,7 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
           const spaceID =
             setup.spaceResp.sharedObjectRef?.providerResourceRef?.id
           handoff.stage(
+            root,
             setup.sessionIndex,
             setup.session,
             spaceID,
@@ -140,7 +145,7 @@ export const Quickstart: React.FC<QuickstartProps> = ({ quickstartId }) => {
         throw err
       }
     },
-    [isCreate, isLocal, quickstartId, reportProgress],
+    [isCreate, isLocal, quickstartId, reportProgress, shared],
     { enabled: isCreate && !isLocal },
   )
   const setup = setupResource.value
