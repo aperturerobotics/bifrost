@@ -165,6 +165,58 @@ func TestResourceLifetimeReleasedNotificationClearsReferences(t *testing.T) {
 	}
 }
 
+func TestResourceRefDoneClosesOnEveryRelease(t *testing.T) {
+	// Report whether a reference's Done channel is closed.
+	isDone := func(ref ResourceRef) bool {
+		select {
+		case <-ref.Done():
+			return true
+		default:
+			return false
+		}
+	}
+
+	// Build a lifetime that accepts every control.
+	newLifetime := func() *resourceLifetime {
+		return newResourceLifetime(context.Background(), nil, func(*resource.ResourceClientRequest) bool { return true })
+	}
+
+	// Verify a local Release closes Done and leaves other resources live.
+	lifetime := newLifetime()
+	local := lifetime.createReference(1)
+	other := lifetime.createReference(2)
+	defer other.Release()
+	if isDone(local) {
+		t.Fatal("Done closed before release")
+	}
+	local.Release()
+	local.Release()
+	if !isDone(local) || isDone(other) {
+		t.Fatalf("after local release: local done=%v other done=%v", isDone(local), isDone(other))
+	}
+
+	// Verify the server releasing a resource closes Done for its references.
+	lifetime.releaseFromServer(2)
+	if !isDone(other) {
+		t.Fatal("Done open after server release")
+	}
+
+	// Verify ending the lifetime closes Done for the remaining references.
+	remaining := lifetime.createReference(3)
+	defer remaining.Release()
+	lifetime.releaseAll()
+	if !isDone(remaining) {
+		t.Fatal("Done open after the lifetime ended")
+	}
+
+	// Verify a reference created after the lifetime ended is already done.
+	late := lifetime.createReference(4)
+	defer late.Release()
+	if !isDone(late) {
+		t.Fatal("Done open for a reference created after the lifetime ended")
+	}
+}
+
 func TestResourceControlQueueRetirePurgesUnsentControls(t *testing.T) {
 	// Prepare a control queue with an unsent adoption and a failure callback.
 	wantErr := errors.New("writer failed")

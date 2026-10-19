@@ -32,8 +32,9 @@ func newObjectRPCCommand() *cli.Command {
 		Description: fsURIDescription(
 			"Mount the typed object and serve its starpc services to the process at the\n"+
 				"other end of stdin and stdout, as a yamux session carrying one RPC per\n"+
-				"stream. The command exits when stdin closes. It writes only the session\n"+
-				"to stdout.",
+				"stream. The command exits when stdin closes. It exits with an error when\n"+
+				"the daemon connection or the object ends. It writes only the session to\n"+
+				"stdout.",
 			`  # open the SQL database object my-db for a client process
   spacewave space object rpc my-db`,
 		),
@@ -47,7 +48,8 @@ func (a *objectRPCArgs) BuildFlags() []cli.Flag {
 	return commonFsFlags(&a.statePath, &a.spaceID, &a.sessionIdx)
 }
 
-// Run serves the object's RPC service until stdin closes.
+// Run serves the object's RPC service until stdin closes, or fails when the
+// daemon connection or the object's resource ends.
 func (a *objectRPCArgs) Run(c *cli.Context) error {
 	// Parse the object URI.
 	uri, err := parseFsURI(c.Args().First(), a.spaceID, a.sessionIdx)
@@ -73,7 +75,28 @@ func (a *objectRPCArgs) Run(c *cli.Context) error {
 		return err
 	}
 	defer conn.Close()
+
+	// Close the session when the object's resource ends. The resource client
+	// releases every reference when the daemon connection ends.
+	stop := make(chan struct{})
+	defer close(stop)
+	go func() {
+		select {
+		case <-mount.typedRef.Done():
+			_ = conn.Close()
+		case <-stop:
+		}
+	}()
 	err = srpc.NewServer(srpc.NewClientInvoker(mount.typedClient)).AcceptMuxedConn(ctx, conn)
+
+	// Report why the object ended, or end cleanly when the peer closed stdin.
+	select {
+	case <-mount.client.resClient.Done():
+		return errors.New("daemon connection closed")
+	case <-mount.typedRef.Done():
+		return errors.New("object " + mount.objectKey + " was released")
+	default:
+	}
 	if err == io.EOF || conn.IsClosed() {
 		return nil
 	}

@@ -21,6 +21,9 @@ type ResourceRef interface {
 	// Release releases this reference.
 	// When the last reference to a resource is released, the server is notified.
 	Release()
+	// Done closes when this reference is released, whether by Release, by the
+	// server releasing the resource, or by the end of the client.
+	Done() <-chan struct{}
 }
 
 // Client manages one immutable remote ResourceClient generation.

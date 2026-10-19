@@ -54,11 +54,9 @@ func (l *resourceLifetime) createReference(resourceID uint32) ResourceRef {
 	l.mtx.Lock()
 	defer l.mtx.Unlock()
 	if l.released {
-		return &resourceRef{
-			lifetime:   l,
-			resourceID: resourceID,
-			released:   true,
-		}
+		ref := &resourceRef{lifetime: l, resourceID: resourceID, done: make(chan struct{})}
+		ref.retireLocked()
+		return ref
 	}
 
 	// Create the resource's first local reference set before publishing Adopt.
@@ -68,7 +66,7 @@ func (l *resourceLifetime) createReference(resourceID uint32) ResourceRef {
 		set = &resourceRefSet{refs: make(map[*resourceRef]struct{})}
 		l.resources[resourceID] = set
 	}
-	ref := &resourceRef{lifetime: l, resourceID: resourceID}
+	ref := &resourceRef{lifetime: l, resourceID: resourceID, done: make(chan struct{})}
 	set.refs[ref] = struct{}{}
 	if first {
 		_ = l.enqueueControlLocked(&resource.ResourceClientRequest{Body: &resource.ResourceClientRequest_Adopt{
@@ -90,7 +88,7 @@ func (l *resourceLifetime) releaseAll() {
 	for id, set := range l.resources {
 		ids = append(ids, id)
 		for ref := range set.refs {
-			ref.released = true
+			ref.retireLocked()
 		}
 	}
 
@@ -122,7 +120,7 @@ func (l *resourceLifetime) releaseFromServer(resourceID uint32) {
 		return
 	}
 	for ref := range set.refs {
-		ref.released = true
+		ref.retireLocked()
 	}
 	l.clearResourceLocked(resourceID)
 }
@@ -134,7 +132,7 @@ func (l *resourceLifetime) releaseRef(ref *resourceRef) {
 	if ref.released {
 		return
 	}
-	ref.released = true
+	ref.retireLocked()
 	id, notify := l.releaseRefLocked(ref)
 	if notify {
 		_ = l.enqueueControlLocked(&resource.ResourceClientRequest{Body: &resource.ResourceClientRequest_Release{
@@ -337,10 +335,14 @@ func (c *resourceRPCClientWithContext) Close() error {
 	return err
 }
 
+// resourceRef is one local reference to a remote resource. The lifetime's
+// mutex guards released.
 type resourceRef struct {
 	lifetime   *resourceLifetime
 	resourceID uint32
 	released   bool
+	// done closes when released becomes true.
+	done chan struct{}
 }
 
 // GetResourceID returns the resource ID the reference holds.
@@ -351,6 +353,17 @@ func (r *resourceRef) GetClient() (srpc.Client, error) { return r.lifetime.clien
 
 // Release drops this reference to the resource.
 func (r *resourceRef) Release() { r.lifetime.releaseRef(r) }
+
+// Done returns a channel that closes when the reference is released.
+func (r *resourceRef) Done() <-chan struct{} { return r.done }
+
+// retireLocked marks the reference released and closes done once.
+func (r *resourceRef) retireLocked() {
+	if !r.released {
+		r.released = true
+		close(r.done)
+	}
+}
 
 // _ is a type assertion
 var _ ResourceRef = (*resourceRef)(nil)

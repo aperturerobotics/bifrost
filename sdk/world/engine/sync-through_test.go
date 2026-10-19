@@ -238,7 +238,7 @@ func (f *syncThroughFixture) commit(ctx context.Context, key string) error {
 		return err
 	}
 	defer tx.Discard()
-	obj, err := tx.CreateObject(ctx, key, nil)
+	obj, err := tx.CreateObject(ctx, key, nil) //nolint:lostresource // obj is nil when CreateObject fails.
 	if err != nil {
 		return err
 	}

@@ -690,19 +690,20 @@ func (c *sdkClient) accessAccount(ctx context.Context, providerID, accountID str
 
 // accessTypedObject accesses a typed object resource via an engine resource reference.
 // engineRef is the resource reference for the engine (from accessWorldEngine).
-// Returns the SRPC client for the typed resource, the resource ID, type ID, and cleanup function.
-func (c *sdkClient) accessTypedObject(ctx context.Context, engineRef resource_client.ResourceRef, objectKey string) (srpc.Client, uint32, string, func(), error) {
+// Returns the typed object's resource reference, which the caller releases,
+// and the SRPC client for its services.
+func (c *sdkClient) accessTypedObject(ctx context.Context, engineRef resource_client.ResourceRef, objectKey string) (resource_client.ResourceRef, srpc.Client, error) {
 	// Access the typed object through the engine client.
 	engineClient, err := engineRef.GetClient()
 	if err != nil {
-		return nil, 0, "", nil, errors.Wrap(err, "engine client")
+		return nil, nil, errors.Wrap(err, "engine client")
 	}
 
 	// Access the typed object resource.
 	typedSvc := s4wave_world.NewSRPCTypedObjectResourceServiceClient(engineClient)
 	resp, err := s4wave_world.AccessTypedObject(ctx, typedSvc, &s4wave_world.AccessTypedObjectRequest{ObjectKey: objectKey})
 	if err != nil {
-		return nil, 0, "", nil, errors.Wrap(err, "access typed object")
+		return nil, nil, errors.Wrap(err, "access typed object")
 	}
 
 	// Wrap the typed object resource reference.
@@ -710,14 +711,9 @@ func (c *sdkClient) accessTypedObject(ctx context.Context, engineRef resource_cl
 	typedClient, err := ref.GetClient()
 	if err != nil {
 		ref.Release()
-		return nil, 0, "", nil, errors.Wrap(err, "typed object client")
+		return nil, nil, errors.Wrap(err, "typed object client")
 	}
-
-	// Build the cleanup that releases the typed object reference.
-	cleanup := func() {
-		ref.Release()
-	}
-	return typedClient, resp.GetResourceId(), resp.GetTypeId(), cleanup, nil
+	return ref, typedClient, nil
 }
 
 // lookupSpacewaveProvider looks up the spacewave provider and returns an SDK wrapper.
@@ -781,10 +777,10 @@ type objectMount struct {
 	spaceSvc    s4wave_space.SRPCSpaceResourceServiceClient
 	engineRef   resource_client.ResourceRef
 	engine      *sdk_engine.SDKEngine
+	typedRef    resource_client.ResourceRef
 	typedClient srpc.Client
 	objectKey   string
 
-	typedCleanup  func()
 	engineCleanup func()
 	spaceCleanup  func()
 }
@@ -792,7 +788,7 @@ type objectMount struct {
 // release unwinds the whole chain in reverse acquisition order.
 func (m *objectMount) release() {
 	// Release the mounted chain in reverse order.
-	m.typedCleanup()
+	m.typedRef.Release()
 	m.engineCleanup()
 	m.spaceCleanup()
 	m.sess.Release()
@@ -873,11 +869,11 @@ func mountObjectChain(
 	}
 
 	// Access the typed object and register its cleanup.
-	typedClient, _, _, typedCleanup, err := client.accessTypedObject(ctx, engineRef, objectKey)
+	typedRef, typedClient, err := client.accessTypedObject(ctx, engineRef, objectKey)
 	if err != nil {
 		return fail(errors.Wrap(err, "access typed object for "+objectKey))
 	}
-	rels = append(rels, typedCleanup)
+	rels = append(rels, typedRef.Release)
 
 	// Assemble the object mount and return its cleanup.
 	mount := &objectMount{
@@ -888,7 +884,7 @@ func mountObjectChain(
 		engine:        engine,
 		typedClient:   typedClient,
 		objectKey:     objectKey,
-		typedCleanup:  typedCleanup,
+		typedRef:      typedRef,
 		engineCleanup: engineCleanup,
 		spaceCleanup:  spaceCleanup,
 	}

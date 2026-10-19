@@ -41,13 +41,16 @@ func NewAttachedEngine(ctx context.Context, resourceID uint32) (*SDKEngine, erro
 
 // CreateResourceReference creates a reference to an attached resource.
 func (c *AttachedResourceClient) CreateResourceReference(resourceID uint32) resource_client.ResourceRef {
-	return &attachedResourceRef{resourceCtx: c.resourceCtx, resourceID: resourceID}
+	return &attachedResourceRef{resourceCtx: c.resourceCtx, resourceID: resourceID, done: make(chan struct{})}
 }
 
 type attachedResourceRef struct {
 	resourceCtx resource_server.ResourceClientContext
 	resourceID  uint32
 	released    atomic.Bool
+	// done closes on Release. The attached resource context reports no
+	// release by the other side.
+	done chan struct{}
 }
 
 func (r *attachedResourceRef) GetResourceID() uint32 {
@@ -68,10 +71,15 @@ func (r *attachedResourceRef) Release() {
 	if r.released.Swap(true) {
 		return
 	}
+	close(r.done)
 	if r.resourceCtx == nil {
 		return
 	}
 	r.resourceCtx.ReleaseResource(r.resourceID)
+}
+
+func (r *attachedResourceRef) Done() <-chan struct{} {
+	return r.done
 }
 
 var _ ResourceClient = (*AttachedResourceClient)(nil)
