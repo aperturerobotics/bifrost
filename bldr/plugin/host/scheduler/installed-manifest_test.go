@@ -155,3 +155,44 @@ func TestInstalledManifestServesAssets(t *testing.T) {
 		t.Fatal("served files after release")
 	}
 }
+
+// TestInstalledManifestPrefersNative proves a peer with native and JavaScript
+// hosts runs the native artifact of an installation whose last deploy repinned
+// the JavaScript build in front of it, and never falls back to JavaScript.
+func TestInstalledManifestPrefersNative(t *testing.T) {
+	// Build the installation in deploy repin order: linux, js, darwin, then
+	// the rollback pins of the previous deploy.
+	linux := newTestManifestRef("core", "desktop/linux/amd64", 146, "linux")
+	js := newTestManifestRef("core", "js", 181, "js")
+	darwin := newTestManifestRef("core", "desktop/darwin/arm64", 181, "darwin")
+	jsOld := newTestManifestRef("core", "js", 180, "js-old")
+	darwinOld := newTestManifestRef("core", "desktop/darwin/arm64", 180, "darwin-old")
+	installation := []*manifest.ManifestRef{linux, js, darwin, jsOld, darwinOld}
+	for _, ref := range installation {
+		digest, err := hash.Sum(hash.RecommendedHashType, []byte(ref.GetManifestRef().GetBucketId()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		ref.ManifestRef.RootRef = block.NewBlockRef(digest)
+	}
+
+	// Run a darwin peer that also hosts JavaScript plugins.
+	hosts := &pluginHostSet{pluginHosts: []plugin_host.PluginHost{
+		&testPluginHost{id: "js"},
+		&testPluginHost{id: "desktop/darwin/arm64"},
+	}}
+	c := NewController(logrus.NewEntry(logrus.New()), nil, &Config{})
+	c.pluginHostsCtr = ccontainer.NewCContainer(hosts)
+	_, instance := c.newPluginInstance(pluginReference{pluginID: "core", instanceKey: "space"})
+	release := instance.addManifestSelection(installation...)
+	defer release()
+
+	// The native artifact runs, with only the older native artifact behind it.
+	state := instance.executePluginRoutine.GetState()
+	if state == nil || !state.manifestSnapshot.GetManifestRef().EqualVT(darwin.GetManifestRef()) {
+		t.Fatal("installation did not select the native artifact")
+	}
+	if len(state.fallbacks) != 1 || !state.fallbacks[0].manifestSnapshot.GetManifestRef().EqualVT(darwinOld.GetManifestRef()) {
+		t.Fatal("native artifact fell back to another platform")
+	}
+}

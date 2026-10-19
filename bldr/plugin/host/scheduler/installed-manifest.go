@@ -64,39 +64,64 @@ func (t *pluginInstance) selectInstalledManifestLocked(hosts *pluginHostSet) {
 		return
 	}
 
-	// Select the newest runnable artifact; older ones are its fallbacks.
+	// Select the preferred runnable artifact; older ones are its fallbacks.
 	candidates := installedManifestCandidates(selected, t.platformHosts(hosts))
 	candidates[0].fallbacks = candidates[1:]
 	t.setExecutePluginStateLocked(candidates[0])
 }
 
-// installedManifestCandidates lists the installation's artifacts newest first
-// for the selectable platforms, those a host runs before those only served. An
-// installation spans platforms, so artifacts for other platforms are skipped.
-// If no artifact is selectable, it returns the newest one without a host to
-// report it as unrunnable.
+// installedManifestCandidates returns the artifact to run, then its fallbacks.
+//
+// An installation spans platforms and lists its artifacts newest first, but a
+// deploy repins every platform it publishes, so the order across platforms
+// says only which platform was deployed last. The selection therefore takes
+// the platform this peer prefers, native before JavaScript as in catalog
+// selection, and the newest artifact of that platform. Only older artifacts of
+// the same platform are fallbacks: a native plugin that fails to start must
+// not fall back to its JavaScript build, which serves a different runtime.
+// Artifacts a host only serves are used when nothing runs. Artifacts for other
+// platforms are skipped. If no artifact is selectable, it returns the newest
+// one without a host to report it as unrunnable.
 func installedManifestCandidates(selected *installedManifests, platforms map[string]bldr_plugin_host.PluginHost) []*executePluginArgs {
-	// Keep the artifacts of the selectable platforms.
-	var run, serve []*executePluginArgs
+	// Rank the artifacts of the selectable platforms; skip foreign platforms.
+	type rankedCandidate struct {
+		args       *executePluginArgs
+		platformID string
+		rank       int
+	}
+	var ranked []rankedCandidate
+	best := -1
 	for _, ref := range selected.refs {
-		pluginHost, ok := platforms[ref.GetMeta().GetPlatformId()]
+		platformID := ref.GetMeta().GetPlatformId()
+		pluginHost, ok := platforms[platformID]
 		if !ok {
 			continue
 		}
-		candidate := &executePluginArgs{
-			manifestSnapshot: &manifest.ManifestSnapshot{ManifestRef: ref.GetManifestRef()},
-			pluginHost:       pluginHost,
-			serveAssets:      pluginHost == nil,
-			installation:     selected,
+		candidate := rankedCandidate{
+			args: &executePluginArgs{
+				manifestSnapshot: &manifest.ManifestSnapshot{ManifestRef: ref.GetManifestRef()},
+				pluginHost:       pluginHost,
+				serveAssets:      pluginHost == nil,
+				installation:     selected,
+			},
+			platformID: platformID,
+			rank:       candidateRank(platformID, pluginHost),
 		}
-		if candidate.serveAssets {
-			serve = append(serve, candidate)
-		} else {
-			run = append(run, candidate)
+		if best < 0 || candidate.rank < ranked[best].rank {
+			best = len(ranked)
+		}
+		ranked = append(ranked, candidate)
+	}
+
+	// Return the best platform's artifacts, newest first, in installation order.
+	var chosen []*executePluginArgs
+	for _, candidate := range ranked {
+		if candidate.platformID == ranked[best].platformID {
+			chosen = append(chosen, candidate.args)
 		}
 	}
-	if candidates := append(run, serve...); len(candidates) != 0 {
-		return candidates
+	if len(chosen) != 0 {
+		return chosen
 	}
 
 	// Report the newest artifact as unrunnable and keep the admitted worker.
