@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -398,9 +399,7 @@ func (f *FrontendService) webPkgImports(compiler map[string]string) map[string]s
 	for _, id := range ids {
 		imports[web_pkg.ImportSpecifierPrefix+id+"/"] = "/b/pkg/" + id + "/"
 	}
-	for spec, url := range compiler {
-		imports[spec] = url
-	}
+	maps.Copy(imports, compiler)
 	return imports
 }
 
