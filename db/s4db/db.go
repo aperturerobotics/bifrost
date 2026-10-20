@@ -46,6 +46,9 @@ type DB struct {
 	tailer *routine.RoutineContainer
 	// warmer reads the tree into the cache after open.
 	warmer *routine.RoutineContainer
+	// compactor moves values toward the start of the file in the
+	// background.
+	compactor *routine.RoutineContainer
 
 	// cur is the published state. Read transactions acquire it without a
 	// lock.
@@ -87,12 +90,13 @@ func open(s storage, opts Options) (*DB, error) {
 	// Build the database on s with its cache, flusher, and writer.
 	opts = opts.withDefaults()
 	db := &DB{
-		s:      s,
-		opts:   opts,
-		p:      &pager{r: s, cache: newCache(opts.CacheBytes)},
-		tailer: routine.NewRoutineContainer(),
-		warmer: routine.NewRoutineContainer(),
-		leases: make(map[int64]struct{}),
+		s:         s,
+		opts:      opts,
+		p:         &pager{r: s, cache: newCache(opts.CacheBytes)},
+		tailer:    routine.NewRoutineContainer(),
+		warmer:    routine.NewRoutineContainer(),
+		compactor: routine.NewRoutineContainer(),
+		leases:    make(map[int64]struct{}),
 	}
 	db.flush = newFlusher(s, &db.cur)
 	db.w = &writer{db: db}
@@ -111,6 +115,10 @@ func open(s storage, opts Options) (*DB, error) {
 	db.tailer.SetContext(context.Background(), false)
 	db.warmer.SetRoutine(db.warm)
 	db.warmer.SetContext(context.Background(), false)
+	if opts.RelocateBudget > 0 {
+		db.compactor.SetRoutine((&compactor{db: db}).run)
+		db.compactor.SetContext(context.Background(), false)
+	}
 	return db, nil
 }
 
@@ -620,10 +628,12 @@ func (db *DB) WaitDurable(ctx context.Context) error {
 // lock, and releasing it afterwards returns nil. Close waits for an abandoned
 // lease wait to return.
 func (db *DB) Close() error {
-	// Stop the warm-up so its snapshot does not hold space, and drop a
-	// running background checkpoint at its next page.
-	if wait, _ := db.warmer.SetRoutine(nil); wait != nil {
-		<-wait
+	// Stop the warm-up and compaction so their snapshots do not hold
+	// space, and drop a running background checkpoint at its next page.
+	for _, rc := range []*routine.RoutineContainer{db.warmer, db.compactor} {
+		if wait, _ := rc.SetRoutine(nil); wait != nil {
+			<-wait
+		}
 	}
 	db.w.closing.Store(true)
 	db.w.builds.Wait()

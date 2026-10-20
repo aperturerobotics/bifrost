@@ -3,6 +3,7 @@ package s4db
 import (
 	"cmp"
 	"encoding/binary"
+	"math"
 	"slices"
 
 	"github.com/tidwall/btree"
@@ -53,6 +54,12 @@ type space struct {
 	sizes *btree.BTreeG[run]
 	// end is the file length in pages.
 	end uint64
+	// freeCount counts the pages of the free runs.
+	freeCount uint64
+	// goal is the end background compaction is moving the file toward, or
+	// zero. While set, an allocation no free run holds whole takes a run
+	// below it before one past it.
+	goal uint64
 	// live holds the live bytes of each value page, indexed by page. It
 	// grows to the highest page that has held a value; pages past its end
 	// hold none. A page holds at most pageSize bytes, so two bytes count it.
@@ -102,12 +109,14 @@ func lessRunSize(a, b run) bool {
 func (s *space) setFree(r run) {
 	s.free.Set(r.start, r.n)
 	s.sizes.Set(r)
+	s.freeCount += r.n
 }
 
 // deleteFree removes r from the free runs.
 func (s *space) deleteFree(r run) {
 	s.free.Delete(r.start)
 	s.sizes.Delete(r)
+	s.freeCount -= r.n
 }
 
 // alloc returns n consecutive pages from the lowest free run that holds
@@ -144,20 +153,58 @@ func (s *space) choose(least, want uint64) (run, bool) {
 		}
 		return true
 	})
-	if found {
+	if found && (s.goal == 0 || best.start < s.goal) {
 		return best, true
 	}
 
-	// Else take the lowest of the longest runs, when it holds least.
+	// Else take the longest run below the goal, when it holds least, before
+	// a run past it.
+	if r, ok := s.longestBelow(least); ok {
+		return run{start: r.start, n: min(r.n, want)}, true
+	}
+	if found {
+		return best, true
+	}
 	longest, ok := s.sizes.Max()
 	if !ok || longest.n < least {
 		return run{}, false
 	}
+
+	// Else take the lowest of the longest runs.
 	s.sizes.Ascend(run{n: longest.n}, func(r run) bool {
 		longest = r
 		return false
 	})
 	return longest, true
+}
+
+// goalVisits bounds the runs longestBelow passes over past the goal.
+const goalVisits = 1024
+
+// longestBelow returns the longest free run of at least least pages that
+// starts below the goal. Compaction frees the runs past the goal, which grow
+// long as they merge, so the search passes over at most goalVisits of them.
+func (s *space) longestBelow(least uint64) (run, bool) {
+	// Without a goal, any run will do.
+	if s.goal == 0 {
+		return run{}, false
+	}
+
+	// Descend from the longest run to the first below the goal.
+	var found run
+	ok, visits := false, goalVisits
+	s.sizes.Descend(run{n: math.MaxUint64}, func(r run) bool {
+		if r.n < least {
+			return false
+		}
+		if r.start < s.goal {
+			found, ok = r, true
+			return false
+		}
+		visits--
+		return visits > 0
+	})
+	return found, ok
 }
 
 // lower reports whether a value of n bytes placed in a new extent would

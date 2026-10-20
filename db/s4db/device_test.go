@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"math/rand/v2"
+	"sync/atomic"
 	"testing"
 
 	"github.com/s4wave/spacewave/db/kvtx"
@@ -111,7 +112,9 @@ func TestDevicePowerLoss(t *testing.T) {
 // its files larger than limit bytes in total.
 type quotaDevice struct {
 	*device.Memory
-	limit int64
+	// limit is atomic: the background compactor writes while a test lifts
+	// it.
+	limit atomic.Int64
 }
 
 // errQuota is the error of a refused write.
@@ -153,7 +156,7 @@ func (q *quotaDevice) check(ctx context.Context, grow map[string]int64) error {
 	for _, size := range grow {
 		total += size
 	}
-	if total > q.limit {
+	if total > q.limit.Load() {
 		return errQuota
 	}
 	return nil
@@ -167,7 +170,8 @@ func TestDeviceQuota(t *testing.T) {
 	for limit := int64(1100 << 10); limit < 2600<<10; limit += 60 << 10 {
 		// Commit 16 KiB values and sync every fourth until the quota
 		// refuses a write.
-		q := &quotaDevice{Memory: device.NewMemory(), limit: limit}
+		q := &quotaDevice{Memory: device.NewMemory()}
+		q.limit.Store(limit)
 		db := openDevice(t, q, Options{})
 		m := make(model)
 		step := func(i int) error {
@@ -206,7 +210,7 @@ func TestDeviceQuota(t *testing.T) {
 		// The commits reported done read back, and later ones succeed once
 		// the quota lifts.
 		m.check(t, db)
-		q.limit = 1 << 30
+		q.limit.Store(1 << 30)
 		for i++; i%8 != 0; i++ {
 			if err := step(i); err != nil {
 				t.Fatalf("limit %d step %d after the quota lifted: %v", limit, i, err)

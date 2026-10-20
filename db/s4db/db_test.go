@@ -273,8 +273,13 @@ const childKeys = 400
 const probeEnv = "S4DB_TEST_PROBE"
 
 // TestMain runs the child of TestTwoProcesses or of
-// TestSingleProcessHoldsWriterLock when the test binary is started as one.
+// TestSingleProcessHoldsWriterLock when the test binary is started as one,
+// and else the tests.
 func TestMain(m *testing.M) {
+	// Compact in the background as soon as a few pages are free, in the
+	// tests and their children, so the tests run beside it.
+	compactMinSlack = 8
+
 	// Choose the child the environment names, if any.
 	run := runChild
 	path := os.Getenv(childEnv)

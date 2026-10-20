@@ -19,7 +19,8 @@ type Options struct {
 	// twice this or the log four times. Zero selects 64 MiB.
 	CheckpointMax int64
 	// RelocateBudget is the value bytes compaction may move after each
-	// commit. Zero selects 4 MiB; negative disables compaction.
+	// commit. Zero selects 4 MiB; negative disables compaction, both after
+	// commits and in the background.
 	RelocateBudget int64
 	// SingleProcess skips watching the file for other processes' commits
 	// and holds the file's writer lock from open to close, so a background

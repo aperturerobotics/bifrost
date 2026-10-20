@@ -53,22 +53,37 @@ func TestSpaceDrainMergesRuns(t *testing.T) {
 }
 
 // scanChoose is choose by a scan of the free runs in address order: the
-// lowest run holding want, else the lowest of the longest runs holding
-// least.
+// lowest run holding want when it starts below the goal, else the longest
+// run below the goal holding least, else the lowest run holding want, else
+// the lowest of the longest runs holding least.
 func scanChoose(s *space, least, want uint64) (run, bool) {
-	var best run
-	found := false
+	// Find the lowest run holding want pages, the longest run holding least,
+	// and the longest holding least below the goal, the highest of equals.
+	var first, longest, below run
+	var hasFirst, hasLongest, hasBelow bool
 	s.free.Scan(func(start, n uint64) bool {
-		if n >= want {
-			best, found = run{start: start, n: want}, true
-			return false
+		if n >= want && !hasFirst {
+			first, hasFirst = run{start: start, n: want}, true
 		}
-		if n >= least && n > best.n {
-			best, found = run{start: start, n: n}, true
+		if n >= least && n > longest.n {
+			longest, hasLongest = run{start: start, n: n}, true
+		}
+		if n >= least && s.goal != 0 && start < s.goal && n >= below.n {
+			below, hasBelow = run{start: start, n: min(n, want)}, true
 		}
 		return true
 	})
-	return best, found
+
+	// Prefer the lowest run below the goal, then the longest below it.
+	switch {
+	case hasFirst && (s.goal == 0 || first.start < s.goal):
+		return first, true
+	case hasBelow:
+		return below, true
+	case hasFirst:
+		return first, true
+	}
+	return longest, hasLongest
 }
 
 // TestSpaceChooseMatchesScan checks that the size index picks the run an
@@ -88,7 +103,12 @@ func TestSpaceChooseMatchesScan(t *testing.T) {
 			held = append(held, sp.alloc(want))
 		}
 
-		// Compare a fit of each shape against the scan.
+		// Compare a fit of each shape against the scan, with a goal end
+		// half the time.
+		sp.goal = 0
+		if rng.IntN(2) == 0 {
+			sp.goal = rng.Uint64N(sp.end + 1)
+		}
 		least := 1 + rng.Uint64N(32)
 		want := least + rng.Uint64N(64)
 		got, gotOK := sp.choose(least, want)
@@ -98,16 +118,21 @@ func TestSpaceChooseMatchesScan(t *testing.T) {
 		}
 	}
 
-	// The index holds exactly the free runs.
+	// The index holds exactly the free runs, and the count their pages.
 	if sp.sizes.Len() != sp.free.Len() {
 		t.Fatalf("sizes holds %d runs, free holds %d", sp.sizes.Len(), sp.free.Len())
 	}
+	var pages uint64
 	sp.free.Scan(func(start, n uint64) bool {
 		if _, ok := sp.sizes.Get(run{start: start, n: n}); !ok {
 			t.Fatalf("sizes lacks free run %d+%d", start, n)
 		}
+		pages += n
 		return true
 	})
+	if pages != sp.freeCount {
+		t.Fatalf("freeCount is %d, the free runs hold %d pages", sp.freeCount, pages)
+	}
 }
 
 // BenchmarkSpaceReserveFragmented measures a checkpoint reservation in a
