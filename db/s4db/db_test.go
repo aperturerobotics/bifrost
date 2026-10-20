@@ -666,3 +666,63 @@ func TestUsage(t *testing.T) {
 		t.Fatalf("usage %+v sums to %d past the file", u, sum)
 	}
 }
+
+// TestCheckpointNothingToFold starts a background checkpoint on a state its
+// checkpoint already holds, and checks that a snapshot of that state still
+// reads every key once freed space is released and punched.
+func TestCheckpointNothingToFold(t *testing.T) {
+	// Fill a file, without the background compactor, and checkpoint it.
+	ctx := context.Background()
+	db := openTest(t, filepath.Join(t.TempDir(), "fold.s4wave"), Options{SingleProcess: true})
+	defer db.Close()
+	if wait, _ := db.compactor.SetRoutine(nil); wait != nil {
+		<-wait
+	}
+	r := rand.New(rand.NewPCG(5, 6))
+	m := make(model)
+	for range 20 {
+		randomCommit(t, r, db, m, 1000)
+	}
+
+	// Checkpoint, so no commit follows the tree, and read it.
+	if err := db.w.lock(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.w.checkpointDurable(ctx); err != nil {
+		t.Fatal(err)
+	}
+	db.w.unlock(nil)
+	if st := db.cur.Load(); st.seq != st.ckpt {
+		t.Fatalf("state at %d after its checkpoint at %d", st.seq, st.ckpt)
+	}
+	tx, err := db.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+
+	// Start a background checkpoint on it, then release and punch.
+	if err := db.w.lock(ctx); err != nil {
+		t.Fatal(err)
+	}
+	db.w.startCheckpoint()
+	db.w.unlock(nil)
+	db.w.builds.Wait()
+	if err := db.w.lock(ctx); err != nil {
+		t.Fatal(err)
+	}
+	err = db.w.releaseNow(ctx)
+	db.w.unlock(err)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The snapshot reads every key from the file.
+	db.p.cache.clear()
+	for k, v := range m {
+		got, ok, err := tx.Get(ctx, []byte(k))
+		if err != nil || !ok || !bytes.Equal(got, v) {
+			t.Fatalf("get %x: found %v err %v", k, ok, err)
+		}
+	}
+}

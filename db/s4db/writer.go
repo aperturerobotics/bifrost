@@ -554,14 +554,28 @@ func (w *writer) startCheckpoint() {
 	w.changed = nil
 	st, stripe := w.db.acquire()
 
-	// Build, then save and release under the writer lock, and wake the
-	// writers waiting for the build.
+	// Skip a state no commit follows since its checkpoint, as checkpoint
+	// does. Its tree would free pages under the checkpoint that snapshots
+	// of the state pin, so a release would hand them out while they read.
+	if st.seq == st.ckpt {
+		w.db.release(st, stripe)
+		w.unlockBuild()
+		w.endBuild()
+		return
+	}
+
+	// Build, then save and release under the writer lock.
 	w.builds.Go(func() {
 		w.runCheckpoint(st, stripe)
-		w.building.Store(false)
-		w.db.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
-			broadcast()
-		})
+		w.endBuild()
+	})
+}
+
+// endBuild ends the claim on the build and wakes the writers waiting for it.
+func (w *writer) endBuild() {
+	w.building.Store(false)
+	w.db.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		broadcast()
 	})
 }
 
