@@ -9,6 +9,8 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"slices"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -374,6 +376,113 @@ func BenchmarkChurnSpace(b *testing.B) {
 		b.ReportMetric(float64(u.FileBytes)/(1<<20), "file-MiB")
 		b.ReportMetric(float64(used)/(1<<20), "used-MiB")
 		b.ReportMetric(float64(u.FileBytes)/float64(used), "file/used")
+		if err := db.Close(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkSweepSpace fills about 300k keys, deletes half of them at once as
+// a block store's garbage collection sweep does, then keeps replacing keys at
+// a steady rate and idles. It reports the file length against the pages in use
+// at the end of the churn and after the idle time, and the commit latency
+// during the churn.
+func BenchmarkSweepSpace(b *testing.B) {
+	for b.Loop() {
+		// Open with small checkpoints, so the churn checkpoints often.
+		ctx := context.Background()
+		path := filepath.Join(b.TempDir(), "sweep.s4wave")
+		db, err := Open(path, Options{CheckpointMin: 4 << 20, CheckpointMax: 4 << 20})
+		if err != nil {
+			b.Fatal(err)
+		}
+		rng := rand.New(rand.NewPCG(7, 8))
+		buf := make([]byte, 48<<10)
+		var keys [][]byte
+		commit := func(n int, fn func(tx *Tx)) time.Duration {
+			// Apply fn n times in one transaction.
+			start := time.Now()
+			tx, err := db.NewTransaction(ctx, true)
+			if err != nil {
+				b.Fatal(err)
+			}
+			for range n {
+				fn(tx.(*Tx))
+			}
+
+			// Commit it.
+			if err := tx.(*Tx).CommitOrdered(ctx); err != nil {
+				b.Fatal(err)
+			}
+			return time.Since(start)
+		}
+		set := func(tx *Tx) {
+			// Most keys are small records, the rest blocks of 2 to 48 KiB.
+			n := 64 + rng.IntN(256)
+			if rng.IntN(100) >= 92 {
+				n = 2<<10 + rng.IntN(46<<10)
+			}
+			k := binary.BigEndian.AppendUint64(nil, rng.Uint64())
+			if err := tx.Set(ctx, k, buf[:n]); err != nil {
+				b.Fatal(err)
+			}
+			keys = append(keys, k)
+		}
+		del := func(tx *Tx) {
+			// Delete a random live key.
+			j := rng.IntN(len(keys))
+			if err := tx.Delete(ctx, keys[j]); err != nil {
+				b.Fatal(err)
+			}
+			keys[j] = keys[len(keys)-1]
+			keys = keys[:len(keys)-1]
+		}
+		report := func(name string) {
+			// Report the length against the pages in use.
+			if err := db.Sync(ctx); err != nil {
+				b.Fatal(err)
+			}
+			u, err := db.Usage(ctx)
+			if err != nil {
+				b.Fatal(err)
+			}
+			used := u.ValuePageBytes + u.IndexBytes + u.LogBytes + u.PendingBytes
+			b.ReportMetric(float64(u.FileBytes)/(1<<20), name+"-file-MiB")
+			b.ReportMetric(float64(u.FileBytes)/float64(used), name+"-file/used")
+		}
+
+		// Fill, then sweep half the keys.
+		for i := 0; i < 300_000; i += 256 {
+			commit(256, set)
+		}
+		for i := 0; i < 150_000; i += 1000 {
+			commit(1000, del)
+		}
+		report("sweep")
+
+		// Replace 50 keys every 2 ms for about 8 s, timing each commit.
+		var lat []time.Duration
+		for range 4000 {
+			lat = append(lat, commit(50, func(tx *Tx) {
+				del(tx)
+				set(tx)
+			}))
+			time.Sleep(2 * time.Millisecond)
+		}
+		report("churn")
+		slices.Sort(lat)
+		b.ReportMetric(float64(lat[len(lat)/2].Microseconds()), "commit-p50-us")
+		b.ReportMetric(float64(lat[len(lat)*99/100].Microseconds()), "commit-p99-us")
+		b.ReportMetric(float64(lat[len(lat)-1].Microseconds()), "commit-max-us")
+
+		// Idle, reporting as compaction proceeds.
+		for i := range 6 {
+			time.Sleep(10 * time.Second)
+			if i != 5 {
+				report("idle-" + strconv.Itoa(10*(i+1)))
+			}
+		}
+		report("idle")
 		if err := db.Close(); err != nil {
 			b.Fatal(err)
 		}
