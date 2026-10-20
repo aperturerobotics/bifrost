@@ -198,7 +198,8 @@ func (s *sessionTracker) opensSession(sig *WebRtcSignal) bool {
 // session spent the current presence epoch. A session the remote peer ends
 // spends its epoch, so the tracker waits for the remote peer to join again
 // instead of redialing a peer that does not want the link. A session the local
-// peer ends, or whose PeerConnection fails, leaves the epoch for the next dial.
+// peer ends, or whose PeerConnection fails, leaves the epoch for the next dial;
+// one that could not be constructed leaves it for a dial after a pause.
 func (s *sessionTracker) execute(ctx context.Context) error {
 	// Log the tracker lifetime.
 	s.le.Debug("session tracker starting")
@@ -231,11 +232,17 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 	// the remote signal that opens the next session, if any.
 	var spent presence
 	var first *WebRtcSignal
+
+	// retry is the pause after the last construction failure, zero after a
+	// session that was constructed. retryAt is when the next session may start.
+	var retry time.Duration
+	var retryAt time.Time
 	for {
 		// Start a session when the remote peer asks for one or a local caller
-		// dials a presence epoch not yet spent.
+		// dials a presence epoch not yet spent, once any retry pause has ended.
 		curr, dialing, waitCh := s.snapshot()
-		if curr.epoch != 0 && (first != nil || (dialing && curr != spent)) {
+		pause := time.Until(retryAt)
+		if pause <= 0 && curr.epoch != 0 && (first != nil || (dialing && curr != spent)) {
 			le := s.le.WithField("presence-epoch", curr.epoch)
 			le.Info("webrtc session starting")
 			rearm, next, err := s.runSession(ctx, curr, first)
@@ -251,14 +258,41 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 			if rearm {
 				spent = presence{}
 			}
+
+			// A session that could not be constructed leaves the epoch to a
+			// retry after a growing pause, so one failed credential fetch
+			// cannot strand the link until the remote peer rejoins.
+			var construct *constructError
+			switch {
+			case !errors.As(err, &construct):
+				retry = 0
+			case retry == 0:
+				retry = constructRetryMin
+			default:
+				retry = min(2*retry, constructRetryMax)
+			}
+			if retry != 0 {
+				retryAt = time.Now().Add(retry)
+			}
 			continue
 		}
 
-		// Wait for a dial, a presence change, or a remote request.
+		// Wait for a dial, a presence change, a remote request, or the end of
+		// the retry pause.
+		var retryTimer *time.Timer
+		var retryCh <-chan time.Time
+		if pause > 0 {
+			retryTimer = time.NewTimer(pause)
+			retryCh = retryTimer.C
+		}
 		select {
 		case <-ctx.Done():
+			if retryTimer != nil {
+				retryTimer.Stop()
+			}
 			return context.Canceled
 		case <-waitCh:
+		case <-retryCh:
 		case sig := <-s.rxSignal:
 			if s.opensSession(sig) {
 				s.le.WithField("presence-epoch", curr.epoch).Debug("remote peer requested a session")
@@ -266,6 +300,9 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 			} else if s.w.GetVerbose() {
 				s.le.Debug("dropping remote signal received outside a session")
 			}
+		}
+		if retryTimer != nil {
+			retryTimer.Stop()
 		}
 	}
 }
@@ -971,10 +1008,30 @@ func (s *sessionTracker) transmitLocalNegotiation(
 	return currLocalSeqno, true, nil
 }
 
+// constructRetryMin and constructRetryMax bound the pause before the next
+// session after one could not be constructed.
+const (
+	constructRetryMin = time.Second
+	constructRetryMax = 30 * time.Second
+)
+
+// constructError is a session that ended before its PeerConnection existed,
+// as when the ICE credential fetch fails. The remote peer never saw it, so it
+// spends nothing.
+type constructError struct {
+	err error
+}
+
+// Error returns the construction failure.
+func (e *constructError) Error() string { return e.err.Error() }
+
+// Unwrap returns the construction failure.
+func (e *constructError) Unwrap() error { return e.err }
+
 // runSession runs one PeerConnection session with the remote peer at pres,
 // starting from the remote signal first when set. rearm reports that a later
 // dial may start another session in the same presence epoch: the local peer
-// closed the link or the PeerConnection failed. next is a remote signal that
+// closed the link, the PeerConnection failed, or it could not be constructed. next is a remote signal that
 // opens the following session, when the remote peer replaced its
 // PeerConnection.
 func (s *sessionTracker) runSession(
@@ -993,7 +1050,7 @@ func (s *sessionTracker) runSession(
 	// Construct the PeerConnection and attach the callbacks.
 	sess, waitCh, err := s.newSession(ctx)
 	if err != nil {
-		return false, nil, pkgerrors.Wrap(err, phase)
+		return true, nil, &constructError{err: pkgerrors.Wrap(err, phase)}
 	}
 	defer sess.close()
 
