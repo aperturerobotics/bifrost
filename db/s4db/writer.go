@@ -906,23 +906,13 @@ func pageRange(start, n uint64) []uint64 {
 	return pages
 }
 
-// writeSpace saves sp in newly allocated pages. The saved space marks its
-// own pages in use, so allocation repeats until the encoding fits exactly
-// the pages it records.
+// writeSpace saves sp in newly allocated pages.
 func (w *writer) writeSpace(sp *space) (extentRef, error) {
-	for {
-		need := pagesFor(len(sp.encode()))
-		r := sp.alloc(need)
-		b := sp.encode()
-		if pagesFor(len(b)) != need {
-			sp.addFree(r)
-			continue
-		}
-		if _, err := w.db.s.WriteAt(b, pageOff(r.start)); err != nil {
-			return extentRef{}, err
-		}
-		return extentRef{off: r.start * pageSize, n: uint32(len(b)), crc: checksum(b)}, nil // #nosec G115 -- the space record is far below 4 GiB.
+	r, b := sp.allocRecord()
+	if _, err := w.db.s.WriteAt(b, pageOff(r.start)); err != nil {
+		return extentRef{}, err
 	}
+	return extentRef{off: r.start * pageSize, n: uint32(len(b)), crc: checksum(b)}, nil // #nosec G115 -- the space record is far below 4 GiB.
 }
 
 // relocate moves up to budget value bytes out of sparse pages, and out of

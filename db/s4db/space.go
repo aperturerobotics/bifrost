@@ -654,6 +654,28 @@ func (s *space) encode() []byte {
 	return b
 }
 
+// allocRecord allocates the pages of the space's own record and returns
+// them with the encoding, padded to fill them. The saved space marks its
+// pages in use, and taking them can lengthen the encoding past them, so
+// allocation repeats with more pages until it fits. Each retry asks for more
+// pages than the last, so it ends. Freeing the record returns its pages
+// whole, and decoding ignores the padding.
+func (s *space) allocRecord() (run, []byte) {
+	// Allocate until the encoding fits.
+	need := pagesFor(len(s.encode()))
+	r := s.alloc(need)
+	b := s.encode()
+	for pagesFor(len(b)) > need {
+		s.addFree(r)
+		need = pagesFor(len(b))
+		r = s.alloc(need)
+		b = s.encode()
+	}
+
+	// Pad it to its pages.
+	return r, append(b, make([]byte, pageOff(need)-int64(len(b)))...)
+}
+
 // liveRun is a run of value pages that each hold bytes live bytes.
 type liveRun struct {
 	run

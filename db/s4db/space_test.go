@@ -237,3 +237,52 @@ func BenchmarkSpaceReserveFragmented(b *testing.B) {
 		}
 	}
 }
+
+// TestSpaceAllocRecordGrows checks that the space record's allocation ends
+// when taking its pages lengthens the encoding past them: here the lowest
+// free run starts at the last page whose number fits two varint bytes, so
+// taking a page from it moves its start to three.
+func TestSpaceAllocRecordGrows(t *testing.T) {
+	// Fill the encoding to exactly one page with runs past the lowest one.
+	sp := fullRecordSpace(t)
+	r, b := sp.allocRecord()
+
+	// The record fills the pages it took, and the saved space holds them
+	// in use.
+	if r.start != 1<<14-1 || len(b) != int(pageOff(r.n)) || r.n != 2 {
+		t.Fatalf("record %+v in %d bytes, want 2 pages from %d", r, len(b), 1<<14-1)
+	}
+	got, err := decodeSpace(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hits := got.overlaps(r); len(hits) != 0 {
+		t.Fatalf("saved space holds the record's pages free: %+v", hits)
+	}
+}
+
+// fullRecordSpace returns a space whose encoding fills exactly one page and
+// whose lowest free run starts at page 1<<14-1.
+func fullRecordSpace(t *testing.T) *space {
+	// Vary the filler count and the width of the last run's length.
+	t.Helper()
+	for k := range pageSize / 4 {
+		for _, last := range []uint64{1, 200, 20000} {
+			sp := newSpace()
+			sp.end = 1 << 30
+			sp.setFree(run{start: 1<<14 - 1, n: 1000})
+			for i := range k {
+				n := uint64(1)
+				if i == k-1 {
+					n = last
+				}
+				sp.setFree(run{start: 1<<15 + uint64(i)*1<<15, n: n})
+			}
+			if len(sp.encode()) == pageSize {
+				return sp
+			}
+		}
+	}
+	t.Fatal("no filler fills the page")
+	return nil
+}
