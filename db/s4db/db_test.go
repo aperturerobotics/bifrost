@@ -64,7 +64,7 @@ func TestModel(t *testing.T) {
 		for range 20 {
 			randomCommit(t, r, db, m, 4000)
 		}
-		checkCrash(t, path, m)
+		checkCrash(t, db, path, m)
 		if err := db.Close(); err != nil {
 			t.Fatal(err)
 		}
@@ -566,10 +566,17 @@ func TestSingleProcessInBubble(t *testing.T) {
 // checkCrash copies the file of an open database, as a crash would leave
 // it, and checks that a process recovering the copy rebuilds the same
 // contents and a consistent space.
-func checkCrash(t *testing.T, path string, m model) {
-	// Copy the file.
+func checkCrash(t *testing.T, live *DB, path string, m model) {
+	// Copy the file under the writer lock. The background compactor and
+	// checkpoint write it otherwise, and a copy read while they do can pair
+	// a durable record with value bytes read before they were written.
 	t.Helper()
+	ctx := context.Background()
+	if err := live.w.lock(ctx); err != nil {
+		t.Fatal(err)
+	}
 	b, err := os.ReadFile(path)
+	live.w.unlock(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
