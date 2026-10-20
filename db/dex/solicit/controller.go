@@ -310,9 +310,9 @@ func (c *Controller) waitSessions(ctx context.Context, exclude *peerSession, wan
 			}
 			// A closed session awaiting removal cannot answer; ask the
 			// newest session that is still open.
-			for i := len(peerSessions) - 1; i >= 0; i-- {
-				if !peerSessions[i].closed.Load() {
-					sessions = append(sessions, peerSessions[i])
+			for _, peerSession := range slices.Backward(peerSessions) {
+				if !peerSession.closed.Load() {
+					sessions = append(sessions, peerSession)
 					break
 				}
 			}
