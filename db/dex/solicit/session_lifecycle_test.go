@@ -846,3 +846,79 @@ func assertNoTestDexValue[T any](t *testing.T, ch <-chan T, name string) {
 	case <-time.After(100 * time.Millisecond):
 	}
 }
+
+func TestControllerForwardToPeersRetriesReplacedSession(t *testing.T) {
+	// Keep the peer sessions within the test lifetime.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	// Start the session a peer is about to replace.
+	c := newTestDexSolicitController()
+	ref := testDexBlockRef(t, "replaced-data")
+	old, oldRemote, oldCleanup := newTestPeerSessionPair(c, peer.ID("peer"))
+	defer oldCleanup()
+	old.start(ctx)
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		c.sessions["peer"] = []*peerSession{old}
+		broadcast()
+	})
+
+	// Close the old session once its request arrives, then bring up the
+	// replacement session that serves the block.
+	next, nextRemote, nextCleanup := newTestPeerSessionPair(c, peer.ID("peer"))
+	defer nextCleanup()
+	replaced := make(chan error, 1)
+	go func() {
+		var req DexMessage
+		if err := oldRemote.RecvMsg(&req); err != nil {
+			replaced <- err
+			return
+		}
+		old.close()
+		c.removeSession("peer", old)
+		next.start(ctx)
+		c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+			c.sessions["peer"] = append(c.sessions["peer"], next)
+			broadcast()
+		})
+		if err := nextRemote.RecvMsg(&req); err != nil {
+			replaced <- err
+			return
+		}
+		replaced <- nextRemote.SendMsg(&DexMessage{
+			RequestId:  req.GetRequestId(),
+			IsResponse: true,
+			Found:      true,
+			Data:       []byte("replaced-data"),
+		})
+	}()
+
+	// Require the request to follow the peer to its replacement session.
+	found, err := c.forwardToPeers(ctx, ref, 0, nil)
+	if err != nil || found == nil || string(found.GetData()) != "replaced-data" {
+		t.Fatalf("forwardToPeers after session replacement = %v, %v", found, err)
+	}
+	if err := recvTestDexValue(t, replaced, "replacement responder result"); err != nil {
+		t.Fatalf("replacement responder: %v", err)
+	}
+}
+
+func TestControllerWaitSessionsSkipsClosedSession(t *testing.T) {
+	// Register an open session behind a newer closed one.
+	c := newTestDexSolicitController()
+	open, _, openCleanup := newTestPeerSessionPair(c, peer.ID("peer"))
+	defer openCleanup()
+	closed, _, closedCleanup := newTestPeerSessionPair(c, peer.ID("peer"))
+	defer closedCleanup()
+	closed.close()
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		c.sessions["peer"] = []*peerSession{open, closed}
+		broadcast()
+	})
+
+	// Require the open session to be the one asked.
+	sessions, err := c.waitSessions(t.Context(), nil, false)
+	if err != nil || len(sessions) != 1 || sessions[0] != open {
+		t.Fatalf("waitSessions = %v, %v", sessions, err)
+	}
+}

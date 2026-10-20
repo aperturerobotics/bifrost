@@ -359,7 +359,7 @@ func (s *peerSession) lookupLocalBlock(ctx context.Context, ref *block.BlockRef)
 func (s *peerSession) requestBlock(ctx context.Context, ref *block.BlockRef, hops uint32) (*DexMessage, error) {
 	// Reject block requests after the peer session closes.
 	if s.closed.Load() {
-		return nil, errors.New("session closed")
+		return nil, errSessionClosed
 	}
 
 	// Register the pending request before sending it.
@@ -368,7 +368,7 @@ func (s *peerSession) requestBlock(ctx context.Context, ref *block.BlockRef, hop
 	s.mtx.Lock()
 	if s.closed.Load() {
 		s.mtx.Unlock()
-		return nil, errors.New("session closed")
+		return nil, errSessionClosed
 	}
 	s.pending[id] = ch
 	s.mtx.Unlock()
@@ -404,7 +404,7 @@ func (s *peerSession) requestBlock(ctx context.Context, ref *block.BlockRef, hop
 		return nil, ctx.Err()
 	case resp := <-ch:
 		if resp == nil {
-			return nil, errors.New("session closed")
+			return nil, errSessionClosed
 		}
 		if resp.GetError() != "" {
 			return nil, errors.New(resp.GetError())

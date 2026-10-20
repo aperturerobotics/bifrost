@@ -35,6 +35,17 @@ const DexProtocolID = protocol.ID("hydra/dex")
 // KiB).
 const maxMessageSize = 10 * 1024 * 1024
 
+// maxSessionRetries bounds how often one block fanout is asked again after a
+// peer session closed under it.
+const maxSessionRetries = 3
+
+// sessionReplaceWait bounds the wait for an open session after a session
+// closed under a fanout. A peer replacing its link reconnects within seconds.
+const sessionReplaceWait = 10 * time.Second
+
+// errSessionClosed reports a request that failed because its peer session closed.
+var errSessionClosed = errors.New("session closed")
+
 // Controller is the solicitation-based DEX controller.
 type Controller struct {
 	le *logrus.Entry
@@ -255,7 +266,27 @@ func (c *Controller) forwardToPeers(ctx context.Context, ref *block.BlockRef, ho
 	if err != nil {
 		return nil, err
 	}
-	return peerBlockFanout{sessions: sessions, ref: ref, hops: hops}.run(ctx)
+	return c.askPeers(ctx, sessions, ref, hops, exclude)
+}
+
+// askPeers runs a block fanout over sessions. A peer that replaces its link
+// closes the session a request went out on while its new session comes up, so
+// a fanout that failed on a closed session waits up to sessionReplaceWait for
+// open sessions and asks again, at most maxSessionRetries times. Only a
+// session close is retried: a miss, a peer error or ctx ending returns at once.
+func (c *Controller) askPeers(ctx context.Context, sessions []*peerSession, ref *block.BlockRef, hops uint32, exclude *peerSession) (*DexMessage, error) {
+	found, err := peerBlockFanout{sessions: sessions, ref: ref, hops: hops}.run(ctx)
+	for attempt := 0; attempt < maxSessionRetries && errors.Is(err, errSessionClosed) && ctx.Err() == nil; attempt++ {
+		waitCtx, waitCancel := context.WithTimeout(ctx, sessionReplaceWait)
+		next, waitErr := c.waitSessions(waitCtx, exclude, true)
+		waitCancel()
+		if waitErr != nil {
+			return nil, err
+		}
+		c.le.WithField("ref", ref.String()).WithField("attempt", attempt+1).Debug("dex block request retried after session close")
+		found, err = peerBlockFanout{sessions: next, ref: ref, hops: hops}.run(ctx)
+	}
+	return found, err
 }
 
 // waitSessions waits until the solicitation has settled and returns the newest
@@ -274,8 +305,16 @@ func (c *Controller) waitSessions(ctx context.Context, exclude *peerSession, wan
 		}
 		sessions = sessions[:0]
 		for _, peerSessions := range c.sessions {
-			if !slices.Contains(peerSessions, exclude) {
-				sessions = append(sessions, peerSessions[len(peerSessions)-1])
+			if slices.Contains(peerSessions, exclude) {
+				continue
+			}
+			// A closed session awaiting removal cannot answer; ask the
+			// newest session that is still open.
+			for i := len(peerSessions) - 1; i >= 0; i-- {
+				if !peerSessions[i].closed.Load() {
+					sessions = append(sessions, peerSessions[i])
+					break
+				}
 			}
 		}
 		return !wantPeer || len(sessions) != 0, nil
@@ -322,11 +361,7 @@ func (r *lookupResolver) Resolve(ctx context.Context, handler directive.Resolver
 	if err != nil {
 		return err
 	}
-	found, err := peerBlockFanout{
-		sessions: sessions,
-		ref:      r.ref,
-		hops:     r.c.cc.GetMaxForwardHops(),
-	}.run(ctx)
+	found, err := r.c.askPeers(ctx, sessions, r.ref, r.c.cc.GetMaxForwardHops(), nil)
 
 	// Emit the result, including a miss or a failed exchange.
 	switch {
