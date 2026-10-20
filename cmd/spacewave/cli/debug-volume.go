@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/aperturerobotics/cli"
+	protojson "github.com/aperturerobotics/protobuf-go-lite/json"
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/s4db"
@@ -40,10 +41,12 @@ func newDebugVolumeUsageCommand() *cli.Command {
 	var top int
 	return &cli.Command{
 		Name:      "volume-usage",
-		Usage:     "break down a volume file's keys and bytes by key prefix",
+		Usage:     "break down a volume file's keys and bytes by key prefix, and its free space",
 		ArgsUsage: "<volume-file>",
 		Description: "Scans an s4db volume file in one snapshot. It may run beside the " +
-			"daemon that has the volume open.",
+			"daemon that has the volume open. The space section shows how the free " +
+			"runs are sized, where the live values end, what holds freed space " +
+			"back, and how much of the free space the file system still allocates.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "prefix",
@@ -120,6 +123,10 @@ func runDebugVolumeUsage(
 	}
 	otherBytes := usage.FileBytes - usage.FreeBytes - usage.ValuePageBytes -
 		usage.IndexBytes - usage.LogBytes - usage.PendingBytes
+	space, err := db.SpaceReport(ctx)
+	if err != nil {
+		return errors.Wrap(err, "read free space")
+	}
 
 	// Read every key from one snapshot. The snapshot holds back the space
 	// a running daemon frees, so the scan reads only the index.
@@ -191,6 +198,9 @@ func runDebugVolumeUsage(
 		writeJSONInt64Field(ms, &morePage, "otherBytes", otherBytes)
 		ms.WriteObjectEnd()
 		ms.WriteMoreIf(&more)
+		ms.WriteObjectField("space")
+		writeVolumeSpaceJSON(ms, &space)
+		ms.WriteMoreIf(&more)
 		ms.WriteObjectField("classes")
 		ms.WriteArrayStart()
 		var moreClass bool
@@ -216,16 +226,25 @@ func runDebugVolumeUsage(
 		{"Keys", strconv.FormatUint(total.keys, 10)},
 		{"Key Bytes", humanize.IBytes(total.keyBytes)},
 		{"Value Bytes", humanize.IBytes(total.valueBytes)},
-		{"Free Pages", ibytes(usage.FreeBytes) + " (punched)"},
+		{"Disk", volumeDiskBytes(space.DiskBytes)},
+		{"Free Pages", ibytes(usage.FreeBytes)},
+		{"Free on Disk", volumeDiskBytes(space.FreeDiskBytes)},
+		{"Largest Free Run", ibytes(space.LargestFreeBytes)},
+		{"Values End", ibytes(space.ValueEndBytes)},
+		{"Compact Goal", volumeCompactGoal(space.CompactGoalBytes)},
 		{"Value Pages", ibytes(usage.ValuePageBytes)},
 		{"Live Values", ibytes(usage.ValueBytes)},
 		{"Index Keys", strconv.FormatInt(usage.IndexKeys, 10)},
 		{"Index Pages", ibytes(usage.IndexBytes)},
 		{"Log", ibytes(usage.LogBytes)},
-		{"Pending", ibytes(usage.PendingBytes)},
+		{"Pending", ibytes(usage.PendingBytes) + " (" + strconv.Itoa(space.PendingValueRuns) +
+			" value runs, " + strconv.Itoa(space.PendingPageRuns) + " page runs)"},
+		{"Unpunched", ibytes(space.UnpunchedBytes)},
+		{"Reserved", ibytes(space.ReservedBytes)},
 		{"Other", ibytes(otherBytes)},
 	})
 	os.Stdout.WriteString("\n")
+	writeVolumeSpaceTables(&space)
 	rows := [][]string{{"CLASS", "KEYS", "KEY BYTES", "VALUE BYTES"}}
 	for _, kc := range ranked {
 		rows = append(rows, []string{
@@ -237,6 +256,110 @@ func runDebugVolumeUsage(
 	}
 	writeTable(os.Stdout, "", rows)
 	return nil
+}
+
+// writeVolumeSpaceJSON writes the free space report as one JSON object.
+func writeVolumeSpaceJSON(ms *protojson.MarshalState, space *s4db.SpaceReport) {
+	// Write where the space lies.
+	ms.WriteObjectStart()
+	var more bool
+	writeJSONInt64Field(ms, &more, "diskBytes", space.DiskBytes)
+	writeJSONInt64Field(ms, &more, "freeDiskBytes", space.FreeDiskBytes)
+	writeJSONInt64Field(ms, &more, "largestFreeBytes", space.LargestFreeBytes)
+	writeJSONInt64Field(ms, &more, "valueEndBytes", space.ValueEndBytes)
+	writeJSONInt64Field(ms, &more, "compactGoalBytes", space.CompactGoalBytes)
+
+	// Write what holds freed space back.
+	writeJSONInt64Field(ms, &more, "pendingValueRuns", int64(space.PendingValueRuns))
+	writeJSONInt64Field(ms, &more, "pendingPageRuns", int64(space.PendingPageRuns))
+	writeJSONInt64Field(ms, &more, "unpunchedBytes", space.UnpunchedBytes)
+	writeJSONInt64Field(ms, &more, "reservedBytes", space.ReservedBytes)
+
+	// Write the free run classes.
+	ms.WriteMoreIf(&more)
+	ms.WriteObjectField("freeRuns")
+	ms.WriteArrayStart()
+	var moreRun bool
+	for _, c := range space.FreeRuns {
+		ms.WriteMoreIf(&moreRun)
+		ms.WriteObjectStart()
+		var moreField bool
+		writeJSONInt64Field(ms, &moreField, "minBytes", c.MinBytes)
+		writeJSONInt64Field(ms, &moreField, "runs", c.Runs)
+		writeJSONInt64Field(ms, &moreField, "bytes", c.Bytes)
+		ms.WriteObjectEnd()
+	}
+	ms.WriteArrayEnd()
+
+	// Write the reader slots.
+	ms.WriteMoreIf(&more)
+	ms.WriteObjectField("slots")
+	ms.WriteArrayStart()
+	var moreSlot bool
+	for _, sl := range space.Slots {
+		ms.WriteMoreIf(&moreSlot)
+		ms.WriteObjectStart()
+		var moreField bool
+		writeJSONInt64Field(ms, &moreField, "slot", int64(sl.Slot))
+		writeJSONUint64Field(ms, &moreField, "seq", sl.Seq)
+		writeJSONUint64Field(ms, &moreField, "ckpt", sl.Ckpt)
+		writeJSONBoolField(ms, &moreField, "live", sl.Live)
+		writeJSONBoolField(ms, &moreField, "own", sl.Own)
+		ms.WriteObjectEnd()
+	}
+	ms.WriteArrayEnd()
+	ms.WriteObjectEnd()
+}
+
+// writeVolumeSpaceTables prints the free run classes and the reader slots.
+func writeVolumeSpaceTables(space *s4db.SpaceReport) {
+	// Print the free runs by length.
+	rows := [][]string{{"FREE RUN LENGTH", "RUNS", "BYTES"}}
+	for _, c := range space.FreeRuns {
+		rows = append(rows, []string{
+			ibytes(c.MinBytes) + " to " + ibytes(2*c.MinBytes),
+			strconv.FormatInt(c.Runs, 10),
+			ibytes(c.Bytes),
+		})
+	}
+	writeTable(os.Stdout, "", rows)
+	os.Stdout.WriteString("\n")
+
+	// Print the slots whose pins hold freed space back.
+	rows = [][]string{{"SLOT", "SEQ", "CKPT", "HELD"}}
+	for _, sl := range space.Slots {
+		held := "no"
+		if sl.Own {
+			held = "this process"
+		} else if sl.Live {
+			held = "yes"
+		}
+		rows = append(rows, []string{
+			strconv.Itoa(sl.Slot),
+			strconv.FormatUint(sl.Seq, 10),
+			strconv.FormatUint(sl.Ckpt, 10),
+			held,
+		})
+	}
+	writeTable(os.Stdout, "", rows)
+	os.Stdout.WriteString("\n")
+}
+
+// volumeDiskBytes formats an allocated byte count the file system may not
+// report.
+func volumeDiskBytes(n int64) string {
+	if n < 0 {
+		return "unknown"
+	}
+	return ibytes(n)
+}
+
+// volumeCompactGoal formats the end compaction is moving toward.
+func volumeCompactGoal(n int64) string {
+	if n == 0 {
+		return "none"
+	}
+	return ibytes(n)
 }
 
 // ibytes formats a signed byte count in binary units.
