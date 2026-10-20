@@ -26,9 +26,14 @@ const compactIdle = time.Second
 // compactBusy is how long a step waits when a writer holds or wants the lock.
 const compactBusy = 5 * time.Millisecond
 
-// compactRest is how long background compaction waits after a full pass over
-// the keys found nothing to move.
+// compactRest is how long background compaction first waits after a full pass
+// over the keys that neither moved nor took off the file's end the least slack
+// worth compacting. Each such pass in a row doubles the wait up to
+// compactRestMax, since a pass reads the whole index.
 const compactRest = time.Minute
+
+// compactRestMax bounds the wait after passes that moved little.
+const compactRestMax = 16 * time.Minute
 
 // compactMinSlack is the least free space, in pages, worth compacting away.
 // Tests lower it so the compactor runs on small files.
@@ -48,6 +53,16 @@ type compactor struct {
 	// passFound counts the values found to move since the cursor last
 	// wrapped.
 	passFound int
+	// passMoved counts the bytes rewritten since the cursor last wrapped.
+	passMoved int64
+	// end is the file end, in pages, at the last plan.
+	end uint64
+	// passEnd is the end at the last plan before the last pass ended, or 0
+	// before the first.
+	passEnd uint64
+	// rest is the wait after the last pass, or 0 after one that moved
+	// enough.
+	rest time.Duration
 	// touched holds the inner pages past the goal a move rewrites in this
 	// pass.
 	touched map[uint64]bool
@@ -133,19 +148,15 @@ func (c *compactor) step(ctx context.Context) (time.Duration, error) {
 		return compactBusy, nil
 	}
 
-	// Rest after a pass that moved nothing; pace a scan that found nothing
-	// like a commit, so scanning takes a share of a core.
+	// Pace a scan that found nothing like a commit, so scanning takes a
+	// share of a core, and rest after a pass that moved little.
 	c.passFound += len(moves)
-	if wrapped {
-		rest := c.passFound == 0
-		c.flush = !rest
-		c.passFound, c.touched = 0, nil
-		if rest {
-			return compactRest, nil
-		}
-	}
 	if len(moves) == 0 {
-		return max(compactBusy, time.Since(start)*(compactShare-1)), nil
+		wait := max(compactBusy, time.Since(start)*(compactShare-1))
+		if wrapped {
+			wait = max(wait, c.endPass())
+		}
+		return wait, nil
 	}
 
 	// Commit the moves under the writer lock.
@@ -154,14 +165,41 @@ func (c *compactor) step(ctx context.Context) (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
+	c.passMoved += int64(moved)
 	if !held {
 		return compactBusy, nil
 	}
 
 	// Wait so the step's lock time stays a share of the writer's, and its
-	// bytes within the rate.
+	// bytes within the rate, and rest after a pass that moved little.
 	d := time.Since(start)
-	return max(d*(compactShare-1), time.Duration(moved)*time.Second/compactRate), nil
+	wait := max(d*(compactShare-1), time.Duration(moved)*time.Second/compactRate)
+	if wrapped {
+		wait = max(wait, c.endPass())
+	}
+	return wait, nil
+}
+
+// endPass ends a pass over the keys and returns how long to rest: nothing
+// after a pass that moved, or took off the file's end since the last pass
+// ended, at least the least slack worth compacting, else a wait that doubles
+// with each such pass in a row. The end falls mostly at the checkpoint after
+// a pass, so a pass counts the fall the one before it caused. A pass that
+// found values to move checkpoints at the next plan.
+func (c *compactor) endPass() time.Duration {
+	// Ask for the checkpoint, and start the next pass's counts.
+	c.flush = c.passFound > 0
+	moved := c.passMoved
+	lowered := c.passEnd > c.end && c.passEnd-c.end >= compactMinSlack
+	c.passFound, c.passMoved, c.touched, c.passEnd = 0, 0, nil, c.end
+
+	// Rest longer after each pass that did little.
+	if moved >= pageOff(compactMinSlack) || lowered {
+		c.rest = 0
+		return 0
+	}
+	c.rest = min(max(2*c.rest, compactRest), compactRestMax)
+	return c.rest
 }
 
 // plan decides under the writer lock whether the file holds slack worth
@@ -177,9 +215,12 @@ func (c *compactor) plan(ctx context.Context) (ok, busy bool, err error) {
 	}
 	defer func() { w.unlock(err) }()
 
+	// Note the end, so the pass's end can tell whether it fell.
+	sp := w.sp
+	c.end = sp.end
+
 	// Aim at the pages in use and an eighth more, once the free runs hold
 	// that much and the minimum.
-	sp := w.sp
 	inUse := sp.end - sp.freeCount
 	goal := inUse + inUse/8
 	live, held := sp.stats()
@@ -371,7 +412,7 @@ func (c *compactor) read(moves []move) error {
 // commit rewrites the moves whose keys still hold the value read and that
 // still would move lower, under the writer lock when no writer holds or
 // wants it. held reports whether it took the lock; moved counts the bytes
-// rewritten.
+// rewritten, a page for each index page.
 func (c *compactor) commit(ctx context.Context, moves []move) (held bool, moved int, err error) {
 	// Take the writer lock only when idle.
 	db, w := c.db, c.db.w
@@ -393,6 +434,9 @@ func (c *compactor) commit(ctx context.Context, moves []move) (held bool, moved 
 		}
 		changes = append(changes, tentry{key: m.key, data: m.data})
 		moved += len(m.data)
+		if m.page != 0 {
+			moved += pageSize
+		}
 	}
 	if len(changes) == 0 {
 		return true, 0, nil

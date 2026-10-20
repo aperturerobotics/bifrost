@@ -237,3 +237,41 @@ func TestCompactorScanCurrentValue(t *testing.T) {
 		t.Fatal("scan did not list the changed key")
 	}
 }
+
+// TestCompactorRestsAfterLittle checks that the rest after a pass that moved
+// and took off the end less than the least slack worth compacting doubles up
+// to compactRestMax, and that a pass that moved or lowered the end enough
+// continues at once and starts the doubling over.
+func TestCompactorRestsAfterLittle(t *testing.T) {
+	// Passes that move a little and lower the end a little rest longer each
+	// time, up to the bound.
+	c := &compactor{end: 1 << 20}
+	want := compactRest
+	for range 8 {
+		c.passFound, c.passMoved = 1, pageOff(compactMinSlack)-1
+		c.end -= compactMinSlack - 1
+		if got := c.endPass(); got != want {
+			t.Fatalf("rest %v, want %v", got, want)
+		}
+		if !c.flush {
+			t.Fatal("a pass that found values asked for no checkpoint")
+		}
+		want = min(2*want, compactRestMax)
+	}
+
+	// A pass that moves enough does not rest, and the next little one
+	// rests the least.
+	c.passMoved = pageOff(compactMinSlack)
+	if got := c.endPass(); got != 0 {
+		t.Fatalf("rest %v after a full pass, want none", got)
+	}
+	if got := c.endPass(); got != compactRest || c.flush {
+		t.Fatalf("rest %v flush %v after an empty pass, want %v and no checkpoint", got, c.flush, compactRest)
+	}
+
+	// A pass after the end fell enough does not rest either.
+	c.end -= compactMinSlack
+	if got := c.endPass(); got != 0 {
+		t.Fatalf("rest %v after the end fell %d pages, want none", got, compactMinSlack)
+	}
+}
