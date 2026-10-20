@@ -173,3 +173,67 @@ func TestCompactorClose(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// TestCompactorScanCurrentValue checks that a scan lists the value a key
+// holds now, not the one in the checkpoint's index, and skips a key deleted
+// since: the index's values may lie in space a commit freed and reused.
+func TestCompactorScanCurrentValue(t *testing.T) {
+	// Fill a file with slack, without the background compactor.
+	ctx := context.Background()
+	opts := Options{RelocateBudget: -1, SingleProcess: true}
+	db := openTest(t, filepath.Join(t.TempDir(), "current.s4wave"), opts)
+	defer db.Close()
+	fillSlack(t, ctx, db)
+
+	// Change one key and delete another after the checkpoint.
+	changed, deleted := []byte("g1/0005"), []byte("g1/0006")
+	tx, err := db.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Set(ctx, changed, bytes.Repeat([]byte{9}, 6000)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Delete(ctx, deleted); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Scan every key on a snapshot whose overlay holds both changes.
+	c := &compactor{db: db}
+	if ok, _, err := c.plan(ctx); err != nil || !ok {
+		t.Fatalf("plan: ok=%v err=%v", ok, err)
+	}
+	st, stripe := db.acquire()
+	defer db.release(st, stripe)
+	if !st.filter.has(changed) || !st.filter.has(deleted) {
+		t.Fatal("a checkpoint took the changes into the index")
+	}
+	refs, _, err := c.scan(ctx, st)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The changed key lists its current value and the deleted key none.
+	want, _, err := db.lookup(st, changed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sawChanged bool
+	for _, m := range refs {
+		switch string(m.key) {
+		case string(deleted):
+			t.Fatal("scan listed a deleted key")
+		case string(changed):
+			sawChanged = true
+			if !sameValue(m.val, want) {
+				t.Fatalf("scan listed %+v, want the current value %+v", m.val.ref, want.ref)
+			}
+		}
+	}
+	if !sawChanged {
+		t.Fatal("scan did not list the changed key")
+	}
+}

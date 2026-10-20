@@ -209,8 +209,9 @@ func (c *compactor) plan(ctx context.Context) (ok, busy bool, err error) {
 // scan lists, on st's index, the values stored outside the index among the
 // next compactVisits entries from the cursor, and one key in each index page
 // past the goal, and advances the cursor. wrapped reports that the scan
-// reached the last key, so the next starts over. Values committed since the
-// last checkpoint reach the index at the next one.
+// reached the last key, so the next starts over. A key changed since the
+// last checkpoint lists its current value; keys added since reach the index
+// at the next checkpoint.
 func (c *compactor) scan(ctx context.Context, st *state) (refs []move, wrapped bool, err error) {
 	// Start at the cursor.
 	cur := cursor{p: c.db.p, root: st.root}
@@ -228,6 +229,18 @@ func (c *compactor) scan(ctx context.Context, st *state) (refs []move, wrapped b
 		if n := cur.path[len(cur.path)-1].n; n != leaf {
 			leaf = n
 			m.page = c.pastGoal(&cur)
+		}
+
+		// Take the key's value from st, not the index: a commit since the
+		// checkpoint may have changed or deleted it, and freed the space the
+		// index's value lies in.
+		if (m.page != 0 || m.val.isRef) && st.filter.has(cur.key()) {
+			if it, ok := st.overlay.Get(overlayProbe(cur.key())); ok {
+				if it.e.del {
+					continue
+				}
+				m.val = it.e.val
+			}
 		}
 		if m.page != 0 || m.val.isRef {
 			m.key = bytes.Clone(cur.key())
