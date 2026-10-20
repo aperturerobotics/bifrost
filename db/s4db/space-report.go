@@ -3,6 +3,7 @@ package s4db
 import (
 	"context"
 	"math/bits"
+	"slices"
 )
 
 // SpaceReport details where a file's free space lies and what holds it, to
@@ -98,8 +99,8 @@ func (db *DB) SpaceReport(ctx context.Context) (SpaceReport, error) {
 	}
 
 	// Find the end of the highest live value page, then release the lock.
-	for i := len(sp.live) - 1; i >= 0; i-- {
-		if sp.live[i] != 0 {
+	for i, v := range slices.Backward(sp.live) {
+		if v != 0 {
 			r.ValueEndBytes = pageOff(uint64(i) + 1) // #nosec G115 -- slice indexes are not negative.
 			break
 		}
