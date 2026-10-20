@@ -82,7 +82,7 @@
         "zod": "4.6.5",
       },
       "devDependencies": {
-        "@aptre/common": "0.36.0",
+        "@aptre/common": "0.36.3",
         "@google/design.md": "^0.4.0",
         "@playwright/test": "^1.62.1",
         "@shadcn/lint": "0.2.0",
@@ -125,7 +125,7 @@
     "quickjs-wasi-reactor": "0.15.1",
   },
   "packages": {
-    "@aptre/common": ["@aptre/common@0.36.0", "", { "dependencies": { "@aptre/protobuf-es-lite": "1.2.1", "starpc": "^0.52.3", "vitest": "^5.0.0" } }, "sha512-y+g4jKEeavOQLS0hLYw2VUalZxlbmPPtiYPsq0sSOOG1QcEaOkA8MF2249Qkx4AwT1lTgRjqPxhK9JZQFJuneg=="],
+    "@aptre/common": ["@aptre/common@0.36.3", "", { "dependencies": { "@aptre/protobuf-es-lite": "1.2.3", "starpc": "^0.52.3", "vitest": "^5.0.0" } }, "sha512-dIsOEGILHWX6qH1wfXGeED3x5N77Kvsxp8wVLCcfaOPwKJ6Fgyd+jsF6z3osslvVDq09GSk4aVFuislY82QRuw=="],
 
     "@aptre/flex-layout": ["@aptre/flex-layout@0.6.4", "", { "peerDependencies": { "react": "^19.2.5", "react-dom": "^19.2.5" } }, "sha512-ROKbbJSoDGv1wbLcQq6VryPtWsqZBIF3R2z5q9hRpBjdltC7/71i2e4erpKqn2gTFckZrjuXssIHTdHMs60/Ag=="],
 

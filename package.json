@@ -239,7 +239,7 @@
     "bldr:vendor": "go mod vendor"
   },
   "devDependencies": {
-    "@aptre/common": "0.36.0",
+    "@aptre/common": "0.36.3",
     "@google/design.md": "^0.4.0",
     "@playwright/test": "^1.62.1",
     "@shadcn/lint": "0.2.0",
