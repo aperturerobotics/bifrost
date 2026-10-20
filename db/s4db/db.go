@@ -601,8 +601,24 @@ func (db *DB) WaitSeq(ctx context.Context, seq uint64) error {
 // Compact moves every value out of sparse pages and the file's tail,
 // checkpoints, and releases freed space.
 func (db *DB) Compact(ctx context.Context) error {
-	if err := db.w.lock(ctx); err != nil {
-		return err
+	// Take the writer lock while no background checkpoint runs. A build's
+	// snapshot pins the space the compaction frees, and the build needs the
+	// writer lock to finish, so compacting during it releases nothing and
+	// leaves the log high in the file. Only commits start builds, and they
+	// need the writer lock.
+	for {
+		if err := db.bcast.Wait(ctx, func(_ func(), _ func() <-chan struct{}) (bool, error) {
+			return !db.w.building.Load(), nil
+		}); err != nil {
+			return err
+		}
+		if err := db.w.lock(ctx); err != nil {
+			return err
+		}
+		if !db.w.building.Load() {
+			break
+		}
+		db.w.unlock(nil)
 	}
 	err := db.w.compact(ctx)
 	db.w.unlock(err)

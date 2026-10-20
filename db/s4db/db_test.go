@@ -777,3 +777,65 @@ func TestReopenAfterReleasedReplace(t *testing.T) {
 		t.Fatalf("get: found %v err %v, len %d", ok, err, len(got))
 	}
 }
+
+// TestCompactDuringBuild deletes every key while a background checkpoint
+// builds the tree that holds them, compacts, and closes. The emptied file
+// shrinks to a few pages: the build's snapshot pins the space the compaction
+// frees, so the compaction waits for the build to end.
+func TestCompactDuringBuild(t *testing.T) {
+	// Commit enough values that the tree takes many reservations to build.
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "build.s4wave")
+	db := openTest(t, path, Options{})
+	if wait, _ := db.compactor.SetRoutine(nil); wait != nil {
+		<-wait
+	}
+	val := bytes.Repeat([]byte{1}, 500)
+	for b := range 100 {
+		tx, err := db.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := range 200 {
+			if err := tx.Set(ctx, fmt.Appendf(nil, "k%05d", b*200+i), val); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Start a background checkpoint of the tree holding them.
+	if err := db.w.lock(ctx); err != nil {
+		t.Fatal(err)
+	}
+	db.w.startCheckpoint()
+	db.w.unlock(nil)
+
+	// Delete every key while it builds, and compact.
+	tx, err := db.NewTransaction(ctx, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range 20000 {
+		if err := tx.Delete(ctx, fmt.Appendf(nil, "k%05d", i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Compact(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// The emptied file shrinks to a few pages.
+	used, size := usage(t, path)
+	if used > 256<<10 || size > 2<<20 {
+		t.Fatalf("empty database is %d bytes long with %d allocated", size, used)
+	}
+}
