@@ -281,6 +281,7 @@ export interface SOWorldOp {
     | { value: InitWorldOp; case: 'initWorld' }
     | { value: ApplyTxOp; case: 'applyTxOp' }
     | { value: SetRetainedRootOp; case: 'setRetainedRoot' }
+    | { value: SetTransformConfOp; case: 'setTransformConf' }
 }
 
 export const SOWorldOp: MessageType<SOWorldOp> =
@@ -290,6 +291,7 @@ export const SOWorldOp: MessageType<SOWorldOp> =
       [1, 'init_world', 11, 0, InitWorldOp.codec, 'body'],
       [2, 'apply_tx_op', 11, 0, ApplyTxOp.codec, 'body'],
       [4, 'set_retained_root', 11, 0, SetRetainedRootOp.codec, 'body'],
+      [5, 'set_transform_conf', 11, 0, SetTransformConfOp.codec, 'body'],
     ],
   )
 
@@ -364,6 +366,26 @@ export const SetRetainedRootOp: MessageType<SetRetainedRootOp> =
       [1, 'name', 9],
       [2, 'root_ref', 11, 0, BlockRef.codec],
     ],
+  )
+
+/**
+ * SetTransformConfOp changes the transform the World writes blocks with.
+ * Replay accepts only a transform that also reads every block the current
+ * one wrote.
+ *
+ * @generated from message sobject.world.engine.SetTransformConfOp
+ */
+export interface SetTransformConfOp {
+  /**
+   * TransformConf is the new World transform.
+   */
+  transformConf?: Config$1
+}
+
+export const SetTransformConfOp: MessageType<SetTransformConfOp> =
+  /* @__PURE__ */ createMessageType<SetTransformConfOp>(
+    'sobject.world.engine.SetTransformConfOp',
+    () => [[1, 'transform_conf', 11, 0, Config$1.codec]],
   )
 
 /**

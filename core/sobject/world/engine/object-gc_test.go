@@ -71,6 +71,13 @@ func (uncachedStore) GetDecodedBlockCache() *block.DecodedBlockCache {
 
 // newSpaceWorld starts a World engine on a new local Space SharedObject.
 func newSpaceWorld(ctx context.Context, t *testing.T) *spaceWorld {
+	t.Helper()
+	return newSpaceWorldWithInit(ctx, t, &sobject_world_engine.InitWorldOp{})
+}
+
+// newSpaceWorldWithInit starts a World engine on a new local Space
+// SharedObject, initializing the World with initOp and no changelog.
+func newSpaceWorldWithInit(ctx context.Context, t *testing.T, initOp *sobject_world_engine.InitWorldOp) *spaceWorld {
 	// Start a testbed.
 	t.Helper()
 	tb, err := testbed.Default(ctx)
@@ -121,7 +128,8 @@ func newSpaceWorld(ctx context.Context, t *testing.T) *spaceWorld {
 	// Start the World engine on the SharedObject without a changelog, as a
 	// Space does, so replaced roots are unreachable from the head.
 	conf := sobject_world_engine.NewConfig(engineID, soRef)
-	conf.InitWorldOp = &sobject_world_engine.InitWorldOp{LastChangeDisable: true}
+	conf.InitWorldOp = initOp.CloneVT()
+	conf.InitWorldOp.LastChangeDisable = true
 	eng, engRef, err := world.StartEngine(ctx, tb.Bus, conf, nil)
 	if err != nil {
 		t.Fatal(err)

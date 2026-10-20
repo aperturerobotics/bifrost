@@ -356,6 +356,7 @@ type SOWorldOp struct {
 	//	*SOWorldOp_InitWorld
 	//	*SOWorldOp_ApplyTxOp
 	//	*SOWorldOp_SetRetainedRoot
+	//	*SOWorldOp_SetTransformConf
 	Body isSOWorldOp_Body `protobuf_oneof:"body"`
 }
 
@@ -393,6 +394,13 @@ func (x *SOWorldOp) GetSetRetainedRoot() *SetRetainedRootOp {
 	return nil
 }
 
+func (x *SOWorldOp) GetSetTransformConf() *SetTransformConfOp {
+	if x, ok := x.GetBody().(*SOWorldOp_SetTransformConf); ok {
+		return x.SetTransformConf
+	}
+	return nil
+}
+
 type isSOWorldOp_Body interface {
 	isSOWorldOp_Body()
 }
@@ -412,11 +420,19 @@ type SOWorldOp_SetRetainedRoot struct {
 	SetRetainedRoot *SetRetainedRootOp `protobuf:"bytes,4,opt,name=set_retained_root,json=setRetainedRoot,proto3,oneof"`
 }
 
+type SOWorldOp_SetTransformConf struct {
+	// SetTransformConf changes the transform later World blocks are written
+	// with.
+	SetTransformConf *SetTransformConfOp `protobuf:"bytes,5,opt,name=set_transform_conf,json=setTransformConf,proto3,oneof"`
+}
+
 func (*SOWorldOp_InitWorld) isSOWorldOp_Body() {}
 
 func (*SOWorldOp_ApplyTxOp) isSOWorldOp_Body() {}
 
 func (*SOWorldOp_SetRetainedRoot) isSOWorldOp_Body() {}
+
+func (*SOWorldOp_SetTransformConf) isSOWorldOp_Body() {}
 
 // InitWorldOp is the operation to initialize the inner state.
 type InitWorldOp struct {
@@ -497,6 +513,28 @@ func (x *SetRetainedRootOp) GetName() string {
 func (x *SetRetainedRootOp) GetRootRef() *block.BlockRef {
 	if x != nil {
 		return x.RootRef
+	}
+	return nil
+}
+
+// SetTransformConfOp changes the transform the World writes blocks with.
+// Replay accepts only a transform that also reads every block the current
+// one wrote.
+type SetTransformConfOp struct {
+	unknownFields []byte
+	// TransformConf is the new World transform.
+	TransformConf *transform.Config `protobuf:"bytes,1,opt,name=transform_conf,json=transformConf,proto3" json:"transformConf,omitempty"`
+}
+
+func (x *SetTransformConfOp) Reset() {
+	*x = SetTransformConfOp{}
+}
+
+func (*SetTransformConfOp) ProtoMessage() {}
+
+func (x *SetTransformConfOp) GetTransformConf() *transform.Config {
+	if x != nil {
+		return x.TransformConf
 	}
 	return nil
 }
@@ -729,6 +767,19 @@ func (m *SOWorldOp_SetRetainedRoot) CloneOneofVT() isSOWorldOp_Body {
 	return m.CloneVT()
 }
 
+func (m *SOWorldOp_SetTransformConf) CloneVT() *SOWorldOp_SetTransformConf {
+	if m == nil {
+		return (*SOWorldOp_SetTransformConf)(nil)
+	}
+	r := new(SOWorldOp_SetTransformConf)
+	r.SetTransformConf = protobuf_go_lite.CloneVTValue(m.SetTransformConf)
+	return r
+}
+
+func (m *SOWorldOp_SetTransformConf) CloneOneofVT() isSOWorldOp_Body {
+	return m.CloneVT()
+}
+
 func (m *InitWorldOp) CloneVT() *InitWorldOp {
 	if m == nil {
 		return (*InitWorldOp)(nil)
@@ -776,6 +827,22 @@ func (m *SetRetainedRootOp) CloneVT() *SetRetainedRootOp {
 }
 
 func (m *SetRetainedRootOp) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *SetTransformConfOp) CloneVT() *SetTransformConfOp {
+	if m == nil {
+		return (*SetTransformConfOp)(nil)
+	}
+	r := new(SetTransformConfOp)
+	r.TransformConf = protobuf_go_lite.CloneVTValue(m.TransformConf)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *SetTransformConfOp) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1069,6 +1136,23 @@ func (this *SOWorldOp_SetRetainedRoot) EqualVT(thatIface isSOWorldOp_Body) bool 
 	return true
 }
 
+func (this *SOWorldOp_SetTransformConf) EqualVT(thatIface isSOWorldOp_Body) bool {
+	that, ok := thatIface.(*SOWorldOp_SetTransformConf)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.SetTransformConf, that.SetTransformConf, func() *SetTransformConfOp { return &SetTransformConfOp{} }) {
+		return false
+	}
+	return true
+}
+
 func (this *InitWorldOp) EqualVT(that *InitWorldOp) bool {
 	if this == that {
 		return true
@@ -1129,6 +1213,26 @@ func (this *SetRetainedRootOp) EqualVT(that *SetRetainedRootOp) bool {
 
 func (this *SetRetainedRootOp) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*SetRetainedRootOp)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *SetTransformConfOp) EqualVT(that *SetTransformConfOp) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.TransformConf, that.TransformConf) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *SetTransformConfOp) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*SetTransformConfOp)
 	if !ok {
 		return false
 	}
@@ -1783,6 +1887,10 @@ func (x *SOWorldOp) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("setRetainedRoot")
 			ov.SetRetainedRoot.MarshalProtoJSON(s.WithField("setRetainedRoot"))
+		case *SOWorldOp_SetTransformConf:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("setTransformConf")
+			ov.SetTransformConf.MarshalProtoJSON(s.WithField("setTransformConf"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -1829,6 +1937,15 @@ func (x *SOWorldOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.SetRetainedRoot = &SetRetainedRootOp{}
 			ov.SetRetainedRoot.UnmarshalProtoJSON(s.WithField("set_retained_root", true))
+		case "set_transform_conf", "setTransformConf":
+			ov := &SOWorldOp_SetTransformConf{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.SetTransformConf = nil
+				return
+			}
+			ov.SetTransformConf = &SetTransformConfOp{}
+			ov.SetTransformConf.UnmarshalProtoJSON(s.WithField("set_transform_conf", true))
 		}
 	})
 }
@@ -1989,6 +2106,52 @@ func (x *SetRetainedRootOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the SetRetainedRootOp from JSON.
 func (x *SetRetainedRootOp) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the SetTransformConfOp message to JSON.
+func (x *SetTransformConfOp) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.TransformConf != nil || s.HasField("transformConf") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("transformConf")
+		x.TransformConf.MarshalProtoJSON(s.WithField("transformConf"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the SetTransformConfOp to JSON.
+func (x *SetTransformConfOp) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the SetTransformConfOp message from JSON.
+func (x *SetTransformConfOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "transform_conf", "transformConf":
+			if s.ReadNil() {
+				x.TransformConf = nil
+				return
+			}
+			x.TransformConf = &transform.Config{}
+			x.TransformConf.UnmarshalProtoJSON(s.WithField("transform_conf", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the SetTransformConfOp from JSON.
+func (x *SetTransformConfOp) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -2603,6 +2766,30 @@ func (m *SOWorldOp_SetRetainedRoot) MarshalToSizedBufferVT(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
+func (m *SOWorldOp_SetTransformConf) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOWorldOp_SetTransformConf) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.SetTransformConf != nil {
+		size, err := m.SetTransformConf.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x2a
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x2a
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *InitWorldOp) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -2733,6 +2920,48 @@ func (m *SetRetainedRootOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	}
 	if len(m.Name) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Name)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SetTransformConfOp) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SetTransformConfOp) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SetTransformConfOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.TransformConf != nil {
+		size, err := m.TransformConf.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -2989,6 +3218,21 @@ func (m *SOWorldOp_SetRetainedRoot) SizeVT() (n int) {
 	return n
 }
 
+func (m *SOWorldOp_SetTransformConf) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.SetTransformConf != nil {
+		l = m.SetTransformConf.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
 func (m *InitWorldOp) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3027,6 +3271,20 @@ func (m *SetRetainedRootOp) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Name)
 	if m.RootRef != nil {
 		l = m.RootRef.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *SetTransformConfOp) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.TransformConf != nil {
+		l = m.TransformConf.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += len(m.unknownFields)
@@ -3292,6 +3550,13 @@ func (x *SOWorldOp) MarshalProtoText() string {
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.SetRetainedRoot)
 		}
+	case *SOWorldOp_SetTransformConf:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "set_transform_conf")
+		if body.SetTransformConf == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &SetTransformConfOp{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.SetTransformConf)
+		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -3347,6 +3612,20 @@ func (x *SetRetainedRootOp) MarshalProtoText() string {
 }
 
 func (x *SetRetainedRootOp) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *SetTransformConfOp) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SetTransformConfOp")
+	if x.TransformConf != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "transform_conf")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.TransformConf)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *SetTransformConfOp) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -4064,6 +4343,26 @@ func (m *SOWorldOp) UnmarshalVT(dAtA []byte) error {
 				m.Body = &SOWorldOp_SetRetainedRoot{SetRetainedRoot: v}
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SetTransformConf", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*SOWorldOp_SetTransformConf); ok {
+				if err := oneof.SetTransformConf.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &SetTransformConfOp{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &SOWorldOp_SetTransformConf{SetTransformConf: v}
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -4255,6 +4554,64 @@ func (m *SetRetainedRootOp) UnmarshalVT(dAtA []byte) error {
 				m.RootRef = &block.BlockRef{}
 			}
 			if err := m.RootRef.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *SetTransformConfOp) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SetTransformConfOp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SetTransformConfOp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TransformConf", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.TransformConf == nil {
+				m.TransformConf = &transform.Config{}
+			}
+			if err := m.TransformConf.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

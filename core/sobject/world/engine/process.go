@@ -98,6 +98,8 @@ func (c *Controller) processOp(
 		return nhs, res, nil
 	case *SOWorldOp_SetRetainedRoot:
 		return processSetRetainedRootOp(ole, body.SetRetainedRoot, headState, peerID, nonce)
+	case *SOWorldOp_SetTransformConf:
+		return processSetTransformConfOp(ole, body.SetTransformConf, headState, peerID, nonce)
 	default:
 		ole.Warn("rejecting op: unknown op type")
 		return nil, opRejection(peerID, nonce, "unknown operation type"), nil

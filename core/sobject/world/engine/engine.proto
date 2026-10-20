@@ -128,6 +128,9 @@ message SOWorldOp {
     ApplyTxOp apply_tx_op = 2;
     // SetRetainedRoot retains or releases a past World root.
     SetRetainedRootOp set_retained_root = 4;
+    // SetTransformConf changes the transform later World blocks are written
+    // with.
+    SetTransformConfOp set_transform_conf = 5;
   }
 }
 
@@ -156,6 +159,14 @@ message SetRetainedRootOp {
   string name = 1;
   // RootRef is the World root block to retain, or empty to release.
   .block.BlockRef root_ref = 2;
+}
+
+// SetTransformConfOp changes the transform the World writes blocks with.
+// Replay accepts only a transform that also reads every block the current
+// one wrote.
+message SetTransformConfOp {
+  // TransformConf is the new World transform.
+  .block.transform.Config transform_conf = 1;
 }
 
 // BackfillState is the outcome of the last finished backfill copy on this
