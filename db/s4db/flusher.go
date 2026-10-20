@@ -24,6 +24,12 @@ type flusher struct {
 	bcast broadcast.Broadcast
 	// durable is the last commit known flushed to the drive.
 	durable uint64
+	// logged is the logged mark of the newest state known flushed. A record
+	// carries the durable mark it was written under, and recovery checks the
+	// values of every record past the highest mark in the log, ending the
+	// log at the first whose values are gone. A value freed by a durable
+	// commit past logged may still be checked, so it stays unreleased.
+	logged uint64
 	// ckptWritten is the checkpoint of the newest superblock in the file.
 	ckptWritten uint64
 	// ckptDurable is the newest checkpoint known flushed. Pages a checkpoint
@@ -49,11 +55,12 @@ func newFlusher(s storage, cur *atomic.Pointer[state]) *flusher {
 	return &flusher{s: s, cur: cur}
 }
 
-// marks returns the durable commit and checkpoint.
-func (f *flusher) marks() (durable, ckpt uint64) {
+// marks returns the durable commit, the bound for releasing the values
+// commits freed, and the durable checkpoint.
+func (f *flusher) marks() (durable, logged, ckpt uint64) {
 	l := f.bcast.Lock()
 	defer l.Unlock()
-	return f.durable, f.ckptDurable
+	return f.durable, f.logged, f.ckptDurable
 }
 
 // newest returns the checkpoint of the newest superblock in the file.
@@ -70,11 +77,12 @@ func (f *flusher) written(ckpt uint64) {
 	l.Unlock()
 }
 
-// setDurable records that commit seq and checkpoint ckpt are durable.
-func (f *flusher) setDurable(seq, ckpt uint64) {
+// setDurable records that the state st and checkpoint ckpt are durable.
+func (f *flusher) setDurable(st *state, ckpt uint64) {
 	// Raise the marks and wake the waiters.
 	l := f.bcast.Lock()
-	f.durable = max(f.durable, seq)
+	f.durable = max(f.durable, st.seq)
+	f.logged = max(f.logged, st.logged)
 	f.ckptDurable = max(f.ckptDurable, ckpt)
 	l.Broadcast()
 	l.Unlock()
@@ -167,7 +175,7 @@ func (f *flusher) syncThrough(ctx context.Context, seq, ckpt uint64) error {
 		// Claim the flush of every published commit and the newest
 		// superblock.
 		f.flushing = true
-		target, targetCkpt := f.cur.Load().seq, f.ckptWritten
+		target, targetCkpt := f.cur.Load(), f.ckptWritten
 		l.Unlock()
 
 		// Flush and wake the waiters.
@@ -175,7 +183,8 @@ func (f *flusher) syncThrough(ctx context.Context, seq, ckpt uint64) error {
 		l = f.bcast.Lock()
 		f.flushing = false
 		if err == nil {
-			f.durable = max(f.durable, target)
+			f.durable = max(f.durable, target.seq)
+			f.logged = max(f.logged, target.logged)
 			f.ckptDurable = max(f.ckptDurable, targetCkpt)
 			f.err = nil
 		}

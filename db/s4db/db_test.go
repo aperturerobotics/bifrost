@@ -726,3 +726,47 @@ func TestCheckpointNothingToFold(t *testing.T) {
 		}
 	}
 }
+
+// TestReopenAfterReleasedReplace commits a value and then a replacement,
+// ordered and unflushed, closes, and reopens. Close flushes and returns the
+// replaced value's pages to the file system, and the reopened file holds the
+// replacement: recovery checks the values of records no later record marks
+// durable, and the first record's value is gone.
+func TestReopenAfterReleasedReplace(t *testing.T) {
+	// Commit a value and replace it, without the background compactor.
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "replace.s4wave")
+	db := openTest(t, path, Options{SingleProcess: true})
+	if wait, _ := db.compactor.SetRoutine(nil); wait != nil {
+		<-wait
+	}
+	key, want := []byte("k"), bytes.Repeat([]byte{2}, 20000)
+	for _, v := range [][]byte{bytes.Repeat([]byte{1}, 20000), want} {
+		tx, err := db.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Set(ctx, key, v); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.(*Tx).CommitOrdered(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// The reopened file holds the replacement.
+	db = openTest(t, path, Options{SingleProcess: true})
+	defer db.Close()
+	tx, err := db.NewTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Discard()
+	got, ok, err := tx.Get(ctx, key)
+	if err != nil || !ok || !bytes.Equal(got, want) {
+		t.Fatalf("get: found %v err %v, len %d", ok, err, len(got))
+	}
+}

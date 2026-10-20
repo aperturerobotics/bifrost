@@ -358,7 +358,7 @@ func (w *writer) commit(ctx context.Context, base *state, changes []tentry, orde
 	if err := w.writeValues(r, writes); err != nil {
 		return err
 	}
-	r.durable, _ = db.flush.marks()
+	r.durable, _, _ = db.flush.marks()
 	rec := r.encode(prev)
 	if err := w.writeRecord(link, linkPos, rec, pos); err != nil {
 		return err
@@ -455,9 +455,9 @@ func (w *writer) releaseSpace(ctx context.Context, base *state, r *record) error
 	// reading the slots when nothing pending falls under that bound.
 	sp := w.sp
 	defer func() { r.released = sp.marks }()
-	durable, ckptDurable := w.db.flush.marks()
+	_, logged, ckptDurable := w.db.flush.marks()
 	local := w.db.localPin()
-	seq := min(local.seq, durable)
+	seq := min(local.seq, logged)
 	ckpt := min(local.ckpt, base.ckpt, ckptDurable)
 	if !sp.due(seq, ckpt) {
 		return nil
@@ -874,7 +874,7 @@ func (w *writer) saveTree(ctx context.Context, t *tree) error {
 		return err
 	}
 	if durable {
-		db.flush.setDurable(cur.seq, prev)
+		db.flush.setDurable(cur, prev)
 	}
 
 	// Switch superblocks. The new one becomes durable with a later flush,

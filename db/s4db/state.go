@@ -34,6 +34,10 @@ type state struct {
 	end uint64
 	// crc is the checksum of record seq, which the next record continues.
 	crc uint32
+	// logged is the highest durable mark the applied records carry, or the
+	// checkpoint when higher. Recovery checks the values of no record
+	// through it.
+	logged uint64
 	// refs counts the snapshots reading the state; publish sets it.
 	refs *refCount
 }
@@ -53,6 +57,7 @@ func newState(sb superblock, limit int64) *state {
 		pos:     sb.logPos,
 		end:     sb.logEnd,
 		crc:     sb.logCrc,
+		logged:  sb.seq,
 	}
 }
 
@@ -71,6 +76,7 @@ func (st *state) onto(sb superblock, c *carried, logBytes int64) *state {
 	// Copy the state under the new tree and the carried changes.
 	next := *st
 	next.ckpt, next.gen, next.sb, next.root = sb.seq, sb.gen, sb, sb.root
+	next.logged = max(next.logged, sb.seq)
 	next.overlay, next.filter, next.overlayBytes = c.overlay, c.filter, c.bytes
 	next.logBytes = logBytes
 	return &next
@@ -130,6 +136,7 @@ func (st *state) apply(rs ...*record) {
 			continue
 		}
 		st.count += r.delta
+		st.logged = max(st.logged, r.durable)
 		for _, o := range r.ops {
 			es = append(es, oentry{key: o.key, del: o.del, val: o.val, seq: r.seq})
 		}
