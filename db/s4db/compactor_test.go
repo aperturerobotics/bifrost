@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+
+	"github.com/s4wave/spacewave/db/kvtx"
 )
 
 // fillSlack writes two generations of keys, deletes the first and releases
@@ -273,5 +275,72 @@ func TestCompactorRestsAfterLittle(t *testing.T) {
 	c.end -= compactMinSlack
 	if got := c.endPass(); got != 0 {
 		t.Fatalf("rest %v after the end fell %d pages, want none", got, compactMinSlack)
+	}
+}
+
+// TestCompactorEmptiesSparsePages checks that the compactor moves values out
+// of sparse pages that no free run below would take, as commits no longer do.
+func TestCompactorEmptiesSparsePages(t *testing.T) {
+	// Fill pages with four values each, without the background compactor.
+	ctx := context.Background()
+	opts := Options{RelocateBudget: -1, SingleProcess: true}
+	db := openTest(t, filepath.Join(t.TempDir(), "sparse.s4wave"), opts)
+	defer db.Close()
+	val := bytes.Repeat([]byte{1}, 1000)
+	commit := func(fn func(tx kvtx.Tx) error) {
+		tx, err := db.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := fn(tx); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	commit(func(tx kvtx.Tx) error {
+		for i := range 4000 {
+			if err := tx.Set(ctx, fmt.Appendf(nil, "k%05d", i), val); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	// Delete three values of four, leaving every page sparse.
+	commit(func(tx kvtx.Tx) error {
+		for i := range 4000 {
+			if i%4 == 0 {
+				continue
+			}
+			if err := tx.Delete(ctx, fmt.Appendf(nil, "k%05d", i)); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	// Checkpoint, so the index the compactor scans holds the keys.
+	w := db.w
+	if err := w.lock(ctx); err != nil {
+		t.Fatal(err)
+	}
+	err := w.checkpointDurable(ctx)
+	w.unlock(err)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Step the compactor by hand: the pages, a quarter live, empty until
+	// what is free inside value pages falls below the least worth moving.
+	c := &compactor{db: db}
+	for range 20 {
+		if _, err := c.step(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if live, held := db.w.sp.stats(); held > 2*live {
+		t.Fatalf("%d live bytes in %d held after compaction, want at most twice", live, held)
 	}
 }

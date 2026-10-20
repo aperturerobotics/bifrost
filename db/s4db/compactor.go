@@ -50,6 +50,9 @@ type compactor struct {
 	cursor []byte
 	// goal is the end the last plan aimed at, or 0 without one.
 	goal uint64
+	// sparse reports that at the last plan a quarter of the value pages'
+	// bytes were free.
+	sparse bool
 	// passFound counts the values found to move since the cursor last
 	// wrapped.
 	passFound int
@@ -225,6 +228,7 @@ func (c *compactor) plan(ctx context.Context) (ok, busy bool, err error) {
 	goal := inUse + inUse/8
 	live, held := sp.stats()
 	sparse := held-live >= max(1<<20, held/4)
+	c.sparse = sparse
 	if sp.freeCount < compactMinSlack || goal >= sp.end {
 		sp.goal, c.goal = 0, 0
 		return sparse, false, nil
@@ -379,18 +383,23 @@ func (c *compactor) lowers(sp *space, m move) bool {
 		return true
 	}
 
-	// A value moves when it lies past the goal or in a sparse page, and
-	// free space below would take it.
+	// While a quarter of the value space is free inside value pages, a
+	// value in a sparse page moves wherever placement puts it, since no
+	// free run below may take it until such pages empty.
 	if !m.val.isRef {
 		return false
 	}
 	ref := m.val.ref
 	p := ref.off / pageSize
-	past := sp.goal != 0 && p >= sp.goal
-	if !past && sp.liveAt(p) >= pageSize/2 {
-		return false
+	sparse := sp.liveAt(p) < pageSize/2
+	if sparse && c.sparse {
+		return true
 	}
-	return sp.lower(int(ref.n), p)
+
+	// Otherwise a value moves when it lies past the goal or in a sparse
+	// page, and free space below would take it.
+	past := sp.goal != 0 && p >= sp.goal
+	return (past || sparse) && sp.lower(int(ref.n), p)
 }
 
 // read reads the moves' values.

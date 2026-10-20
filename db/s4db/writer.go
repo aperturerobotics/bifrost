@@ -12,10 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// relocateVisits bounds the entries one incremental relocation pass reads, so
-// a commit's compaction work does not grow with the key count.
-const relocateVisits = 4096
-
 // compactBatch bounds the value bytes Compact holds in memory and commits
 // at once.
 const compactBatch = 64 << 20
@@ -984,7 +980,8 @@ func (w *writer) relocate(ctx context.Context, budget int64, visits int) error {
 	return w.commit(ctx, st, moves, true)
 }
 
-// afterCommit runs checkpoint and compaction work. The caller holds the
+// afterCommit runs checkpoint work. Values leave sparse pages in the
+// background compactor, outside writers' commits. The caller holds the
 // writer lock.
 func (w *writer) afterCommit(ctx context.Context) error {
 	// Report a failed background checkpoint, and start one when the
@@ -998,14 +995,6 @@ func (w *writer) afterCommit(ctx context.Context) error {
 	st := db.cur.Load()
 	if limit := db.opts.checkpointLimit(st.sb); st.overlayBytes > limit || st.logBytes > 2*limit {
 		w.startCheckpoint()
-	}
-
-	// Move a bounded batch of values out of sparse pages once they hold a
-	// quarter of the value space. Free runs need no move: they are punched,
-	// so they cost file length but no disk.
-	live, held := w.sp.stats()
-	if db.opts.RelocateBudget > 0 && held-live >= max(1<<20, held/4) {
-		return w.relocate(ctx, db.opts.RelocateBudget, relocateVisits)
 	}
 	return nil
 }

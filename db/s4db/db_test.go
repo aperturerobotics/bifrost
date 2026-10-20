@@ -839,3 +839,77 @@ func TestCompactDuringBuild(t *testing.T) {
 		t.Fatalf("empty database is %d bytes long with %d allocated", size, used)
 	}
 }
+
+// TestCommitLeavesSparsePages checks that commits leave values in sparse
+// pages where they are, to the background compactor, so a writer's commit
+// does not move other keys' values while holding the writer lock.
+func TestCommitLeavesSparsePages(t *testing.T) {
+	// Fill pages with four values each, with the compactor stopped.
+	ctx := context.Background()
+	db := openTest(t, filepath.Join(t.TempDir(), "sparse.s4wave"), Options{})
+	if wait, _ := db.compactor.SetRoutine(nil); wait != nil {
+		<-wait
+	}
+	val := bytes.Repeat([]byte{1}, 1000)
+	commit := func(fn func(tx *Tx) error) {
+		tx, err := db.NewTransaction(ctx, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := fn(tx.(*Tx)); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	commit(func(tx *Tx) error {
+		for i := range 4000 {
+			if err := tx.Set(ctx, fmt.Appendf(nil, "k%05d", i), val); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	// Note where every fourth value lies.
+	offs := func() map[int]uint64 {
+		m := map[int]uint64{}
+		for i := 0; i < 4000; i += 4 {
+			v, found, err := db.lookup(db.cur.Load(), fmt.Appendf(nil, "k%05d", i))
+			if err != nil || !found {
+				t.Fatalf("k%05d: found %v, %v", i, found, err)
+			}
+			m[i] = v.ref.off
+		}
+		return m
+	}
+	before := offs()
+
+	// Delete the other values, leaving every page sparse, and commit more
+	// keys.
+	commit(func(tx *Tx) error {
+		for i := range 4000 {
+			if i%4 == 0 {
+				continue
+			}
+			if err := tx.Delete(ctx, fmt.Appendf(nil, "k%05d", i)); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	for i := range 20 {
+		commit(func(tx *Tx) error {
+			return tx.Set(ctx, fmt.Appendf(nil, "n%05d", i), val)
+		})
+	}
+
+	// Check that every kept value stayed in its sparse page.
+	if after := offs(); !maps.Equal(before, after) {
+		t.Fatal("a commit moved values out of sparse pages")
+	}
+	if live, held := db.w.sp.stats(); held-live < held/2 {
+		t.Fatalf("%d live bytes in %d held, want sparse pages", live, held)
+	}
+}
