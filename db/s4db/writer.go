@@ -59,6 +59,9 @@ type writer struct {
 	building atomic.Bool
 	// builds counts running background checkpoints, so Close can wait.
 	builds sync.WaitGroup
+	// buildLocked is set while this handle's background checkpoint holds
+	// a shared file's build lock. It is set under the writer lock.
+	buildLocked atomic.Bool
 	// closing is set by Close, so a running background checkpoint drops
 	// its tree instead of finishing it.
 	closing atomic.Bool
@@ -537,6 +540,17 @@ func (w *writer) startCheckpoint() {
 	if !w.building.CompareAndSwap(false, true) {
 		return
 	}
+
+	// In a shared file, build only while no other process does. Its tree
+	// covers this handle's records too.
+	if !w.db.opts.SingleProcess {
+		ok, err := w.db.s.lock(lockBuild, false)
+		if err != nil || !ok {
+			w.building.Store(false)
+			return
+		}
+		w.buildLocked.Store(true)
+	}
 	w.changed = nil
 	st, stripe := w.db.acquire()
 
@@ -595,9 +609,10 @@ func (w *writer) runCheckpoint(st *state, stripe int) {
 	// in the file does not hold the reservations, so the reloaded space
 	// may hand them out. Another process may also hand them out, so a
 	// shared file is written under the writer lock, whose catch-up reloads
-	// the space when another process wrote. A single-process handle holds
-	// the file's writer lock for its lifetime and writes without waiting
-	// for this handle's writers.
+	// the space when another process wrote, and the build lock keeps other
+	// processes' checkpoints and punches off them. A single-process
+	// handle holds the file's writer lock for its lifetime and writes
+	// without waiting for this handle's writers.
 	write := out.write
 	out.write = func(buf []byte, page uint64) error {
 		// Exclude other processes' writers from a shared file.
@@ -630,6 +645,7 @@ func (w *writer) runCheckpoint(st *state, stripe int) {
 	// Take the writer lock to save the tree.
 	if lerr := w.lock(ctx); lerr != nil {
 		w.db.release(st, stripe)
+		w.unlockBuild()
 		return
 	}
 
@@ -646,7 +662,16 @@ func (w *writer) runCheckpoint(st *state, stripe int) {
 		err = w.releaseNow(ctx)
 	}
 	w.ckptErr = err
+	w.unlockBuild()
 	w.unlock(err)
+}
+
+// unlockBuild releases the build lock this handle's background checkpoint
+// holds in a shared file.
+func (w *writer) unlockBuild() {
+	if w.buildLocked.Swap(false) {
+		_ = w.db.s.unlock(lockBuild)
+	}
 }
 
 // tree is a checkpoint tree built from a published state.
@@ -1060,10 +1085,28 @@ func (w *writer) checkpointDurable(ctx context.Context) error {
 // releaseNow returns freed space no snapshot reads to the file system
 // without writing a record. The next commit record carries release marks at
 // least as high, so recovery repeats the release before reusing the space.
-// The caller holds the writer lock.
+// In a shared file, another process's background checkpoint may have
+// written pages it reserved from the released runs or past the space end,
+// and would not notice a punch that leaves no record, so the punch needs
+// the build lock: held by this handle's build, or taken here when free. The
+// caller holds the writer lock.
 func (w *writer) releaseNow(ctx context.Context) error {
+	// Release what no snapshot reads.
 	if err := w.releaseSpace(ctx, w.db.cur.Load(), &record{}); err != nil {
 		return err
 	}
+
+	// Punch when no other process's checkpoint can hold the pages.
+	if w.db.opts.SingleProcess || w.buildLocked.Load() {
+		return w.punch()
+	}
+
+	// Else take the build lock first, leaving the released runs queued
+	// for the next punch while another process builds.
+	ok, err := w.db.s.lock(lockBuild, false)
+	if err != nil || !ok {
+		return err
+	}
+	defer func() { _ = w.db.s.unlock(lockBuild) }()
 	return w.punch()
 }

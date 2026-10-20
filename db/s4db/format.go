@@ -27,6 +27,13 @@ const (
 	lockWriter = 1 << 40
 	// lockSlot is the first reader slot lock; slot i locks lockSlot+i.
 	lockSlot = lockWriter + 1
+	// lockBuild is held in a shared file by the process whose background
+	// checkpoint has reserved pages, and by a process punching or
+	// truncating without a record. Reservations live only in the
+	// reserving process's space, so without it another process's
+	// checkpoint could reserve the same pages, or a punch zero them, and
+	// neither leaves a record or superblock that would drop the tree.
+	lockBuild = lockSlot + slots
 	// lockLease is the first of leaseLocks lease locks, one per name hash.
 	lockLease = 1 << 41
 	// leaseLocks is the number of lease lock bytes.
