@@ -189,6 +189,7 @@ func (c *compactor) plan(ctx context.Context) (ok, busy bool, err error) {
 		return sparse, false, nil
 	}
 	sp.goal, c.goal = goal, goal
+	sp.moveCut()
 
 	// Checkpoint after a pass that rewrote keys, so the index pages they
 	// lie in move below the goal.

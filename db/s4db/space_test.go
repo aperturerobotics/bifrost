@@ -108,6 +108,7 @@ func TestSpaceChooseMatchesScan(t *testing.T) {
 		sp.goal = 0
 		if rng.IntN(2) == 0 {
 			sp.goal = rng.Uint64N(sp.end + 1)
+			settleCut(sp)
 		}
 		least := 1 + rng.Uint64N(32)
 		want := least + rng.Uint64N(64)
@@ -118,7 +119,8 @@ func TestSpaceChooseMatchesScan(t *testing.T) {
 		}
 	}
 
-	// The index holds exactly the free runs, and the count their pages.
+	// The indexes hold exactly the free runs, and the count their pages.
+	checkBelow(t, sp)
 	if sp.sizes.Len() != sp.free.Len() {
 		t.Fatalf("sizes holds %d runs, free holds %d", sp.sizes.Len(), sp.free.Len())
 	}
@@ -132,6 +134,89 @@ func TestSpaceChooseMatchesScan(t *testing.T) {
 	})
 	if pages != sp.freeCount {
 		t.Fatalf("freeCount is %d, the free runs hold %d pages", sp.freeCount, pages)
+	}
+}
+
+// settleCut moves the cut until it reaches a goal.
+func settleCut(sp *space) {
+	for sp.goal != 0 && sp.cut != sp.goal {
+		sp.moveCut()
+	}
+}
+
+// checkBelow checks that below holds exactly the free runs starting below
+// the cut.
+func checkBelow(t *testing.T, sp *space) {
+	t.Helper()
+	var n int
+	sp.free.Scan(func(start, length uint64) bool {
+		_, ok := sp.below.Get(run{start: start, n: length})
+		if ok != (start < sp.cut) {
+			t.Fatalf("cut %d: below has run %d+%d = %v", sp.cut, start, length, ok)
+		}
+		if ok {
+			n++
+		}
+		return true
+	})
+	if sp.below.Len() != n {
+		t.Fatalf("below holds %d runs, %d free runs start below the cut %d", sp.below.Len(), n, sp.cut)
+	}
+}
+
+// TestSpaceChooseBelowManyLonger checks that a fit with a goal takes a short
+// run below it when more than goalVisits longer runs lie past it, as after
+// compaction frees the end of a fragmented file.
+func TestSpaceChooseBelowManyLonger(t *testing.T) {
+	// Free one page low in the file, and many long runs high in it.
+	sp := newSpace()
+	base := sp.alloc(4 * goalVisits * 16).start
+	sp.addFree(run{start: base + 8, n: 1})
+	high := base + goalVisits*16
+	for i := range uint64(2 * goalVisits) {
+		sp.addFree(run{start: high + i*16, n: 8})
+	}
+
+	// A value fits the page below the goal.
+	sp.goal = high
+	settleCut(sp)
+	r, ok := sp.choose(1, extentPages)
+	if !ok || r.start != base+8 {
+		t.Fatalf("choose = %+v %v, want the page at %d", r, ok, base+8)
+	}
+}
+
+// TestSpaceMoveCutBounded checks that the cut passes at most cutRuns free
+// runs a move, raising and lowering, and that below follows it.
+func TestSpaceMoveCutBounded(t *testing.T) {
+	// Free every other page of a file holding more than two moves of runs.
+	sp := newSpace()
+	base := sp.alloc(6 * cutRuns).start
+	for p := uint64(0); p < 6*cutRuns; p += 2 {
+		sp.addFree(run{start: base + p, n: 1})
+	}
+
+	// Raising the cut to the end takes three moves.
+	sp.goal = base + 6*cutRuns
+	for i := range 3 {
+		if sp.cut == sp.goal {
+			t.Fatalf("cut reached the goal after %d moves, want 3", i)
+		}
+		sp.moveCut()
+		checkBelow(t, sp)
+	}
+	if sp.cut != sp.goal {
+		t.Fatalf("cut is %d after 3 moves, want the goal %d", sp.cut, sp.goal)
+	}
+
+	// Lowering it to the start takes three moves too.
+	sp.goal = base
+	for range 3 {
+		sp.moveCut()
+		checkBelow(t, sp)
+	}
+	if sp.cut != sp.goal || sp.below.Len() != 0 {
+		t.Fatalf("cut is %d holding %d runs, want the goal %d holding none", sp.cut, sp.below.Len(), sp.goal)
 	}
 }
 

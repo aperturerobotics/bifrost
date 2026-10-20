@@ -52,6 +52,13 @@ type space struct {
 	// sizes holds the free runs ordered by length, then start, so a fit
 	// visits only the runs long enough to hold it.
 	sizes *btree.BTreeG[run]
+	// below holds the free runs starting below cut, ordered like sizes, so
+	// a fit finds the longest run below the goal without passing the many
+	// longer runs compaction frees past it.
+	below *btree.BTreeG[run]
+	// cut is the page below which below holds every free run. moveCut
+	// moves it toward goal.
+	cut uint64
 	// end is the file length in pages.
 	end uint64
 	// freeCount counts the pages of the free runs.
@@ -93,6 +100,7 @@ func newSpace() *space {
 	return &space{
 		free:  new(btree.Map[uint64, uint64]),
 		sizes: btree.NewBTreeGOptions(lessRunSize, btree.Options{NoLocks: true}),
+		below: btree.NewBTreeGOptions(lessRunSize, btree.Options{NoLocks: true}),
 		end:   firstPage,
 	}
 }
@@ -109,6 +117,9 @@ func lessRunSize(a, b run) bool {
 func (s *space) setFree(r run) {
 	s.free.Set(r.start, r.n)
 	s.sizes.Set(r)
+	if r.start < s.cut {
+		s.below.Set(r)
+	}
 	s.freeCount += r.n
 }
 
@@ -116,6 +127,9 @@ func (s *space) setFree(r run) {
 func (s *space) deleteFree(r run) {
 	s.free.Delete(r.start)
 	s.sizes.Delete(r)
+	if r.start < s.cut {
+		s.below.Delete(r)
+	}
 	s.freeCount -= r.n
 }
 
@@ -182,18 +196,19 @@ func (s *space) choose(least, want uint64) (run, bool) {
 const goalVisits = 1024
 
 // longestBelow returns the longest free run of at least least pages that
-// starts below the goal. Compaction frees the runs past the goal, which grow
-// long as they merge, so the search passes over at most goalVisits of them.
+// starts below the goal. below holds runs past the goal only while the cut
+// lowers toward it, so the search passes over at most goalVisits of them.
 func (s *space) longestBelow(least uint64) (run, bool) {
 	// Without a goal, any run will do.
 	if s.goal == 0 {
 		return run{}, false
 	}
 
-	// Descend from the longest run to the first below the goal.
+	// Descend from the longest run below the cut to the first below the
+	// goal.
 	var found run
 	ok, visits := false, goalVisits
-	s.sizes.Descend(run{n: math.MaxUint64}, func(r run) bool {
+	s.below.Descend(run{n: math.MaxUint64}, func(r run) bool {
 		if r.n < least {
 			return false
 		}
@@ -205,6 +220,59 @@ func (s *space) longestBelow(least uint64) (run, bool) {
 		return visits > 0
 	})
 	return found, ok
+}
+
+// cutRuns bounds the free runs one moveCut passes.
+const cutRuns = 4096
+
+// moveCut moves the cut toward the goal over at most cutRuns free runs, so
+// setting a goal never holds the writer for a pass over every run. Until the
+// cut reaches the goal, fits miss the runs between them.
+func (s *space) moveCut() {
+	// Raise the cut, adding the runs it passes.
+	n := 0
+	if s.goal > s.cut {
+		next := s.goal
+		s.free.Ascend(s.cut, func(start, length uint64) bool {
+			// Stop at the goal, or at the run past the bound.
+			if start >= s.goal {
+				return false
+			}
+			if n == cutRuns {
+				next = start
+				return false
+			}
+
+			// Index the run below the new cut.
+			s.below.Set(run{start: start, n: length})
+			n++
+			return true
+		})
+		s.cut = next
+		return
+	}
+
+	// Lower it toward a goal, removing the runs it passes.
+	if s.goal == 0 || s.goal == s.cut {
+		return
+	}
+	next := s.goal
+	s.free.Descend(s.cut-1, func(start, length uint64) bool {
+		// Stop at the goal, or at the run past the bound.
+		if start < s.goal {
+			return false
+		}
+		if n == cutRuns {
+			next = start + 1
+			return false
+		}
+
+		// Drop the run the new cut leaves above.
+		s.below.Delete(run{start: start, n: length})
+		n++
+		return true
+	})
+	s.cut = next
 }
 
 // lower reports whether a value of n bytes placed in a new extent would
