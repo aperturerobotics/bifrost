@@ -90,6 +90,40 @@ func TestPublicationSweepRescuesAdoptedBlock(t *testing.T) {
 	assertPublishedBlock(t, v, p, false)
 }
 
+// TestPublicationSweepStopsOnRescuedUnknown checks that a sweep removes
+// nothing once a rescue reports a block of unknown references, which may name
+// any unreached block.
+func TestPublicationSweepStopsOnRescuedUnknown(t *testing.T) {
+	// Publish a block, release it, and mark it unreached in an open pass.
+	v, _ := newPublicationTestVolume(t)
+	ctx := t.Context()
+	p := publicationFor(t, "unknown", "", "one")
+	if err := v.PublishAtomic(ctx, p); err != nil {
+		t.Fatal(err)
+	}
+	orphanPublication(t, v, p)
+	rg := v.refGraph.(*transactionRefGraph)
+	if err := rg.write(ctx, func(rg *block_gc.RefGraph) error { return rg.BeginBlockPass(ctx) }); err != nil {
+		t.Fatal(err)
+	}
+	mark := markBlocks(t, v)
+
+	// Stand in for a rescue that walked into a block without a child list.
+	mark.Unknown, mark.UnknownSample = 1, []string{"untracked"}
+
+	// The sweep keeps the block and reports the unknown block.
+	var stats block_gc.Stats
+	if err := v.sweepUnreached(ctx, mark, &stats); err != nil {
+		t.Fatal(err)
+	}
+	if stats.BlocksSwept != 0 || stats.UnknownBlocks != 1 || !slices.Equal(stats.UnknownSample, []string{"untracked"}) {
+		t.Fatalf("stats=%+v", stats)
+	}
+	if _, found, err := v.GetBlock(ctx, p.Entries[0].Ref); err != nil || !found {
+		t.Fatalf("block found=%v err=%v", found, err)
+	}
+}
+
 // TestPublicationSweepBatchMarksReleasedChildren checks that one sweep batch
 // marks each child it leaves without an owner, leaves a child another owner
 // keeps unmarked, leaves no marker on the nodes it removes, and drops the
