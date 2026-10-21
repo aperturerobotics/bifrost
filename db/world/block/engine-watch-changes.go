@@ -3,6 +3,7 @@ package world_block
 import (
 	"context"
 	"slices"
+	"sync"
 
 	"github.com/s4wave/spacewave/db/block"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
@@ -21,17 +22,20 @@ type watchedHead struct {
 	root *bucket_lookup.Cursor
 }
 
-// changeSubscriber is one WatchChanges call on the change watch. Its fields
-// other than touches are guarded by the Engine bcast lock.
+// changeSubscriber is one WatchChanges call on the change watch. Its pending
+// changes have their own lock, so merging them never holds the Engine bcast.
 type changeSubscriber struct {
 	// touches selects the changes that wake the subscriber.
 	touches world.ChangeFilter
+	// wake receives a value when changes is set or the watch loses track.
+	wake chan struct{}
+
+	// mtx guards seqno and changes.
+	mtx sync.Mutex
 	// seqno is the seqno of the newest head merged into changes.
 	seqno uint64
 	// changes merges the changes not yet reported, or is nil.
 	changes *world.ChangeSet
-	// wake receives a value when changes is set or the watch loses track.
-	wake chan struct{}
 }
 
 // WatchChanges calls cb with each later seqno whose changes touches accepts,
@@ -68,15 +72,15 @@ func (e *Engine) WatchChanges(
 	}
 	w.subs[sub] = struct{}{}
 
-	// Catch up from the recorded ChangeSets when the change watch starts past
-	// afterSeqno and recorded every span since the head at afterSeqno.
+	// Copy the recorded spans when the change watch starts past afterSeqno and
+	// recorded every span since the head at afterSeqno. A reconnect wave
+	// subscribes thousands of watchers at once, so the merge runs unlocked.
 	caughtUp := afterSeqno >= w.baseSeqno
+	var spans []changeSpan
 	if base := e.watchedHeadLocked(afterSeqno); !caughtUp && base != nil {
-		var changes *world.ChangeSet
-		if changes, caughtUp = w.changesSinceLocked(afterSeqno, base.GetRef()); caughtUp {
-			sub.addLocked(w.baseSeqno, changes)
-		}
+		spans, caughtUp = w.spansSinceLocked(afterSeqno, base.GetRef())
 	}
+	baseSeqno := w.baseSeqno
 	locked.Unlock()
 	defer func() {
 		locked := e.bcast.Lock()
@@ -85,39 +89,36 @@ func (e *Engine) WatchChanges(
 		locked.Unlock()
 	}()
 
-	// Otherwise compare the head at afterSeqno with the published head.
+	// Merge the recorded spans, or compare the head at afterSeqno with the
+	// published head. The first wake checks whether the watch already ended.
+	if len(spans) != 0 {
+		sub.add(baseSeqno, mergeSpans(spans))
+	}
 	if !caughtUp {
 		seqno, changes, err := e.catchUpChanges(ctx, afterSeqno)
 		if err != nil {
 			return err
 		}
-		locked := e.bcast.Lock()
-		sub.addLocked(seqno, changes)
-		locked.Unlock()
+		sub.add(seqno, changes)
 	}
+	sub.signal()
 
 	// Report each change past afterSeqno.
 	for {
-		// Take the merged changes, or wait for the next.
-		locked := e.bcast.Lock()
-		if e.closed {
-			locked.Unlock()
-			return ErrEngineClosed
-		}
-		seqno, changes := sub.seqno, sub.changes
-		sub.changes = nil
-		watchErr := e.headWatchErr
-		locked.Unlock()
-		if changes == nil {
-			if watchErr != nil {
-				return watchErr
-			}
+		// Take the merged changes, or wait for the next. A wake that brings
+		// no changes may report that the watch ended.
+		seqno, changes := sub.take()
+		for changes == nil {
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
 			case <-sub.wake:
 			}
-			continue
+			if seqno, changes = sub.take(); changes == nil {
+				if err := e.changeWatchErr(); err != nil {
+					return err
+				}
+			}
 		}
 
 		// Skip changes the caller already saw, and catch-up changes or
@@ -245,12 +246,35 @@ func (e *Engine) recordWatchedHeadLocked(root *bucket_lookup.Cursor, seqno uint6
 	return evicted
 }
 
-// addLocked merges the changes up to the head at seqno and wakes the
-// subscriber. The caller must hold bcast.
-func (s *changeSubscriber) addLocked(seqno uint64, changes *world.ChangeSet) {
+// add merges the changes up to the head at seqno and wakes the subscriber.
+// Merging is a union, so spans may arrive in any order.
+func (s *changeSubscriber) add(seqno uint64, changes *world.ChangeSet) {
+	// Merge under the subscriber's lock, then wake it.
+	s.mtx.Lock()
 	s.seqno = max(s.seqno, seqno)
 	s.changes = world.MergeChangeSets(s.changes, changes, changeDiffLimit)
+	s.mtx.Unlock()
 	s.signal()
+}
+
+// take returns and clears the merged changes and the seqno they reach.
+func (s *changeSubscriber) take() (uint64, *world.ChangeSet) {
+	// Hand off the pending changes and leave none.
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	changes := s.changes
+	s.changes = nil
+	return s.seqno, changes
+}
+
+// changeWatchErr returns why change subscribers must stop, or nil.
+func (e *Engine) changeWatchErr() error {
+	locked := e.bcast.Lock()
+	defer locked.Unlock()
+	if e.closed {
+		return ErrEngineClosed
+	}
+	return e.headWatchErr
 }
 
 // signal wakes the subscriber without blocking.

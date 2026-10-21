@@ -272,9 +272,10 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 			w.wakeAllLocked()
 		}
 		w.wakeKeysLocked(keys)
+		recipients := make([]*changeSubscriber, 0, len(w.subs))
 		for sub := range w.subs {
 			if _, ok := skip[sub]; !ok {
-				sub.addLocked(nextSeqno, changes)
+				recipients = append(recipients, sub)
 			}
 		}
 		w.recordLocked(changeSpan{
@@ -286,6 +287,12 @@ func (e *Engine) runChangeWatch(w *engineChangeWatch) {
 		prevRelease := w.baseRelease
 		w.base, w.baseSeqno, w.baseRelease = next, nextSeqno, nextRelease
 		locked.Unlock()
+
+		// Hand the changes to the subscribers that held before the record. A
+		// later subscriber merges this span from the history instead.
+		for _, sub := range recipients {
+			sub.add(nextSeqno, changes)
+		}
 		prevRelease()
 	}
 }
@@ -360,24 +367,26 @@ func (w *engineChangeWatch) recordLocked(span changeSpan, listed bool) {
 	w.history = append(w.history, span)
 }
 
-// changesSinceLocked merges the recorded ChangeSets from the head at after to
-// the base. It returns false when no recorded span starts at that head. The
+// spansSinceLocked returns a copy of the recorded spans from the head at after
+// to the base. It returns false when no recorded span starts at that head. The
 // caller must hold bcast.
-func (w *engineChangeWatch) changesSinceLocked(after uint64, afterRef *bucket.ObjectRef) (*world.ChangeSet, bool) {
-	// Find the span leaving the caller's head; a missed head needs a diff.
+func (w *engineChangeWatch) spansSinceLocked(after uint64, afterRef *bucket.ObjectRef) ([]changeSpan, bool) {
 	i := slices.IndexFunc(w.history, func(span changeSpan) bool {
 		return span.after == after && span.afterRef.EqualsRef(afterRef)
 	})
 	if i < 0 {
 		return nil, false
 	}
+	return slices.Clone(w.history[i:]), true
+}
 
-	// Merge every later span up to the base.
+// mergeSpans merges the ChangeSets of consecutive spans.
+func mergeSpans(spans []changeSpan) *world.ChangeSet {
 	var changes *world.ChangeSet
-	for _, span := range w.history[i:] {
+	for _, span := range spans {
 		changes = world.MergeChangeSets(changes, span.changes, changeDiffLimit)
 	}
-	return changes, true
+	return changes
 }
 
 // stopChangeWatchLocked detaches w so the next watcher starts a fresh watch,
