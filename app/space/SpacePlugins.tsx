@@ -1,9 +1,15 @@
-import { type ComponentType, useCallback, useState } from 'react'
+import {
+  type ComponentType,
+  type ReactNode,
+  useCallback,
+  useState,
+} from 'react'
 import { useWatchStateRpc } from '@aptre/bldr-react'
 import { LuLoaderCircle, LuPlus, LuPuzzle, LuTrash2, LuX } from 'react-icons/lu'
 
 import { useResourceValue } from '@aptre/bldr-sdk/hooks/useResource.js'
 import type { BackgroundPlugin } from '@s4wave/core/session/session.pb.js'
+import type { Space } from '@s4wave/sdk/space/space.js'
 import { useBackgroundPlugins } from '@s4wave/app/session/useBackgroundPlugins.js'
 import {
   SpaceContentsContext,
@@ -23,6 +29,7 @@ import {
 } from '@s4wave/sdk/space/space.pb.js'
 
 import { SpacePluginBuild } from './SpacePluginBuild.js'
+import { SpacePluginImport } from './SpacePluginImport.js'
 
 import { KNOWN_SPACE_PLUGINS, knownSpacePlugin } from './known-plugins.js'
 
@@ -107,10 +114,11 @@ interface SpacePluginAddPanelProps {
   suggestions: CatalogEntry[]
   onDraftChange: (value: string) => void
   onAdd: (pluginId: string) => void
+  children?: ReactNode
 }
 
-// SpacePluginAddPanel renders manifest entry and catalog suggestions while the
-// parent retains mutation and lifecycle state.
+// SpacePluginAddPanel renders manifest entry, catalog suggestions, and its
+// children while the parent retains mutation and lifecycle state.
 function SpacePluginAddPanel({
   draftId,
   draftError,
@@ -120,6 +128,7 @@ function SpacePluginAddPanel({
   suggestions,
   onDraftChange,
   onAdd,
+  children,
 }: SpacePluginAddPanelProps) {
   return (
     <div className="border-foreground/6 bg-background-card/30 space-y-3 rounded-lg border p-3.5">
@@ -212,6 +221,8 @@ function SpacePluginAddPanel({
           </div>
         </div>
       )}
+
+      {children}
     </div>
   )
 }
@@ -248,7 +259,7 @@ function RequestedPluginList({
                 <span className="text-foreground-alt truncate text-xs">
                   {stored
                     ? 'Waiting to load. Add it to this Space to continue.'
-                    : 'Waiting to load. Deploy it to this Space, then add it.'}
+                    : 'Waiting to load. Add it from another Space, or deploy it here.'}
                 </span>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -509,11 +520,14 @@ export function SpacePlugins() {
   // running while the Space is closed.
   const [askingBackgroundId, setAskingBackgroundId] = useState('')
 
+  // handleAdd installs pluginId, first copying its builds from source when
+  // the plugin comes from another Space.
   const handleAdd = useCallback(
-    async (pluginId: string) => {
+    async (pluginId: string, source?: Space) => {
       if (!space || pending) return
       setPending(pluginId)
       try {
+        if (source) await space.importSpacePlugin(source.id, pluginId)
         await space.addSpacePlugin(pluginId)
         setDraftId('')
         setAdding(false)
@@ -616,7 +630,14 @@ export function SpacePlugins() {
           suggestions={suggestions}
           onDraftChange={setDraftId}
           onAdd={(pluginId) => void handleAdd(pluginId)}
-        />
+        >
+          <SpacePluginImport
+            spaceId={spaceId}
+            installedIds={installedIds}
+            pending={pending}
+            onImport={(source, pluginId) => void handleAdd(pluginId, source)}
+          />
+        </SpacePluginAddPanel>
       )}
 
       <SpacePluginBuild space={space} />

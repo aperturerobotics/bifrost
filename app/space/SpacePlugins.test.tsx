@@ -17,12 +17,15 @@ const mocks = vi.hoisted(() => ({
   useResourceValue: vi.fn(),
   useWatchStateRpc: vi.fn(),
   addSpacePlugin: vi.fn().mockResolvedValue(undefined),
+  importSpacePlugin: vi.fn().mockResolvedValue(undefined),
   removeSpacePlugin: vi.fn().mockResolvedValue(undefined),
   setBackgroundPlugin: vi.fn().mockResolvedValue(undefined),
   toastError: vi.fn(),
 }))
 
 let contentsState: SpaceContentsState | null = null
+let sourceContentsState: SpaceContentsState | null = null
+let spacesList: unknown[] = []
 let backgroundPlugins: {
   entries: BackgroundPlugin[]
   set: typeof mocks.setBackgroundPlugin
@@ -32,8 +35,14 @@ const spaceResource = { kind: 'space' }
 const contentsResource = { kind: 'contents' }
 const spaceMock = {
   addSpacePlugin: mocks.addSpacePlugin,
+  importSpacePlugin: mocks.importSpacePlugin,
   removeSpacePlugin: mocks.removeSpacePlugin,
 }
+const sourceSpaceResource = { kind: 'source-space', error: null }
+const sourceContentsResource = { kind: 'source-contents', error: null }
+const sourceSpaceMock = { id: 9 }
+const contentsMock = { watchState: () => 'self' }
+const sourceContentsMock = { watchState: () => 'source' }
 
 vi.mock('@aptre/bldr-react', () => ({
   useWatchStateRpc: mocks.useWatchStateRpc,
@@ -43,7 +52,19 @@ vi.mock('@aptre/bldr-sdk/hooks/useResource.js', () => ({
   useResourceValue: mocks.useResourceValue,
 }))
 
+vi.mock('@s4wave/app/system/useSystemStatus.js', () => ({
+  useWatchSpacesList: () => spacesList,
+}))
+
+vi.mock('@s4wave/app/hooks/useSharedMounts.js', () => ({
+  useSharedObjectMount: () => ({ error: null }),
+  useSharedObjectBodyMount: () => ({ error: null }),
+  useSpaceMount: () => sourceSpaceResource,
+  useSpaceContentsMount: () => sourceContentsResource,
+}))
+
 vi.mock('@s4wave/web/contexts/contexts.js', () => ({
+  SessionContext: { useContext: () => ({ kind: 'session' }) },
   SpaceContext: { useContext: () => spaceResource },
   SpaceContentsContext: { useContext: () => contentsResource },
 }))
@@ -68,11 +89,22 @@ import { SpacePlugins } from './SpacePlugins.js'
 describe('SpacePlugins', () => {
   beforeEach(() => {
     contentsState = null
+    sourceContentsState = null
+    spacesList = []
     backgroundPlugins = { entries: [], set: mocks.setBackgroundPlugin }
-    mocks.useResourceValue.mockImplementation((res: unknown) =>
-      res === spaceResource ? spaceMock : {},
+    mocks.useResourceValue.mockImplementation((res: unknown) => {
+      if (res === spaceResource) return spaceMock
+      if (res === contentsResource) return contentsMock
+      if (res === sourceSpaceResource) return sourceSpaceMock
+      if (res === sourceContentsResource) return sourceContentsMock
+      return {}
+    })
+    mocks.useWatchStateRpc.mockImplementation(
+      (watch: (req: object, signal: AbortSignal) => unknown) =>
+        watch({}, new AbortController().signal) === 'source'
+          ? sourceContentsState
+          : contentsState,
     )
-    mocks.useWatchStateRpc.mockImplementation(() => contentsState)
   })
 
   afterEach(() => {
@@ -171,6 +203,33 @@ describe('SpacePlugins', () => {
     fireEvent.click(screen.getByText('Notes'))
 
     expect(mocks.addSpacePlugin).toHaveBeenCalledWith('spacewave-notes')
+  })
+
+  it('imports a plugin from another Space, then installs it', async () => {
+    spacesList = [
+      { entry: { ref: { providerResourceRef: { id: 'space-1' } } } },
+      {
+        entry: { ref: { providerResourceRef: { id: 'space-2' } } },
+        spaceMeta: { name: 'Aperture' },
+      },
+    ]
+    sourceContentsState = {
+      availablePlugins: [{ pluginId: 'glados-core', revision: '4' }],
+    }
+
+    render(<SpacePlugins />)
+    fireEvent.click(screen.getByLabelText('Add plugin'))
+    expect(screen.queryByText('space-1')).toBeNull()
+    fireEvent.click(screen.getByText('Aperture'))
+    fireEvent.click(screen.getByText('glados-core'))
+
+    await waitFor(() =>
+      expect(mocks.addSpacePlugin).toHaveBeenCalledWith('glados-core'),
+    )
+    expect(mocks.importSpacePlugin).toHaveBeenCalledWith(9, 'glados-core')
+    expect(mocks.importSpacePlugin.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.addSpacePlugin.mock.invocationCallOrder[0],
+    )
   })
 
   it('hides already-installed plugins from suggestions', () => {

@@ -60,6 +60,10 @@ vi.mock('@s4wave/web/contexts/SpaceContainerContext.js', () => ({
   },
 }))
 
+vi.mock('@s4wave/app/system/useSystemStatus.js', () => ({
+  useWatchSpacesList: () => [],
+}))
+
 vi.mock('@s4wave/app/session/useBackgroundPlugins.js', () => ({
   useBackgroundPlugins: () => backgroundPlugins,
 }))

@@ -1451,6 +1451,46 @@ func (x *AddSpacePluginResponse) Reset() {
 
 func (*AddSpacePluginResponse) ProtoMessage() {}
 
+// ImportSpacePluginRequest names a plugin to copy from another mounted Space.
+type ImportSpacePluginRequest struct {
+	unknownFields []byte
+	// SourceSpaceResourceId is the caller's resource ID of the mounted source Space.
+	SourceSpaceResourceId uint32 `protobuf:"varint,1,opt,name=source_space_resource_id,json=sourceSpaceResourceId,proto3" json:"sourceSpaceResourceId,omitempty"`
+	// PluginId is the manifest ID of the plugin to copy.
+	PluginId string `protobuf:"bytes,2,opt,name=plugin_id,json=pluginId,proto3" json:"pluginId,omitempty"`
+}
+
+func (x *ImportSpacePluginRequest) Reset() {
+	*x = ImportSpacePluginRequest{}
+}
+
+func (*ImportSpacePluginRequest) ProtoMessage() {}
+
+func (x *ImportSpacePluginRequest) GetSourceSpaceResourceId() uint32 {
+	if x != nil {
+		return x.SourceSpaceResourceId
+	}
+	return 0
+}
+
+func (x *ImportSpacePluginRequest) GetPluginId() string {
+	if x != nil {
+		return x.PluginId
+	}
+	return ""
+}
+
+// ImportSpacePluginResponse is the response for ImportSpacePlugin.
+type ImportSpacePluginResponse struct {
+	unknownFields []byte
+}
+
+func (x *ImportSpacePluginResponse) Reset() {
+	*x = ImportSpacePluginResponse{}
+}
+
+func (*ImportSpacePluginResponse) ProtoMessage() {}
+
 // RemoveSpacePluginRequest is a request to remove a plugin from the space settings.
 type RemoveSpacePluginRequest struct {
 	unknownFields []byte
@@ -2422,6 +2462,38 @@ func (m *AddSpacePluginResponse) CloneVT() *AddSpacePluginResponse {
 }
 
 func (m *AddSpacePluginResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *ImportSpacePluginRequest) CloneVT() *ImportSpacePluginRequest {
+	if m == nil {
+		return (*ImportSpacePluginRequest)(nil)
+	}
+	r := new(ImportSpacePluginRequest)
+	r.SourceSpaceResourceId = m.SourceSpaceResourceId
+	r.PluginId = m.PluginId
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ImportSpacePluginRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *ImportSpacePluginResponse) CloneVT() *ImportSpacePluginResponse {
+	if m == nil {
+		return (*ImportSpacePluginResponse)(nil)
+	}
+	r := new(ImportSpacePluginResponse)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *ImportSpacePluginResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -3568,6 +3640,46 @@ func (this *AddSpacePluginResponse) EqualVT(that *AddSpacePluginResponse) bool {
 
 func (this *AddSpacePluginResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*AddSpacePluginResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *ImportSpacePluginRequest) EqualVT(that *ImportSpacePluginRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.SourceSpaceResourceId != that.SourceSpaceResourceId {
+		return false
+	}
+	if this.PluginId != that.PluginId {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ImportSpacePluginRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ImportSpacePluginRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *ImportSpacePluginResponse) EqualVT(that *ImportSpacePluginResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ImportSpacePluginResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*ImportSpacePluginResponse)
 	if !ok {
 		return false
 	}
@@ -6197,6 +6309,86 @@ func (x *AddSpacePluginResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the ImportSpacePluginRequest message to JSON.
+func (x *ImportSpacePluginRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.SourceSpaceResourceId != 0 || s.HasField("sourceSpaceResourceId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sourceSpaceResourceId")
+		s.WriteUint32(x.SourceSpaceResourceId)
+	}
+	if x.PluginId != "" || s.HasField("pluginId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("pluginId")
+		s.WriteString(x.PluginId)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ImportSpacePluginRequest to JSON.
+func (x *ImportSpacePluginRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ImportSpacePluginRequest message from JSON.
+func (x *ImportSpacePluginRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "source_space_resource_id", "sourceSpaceResourceId":
+			s.AddField("source_space_resource_id")
+			x.SourceSpaceResourceId = s.ReadUint32()
+		case "plugin_id", "pluginId":
+			s.AddField("plugin_id")
+			x.PluginId = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the ImportSpacePluginRequest from JSON.
+func (x *ImportSpacePluginRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the ImportSpacePluginResponse message to JSON.
+func (x *ImportSpacePluginResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the ImportSpacePluginResponse to JSON.
+func (x *ImportSpacePluginResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the ImportSpacePluginResponse message from JSON.
+func (x *ImportSpacePluginResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the ImportSpacePluginResponse from JSON.
+func (x *ImportSpacePluginResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 // MarshalProtoJSON marshals the RemoveSpacePluginRequest message to JSON.
 func (x *RemoveSpacePluginRequest) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -8650,6 +8842,80 @@ func (m *AddSpacePluginResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
+func (m *ImportSpacePluginRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ImportSpacePluginRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ImportSpacePluginRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.PluginId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.PluginId)
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.SourceSpaceResourceId != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.SourceSpaceResourceId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ImportSpacePluginResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ImportSpacePluginResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ImportSpacePluginResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *RemoveSpacePluginRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -9840,6 +10106,28 @@ func (m *AddSpacePluginResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *ImportSpacePluginRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.SourceSpaceResourceId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.PluginId)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *ImportSpacePluginResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *RemoveSpacePluginRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -10885,6 +11173,34 @@ func (x *AddSpacePluginResponse) MarshalProtoText() string {
 }
 
 func (x *AddSpacePluginResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *ImportSpacePluginRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "ImportSpacePluginRequest")
+	if x.SourceSpaceResourceId != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "source_space_resource_id")
+		protobuf_go_lite.TextWriteUint(&sb, x.SourceSpaceResourceId)
+	}
+	if x.PluginId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "plugin_id")
+		protobuf_go_lite.TextWriteString(&sb, x.PluginId)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ImportSpacePluginRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *ImportSpacePluginResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "ImportSpacePluginResponse")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *ImportSpacePluginResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -13591,6 +13907,111 @@ func (m *AddSpacePluginResponse) UnmarshalVT(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: AddSpacePluginResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *ImportSpacePluginRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ImportSpacePluginRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ImportSpacePluginRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceSpaceResourceId", wireType)
+			}
+			m.SourceSpaceResourceId = 0
+			m.SourceSpaceResourceId, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PluginId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.PluginId = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *ImportSpacePluginResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ImportSpacePluginResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ImportSpacePluginResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

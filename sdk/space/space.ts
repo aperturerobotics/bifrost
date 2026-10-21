@@ -105,6 +105,19 @@ export class Space extends Resource {
     await this.service.AddSpacePlugin({ pluginId, manifestKey }, abortSignal)
   }
 
+  // importSpacePlugin copies the newest build of a plugin for each platform
+  // from another mounted Space into this one. Add it with addSpacePlugin.
+  public async importSpacePlugin(
+    sourceSpaceResourceId: number,
+    pluginId: string,
+    abortSignal?: AbortSignal,
+  ): Promise<void> {
+    await this.service.ImportSpacePlugin(
+      { sourceSpaceResourceId, pluginId },
+      abortSignal,
+    )
+  }
+
   // removeSpacePlugin removes a plugin manifest ID from the Space settings
   // plugin list. The Space contents state re-projects after removal.
   public async removeSpacePlugin(

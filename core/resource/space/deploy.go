@@ -38,20 +38,35 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 		return errors.New("first message must be DeployManifestsRequest")
 	}
 
+	// Publish the set, reading each missing block from the stream.
+	if err := r.publishManifestSet(ctx, req.GetObjectKey(), req.GetManifestRefs(), &streamStoreOps{strm: strm}); err != nil {
+		return sendDeployManifestsResult(strm, err.Error())
+	}
+	return sendDeployManifestsResult(strm, "")
+}
+
+// publishManifestSet copies one manifest set from src into this Space and
+// publishes it under the manifest store at objectKey in one transaction.
+// Only the blocks the Space lacks are read from src. When the Space settings
+// pin the plugin, the published artifacts become its installation.
+func (r *SpaceResource) publishManifestSet(
+	ctx context.Context,
+	objectKey string,
+	refs []*bldr_manifest.ManifestRef,
+	src block.StoreOps,
+) error {
 	// Validate the request shape and complete manifest set before touching the World.
-	objectKey := req.GetObjectKey()
-	refs := req.GetManifestRefs()
 	if objectKey == "" {
-		return sendDeployManifestsResult(strm, "object_key is required")
+		return errors.New("object_key is required")
 	}
 	if len(refs) == 0 {
-		return sendDeployManifestsResult(strm, "manifest_refs is required")
+		return errors.New("manifest_refs is required")
 	}
 
 	// Validate the complete request before reading or writing any block.
 	manifestID, err := validateManifestSet(refs)
 	if err != nil {
-		return sendDeployManifestsResult(strm, err.Error())
+		return err
 	}
 
 	// Reject a known wrong host before block transfer; repeat this check in the write transaction.
@@ -61,13 +76,13 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 		objectState, exists, err := ws.GetObject(ctx, objectKey)
 		world.ReleaseObjectState(objectState)
 		if err != nil {
-			return sendDeployManifestsResult(strm, errors.Wrap(err, "check manifest store").Error())
+			return errors.Wrap(err, "check manifest store")
 		} else if exists {
 			if err := bldr_manifest_world.CheckManifestStoreType(ctx, ws, objectKey); err != nil {
-				return sendDeployManifestsResult(strm, errors.Wrap(err, "manifest store type").Error())
+				return errors.Wrap(err, "manifest store type")
 			}
 			if err := checkManifestSetSupersedes(ctx, ws, objectKey, manifestID, refs); err != nil {
-				return sendDeployManifestsResult(strm, err.Error())
+				return err
 			}
 		}
 	}
@@ -76,14 +91,14 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 	// staged until the transaction links the copies.
 	stage, err := engine.StageWorldState(ctx)
 	if err != nil {
-		return sendDeployManifestsResult(strm, errors.Wrap(err, "stage world state").Error())
+		return errors.Wrap(err, "stage world state")
 	}
 	defer stage.Release()
 
 	// Buffer the copies into the staged storage.
 	cursor, err := stage.BuildStorageCursor(ctx)
 	if err != nil {
-		return sendDeployManifestsResult(strm, errors.Wrap(err, "build storage cursor").Error())
+		return errors.Wrap(err, "build storage cursor")
 	}
 	defer cursor.Release()
 	dest := block.NewBufferedStoreWithSettings(ctx, cursor.GetBlockStore(), &block.BufferedStoreSettings{
@@ -91,24 +106,23 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 		MaxPendingBytes:   4 << 20,
 	})
 
-	// Copy each manifest DAG from the stream.
-	src := &streamStoreOps{strm: strm}
+	// Copy each manifest DAG from the source.
 	visited := make(map[string]bool)
 	storedRefs := make([]*bucket.ObjectRef, len(refs))
 	for i, ref := range refs {
 		if err := ctx.Err(); err != nil {
-			return sendDeployManifestsResult(strm, err.Error())
+			return err
 		}
 		xfrm, err := newManifestTransformer(r.le, ref.GetManifestRef().GetTransformConf())
 		if err != nil {
-			return sendDeployManifestsResult(strm, errors.Wrapf(err, "manifest_refs[%d] transform", i).Error())
+			return errors.Wrapf(err, "manifest_refs[%d] transform", i)
 		}
 		rootRef := ref.GetManifestRef().GetRootRef()
 		if err := copyBlockWithTransform(ctx, rootRef, bldr_manifest.NewManifestBlock, src, dest, xfrm, visited); err != nil {
-			return sendDeployManifestsResult(strm, errors.Wrapf(err, "manifest_refs[%d] block copy", i).Error())
+			return errors.Wrapf(err, "manifest_refs[%d] block copy", i)
 		}
 		if err := validateCopiedManifest(ctx, dest, rootRef, ref.GetMeta(), xfrm); err != nil {
-			return sendDeployManifestsResult(strm, errors.Wrapf(err, "manifest_refs[%d] copied manifest", i).Error())
+			return errors.Wrapf(err, "manifest_refs[%d] copied manifest", i)
 		}
 		storedRefs[i] = &bucket.ObjectRef{
 			BucketId:      r.space.GetWorldEngineBucketID(),
@@ -119,13 +133,13 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 
 	// Make every copied block durable before publishing references to the set.
 	if _, err := dest.Sync(ctx); err != nil {
-		return sendDeployManifestsResult(strm, errors.Wrap(err, "sync manifest blocks").Error())
+		return errors.Wrap(err, "sync manifest blocks")
 	}
 
 	// Publish the host, child objects, and graph edges in one transaction.
 	tx, err := engine.NewTransaction(ctx, true)
 	if err != nil {
-		return sendDeployManifestsResult(strm, errors.Wrap(err, "new transaction").Error())
+		return errors.Wrap(err, "new transaction")
 	}
 	defer tx.Discard()
 	txws := world.WorldState(tx)
@@ -135,16 +149,16 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 		objectState2, exists, err := txws.GetObject(ctx, objectKey)
 		world.ReleaseObjectState(objectState2)
 		if err != nil {
-			return sendDeployManifestsResult(strm, errors.Wrap(err, "check manifest store in transaction").Error())
+			return errors.Wrap(err, "check manifest store in transaction")
 		} else if exists {
 			if err := bldr_manifest_world.CheckManifestStoreType(ctx, txws, objectKey); err != nil {
-				return sendDeployManifestsResult(strm, errors.Wrap(err, "manifest store type in transaction").Error())
+				return errors.Wrap(err, "manifest store type in transaction")
 			}
 			if err := checkManifestSetSupersedes(ctx, txws, objectKey, manifestID, refs); err != nil {
-				return sendDeployManifestsResult(strm, err.Error())
+				return err
 			}
 		} else if _, err := bldr_manifest_world.CreateManifestStore(ctx, txws, objectKey); err != nil {
-			return sendDeployManifestsResult(strm, errors.Wrap(err, "create manifest store").Error())
+			return errors.Wrap(err, "create manifest store")
 		}
 	}
 
@@ -153,12 +167,12 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 		childKey := bldr_manifest.NewManifestArtifactKey(storedRefs[i])
 		// Store the exact copied reference at the deterministic child key.
 		if _, _, err := bldr_manifest_world.SetManifest(ctx, txws, "", childKey, storedRefs[i]); err != nil {
-			return sendDeployManifestsResult(strm, errors.Wrapf(err, "set manifest_refs[%d]", i).Error())
+			return errors.Wrapf(err, "set manifest_refs[%d]", i)
 		}
 
 		// Link the host to this child under the shared manifest ID.
 		if err := txws.SetGraphQuad(ctx, bldr_manifest_world.NewManifestQuad(objectKey, childKey, manifestID)); err != nil {
-			return sendDeployManifestsResult(strm, errors.Wrapf(err, "link manifest_refs[%d]", i).Error())
+			return errors.Wrapf(err, "link manifest_refs[%d]", i)
 		}
 	}
 
@@ -169,13 +183,13 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 	{
 		settings, err := space_world.LookupSpaceSettingsBody(ctx, txws)
 		if err != nil {
-			return sendDeployManifestsResult(strm, errors.Wrap(err, "read space settings").Error())
+			return errors.Wrap(err, "read space settings")
 		}
 		if settings != nil && len(settings.GetPluginInstallations()[manifestID].GetManifestKeys()) != 0 {
 			for i := range refs {
 				key := bldr_manifest.NewManifestArtifactKey(storedRefs[i])
 				if _, err := space_world_ops.InstallSpacePlugin(ctx, txws, "", manifestID, key, time.Now()); err != nil {
-					return sendDeployManifestsResult(strm, errors.Wrapf(err, "install manifest_refs[%d]", i).Error())
+					return errors.Wrapf(err, "install manifest_refs[%d]", i)
 				}
 			}
 		}
@@ -183,14 +197,14 @@ func (r *SpaceResource) DeployManifests(strm s4wave_space.SRPCSpaceResourceServi
 
 	// Commit is the publication point; Sync and the result may be ambiguous after it.
 	if err := tx.Commit(ctx); err != nil {
-		return sendDeployManifestsResult(strm, errors.Wrap(err, "commit manifest set").Error())
+		return errors.Wrap(err, "commit manifest set")
 	}
 	if _, err := engine.Sync(ctx); err != nil {
-		return sendDeployManifestsResult(strm, errors.Wrap(err, "sync manifest set").Error())
+		return errors.Wrap(err, "sync manifest set")
 	}
 	r.le.WithField("manifest-id", manifestID).WithField("object-key", objectKey).
 		Info("deploy manifest set complete")
-	return sendDeployManifestsResult(strm, "")
+	return nil
 }
 
 func validateManifestSet(refs []*bldr_manifest.ManifestRef) (string, error) {

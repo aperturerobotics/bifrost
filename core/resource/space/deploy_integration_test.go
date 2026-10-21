@@ -30,10 +30,16 @@ import (
 type deployIntegrationBody struct {
 	engine   world.Engine
 	bucketID string
+	engineID string
 }
 
-func (b *deployIntegrationBody) GetWorldEngine() world.Engine                 { return b.engine }
-func (b *deployIntegrationBody) GetWorldEngineID() string                     { return "test-world" }
+func (b *deployIntegrationBody) GetWorldEngine() world.Engine { return b.engine }
+func (b *deployIntegrationBody) GetWorldEngineID() string {
+	if b.engineID != "" {
+		return b.engineID
+	}
+	return "test-world"
+}
 func (b *deployIntegrationBody) GetWorldEngineBucketID() string               { return b.bucketID }
 func (b *deployIntegrationBody) GetSharedObjectRef() *sobject.SharedObjectRef { return nil }
 func (b *deployIntegrationBody) GetSharedObject() sobject.SharedObject        { return nil }
@@ -228,6 +234,37 @@ func TestDeployManifestsPublishesNativeAndJSAndReplays(t *testing.T) {
 	}
 	if len(edges2) != len(edges) {
 		t.Fatalf("replay edge count=%d want %d", len(edges2), len(edges))
+	}
+
+	// Import the plugin into a second Space with its own block store: only the
+	// newest build per platform arrives, and a repeat import changes nothing.
+	tb2, eng2 := newDeployIntegrationEngine(t, ctx)
+	defer tb2.Release()
+	defer eng2.Close()
+	r2 := &SpaceResource{le: tb2.Logger, space: &deployIntegrationBody{engine: eng2, bucketID: tb2.BucketId, engineID: "test-world-2"}}
+	if e := r2.importPlugin(ctx, r2, "gizmo-core"); e == nil {
+		t.Fatal("import from the same Space succeeded")
+	}
+	if e := r2.importPlugin(ctx, r, "missing-plugin"); e == nil {
+		t.Fatal("import of a missing plugin succeeded")
+	}
+	for range 2 {
+		if e := r2.importPlugin(ctx, r, "gizmo-core"); e != nil {
+			t.Fatal(e)
+		}
+		ws2 := world.NewEngineWorldState(eng2, false)
+		imported, _, e := bldr_manifest_world.CollectManifestsForManifestID(ctx, ws2, "gizmo-core", nil, "plugin-host")
+		if e != nil {
+			t.Fatal(e)
+		}
+		var revs []uint64
+		for _, m := range imported {
+			revs = append(revs, m.GetRev())
+		}
+		slices.Sort(revs)
+		if !slices.Equal(revs, []uint64{2, 3}) {
+			t.Fatalf("imported revs=%v want [2 3]", revs)
+		}
 	}
 }
 

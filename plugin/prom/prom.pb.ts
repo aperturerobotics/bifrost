@@ -2,10 +2,9 @@
 // @generated from file github.com/s4wave/spacewave/plugin/prom/prom.proto (package s4wave.plugin.prom, syntax proto3)
 /* eslint-disable */
 
-import { createEnumType } from "@aptre/protobuf-es-lite/enum";
-import type { MessageType } from "@aptre/protobuf-es-lite/message";
-import { createMessageType } from "@aptre/protobuf-es-lite/message";
-
+import { createEnumType } from '@aptre/protobuf-es-lite/enum'
+import type { MessageType } from '@aptre/protobuf-es-lite/message'
+import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
 /**
  * ChunkEncoding identifies how a Chunk encodes its samples.
@@ -24,7 +23,13 @@ export enum ChunkEncoding {
   XOR = 1,
 }
 
-export const ChunkEncoding_Enum = /* @__PURE__ */ createEnumType("s4wave.plugin.prom.ChunkEncoding", [[0, "CHUNK_ENCODING_UNKNOWN"], [1, "CHUNK_ENCODING_XOR"]]);
+export const ChunkEncoding_Enum = /* @__PURE__ */ createEnumType(
+  's4wave.plugin.prom.ChunkEncoding',
+  [
+    [0, 'CHUNK_ENCODING_UNKNOWN'],
+    [1, 'CHUNK_ENCODING_XOR'],
+  ],
+)
 
 /**
  * Label is one name and value of a series.
@@ -35,17 +40,18 @@ export interface Label {
   /**
    * Name is the label name.
    */
-  name?: string;
+  name?: string
   /**
    * Value is the label value.
    */
-  value?: string;
+  value?: string
 }
 
-export const Label: MessageType<Label> = /* @__PURE__ */ createMessageType<Label>("s4wave.plugin.prom.Label", () => [
-  [1, "name", 9],
-  [2, "value", 9],
-]);
+export const Label: MessageType<Label> =
+  /* @__PURE__ */ createMessageType<Label>('s4wave.plugin.prom.Label', () => [
+    [1, 'name', 9],
+    [2, 'value', 9],
+  ])
 
 /**
  * LabelSet is the sorted label set that identifies one series.
@@ -56,12 +62,14 @@ export interface LabelSet {
   /**
    * Labels holds the labels in ascending name order.
    */
-  labels?: Label[];
+  labels?: Label[]
 }
 
-export const LabelSet: MessageType<LabelSet> = /* @__PURE__ */ createMessageType<LabelSet>("s4wave.plugin.prom.LabelSet", () => [
-  [1, "labels", 11, 1, Label.codec],
-]);
+export const LabelSet: MessageType<LabelSet> =
+  /* @__PURE__ */ createMessageType<LabelSet>(
+    's4wave.plugin.prom.LabelSet',
+    () => [[1, 'labels', 11, 1, Label.codec]],
+  )
 
 /**
  * TargetMeta names the target a store holds samples for.
@@ -74,12 +82,14 @@ export interface TargetMeta {
    * store carries. A query skips the store when a matcher on one of these names
    * rejects its value.
    */
-  labels?: LabelSet;
+  labels?: LabelSet
 }
 
-export const TargetMeta: MessageType<TargetMeta> = /* @__PURE__ */ createMessageType<TargetMeta>("s4wave.plugin.prom.TargetMeta", () => [
-  [1, "labels", 11, 0, LabelSet.codec],
-]);
+export const TargetMeta: MessageType<TargetMeta> =
+  /* @__PURE__ */ createMessageType<TargetMeta>(
+    's4wave.plugin.prom.TargetMeta',
+    () => [[1, 'labels', 11, 0, LabelSet.codec]],
+  )
 
 /**
  * SeriesPage appends series to a target's series table.
@@ -93,17 +103,21 @@ export interface SeriesPage {
    * never reused, so the page covers FirstSeries through
    * FirstSeries + len(series) - 1.
    */
-  firstSeries?: bigint;
+  firstSeries?: bigint
   /**
    * Series holds the label sets of the added series in series number order.
    */
-  series?: LabelSet[];
+  series?: LabelSet[]
 }
 
-export const SeriesPage: MessageType<SeriesPage> = /* @__PURE__ */ createMessageType<SeriesPage>("s4wave.plugin.prom.SeriesPage", () => [
-  [1, "first_series", 4],
-  [2, "series", 11, 1, LabelSet.codec],
-]);
+export const SeriesPage: MessageType<SeriesPage> =
+  /* @__PURE__ */ createMessageType<SeriesPage>(
+    's4wave.plugin.prom.SeriesPage',
+    () => [
+      [1, 'first_series', 4],
+      [2, 'series', 11, 1, LabelSet.codec],
+    ],
+  )
 
 /**
  * Chunk is a run of one series' samples in one encoding.
@@ -114,27 +128,28 @@ export interface Chunk {
   /**
    * MinTime is the first sample's timestamp in milliseconds.
    */
-  minTime?: bigint;
+  minTime?: bigint
   /**
    * MaxTime is the last sample's timestamp in milliseconds.
    */
-  maxTime?: bigint;
+  maxTime?: bigint
   /**
    * Encoding is how Data encodes the samples.
    */
-  encoding?: ChunkEncoding;
+  encoding?: ChunkEncoding
   /**
    * Data holds the encoded samples.
    */
-  data?: Uint8Array;
+  data?: Uint8Array
 }
 
-export const Chunk: MessageType<Chunk> = /* @__PURE__ */ createMessageType<Chunk>("s4wave.plugin.prom.Chunk", () => [
-  [1, "min_time", 3],
-  [2, "max_time", 3],
-  [3, "encoding", 14, 0, ChunkEncoding_Enum],
-  [4, "data", 12],
-]);
+export const Chunk: MessageType<Chunk> =
+  /* @__PURE__ */ createMessageType<Chunk>('s4wave.plugin.prom.Chunk', () => [
+    [1, 'min_time', 3],
+    [2, 'max_time', 3],
+    [3, 'encoding', 14, 0, ChunkEncoding_Enum],
+    [4, 'data', 12],
+  ])
 
 /**
  * SeriesChunks holds one series' chunks within a segment.
@@ -145,17 +160,21 @@ export interface SeriesChunks {
   /**
    * Series is the series number in the target's series table.
    */
-  series?: bigint;
+  series?: bigint
   /**
    * Chunks are the series' chunks in ascending time order.
    */
-  chunks?: Chunk[];
+  chunks?: Chunk[]
 }
 
-export const SeriesChunks: MessageType<SeriesChunks> = /* @__PURE__ */ createMessageType<SeriesChunks>("s4wave.plugin.prom.SeriesChunks", () => [
-  [1, "series", 4],
-  [2, "chunks", 11, 1, Chunk.codec],
-]);
+export const SeriesChunks: MessageType<SeriesChunks> =
+  /* @__PURE__ */ createMessageType<SeriesChunks>(
+    's4wave.plugin.prom.SeriesChunks',
+    () => [
+      [1, 'series', 4],
+      [2, 'chunks', 11, 1, Chunk.codec],
+    ],
+  )
 
 /**
  * Segment is the immutable samples one commit window collected.
@@ -167,20 +186,23 @@ export interface Segment {
   /**
    * MinTime is the earliest sample timestamp in milliseconds, inclusive.
    */
-  minTime?: bigint;
+  minTime?: bigint
   /**
    * MaxTime is the latest sample timestamp in milliseconds, inclusive.
    */
-  maxTime?: bigint;
+  maxTime?: bigint
   /**
    * Series holds the window's samples per series in series number order.
    */
-  series?: SeriesChunks[];
+  series?: SeriesChunks[]
 }
 
-export const Segment: MessageType<Segment> = /* @__PURE__ */ createMessageType<Segment>("s4wave.plugin.prom.Segment", () => [
-  [1, "min_time", 3],
-  [2, "max_time", 3],
-  [3, "series", 11, 1, SeriesChunks.codec],
-]);
-
+export const Segment: MessageType<Segment> =
+  /* @__PURE__ */ createMessageType<Segment>(
+    's4wave.plugin.prom.Segment',
+    () => [
+      [1, 'min_time', 3],
+      [2, 'max_time', 3],
+      [3, 'series', 11, 1, SeriesChunks.codec],
+    ],
+  )

@@ -34,6 +34,11 @@ service SpaceResourceService {
 
   rpc AddSpacePlugin(AddSpacePluginRequest) returns (AddSpacePluginResponse) {}
 
+  // ImportSpacePlugin copies a plugin's newest build for each platform from
+  // another mounted Space into this one, as a deploy does, so AddSpacePlugin
+  // can then install it.
+  rpc ImportSpacePlugin(ImportSpacePluginRequest) returns (ImportSpacePluginResponse) {}
+
   rpc RemoveSpacePlugin(RemoveSpacePluginRequest) returns (RemoveSpacePluginResponse) {}
 
   // BuildSpacePlugin pins the source and queues a native build on a registered
@@ -491,6 +496,17 @@ message AddSpacePluginRequest {
 
 // AddSpacePluginResponse is the response for AddSpacePlugin.
 message AddSpacePluginResponse {}
+
+// ImportSpacePluginRequest names a plugin to copy from another mounted Space.
+message ImportSpacePluginRequest {
+  // SourceSpaceResourceId is the caller's resource ID of the mounted source Space.
+  uint32 source_space_resource_id = 1;
+  // PluginId is the manifest ID of the plugin to copy.
+  string plugin_id = 2;
+}
+
+// ImportSpacePluginResponse is the response for ImportSpacePlugin.
+message ImportSpacePluginResponse {}
 
 // RemoveSpacePluginRequest is a request to remove a plugin from the space settings.
 message RemoveSpacePluginRequest {

@@ -17,6 +17,8 @@ import {
   CreateSecretResponse,
   FetchPluginRepositoryRequest,
   FetchPluginRepositoryResponse,
+  ImportSpacePluginRequest,
+  ImportSpacePluginResponse,
   MountSpaceContentsRequest,
   MountSpaceContentsResponse,
   OpenPluginFrontendResponse,
@@ -158,6 +160,19 @@ export const SpaceResourceServiceDefinition = {
       name: 'AddSpacePlugin',
       I: AddSpacePluginRequest,
       O: AddSpacePluginResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ImportSpacePlugin copies a plugin's newest build for each platform from
+     * another mounted Space into this one, as a deploy does, so AddSpacePlugin
+     * can then install it.
+     *
+     * @generated from rpc s4wave.space.SpaceResourceService.ImportSpacePlugin
+     */
+    ImportSpacePlugin: {
+      name: 'ImportSpacePlugin',
+      I: ImportSpacePluginRequest,
+      O: ImportSpacePluginResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -389,6 +404,18 @@ export interface SpaceResourceService {
   ): Promise<AddSpacePluginResponse>
 
   /**
+   * ImportSpacePlugin copies a plugin's newest build for each platform from
+   * another mounted Space into this one, as a deploy does, so AddSpacePlugin
+   * can then install it.
+   *
+   * @generated from rpc s4wave.space.SpaceResourceService.ImportSpacePlugin
+   */
+  ImportSpacePlugin(
+    request: ImportSpacePluginRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ImportSpacePluginResponse>
+
+  /**
    * @generated from rpc s4wave.space.SpaceResourceService.RemoveSpacePlugin
    */
   RemoveSpacePlugin(
@@ -614,6 +641,19 @@ export interface SpaceResourceServiceHandler {
   ): Promise<AddSpacePluginResponse>
 
   /**
+   * ImportSpacePlugin copies a plugin's newest build for each platform from
+   * another mounted Space into this one, as a deploy does, so AddSpacePlugin
+   * can then install it.
+   *
+   * @generated from rpc s4wave.space.SpaceResourceService.ImportSpacePlugin
+   */
+  ImportSpacePlugin(
+    request: ImportSpacePluginRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<ImportSpacePluginResponse>
+
+  /**
    * @generated from rpc s4wave.space.SpaceResourceService.RemoveSpacePlugin
    */
   RemoveSpacePlugin(
@@ -769,6 +809,7 @@ export class SpaceResourceServiceClient implements SpaceResourceService {
     this.WriteSecretPayload = this.WriteSecretPayload.bind(this)
     this.DeployManifests = this.DeployManifests.bind(this)
     this.AddSpacePlugin = this.AddSpacePlugin.bind(this)
+    this.ImportSpacePlugin = this.ImportSpacePlugin.bind(this)
     this.RemoveSpacePlugin = this.RemoveSpacePlugin.bind(this)
     this.BuildSpacePlugin = this.BuildSpacePlugin.bind(this)
     this.FetchPluginRepository = this.FetchPluginRepository.bind(this)
@@ -953,6 +994,27 @@ export class SpaceResourceServiceClient implements SpaceResourceService {
       abortSignal || undefined,
     )
     return AddSpacePluginResponse.fromBinary(result)
+  }
+
+  /**
+   * ImportSpacePlugin copies a plugin's newest build for each platform from
+   * another mounted Space into this one, as a deploy does, so AddSpacePlugin
+   * can then install it.
+   *
+   * @generated from rpc s4wave.space.SpaceResourceService.ImportSpacePlugin
+   */
+  async ImportSpacePlugin(
+    request: ImportSpacePluginRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<ImportSpacePluginResponse> {
+    const requestMsg = ImportSpacePluginRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      SpaceResourceServiceDefinition.methods.ImportSpacePlugin.name,
+      ImportSpacePluginRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return ImportSpacePluginResponse.fromBinary(result)
   }
 
   /**

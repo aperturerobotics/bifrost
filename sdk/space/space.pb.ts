@@ -1145,6 +1145,44 @@ export const AddSpacePluginResponse: MessageType<AddSpacePluginResponse> =
   )
 
 /**
+ * ImportSpacePluginRequest names a plugin to copy from another mounted Space.
+ *
+ * @generated from message s4wave.space.ImportSpacePluginRequest
+ */
+export interface ImportSpacePluginRequest {
+  /**
+   * SourceSpaceResourceId is the caller's resource ID of the mounted source Space.
+   */
+  sourceSpaceResourceId?: number
+  /**
+   * PluginId is the manifest ID of the plugin to copy.
+   */
+  pluginId?: string
+}
+
+export const ImportSpacePluginRequest: MessageType<ImportSpacePluginRequest> =
+  /* @__PURE__ */ createMessageType<ImportSpacePluginRequest>(
+    's4wave.space.ImportSpacePluginRequest',
+    () => [
+      [1, 'source_space_resource_id', 13],
+      [2, 'plugin_id', 9],
+    ],
+  )
+
+/**
+ * ImportSpacePluginResponse is the response for ImportSpacePlugin.
+ *
+ * @generated from message s4wave.space.ImportSpacePluginResponse
+ */
+export interface ImportSpacePluginResponse {}
+
+export const ImportSpacePluginResponse: MessageType<ImportSpacePluginResponse> =
+  /* @__PURE__ */ createMessageType<ImportSpacePluginResponse>(
+    's4wave.space.ImportSpacePluginResponse',
+    () => [],
+  )
+
+/**
  * RemoveSpacePluginRequest is a request to remove a plugin from the space settings.
  *
  * @generated from message s4wave.space.RemoveSpacePluginRequest
