@@ -247,10 +247,16 @@ func (v *Volume) SweepUnreachedBlocks(ctx context.Context, graph block_gc.RefGra
 
 // sweepBlockPass marks the blocks of an open pass and sweeps the unreached.
 func (v *Volume) sweepBlockPass(ctx context.Context, actual *transactionRefGraph, stats *block_gc.Stats) error {
+	// Mark by scan, unless the setting selects the walk.
+	markBlocks := actual.MarkBlocksScan
+	if v.gcMarkWalk {
+		markBlocks = actual.MarkBlocks
+	}
+
 	// Mark the blocks. A block of unknown references may name any
 	// unreached block, so the pass then sweeps nothing.
 	start := time.Now()
-	mark, err := actual.MarkBlocks(ctx)
+	mark, err := markBlocks(ctx)
 	stats.MarkDuration += time.Since(start)
 	if err != nil {
 		return err

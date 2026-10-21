@@ -266,6 +266,41 @@ func TestPublicationBlockPassSweepsPastBudget(t *testing.T) {
 	}
 }
 
+// TestPublicationBlockPassMarkSetting checks that a block pass sweeps the same
+// blocks whether it marks by scan, the default, or by the walk the setting
+// selects, and that the scan leaves directMu released.
+func TestPublicationBlockPassMarkSetting(t *testing.T) {
+	for _, walk := range []bool{false, true} {
+		t.Run(fmt.Sprintf("walk=%v", walk), func(t *testing.T) {
+			// Publish two blocks and release the first's ownership.
+			v, _ := newPublicationTestVolume(t)
+			v.gcMarkWalk = walk
+			released := publicationFor(t, "released", "", "one")
+			kept := publicationFor(t, "kept", "", "two")
+			for _, p := range []*block.AtomicPublication{released, kept} {
+				if err := v.PublishAtomic(t.Context(), p); err != nil {
+					t.Fatal(err)
+				}
+			}
+			orphanPublication(t, v, released)
+
+			// A pass sweeps only the released block.
+			stats, err := block_gc.NewCollector(v.GetRefGraph(), v, nil).Collect(t.Context())
+			if err != nil || stats.BlocksSwept != 1 || (stats.MarkScans != 0) == walk {
+				t.Fatalf("collection stats=%+v err=%v", stats, err)
+			}
+			assertPublishedBlock(t, v, released, false)
+			assertPublishedBlock(t, v, kept, true)
+
+			// No mark transaction still holds directMu.
+			if !v.directMu.TryLock() {
+				t.Fatal("directMu is held after the pass")
+			}
+			v.directMu.Unlock()
+		})
+	}
+}
+
 func TestPublicationCollectorSweepsCandidatesInOneCommit(t *testing.T) {
 	// Publish and orphan a batch of collector candidates.
 	v, raw := newPublicationTestVolume(t)

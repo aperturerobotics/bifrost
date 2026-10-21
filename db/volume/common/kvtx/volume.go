@@ -59,6 +59,9 @@ type Volume struct {
 	// atomicHashGet records whether hash verification reads are enabled for
 	// atomic publication block construction.
 	atomicHashGet bool
+	// gcMarkWalk marks a block pass by walking in one snapshot instead of
+	// scanning child lists in short transactions.
+	gcMarkWalk bool
 	// closeBcast guards the closing, closed, and closeErr state below.
 	closeBcast broadcast.Broadcast
 	// closing records that Close has started and direct writes must stop.
@@ -155,6 +158,7 @@ func NewVolume(
 	// Route atomic publications through transaction-local reference graphs.
 	if atomicStore, ok := store.(kvtx.AtomicCommitStore); ok && atomicStore.SupportsAtomicCommit() {
 		v.atomicHashGet = !conf.GetDisableHashGet()
+		v.gcMarkWalk = conf.GetGcMarkWalk()
 		v.refGraph = &transactionRefGraph{volume: v}
 		v.publications = newPublicationWriter(v)
 		if orderedStore, ok := store.(kvtx.OrderedCommitStore); ok {

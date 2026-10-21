@@ -40,6 +40,12 @@ type Stats struct {
 	BlockPasses int
 	// MarkDuration is time spent marking blocks.
 	MarkDuration time.Duration
+	// MarkScans is the number of child list scans the last mark made, zero
+	// for a walk.
+	MarkScans int
+	// MarkLongestRead is the last mark's longest read transaction, zero for
+	// a walk.
+	MarkLongestRead time.Duration
 	// LiveNodes is the number of nodes the last mark reached.
 	LiveNodes int
 	// UnreachedBlocks is the number of tracked blocks the last mark did not
@@ -64,4 +70,6 @@ func (s *Stats) RecordMark(mark *BlockMark) {
 	s.UnreachedBlocks = len(mark.Unreached)
 	s.UnknownBlocks = mark.Unknown
 	s.UnknownSample = mark.UnknownSample
+	s.MarkScans = mark.Scans
+	s.MarkLongestRead = mark.LongestRead
 }

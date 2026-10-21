@@ -26,10 +26,17 @@ export interface Config {
    * do not enable this option. It is important to hash the data for each read.
    */
   disableHashGet?: boolean
+  /**
+   * GcMarkWalk marks blocks in a GC block pass by walking from the roots in
+   * one read snapshot, as before, instead of scanning the child lists in key
+   * order in short read transactions.
+   */
+  gcMarkWalk?: boolean
 }
 
 export const Config: MessageType<Config> =
   /* @__PURE__ */ createMessageType<Config>('store.kvtx.Config', () => [
     [2, 'hash_type', 14, 0, HashType_Enum],
     [3, 'disable_hash_get', 8],
+    [4, 'gc_mark_walk', 8],
   ])

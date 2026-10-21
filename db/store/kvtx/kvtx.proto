@@ -14,6 +14,10 @@ message Config {
   // If the store may return invalid data or mismatch the requested block ref,
   // do not enable this option. It is important to hash the data for each read.
   bool disable_hash_get = 3;
+  // GcMarkWalk marks blocks in a GC block pass by walking from the roots in
+  // one read snapshot, as before, instead of scanning the child lists in key
+  // order in short read transactions.
+  bool gc_mark_walk = 4;
 
   // reserved: 1 mqueue_config
 }
