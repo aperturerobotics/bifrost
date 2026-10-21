@@ -326,6 +326,8 @@ func (a *DevtoolArgs) BuildSubCommands() []*cli.Command {
 		a.BuildPublishCommand(),
 		a.BuildProfileAccessOrderCommand(),
 		a.BuildTargetsCommand(),
+		BuildTraceCommand(),
+		BuildCallpathCommand(),
 	}
 }
 
