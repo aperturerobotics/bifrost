@@ -130,6 +130,8 @@ type Engine struct {
 	retiring int
 	// committing counts write commits that own coordinator cleanup outside bcast.
 	committing int
+	// opening counts read transaction opens building state outside bcast.
+	opening int
 	// commitFn is a function to be called just before a commit is confirmed.
 	// It can be nil.
 	commitFn        CommitFn
@@ -805,27 +807,7 @@ func (e *Engine) NewBlockEngineTransaction(ctx context.Context, write bool) (*En
 			return nil, err
 		}
 
-		// Pin the current head after refresh and retirement complete.
-		locked := e.bcast.Lock()
-		if e.closed {
-			locked.Unlock()
-			return nil, ErrEngineClosed
-		}
-
-		// Each reader owns a dedicated snapshot tracked for Engine.Close.
-		world, err := e.buildReadWorldState(ctx)
-		if err != nil {
-			locked.Unlock()
-			return nil, err
-		}
-		engTx := newEngineTx(e, nil)
-		engTx.readTx.Store(NewTx(world))
-		engTx.readRoot = e.head.root.GetRef().Clone()
-		root, release := e.holdHeadLocked()
-		engTx.readHead.Store(&heldHead{root: root, release: release})
-		e.snapshotTxs[engTx] = struct{}{}
-		locked.Unlock()
-		return engTx, nil
+		return e.openReadTx(ctx)
 	}
 
 	// Serialize writers until Commit or Discard drains the prior transaction.
@@ -941,6 +923,65 @@ func (e *Engine) NewBlockEngineTransaction(ctx context.Context, write bool) (*En
 	// Drain retired roots and return the write transaction.
 	e.drainRetirement(ctx, retirement)
 	return engTx, nil
+}
+
+// openReadTx opens a read snapshot of the current head. It holds the head and
+// its publication pin under bcast and builds the World state after unlocking,
+// so the root decode and tree reads never stall other Engine users. Close
+// joins an open in flight through opening.
+func (e *Engine) openReadTx(ctx context.Context) (*EngineTx, error) {
+	// Return when the Engine has closed.
+	locked := e.bcast.Lock()
+	if e.closed {
+		locked.Unlock()
+		return nil, ErrEngineClosed
+	}
+
+	// Hold the head for the snapshot's object reads and for its state.
+	root, release := e.holdHeadLocked()
+	readRoot := e.head.root.GetRef().Clone()
+	rootBlock, err := e.headRootBlockLocked(ctx)
+	if err != nil {
+		locked.Unlock()
+		release()
+		return nil, err
+	}
+	statePin := e.head.pin.hold()
+	e.opening++
+	locked.Unlock()
+
+	// Build the state from the held root without the Engine lock.
+	world, err := e.newWorldState(ctx, true, root, e.writeBlockStore, statePin, rootBlock)
+
+	// Register the snapshot for Engine.Close unless it closed meanwhile.
+	locked = e.bcast.Lock()
+	e.opening--
+	closed := e.closed
+	if closed {
+		locked.Broadcast()
+	}
+	var engTx *EngineTx
+	if err == nil && !closed {
+		engTx = newEngineTx(e, nil)
+		engTx.readTx.Store(NewTx(world))
+		engTx.readRoot = readRoot
+		engTx.readHead.Store(&heldHead{root: root, release: release})
+		e.snapshotTxs[engTx] = struct{}{}
+	}
+	locked.Unlock()
+	if engTx != nil {
+		return engTx, nil
+	}
+
+	// Release what the failed open held.
+	if world != nil {
+		world.Discard()
+	}
+	release()
+	if err == nil {
+		err = ErrEngineClosed
+	}
+	return nil, err
 }
 
 // refreshReadHead adopts the durable head when no local writer owns publication.
@@ -1435,10 +1476,10 @@ func (e *Engine) Close() error {
 		<-e.headWatchDone
 	}
 
-	// Join detached work, in-flight commit publication and change watches before
-	// baseRoot release.
+	// Join detached work, in-flight commit publication, read opens and change
+	// watches before baseRoot release.
 	locked = e.bcast.Lock()
-	for e.retiring != 0 || e.committing != 0 || e.changeWatches != 0 {
+	for e.retiring != 0 || e.committing != 0 || e.opening != 0 || e.changeWatches != 0 {
 		wait := locked.WaitCh()
 		locked.Unlock()
 		<-wait
@@ -1520,41 +1561,42 @@ func (e *Engine) buildReadWorldState(ctx context.Context) (*WorldState, error) {
 	return e.buildWorldStateForRoot(ctx, true, e.head.root, nil)
 }
 
+// headRootBlockLocked returns the published head's decoded World root, or nil
+// when the head has no read transaction at its root. The block is immutable;
+// callers clone it before use. The caller must hold bcast.
+func (e *Engine) headRootBlockLocked(ctx context.Context) (*World, error) {
+	if e.head == nil || e.head.readTx == nil ||
+		!e.head.readTx.state.GetRootRef().EqualsRef(e.head.root.GetRef().GetRootRef()) {
+		return nil, nil
+	}
+	return e.head.readTx.state.GetRoot(ctx)
+}
+
 // buildWorldStateForRoot builds state using the engine's stores and lookup policy.
-// The caller must hold bcast after construction.
+// The caller must hold bcast.
 func (e *Engine) buildWorldStateForRoot(
 	ctx context.Context,
 	readOnly bool,
 	root *bucket_lookup.Cursor,
 	transactionStore block.StoreOps,
 ) (*WorldState, error) {
-	// Trace the build.
-	ctx, task := trace.NewTask(ctx, "hydra/world-block/engine/build-world-state")
-	defer task.End()
-
 	// Select the store under the existing transaction authority. Both read and
 	// write transactions read and write through writeBlockStore so that, in the
 	// single-writer deferred path, reads see blocks that are committed in memory
 	// but not yet drained to durable storage (read your writes before Sync). It
 	// is the bucket store directly in coordinator and self-buffered modes.
-	_, subtask := trace.NewTask(ctx, "hydra/world-block/engine/build-world-state/get-bucket")
 	store := transactionStore
 	if store == nil {
 		store = e.writeBlockStore
 	}
-	subtask.End()
-
-	// Build the transaction. A read-only state pins its root until Discard.
-	_, subtask = trace.NewTask(ctx, "hydra/world-block/engine/build-world-state/build-transaction")
-	btx, bcs := root.BuildTransactionWithStore(nil, store)
-	subtask.End()
 
 	// A reader of the published head shares the head's pin, so opening it
 	// does no block I/O under bcast. Other roots take their own pin.
 	releaseRoot := func() {}
+	atHead := e.head != nil && e.head.root.GetRef().EqualsRef(root.GetRef())
 	switch {
 	case !readOnly:
-	case e.head != nil && e.head.root == root && store == e.writeBlockStore:
+	case atHead && e.head.root == root && store == e.writeBlockStore:
 		releaseRoot = e.head.pin.hold()
 	default:
 		var err error
@@ -1564,15 +1606,38 @@ func (e *Engine) buildWorldStateForRoot(
 		}
 	}
 
-	// The published read head already holds this immutable root. Clone its
-	// decoded value so each new handle owns its mutable sub-block fields.
-	if e.head != nil && e.head.readTx != nil && e.head.root.GetRef().EqualsRef(root.GetRef()) &&
-		e.head.readTx.state.GetRootRef().EqualsRef(root.GetRef().GetRootRef()) {
-		rootBlock, err := e.head.readTx.state.GetRoot(ctx)
+	// The published read head already holds this immutable root.
+	var rootBlock *World
+	if atHead {
+		var err error
+		rootBlock, err = e.headRootBlockLocked(ctx)
 		if err != nil {
 			releaseRoot()
 			return nil, err
 		}
+	}
+	return e.newWorldState(ctx, readOnly, root, store, releaseRoot, rootBlock)
+}
+
+// newWorldState builds a state at root over store. It reads no Engine fields
+// guarded by bcast, so a caller holding root and its pin may build without the
+// lock. The state owns releaseRoot, which is called on failure. rootBlock, when
+// set, is the decoded World root, cloned so the state owns its mutable fields.
+func (e *Engine) newWorldState(
+	ctx context.Context,
+	readOnly bool,
+	root *bucket_lookup.Cursor,
+	store block.StoreOps,
+	releaseRoot func(),
+	rootBlock *World,
+) (*WorldState, error) {
+	// Trace the build.
+	ctx, task := trace.NewTask(ctx, "hydra/world-block/engine/build-world-state")
+	defer task.End()
+
+	// Build the transaction and seed the decoded root.
+	btx, bcs := root.BuildTransactionWithStore(nil, store)
+	if rootBlock != nil {
 		bcs.SetBlock(rootBlock.CloneVT(), false)
 	}
 
@@ -1582,9 +1647,7 @@ func (e *Engine) buildWorldStateForRoot(
 		btx.SetReadOnly()
 		btx = nil
 	}
-	taskCtx, subtask := trace.NewTask(ctx, "hydra/world-block/engine/build-world-state/new-world-state")
-	ws, err := NewWorldState(taskCtx, e.le, !readOnly, btx, bcs, store, e, e.lookupOp, e.verbose)
-	subtask.End()
+	ws, err := NewWorldState(ctx, e.le, !readOnly, btx, bcs, store, e, e.lookupOp, e.verbose)
 	if err != nil {
 		releaseRoot()
 		return nil, err
