@@ -1,17 +1,29 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { LuHardDrive, LuMonitor, LuPlus, LuServer } from 'react-icons/lu'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import { LuMonitor, LuPlus } from 'react-icons/lu'
 
+import type { Resource } from '@aptre/bldr-sdk/hooks/useResource.js'
+import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
 import { CreateWizardObjectOp } from '@s4wave/sdk/world/wizard/wizard.pb.js'
 import { CREATE_WIZARD_OBJECT_OP_ID } from '@s4wave/sdk/world/wizard/create-wizard.js'
+import type { IWorldState } from '@s4wave/sdk/world/world-state.js'
 import type { ObjectViewerComponentProps } from '@s4wave/web/object/object.js'
 import { SpaceContainerContext } from '@s4wave/web/contexts/SpaceContainerContext.js'
+import { useAccessTypedHandle } from '@s4wave/web/hooks/useAccessTypedHandle.js'
 import { useWorldQuery } from '@s4wave/web/hooks/useWorldQuery.js'
 import { DashboardButton } from '@s4wave/web/ui/DashboardButton.js'
+import { FigureStrip } from '@s4wave/web/ui/FigureStrip.js'
 import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
 import { toast } from '@s4wave/web/ui/toaster.js'
 import { cn } from '@s4wave/web/style/utils.js'
-import { DeviceTypeID } from '@s4wave/sdk/device/device.js'
-import { SshHostTypeID } from '@s4wave/sdk/sshhost/sshhost.js'
+import { DeviceHandle, DeviceTypeID } from '@s4wave/sdk/device/device.js'
+import { DeviceLiveness } from '@s4wave/sdk/device/device.pb.js'
+import { SshHostHandle, SshHostTypeID } from '@s4wave/sdk/sshhost/sshhost.js'
 
 import { buildWizardObjectKey } from '../space/create-op-builders.js'
 import { useVisibleObjectWizardTypeSet } from '../space/useVisibleObjectWizardTypeSet.js'
@@ -21,6 +33,7 @@ import {
   AddDeviceWizardTypeID,
 } from './add-device-wizard.js'
 import { ComputersDashboardTypeID } from './computers.js'
+import { projectSshConnectionStatus } from './SshHostViewer.js'
 
 export { ComputersDashboardTypeID }
 
@@ -28,7 +41,9 @@ type InventoryFilter = 'all' | 'devices' | 'hosts'
 
 const noKeys: string[] = []
 
-export function ComputersDashboardViewer(_props: ObjectViewerComponentProps) {
+export function ComputersDashboardViewer({
+  worldState,
+}: ObjectViewerComponentProps) {
   const { navigateToObjects, spaceWorld, spaceWorldResource } =
     SpaceContainerContext.useContext()
   const visibleWizardTypeSet = useVisibleObjectWizardTypeSet()
@@ -55,6 +70,18 @@ export function ComputersDashboardViewer(_props: ObjectViewerComponentProps) {
   const [opening, setOpening] = useState(false)
   const [openingError, setOpeningError] = useState('')
   const [filter, setFilter] = useState<InventoryFilter>('all')
+  const [onlineKeys, setOnlineKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  )
+  const handleOnline = useCallback((objectKey: string, online: boolean) => {
+    setOnlineKeys((prev) => {
+      if (prev.has(objectKey) === online) return prev
+      const next = new Set(prev)
+      if (online) next.add(objectKey)
+      else next.delete(objectKey)
+      return next
+    })
+  }, [])
 
   const handleAddDevice = useCallback(async () => {
     if (opening) return
@@ -100,24 +127,20 @@ export function ComputersDashboardViewer(_props: ObjectViewerComponentProps) {
   ])
 
   const inventory = useMemo(() => {
-    const entries = [
-      ...devices.map((objectKey) => ({
-        objectKey,
-        kind: 'Managed Device',
-        icon: <LuHardDrive className="size-3.5" />,
-      })),
-      ...hosts.map((objectKey) => ({
-        objectKey,
-        kind: 'SSH Host',
-        icon: <LuServer className="size-3.5" />,
-      })),
+    const entries: InventoryEntry[] = [
+      ...devices.map((objectKey) => ({ objectKey, kind: 'device' as const })),
+      ...hosts.map((objectKey) => ({ objectKey, kind: 'host' as const })),
     ]
     if (filter === 'devices')
-      return entries.filter((entry) => entry.kind === 'Managed Device')
+      return entries.filter((entry) => entry.kind === 'device')
     if (filter === 'hosts')
-      return entries.filter((entry) => entry.kind === 'SSH Host')
+      return entries.filter((entry) => entry.kind === 'host')
     return entries
   }, [devices, filter, hosts])
+  const total = devices.length + hosts.length
+  const online = [...devices, ...hosts].filter((key) =>
+    onlineKeys.has(key),
+  ).length
 
   return (
     <div className="bg-background-primary flex h-full w-full flex-col">
@@ -146,18 +169,13 @@ export function ComputersDashboardViewer(_props: ObjectViewerComponentProps) {
               {openingError}
             </div>
           )}
-          <section className="grid gap-3 sm:grid-cols-2">
-            <SummaryTile
-              icon={<LuHardDrive className="size-3.5" />}
-              label="Managed Devices"
-              value={devices.length}
-            />
-            <SummaryTile
-              icon={<LuServer className="size-3.5" />}
-              label="SSH Hosts"
-              value={hosts.length}
-            />
-          </section>
+          <FigureStrip
+            figures={[
+              { label: 'Devices', value: devices.length },
+              { label: 'SSH hosts', value: hosts.length },
+              { label: 'Online', value: online, unit: `of ${total}` },
+            ]}
+          />
 
           {computers && devices.length + hosts.length === 0 ? (
             <InfoCard
@@ -174,8 +192,7 @@ export function ComputersDashboardViewer(_props: ObjectViewerComponentProps) {
           ) : (
             <section className="space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="text-foreground flex items-center gap-1.5 text-xs font-medium">
-                  <LuMonitor className="size-3.5" />
+                <h3 className="text-foreground text-xs font-medium select-none">
                   Inventory
                 </h3>
                 <div className="flex items-center gap-1" role="tablist">
@@ -201,32 +218,14 @@ export function ComputersDashboardViewer(_props: ObjectViewerComponentProps) {
               </div>
               <InventoryPanel
                 entries={inventory}
+                worldState={worldState}
+                onOnline={handleOnline}
                 onOpen={(objectKey) => navigateToObjects([objectKey])}
               />
             </section>
           )}
         </div>
       </div>
-    </div>
-  )
-}
-
-function SummaryTile({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode
-  label: string
-  value: number
-}) {
-  return (
-    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5">
-      <div className="text-foreground-alt/70 flex items-center gap-1.5 text-xs font-medium">
-        {icon}
-        {label}
-      </div>
-      <div className="text-foreground mt-2 text-xl font-semibold">{value}</div>
     </div>
   )
 }
@@ -247,10 +246,10 @@ function FilterButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        'h-7 rounded-md border px-2 text-xs font-medium transition-colors',
+        'h-7 rounded-md px-2 text-xs font-medium transition-colors',
         active
-          ? 'border-brand/30 bg-brand/10 text-foreground'
-          : 'border-foreground/10 text-foreground-alt/70 hover:border-foreground/20 hover:bg-foreground/5',
+          ? 'bg-foreground/8 text-foreground'
+          : 'text-foreground-alt/70 hover:bg-foreground/5 hover:text-foreground',
       )}
     >
       {children}
@@ -258,52 +257,241 @@ function FilterButton({
   )
 }
 
+interface InventoryEntry {
+  objectKey: string
+  kind: 'device' | 'host'
+}
+
+type ChipTone = 'idle' | 'success' | 'warning' | 'error'
+
+const chipTone: Record<ChipTone, string> = {
+  idle: 'border-foreground/15 bg-foreground/5 text-foreground-alt/70',
+  success: 'border-emerald-400/20 bg-emerald-400/8 text-emerald-300',
+  warning: 'border-amber-400/20 bg-amber-400/8 text-amber-300',
+  error: 'border-destructive/30 bg-destructive/8 text-destructive',
+}
+
+// RowView is what one inventory row shows once its object state streams in.
+interface RowView {
+  name: string
+  platform: string
+  state: string
+  tone: ChipTone
+  capabilities?: number
+  online: boolean
+}
+
+const rowGrid =
+  'grid grid-cols-inventory-narrow items-center gap-x-4 @2xl:grid-cols-inventory'
+
 function InventoryPanel({
   entries,
+  worldState,
+  onOnline,
   onOpen,
 }: {
-  entries: Array<{
-    objectKey: string
-    kind: string
-    icon: ReactNode
-  }>
+  entries: InventoryEntry[]
+  worldState: Resource<IWorldState>
+  onOnline: (objectKey: string, online: boolean) => void
   onOpen: (objectKey: string) => void
 }) {
   return (
-    <div className="border-foreground/6 bg-background-card/30 overflow-hidden rounded-lg border">
+    <div className="border-foreground/6 bg-background-card/30 @container overflow-hidden rounded-lg border">
       {entries.length === 0 ? (
         <div className="text-foreground-alt/70 px-3.5 py-4 text-xs">
           No computers match this filter.
         </div>
       ) : (
-        <div className="divide-foreground/8 divide-y">
-          {entries.map((entry) => (
-            <button
-              key={entry.objectKey}
-              type="button"
-              onClick={() => onOpen(entry.objectKey)}
-              className="hover:bg-foreground/5 flex w-full min-w-0 items-center justify-between gap-3 px-3.5 py-3 text-left transition-colors"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="text-foreground-alt/60 shrink-0">
-                  {entry.icon}
-                </span>
-                <span className="min-w-0">
-                  <span className="text-foreground block truncate text-sm font-medium">
-                    {entry.kind}
-                  </span>
-                  <span className="text-foreground-alt/50 mt-0.5 block truncate font-mono text-xs">
-                    {entry.objectKey}
-                  </span>
-                </span>
-              </span>
-              <span className="text-foreground-alt/70 shrink-0 text-xs font-medium">
-                Open
-              </span>
-            </button>
-          ))}
+        <div>
+          <div
+            aria-hidden
+            className={cn(
+              rowGrid,
+              'border-foreground/8 text-foreground-alt micro-ten border-b px-3.5 py-2 font-semibold tracking-widest uppercase select-none',
+            )}
+          >
+            <span>Name</span>
+            <span className="hidden @2xl:block">Kind</span>
+            <span className="hidden @2xl:block">Platform</span>
+            <span>State</span>
+            <span className="hidden text-right @2xl:block">Capabilities</span>
+          </div>
+          <div className="divide-foreground/8 divide-y">
+            {entries.map((entry) =>
+              entry.kind === 'device' ? (
+                <DeviceRow
+                  key={entry.objectKey}
+                  objectKey={entry.objectKey}
+                  worldState={worldState}
+                  onOnline={onOnline}
+                  onOpen={onOpen}
+                />
+              ) : (
+                <HostRow
+                  key={entry.objectKey}
+                  objectKey={entry.objectKey}
+                  worldState={worldState}
+                  onOnline={onOnline}
+                  onOpen={onOpen}
+                />
+              ),
+            )}
+          </div>
         </div>
       )}
     </div>
+  )
+}
+
+interface RowProps {
+  objectKey: string
+  worldState: Resource<IWorldState>
+  onOnline: (objectKey: string, online: boolean) => void
+  onOpen: (objectKey: string) => void
+}
+
+const watchDevice = (h: DeviceHandle, signal: AbortSignal) =>
+  h.watchDeviceState(signal)
+
+function DeviceRow({ objectKey, worldState, onOnline, onOpen }: RowProps) {
+  const handle = useAccessTypedHandle(
+    worldState,
+    objectKey,
+    DeviceHandle,
+    DeviceTypeID,
+  )
+  const device = useStreamingResource(handle, watchDevice, []).value
+  const liveness = device?.lastStatus?.liveness ?? DeviceLiveness.UNKNOWN
+  const view: RowView = {
+    name: device?.label || 'Device',
+    platform:
+      [device?.platform?.os, device?.platform?.arch]
+        .filter(Boolean)
+        .join(' / ') || '',
+    ...livenessChip(liveness),
+    capabilities: device ? (device.capabilities?.length ?? 0) : undefined,
+    online: liveness === DeviceLiveness.ONLINE,
+  }
+  return (
+    <InventoryRow
+      objectKey={objectKey}
+      kind="Device"
+      view={view}
+      onOnline={onOnline}
+      onOpen={onOpen}
+    />
+  )
+}
+
+const watchHost = (h: SshHostHandle, signal: AbortSignal) =>
+  h.watchSshHostState(signal)
+
+function HostRow({ objectKey, worldState, onOnline, onOpen }: RowProps) {
+  const handle = useAccessTypedHandle(
+    worldState,
+    objectKey,
+    SshHostHandle,
+    SshHostTypeID,
+  )
+  const host = useStreamingResource(handle, watchHost, []).value
+  const status = projectSshConnectionStatus(host?.lastStatus)
+  const endpoint = host?.endpoint
+  const view: RowView = {
+    name: host?.label || 'SSH host',
+    platform: endpoint?.host
+      ? `${endpoint.username ? endpoint.username + '@' : ''}${endpoint.host}`
+      : '',
+    state: status.label,
+    tone:
+      status.state === 'ready'
+        ? 'success'
+        : status.state === 'failed'
+          ? 'error'
+          : 'idle',
+    online: status.state === 'ready',
+  }
+  return (
+    <InventoryRow
+      objectKey={objectKey}
+      kind="SSH host"
+      view={view}
+      onOnline={onOnline}
+      onOpen={onOpen}
+    />
+  )
+}
+
+function livenessChip(liveness: DeviceLiveness): {
+  state: string
+  tone: ChipTone
+} {
+  switch (liveness) {
+    case DeviceLiveness.ONLINE:
+      return { state: 'Online', tone: 'success' }
+    case DeviceLiveness.DEGRADED:
+      return { state: 'Degraded', tone: 'warning' }
+    case DeviceLiveness.OFFLINE:
+      return { state: 'Offline', tone: 'error' }
+    default:
+      return { state: 'Unknown', tone: 'idle' }
+  }
+}
+
+function InventoryRow({
+  objectKey,
+  kind,
+  view,
+  onOnline,
+  onOpen,
+}: {
+  objectKey: string
+  kind: string
+  view: RowView
+  onOnline: (objectKey: string, online: boolean) => void
+  onOpen: (objectKey: string) => void
+}) {
+  const { online } = view
+  useEffect(() => {
+    onOnline(objectKey, online)
+  }, [objectKey, online, onOnline])
+  useEffect(() => () => onOnline(objectKey, false), [objectKey, onOnline])
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(objectKey)}
+      className={cn(
+        rowGrid,
+        'hover:bg-foreground/5 w-full min-w-0 px-3.5 py-2.5 text-left transition-colors',
+      )}
+    >
+      <span className="min-w-0">
+        <span className="text-foreground block truncate text-sm font-medium">
+          {view.name}
+        </span>
+        <span className="text-foreground-alt/50 block truncate font-mono text-xs">
+          {objectKey}
+        </span>
+      </span>
+      <span className="text-foreground-alt hidden truncate text-xs @2xl:block">
+        {kind}
+      </span>
+      <span className="text-foreground-alt hidden truncate text-xs @2xl:block">
+        {view.platform}
+      </span>
+      <span>
+        <span
+          className={cn(
+            'micro-ten inline-flex items-center rounded-full border px-2 py-0.5 font-medium tracking-widest uppercase select-none',
+            chipTone[view.tone],
+          )}
+        >
+          {view.state}
+        </span>
+      </span>
+      <span className="text-foreground hidden text-right font-mono text-xs tabular-nums @2xl:block">
+        {view.capabilities ?? ''}
+      </span>
+    </button>
   )
 }

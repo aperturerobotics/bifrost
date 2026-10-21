@@ -1351,6 +1351,14 @@
   inset: -6px;
 }
 
+@utility grid-cols-inventory-narrow {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@utility grid-cols-inventory {
+  grid-template-columns: minmax(0, 1.4fr) 6rem minmax(0, 1fr) 6.5rem 6.5rem;
+}
+
 @utility grid-cols-demo-wide {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
 }
