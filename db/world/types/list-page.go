@@ -3,6 +3,7 @@ package world_types
 import (
 	"context"
 	"io"
+	"slices"
 
 	cayley_kv "github.com/aperturerobotics/cayley/graph/kv"
 	"github.com/aperturerobotics/cayley/quad"
@@ -50,11 +51,17 @@ func ListObjectsWithTypeOnGraph(ctx context.Context, h *cayley_kv.QuadStore, typ
 		after = ref.(cayley_kv.Int64Value)
 	}
 
+	// Find the reverse index in the open layout.
+	ind, err := findCompleteIndex(h, typePageDirs)
+	if err != nil {
+		return nil, false, err
+	}
+
 	// Read at most one page plus its lookahead, deduplicated by subject posting.
 	keys := make([]string, 0, limit)
 	var more bool
 	values := []uint64{uint64(typeRef.(cayley_kv.Int64Value)), uint64(predRef.(cayley_kv.Int64Value))}
-	err = h.IterateIndexPrefixNextRefsAfter(ctx, cayley_kv.DefaultQuadIndexes[1], values, after, func(ref cayley_kv.Int64Value, hasLive func() (bool, error)) error {
+	err = h.IterateIndexPrefixNextRefsAfter(ctx, ind, values, after, func(ref cayley_kv.Int64Value, hasLive func() (bool, error)) error {
 		// Ignore a posting whose quads have all been deleted.
 		live, err := hasLive()
 		if err != nil || !live {
@@ -80,4 +87,18 @@ func ListObjectsWithTypeOnGraph(ctx context.Context, h *cayley_kv.QuadStore, typ
 		return nil
 	})
 	return keys, more, err
+}
+
+// typePageDirs are the directions of the reverse index a typed page walks:
+// the type object and predicate pinned, the subjects enumerated in order.
+var typePageDirs = []quad.Direction{quad.Object, quad.Predicate, quad.Subject}
+
+// findCompleteIndex returns the complete index of h with dirs.
+func findCompleteIndex(h *cayley_kv.QuadStore, dirs []quad.Direction) (cayley_kv.QuadIndex, error) {
+	for _, ind := range h.Layout() {
+		if ind.State == cayley_kv.QuadIndexState_COMPLETE && slices.Equal(ind.Dirs, dirs) {
+			return ind, nil
+		}
+	}
+	return cayley_kv.QuadIndex{}, errors.Errorf("graph has no complete %v index", dirs)
 }

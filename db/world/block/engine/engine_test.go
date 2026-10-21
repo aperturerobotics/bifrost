@@ -35,10 +35,10 @@ import (
 
 // newEngineTestbed starts a storage testbed with the World engine factory. It
 // returns a function that starts the test World engine, which keeps a
-// changelog when enableChangelog is set.
+// changelog when enableChangelog is set; each edit then adjusts its config.
 func newEngineTestbed(
 	t *testing.T,
-) (context.Context, *logrus.Entry, *testbed.Testbed, func(enableChangelog bool) (*world.BusEngine, directive.Reference)) {
+) (context.Context, *logrus.Entry, *testbed.Testbed, func(enableChangelog bool, edits ...func(*world_block_engine.Config)) (*world.BusEngine, directive.Reference)) {
 	// Report failures at the caller and configure debug logging.
 	t.Helper()
 	ctx := t.Context()
@@ -76,7 +76,8 @@ func newEngineTestbed(
 		BucketId:      tb.BucketId,
 		TransformConf: stateTransformConf,
 	}
-	startEngine := func(enableChangelog bool) (*world.BusEngine, directive.Reference) {
+	startEngine := func(enableChangelog bool, edits ...func(*world_block_engine.Config)) (*world.BusEngine, directive.Reference) {
+		// Build the config.
 		engineConf := world_block_engine.NewConfig(
 			"test-world-engine",
 			tb.Volume.GetID(), tb.BucketId,
@@ -85,6 +86,11 @@ func newEngineTestbed(
 			stateTransformConf,
 			enableChangelog,
 		)
+
+		// Apply the test's edits and start the engine.
+		for _, edit := range edits {
+			edit(engineConf)
+		}
 		eng, engRef, err := world.StartEngine(ctx, tb.Bus, engineConf, nil)
 		if err != nil {
 			t.Fatal(err.Error())

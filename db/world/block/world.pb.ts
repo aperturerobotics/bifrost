@@ -7,6 +7,7 @@ import { KeyValueStore } from '../../kvtx/block/kvtx.pb.js'
 import { BlockRef } from '../../block/block.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
+import { QuadIndexMeta } from '@go/github.com/aperturerobotics/cayley/graph/kv/indexing.pb.js'
 import { ObjectRef } from '../../bucket/bucket.pb.js'
 import { Quad } from '../../block/quad/quad.pb.js'
 
@@ -83,6 +84,12 @@ export interface World {
    * replaces this field, so the World retains between one and two segments.
    */
   prevChanges?: BlockRef
+  /**
+   * GraphSettings are the settings of the graph store in graph_key_value.
+   * Empty means the default settings. The graph store holds the same
+   * settings; this copy lets the World open it without reading them.
+   */
+  graphSettings?: GraphSettings
 }
 
 export const World: MessageType<World> =
@@ -92,7 +99,27 @@ export const World: MessageType<World> =
     [3, 'last_change', 11, 0, ChangeLogLL.codec],
     [4, 'last_change_disable', 8],
     [7, 'prev_changes', 11, 0, BlockRef.codec],
+    [8, 'graph_settings', 11, 0, GraphSettings.codec],
   ])
+
+/**
+ * GraphSettings are the settings of a World's graph store.
+ *
+ * @generated from message world.block.GraphSettings
+ */
+export interface GraphSettings {
+  /**
+   * Indexes are the quad indexes in priority order, with their states.
+   * Empty means the default indexes.
+   */
+  indexes?: QuadIndexMeta[]
+}
+
+export const GraphSettings: MessageType<GraphSettings> =
+  /* @__PURE__ */ createMessageType<GraphSettings>(
+    'world.block.GraphSettings',
+    () => [[1, 'indexes', 11, 1, QuadIndexMeta.codec]],
+  )
 
 /**
  * Object is an atomic unit for a object in a World graph.

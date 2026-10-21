@@ -173,7 +173,8 @@ func opRejection(peerID peer.ID, nonce uint64, msg string) *sobject.SOOperationR
 	)
 }
 
-// writeInitialWorldRoot persists an initial World when changelog initialization is disabled.
+// writeInitialWorldRoot persists an initial World when changelog initialization
+// is disabled or the graph starts with settings.
 func (c *Controller) writeInitialWorldRoot(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -181,12 +182,14 @@ func (c *Controller) writeInitialWorldRoot(
 	initOp *InitWorldOp,
 	headRef *bucket.ObjectRef,
 ) error {
-	// Only a World without a changelog starts from a written root.
-	if !initOp.GetLastChangeDisable() {
+	// Only a World without a changelog or with graph settings starts from a
+	// written root.
+	settings := initOp.GetGraphSettings()
+	if !initOp.GetLastChangeDisable() && len(settings.GetIndexes()) == 0 {
 		return nil
 	}
 	if so == nil {
-		return errors.New("shared object is required to initialize disabled changelog world")
+		return errors.New("shared object is required to write the initial world root")
 	}
 	if headRef.GetTransformConf().GetEmpty() {
 		return errors.New("initial world transform config is empty")
@@ -201,8 +204,12 @@ func (c *Controller) writeInitialWorldRoot(
 	if err != nil {
 		return err
 	}
+
+	// Store the root holding the World's starting settings.
 	btx, bcs := block.NewTransaction(so.GetBlockStore(), xfrm, nil, nil)
-	bcs.SetBlock(world_block.NewWorld(true), true)
+	root := world_block.NewWorld(initOp.GetLastChangeDisable())
+	root.GraphSettings = settings.CloneVT()
+	bcs.SetBlock(root, true)
 	rootRef, _, err := btx.Write(ctx, true)
 	if err != nil {
 		return err

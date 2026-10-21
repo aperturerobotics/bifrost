@@ -3,6 +3,7 @@ package world.block.engine;
 
 import "github.com/s4wave/spacewave/db/block/transform/transform.proto";
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
+import "github.com/s4wave/spacewave/db/world/block/world.proto";
 
 // Config configures a World Graph engine bound to a block graph.
 // Builds a bucket handle using the given bucket ID.
@@ -39,6 +40,10 @@ message Config {
   // DisableChangelog disables the changelog in the world structure.
   // Note: has no effect unless we initialize the world from empty.
   bool disable_changelog = 13;
+  // GraphSettings are the settings a new World's graph store starts with.
+  // Empty means the default settings.
+  // Note: has no effect unless we initialize the world from empty.
+  .world.block.GraphSettings graph_settings = 15;
 
   // DisableLookup disables looking up anything on the bus via directives.
   // Implies both DisableApplyWorldOp and DisableApplyObjectOp.

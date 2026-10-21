@@ -13,6 +13,7 @@ import (
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	transform "github.com/s4wave/spacewave/db/block/transform"
 	bucket "github.com/s4wave/spacewave/db/bucket"
+	block "github.com/s4wave/spacewave/db/world/block"
 )
 
 // Config configures a World Graph engine bound to a block graph.
@@ -51,6 +52,10 @@ type Config struct {
 	// DisableChangelog disables the changelog in the world structure.
 	// Note: has no effect unless we initialize the world from empty.
 	DisableChangelog bool `protobuf:"varint,13,opt,name=disable_changelog,json=disableChangelog,proto3" json:"disableChangelog,omitempty"`
+	// GraphSettings are the settings a new World's graph store starts with.
+	// Empty means the default settings.
+	// Note: has no effect unless we initialize the world from empty.
+	GraphSettings *block.GraphSettings `protobuf:"bytes,15,opt,name=graph_settings,json=graphSettings,proto3" json:"graphSettings,omitempty"`
 	// DisableLookup disables looking up anything on the bus via directives.
 	// Implies both DisableApplyWorldOp and DisableApplyObjectOp.
 	DisableLookup bool `protobuf:"varint,8,opt,name=disable_lookup,json=disableLookup,proto3" json:"disableLookup,omitempty"`
@@ -135,6 +140,13 @@ func (x *Config) GetDisableChangelog() bool {
 	return false
 }
 
+func (x *Config) GetGraphSettings() *block.GraphSettings {
+	if x != nil {
+		return x.GraphSettings
+	}
+	return nil
+}
+
 func (x *Config) GetDisableLookup() bool {
 	if x != nil {
 		return x.DisableLookup
@@ -209,6 +221,7 @@ func (m *Config) CloneVT() *Config {
 	r.Verbose = m.Verbose
 	r.InitHeadRef = protobuf_go_lite.CloneVTValue(m.InitHeadRef)
 	r.StateTransformConf = protobuf_go_lite.CloneVTValue(m.StateTransformConf)
+	r.GraphSettings = protobuf_go_lite.CloneVTValue(m.GraphSettings)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -281,6 +294,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.RecoverMissingPersistedHead != that.RecoverMissingPersistedHead {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.GraphSettings, that.GraphSettings) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -392,6 +408,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("recoverMissingPersistedHead")
 		s.WriteBool(x.RecoverMissingPersistedHead)
 	}
+	if x.GraphSettings != nil || s.HasField("graphSettings") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("graphSettings")
+		x.GraphSettings.MarshalProtoJSON(s.WithField("graphSettings"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -459,6 +480,13 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "recover_missing_persisted_head", "recoverMissingPersistedHead":
 			s.AddField("recover_missing_persisted_head")
 			x.RecoverMissingPersistedHead = s.ReadBool()
+		case "graph_settings", "graphSettings":
+			if s.ReadNil() {
+				x.GraphSettings = nil
+				return
+			}
+			x.GraphSettings = &block.GraphSettings{}
+			x.GraphSettings.UnmarshalProtoJSON(s.WithField("graph_settings", true))
 		}
 	})
 }
@@ -542,6 +570,16 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.GraphSettings != nil {
+		size, err := m.GraphSettings.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x7a
 	}
 	if m.RecoverMissingPersistedHead {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.RecoverMissingPersistedHead)
@@ -694,6 +732,10 @@ func (m *Config) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Verbose)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.DisableChangelog)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.RecoverMissingPersistedHead)
+	if m.GraphSettings != nil {
+		l = m.GraphSettings.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -770,6 +812,10 @@ func (x *Config) MarshalProtoText() string {
 	if x.RecoverMissingPersistedHead != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "recover_missing_persisted_head")
 		protobuf_go_lite.TextWriteBool(&sb, x.RecoverMissingPersistedHead)
+	}
+	if x.GraphSettings != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "graph_settings")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.GraphSettings)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -962,6 +1008,21 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.RecoverMissingPersistedHead = bool(v)
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GraphSettings", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.GraphSettings == nil {
+				m.GraphSettings = &block.GraphSettings{}
+			}
+			if err := m.GraphSettings.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

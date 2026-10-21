@@ -15,6 +15,7 @@ import (
 	block "github.com/s4wave/spacewave/db/block"
 	transform "github.com/s4wave/spacewave/db/block/transform"
 	bucket "github.com/s4wave/spacewave/db/bucket"
+	block1 "github.com/s4wave/spacewave/db/world/block"
 	tx "github.com/s4wave/spacewave/db/world/block/tx"
 )
 
@@ -445,6 +446,9 @@ type InitWorldOp struct {
 	// The author sets it so every member replays the same World. Replay
 	// rejects an operation without it.
 	TransformConf *transform.Config `protobuf:"bytes,2,opt,name=transform_conf,json=transformConf,proto3" json:"transformConf,omitempty"`
+	// GraphSettings are the settings the World's graph store starts with.
+	// Empty means the default settings.
+	GraphSettings *block1.GraphSettings `protobuf:"bytes,3,opt,name=graph_settings,json=graphSettings,proto3" json:"graphSettings,omitempty"`
 }
 
 func (x *InitWorldOp) Reset() {
@@ -463,6 +467,13 @@ func (x *InitWorldOp) GetLastChangeDisable() bool {
 func (x *InitWorldOp) GetTransformConf() *transform.Config {
 	if x != nil {
 		return x.TransformConf
+	}
+	return nil
+}
+
+func (x *InitWorldOp) GetGraphSettings() *block1.GraphSettings {
+	if x != nil {
+		return x.GraphSettings
 	}
 	return nil
 }
@@ -787,6 +798,7 @@ func (m *InitWorldOp) CloneVT() *InitWorldOp {
 	r := new(InitWorldOp)
 	r.LastChangeDisable = m.LastChangeDisable
 	r.TransformConf = protobuf_go_lite.CloneVTValue(m.TransformConf)
+	r.GraphSettings = protobuf_go_lite.CloneVTValue(m.GraphSettings)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1163,6 +1175,9 @@ func (this *InitWorldOp) EqualVT(that *InitWorldOp) bool {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.TransformConf, that.TransformConf) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.GraphSettings, that.GraphSettings) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1973,6 +1988,11 @@ func (x *InitWorldOp) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("transformConf")
 		x.TransformConf.MarshalProtoJSON(s.WithField("transformConf"))
 	}
+	if x.GraphSettings != nil || s.HasField("graphSettings") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("graphSettings")
+		x.GraphSettings.MarshalProtoJSON(s.WithField("graphSettings"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -2000,6 +2020,13 @@ func (x *InitWorldOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.TransformConf = &transform.Config{}
 			x.TransformConf.UnmarshalProtoJSON(s.WithField("transform_conf", true))
+		case "graph_settings", "graphSettings":
+			if s.ReadNil() {
+				x.GraphSettings = nil
+				return
+			}
+			x.GraphSettings = &block1.GraphSettings{}
+			x.GraphSettings.UnmarshalProtoJSON(s.WithField("graph_settings", true))
 		}
 	})
 }
@@ -2819,6 +2846,16 @@ func (m *InitWorldOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.GraphSettings != nil {
+		size, err := m.GraphSettings.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if m.TransformConf != nil {
 		size, err := m.TransformConf.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -3244,6 +3281,10 @@ func (m *InitWorldOp) SizeVT() (n int) {
 		l = m.TransformConf.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	if m.GraphSettings != nil {
+		l = m.GraphSettings.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -3575,6 +3616,10 @@ func (x *InitWorldOp) MarshalProtoText() string {
 	if x.TransformConf != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "transform_conf")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.TransformConf)
+	}
+	if x.GraphSettings != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "graph_settings")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.GraphSettings)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -4428,6 +4473,21 @@ func (m *InitWorldOp) UnmarshalVT(dAtA []byte) error {
 				m.TransformConf = &transform.Config{}
 			}
 			if err := m.TransformConf.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GraphSettings", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.GraphSettings == nil {
+				m.GraphSettings = &block1.GraphSettings{}
+			}
+			if err := m.GraphSettings.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

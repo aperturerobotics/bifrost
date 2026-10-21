@@ -283,6 +283,7 @@ buildWorldEngine:
 		le.Debug("no initial head reference provided, building new world")
 		btx, bcs := cursor.BuildTransaction(nil)
 		worldRoot := world_block.NewWorld(c.conf.GetDisableChangelog())
+		worldRoot.GraphSettings = c.conf.GetGraphSettings().CloneVT()
 		bcs.ClearAllRefs()
 		bcs.SetBlock(worldRoot, true)
 		nrootRef, _, err := btx.Write(ctx, true)

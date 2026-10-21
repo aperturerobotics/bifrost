@@ -2,8 +2,11 @@ package sobject_world_engine
 
 import (
 	"context"
+	"slices"
 	"testing"
 
+	cayley_kv "github.com/aperturerobotics/cayley/graph/kv"
+	"github.com/aperturerobotics/cayley/quad"
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/s4wave/spacewave/db/block"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
@@ -258,4 +261,113 @@ func newProcessTestWorld(t *testing.T, ctx context.Context) (*Controller, *testS
 		},
 		&testSharedObject{blockStore: store},
 		&InnerState{HeadRef: &bucket.ObjectRef{RootRef: rootRef, TransformConf: transformConf}}
+}
+
+// TestProcessInitWorldOpWritesGraphSettingsRoot checks that an init op with
+// graph settings writes a World root that records them, with the changelog
+// left enabled, and that two members processing it write the same root.
+func TestProcessInitWorldOpWritesGraphSettingsRoot(t *testing.T) {
+	// Encode an init op whose graph adds a predicate index.
+	ctx := context.Background()
+	indexes := append(slices.Clone(cayley_kv.DefaultQuadIndexes), cayley_kv.QuadIndex{
+		Dirs: []quad.Direction{quad.Predicate, quad.Label, quad.Subject},
+	})
+	settings, err := world_block.NewGraphSettings(indexes)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// Build the operation and encode it.
+	initOp, err := NewInitWorldOp(&InitWorldOp{GraphSettings: settings})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if err := initOp.Validate(); err != nil {
+		t.Fatal(err.Error())
+	}
+	opData, err := (&SOWorldOp{Body: &SOWorldOp_InitWorld{InitWorld: initOp}}).MarshalVT()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	// Process it on two members, each from an empty state over its own store.
+	pid := newProcessTestPeerID(t)
+	var roots []*block.BlockRef
+	for range 2 {
+		// Start the member's testbed.
+		tb, err := alpha_testbed.Default(ctx)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		t.Cleanup(tb.Release)
+
+		// Process the operation on the member.
+		store := newTestBlockStore(tb.EngineBucketID, tb.Volume)
+		c := &Controller{le: tb.Logger, bus: tb.Bus, conf: &Config{}, sfs: tb.StepFactorySet}
+		nextState, res, err := c.processOp(
+			ctx,
+			tb.Logger,
+			newReplayWorld(c, &testSharedObject{blockStore: store}),
+			opData,
+			"test-op",
+			pid,
+			1,
+			0,
+			&InnerState{},
+		)
+		if err != nil {
+			t.Fatalf("process op returned error: %v", err)
+		}
+		if res == nil || !res.GetSuccess() {
+			t.Fatalf("expected init success, got %#v", res)
+		}
+		headRef := nextState.GetHeadRef()
+		if headRef.GetRootRef().GetEmpty() {
+			t.Fatal("expected graph settings init to write an initial world root")
+		}
+
+		// The written root records the settings and keeps the changelog.
+		xfrm, err := block_transform.NewTransformer(
+			controller.ConstructOpts{Logger: tb.Logger},
+			tb.StepFactorySet,
+			headRef.GetTransformConf(),
+		)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		_, bcs := block.NewTransaction(store, xfrm, headRef.GetRootRef(), nil)
+		wi, err := bcs.Unmarshal(ctx, world_block.NewWorldBlock)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		root := wi.(*world_block.World)
+		if !root.GetGraphSettings().EqualVT(settings) || root.GetLastChangeDisable() {
+			t.Fatalf("initial world root %v", root)
+		}
+		roots = append(roots, headRef.GetRootRef())
+	}
+	if !roots[0].EqualVT(roots[1]) {
+		t.Fatal("members wrote different initial roots")
+	}
+}
+
+// TestInitWorldOpRejectsBuildingIndex checks that a World cannot start with
+// a layout change in progress.
+func TestInitWorldOpRejectsBuildingIndex(t *testing.T) {
+	// Build settings holding a building index and require validation to fail.
+	indexes := append(slices.Clone(cayley_kv.DefaultQuadIndexes), cayley_kv.QuadIndex{
+		Dirs:  []quad.Direction{quad.Predicate, quad.Label, quad.Subject},
+		State: cayley_kv.QuadIndexState_BUILDING,
+	})
+	settings, err := world_block.NewGraphSettings(indexes)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	initOp, err := NewInitWorldOp(&InitWorldOp{GraphSettings: settings})
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if err := initOp.Validate(); err == nil {
+		t.Fatal("init op with a building index validated")
+	}
 }

@@ -44,6 +44,9 @@ func (c *Config) Validate() error {
 	if err := c.GetStateTransformConf().Validate(); err != nil {
 		return errors.Wrap(err, "state_transform_conf")
 	}
+	if err := c.GetGraphSettings().ValidateInitial(); err != nil {
+		return errors.Wrap(err, "graph_settings")
+	}
 
 	return nil
 }

@@ -9,6 +9,9 @@ func (i *InitWorldOp) Validate() error {
 	if err := i.GetTransformConf().Validate(); err != nil {
 		return err
 	}
+	if err := i.GetGraphSettings().ValidateInitial(); err != nil {
+		return err
+	}
 	return nil
 }
 

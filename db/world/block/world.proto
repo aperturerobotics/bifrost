@@ -5,6 +5,7 @@ import "github.com/s4wave/spacewave/db/block/block.proto";
 import "github.com/s4wave/spacewave/db/block/quad/quad.proto";
 import "github.com/s4wave/spacewave/db/kvtx/block/kvtx.proto";
 import "github.com/s4wave/spacewave/db/bucket/bucket.proto";
+import "github.com/aperturerobotics/cayley/graph/kv/indexing.proto";
 
 // World contains a key/value Object store, and a graph database with quads
 // <subject, predicate, object, value>. Optionally a bounded 2D changelog
@@ -29,10 +30,21 @@ message World {
   // Each segment holds ChangeLogSegmentLen entries. Starting a new segment
   // replaces this field, so the World retains between one and two segments.
   .block.BlockRef prev_changes = 7;
+  // GraphSettings are the settings of the graph store in graph_key_value.
+  // Empty means the default settings. The graph store holds the same
+  // settings; this copy lets the World open it without reading them.
+  GraphSettings graph_settings = 8;
 
   // The volume owns block reachability. Fields 5 and 6 held a World-local
   // reference graph and its journal.
   reserved 5, 6;
+}
+
+// GraphSettings are the settings of a World's graph store.
+message GraphSettings {
+  // Indexes are the quad indexes in priority order, with their states.
+  // Empty means the default indexes.
+  repeated .kv.QuadIndexMeta indexes = 1;
 }
 
 // Object is an atomic unit for a object in a World graph.

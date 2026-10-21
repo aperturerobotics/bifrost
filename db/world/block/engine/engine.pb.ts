@@ -4,6 +4,7 @@
 
 import { ObjectRef } from '../../../bucket/bucket.pb.js'
 import { Config as Config$1 } from '../../../block/transform/transform.pb.js'
+import { GraphSettings } from '../world.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
@@ -65,6 +66,12 @@ export interface Config {
    */
   disableChangelog?: boolean
   /**
+   * GraphSettings are the settings a new World's graph store starts with.
+   * Empty means the default settings.
+   * Note: has no effect unless we initialize the world from empty.
+   */
+  graphSettings?: GraphSettings
+  /**
    * DisableLookup disables looking up anything on the bus via directives.
    * Implies both DisableApplyWorldOp and DisableApplyObjectOp.
    */
@@ -105,6 +112,7 @@ export const Config: MessageType<Config> =
     [12, 'verbose', 8],
     [13, 'disable_changelog', 8],
     [14, 'recover_missing_persisted_head', 8],
+    [15, 'graph_settings', 11, 0, GraphSettings.codec],
   ])
 
 /**

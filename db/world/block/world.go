@@ -7,8 +7,6 @@ import (
 	trace "github.com/s4wave/spacewave/db/traceutil"
 
 	"github.com/aperturerobotics/cayley"
-	"github.com/aperturerobotics/cayley/graph"
-	cayley_kv "github.com/aperturerobotics/cayley/graph/kv"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/bucket"
@@ -460,7 +458,7 @@ func (t *WorldState) setBlockTransaction(
 
 	// Build the graph tree.
 	taskCtx, subtask = trace.NewTask(ctx, "hydra/world-block/world-state/set-block-transaction/build-graph-tree")
-	graphTree, graphHandle, err := t.buildGraphTree(taskCtx, bcs)
+	graphTree, graphHandle, err := t.buildGraphTree(taskCtx, bcs, root.GetGraphSettings())
 	subtask.End()
 	if err != nil {
 		return err
@@ -584,7 +582,7 @@ func (t *WorldState) buildObjectTree(ctx context.Context, bcs *block.Cursor) (kv
 }
 
 // buildGraphTree builds the graph tree (kv storage) handle.
-func (t *WorldState) buildGraphTree(ctx context.Context, bcs *block.Cursor) (kvtx.BlockTx, *cayley.Handle, error) {
+func (t *WorldState) buildGraphTree(ctx context.Context, bcs *block.Cursor, settings *GraphSettings) (kvtx.BlockTx, *cayley.Handle, error) {
 	// Start the graph-tree trace.
 	ctx, task := trace.NewTask(ctx, "hydra/world-block/world-state/build-graph-tree")
 	defer task.End()
@@ -602,13 +600,14 @@ func (t *WorldState) buildGraphTree(ctx context.Context, bcs *block.Cursor) (kvt
 		ktx = kvtx_vlogger.NewBlockTx(t.le, ktx)
 	}
 
-	// makes frequent NewTx() Get() Discard() calls
-	// back it all w/ a single transaction
-	graphOpts := make(graph.Options, 1)
-
-	// disable custom indexes: use the default set
-	// reduces the number of Get calls to zero
-	graphOpts[cayley_kv.OptAssumeDefaultIdx] = true
+	// Open the graph under the root's settings, so the store reads no layout.
+	// The calls back onto one transaction: makes frequent NewTx() Get()
+	// Discard() calls.
+	graphOpts, err := settings.graphOptions()
+	if err != nil {
+		ktx.Discard()
+		return nil, nil, err
+	}
 
 	// NOTE: the ctx is used here for internal hidalgo k/v transactions!
 	// it must not be canceled while WorldState is in use!

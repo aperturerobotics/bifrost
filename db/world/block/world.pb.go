@@ -10,6 +10,7 @@ import (
 	slices "slices"
 	strconv "strconv"
 
+	kv "github.com/aperturerobotics/cayley/graph/kv"
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	block1 "github.com/s4wave/spacewave/db/block"
@@ -93,6 +94,10 @@ type World struct {
 	// Each segment holds ChangeLogSegmentLen entries. Starting a new segment
 	// replaces this field, so the World retains between one and two segments.
 	PrevChanges *block1.BlockRef `protobuf:"bytes,7,opt,name=prev_changes,json=prevChanges,proto3" json:"prevChanges,omitempty"`
+	// GraphSettings are the settings of the graph store in graph_key_value.
+	// Empty means the default settings. The graph store holds the same
+	// settings; this copy lets the World open it without reading them.
+	GraphSettings *GraphSettings `protobuf:"bytes,8,opt,name=graph_settings,json=graphSettings,proto3" json:"graphSettings,omitempty"`
 }
 
 func (x *World) Reset() {
@@ -132,6 +137,34 @@ func (x *World) GetLastChangeDisable() bool {
 func (x *World) GetPrevChanges() *block1.BlockRef {
 	if x != nil {
 		return x.PrevChanges
+	}
+	return nil
+}
+
+func (x *World) GetGraphSettings() *GraphSettings {
+	if x != nil {
+		return x.GraphSettings
+	}
+	return nil
+}
+
+// GraphSettings are the settings of a World's graph store.
+type GraphSettings struct {
+	unknownFields []byte
+	// Indexes are the quad indexes in priority order, with their states.
+	// Empty means the default indexes.
+	Indexes []*kv.QuadIndexMeta `protobuf:"bytes,1,rep,name=indexes,proto3" json:"indexes,omitempty"`
+}
+
+func (x *GraphSettings) Reset() {
+	*x = GraphSettings{}
+}
+
+func (*GraphSettings) ProtoMessage() {}
+
+func (x *GraphSettings) GetIndexes() []*kv.QuadIndexMeta {
+	if x != nil {
+		return x.Indexes
 	}
 	return nil
 }
@@ -386,6 +419,7 @@ func (m *World) CloneVT() *World {
 	r.GraphKeyValue = protobuf_go_lite.CloneVTValue(m.GraphKeyValue)
 	r.LastChange = protobuf_go_lite.CloneVTValue(m.LastChange)
 	r.PrevChanges = protobuf_go_lite.CloneVTValue(m.PrevChanges)
+	r.GraphSettings = protobuf_go_lite.CloneVTValue(m.GraphSettings)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -393,6 +427,22 @@ func (m *World) CloneVT() *World {
 }
 
 func (m *World) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *GraphSettings) CloneVT() *GraphSettings {
+	if m == nil {
+		return (*GraphSettings)(nil)
+	}
+	r := new(GraphSettings)
+	r.Indexes = protobuf_go_lite.CloneVTSlice(m.Indexes)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GraphSettings) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -496,11 +546,34 @@ func (this *World) EqualVT(that *World) bool {
 	if !protobuf_go_lite.IsEqualVT(this.PrevChanges, that.PrevChanges) {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.GraphSettings, that.GraphSettings) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *World) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*World)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *GraphSettings) EqualVT(that *GraphSettings) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Indexes, that.Indexes, func() *kv.QuadIndexMeta { return &kv.QuadIndexMeta{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GraphSettings) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GraphSettings)
 	if !ok {
 		return false
 	}
@@ -705,6 +778,11 @@ func (x *World) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("prevChanges")
 		x.PrevChanges.MarshalProtoJSON(s.WithField("prevChanges"))
 	}
+	if x.GraphSettings != nil || s.HasField("graphSettings") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("graphSettings")
+		x.GraphSettings.MarshalProtoJSON(s.WithField("graphSettings"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -753,12 +831,82 @@ func (x *World) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.PrevChanges = &block1.BlockRef{}
 			x.PrevChanges.UnmarshalProtoJSON(s.WithField("prev_changes", true))
+		case "graph_settings", "graphSettings":
+			if s.ReadNil() {
+				x.GraphSettings = nil
+				return
+			}
+			x.GraphSettings = &GraphSettings{}
+			x.GraphSettings.UnmarshalProtoJSON(s.WithField("graph_settings", true))
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the World from JSON.
 func (x *World) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the GraphSettings message to JSON.
+func (x *GraphSettings) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Indexes) > 0 || s.HasField("indexes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("indexes")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Indexes {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("indexes"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GraphSettings to JSON.
+func (x *GraphSettings) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GraphSettings message from JSON.
+func (x *GraphSettings) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "indexes":
+			s.AddField("indexes")
+			if s.ReadNil() {
+				x.Indexes = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Indexes = append(x.Indexes, nil)
+					return
+				}
+				v := &kv.QuadIndexMeta{}
+				v.UnmarshalProtoJSON(s.WithField("indexes", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Indexes = append(x.Indexes, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the GraphSettings from JSON.
+func (x *GraphSettings) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -1132,6 +1280,16 @@ func (m *World) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.GraphSettings != nil {
+		size, err := m.GraphSettings.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x42
+	}
 	if m.PrevChanges != nil {
 		size, err := m.PrevChanges.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -1176,6 +1334,50 @@ func (m *World) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GraphSettings) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GraphSettings) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GraphSettings) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Indexes) > 0 {
+		for iNdEx := len(m.Indexes) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Indexes[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
 	}
 	return len(dAtA) - i, nil
 }
@@ -1473,6 +1675,24 @@ func (m *World) SizeVT() (n int) {
 		l = m.PrevChanges.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	if m.GraphSettings != nil {
+		l = m.GraphSettings.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *GraphSettings) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Indexes {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -1590,10 +1810,36 @@ func (x *World) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "prev_changes")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.PrevChanges)
 	}
+	if x.GraphSettings != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "graph_settings")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.GraphSettings)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *World) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *GraphSettings) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "GraphSettings")
+	if len(x.Indexes) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "indexes")
+		for i, v := range x.Indexes {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &kv.QuadIndexMeta{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GraphSettings) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -1808,6 +2054,77 @@ func (m *World) UnmarshalVT(dAtA []byte) error {
 				m.PrevChanges = &block1.BlockRef{}
 			}
 			if err := m.PrevChanges.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GraphSettings", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.GraphSettings == nil {
+				m.GraphSettings = &GraphSettings{}
+			}
+			if err := m.GraphSettings.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *GraphSettings) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GraphSettings: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GraphSettings: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Indexes", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Indexes = append(m.Indexes, &kv.QuadIndexMeta{})
+			if err := m.Indexes[len(m.Indexes)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
