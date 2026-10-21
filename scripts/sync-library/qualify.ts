@@ -288,7 +288,7 @@ await writeFile(
     2,
   ),
 )
-await run('consumer-types', [bun, 'x', 'tsgo', '-p', 'tsconfig.json'], consumer)
+await run('consumer-types', [bun, 'x', 'tsrs', '-p', 'tsconfig.json'], consumer)
 
 // Exercise browser subscriptions with the system utilities their launchers require.
 await bundle('e2e/sync-library/browser.ts', 'browser.mjs', true, ['spacewave'])
@@ -327,7 +327,7 @@ await writeFile(
   JSON.stringify(exampleManifest, null, 2),
 )
 await run('example-install', [bun, 'install', '--ignore-scripts'], example)
-await run('example-types', [bun, 'x', 'tsgo', '-p', 'tsconfig.json'], example)
+await run('example-types', [bun, 'x', 'tsrs', '-p', 'tsconfig.json'], example)
 await bundle('e2e/sync-library/example.test.ts', 'example.test.mjs')
 await run('example-browser', [node, '--test', 'example.test.mjs'], consumer, {
   SYNC_EXAMPLE_DIRECTORY: example,

@@ -6,7 +6,7 @@ import { parseSync, Visitor } from 'oxc-parser'
 const output = resolve(process.argv[2] ?? 'packages/spacewave/dist')
 const source = resolve('.tmp/sync-library/types')
 const compiler = Bun.spawn(
-  ['bunx', 'tsgo', '-p', 'scripts/sync-library/tsconfig.json'],
+  ['bunx', 'tsrs', '-p', 'scripts/sync-library/tsconfig.json'],
   { stdout: 'inherit', stderr: 'inherit' },
 )
 if (await compiler.exited)

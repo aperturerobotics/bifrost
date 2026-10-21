@@ -960,7 +960,7 @@ Spacewave uses container queries and viewport-height variants heavily.
    empty, error, disabled.
 5. For mutable state, wire a watched/streaming state owner first, then render
    with the existing loading or status primitives.
-6. Verify app code changes with `bun run tsgo --noEmit` and focused tests for
+6. Verify app code changes with `bun run tsrs --noEmit` and focused tests for
    the changed surface.
 7. When editing this design document, keep it current-state only. Remove stale
    compatibility notes rather than documenting old and new systems side by side.
