@@ -1,9 +1,12 @@
 package world_block
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/cayley/graph"
 	cayley_kv "github.com/aperturerobotics/cayley/graph/kv"
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/db/tx"
 )
 
 // NewGraphSettings builds the settings holding indexes. The default indexes
@@ -58,4 +61,59 @@ func (s *GraphSettings) graphOptions() (graph.Options, error) {
 		return graph.Options{cayley_kv.OptAssumeDefaultIdx: true}, nil
 	}
 	return graph.Options{cayley_kv.OptTrustQuadIndexes: indexes}, nil
+}
+
+// StepGraphSettings advances the World's graph toward the target settings by
+// at most max links. It reports whether the graph matches target and whether
+// this call changed the World. Expects rmtx to be locked.
+//
+// The first call records the change in the graph store and later calls
+// continue it; a different change in progress is an error. Each call is a
+// function of the World and its arguments only, so every replay of the same
+// calls reaches the same World.
+func (t *WorldState) StepGraphSettings(ctx context.Context, target *GraphSettings, max int) (done, changed bool, err error) {
+	// Reject a read-only state and an invalid target.
+	if !t.write {
+		return false, false, tx.ErrNotWrite
+	}
+	if err := target.ValidateInitial(); err != nil {
+		return false, false, err
+	}
+	indexes, err := target.QuadIndexes()
+	if err != nil {
+		return false, false, err
+	}
+	if indexes == nil {
+		indexes = cayley_kv.DefaultQuadIndexes
+	}
+
+	// Skip a graph that already matches.
+	qs, ok := t.graphHd.QuadStore.(*cayley_kv.QuadStore)
+	if !ok {
+		return false, false, errors.New("world graph is not a cayley kv store")
+	}
+	if cayley_kv.CompareQuadIndexes(qs.Layout(), indexes) {
+		return true, false, nil
+	}
+
+	// Begin or continue the change and advance it one step.
+	if err := qs.BeginIndexChange(ctx, indexes); err != nil {
+		return false, false, err
+	}
+	done, err = qs.StepIndexChange(ctx, max)
+	if err != nil {
+		return false, false, err
+	}
+
+	// Record the graph's new layout in the root, which opens it next time.
+	r, err := t.GetRoot(ctx)
+	if err != nil {
+		return false, false, err
+	}
+	r.GraphSettings, err = NewGraphSettings(qs.Layout())
+	if err != nil {
+		return false, false, err
+	}
+	t.bcs.MarkDirty()
+	return done, true, nil
 }

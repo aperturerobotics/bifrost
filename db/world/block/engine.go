@@ -1326,6 +1326,33 @@ func (e *Engine) SetChangelogDisabled(ctx context.Context, disable bool) error {
 	return engTx.Commit(ctx)
 }
 
+// StepGraphSettings advances the World's graph toward the target settings by
+// at most max links in one write transaction, committing only a change. It
+// reports whether the graph matches target.
+func (e *Engine) StepGraphSettings(ctx context.Context, target *GraphSettings, max int) (bool, error) {
+	// Open a write transaction.
+	engTx, err := e.NewBlockEngineTransaction(ctx, true)
+	if err != nil {
+		return false, err
+	}
+	defer engTx.Discard()
+	if engTx.writeTx == nil {
+		return false, tx.ErrNotWrite
+	}
+
+	// Apply one step and commit only a change.
+	unlock, err := engTx.writeTx.rmtx.Lock(ctx, true)
+	if err != nil {
+		return false, err
+	}
+	done, changed, err := engTx.writeTx.state.StepGraphSettings(ctx, target, max)
+	unlock()
+	if err != nil || !changed {
+		return done, err
+	}
+	return done, engTx.Commit(ctx)
+}
+
 // GetSeqno returns the current seqno of the world state.
 // This is also the sequence number of the most recent change.
 // Initializes at 0 for initial world state.

@@ -66,9 +66,11 @@ export interface Config {
    */
   disableChangelog?: boolean
   /**
-   * GraphSettings are the settings a new World's graph store starts with.
-   * Empty means the default settings.
-   * Note: has no effect unless we initialize the world from empty.
+   * GraphSettings are the settings of the World's graph store.
+   * A new World starts with these settings. An existing writable World moves
+   * to them in the background, one step at a time alongside writers.
+   * Empty leaves an existing World's settings unchanged and starts a new World
+   * with the default settings; list the default indexes to return to them.
    */
   graphSettings?: GraphSettings
   /**

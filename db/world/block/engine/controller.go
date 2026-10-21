@@ -433,9 +433,24 @@ buildWorldEngine:
 	}
 	stateStoreRef = nil
 
-	// Fence durability when this execution ends.
+	// Move an existing World to the configured graph settings in the
+	// background, alongside writers.
+	var graphSettingsDone chan struct{}
+	if target := c.conf.GetGraphSettings(); len(target.GetIndexes()) != 0 && !isReadOnlyInitHead(stateStore, initRef) {
+		graphSettingsDone = make(chan struct{})
+		go func() {
+			defer close(graphSettingsDone)
+			driveGraphSettings(rctx, le, engine, target)
+		}()
+	}
+
+	// Fence durability when this execution ends, after the settings change
+	// stops.
 	<-rctx.Done()
 	le.Debug("shutting down")
+	if graphSettingsDone != nil {
+		<-graphSettingsDone
+	}
 
 	// Clean-shutdown durability flush. In the single-writer path the durable
 	// head advances only at Sync, so a normal shutdown must fence before ending
