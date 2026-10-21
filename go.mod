@@ -25,10 +25,10 @@ require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/aperturerobotics/bbolt v0.0.0-20261006081945-09141165d72c // master
 	github.com/aperturerobotics/bldr-saucer v0.4.4
-	github.com/aperturerobotics/cayley v0.15.1-0.20261018071117-9956219e1674
+	github.com/aperturerobotics/cayley v0.15.1-0.20261021195911-2e21d7b6adfe
 	github.com/aperturerobotics/cli v1.1.1-0.20261008170756-47089de94fb3 // master
 	github.com/aperturerobotics/common v0.36.3
-	github.com/aperturerobotics/controllerbus v0.53.6-0.20261018071028-dd2495c0aa2c // master
+	github.com/aperturerobotics/controllerbus v0.53.6-0.20261021005226-3d7ed787e11b // master
 	github.com/aperturerobotics/cpp-yamux v0.0.0-20260929192932-26bdf6cab5b3
 	github.com/aperturerobotics/esbuild v0.24.1-0.20260219011422-6d4b923e2023 // https://github.com/evanw/esbuild/pull/3413 [rejected]
 	github.com/aperturerobotics/fastjson v0.1.2-0.20260705010846-94f343f5bb34
@@ -42,8 +42,8 @@ require (
 	github.com/aperturerobotics/go-winjob v0.0.0-20260705010911-656e088d1b05
 	github.com/aperturerobotics/json-iterator-lite v1.1.0 // latest
 	github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261018054529-f60c4d2691ea // master
-	github.com/aperturerobotics/starpc v0.52.4-0.20261018110213-574a40428279 // master
-	github.com/aperturerobotics/util v1.34.10-0.20261018211851-3e8e694574ad // master
+	github.com/aperturerobotics/starpc v0.52.4-0.20261021005057-f60467d0da35 // master
+	github.com/aperturerobotics/util v1.34.10-0.20261021005056-6e84f021eba1 // master
 	github.com/cloudflare/circl v1.6.5
 	github.com/creack/pty v1.1.24
 	github.com/dgraph-io/ristretto/v2 v2.4.2
@@ -53,7 +53,7 @@ require (
 	github.com/fatih/color v1.19.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-billy/v6 v6.0.0-beta.1.0.20261016211742-fd38f5ac32fe // main
-	github.com/go-git/go-git/v6 v6.0.0-beta.1.0.20261016225838-3b930b688adc // main
+	github.com/go-git/go-git/v6 v6.0.0-beta.1.0.20261021151956-bed43815d13b // main
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/goccy/go-json v0.11.2
 	github.com/gomodule/redigo v2.0.0+incompatible
