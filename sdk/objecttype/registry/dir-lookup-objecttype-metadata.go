@@ -3,7 +3,6 @@ package s4wave_objecttype_registry
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -149,11 +148,12 @@ func (d *lookupObjectTypeMetadata) Validate() error {
 }
 
 // GetValueOptions returns options relating to value handling.
+//
+// The directive is disposed as soon as it is unreferenced. A lingering
+// instance would hand a later one-off lookup the metadata of a registration
+// released before the resolver wakes to remove it.
 func (d *lookupObjectTypeMetadata) GetValueOptions() directive.ValueOptions {
-	return directive.ValueOptions{
-		UnrefDisposeDur:            time.Millisecond * 100,
-		UnrefDisposeEmptyImmediate: true,
-	}
+	return directive.ValueOptions{}
 }
 
 // LookupObjectTypeMetadataTypeID returns the object type ID to look up.
