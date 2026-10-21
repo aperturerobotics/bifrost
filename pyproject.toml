@@ -20,6 +20,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["spacewave_resource*", "bldr.resource", "core*", "db*", "net*", "sdk*"]
+# The libdeflate binding keeps its vendoring script beside the Go source.
+exclude = ["db.block.transform.gzip.libdeflate"]
 namespaces = true
 
 [tool.setuptools.package-data]
