@@ -299,10 +299,11 @@ func TestControllerRekeysUnsupportedHashReset(t *testing.T) {
 		t.Fatalf("manifest snapshot after reset = %#v, want empty sequence 2", snapshot)
 	}
 
-	// Selected traversal reads the stale candidate and its empty replacement;
-	// resetting still performs one full candidate traversal.
-	if got := countedWS.traversals(); got != 4 {
-		t.Fatalf("manifest graph traversals across reset = %d, want 4", got)
+	// Each graph level is one batch. The selected and full walks of the stale
+	// store each read the store and the bad manifest's empty edge set; the
+	// selected walk of the empty replacement reads only the store.
+	if got := countedWS.traversals(); got != 5 {
+		t.Fatalf("manifest graph traversals across reset = %d, want 5", got)
 	}
 
 	// The manifest store must be reset and type-checked.
@@ -314,8 +315,8 @@ func TestControllerRekeysUnsupportedHashReset(t *testing.T) {
 	if _, err := ctrl.collectManifests(ctx, countedWS); err != nil {
 		t.Fatalf("cached post-reset manifest collection: %v", err)
 	}
-	if got := countedWS.traversals(); got != 4 {
-		t.Fatalf("post-reset manifest graph traversals = %d, want 4", got)
+	if got := countedWS.traversals(); got != 5 {
+		t.Fatalf("post-reset manifest graph traversals = %d, want 5", got)
 	}
 }
 

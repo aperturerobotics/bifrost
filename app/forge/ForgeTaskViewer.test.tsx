@@ -124,7 +124,7 @@ describe('ForgeTaskViewer', () => {
     expect(screen.getByText('Current Execution')).toBeTruthy()
     expect(screen.getByText('forge/execution/current')).toBeTruthy()
     expect(screen.getByText('12D3KooWExec')).toBeTruthy()
-    expect(screen.getByText('Task Outputs')).toBeTruthy()
+    expect(screen.getByText('Task outputs')).toBeTruthy()
     expect(screen.getByText('bundle')).toBeTruthy()
     expect(screen.getAllByText('Success').length).toBeGreaterThan(0)
     expect(screen.getByText('cache miss')).toBeTruthy()

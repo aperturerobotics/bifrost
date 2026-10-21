@@ -155,7 +155,7 @@ describe('ForgeWorkerViewer', () => {
       />,
     )
 
-    expect(screen.getByText('1/1')).toBeTruthy()
+    expect(screen.getByText('of 1').parentElement?.textContent).toBe('1of 1')
     expect(screen.getAllByText('12D3KooWWorker').length).toBeGreaterThan(0)
     expect(screen.getByText('forge/execution/active')).toBeTruthy()
     expect(screen.getByText('forge/execution/history')).toBeTruthy()
