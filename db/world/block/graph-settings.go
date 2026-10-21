@@ -76,6 +76,9 @@ func (t *WorldState) StepGraphSettings(ctx context.Context, target *GraphSetting
 	if !t.write {
 		return false, false, tx.ErrNotWrite
 	}
+	if max < 1 {
+		return false, false, errors.New("graph settings step max must be positive")
+	}
 	if err := target.ValidateInitial(); err != nil {
 		return false, false, err
 	}
@@ -117,3 +120,76 @@ func (t *WorldState) StepGraphSettings(ctx context.Context, target *GraphSetting
 	t.bcs.MarkDirty()
 	return done, true, nil
 }
+
+// StepGraphSettings advances the transaction's World toward the target graph
+// settings by at most max links, as WorldState.StepGraphSettings does. The
+// caller commits the transaction when changed is set.
+func (e *EngineTx) StepGraphSettings(ctx context.Context, target *GraphSettings, max int) (done, changed bool, err error) {
+	// Step the write transaction's World under its lock.
+	if e.writeTx == nil {
+		return false, false, tx.ErrNotWrite
+	}
+	unlock, err := e.writeTx.rmtx.Lock(ctx, true)
+	if err != nil {
+		return false, false, err
+	}
+	defer unlock()
+	return e.writeTx.state.StepGraphSettings(ctx, target, max)
+}
+
+// GetGraphSettings returns the graph settings of the transaction's World, nil
+// for the default settings.
+func (t *Tx) GetGraphSettings(ctx context.Context) (*GraphSettings, error) {
+	// Read the root under the transaction's read lock.
+	unlock, err := t.rmtx.Lock(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+	r, err := t.state.GetRoot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.GetGraphSettings().CloneVT(), nil
+}
+
+// GetGraphSettings returns the graph settings of the transaction's World, nil
+// for the default settings.
+func (e *EngineTx) GetGraphSettings(ctx context.Context) (*GraphSettings, error) {
+	// Read through the transaction's retained state.
+	var settings *GraphSettings
+	err := e.performOp(ctx, func(tx *Tx) error {
+		var err error
+		settings, err = tx.GetGraphSettings(ctx)
+		return err
+	})
+	return settings, err
+}
+
+// DefaultGraphSettingsStepMax bounds the links one graph settings step indexes
+// or the postings it deletes, keeping each step's commit short next to
+// writers. Measured at 124 ms for the slowest step of a 200,000 link build.
+const DefaultGraphSettingsStepMax = 2048
+
+// GraphSettingsStepper is a World engine that changes its graph settings one
+// step at a time: a local Engine or a Space World engine.
+type GraphSettingsStepper interface {
+	// StepGraphSettings advances the World toward target by at most max links
+	// and reports whether the World matches target.
+	StepGraphSettings(ctx context.Context, target *GraphSettings, max int) (bool, error)
+}
+
+// ApplyGraphSettings steps the World to target until it matches, returning the
+// number of steps that changed it. A change stopped by ctx or an error resumes
+// from the stored progress on the next call.
+func ApplyGraphSettings(ctx context.Context, s GraphSettingsStepper, target *GraphSettings, max int) (int, error) {
+	for steps := 0; ; steps++ {
+		done, err := s.StepGraphSettings(ctx, target, max)
+		if err != nil || done {
+			return steps, err
+		}
+	}
+}
+
+// _ is a type assertion
+var _ GraphSettingsStepper = (*Engine)(nil)

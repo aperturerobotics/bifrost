@@ -100,6 +100,28 @@ func (c *Controller) processOp(
 		return processSetRetainedRootOp(ole, body.SetRetainedRoot, headState, peerID, nonce)
 	case *SOWorldOp_SetTransformConf:
 		return processSetTransformConfOp(ole, body.SetTransformConf, headState, peerID, nonce)
+	case *SOWorldOp_GraphSettingsStep:
+		stepOp := body.GraphSettingsStep
+		if headState.GetHeadRef().GetEmpty() {
+			return rejectOp(ole, peerID, nonce, "world is not initialized")
+		}
+		if err := validateGraphSettingsStep(stepOp.GetTarget(), int(stepOp.GetMax())); err != nil {
+			return rejectOp(ole, peerID, nonce, err.Error())
+		}
+
+		// Step the head World.
+		ws, err := w.bind(ctx, headState.GetHeadRef())
+		if err != nil {
+			return nil, nil, err
+		}
+		nhs, res, err := processGraphSettingsStepOp(ctx, ole, stepOp, headState, peerID, nonce, ws)
+		if err != nil {
+			return nil, nil, err
+		}
+		if nhs != nil && !nhs.GetHeadRef().EqualVT(headState.GetHeadRef()) {
+			w.advance(nhs.GetHeadRef())
+		}
+		return nhs, res, nil
 	default:
 		ole.Warn("rejecting op: unknown op type")
 		return nil, opRejection(peerID, nonce, "unknown operation type"), nil

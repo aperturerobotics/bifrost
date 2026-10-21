@@ -132,6 +132,9 @@ message SOWorldOp {
     // SetTransformConf changes the transform later World blocks are written
     // with.
     SetTransformConfOp set_transform_conf = 5;
+    // GraphSettingsStep moves the World's graph store one bounded step toward
+    // new graph settings.
+    GraphSettingsStepOp graph_settings_step = 6;
   }
 }
 
@@ -184,4 +187,17 @@ message BackfillState {
   uint32 holes = 2;
   // Seqno is the World seqno of Root. A later copy never covers a lower one.
   uint64 seqno = 3;
+}
+
+// GraphSettingsStepOp moves the World's graph store one bounded step toward
+// new graph settings, such as building or dropping an index. Every member
+// replays the same step, so the change runs as a series of these operations
+// interleaved with transactions. A step on a World that already has the
+// target settings changes nothing.
+message GraphSettingsStepOp {
+  // Target are the graph settings to move to. Empty means the default
+  // settings.
+  .world.block.GraphSettings target = 1;
+  // Max bounds the links the step indexes or the postings it deletes.
+  uint32 max = 2;
 }

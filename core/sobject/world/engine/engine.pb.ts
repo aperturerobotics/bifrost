@@ -283,6 +283,7 @@ export interface SOWorldOp {
     | { value: ApplyTxOp; case: 'applyTxOp' }
     | { value: SetRetainedRootOp; case: 'setRetainedRoot' }
     | { value: SetTransformConfOp; case: 'setTransformConf' }
+    | { value: GraphSettingsStepOp; case: 'graphSettingsStep' }
 }
 
 export const SOWorldOp: MessageType<SOWorldOp> =
@@ -293,6 +294,7 @@ export const SOWorldOp: MessageType<SOWorldOp> =
       [2, 'apply_tx_op', 11, 0, ApplyTxOp.codec, 'body'],
       [4, 'set_retained_root', 11, 0, SetRetainedRootOp.codec, 'body'],
       [5, 'set_transform_conf', 11, 0, SetTransformConfOp.codec, 'body'],
+      [6, 'graph_settings_step', 11, 0, GraphSettingsStepOp.codec, 'body'],
     ],
   )
 
@@ -425,5 +427,35 @@ export const BackfillState: MessageType<BackfillState> =
       [1, 'root', 11, 0, BlockRef.codec],
       [2, 'holes', 13],
       [3, 'seqno', 4],
+    ],
+  )
+
+/**
+ * GraphSettingsStepOp moves the World's graph store one bounded step toward
+ * new graph settings, such as building or dropping an index. Every member
+ * replays the same step, so the change runs as a series of these operations
+ * interleaved with transactions. A step on a World that already has the
+ * target settings changes nothing.
+ *
+ * @generated from message sobject.world.engine.GraphSettingsStepOp
+ */
+export interface GraphSettingsStepOp {
+  /**
+   * Target are the graph settings to move to. Empty means the default
+   * settings.
+   */
+  target?: GraphSettings
+  /**
+   * Max bounds the links the step indexes or the postings it deletes.
+   */
+  max?: number
+}
+
+export const GraphSettingsStepOp: MessageType<GraphSettingsStepOp> =
+  /* @__PURE__ */ createMessageType<GraphSettingsStepOp>(
+    'sobject.world.engine.GraphSettingsStepOp',
+    () => [
+      [1, 'target', 11, 0, GraphSettings.codec],
+      [2, 'max', 13],
     ],
   )

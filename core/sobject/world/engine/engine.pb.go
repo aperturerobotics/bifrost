@@ -358,6 +358,7 @@ type SOWorldOp struct {
 	//	*SOWorldOp_ApplyTxOp
 	//	*SOWorldOp_SetRetainedRoot
 	//	*SOWorldOp_SetTransformConf
+	//	*SOWorldOp_GraphSettingsStep
 	Body isSOWorldOp_Body `protobuf_oneof:"body"`
 }
 
@@ -402,6 +403,13 @@ func (x *SOWorldOp) GetSetTransformConf() *SetTransformConfOp {
 	return nil
 }
 
+func (x *SOWorldOp) GetGraphSettingsStep() *GraphSettingsStepOp {
+	if x, ok := x.GetBody().(*SOWorldOp_GraphSettingsStep); ok {
+		return x.GraphSettingsStep
+	}
+	return nil
+}
+
 type isSOWorldOp_Body interface {
 	isSOWorldOp_Body()
 }
@@ -427,6 +435,12 @@ type SOWorldOp_SetTransformConf struct {
 	SetTransformConf *SetTransformConfOp `protobuf:"bytes,5,opt,name=set_transform_conf,json=setTransformConf,proto3,oneof"`
 }
 
+type SOWorldOp_GraphSettingsStep struct {
+	// GraphSettingsStep moves the World's graph store one bounded step toward
+	// new graph settings.
+	GraphSettingsStep *GraphSettingsStepOp `protobuf:"bytes,6,opt,name=graph_settings_step,json=graphSettingsStep,proto3,oneof"`
+}
+
 func (*SOWorldOp_InitWorld) isSOWorldOp_Body() {}
 
 func (*SOWorldOp_ApplyTxOp) isSOWorldOp_Body() {}
@@ -434,6 +448,8 @@ func (*SOWorldOp_ApplyTxOp) isSOWorldOp_Body() {}
 func (*SOWorldOp_SetRetainedRoot) isSOWorldOp_Body() {}
 
 func (*SOWorldOp_SetTransformConf) isSOWorldOp_Body() {}
+
+func (*SOWorldOp_GraphSettingsStep) isSOWorldOp_Body() {}
 
 // InitWorldOp is the operation to initialize the inner state.
 type InitWorldOp struct {
@@ -587,6 +603,40 @@ func (x *BackfillState) GetHoles() uint32 {
 func (x *BackfillState) GetSeqno() uint64 {
 	if x != nil {
 		return x.Seqno
+	}
+	return 0
+}
+
+// GraphSettingsStepOp moves the World's graph store one bounded step toward
+// new graph settings, such as building or dropping an index. Every member
+// replays the same step, so the change runs as a series of these operations
+// interleaved with transactions. A step on a World that already has the
+// target settings changes nothing.
+type GraphSettingsStepOp struct {
+	unknownFields []byte
+	// Target are the graph settings to move to. Empty means the default
+	// settings.
+	Target *block1.GraphSettings `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	// Max bounds the links the step indexes or the postings it deletes.
+	Max uint32 `protobuf:"varint,2,opt,name=max,proto3" json:"max,omitempty"`
+}
+
+func (x *GraphSettingsStepOp) Reset() {
+	*x = GraphSettingsStepOp{}
+}
+
+func (*GraphSettingsStepOp) ProtoMessage() {}
+
+func (x *GraphSettingsStepOp) GetTarget() *block1.GraphSettings {
+	if x != nil {
+		return x.Target
+	}
+	return nil
+}
+
+func (x *GraphSettingsStepOp) GetMax() uint32 {
+	if x != nil {
+		return x.Max
 	}
 	return 0
 }
@@ -791,6 +841,19 @@ func (m *SOWorldOp_SetTransformConf) CloneOneofVT() isSOWorldOp_Body {
 	return m.CloneVT()
 }
 
+func (m *SOWorldOp_GraphSettingsStep) CloneVT() *SOWorldOp_GraphSettingsStep {
+	if m == nil {
+		return (*SOWorldOp_GraphSettingsStep)(nil)
+	}
+	r := new(SOWorldOp_GraphSettingsStep)
+	r.GraphSettingsStep = protobuf_go_lite.CloneVTValue(m.GraphSettingsStep)
+	return r
+}
+
+func (m *SOWorldOp_GraphSettingsStep) CloneOneofVT() isSOWorldOp_Body {
+	return m.CloneVT()
+}
+
 func (m *InitWorldOp) CloneVT() *InitWorldOp {
 	if m == nil {
 		return (*InitWorldOp)(nil)
@@ -873,6 +936,23 @@ func (m *BackfillState) CloneVT() *BackfillState {
 }
 
 func (m *BackfillState) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *GraphSettingsStepOp) CloneVT() *GraphSettingsStepOp {
+	if m == nil {
+		return (*GraphSettingsStepOp)(nil)
+	}
+	r := new(GraphSettingsStepOp)
+	r.Max = m.Max
+	r.Target = protobuf_go_lite.CloneVTValue(m.Target)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GraphSettingsStepOp) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1165,6 +1245,23 @@ func (this *SOWorldOp_SetTransformConf) EqualVT(thatIface isSOWorldOp_Body) bool
 	return true
 }
 
+func (this *SOWorldOp_GraphSettingsStep) EqualVT(thatIface isSOWorldOp_Body) bool {
+	that, ok := thatIface.(*SOWorldOp_GraphSettingsStep)
+	if !ok {
+		return false
+	}
+	if this == that {
+		return true
+	}
+	if this == nil && that != nil || this != nil && that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTImplicit(this.GraphSettingsStep, that.GraphSettingsStep, func() *GraphSettingsStepOp { return &GraphSettingsStepOp{} }) {
+		return false
+	}
+	return true
+}
+
 func (this *InitWorldOp) EqualVT(that *InitWorldOp) bool {
 	if this == that {
 		return true
@@ -1274,6 +1371,29 @@ func (this *BackfillState) EqualVT(that *BackfillState) bool {
 
 func (this *BackfillState) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*BackfillState)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *GraphSettingsStepOp) EqualVT(that *GraphSettingsStepOp) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Target, that.Target) {
+		return false
+	}
+	if this.Max != that.Max {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GraphSettingsStepOp) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GraphSettingsStepOp)
 	if !ok {
 		return false
 	}
@@ -1906,6 +2026,10 @@ func (x *SOWorldOp) MarshalProtoJSON(s *json.MarshalState) {
 			s.WriteMoreIf(&wroteField)
 			s.WriteObjectField("setTransformConf")
 			ov.SetTransformConf.MarshalProtoJSON(s.WithField("setTransformConf"))
+		case *SOWorldOp_GraphSettingsStep:
+			s.WriteMoreIf(&wroteField)
+			s.WriteObjectField("graphSettingsStep")
+			ov.GraphSettingsStep.MarshalProtoJSON(s.WithField("graphSettingsStep"))
 		}
 	}
 	s.WriteObjectEnd()
@@ -1961,6 +2085,15 @@ func (x *SOWorldOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			ov.SetTransformConf = &SetTransformConfOp{}
 			ov.SetTransformConf.UnmarshalProtoJSON(s.WithField("set_transform_conf", true))
+		case "graph_settings_step", "graphSettingsStep":
+			ov := &SOWorldOp_GraphSettingsStep{}
+			x.Body = ov
+			if s.ReadNil() {
+				ov.GraphSettingsStep = nil
+				return
+			}
+			ov.GraphSettingsStep = &GraphSettingsStepOp{}
+			ov.GraphSettingsStep.UnmarshalProtoJSON(s.WithField("graph_settings_step", true))
 		}
 	})
 }
@@ -2241,6 +2374,60 @@ func (x *BackfillState) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the BackfillState from JSON.
 func (x *BackfillState) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the GraphSettingsStepOp message to JSON.
+func (x *GraphSettingsStepOp) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Target != nil || s.HasField("target") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("target")
+		x.Target.MarshalProtoJSON(s.WithField("target"))
+	}
+	if x.Max != 0 || s.HasField("max") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("max")
+		s.WriteUint32(x.Max)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GraphSettingsStepOp to JSON.
+func (x *GraphSettingsStepOp) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GraphSettingsStepOp message from JSON.
+func (x *GraphSettingsStepOp) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "target":
+			if s.ReadNil() {
+				x.Target = nil
+				return
+			}
+			x.Target = &block1.GraphSettings{}
+			x.Target.UnmarshalProtoJSON(s.WithField("target", true))
+		case "max":
+			s.AddField("max")
+			x.Max = s.ReadUint32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the GraphSettingsStepOp from JSON.
+func (x *GraphSettingsStepOp) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -2817,6 +3004,30 @@ func (m *SOWorldOp_SetTransformConf) MarshalToSizedBufferVT(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
+func (m *SOWorldOp_GraphSettingsStep) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *SOWorldOp_GraphSettingsStep) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.GraphSettingsStep != nil {
+		size, err := m.GraphSettingsStep.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x32
+	} else {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, 0)
+		i--
+		dAtA[i] = 0x32
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *InitWorldOp) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -3057,6 +3268,53 @@ func (m *BackfillState) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *GraphSettingsStepOp) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GraphSettingsStepOp) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GraphSettingsStepOp) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Max != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Max))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Target != nil {
+		size, err := m.Target.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *Config) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3270,6 +3528,21 @@ func (m *SOWorldOp_SetTransformConf) SizeVT() (n int) {
 	return n
 }
 
+func (m *SOWorldOp_GraphSettingsStep) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.GraphSettingsStep != nil {
+		l = m.GraphSettingsStep.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	} else {
+		n += 2
+	}
+	return n
+}
+
 func (m *InitWorldOp) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -3344,6 +3617,21 @@ func (m *BackfillState) SizeVT() (n int) {
 	}
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Holes)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Seqno)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *GraphSettingsStepOp) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Target != nil {
+		l = m.Target.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Max)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3598,6 +3886,13 @@ func (x *SOWorldOp) MarshalProtoText() string {
 		} else {
 			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.SetTransformConf)
 		}
+	case *SOWorldOp_GraphSettingsStep:
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "graph_settings_step")
+		if body.GraphSettingsStep == nil {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, &GraphSettingsStepOp{})
+		} else {
+			protobuf_go_lite.TextWriteTextMarshaler(&sb, body.GraphSettingsStep)
+		}
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -3693,6 +3988,24 @@ func (x *BackfillState) MarshalProtoText() string {
 }
 
 func (x *BackfillState) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *GraphSettingsStepOp) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "GraphSettingsStepOp")
+	if x.Target != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "target")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Target)
+	}
+	if x.Max != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "max")
+		protobuf_go_lite.TextWriteUint(&sb, x.Max)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GraphSettingsStepOp) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -4408,6 +4721,26 @@ func (m *SOWorldOp) UnmarshalVT(dAtA []byte) error {
 				m.Body = &SOWorldOp_SetTransformConf{SetTransformConf: v}
 			}
 			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GraphSettingsStep", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if oneof, ok := m.Body.(*SOWorldOp_GraphSettingsStep); ok {
+				if err := oneof.GraphSettingsStep.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+			} else {
+				v := &GraphSettingsStepOp{}
+				if err := v.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+					return err
+				}
+				m.Body = &SOWorldOp_GraphSettingsStep{GraphSettingsStep: v}
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -4748,6 +5081,73 @@ func (m *BackfillState) UnmarshalVT(dAtA []byte) error {
 			}
 			m.Seqno = 0
 			m.Seqno, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *GraphSettingsStepOp) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GraphSettingsStepOp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GraphSettingsStepOp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Target", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Target == nil {
+				m.Target = &block1.GraphSettings{}
+			}
+			if err := m.Target.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Max", wireType)
+			}
+			m.Max = 0
+			m.Max, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}

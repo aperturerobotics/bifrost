@@ -1341,12 +1341,7 @@ func (e *Engine) StepGraphSettings(ctx context.Context, target *GraphSettings, m
 	}
 
 	// Apply one step and commit only a change.
-	unlock, err := engTx.writeTx.rmtx.Lock(ctx, true)
-	if err != nil {
-		return false, err
-	}
-	done, changed, err := engTx.writeTx.state.StepGraphSettings(ctx, target, max)
-	unlock()
+	done, changed, err := engTx.StepGraphSettings(ctx, target, max)
 	if err != nil || !changed {
 		return done, err
 	}
