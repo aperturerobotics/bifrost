@@ -64,7 +64,7 @@ import "embed"
 //go:embed ui/DropdownMenu.tsx ui/DropdownMenuGhostAnchor.tsx ui/DropdownTriggerButton.tsx ui/EmptyState.tsx
 //go:embed ui/ErrorState.tsx ui/ExperimentalBadge.tsx ui/FloatingWindow.tsx ui/InfoCard.tsx ui/MenuButton.tsx
 //go:embed ui/MenuButtonGroup.tsx ui/Menubar.tsx ui/ObjectKeySelector.tsx ui/OutputPanel.tsx ui/PanelHeader.tsx
-//go:embed ui/PanelSizeGate.tsx ui/Popover.tsx ui/RadioOption.tsx ui/SearchBox.tsx ui/StatCard.tsx
+//go:embed ui/PanelSizeGate.tsx ui/Popover.tsx ui/RadioOption.tsx ui/FigureStrip.tsx ui/SearchBox.tsx
 //go:embed ui/StatsBar.tsx ui/StatusList.tsx ui/Window.tsx ui/badge.tsx ui/button-group.tsx ui/button.tsx
 //go:embed ui/card.tsx ui/code-block.tsx ui/collapsible.tsx ui/command.tsx ui/credential/AuthProgressCard.tsx ui/credential/CredentialProofInput.tsx
 //go:embed ui/credential/auth-utils.ts ui/credential/useCredentialProof.ts ui/dialog.tsx ui/input.tsx
