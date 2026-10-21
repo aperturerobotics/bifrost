@@ -110,6 +110,8 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 				WithField("unreached", stats.UnreachedBlocks).
 				WithField("blocks-swept", stats.BlocksSwept).
 				WithField("mark-duration", stats.MarkDuration.String()).
+				WithField("mark-scans", stats.MarkScans).
+				WithField("mark-longest-read", stats.MarkLongestRead.String()).
 				WithField("more", stats.More).
 				WithField("duration", stats.Duration.String()).
 				Info("gc sweep completed")

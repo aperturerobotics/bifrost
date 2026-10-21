@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"slices"
+	"time"
 
 	"github.com/s4wave/spacewave/db/kvtx"
 )
@@ -24,6 +25,12 @@ type BlockMark struct {
 	Unknown int
 	// UnknownSample lists up to unknownSample of those blocks.
 	UnknownSample []string
+	// Scans counts the scans of the child lists a scan mark made, zero for
+	// a walk.
+	Scans int
+	// LongestRead is the longest read transaction of a scan mark, zero for
+	// a walk.
+	LongestRead time.Duration
 }
 
 // MarkBlocks marks the blocks of the graph in one snapshot. Every node that is
@@ -132,9 +139,10 @@ func walkTx(ctx context.Context, tx kvtx.Tx, reached *NodeSet, stack []string, u
 			if node == NodeUnreferenced {
 				continue
 			}
-			keys = append(keys, graphKey(kindForward, node))
 			if isBlockNode(node) {
 				keys = append(keys, graphKey(kindChildren, node))
+			} else {
+				keys = append(keys, graphKey(kindForward, node))
 			}
 		}
 		stack = stack[:len(stack)-len(chunk)]

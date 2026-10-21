@@ -2,6 +2,7 @@ package kvtx
 
 import (
 	"context"
+	"sync"
 
 	"github.com/s4wave/spacewave/db/block"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
@@ -106,6 +107,59 @@ func (g *transactionRefGraph) GetUnreferencedNodes(ctx context.Context) ([]strin
 func (g *transactionRefGraph) MarkBlocks(ctx context.Context) (mark *block_gc.BlockMark, err error) {
 	err = g.read(ctx, func(rg *block_gc.RefGraph) error { mark, err = rg.MarkBlocks(ctx); return err })
 	return
+}
+
+// MarkBlocksScan marks the graph's blocks by scanning child lists in short
+// read transactions, as RefGraph.MarkBlocksScan describes. Each transaction
+// joins the Volume's direct operations on its own, so neither a snapshot nor
+// Close waits on the whole mark.
+func (g *transactionRefGraph) MarkBlocksScan(ctx context.Context) (*block_gc.BlockMark, error) {
+	return openRefGraph(&directReadStore{volume: g.volume}).MarkBlocksScan(ctx)
+}
+
+// directReadStore opens read transactions of the Volume's store, each joined
+// with the Volume's direct operations until it is discarded.
+type directReadStore struct{ volume *Volume }
+
+// NewTransaction opens a read transaction holding directMu's read lock.
+func (s *directReadStore) NewTransaction(ctx context.Context, write bool) (kvtx.Tx, error) {
+	// Join Volume operations, unless closed.
+	if write {
+		return nil, errMarkReadOnly
+	}
+	v := s.volume
+	v.directMu.RLock()
+	if v.directClosed {
+		v.directMu.RUnlock()
+		return nil, block.ErrPublicationClosed
+	}
+
+	// Open the transaction, releasing the lock with it.
+	tx, err := v.kvtxStore.NewTransaction(ctx, false)
+	if err != nil {
+		v.directMu.RUnlock()
+		return nil, err
+	}
+	return &directReadTx{Tx: tx, release: sync.OnceFunc(v.directMu.RUnlock)}, nil
+}
+
+// directReadTx releases directMu's read lock when it ends.
+type directReadTx struct {
+	kvtx.Tx
+	// release unlocks directMu once.
+	release func()
+}
+
+// Commit ends the transaction and releases the lock.
+func (t *directReadTx) Commit(ctx context.Context) error {
+	defer t.release()
+	return t.Tx.Commit(ctx)
+}
+
+// Discard ends the transaction and releases the lock.
+func (t *directReadTx) Discard() {
+	t.Tx.Discard()
+	t.release()
 }
 
 // AddBlockRef adds a block-to-block reference edge.

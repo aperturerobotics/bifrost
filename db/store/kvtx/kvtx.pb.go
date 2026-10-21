@@ -26,6 +26,10 @@ type Config struct {
 	// If the store may return invalid data or mismatch the requested block ref,
 	// do not enable this option. It is important to hash the data for each read.
 	DisableHashGet bool `protobuf:"varint,3,opt,name=disable_hash_get,json=disableHashGet,proto3" json:"disableHashGet,omitempty"`
+	// GcMarkWalk marks blocks in a GC block pass by walking from the roots in
+	// one read snapshot, as before, instead of scanning the child lists in key
+	// order in short read transactions.
+	GcMarkWalk bool `protobuf:"varint,4,opt,name=gc_mark_walk,json=gcMarkWalk,proto3" json:"gcMarkWalk,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -48,6 +52,13 @@ func (x *Config) GetDisableHashGet() bool {
 	return false
 }
 
+func (x *Config) GetGcMarkWalk() bool {
+	if x != nil {
+		return x.GcMarkWalk
+	}
+	return false
+}
+
 func (m *Config) CloneVT() *Config {
 	if m == nil {
 		return (*Config)(nil)
@@ -55,6 +66,7 @@ func (m *Config) CloneVT() *Config {
 	r := new(Config)
 	r.HashType = m.HashType
 	r.DisableHashGet = m.DisableHashGet
+	r.GcMarkWalk = m.GcMarkWalk
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -75,6 +87,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if this.DisableHashGet != that.DisableHashGet {
+		return false
+	}
+	if this.GcMarkWalk != that.GcMarkWalk {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -106,6 +121,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("disableHashGet")
 		s.WriteBool(x.DisableHashGet)
 	}
+	if x.GcMarkWalk || s.HasField("gcMarkWalk") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("gcMarkWalk")
+		s.WriteBool(x.GcMarkWalk)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -129,6 +149,9 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "disable_hash_get", "disableHashGet":
 			s.AddField("disable_hash_get")
 			x.DisableHashGet = s.ReadBool()
+		case "gc_mark_walk", "gcMarkWalk":
+			s.AddField("gc_mark_walk")
+			x.GcMarkWalk = s.ReadBool()
 		}
 	})
 }
@@ -167,6 +190,11 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.GcMarkWalk {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.GcMarkWalk)
+		i--
+		dAtA[i] = 0x20
+	}
 	if m.DisableHashGet {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.DisableHashGet)
 		i--
@@ -188,6 +216,7 @@ func (m *Config) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.HashType)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.DisableHashGet)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.GcMarkWalk)
 	n += len(m.unknownFields)
 	return n
 }
@@ -202,6 +231,10 @@ func (x *Config) MarshalProtoText() string {
 	if x.DisableHashGet != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "disable_hash_get")
 		protobuf_go_lite.TextWriteBool(&sb, x.DisableHashGet)
+	}
+	if x.GcMarkWalk != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "gc_mark_walk")
+		protobuf_go_lite.TextWriteBool(&sb, x.GcMarkWalk)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -251,6 +284,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.DisableHashGet = bool(v)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GcMarkWalk", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.GcMarkWalk = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
