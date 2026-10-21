@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: Spacewave-design-system
-description: "Spacewave is a dark, local-first application environment with a polished workbench feel: warm near-black surfaces, OKLCH brand reds, glass panels, compact tab chrome, dense object viewers, and a small amount of responsive motion. The app should feel precise and technical without becoming generic developer-tool gray. Marketing and onboarding surfaces may be more expressive, but they still share the same dark canvas, translucent cards, Manrope typography, Lucide icons, and brand-tinted interaction states."
+description: "Spacewave is a dark, local-first application environment with a polished workbench feel: warm near-black surfaces, OKLCH brand reds, solid cards, glass only on floating panels, compact tab chrome, dense object viewers, and a small amount of responsive motion. The app should feel precise and technical without becoming generic developer-tool gray. Marketing and onboarding surfaces may be more expressive, but they still share the same dark canvas, solid low-contrast cards, Manrope typography, Lucide icons, and brand-tinted interaction states."
 
 colors:
   brand: "#ff9ea5"
@@ -72,6 +72,12 @@ typography:
     fontSize: 18px
     fontWeight: 600
     lineHeight: 1.35
+    letterSpacing: 0
+  figure:
+    fontFamily: "Manrope Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    fontSize: 24px
+    fontWeight: 500
+    lineHeight: 1.25
     letterSpacing: 0
   panel-title:
     fontFamily: "Manrope Variable, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
@@ -408,6 +414,11 @@ components:
     typography: "{typography.body-sm}"
     rounded: "{rounded.xl}"
     padding: 8px
+allow:
+  - rule: type.size
+    uppercase: true
+    minSize: 10
+    decision: "Typography: micro-cap labels, badges and figure labels at 10px tracked capitals"
 ---
 
 ## Overview
@@ -416,8 +427,8 @@ Spacewave's visual language is a dense dark workbench, not a light SaaS shell
 and not a black marketing poster. The app lives on warmed near-black OKLCH
 surfaces with white foreground text, soft secondary text, and a red-pink brand
 accent used sparingly for focus, selected state, and primary action. The
-strongest visual identity comes from glass cards, compact tab chrome, a
-gradient animated app icon, and precise control density.
+strongest visual identity comes from low-contrast solid cards, compact tab
+chrome, a gradient animated app icon, and precise control density.
 
 The system has two related modes. The app mode is compact: panels, ObjectViewer
 surfaces, Space layouts, session settings, command palettes, and wizards should
@@ -431,9 +442,11 @@ rules still apply.
   `{colors.background-card}`, and `{colors.background-primary}` define the base.
 - Brand red-pink as an interaction accent, not a full-page wash. Use
   `{colors.brand}` mostly at 5-15% background opacity or 30-60% border opacity.
-- Glassmorphism stack: translucent card background, subtle white border,
-  `backdrop-blur-sm`, and no heavy shadow except menus, toasts, and modal-like
-  overlays.
+- Cards in the page flow are solid: a low-opacity card background, a subtle
+  white border, no backdrop blur, and no heavy shadow. Backdrop blur belongs
+  only to surfaces that float over other content: menus, popovers, tooltips,
+  toasts, floating windows, toolbars, and overlays.
+- Figures sit side by side in one figure strip, not one icon card per number.
 - Compact app chrome: 28px shell header, 36px detail-panel header, 22px shell
   tabs, 7px-9px icon buttons, and 12px section labels.
 - Manrope Variable for UI and display; Pragmasevka only for code, terminals,
@@ -543,6 +556,7 @@ a brand decoration.
 | `{typography.display-xl}` | 48px | 700 | 1.12 | Large landing title only |
 | `{typography.display-lg}` | 36px | 700 | 1.16 | Landing section title |
 | `{typography.page-title}` | 18px | 600 | 1.35 | Focused page title |
+| `{typography.figure}` | 24px | 500 | 1.25 | Figure strip values |
 | `{typography.panel-title}` | 14px | 600 | 1.4 | Panel header title |
 | `{typography.section-title}` | 12px | 500 | 1.4 | Section heading |
 | `{typography.body-md}` | 14px | 400 | 1.6 | Body copy and descriptions |
@@ -603,6 +617,10 @@ Rules:
 - Section groups use `space-y-3`.
 - Section heading uses `text-xs font-medium`, icon `h-3.5 w-3.5`, and
   `gap-1.5`.
+- Dashboards keep this compact header and its 14px title. A dashboard takes
+  the structure of an Operate screen (one figure strip, then a table of the
+  objects with right-aligned figures and state chips, no row icons) but not a
+  page-scale title.
 - Do not show empty placeholder sections above sections with real content.
 
 ### Focused Pages
@@ -627,18 +645,22 @@ Spacewave:
 - Sections: `px-4 py-20`, `max-w-5xl`, optional one-pixel separator.
 - Section labels: uppercase `text-xs font-semibold tracking-widest`.
 - Section titles: `text-3xl @lg:text-4xl font-semibold` or `font-bold`.
-- Cards: glass cards with `border-foreground/6 bg-background-card/30`.
+- Cards: solid cards with `border-foreground/6 bg-background-card/30` and no
+  backdrop blur.
 - Scroll reveal: fade + translate from `translate-y-8 opacity-0` to visible.
 
 ## Elevation And Depth
 
-Spacewave uses translucency, borders, and subtle motion more than shadows.
+Spacewave uses low-opacity fills, borders, and subtle motion more than
+shadows. Backdrop blur marks a surface that floats over other content; a card
+in the page flow never takes it, because nothing moves behind it.
 
 | Level | Treatment | Use |
 |---|---|---|
 | 0 | Flat near-black surface | App canvas, editor interiors |
 | 1 | `bg-background-card/30`, `border-foreground/6` | Info cards, wizards, object panels |
-| 2 | Glass card with `backdrop-blur-sm` and hover border | Action cards, landing cards, popover-like panels |
+| 2 | Level 1 with a hover border and lift | Action cards, landing cards, clickable rows |
+| 2F | Glass with `backdrop-blur-sm` over content | Popovers, floating windows, toolbars, pills over media |
 | 3 | Menu shadow plus opaque card | Menus, dropdowns, toasts, overlays |
 | 4 | Shine border / animated logo glow | Boot and brand moments only |
 
@@ -709,14 +731,21 @@ description.
 - Icon box usually `bg-foreground/5` or `bg-brand/10`.
 - Destructive variant uses low-opacity error/destructive border and background.
 
-### Stat Card
+### Figure Strip
 
-**`stat-card`** displays a metric with a brand icon box.
+**`figure-strip`** shows a few figures side by side in one panel
+(`web/ui/FigureStrip.tsx`).
 
-- `border-foreground/6 bg-background-card/30 rounded-lg border p-3`.
-- Hover: `hover:border-foreground/12 hover:bg-background-card/60`.
-- Icon container: `size-9 bg-brand/10`, icon `size-4.5 text-brand`.
-- Label `text-xs text-foreground-alt`; value `text-sm font-medium`.
+- One `border-foreground/6 bg-background-card/30 rounded-lg border` panel,
+  figures divided by `divide-foreground/6` hairlines, each `px-3.5 py-3`.
+- Label: `micro-ten font-semibold tracking-widest uppercase
+  text-foreground-alt`.
+- Value: `{typography.figure}` with `tabular-nums`; a unit such as "of 4"
+  follows in `text-sm text-foreground-alt`.
+- An optional line of context under the value in `text-xs`. Leave it out
+  rather than invent one.
+- No icon boxes, no growth pills, no hover state. A screen has one strip;
+  more figures widen it rather than adding a second.
 
 ### Dashboard Button
 
@@ -773,8 +802,7 @@ description.
 **`wizard-shell`** is the persistent object-creation shell.
 
 - Outer: centered, `px-4 py-10`, scrollable.
-- Card: `max-w-lg rounded-xl border-foreground/6 bg-background-card/30
-  backdrop-blur-sm`.
+- Card: `max-w-lg rounded-xl border-foreground/6 bg-background-card/30`.
 - Header: `h-9 border-b border-foreground/8 px-4`.
 - Step label: `text-foreground-alt/50 text-[0.6rem] font-medium
   tracking-widest uppercase`.
@@ -839,7 +867,6 @@ stable:
 | `h-3 w-3` | Secondary row glyphs |
 | `h-3.5 w-3.5` | Section headings and dense buttons |
 | `h-4 w-4` | Panel header actions and primary row icons |
-| `h-4.5 w-4.5` | Stat-card icons |
 | `h-5 w-5` | Focused page leading icons |
 
 Icon containers:
@@ -847,7 +874,6 @@ Icon containers:
 - `size-5 bg-foreground/5` for secondary rows.
 - `size-7 bg-foreground/5` for compact primary rows.
 - `size-8 bg-brand/10` for primary actions and status rows.
-- `size-9 bg-brand/10` for metric/stat cards.
 
 Do not use standalone decorative icons as filler. An icon should clarify a
 section, action, status, or data type.
@@ -949,7 +975,7 @@ Spacewave uses container queries and viewport-height variants heavily.
 - `web/ui/InfoCard.tsx`: standard static card.
 - `web/ui/DashboardButton.tsx`: compact panel action button.
 - `web/ui/RadioOption.tsx`: selected/unselected choice row.
-- `web/ui/StatCard.tsx`: metric card with brand icon box.
+- `web/ui/FigureStrip.tsx`: figure strip for a screen's figures.
 - `web/ui/loading/*`: `LoadingView`, `Spinner`, `ProgressBar`,
   `LoadingInline`, `LoadingCard`, and `LoadingScreen`.
 - `app/wizard/WizardShell.tsx`: persistent wizard shell.

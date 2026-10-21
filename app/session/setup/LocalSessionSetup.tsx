@@ -242,7 +242,7 @@ export function WarningCard({
   upgradeLoading?: boolean
 }) {
   return (
-    <div className="border-foreground/20 bg-background-card/50 overflow-hidden rounded-lg border backdrop-blur-sm">
+    <div className="border-foreground/20 bg-background-card/50 overflow-hidden rounded-lg border">
       <div className="p-6">
         <div className="mb-4 flex items-center gap-3">
           <div className="bg-brand/10 flex size-10 shrink-0 items-center justify-center rounded-lg">

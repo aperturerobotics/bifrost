@@ -90,7 +90,7 @@ function DisplayComponentNotFoundState({
 }: DisplayComponentNotFoundStateProps) {
   return (
     <div className="bg-background-primary flex h-full w-full flex-1 items-center justify-center p-4">
-      <div className="border-foreground/6 bg-background-card/30 flex max-w-sm items-start gap-3 rounded-lg border p-3.5 backdrop-blur-sm">
+      <div className="border-foreground/6 bg-background-card/30 flex max-w-sm items-start gap-3 rounded-lg border p-3.5">
         <div className="bg-destructive/10 text-destructive flex size-8 shrink-0 items-center justify-center rounded-md">
           <span className="text-sm font-semibold" aria-hidden="true">
             !

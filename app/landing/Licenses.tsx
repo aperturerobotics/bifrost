@@ -62,7 +62,7 @@ function LicenseGroup({
   )
 
   return (
-    <div className="border-foreground/8 bg-background-card/50 rounded-lg border backdrop-blur-sm">
+    <div className="border-foreground/8 bg-background-card/50 rounded-lg border">
       <div className="flex items-center gap-3 px-5 py-4">
         <SpdxBadge spdx={spdx} />
         <span className="text-foreground text-sm font-medium">{spdx}</span>
@@ -196,7 +196,7 @@ const vmComponents = [
 // their source code.
 function VmImageNotice() {
   return (
-    <div className="border-foreground/8 bg-background-card/50 mt-10 rounded-lg border px-5 py-4 backdrop-blur-sm">
+    <div className="border-foreground/8 bg-background-card/50 mt-10 rounded-lg border px-5 py-4">
       <h2 className="text-foreground mb-2 text-sm font-medium">
         Virtual machine images
       </h2>
@@ -289,7 +289,7 @@ export function Licenses() {
               placeholder="Filter packages…"
               value={filter}
               onChange={onFilterChange}
-              className="border-foreground/10 bg-background-card/50 text-foreground placeholder:text-foreground-alt/40 w-full rounded-md border py-1.5 pr-3 pl-8 text-sm backdrop-blur-sm focus:ring-1 focus:ring-white/20 focus:outline-none @md:w-64"
+              className="border-foreground/10 bg-background-card/50 text-foreground placeholder:text-foreground-alt/40 w-full rounded-md border py-1.5 pr-3 pl-8 text-sm focus:ring-1 focus:ring-white/20 focus:outline-none @md:w-64"
             />
           </div>
         </div>

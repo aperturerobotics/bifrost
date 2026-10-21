@@ -18,7 +18,7 @@ export function ArchTile({ entry }: ArchTileProps) {
       download
       className={cn(
         'border-foreground/6 bg-background-card/30 hover:border-foreground/12',
-        'group flex cursor-pointer flex-col gap-2 rounded-lg border p-6 backdrop-blur-sm',
+        'group flex cursor-pointer flex-col gap-2 rounded-lg border p-6',
         'transition-all duration-300 hover:-translate-y-0.5',
       )}
     >

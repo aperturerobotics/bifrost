@@ -306,7 +306,7 @@ export function DesktopCLIInstallCard({
   const actions = state?.actions ?? []
   const errorMessage = visibleInstallError(state)
   return (
-    <section className="border-foreground/6 bg-background-card/30 rounded-lg border p-4 backdrop-blur-sm">
+    <section className="border-foreground/6 bg-background-card/30 rounded-lg border p-4">
       <div className="mb-3 flex items-start gap-3">
         <StatusDot tone={presentation.tone} />
         <div className="min-w-0 flex-1">
@@ -602,7 +602,7 @@ function formatCLIIdentity(
 // the active session (status, whoami, space list).
 export function WalkthroughSection({ opts }: { opts: CommandOptions }) {
   return (
-    <section className="border-foreground/6 bg-background-card/30 rounded-lg border p-4 backdrop-blur-sm">
+    <section className="border-foreground/6 bg-background-card/30 rounded-lg border p-4">
       <h2 className="text-foreground mb-3 text-sm font-semibold tracking-tight">
         Try it out
       </h2>
@@ -773,7 +773,7 @@ function ListenerStatusChip() {
 
   if (!isDesktop) {
     return (
-      <div className="border-foreground/10 bg-background-card/30 flex items-center gap-3 rounded-md border p-3 backdrop-blur-sm">
+      <div className="border-foreground/10 bg-background-card/30 flex items-center gap-3 rounded-md border p-3">
         <StatusDot tone="muted" />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-foreground text-xs font-medium">
@@ -808,7 +808,7 @@ function ListenerStatusChip() {
   return (
     <div
       className={cn(
-        'border-foreground/10 bg-background-card/30 flex flex-wrap items-center gap-3 rounded-md border p-3 backdrop-blur-sm',
+        'border-foreground/10 bg-background-card/30 flex flex-wrap items-center gap-3 rounded-md border p-3',
       )}
     >
       <StatusDot tone={tone} />

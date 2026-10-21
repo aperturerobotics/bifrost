@@ -82,7 +82,7 @@ export function Changelog() {
               type="button"
               onClick={toggleDropdown}
               className={cn(
-                'border-foreground/15 bg-background-card/50 text-foreground flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium backdrop-blur-sm transition-colors',
+                'border-foreground/15 bg-background-card/50 text-foreground flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors',
                 dropdownOpen && 'border-foreground/25',
               )}
             >

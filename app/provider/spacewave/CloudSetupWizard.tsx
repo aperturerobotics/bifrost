@@ -34,7 +34,7 @@ const CLOUD_PERKS = [
 /** CloudPerksCard confirms the active subscription and lists what it enables. */
 function CloudPerksCard() {
   return (
-    <div className="border-brand/30 bg-background-card/50 overflow-hidden rounded-lg border p-6 backdrop-blur-sm">
+    <div className="border-brand/30 bg-background-card/50 overflow-hidden rounded-lg border p-6">
       <div className="mb-4 flex items-center gap-3">
         <div className="bg-brand/10 flex size-10 items-center justify-center rounded-lg">
           <LuCloud className="text-brand size-5" />

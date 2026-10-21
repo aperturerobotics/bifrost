@@ -85,7 +85,7 @@ export function MigrateDecisionPage() {
         onClick={handleMigrate}
         disabled={unlinking}
         className={cn(
-          'border-brand/30 bg-background-card/50 hover:border-brand/50 hover:shadow-brand/5 group cursor-pointer overflow-hidden rounded-lg border p-6 text-left backdrop-blur-sm transition-all duration-300 hover:shadow-md',
+          'border-brand/30 bg-background-card/50 hover:border-brand/50 hover:shadow-brand/5 group cursor-pointer overflow-hidden rounded-lg border p-6 text-left transition-all duration-300 hover:shadow-md',
           'disabled:cursor-not-allowed disabled:opacity-50',
         )}
       >
@@ -112,7 +112,7 @@ export function MigrateDecisionPage() {
         onClick={() => void handleKeepSeparate()}
         disabled={unlinking || !session}
         className={cn(
-          'border-foreground/10 bg-background-card/30 hover:border-foreground/20 group cursor-pointer overflow-hidden rounded-lg border p-6 text-left backdrop-blur-sm transition-all duration-300 hover:shadow-md',
+          'border-foreground/10 bg-background-card/30 hover:border-foreground/20 group cursor-pointer overflow-hidden rounded-lg border p-6 text-left transition-all duration-300 hover:shadow-md',
           'disabled:cursor-not-allowed disabled:opacity-50',
         )}
       >

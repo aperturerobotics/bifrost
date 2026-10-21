@@ -248,7 +248,7 @@ const FaqItem: React.FC<FaqItemProps> = ({
       role="button"
       tabIndex={0}
       className={cn(
-        'group shadow-landing-card hover:shadow-landing-card-raised cursor-pointer rounded-xl border p-5 backdrop-blur-sm transition',
+        'group shadow-landing-card hover:shadow-landing-card-raised cursor-pointer rounded-xl border p-5 transition',
         isOpen
           ? 'border-foreground/12 bg-background-card/60'
           : 'border-foreground/6 bg-background-card/30 hover:border-foreground/12 hover:-translate-y-0.5',
@@ -444,7 +444,7 @@ const HeroSection: React.FC = () => {
 
         <a
           href={blogHref}
-          className="border-brand/30 text-brand hover:border-brand/50 shadow-landing-button mb-8 inline-block cursor-pointer rounded-full border px-4 py-2 text-sm font-medium no-underline backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center"
+          className="border-brand/30 text-brand hover:border-brand/50 shadow-landing-button mb-8 inline-block cursor-pointer rounded-full border px-4 py-2 text-sm font-medium no-underline transition duration-300 hover:-translate-y-0.5 [@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center"
         >
           <PiRocketLaunchDuotone className="mr-2 inline-block size-4 -translate-y-0.5" />
           Announcing open beta
@@ -917,7 +917,7 @@ function HowItWorksSection() {
       </SectionSubtitle>
 
       <div className="grid gap-8 @lg:grid-cols-2">
-        <div className="border-foreground/6 bg-background-card/20 shadow-landing-card rounded-xl border p-6 backdrop-blur-sm">
+        <div className="border-foreground/6 bg-background-card/20 shadow-landing-card rounded-xl border p-6">
           <div className="text-foreground-alt tracking-brand-wide mb-4 text-center text-xs font-medium uppercase opacity-50">
             Traditional Cloud
           </div>
@@ -926,7 +926,7 @@ function HowItWorksSection() {
           </div>
         </div>
 
-        <div className="border-brand/20 bg-background-card/30 shadow-landing-card rounded-xl border p-6 backdrop-blur-sm">
+        <div className="border-brand/20 bg-background-card/30 shadow-landing-card rounded-xl border p-6">
           <div className="text-brand tracking-brand-wide mb-4 text-center text-xs font-medium uppercase">
             Spacewave
           </div>
@@ -942,7 +942,7 @@ function HowItWorksSection() {
           return (
             <div
               key={card.title}
-              className="border-foreground/6 bg-background-card/30 group shadow-landing-card hover:shadow-landing-card-raised rounded-xl border p-5 backdrop-blur-sm transition duration-300 hover:-translate-y-0.5"
+              className="border-foreground/6 bg-background-card/30 group shadow-landing-card hover:shadow-landing-card-raised rounded-xl border p-5 transition duration-300 hover:-translate-y-0.5"
             >
               <CardIcon className="text-brand mb-3 size-5" />
               <h3 className="text-foreground mb-2 text-sm font-semibold">
@@ -1038,7 +1038,7 @@ function UseCaseCard({
       ref={ref}
       href={resolvedHref}
       className={cn(
-        'feature-reveal-delay border-foreground/6 bg-background-card/30 group shadow-landing-card hover:shadow-landing-card-raised cursor-pointer rounded-xl border p-6 no-underline backdrop-blur-sm transition duration-500',
+        'feature-reveal-delay border-foreground/6 bg-background-card/30 group shadow-landing-card hover:shadow-landing-card-raised cursor-pointer rounded-xl border p-6 no-underline transition duration-500',
         visible
           ? 'translate-y-0 opacity-100 hover:-translate-y-1'
           : 'translate-y-8 opacity-0',
@@ -1128,7 +1128,7 @@ function ArchitectureStackDiagram() {
             >
               {isTop ? (
                 <div
-                  className="landing-stack-position border-foreground/8 bg-background-card shadow-landing-card relative rounded-xl border px-5 py-4 backdrop-blur-sm"
+                  className="landing-stack-position border-foreground/8 bg-background-card shadow-landing-card relative rounded-xl border px-5 py-4"
                   style={{
                     '--landing-stack-z-index': STACK_LAYERS.length - i,
                   }}
@@ -1231,12 +1231,12 @@ function ForDevelopersSection() {
         right in front of you.
       </SectionSubtitle>
 
-      <div className="border-brand/20 bg-background-card/30 shadow-landing-card mx-auto max-w-2xl rounded-xl border p-6 backdrop-blur-sm">
+      <div className="border-brand/20 bg-background-card/30 shadow-landing-card mx-auto max-w-2xl rounded-xl border p-6">
         <ArchitectureStackDiagram />
       </div>
 
       <div className="mx-auto mt-10 max-w-3xl">
-        <div className="border-foreground/6 bg-background-card/20 shadow-landing-card rounded-xl border p-6 backdrop-blur-sm">
+        <div className="border-foreground/6 bg-background-card/20 shadow-landing-card rounded-xl border p-6">
           <div className="grid gap-6 @lg:grid-cols-3">
             {DEV_CARDS.map((card, i) => {
               const CardIcon = DEV_CARD_ICONS[i]
@@ -1348,7 +1348,7 @@ const ComparisonChart: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-4xl text-base @md:text-lg">
-      <div className="border-foreground/10 bg-background-card-alt shadow-landing-card overflow-hidden rounded-xl border backdrop-blur-sm">
+      <div className="border-foreground/10 bg-background-card-alt shadow-landing-card overflow-hidden rounded-xl border">
         {/* Header */}
         <div className="comparison-chart-grid border-foreground/6 grid border-b">
           <div className="p-4 font-medium">Feature</div>

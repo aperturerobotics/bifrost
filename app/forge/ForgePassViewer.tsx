@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { LuActivity, LuCopy, LuPlay } from 'react-icons/lu'
+import { LuActivity, LuPlay } from 'react-icons/lu'
 
 import {
   Pass,
@@ -20,7 +20,7 @@ import { ForgeEntityLink } from '@s4wave/web/forge/ForgeEntityLink.js'
 import { PRED_PASS_TO_EXECUTION } from '@s4wave/web/forge/predicates.js'
 import { StateBadge } from '@s4wave/web/forge/StateBadge.js'
 import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
-import { StatCard } from '@s4wave/web/ui/StatCard.js'
+import { FigureStrip } from '@s4wave/web/ui/FigureStrip.js'
 import { CopyableField } from '@s4wave/web/ui/CopyableField.js'
 import { ForgeValueSetPanels } from './ForgeValueSetDisplay.js'
 import { useForgeDecodedLinkedEntities } from './useForgeDecodedLinkedEntities.js'
@@ -93,20 +93,17 @@ export function ForgePassViewer({
                 <CopyableField label="Object Key" value={objectKey} />
               </div>
             </InfoCard>
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard
-                icon={LuCopy}
-                label="Replicas"
-                value={pass?.replicas ?? 0}
-              />
-              <StatCard
-                icon={LuActivity}
-                label="Executions"
-                value={
-                  decodedExecutionsLoading ? '-' : decodedExecutions.length
-                }
-              />
-            </div>
+            <FigureStrip
+              figures={[
+                { label: 'Replicas', value: pass?.replicas ?? 0 },
+                {
+                  label: 'Executions',
+                  value: decodedExecutionsLoading
+                    ? '-'
+                    : decodedExecutions.length,
+                },
+              ]}
+            />
             <InfoCard title="Result">
               <div className="text-foreground text-sm font-medium">
                 {describeResult(pass?.result)}

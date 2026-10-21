@@ -158,7 +158,7 @@ export function CloudConfirmationPage({
       </div>
 
       {/* Expanded cloud card */}
-      <div className="border-brand/30 bg-background-card/50 overflow-hidden rounded-lg border p-8 backdrop-blur-sm">
+      <div className="border-brand/30 bg-background-card/50 overflow-hidden rounded-lg border p-8">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-brand/10 flex size-10 items-center justify-center rounded-lg">
@@ -251,7 +251,7 @@ export function CloudConfirmationPage({
       <FaqAccordion items={CLOUD_FAQ} />
 
       {/* Open source footer */}
-      <div className="border-foreground/6 via-brand/5 flex flex-col items-center justify-between gap-4 rounded-lg border bg-gradient-to-r from-blue-500/5 to-cyan-500/5 px-6 py-5 backdrop-blur-sm sm:flex-row">
+      <div className="border-foreground/6 via-brand/5 flex flex-col items-center justify-between gap-4 rounded-lg border bg-gradient-to-r from-blue-500/5 to-cyan-500/5 px-6 py-5 sm:flex-row">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-blue-500/10 p-2.5">
             <LuCode className="text-brand size-5" />
@@ -383,7 +383,7 @@ export function PlanFaqItem({
       role="button"
       tabIndex={0}
       className={cn(
-        'cursor-pointer rounded-lg border p-4 backdrop-blur-sm transition-all',
+        'cursor-pointer rounded-lg border p-4 transition-all',
         isOpen
           ? 'border-foreground/12 bg-background-card/60'
           : 'border-foreground/6 bg-background-card/20 hover:border-foreground/12',

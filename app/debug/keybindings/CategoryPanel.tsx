@@ -42,7 +42,7 @@ export function CategoryPanel({
   )
 
   return (
-    <article className="border-foreground/8 bg-background-card/30 overflow-hidden rounded-lg border backdrop-blur-sm">
+    <article className="border-foreground/8 bg-background-card/30 overflow-hidden rounded-lg border">
       <Button
         type="button"
         variant="category"

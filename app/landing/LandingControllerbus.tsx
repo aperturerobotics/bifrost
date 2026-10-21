@@ -107,7 +107,7 @@ export function LandingControllerbus() {
             return (
               <div
                 key={feature.title}
-                className="border-foreground/6 bg-background-card/30 group rounded-lg border p-6 backdrop-blur-sm transition duration-300 hover:-translate-y-0.5"
+                className="border-foreground/6 bg-background-card/30 group rounded-lg border p-6 transition duration-300 hover:-translate-y-0.5"
               >
                 <div className="mb-3 flex items-center gap-3">
                   <div className="bg-brand/8 group-hover:bg-brand/15 flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors">

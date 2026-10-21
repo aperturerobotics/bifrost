@@ -431,7 +431,7 @@ function SpaceObjectBrowserView({
           </>
         ) : pendingRename ? (
           <div className="w-80 p-2">
-            <div className="border-foreground/6 bg-background-card/30 overflow-hidden rounded-lg border backdrop-blur-sm">
+            <div className="border-foreground/6 bg-background-card/30 overflow-hidden rounded-lg border">
               <div className="border-foreground/8 flex h-9 items-center gap-2 border-b px-3">
                 <span className="bg-brand/10 flex size-5 shrink-0 items-center justify-center rounded-md">
                   <LuPencil className="text-brand size-3" />

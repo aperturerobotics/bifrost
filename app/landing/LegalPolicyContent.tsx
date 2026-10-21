@@ -24,7 +24,7 @@ export function LegalPolicyContent({ sections }: LegalPolicyContentProps) {
         {sections.map(({ title, content }) => (
           <section
             key={title}
-            className="border-foreground/8 bg-background-card/50 rounded-lg border p-6 backdrop-blur-sm @lg:p-8"
+            className="border-foreground/8 bg-background-card/50 rounded-lg border p-6 @lg:p-8"
           >
             <h2 className="text-foreground mb-4 text-lg font-semibold">
               {title}

@@ -12,7 +12,7 @@ export function WindowsBypassNotice() {
   return (
     <div
       className={cn(
-        'rounded-lg border backdrop-blur-sm transition-all',
+        'rounded-lg border transition-all',
         isOpen
           ? 'border-foreground/12 bg-background-card/60'
           : 'border-foreground/6 bg-background-card/30 hover:border-foreground/12',

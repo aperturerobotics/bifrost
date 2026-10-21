@@ -400,7 +400,7 @@ function SharedObjectHealthCard({
       <div className="flex w-full max-w-xl flex-col gap-4">
         <div
           className={cn(
-            'rounded-xl border p-5 backdrop-blur-sm',
+            'rounded-xl border p-5',
             tone.cardBackground,
             tone.cardBorder,
           )}

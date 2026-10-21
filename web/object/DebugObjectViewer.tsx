@@ -51,7 +51,7 @@ export function DebugObjectViewer({
       <div className="flex-1 overflow-auto px-4 py-3">
         <div className="mx-auto max-w-3xl space-y-3">
           {untyped && (
-            <div className="border-foreground/6 bg-background-card/30 flex items-start gap-3 rounded-lg border p-3.5 backdrop-blur-sm">
+            <div className="border-foreground/6 bg-background-card/30 flex items-start gap-3 rounded-lg border p-3.5">
               <div className="bg-foreground/5 text-foreground-alt flex size-8 shrink-0 items-center justify-center rounded-md">
                 <LuCircleAlert className="size-4" />
               </div>
@@ -109,7 +109,7 @@ export function DebugObjectViewer({
               </h2>
             </div>
 
-            <div className="border-foreground/6 bg-background-card/30 overflow-hidden rounded-lg border backdrop-blur-sm">
+            <div className="border-foreground/6 bg-background-card/30 overflow-hidden rounded-lg border">
               <pre className="text-foreground-alt/80 overflow-auto p-3 font-mono text-xs leading-relaxed">
                 {JSON.stringify(
                   {

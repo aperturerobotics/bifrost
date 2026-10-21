@@ -33,7 +33,7 @@ import {
 } from '@s4wave/web/forge/predicates.js'
 import { StateBadge } from '@s4wave/web/forge/StateBadge.js'
 import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
-import { StatCard } from '@s4wave/web/ui/StatCard.js'
+import { FigureStrip } from '@s4wave/web/ui/FigureStrip.js'
 import { CopyableField } from '@s4wave/web/ui/CopyableField.js'
 import { LoadingCard } from '@s4wave/web/ui/loading/LoadingCard.js'
 import { DashboardButton } from '@s4wave/web/ui/DashboardButton.js'
@@ -188,18 +188,15 @@ export function ForgeClusterViewer({
                 </div>
               </InfoCard>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard
-                icon={LuCpu}
-                label="Workers"
-                value={workersLoading ? '-' : workers.length}
-              />
-              <StatCard
-                icon={LuBriefcase}
-                label="Jobs"
-                value={jobsLoading ? '-' : jobs.length}
-              />
-            </div>
+            <FigureStrip
+              figures={[
+                {
+                  label: 'Workers',
+                  value: workersLoading ? '-' : workers.length,
+                },
+                { label: 'Jobs', value: jobsLoading ? '-' : jobs.length },
+              ]}
+            />
             <InfoCard
               icon={<LuListTodo className="text-foreground-alt/60 size-3.5" />}
               title="Task States"

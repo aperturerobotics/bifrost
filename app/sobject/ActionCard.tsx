@@ -27,7 +27,7 @@ export function ActionCard({
       onClick={onClick}
       disabled={!onClick}
       className={cn(
-        'border-foreground/6 bg-background-card/30 hover:border-foreground/12 hover:bg-background-card/50 group flex w-full cursor-pointer items-center rounded-lg border text-left backdrop-blur-sm transition-all',
+        'border-foreground/6 bg-background-card/30 hover:border-foreground/12 hover:bg-background-card/50 group flex w-full cursor-pointer items-center rounded-lg border text-left transition-all',
         compact ? 'gap-2 p-2' : 'gap-3 p-3',
         variant === 'destructive' &&
           'hover:border-destructive/30 hover:bg-destructive/5',

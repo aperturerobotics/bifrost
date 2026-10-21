@@ -20,7 +20,7 @@ export function InfoCard({
   return (
     <div
       className={cn(
-        'border-foreground/6 bg-background-card/30 min-w-0 rounded-lg border backdrop-blur-sm',
+        'border-foreground/6 bg-background-card/30 min-w-0 rounded-lg border',
         compact ? 'p-2.5' : 'p-3.5',
       )}
     >

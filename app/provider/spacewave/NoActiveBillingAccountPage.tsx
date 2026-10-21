@@ -193,14 +193,20 @@ function useBillingAccountActions(
     }
   }, [checkout, creating, reload, session])
 
-  return { activatingBaId, actionError, creating, handleActivate, handleCreate }
+  return {
+    activatingBaId,
+    actionError,
+    creating,
+    handleActivate,
+    handleCreate,
+  }
 }
 
 /** BillingTargetBadge shows who the billing account is being set up for. */
 function BillingTargetBadge({ target }: { target: BillingSetupTarget }) {
   return (
     <div className="mt-4 flex w-full justify-start">
-      <div className="border-foreground/10 bg-background-card/35 inline-flex items-center gap-3 rounded-xl border p-3 backdrop-blur-sm">
+      <div className="border-foreground/10 bg-background-card/35 inline-flex items-center gap-3 rounded-xl border p-3">
         <div className="bg-brand/10 text-brand flex size-10 items-center justify-center rounded-xl">
           {target.ownerType === 'organization' ? (
             <LuBuilding2 className="size-5" />
@@ -244,7 +250,7 @@ function BillingHeader({ hasAccounts }: { hasAccounts: boolean }) {
 /** ErrorNotice renders a destructive-toned error message. */
 function ErrorNotice({ message }: { message: string }) {
   return (
-    <div className="border-destructive/20 bg-destructive/5 text-destructive rounded-lg border px-3 py-2 text-sm backdrop-blur-sm">
+    <div className="border-destructive/20 bg-destructive/5 text-destructive rounded-lg border px-3 py-2 text-sm">
       {message}
     </div>
   )
@@ -253,7 +259,7 @@ function ErrorNotice({ message }: { message: string }) {
 /** CheckoutPollingNotice explains that activation is pending and offers the Stripe retry. */
 function CheckoutPollingNotice({ checkout }: { checkout: BillingCheckout }) {
   return (
-    <div className="border-brand/20 bg-brand/5 rounded-lg border p-3 text-sm backdrop-blur-sm">
+    <div className="border-brand/20 bg-brand/5 rounded-lg border p-3 text-sm">
       <div className="flex items-center gap-2">
         <Spinner variant="brand" />
         <span className="text-foreground">
@@ -299,7 +305,7 @@ function BillingAccountRow({
   return (
     <li
       className={cn(
-        'border-foreground/6 bg-background-card/30 rounded-lg border backdrop-blur-sm transition-all duration-150',
+        'border-foreground/6 bg-background-card/30 rounded-lg border transition-all duration-150',
         'hover:border-foreground/12 hover:bg-background-card/50',
       )}
     >

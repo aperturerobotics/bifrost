@@ -546,7 +546,7 @@ export function SessionContainer(props: SessionContainerProps) {
                       </Route>
                       <Route path="*">
                         <div className="flex h-full w-full items-center justify-center px-4 py-8">
-                          <div className="border-foreground/6 bg-background-card/30 flex w-full max-w-md flex-col items-center gap-3 rounded-lg border p-6 backdrop-blur-sm">
+                          <div className="border-foreground/6 bg-background-card/30 flex w-full max-w-md flex-col items-center gap-3 rounded-lg border p-6">
                             <div className="bg-foreground/5 flex size-10 items-center justify-center rounded-full">
                               <LuCompass
                                 className="text-foreground-alt/60 size-5"

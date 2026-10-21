@@ -78,7 +78,7 @@ export function LoadingCard({ view, className }: LoadingCardProps) {
   return (
     <div
       className={cn(
-        'border-foreground/6 bg-background-card/30 rounded-lg border p-3.5 backdrop-blur-sm',
+        'border-foreground/6 bg-background-card/30 rounded-lg border p-3.5',
         className,
       )}
     >

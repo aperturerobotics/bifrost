@@ -239,7 +239,7 @@ export function TransformConfigDisplay({ info }: TransformConfigDisplayProps) {
         hasEncryption
           ? 'transform-config-shadow-encryption'
           : 'transform-config-shadow-default',
-        'divide-foreground/6 divide-y overflow-hidden rounded-lg border backdrop-blur-sm',
+        'divide-foreground/6 divide-y overflow-hidden rounded-lg border',
         hasEncryption
           ? 'border-brand/12 bg-background-card/40'
           : 'border-foreground/6 bg-background-card/30',

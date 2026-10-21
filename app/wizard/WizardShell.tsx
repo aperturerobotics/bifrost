@@ -237,7 +237,7 @@ export function WizardShell({
     <div className="very-short:py-2 flex h-full w-full items-start justify-center px-4 py-10">
       <div
         className={cn(
-          'border-foreground/6 bg-background-card/30 flex max-h-full w-full flex-col overflow-hidden rounded-xl border backdrop-blur-sm',
+          'border-foreground/6 bg-background-card/30 flex max-h-full w-full flex-col overflow-hidden rounded-xl border',
           width === 'wide' ? 'max-w-2xl' : 'max-w-lg',
         )}
       >

@@ -402,7 +402,7 @@ function CancelActions({
 /** CancelCheckoutNotice shows the reactivation checkout progress and retry. */
 function CancelCheckoutNotice({ checkout }: { checkout: CheckoutState }) {
   return (
-    <div className="border-brand/20 bg-brand/5 mt-4 rounded-lg border p-3 text-sm backdrop-blur-sm">
+    <div className="border-brand/20 bg-brand/5 mt-4 rounded-lg border p-3 text-sm">
       <div className="flex items-center gap-2">
         <LuRefreshCw className="text-brand size-4 animate-spin" />
         <span className="text-foreground">
@@ -521,7 +521,7 @@ export function BillingCancelPage() {
       {checkout.consentDialog}
       <CancelHeader stage={stage} endLabel={endLabel} />
 
-      <div className="border-brand/20 bg-background-card/55 overflow-hidden rounded-xl border p-8 backdrop-blur-sm">
+      <div className="border-brand/20 bg-background-card/55 overflow-hidden rounded-xl border p-8">
         <CancelNextSection stage={stage} endLabel={endLabel} />
         <CancelOutcomeCards stage={stage} endLabel={endLabel} />
         <CancelDeletionNote />

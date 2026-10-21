@@ -19,7 +19,7 @@ export function HeroCard({ post }: HeroCardProps) {
   }, [navigate, post.url])
 
   return (
-    <article className="border-foreground/8 bg-background-card/20 group relative cursor-pointer overflow-hidden rounded-2xl border backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:border-white/12">
+    <article className="border-foreground/8 bg-background-card/20 group relative cursor-pointer overflow-hidden rounded-2xl border transition duration-300 hover:-translate-y-0.5 hover:border-white/12">
       {/* Subtle gradient glow on hover */}
       <div className="from-brand/5 pointer-events-none absolute inset-0 bg-gradient-to-br via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 

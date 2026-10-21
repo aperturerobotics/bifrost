@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react'
-import { LuActivity, LuCpu, LuServer } from 'react-icons/lu'
+import { LuActivity, LuCpu } from 'react-icons/lu'
 
 import { useResourceValue } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { useStreamingResource } from '@aptre/bldr-sdk/hooks/useStreamingResource.js'
@@ -21,7 +21,7 @@ import { ForgeEntityLink } from '@s4wave/web/forge/ForgeEntityLink.js'
 import { PRED_CLUSTER_TO_WORKER } from '@s4wave/web/forge/predicates.js'
 import { StateBadge } from '@s4wave/web/forge/StateBadge.js'
 import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
-import { StatCard } from '@s4wave/web/ui/StatCard.js'
+import { FigureStrip } from '@s4wave/web/ui/FigureStrip.js'
 import { CopyableField } from '@s4wave/web/ui/CopyableField.js'
 import { useForgeClusterSnapshot } from './useForgeClusterSnapshot.js'
 
@@ -137,19 +137,20 @@ export function ForgeWorkerViewer({
                 <CopyableField label="Object Key" value={objectKey} />
               </div>
             </InfoCard>
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard
-                icon={LuServer}
-                label="Clusters"
-                value={clustersLoading ? '-' : clusters.length}
-              />
-              <StatCard
-                icon={LuActivity}
-                label="Capacity"
-                value={`${activeExecutions.length}/${Math.max(peerIds.length, 1)}`}
-                detail="active executions / peers"
-              />
-            </div>
+            <FigureStrip
+              figures={[
+                {
+                  label: 'Clusters',
+                  value: clustersLoading ? '-' : clusters.length,
+                },
+                {
+                  label: 'Active executions',
+                  value: activeExecutions.length,
+                  unit: `of ${Math.max(peerIds.length, 1)}`,
+                  detail: 'one per peer',
+                },
+              ]}
+            />
             <InfoCard title="Peer IDs">
               {snapshotLoading && (
                 <div className="text-foreground-alt/50 text-xs">

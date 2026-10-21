@@ -18,7 +18,7 @@ export function TerminalSshTrustPanel({
     <dialog
       open
       aria-label="SSH host key trust"
-      className="border-warning/30 bg-background-card/80 text-foreground static m-0 w-full rounded-lg border px-4 py-3 text-sm backdrop-blur-sm"
+      className="border-warning/30 bg-background-card/80 text-foreground static m-0 w-full rounded-lg border px-4 py-3 text-sm"
     >
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 space-y-2">

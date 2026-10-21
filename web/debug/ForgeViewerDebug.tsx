@@ -61,7 +61,7 @@ export function ForgeViewerDebug() {
 
 function Intro() {
   return (
-    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5 backdrop-blur-sm">
+    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5">
       <p className="text-foreground text-sm font-semibold tracking-tight">
         Forge ObjectViewer variant gallery
       </p>
@@ -80,7 +80,9 @@ function Intro() {
           variant via prop.
         </li>
         <li>Entity rows: C (compact dense single-line) for ForgeEntityList.</li>
-        <li>Stat tile: C (inline StatCard, web/ui/StatCard.tsx).</li>
+        <li>
+          Stat tile: one figure strip (FigureStrip, web/ui/FigureStrip.tsx).
+        </li>
         <li>Empty state: B (compact single-line, foreground-alt/40).</li>
         <li>Tab bar: C (pill tabs) in ForgeViewerShell.</li>
       </ul>
@@ -120,7 +122,7 @@ interface VariantProps {
 
 function Variant({ label, note, children }: VariantProps) {
   return (
-    <div className="border-foreground/6 bg-background-card/30 space-y-2 rounded-lg border p-3.5 backdrop-blur-sm">
+    <div className="border-foreground/6 bg-background-card/30 space-y-2 rounded-lg border p-3.5">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-foreground text-xs font-medium tracking-wide select-none">
           {label}
@@ -450,7 +452,7 @@ function CurrentStatCard({
   detail: string
 }) {
   return (
-    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5 backdrop-blur-sm">
+    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5">
       <h3 className="text-foreground mb-3 flex items-center gap-2 text-sm select-none">
         <span className="text-foreground-alt/70">{icon}</span>
         {title}
@@ -682,7 +684,7 @@ function ViewerShellSection() {
       title="Combined viewer mock"
       description="Full ForgeViewerShell layout using the candidate variants: brand underline tabs, tinted state badge, glass entity rows, compact empty state. Compare against ForgeJobViewer in repos/spacewave/app/forge/."
     >
-      <div className="border-foreground/6 bg-background-card/30 overflow-hidden rounded-lg border backdrop-blur-sm">
+      <div className="border-foreground/6 bg-background-card/30 overflow-hidden rounded-lg border">
         <div className="border-foreground/8 flex h-9 items-center justify-between border-b px-4">
           <div className="text-foreground flex items-center gap-2 text-sm font-semibold select-none">
             <LuBriefcase className="size-4" />

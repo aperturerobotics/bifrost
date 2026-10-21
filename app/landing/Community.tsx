@@ -217,7 +217,7 @@ export function Community() {
             <ExternalLink
               key={c.title}
               href={c.href}
-              className="border-foreground/8 hover:border-foreground/15 bg-background-card/50 group flex flex-col gap-3 rounded-lg border p-5 backdrop-blur-sm transition hover:-translate-y-0.5"
+              className="border-foreground/8 hover:border-foreground/15 bg-background-card/50 group flex flex-col gap-3 rounded-lg border p-5 transition hover:-translate-y-0.5"
             >
               <c.icon className="text-foreground-alt group-hover:text-brand size-5 transition-colors" />
               <h3 className="text-foreground text-sm font-semibold">
@@ -306,7 +306,7 @@ export function Community() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filter packages…"
-            className="border-foreground/10 bg-background-card/30 text-foreground placeholder:text-foreground-alt/30 focus:border-brand/50 w-full rounded-lg border py-2 pr-3 pl-9 text-xs backdrop-blur-sm transition-colors outline-none"
+            className="border-foreground/10 bg-background-card/30 text-foreground placeholder:text-foreground-alt/30 focus:border-brand/50 w-full rounded-lg border py-2 pr-3 pl-9 text-xs transition-colors outline-none"
           />
         </div>
         {ossGroups.length === 0 ? (
@@ -346,7 +346,7 @@ export function Community() {
                       tabIndex={0}
                       aria-label={`Copy dependency details for ${entry.name}`}
                       className={cn(
-                        'flex cursor-pointer flex-col gap-1.5 rounded-lg border p-3 backdrop-blur-sm transition-all duration-150',
+                        'flex cursor-pointer flex-col gap-1.5 rounded-lg border p-3 transition-all duration-150',
                         entry.internal
                           ? 'border-brand/15 bg-brand/5 hover:border-brand/30'
                           : 'border-foreground/6 bg-background-card/30 hover:border-foreground/12 hover:bg-background-card/50',

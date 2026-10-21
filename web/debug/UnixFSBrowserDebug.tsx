@@ -59,7 +59,7 @@ export function UnixFSBrowserDebug() {
 
 function Intro() {
   return (
-    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5 backdrop-blur-sm">
+    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5">
       <p className="text-foreground text-sm font-semibold tracking-tight">
         UnixFS browser variant gallery
       </p>
@@ -128,7 +128,7 @@ interface VariantProps {
 
 function Variant({ label, note, children }: VariantProps) {
   return (
-    <div className="border-foreground/6 bg-background-card/30 space-y-2 rounded-lg border p-3.5 backdrop-blur-sm">
+    <div className="border-foreground/6 bg-background-card/30 space-y-2 rounded-lg border p-3.5">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-foreground text-xs font-medium tracking-wide select-none">
           {label}
@@ -593,7 +593,7 @@ function EmptyStateSection() {
         note="border-foreground/6 bg-background-card/30, muted icon + headline + helper"
       >
         <div className="bg-file-back flex min-h-40 items-center justify-center p-6">
-          <div className="border-foreground/6 bg-background-card/30 w-full max-w-xs rounded-lg border p-4 backdrop-blur-sm">
+          <div className="border-foreground/6 bg-background-card/30 w-full max-w-xs rounded-lg border p-4">
             <div className="flex items-start gap-2.5">
               <span className="bg-foreground/5 flex size-8 shrink-0 items-center justify-center rounded-md">
                 <LuFolder className="text-foreground-alt/60 size-4" />
@@ -663,7 +663,7 @@ function DragOverlaySection() {
         <div className="bg-file-back relative h-45">
           <DummyRows />
           <div className="border-brand/30 bg-brand/5 pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-md border border-dashed backdrop-blur-sm">
-            <div className="border-brand/30 bg-background-card/40 flex items-center gap-2.5 rounded-lg border px-3.5 py-2 backdrop-blur-sm">
+            <div className="border-brand/30 bg-background-card/40 flex items-center gap-2.5 rounded-lg border px-3.5 py-2">
               <span className="bg-brand/15 flex size-7 shrink-0 items-center justify-center rounded-md">
                 <LuUpload className="text-brand size-3.5" />
               </span>
@@ -721,7 +721,9 @@ function ErrorStateSection() {
           <div className="text-foreground-alt/70 mt-1 text-xs">
             failed to read directory: permission denied
           </div>
-          <button type="button" className="text-brand mt-2 text-xs underline">Retry</button>
+          <button type="button" className="text-brand mt-2 text-xs underline">
+            Retry
+          </button>
         </div>
       </Variant>
 
@@ -795,10 +797,16 @@ function DestructiveDialogSection() {
         note="bg-destructive + text-destructive-foreground"
       >
         <div className="bg-background flex justify-end gap-2 p-3">
-          <button type="button" className="hover:bg-accent rounded-md px-4 py-2 text-xs">
+          <button
+            type="button"
+            className="hover:bg-accent rounded-md px-4 py-2 text-xs"
+          >
             Cancel
           </button>
-          <button type="button" className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md px-4 py-2 text-xs">
+          <button
+            type="button"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md px-4 py-2 text-xs"
+          >
             Delete
           </button>
         </div>
@@ -809,10 +817,16 @@ function DestructiveDialogSection() {
         note="border-destructive/30 bg-destructive/10 hover:bg-destructive/15"
       >
         <div className="bg-background flex justify-end gap-2 p-3">
-          <button type="button" className="text-foreground-alt hover:text-foreground h-7 rounded-md px-3 text-xs transition-colors">
+          <button
+            type="button"
+            className="text-foreground-alt hover:text-foreground h-7 rounded-md px-3 text-xs transition-colors"
+          >
             Cancel
           </button>
-          <button type="button" className="border-destructive/30 bg-destructive/10 hover:border-destructive/50 hover:bg-destructive/15 text-foreground h-7 rounded-md border px-3 text-xs font-medium transition duration-150">
+          <button
+            type="button"
+            className="border-destructive/30 bg-destructive/10 hover:border-destructive/50 hover:bg-destructive/15 text-foreground h-7 rounded-md border px-3 text-xs font-medium transition duration-150"
+          >
             Delete
           </button>
         </div>

@@ -113,7 +113,7 @@ function FaqItem({
       role="button"
       tabIndex={0}
       className={cn(
-        'group cursor-pointer rounded-lg border p-5 backdrop-blur-sm transition-all',
+        'group cursor-pointer rounded-lg border p-5 transition-all',
         isOpen
           ? 'border-foreground/12 bg-background-card/60'
           : 'border-foreground/6 bg-background-card/30 hover:border-foreground/12 hover:-translate-y-0.5',
@@ -207,7 +207,7 @@ export function Pricing() {
       <section className="relative z-10 mx-auto w-full max-w-4xl px-4 pb-14 @lg:px-8 @lg:pb-16">
         <div className="grid gap-6 @lg:grid-cols-2">
           {/* Cloud tier */}
-          <div className="border-brand/30 bg-background-card/50 relative flex flex-col rounded-lg border-2 p-6 backdrop-blur-sm @lg:p-8">
+          <div className="border-brand/30 bg-background-card/50 relative flex flex-col rounded-lg border-2 p-6 @lg:p-8">
             <div className="bg-brand absolute -top-3 right-4 rounded-full px-3 py-0.5 text-xs font-semibold text-black">
               Popular
             </div>
@@ -236,7 +236,7 @@ export function Pricing() {
           </div>
 
           {/* Free tier */}
-          <div className="border-foreground/8 bg-background-card/50 flex flex-col rounded-lg border p-6 backdrop-blur-sm @lg:p-8">
+          <div className="border-foreground/8 bg-background-card/50 flex flex-col rounded-lg border p-6 @lg:p-8">
             <div className="mb-4 flex items-center gap-2">
               <LuCloudOff className="text-foreground-alt size-5" />
               <h2 className="text-foreground text-xl font-semibold">Free</h2>
@@ -266,7 +266,7 @@ export function Pricing() {
         <span className="text-foreground-alt tracking-brand-wide mb-6 block text-center text-xs font-semibold uppercase">
           Usage above baseline
         </span>
-        <div className="border-foreground/8 bg-background-card/50 overflow-hidden rounded-lg border backdrop-blur-sm">
+        <div className="border-foreground/8 bg-background-card/50 overflow-hidden rounded-lg border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-foreground/8 border-b">

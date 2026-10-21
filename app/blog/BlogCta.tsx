@@ -105,7 +105,7 @@ export function BlogCta() {
 
   return (
     <section className="mt-16 mb-4">
-      <div className="border-brand/20 bg-background-card/30 rounded-2xl border p-6 backdrop-blur-sm @lg:p-8">
+      <div className="border-brand/20 bg-background-card/30 rounded-2xl border p-6 @lg:p-8">
         <div className="flex flex-col gap-8 @lg:flex-row @lg:items-center @lg:gap-10">
           <div className="flex flex-1 flex-col gap-4">
             <h2 className="text-foreground text-2xl font-semibold tracking-tight select-none">

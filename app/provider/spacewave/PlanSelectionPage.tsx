@@ -373,7 +373,7 @@ export function PlanSelectionPage({
       </div>
 
       {/* Cloud card */}
-      <div className="border-brand/40 bg-background-card/50 hover:border-brand/60 hover:shadow-brand/5 relative overflow-hidden rounded-lg border p-6 backdrop-blur-sm transition duration-300 hover:shadow-md">
+      <div className="border-brand/40 bg-background-card/50 hover:border-brand/60 hover:shadow-brand/5 relative overflow-hidden rounded-lg border p-6 transition duration-300 hover:shadow-md">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <LuCloud className="text-brand size-5" />
@@ -412,7 +412,7 @@ export function PlanSelectionPage({
       )}
 
       {/* Free local option */}
-      <div className="border-foreground/10 bg-background-card/30 hover:border-foreground/20 rounded-lg border p-6 backdrop-blur-sm transition duration-300 hover:shadow-md">
+      <div className="border-foreground/10 bg-background-card/30 hover:border-foreground/20 rounded-lg border p-6 transition duration-300 hover:shadow-md">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <LuServer className="text-foreground-alt size-5" />
@@ -441,7 +441,7 @@ export function PlanSelectionPage({
       </div>
 
       {/* Shared baseline */}
-      <div className="border-foreground/8 bg-background-card/30 rounded-lg border p-4 backdrop-blur-sm">
+      <div className="border-foreground/8 bg-background-card/30 rounded-lg border p-4">
         <p className="text-foreground-alt mb-3 text-center text-xs font-semibold tracking-wide uppercase">
           Both options include
         </p>

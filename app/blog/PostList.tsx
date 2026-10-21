@@ -56,7 +56,7 @@ interface PostListProps {
 // PostList renders a compact list of blog posts.
 export function PostList({ posts }: PostListProps) {
   return (
-    <div className="border-foreground/6 bg-background-card/10 overflow-hidden rounded-xl border backdrop-blur-sm">
+    <div className="border-foreground/6 bg-background-card/10 overflow-hidden rounded-xl border">
       {posts.map((post) => (
         <PostListItem key={post.slug} post={post} />
       ))}

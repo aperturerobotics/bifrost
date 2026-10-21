@@ -24,7 +24,7 @@ import { ForgeEntityList } from '@s4wave/web/forge/ForgeEntityList.js'
 import { PRED_TASK_TO_PASS } from '@s4wave/web/forge/predicates.js'
 import { StateBadge } from '@s4wave/web/forge/StateBadge.js'
 import { InfoCard } from '@s4wave/web/ui/InfoCard.js'
-import { StatCard } from '@s4wave/web/ui/StatCard.js'
+import { FigureStrip } from '@s4wave/web/ui/FigureStrip.js'
 import { CopyableField } from '@s4wave/web/ui/CopyableField.js'
 import { ForgeValueSetDisplay } from './ForgeValueSetDisplay.js'
 import { useForgeDecodedLinkedEntities } from './useForgeDecodedLinkedEntities.js'
@@ -143,11 +143,19 @@ export function ForgeTaskViewer({
                 <CopyableField label="Object Key" value={objectKey} />
               </div>
             </InfoCard>
-            <StatCard
-              icon={LuPlay}
-              label="Passes"
-              value={passesLoading ? '-' : passes.length}
-              detail={`Current nonce ${task?.passNonce?.toString() ?? '0'}`}
+            <FigureStrip
+              figures={[
+                {
+                  label: 'Passes',
+                  value: passesLoading ? '-' : passes.length,
+                  detail: `Current nonce ${task?.passNonce?.toString() ?? '0'}`,
+                },
+                {
+                  label: 'Task outputs',
+                  value: task?.valueSet?.outputs?.length ?? 0,
+                  detail: describeResult(task?.result),
+                },
+              ]}
             />
             <InfoCard
               icon={<LuActivity className="text-foreground-alt/60 size-3.5" />}
@@ -208,12 +216,6 @@ export function ForgeTaskViewer({
                 </div>
               )}
             </InfoCard>
-            <StatCard
-              icon={LuListTodo}
-              label="Task Outputs"
-              value={task?.valueSet?.outputs?.length ?? 0}
-              detail={describeResult(task?.result)}
-            />
           </div>
         ),
       },

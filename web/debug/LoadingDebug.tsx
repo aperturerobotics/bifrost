@@ -51,7 +51,7 @@ export function LoadingDebug() {
 
 function Intro() {
   return (
-    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5 backdrop-blur-sm">
+    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5">
       <p className="text-foreground text-sm font-semibold tracking-tight">
         Unified loading primitive gallery
       </p>
@@ -90,7 +90,7 @@ function Section({ title, description, children }: SectionProps) {
         </h2>
         <p className="text-foreground-alt/60 mt-0.5 text-xs">{description}</p>
       </div>
-      <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-4 backdrop-blur-sm">
+      <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-4">
         {children}
       </div>
     </section>
@@ -364,7 +364,7 @@ function LoadingCardActions({ view }: { view: LoadingView }) {
 
 function LoadingCard({ view }: { view: LoadingView }) {
   return (
-    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5 backdrop-blur-sm">
+    <div className="border-foreground/6 bg-background-card/30 rounded-lg border p-3.5">
       <div className="flex items-start gap-3">
         <div
           className={cn(
@@ -548,7 +548,7 @@ function LoadingInlineSection() {
       <div className="space-y-3">
         <div>
           <Label>In place of bare text</Label>
-          <div className="border-foreground/6 bg-background-card/30 mt-1.5 rounded-lg border p-3 backdrop-blur-sm">
+          <div className="border-foreground/6 bg-background-card/30 mt-1.5 rounded-lg border p-3">
             <LoadingInline label="Loading messages..." />
           </div>
         </div>

@@ -75,7 +75,7 @@ function FileIcon({
 function BinaryFileViewer({ mimeType }: { mimeType: string }) {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-      <div className="border-foreground/6 bg-background-card/30 w-full max-w-xs rounded-lg border p-4 backdrop-blur-sm">
+      <div className="border-foreground/6 bg-background-card/30 w-full max-w-xs rounded-lg border p-4">
         <div className="flex items-start gap-2.5">
           <span className="bg-foreground/5 flex size-8 shrink-0 items-center justify-center rounded-md">
             <FileIcon
@@ -131,7 +131,7 @@ function SymlinkViewer({
 }) {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-      <div className="border-foreground/6 bg-background-card/30 w-full max-w-xs rounded-lg border p-4 backdrop-blur-sm">
+      <div className="border-foreground/6 bg-background-card/30 w-full max-w-xs rounded-lg border p-4">
         <div className="flex items-start gap-2.5">
           <span className="bg-foreground/5 flex size-8 shrink-0 items-center justify-center rounded-md">
             <LuLink className="text-foreground-alt/70 size-4" />

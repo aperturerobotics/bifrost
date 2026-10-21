@@ -44,7 +44,7 @@ export function CollapsibleSection({
     <Collapsible.Root open={open} onOpenChange={onOpenChange} asChild>
       <section
         className={cn(
-          'border-foreground/6 bg-background-card/30 rounded-lg border backdrop-blur-sm',
+          'border-foreground/6 bg-background-card/30 rounded-lg border',
           className,
         )}
       >
