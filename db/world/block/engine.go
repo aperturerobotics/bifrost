@@ -1548,8 +1548,15 @@ func (e *Engine) buildWorldStateForRoot(
 	_, subtask = trace.NewTask(ctx, "hydra/world-block/engine/build-world-state/build-transaction")
 	btx, bcs := root.BuildTransactionWithStore(nil, store)
 	subtask.End()
+
+	// A reader of the published head shares the head's pin, so opening it
+	// does no block I/O under bcast. Other roots take their own pin.
 	releaseRoot := func() {}
-	if readOnly {
+	switch {
+	case !readOnly:
+	case e.head != nil && e.head.root == root && store == e.writeBlockStore:
+		releaseRoot = e.head.pin.hold()
+	default:
 		var err error
 		releaseRoot, err = block.PinRoot(ctx, store, root.GetRef().GetRootRef())
 		if err != nil {

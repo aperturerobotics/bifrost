@@ -429,11 +429,18 @@ func TestHeadHoldersSharePublicationPin(t *testing.T) {
 		return nil, context.Cause(ctx)
 	})
 
-	// Read the head and fork it for writing.
+	// Read the head and open a read snapshot of it.
 	err := f.engine.AccessWorldState(ctx, nil, func(*bucket_lookup.Cursor) error { return nil })
 	if err != nil {
 		t.Fatal(err)
 	}
+	read, err := f.engine.NewBlockEngineTransaction(ctx, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	read.Discard()
+
+	// Fork the head for writing.
 	fork, err := f.engine.ForkBlockTransaction(ctx, true)
 	if err != nil {
 		t.Fatal(err)
