@@ -28,7 +28,11 @@ function CounterContent() {
       ? `counter-${contextNamespace.join('-')}`
       : 'counter-root'
   return (
-    <button type="button" onClick={() => setCount((c: number) => c + 1)} data-testid={testId}>
+    <button
+      type="button"
+      onClick={() => setCount((c: number) => c + 1)}
+      data-testid={testId}
+    >
       Count: {count}
     </button>
   )
@@ -252,7 +256,8 @@ describe('StateNamespaceProvider', () => {
       const namespace = useStateNamespace(['custom', 'path'])
       const [count, setCount] = useStateAtom(namespace, 'count', 0)
       return (
-        <button type="button"
+        <button
+          type="button"
           onClick={() => setCount((c: number) => c + 1)}
           data-testid="custom-counter"
         >
@@ -276,7 +281,8 @@ describe('StateNamespaceProvider', () => {
     function DefaultCounter() {
       const [count, setCount] = useStateAtom(null, 'count', 0)
       return (
-        <button type="button"
+        <button
+          type="button"
           onClick={() => setCount((c: number) => c + 1)}
           data-testid="default-counter"
         >
@@ -310,7 +316,11 @@ describe('StateNamespaceProvider', () => {
       const [count, setCount] = useStateAtom(null, 'count1', 0)
       renderCount1++
       return (
-        <button type="button" onClick={() => setCount((c) => c + 1)} data-testid="counter1">
+        <button
+          type="button"
+          onClick={() => setCount((c) => c + 1)}
+          data-testid="counter1"
+        >
           Count1: {count}
         </button>
       )
@@ -320,7 +330,11 @@ describe('StateNamespaceProvider', () => {
       const [count, setCount] = useStateAtom(null, 'count2', 0)
       renderCount2++
       return (
-        <button type="button" onClick={() => setCount((c) => c + 1)} data-testid="counter2">
+        <button
+          type="button"
+          onClick={() => setCount((c) => c + 1)}
+          data-testid="counter2"
+        >
           Count2: {count}
         </button>
       )
@@ -393,13 +407,15 @@ describe('StateNamespaceProvider', () => {
       return (
         <div>
           <div data-testid={testId}>Count: {state.value}</div>
-          <button type="button"
+          <button
+            type="button"
             onClick={() => dispatch({ type: 'INCREMENT' })}
             data-testid={`${testId}-increment`}
           >
             Increment
           </button>
-          <button type="button"
+          <button
+            type="button"
             onClick={() => dispatch({ type: 'DECREMENT' })}
             data-testid={`${testId}-decrement`}
           >
@@ -562,10 +578,18 @@ describe('StateNamespaceProvider', () => {
       return (
         <div>
           <div data-testid="display">Value: {value ?? 'null'}</div>
-          <button type="button" onClick={() => setValue('test')} data-testid="set-value">
+          <button
+            type="button"
+            onClick={() => setValue('test')}
+            data-testid="set-value"
+          >
             Set Value
           </button>
-          <button type="button" onClick={() => setValue(null)} data-testid="set-null">
+          <button
+            type="button"
+            onClick={() => setValue(null)}
+            data-testid="set-null"
+          >
             Set Null
           </button>
         </div>
@@ -608,13 +632,25 @@ describe('StateNamespaceProvider', () => {
         <div>
           <div data-testid="value1">Value1: {value1}</div>
           <div data-testid="value2">Value2: {value2}</div>
-          <button type="button" onClick={() => setValue1(0)} data-testid="reset1">
+          <button
+            type="button"
+            onClick={() => setValue1(0)}
+            data-testid="reset1"
+          >
             Reset Value1
           </button>
-          <button type="button" onClick={() => setValue2('default')} data-testid="reset2">
+          <button
+            type="button"
+            onClick={() => setValue2('default')}
+            data-testid="reset2"
+          >
             Reset Value2
           </button>
-          <button type="button" onClick={() => setValue1(1)} data-testid="change1">
+          <button
+            type="button"
+            onClick={() => setValue1(1)}
+            data-testid="change1"
+          >
             Change Value1
           </button>
           <pre data-testid="state">

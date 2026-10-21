@@ -8,6 +8,10 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'happy-dom',
+      // Tests read same-origin iframe windows, which happy-dom loads only on request.
+      environmentOptions: {
+        happyDOM: { settings: { enableIframePageLoading: true } },
+      },
       setupFiles: ['./web/test/setup.ts'],
       include: [
         '{app,web,core,sdk,plugin,cmd,forge,net}/**/*.test.{ts,tsx}',

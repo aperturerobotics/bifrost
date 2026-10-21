@@ -78,7 +78,10 @@ function MockShellFlexLayout({ withMenu = true }: { withMenu?: boolean }) {
                       className="flexlayout__tab_toolbar"
                       data-testid="toolbar"
                     >
-                      <button type="button" className="flexlayout__tab_toolbar_button">
+                      <button
+                        type="button"
+                        className="flexlayout__tab_toolbar_button"
+                      >
                         +
                       </button>
                     </div>

@@ -47,13 +47,12 @@ describe('PanelSizeGate', () => {
     const baseGetComputedStyle = getComputedStyle
     vi.stubGlobal('getComputedStyle', (el: Element) => {
       const style = baseGetComputedStyle(el)
-      if (el instanceof HTMLElement && el.dataset.transformScale) {
-        Object.defineProperty(style, 'transform', {
-          value: `scale(${el.dataset.transformScale})`,
-          configurable: true,
-        })
-      }
-      return style
+      const scale = el instanceof HTMLElement && el.dataset.transformScale
+      if (!scale) return style
+      return new Proxy(style, {
+        get: (target, prop) =>
+          prop === 'transform' ? `scale(${scale})` : Reflect.get(target, prop),
+      })
     })
   })
 
