@@ -20,8 +20,12 @@ type EngineTx struct {
 	engine *Engine
 
 	// readTx is replaced under Engine.bcast and read without it.
-	readTx      atomic.Pointer[Tx]
-	readRoot    *bucket.ObjectRef
+	readTx   atomic.Pointer[Tx]
+	readRoot *bucket.ObjectRef
+	// readHead holds the head a read snapshot opened at, so its object
+	// reads follow refs without the Engine lock. Swapped out under
+	// Engine.bcast when the snapshot detaches or reopens its storage.
+	readHead    atomic.Pointer[heldHead]
 	writeTx     *Tx
 	baseHeadRef *bucket.ObjectRef
 	lease       coord.WriteLease
@@ -262,9 +266,10 @@ func (e *EngineTx) detachLocked() engineRetirement {
 	e.rel.Store(true)
 	delete(e.engine.snapshotTxs, e)
 	retirement := engineRetirement{
-		readTx:  e.readTx.Load(),
-		writeTx: e.writeTx,
-		lease:   e.lease,
+		readTx:   e.readTx.Load(),
+		readHead: e.readHead.Swap(nil),
+		writeTx:  e.writeTx,
+		lease:    e.lease,
 	}
 	e.lease = nil
 

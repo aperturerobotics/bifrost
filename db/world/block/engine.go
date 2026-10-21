@@ -71,6 +71,8 @@ type engineRetirement struct {
 	head *engineHead
 	// readTx is a detached caller-owned read snapshot.
 	readTx *Tx
+	// readHead is the head that snapshot held for its object reads.
+	readHead *heldHead
 	// writeTx is the detached mutable transaction.
 	writeTx *Tx
 	// lease retains external write authority until transaction users drain.
@@ -87,6 +89,7 @@ type engineRetirement struct {
 func (r engineRetirement) empty() bool {
 	return r.head == nil &&
 		r.readTx == nil &&
+		r.readHead == nil &&
 		r.writeTx == nil &&
 		r.lease == nil &&
 		r.writeTxRel == nil &&
@@ -692,6 +695,9 @@ func (e *Engine) drainRetirement(ctx context.Context, retirement engineRetiremen
 	}
 
 	// Release the root authority only after every coupled transaction drains.
+	if retirement.readHead != nil {
+		retirement.readHead.release()
+	}
 	if retirement.head != nil && retirement.head.root != nil {
 		retirement.head.root.Release()
 		retirement.head.pin.release()
@@ -815,6 +821,8 @@ func (e *Engine) NewBlockEngineTransaction(ctx context.Context, write bool) (*En
 		engTx := newEngineTx(e, nil)
 		engTx.readTx.Store(NewTx(world))
 		engTx.readRoot = e.head.root.GetRef().Clone()
+		root, release := e.holdHeadLocked()
+		engTx.readHead.Store(&heldHead{root: root, release: release})
 		e.snapshotTxs[engTx] = struct{}{}
 		locked.Unlock()
 		return engTx, nil
@@ -1176,6 +1184,14 @@ func (e *Engine) AccessWorldState(
 	})
 }
 
+// heldHead is a cursor on a head and the hold that keeps its root pinned.
+type heldHead struct {
+	// root is the held cursor; only cloned, never changed.
+	root *bucket_lookup.Cursor
+	// release drops root and the pin.
+	release func()
+}
+
 // holdHeadLocked clones the published head and holds its pin until release.
 // The pin was taken at publication, so holding it needs no block I/O. Cursor.Clone
 // copies the bucket handle without taking a release func, so the hold does not
@@ -1206,19 +1222,31 @@ func (e *Engine) accessStorage(
 	ncs, release := e.holdHeadLocked()
 	locked.Unlock()
 	defer release()
+	return e.accessFrom(ctx, ncs, ref, cb)
+}
+
+// accessFrom runs cb on root, or on the cursor root follows to ref. The caller
+// holds root's pin for the call.
+func (e *Engine) accessFrom(
+	ctx context.Context,
+	root *bucket_lookup.Cursor,
+	ref *bucket.ObjectRef,
+	cb func(*bucket_lookup.Cursor) error,
+) error {
+	// Read staged blocks through the root when following a ref.
 	if ref != nil && e.stagedStore != nil {
-		ncs.SetTransactionStore(e.stagedStore)
+		root.SetTransactionStore(e.stagedStore)
 	}
 
-	// Use the current root when no explicit reference was supplied.
+	// Use the root itself when no explicit reference was supplied.
 	if ref == nil {
-		return cb(ncs)
+		return cb(root)
 	}
 
 	// Follow a supplied root outside the engine lock.
 	subCtx, subCtxCancel := context.WithCancel(ctx)
 	defer subCtxCancel()
-	followed, err := ncs.FollowRef(subCtx, ref)
+	followed, err := root.FollowRef(subCtx, ref)
 	if err != nil {
 		return err
 	}

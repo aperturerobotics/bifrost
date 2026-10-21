@@ -46,6 +46,17 @@ func (e *EngineTx) AccessWorldState(
 	if e.writeTx != nil {
 		return e.writeTx.AccessWorldState(ctx, ref, cb)
 	}
+
+	// A read snapshot reads from the head it holds, without the Engine lock
+	// every reader would otherwise queue on for each object.
+	if held := e.readHead.Load(); held != nil && !e.rel.Load() {
+		root := held.root.Clone()
+		defer root.Release()
+		return e.engine.accessFrom(ctx, root, ref, func(cursor *bucket_lookup.Cursor) error {
+			setReadOnlyCursor(ctx, cursor)
+			return cb(cursor)
+		})
+	}
 	return e.engine.AccessWorldState(ctx, ref, cb)
 }
 
@@ -309,8 +320,10 @@ func (e *EngineTx) refreshReadSnapshot(ctx context.Context, previous *Tx) error 
 		return err
 	}
 
-	// Retire the replaced reader outside the Engine lock.
-	retirement := e.engine.beginRetirementLocked(engineRetirement{readTx: previous})
+	// Retire the replaced reader and the head it held outside the Engine
+	// lock. The held head belongs to the storage it closes, so later object
+	// reads go through the Engine.
+	retirement := e.engine.beginRetirementLocked(engineRetirement{readTx: previous, readHead: e.readHead.Swap(nil)})
 	e.readTx.Store(NewTx(state))
 	locked.Unlock()
 	e.engine.drainRetirement(ctx, retirement)
