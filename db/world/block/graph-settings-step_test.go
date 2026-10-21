@@ -78,9 +78,7 @@ func TestEngineStepGraphSettings(t *testing.T) {
 	dropFrom := w.next
 	var wg sync.WaitGroup
 	stop := make(chan struct{})
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case <-stop:
@@ -89,7 +87,7 @@ func TestEngineStepGraphSettings(t *testing.T) {
 			}
 			w.write(ctx)
 		}
-	}()
+	})
 
 	// Drop the index in small steps, checking between them.
 	dropSteps := 0
