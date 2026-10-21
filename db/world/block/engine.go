@@ -3,6 +3,7 @@ package world_block
 import (
 	"context"
 	"slices"
+	"sync"
 	"sync/atomic"
 
 	"github.com/aperturerobotics/util/broadcast"
@@ -64,11 +65,62 @@ func (p *rootPin) release() {
 	}
 }
 
+// publishedHead is an immutable published head that readers load and hold
+// without the Engine lock. The Engine holds one reference while the head is
+// published and every reader holds another until it releases, so a reader
+// keeps reading the storage of the head it pinned after a newer head
+// replaces it.
+type publishedHead struct {
+	// refs counts the holders. Zero means retired, and a retired head is
+	// never held again.
+	refs atomic.Int64
+	// root is a cursor on the head root, only cloned, never changed.
+	root *bucket_lookup.Cursor
+	// ref is the head root reference, never changed.
+	ref *bucket.ObjectRef
+	// unpin drops this head's hold on the root pin.
+	unpin func()
+	// rootBlock is the decoded World root, or nil. Callers clone it before use.
+	rootBlock *World
+	// seqno is the revision of the head.
+	seqno uint64
+}
+
+// tryHold adds a holder unless the head has retired.
+func (p *publishedHead) tryHold() bool {
+	// Count up only from a live count, so a retired head stays retired.
+	for {
+		n := p.refs.Load()
+		if n <= 0 {
+			return false
+		}
+		if p.refs.CompareAndSwap(n, n+1) {
+			return true
+		}
+	}
+}
+
+// hold adds a holder. The caller must already hold the head.
+func (p *publishedHead) hold() func() {
+	p.refs.Add(1)
+	return p.release
+}
+
+// release drops a holder and releases the root after the last one.
+func (p *publishedHead) release() {
+	if p.refs.Add(-1) == 0 {
+		p.root.Release()
+		p.unpin()
+	}
+}
+
 // engineRetirement is an obsolete resource set detached from Engine publication.
 // The Engine drains it after unlocking so cleanup can reenter Engine state.
 type engineRetirement struct {
 	// head is a replaced root and its shared read transaction.
 	head *engineHead
+	// pub is the Engine's reference to a replaced published head.
+	pub *publishedHead
 	// readTx is a detached caller-owned read snapshot.
 	readTx *Tx
 	// readHead is the head that snapshot held for its object reads.
@@ -88,6 +140,7 @@ type engineRetirement struct {
 // empty reports whether there are no detached resources to drain.
 func (r engineRetirement) empty() bool {
 	return r.head == nil &&
+		r.pub == nil &&
 		r.readTx == nil &&
 		r.readHead == nil &&
 		r.writeTx == nil &&
@@ -124,14 +177,33 @@ type Engine struct {
 	writeTx *EngineTx
 	// writeTxRel releases wmtx after the detached write transaction drains.
 	writeTxRel func()
-	// snapshotTxs tracks immutable read snapshots owned by caller-held EngineTx values.
+	// pub is the published head read transactions open at. It is swapped
+	// under bcast and loaded without it, so a read open never waits on a
+	// writer holding bcast. Nil after Close.
+	pub atomic.Pointer[publishedHead]
+	// writerOwned mirrors writeTx != nil || writeSession != nil for readers
+	// that skip a durable head refresh while a local writer owns publication.
+	// Stored under bcast.
+	writerOwned atomic.Bool
+	// snapMu guards read snapshot registration. It is never held across I/O,
+	// and bcast may be taken before it but never while holding it.
+	snapMu sync.Mutex
+	// snapIdle wakes Close when opening or snapRetiring reaches zero.
+	snapIdle *sync.Cond
+	// snapClosed rejects new read snapshots once Close starts. Guarded by snapMu.
+	snapClosed bool
+	// snapshotTxs tracks immutable read snapshots owned by caller-held EngineTx
+	// values. Guarded by snapMu.
 	snapshotTxs map[*EngineTx]struct{}
+	// opening counts read transaction opens building state. Guarded by snapMu.
+	opening int
+	// snapRetiring counts discarded read snapshots still releasing their
+	// state. Guarded by snapMu.
+	snapRetiring int
 	// retiring counts detached resource sets that have not finished draining.
 	retiring int
 	// committing counts write commits that own coordinator cleanup outside bcast.
 	committing int
-	// opening counts read transaction opens building state outside bcast.
-	opening int
 	// commitFn is a function to be called just before a commit is confirmed.
 	// It can be nil.
 	commitFn        CommitFn
@@ -279,6 +351,7 @@ func NewEngine(
 		snapshotTxs:    make(map[*EngineTx]struct{}),
 		watchedHeads:   make([]*watchedHead, 0, changeWatchHeads),
 	}
+	e.snapIdle = sync.NewCond(&e.snapMu)
 	for _, opt := range opts {
 		if opt != nil {
 			opt(e)
@@ -331,6 +404,9 @@ func NewEngine(
 	}
 	e.durableSeqno = e.headSeqnoLocked()
 
+	// Publish the opening head for lock-free readers.
+	e.publishHeadLocked(ctx, e.durableSeqno)
+
 	// External head observation belongs to the engine's resource lifetime.
 	// Constructor cancellation does not invalidate retained engine handles.
 	if e.writeCoordinator != nil && e.writeHeadRefresh != nil {
@@ -350,14 +426,11 @@ func (e *Engine) deferredDurability() bool {
 
 // GetRootRef gets the current root cursor reference.
 func (e *Engine) GetRootRef() *bucket.ObjectRef {
-	// Clone the published head ref under the engine lock.
-	locked := e.bcast.Lock()
-	var ref *bucket.ObjectRef
-	if e.head != nil {
-		ref = e.head.root.GetRef().Clone()
+	// Clone the published head ref without the engine lock.
+	if p := e.pub.Load(); p != nil {
+		return p.ref.Clone()
 	}
-	locked.Unlock()
-	return ref
+	return nil
 }
 
 // Sync fences durable storage and advances the durable world head.
@@ -642,12 +715,55 @@ func (e *Engine) installRootRefLocked(ctx context.Context, ref *bucket.ObjectRef
 		pin:    pin,
 		readTx: NewTx(nextWorld),
 	}
+	retirement.pub = e.publishHeadLocked(ctx, seqno)
 	if !e.deferredDurability() {
 		// A head publishes only once durable outside deferred mode.
 		e.durableSeqno = max(e.durableSeqno, seqno)
 	}
 	e.signalHeadLocked()
 	return e.beginRetirementLocked(retirement), nil
+}
+
+// publishHeadLocked publishes e.head at seqno for lock-free readers and
+// returns the replaced published head, whose Engine reference the caller
+// releases after unlocking. The caller must hold bcast.
+func (e *Engine) publishHeadLocked(ctx context.Context, seqno uint64) *publishedHead {
+	// Seed readers with the decoded root when the head has one; a reader
+	// without it decodes the root itself.
+	rootBlock, err := e.headRootBlockLocked(ctx)
+	if err != nil {
+		rootBlock = nil
+	}
+
+	// Hold the head's root pin for as long as any reader holds this head.
+	p := &publishedHead{
+		root:      e.head.root.Clone(),
+		ref:       e.head.root.GetRef().Clone(),
+		unpin:     e.head.pin.hold(),
+		rootBlock: rootBlock,
+		seqno:     seqno,
+	}
+	p.refs.Store(1)
+	return e.pub.Swap(p)
+}
+
+// acquireHead holds the published head without the Engine lock, or returns
+// nil after Close. A retired head was already replaced, so the retry loads a
+// newer one.
+func (e *Engine) acquireHead() *publishedHead {
+	for {
+		p := e.pub.Load()
+		if p == nil || p.tryHold() {
+			return p
+		}
+	}
+}
+
+// syncWriterOwnedLocked records whether a local writer owns publication.
+// The caller must hold bcast and call it after changing writeTx or
+// writeSession.
+func (e *Engine) syncWriterOwnedLocked() {
+	e.writerOwned.Store(e.writeTx != nil || e.writeSession != nil)
 }
 
 // signalHeadLocked wakes revision waiters. The caller must hold bcast.
@@ -697,6 +813,10 @@ func (e *Engine) drainRetirement(ctx context.Context, retirement engineRetiremen
 	}
 
 	// Release the root authority only after every coupled transaction drains.
+	// Readers still holding a replaced published head keep its root.
+	if retirement.pub != nil {
+		retirement.pub.release()
+	}
 	if retirement.readHead != nil {
 		retirement.readHead.release()
 	}
@@ -918,6 +1038,7 @@ func (e *Engine) NewBlockEngineTransaction(ctx context.Context, write bool) (*En
 	}
 	e.writeTx = engTx
 	e.writeTxRel = relLock
+	e.syncWriterOwnedLocked()
 	locked.Unlock()
 
 	// Drain retired roots and return the write transaction.
@@ -925,50 +1046,51 @@ func (e *Engine) NewBlockEngineTransaction(ctx context.Context, write bool) (*En
 	return engTx, nil
 }
 
-// openReadTx opens a read snapshot of the current head. It holds the head and
-// its publication pin under bcast and builds the World state after unlocking,
-// so the root decode and tree reads never stall other Engine users. Close
-// joins an open in flight through opening.
+// openReadTx opens a read snapshot of the published head without the Engine
+// lock, so a read never waits on a writer holding bcast. The snapshot may lag
+// behind a commit publishing concurrently. It holds the head it opened at
+// until Discard, so it keeps reading that head's storage. Close joins an open
+// in flight through opening.
 func (e *Engine) openReadTx(ctx context.Context) (*EngineTx, error) {
-	// Return when the Engine has closed.
-	locked := e.bcast.Lock()
-	if e.closed {
-		locked.Unlock()
+	// Count the open so Close joins it, unless the Engine has closed.
+	e.snapMu.Lock()
+	if e.snapClosed {
+		e.snapMu.Unlock()
 		return nil, ErrEngineClosed
 	}
-
-	// Hold the head for the snapshot's object reads and for its state.
-	root, release := e.holdHeadLocked()
-	readRoot := e.head.root.GetRef().Clone()
-	rootBlock, err := e.headRootBlockLocked(ctx)
-	if err != nil {
-		locked.Unlock()
-		release()
-		return nil, err
-	}
-	statePin := e.head.pin.hold()
 	e.opening++
-	locked.Unlock()
+	e.snapMu.Unlock()
 
-	// Build the state from the held root without the Engine lock.
-	world, err := e.newWorldState(ctx, true, root, e.writeBlockStore, statePin, rootBlock)
+	// Hold the published head for the snapshot's object reads and for its
+	// state, and build the state from it.
+	var engTx *EngineTx
+	var world *WorldState
+	err := ErrEngineClosed
+	head := e.acquireHead()
+	var root *bucket_lookup.Cursor
+	if head != nil {
+		root = head.root.Clone()
+		world, err = e.newWorldState(ctx, true, root, e.writeBlockStore, head.hold(), head.rootBlock)
+	}
 
 	// Register the snapshot for Engine.Close unless it closed meanwhile.
-	locked = e.bcast.Lock()
+	e.snapMu.Lock()
 	e.opening--
-	closed := e.closed
+	closed := e.snapClosed
 	if closed {
-		locked.Broadcast()
+		e.snapIdle.Broadcast()
 	}
-	var engTx *EngineTx
 	if err == nil && !closed {
 		engTx = newEngineTx(e, nil)
 		engTx.readTx.Store(NewTx(world))
-		engTx.readRoot = readRoot
-		engTx.readHead.Store(&heldHead{root: root, release: release})
+		engTx.readRoot = head.ref.Clone()
+		engTx.readHead.Store(&heldHead{root: root, release: func() {
+			root.Release()
+			head.release()
+		}})
 		e.snapshotTxs[engTx] = struct{}{}
 	}
-	locked.Unlock()
+	e.snapMu.Unlock()
 	if engTx != nil {
 		return engTx, nil
 	}
@@ -977,51 +1099,88 @@ func (e *Engine) openReadTx(ctx context.Context) (*EngineTx, error) {
 	if world != nil {
 		world.Discard()
 	}
-	release()
+	if head != nil {
+		root.Release()
+		head.release()
+	}
 	if err == nil {
 		err = ErrEngineClosed
 	}
 	return nil, err
 }
 
+// discardSnapshot detaches a read snapshot under snapMu and releases its
+// state after unlocking, without the Engine lock.
+func (e *Engine) discardSnapshot(tx *EngineTx) {
+	// Detach the snapshot and count its release so Close joins it.
+	e.snapMu.Lock()
+	retirement := tx.detachSnapshotLocked()
+	e.snapRetiring++
+	e.snapMu.Unlock()
+
+	// Release the state before the head that backs it.
+	if retirement.readTx != nil {
+		retirement.readTx.Discard()
+	}
+	if retirement.readHead != nil {
+		retirement.readHead.release()
+	}
+
+	// Publish completion for Close.
+	e.snapMu.Lock()
+	e.snapRetiring--
+	e.snapIdle.Broadcast()
+	e.snapMu.Unlock()
+}
+
 // refreshReadHead adopts the durable head when no local writer owns publication.
-// External I/O and retirement run without holding bcast.
+// External I/O and retirement run without holding bcast. It takes bcast only
+// to adopt a durable head that differs from the published one while no local
+// writer owns publication; otherwise the read uses the published head.
 func (e *Engine) refreshReadHead(ctx context.Context) error {
 	// Skip refresh when no durable head writer is configured.
 	if e.writeHeadRefresh == nil {
 		return nil
 	}
 
+	// A local writer owns publication: read the published head.
+	if e.pub.Load() == nil {
+		return ErrEngineClosed
+	}
+	if e.writerOwned.Load() {
+		return nil
+	}
+
 	// Refresh the durable coordinator head before pinning local state.
-	var headRef *bucket.ObjectRef
-	locked := e.bcast.Lock()
-	shouldRefresh := !e.closed && e.writeTx == nil && e.writeSession == nil
-	locked.Unlock()
-	if shouldRefresh {
-		var err error
-		headRef, err = e.writeHeadRefresh(ctx)
-		if err != nil {
-			var retirement engineRetirement
-			if isCoordinatedWriteSnapshotError(err) {
-				locked := e.bcast.Lock()
-				if !e.closed {
-					retirement = e.invalidateHeadReadTxLocked()
-				}
-				locked.Unlock()
+	headRef, err := e.writeHeadRefresh(ctx)
+	if err != nil {
+		var retirement engineRetirement
+		if isCoordinatedWriteSnapshotError(err) {
+			locked := e.bcast.Lock()
+			if !e.closed {
+				retirement = e.invalidateHeadReadTxLocked()
 			}
-			e.drainRetirement(ctx, retirement)
-			return err
+			locked.Unlock()
 		}
+		e.drainRetirement(ctx, retirement)
+		return err
+	}
+
+	// The published head already is the durable head.
+	if headRef == nil || headRef.GetRootRef().GetEmpty() {
+		return nil
+	}
+	if p := e.pub.Load(); p != nil && p.ref.EqualsRef(headRef) {
+		return nil
 	}
 
 	// Revalidate writer ownership after external I/O before adopting the head.
-	locked = e.bcast.Lock()
+	locked := e.bcast.Lock()
 	if e.closed {
 		locked.Unlock()
 		return ErrEngineClosed
 	}
 	var retirement engineRetirement
-	var err error
 	if e.writeTx == nil && e.writeSession == nil {
 		retirement, err = e.applyDurableHeadLocked(ctx, headRef)
 	}
@@ -1248,21 +1407,22 @@ func (e *Engine) holdHeadLocked() (*bucket_lookup.Cursor, func()) {
 }
 
 // accessStorage builds a writable bucket lookup cursor with an optional ref,
-// holding the current root for the callback.
+// holding the published root for the callback without the Engine lock.
+// Cursor.Clone copies the bucket handle without taking a release func, so the
+// hold does not establish a cross-bucket lifetime across Engine.Close.
 func (e *Engine) accessStorage(
 	ctx context.Context,
 	ref *bucket.ObjectRef,
 	cb func(*bucket_lookup.Cursor) error,
 ) error {
-	// Retain the current root while publication is stable.
-	locked := e.bcast.Lock()
-	if e.closed {
-		locked.Unlock()
+	// Hold the published root for the callback.
+	head := e.acquireHead()
+	if head == nil {
 		return ErrEngineClosed
 	}
-	ncs, release := e.holdHeadLocked()
-	locked.Unlock()
-	defer release()
+	defer head.release()
+	ncs := head.root.Clone()
+	defer ncs.Release()
 	return e.accessFrom(ctx, ncs, ref, cb)
 }
 
@@ -1357,27 +1517,13 @@ func (e *Engine) GetSeqno(ctx context.Context) (uint64, error) {
 		return 0, err
 	}
 
-	// Reuse the shared head published by local commits or durable refresh.
-	for {
-		locked := e.bcast.Lock()
-		if e.closed {
-			locked.Unlock()
-			return 0, ErrEngineClosed
-		}
-		if err := e.initializeHeadReadTx(ctx); err != nil {
-			locked.Unlock()
-			return 0, err
-		}
-		readTx := e.head.readTx
-		locked.Unlock()
-
-		// Retry a revision read if its shared head retired concurrently.
-		seqno, err := readTx.GetSeqno(ctx)
-		if readTx.state.discarded.Load() {
-			continue
-		}
-		return seqno, err
+	// Read the revision of the head published by local commits or durable
+	// refresh, without the Engine lock.
+	p := e.pub.Load()
+	if p == nil {
+		return 0, ErrEngineClosed
 	}
+	return p.seqno, nil
 }
 
 // WaitSeqno waits for the seqno of the world state to be >= value.
@@ -1464,8 +1610,8 @@ func (e *Engine) Close() error {
 	}
 
 	// Detach every Engine-owned resource while publication is closed.
-	retirements := make([]engineRetirement, 0, len(e.snapshotTxs)+1)
-	retirement := engineRetirement{head: e.head, watched: e.watchedHeads}
+	retirements := make([]engineRetirement, 0, 1)
+	retirement := engineRetirement{head: e.head, pub: e.pub.Swap(nil), watched: e.watchedHeads}
 	e.head = nil
 	e.watchedHeads = nil
 
@@ -1481,12 +1627,17 @@ func (e *Engine) Close() error {
 	if !retirement.empty() {
 		retirements = append(retirements, e.beginRetirementLocked(retirement))
 	}
+
+	// Reject new read snapshots and detach the registered ones.
+	e.snapMu.Lock()
+	e.snapClosed = true
 	for tx := range e.snapshotTxs {
-		txRetirement := e.beginRetirementLocked(tx.detachLocked())
+		txRetirement := e.beginRetirementLocked(tx.detachSnapshotLocked())
 		if !txRetirement.empty() {
 			retirements = append(retirements, txRetirement)
 		}
 	}
+	e.snapMu.Unlock()
 	locked.Broadcast()
 	locked.Unlock()
 
@@ -1501,12 +1652,19 @@ func (e *Engine) Close() error {
 	// Join detached work, in-flight commit publication, read opens and change
 	// watches before baseRoot release.
 	locked = e.bcast.Lock()
-	for e.retiring != 0 || e.committing != 0 || e.opening != 0 || e.changeWatches != 0 {
+	for e.retiring != 0 || e.committing != 0 || e.changeWatches != 0 {
 		wait := locked.WaitCh()
 		locked.Unlock()
 		<-wait
 		locked = e.bcast.Lock()
 	}
+
+	// Join read opens and snapshot releases, which run without bcast.
+	e.snapMu.Lock()
+	for e.opening != 0 || e.snapRetiring != 0 {
+		e.snapIdle.Wait()
+	}
+	e.snapMu.Unlock()
 
 	// Release the block-store authority only after every dependent user exits.
 	baseRoot := e.baseRoot

@@ -85,6 +85,7 @@ func (e *Engine) resumeWriteSession(ctx context.Context, releaseWriter func()) (
 		out.baseHeadRef = s.prepared.Clone()
 		out.staged, out.session = e.stagedStore, s
 		e.writeTx, e.writeTxRel = out, releaseWriter
+		e.syncWriterOwnedLocked()
 		locked.Unlock()
 		return out, true, nil
 	}
@@ -114,6 +115,7 @@ func (e *Engine) releaseWriteSession(s *engineWriteSession) error {
 	// Deregister the session from the engine and wake waiters.
 	if e.writeSession == s {
 		e.writeSession = nil
+		e.syncWriterOwnedLocked()
 	}
 	locked.Broadcast()
 	locked.Unlock()
