@@ -93,6 +93,21 @@ type space struct {
 	marks pin
 	// reserved lists the runs checkpoints are writing new pages into.
 	reserved []run
+	// pendingAt indexes the runs of values and pages by first page while
+	// replay runs, so a claim finds the runs it overlaps without scanning
+	// both queues. It is nil outside replay, and replay drops it if two
+	// pending runs ever overlap, falling back to the scan.
+	pendingAt *btree.Map[uint64, pendingRef]
+}
+
+// pendingRef is a pending run as pendingAt holds it.
+type pendingRef struct {
+	// n is the page count.
+	n uint64
+	// tag is the run's tag in its queue.
+	tag uint64
+	// page reports whether the run is in pages rather than values.
+	page bool
 }
 
 // newSpace returns the space of a new file.
@@ -444,37 +459,140 @@ func (s *space) liveAt(p uint64) uint16 {
 // release the writer made without a record, or, for a page of the writer's
 // open extent that replay pended when its values were freed, never.
 func (s *space) claim(r run) {
-	s.values = cut(s.values, r)
-	s.pages = cut(s.pages, r)
+	// Without the replay index, scan both queues.
+	if s.pendingAt == nil {
+		s.values = cut(s.values, r)
+		s.pages = cut(s.pages, r)
+		s.take(r)
+		return
+	}
+
+	// Find the pending runs r overlaps, which end after its start. The
+	// indexed runs do not overlap, so the first run that ends before it ends
+	// the search.
+	if r.n == 0 {
+		s.take(r)
+		return
+	}
+	var hits []uint64
+	s.pendingAt.Descend(r.end()-1, func(start uint64, x pendingRef) bool {
+		if start+x.n <= r.start {
+			return false
+		}
+		hits = append(hits, start)
+		return true
+	})
+
+	// Cut each from its queue and the index.
+	for _, start := range hits {
+		x, _ := s.pendingAt.Delete(start)
+		q := &s.values
+		if x.page {
+			q = &s.pages
+		}
+		i := findPending(*q, start, x.tag)
+		if i < 0 {
+			s.pendingAt = nil
+			s.values = cut(s.values, r)
+			s.pages = cut(s.pages, r)
+			break
+		}
+		var parts []pending
+		*q, parts = cutAt(*q, i, r)
+		for _, part := range parts {
+			s.pendingAt.Set(part.start, pendingRef{n: part.n, tag: part.tag, page: x.page})
+		}
+	}
 	s.take(r)
 }
 
 // cut removes the pages of r from the runs in q in place, keeping tag
-// order. Replay cuts once per claimed page, so it allocates only to split
-// a run.
+// order. It scans q, so replay uses the pendingAt index instead.
 func cut(q []pending, r run) []pending {
 	for i := 0; i < len(q); i++ {
 		x := q[i]
 		if x.end() <= r.start || x.start >= r.end() {
 			continue
 		}
-		head := pending{start: x.start, n: r.start - x.start, tag: x.tag}
-		tail := pending{start: r.end(), n: x.end() - r.end(), tag: x.tag}
-		switch {
-		case x.start < r.start && x.end() > r.end():
-			q[i] = head
-			q = slices.Insert(q, i+1, tail)
-			i++
-		case x.start < r.start:
-			q[i] = head
-		case x.end() > r.end():
-			q[i] = tail
-		default:
-			q = slices.Delete(q, i, i+1)
-			i--
-		}
+		var parts []pending
+		q, parts = cutAt(q, i, r)
+		i += len(parts) - 1
 	}
 	return q
+}
+
+// cutAt removes the pages of r from q[i], which r overlaps, keeping tag
+// order, and returns q with the parts of q[i] that remain in its place. It
+// allocates only to split a run.
+func cutAt(q []pending, i int, r run) ([]pending, []pending) {
+	x := q[i]
+	head := pending{start: x.start, n: r.start - x.start, tag: x.tag}
+	tail := pending{start: r.end(), n: x.end() - r.end(), tag: x.tag}
+	switch {
+	case x.start < r.start && x.end() > r.end():
+		q[i] = head
+		q = slices.Insert(q, i+1, tail)
+		return q, q[i : i+2]
+	case x.start < r.start:
+		q[i] = head
+		return q, q[i : i+1]
+	case x.end() > r.end():
+		q[i] = tail
+		return q, q[i : i+1]
+	default:
+		return slices.Delete(q, i, i+1), nil
+	}
+}
+
+// findPending returns the index in q of the run starting at start with tag.
+// The queues are in tag order, so it searches the runs of tag first.
+func findPending(q []pending, start, tag uint64) int {
+	// Search the runs of tag.
+	i, _ := slices.BinarySearchFunc(q, tag, func(p pending, tag uint64) int { return cmp.Compare(p.tag, tag) })
+	for ; i < len(q) && q[i].tag == tag; i++ {
+		if q[i].start == start {
+			return i
+		}
+	}
+
+	// Fall back to a scan if the order was ever broken.
+	return slices.IndexFunc(q, func(p pending) bool { return p.start == start })
+}
+
+// indexPending builds pendingAt from the queues for a replay.
+func (s *space) indexPending() {
+	s.pendingAt = new(btree.Map[uint64, pendingRef])
+	for _, p := range s.values {
+		s.indexRun(p, false, false)
+	}
+	for _, p := range s.pages {
+		s.indexRun(p, true, false)
+	}
+}
+
+// indexRun adds a run of the pages queue or the values queue to pendingAt.
+// grown reports that it lengthens the indexed run at its start. A run that
+// overlaps another drops the index, so claims scan the queues as before.
+func (s *space) indexRun(p pending, page, grown bool) {
+	// Find the run before p's end other than the one p grows.
+	if s.pendingAt == nil {
+		return
+	}
+	overlap := p.n == 0
+	s.pendingAt.Descend(p.end()-1, func(start uint64, x pendingRef) bool {
+		if grown && start == p.start {
+			return true
+		}
+		overlap = overlap || start+x.n > p.start
+		return false
+	})
+
+	// Index p, or give up on the index.
+	if overlap {
+		s.pendingAt = nil
+		return
+	}
+	s.pendingAt.Set(p.start, pendingRef{n: p.n, tag: p.tag, page: page})
 }
 
 // freeValue drops n live bytes at off, freed by commit tag.
@@ -499,14 +617,17 @@ func (s *space) inOpen(p uint64) bool {
 
 // pend queues a freed run, merging it with the previous run of the same tag.
 func (s *space) pend(q *[]pending, p pending) {
-	if l := len(*q); l != 0 {
-		last := &(*q)[l-1]
-		if last.tag == p.tag && last.end() == p.start {
-			last.n += p.n
-			return
-		}
+	// Merge with the previous run, or append.
+	grown := false
+	if l := len(*q); l != 0 && (*q)[l-1].tag == p.tag && (*q)[l-1].end() == p.start {
+		(*q)[l-1].n += p.n
+		p, grown = (*q)[l-1], true
+	} else {
+		*q = append(*q, p)
 	}
-	*q = append(*q, p)
+
+	// Keep the replay index current.
+	s.indexRun(p, q == &s.pages, grown)
 }
 
 // freePages queues index pages freed by checkpoint tag.
@@ -530,16 +651,24 @@ func (s *space) release(seq, ckpt uint64) {
 	s.marks = pin{seq: max(s.marks.seq, seq), ckpt: max(s.marks.ckpt, ckpt)}
 	i := 0
 	for ; i < len(s.values) && s.values[i].tag <= seq; i++ {
-		s.addFree(s.values[i].run)
+		s.releasePending(s.values[i].run)
 	}
 	s.values = s.values[i:]
 
 	// Free page runs through ckpt.
 	i = 0
 	for ; i < len(s.pages) && s.pages[i].tag <= ckpt; i++ {
-		s.addFree(s.pages[i].run)
+		s.releasePending(s.pages[i].run)
 	}
 	s.pages = s.pages[i:]
+}
+
+// releasePending frees a run leaving a queue.
+func (s *space) releasePending(r run) {
+	if s.pendingAt != nil {
+		s.pendingAt.Delete(r.start)
+	}
+	s.addFree(r)
 }
 
 // drain returns the parts of the runs released since the last drain that

@@ -218,8 +218,10 @@ func (w *writer) replaySpace(st *state) error {
 		return err
 	}
 
-	// Replay the space changes of the records after it. The log resumes
+	// Replay the space changes of the records after it, indexing the
+	// pending runs so each claim finds the runs it overlaps. The log resumes
 	// after the tree's checkpoint, which may precede the space's.
+	sp.indexPending()
 	lr := newLogReader(s, st.sb.logPos, st.sb.logEnd, st.sb.seq, st.sb.logCrc)
 	for lr.seq <= st.seq {
 		r, ok := lr.next()
@@ -250,6 +252,7 @@ func (w *writer) replaySpace(st *state) error {
 
 	// Adopt the space. Its writer punched what it released, except a last
 	// batch a crash cut short, whose pages stay allocated until reused.
+	sp.pendingAt = nil
 	sp.drain()
 	size, err := s.size()
 	if err != nil {
