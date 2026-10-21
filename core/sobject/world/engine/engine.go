@@ -417,7 +417,7 @@ func (e *soEngine) lockReplayed(ctx context.Context, clock *commitClock) (func()
 	for {
 		// Take the writer lock, tracing the hold until the write releases it.
 		taskCtx, task := trace.NewTask(ctx, "alpha/so-engine/new-transaction/lock-write-mtx")
-		unlockWriteMtx, err := e.c.writeMtx.Lock(taskCtx)
+		unlockWriteMtx, err := e.c.writeMtx.Lock(taskCtx, "write")
 		task.End()
 		if err != nil {
 			return nil, err

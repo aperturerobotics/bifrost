@@ -9,7 +9,6 @@ import (
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/ccontainer"
-	"github.com/aperturerobotics/util/csync"
 	"github.com/s4wave/spacewave/core/sobject"
 	block_transform "github.com/s4wave/spacewave/db/block/transform"
 	"github.com/s4wave/spacewave/db/world"
@@ -53,7 +52,7 @@ type Controller struct {
 
 	// writeMtx serializes write transactions and replay of the watched
 	// SharedObject state.
-	writeMtx csync.Mutex
+	writeMtx writerLock
 	// writer is the last served engine, whose admissions lockSettled settles,
 	// or nil before the first. Guarded by writeMtx.
 	writer *soEngine
@@ -73,13 +72,15 @@ func NewController(
 	conf *Config,
 	sfs *block_transform.StepFactorySet,
 ) (*Controller, error) {
+	le = le.WithField("engine-id", conf.GetEngineId())
 	return &Controller{
-		le:        le.WithField("engine-id", conf.GetEngineId()),
+		le:        le,
 		conf:      conf,
 		bus:       bus,
 		engineCtr: ccontainer.NewCContainer[*servedEngine](nil),
 		engineID:  conf.GetEngineId(),
 		sfs:       sfs,
+		writeMtx:  writerLock{le: le},
 		failed:    make(map[string]struct{}),
 	}, nil
 }
@@ -208,7 +209,7 @@ func (c *Controller) executeWorld(
 ) error {
 	// Wait for the writes the previous engine admitted to settle, so this
 	// engine starts from the store and knows which operations failed.
-	unlock, err := c.lockSettled(ctx)
+	unlock, err := c.lockSettled(ctx, "execute-world")
 	if err != nil {
 		return err
 	}
@@ -324,7 +325,7 @@ func (c *Controller) acknowledger(so sobject.SharedObject) func(context.Context)
 	return func(ctx context.Context) error {
 		// Queue it under the writer lock once the admitted writes settle, so
 		// the direct state write does not wait for their receipts under it.
-		unlockWriteMtx, err := c.lockSettled(ctx)
+		unlockWriteMtx, err := c.lockSettled(ctx, "acknowledge")
 		if err != nil {
 			return err
 		}
@@ -397,7 +398,7 @@ func (c *Controller) withdraw(served *servedEngine) {
 // replaces settles no further: its writes ended with it.
 func (c *Controller) setWriter(ctx context.Context, e *soEngine) error {
 	// Swap the writer under the writer lock.
-	unlock, err := c.writeMtx.Lock(ctx)
+	unlock, err := c.writeMtx.Lock(ctx, "set-writer")
 	if err != nil {
 		return err
 	}
@@ -409,7 +410,7 @@ func (c *Controller) setWriter(ctx context.Context, e *soEngine) error {
 // staleSnapshot reports whether snap of so shows a failed write, for a caller
 // outside the writer lock.
 func (c *Controller) staleSnapshot(ctx context.Context, so sobject.SharedObject, snap sobject.SharedObjectStateSnapshot) (bool, error) {
-	unlock, err := c.writeMtx.Lock(ctx)
+	unlock, err := c.writeMtx.Lock(ctx, "stale-snapshot")
 	if err != nil {
 		return false, err
 	}
@@ -422,10 +423,10 @@ func (c *Controller) staleSnapshot(ctx context.Context, so sobject.SharedObject,
 // the SharedObject state directly or holds the replayed Worlds itself uses it,
 // since the direct write waits for every pending receipt and only a pending
 // publication holds the blocks of its World.
-func (c *Controller) lockSettled(ctx context.Context) (func(), error) {
+func (c *Controller) lockSettled(ctx context.Context, holder string) (func(), error) {
 	for {
 		// Lock and settle the resolved receipts.
-		unlock, err := c.writeMtx.Lock(ctx)
+		unlock, err := c.writeMtx.Lock(ctx, holder)
 		if err != nil {
 			return nil, err
 		}

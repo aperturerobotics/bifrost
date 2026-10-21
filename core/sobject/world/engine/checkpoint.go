@@ -267,7 +267,7 @@ func (e *soEngine) ProposeCheckpoint(ctx context.Context, state *sobject.SOState
 	if !ok {
 		return nil, nil
 	}
-	unlock, err := e.c.writeMtx.Lock(ctx)
+	unlock, err := e.c.writeMtx.Lock(ctx, "propose-checkpoint")
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func (e *soEngine) JudgeCheckpoint(ctx context.Context, state *sobject.SOState, 
 	if !ok {
 		return false, false, nil
 	}
-	unlock, err := e.c.writeMtx.Lock(ctx)
+	unlock, err := e.c.writeMtx.Lock(ctx, "judge-checkpoint")
 	if err != nil {
 		return false, false, err
 	}

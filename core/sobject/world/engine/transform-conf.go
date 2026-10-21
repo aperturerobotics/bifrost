@@ -27,7 +27,7 @@ type TransformEngine interface {
 // GetTransformConf returns the transform of the installed World head.
 func (e *soEngine) GetTransformConf(ctx context.Context) (*block_transform.Config, error) {
 	// Replay the admitted operations, then read the head.
-	unlockWriteMtx, err := e.c.lockSettled(ctx)
+	unlockWriteMtx, err := e.c.lockSettled(ctx, "transform-conf")
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (e *soEngine) SetTransformConf(ctx context.Context, conf *block_transform.C
 	// Build the operation on the current World, excluding write transactions
 	// until it is placed. The SharedObject writes it directly after every
 	// pending receipt, so wait for them outside the lock.
-	unlockWriteMtx, err := e.c.lockSettled(ctx)
+	unlockWriteMtx, err := e.c.lockSettled(ctx, "transform-conf")
 	if err != nil {
 		return err
 	}

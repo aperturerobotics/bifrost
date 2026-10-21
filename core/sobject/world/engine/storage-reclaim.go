@@ -195,7 +195,7 @@ func (e *soEngine) fenceStorageReclaim(ctx context.Context, copyRoots bool) ([]*
 func (e *soEngine) writeFence(ctx context.Context) ([]byte, uint64, error) {
 	// Queue it under the writer lock once no receipt is pending, since the
 	// SharedObject writes it directly after every pending receipt.
-	unlockWriteMtx, err := e.c.lockSettled(ctx)
+	unlockWriteMtx, err := e.c.lockSettled(ctx, "reclaim-fence")
 	if err != nil {
 		return nil, 0, err
 	}
@@ -268,7 +268,7 @@ func (e *soEngine) waitStable(ctx context.Context, h []byte, nonce uint64) error
 func (e *soEngine) liveWorlds(ctx context.Context) (*block.BlockRef, []*RetainedRoot, []*RetainedRoot, error) {
 	// Replay the current state under the writer lock once the replayed
 	// Worlds are durable, since the caller holds them itself.
-	unlockWriteMtx, err := e.c.lockSettled(ctx)
+	unlockWriteMtx, err := e.c.lockSettled(ctx, "reclaim-live-worlds")
 	if err != nil {
 		return nil, nil, nil, err
 	}

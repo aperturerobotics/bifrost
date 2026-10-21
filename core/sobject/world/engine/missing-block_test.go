@@ -207,7 +207,7 @@ func testEngineStopsReplayAtBlockGap(t *testing.T, store *hidingBlockStore, want
 		t.Helper()
 		lockCtx, lockCancel := context.WithTimeout(ctx, 2*time.Second)
 		defer lockCancel()
-		unlock, err := space.c.writeMtx.Lock(lockCtx)
+		unlock, err := space.c.writeMtx.Lock(lockCtx, "test")
 		if err != nil {
 			t.Fatalf("write lock is held: %v", err)
 		}

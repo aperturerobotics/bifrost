@@ -115,7 +115,7 @@ func (e *soEngine) reinstall(ctx context.Context) {
 	// Take the writer lock the failed write released.
 	ctx, cancel := e.detach(ctx)
 	defer cancel()
-	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
+	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx, "reinstall")
 	if err != nil {
 		return
 	}

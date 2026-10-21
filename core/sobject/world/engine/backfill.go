@@ -63,7 +63,7 @@ func (s *BackfillState) IsComplete() bool {
 // copy.
 func (e *soEngine) SetBackfill(ctx context.Context, enabled bool) error {
 	// Serialize choices so the stored and the published choice agree.
-	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
+	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx, "set-backfill")
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (e *soEngine) executeBackfill(ctx context.Context, _ bool) error {
 // SetBackfill stopped the copy first.
 func (e *soEngine) publishBackfill(ctx context.Context, state *BackfillState) error {
 	// Take the lock SetBackfill holds, then check the copy is still wanted.
-	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx)
+	unlockWriteMtx, err := e.c.writeMtx.Lock(ctx, "publish-backfill")
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func (e *soEngine) publishBackfill(ctx context.Context, state *BackfillState) er
 func (e *soEngine) backfillRoots(ctx context.Context) ([]*block.BlockRef, uint64, error) {
 	// Read them under the writer lock once the installed World is durable,
 	// since the copy reads only the store.
-	unlockWriteMtx, err := e.c.lockSettled(ctx)
+	unlockWriteMtx, err := e.c.lockSettled(ctx, "backfill")
 	if err != nil {
 		return nil, 0, err
 	}

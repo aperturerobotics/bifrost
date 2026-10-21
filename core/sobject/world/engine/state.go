@@ -30,7 +30,7 @@ func (c *Controller) executeWatchSOState(
 
 		// Lock the writeMtx, so that we wait until any write txn is done processing first.
 		lockCtx, lockTask := trace.NewTask(ctx, "alpha/watch-state/lock-write-mtx")
-		unlockWriteMtx, err := c.writeMtx.Lock(lockCtx)
+		unlockWriteMtx, err := c.writeMtx.Lock(lockCtx, "watch-state")
 		lockTask.End()
 		if err != nil {
 			return err
