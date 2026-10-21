@@ -36,21 +36,20 @@ func TestReadSnapshotAccessWithoutEngineLock(t *testing.T) {
 	}
 	defer eng.Close()
 
-	// Open a read snapshot; it holds one more pin on the head.
-	locked := eng.bcast.Lock()
-	pin := eng.head.pin
-	before := pin.refs.Load()
-	locked.Unlock()
+	// Open a read snapshot; it holds the published head for its object
+	// reads and for its state.
+	head := eng.pub.Load()
+	before := head.refs.Load()
 	rtx, err := eng.NewBlockEngineTransaction(ctx, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := pin.refs.Load(); got != before+1 {
-		t.Fatalf("snapshot holds %d pins, want %d", got, before+1)
+	if got := head.refs.Load(); got != before+2 {
+		t.Fatalf("snapshot holds %d head references, want %d", got, before+2)
 	}
 
 	// Follow the snapshot's root while the Engine lock is held.
-	locked = eng.bcast.Lock()
+	locked := eng.bcast.Lock()
 	done := make(chan error, 1)
 	go func() {
 		done <- rtx.AccessWorldState(ctx, rtx.readRoot, func(*bucket_lookup.Cursor) error { return nil })
@@ -67,9 +66,9 @@ func TestReadSnapshotAccessWithoutEngineLock(t *testing.T) {
 	}
 	locked.Unlock()
 
-	// Discard releases the held pin, and reads after it fall back to the Engine.
+	// Discard releases the held head, and reads after it fall back to the Engine.
 	rtx.Discard()
-	if got := pin.refs.Load(); got != before {
-		t.Fatalf("discarded snapshot left %d pins, want %d", got, before)
+	if got := head.refs.Load(); got != before {
+		t.Fatalf("discarded snapshot left %d head references, want %d", got, before)
 	}
 }

@@ -320,11 +320,22 @@ func (e *EngineTx) refreshReadSnapshot(ctx context.Context, previous *Tx) error 
 		return err
 	}
 
+	// Swap the reader under snapMu, which a concurrent Discard detaches it
+	// under, unless that Discard already ran.
+	e.engine.snapMu.Lock()
+	if _, ok := e.engine.snapshotTxs[e]; !ok || e.readTx.Load() != previous {
+		e.engine.snapMu.Unlock()
+		locked.Unlock()
+		state.Discard()
+		return nil
+	}
+
 	// Retire the replaced reader and the head it held outside the Engine
 	// lock. The held head belongs to the storage it closes, so later object
 	// reads go through the Engine.
 	retirement := e.engine.beginRetirementLocked(engineRetirement{readTx: previous, readHead: e.readHead.Swap(nil)})
 	e.readTx.Store(NewTx(state))
+	e.engine.snapMu.Unlock()
 	locked.Unlock()
 	e.engine.drainRetirement(ctx, retirement)
 	return nil

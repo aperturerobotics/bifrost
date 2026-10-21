@@ -19,12 +19,13 @@ type EngineTx struct {
 	rel    atomic.Bool
 	engine *Engine
 
-	// readTx is replaced under Engine.bcast and read without it.
+	// readTx is read without a lock. A read snapshot replaces it under
+	// Engine.snapMu.
 	readTx   atomic.Pointer[Tx]
 	readRoot *bucket.ObjectRef
 	// readHead holds the head a read snapshot opened at, so its object
 	// reads follow refs without the Engine lock. Swapped out under
-	// Engine.bcast when the snapshot detaches or reopens its storage.
+	// Engine.snapMu when the snapshot detaches or reopens its storage.
 	readHead    atomic.Pointer[heldHead]
 	writeTx     *Tx
 	baseHeadRef *bucket.ObjectRef
@@ -251,6 +252,13 @@ func (e *EngineTx) Discard() {
 		return
 	}
 
+	// A read snapshot detaches without the Engine lock, so releasing it never
+	// waits on a writer holding bcast.
+	if e.writeTx == nil && e.session == nil {
+		e.engine.discardSnapshot(e)
+		return
+	}
+
 	// Detach under the Engine lock, then drain after unlocking.
 	locked := e.engine.bcast.Lock()
 	retirement := e.engine.beginRetirementLocked(e.detachLocked())
@@ -258,13 +266,24 @@ func (e *EngineTx) Discard() {
 	e.engine.drainRetirement(context.Background(), retirement)
 }
 
-// detachLocked removes this transaction from Engine.snapshotTxs and
-// Engine.writeTx without waiting for its transaction locks or coordinator
-// lease.
+// detachSnapshotLocked removes this read snapshot from Engine.snapshotTxs
+// and returns its state and held head for release. It returns nothing when
+// another path already detached it. The caller must hold Engine.snapMu.
+func (e *EngineTx) detachSnapshotLocked() engineRetirement {
+	// Mark the snapshot discarded, then detach it exactly once.
+	e.rel.Store(true)
+	if _, ok := e.engine.snapshotTxs[e]; !ok {
+		return engineRetirement{}
+	}
+	delete(e.engine.snapshotTxs, e)
+	return engineRetirement{readTx: e.readTx.Load(), readHead: e.readHead.Swap(nil)}
+}
+
+// detachLocked removes this write transaction from Engine.writeTx without
+// waiting for its transaction locks or coordinator lease.
 func (e *EngineTx) detachLocked() engineRetirement {
 	// Mark the transaction discarded before removing its Engine registrations.
 	e.rel.Store(true)
-	delete(e.engine.snapshotTxs, e)
 	retirement := engineRetirement{
 		readTx:   e.readTx.Load(),
 		readHead: e.readHead.Swap(nil),
@@ -279,6 +298,7 @@ func (e *EngineTx) detachLocked() engineRetirement {
 		e.engine.writeTx = nil
 		retirement.writeTxRel = e.engine.writeTxRel
 		e.engine.writeTxRel = nil
+		e.engine.syncWriterOwnedLocked()
 	}
 
 	// A shared session outlives this mutable handle while accepted publications
