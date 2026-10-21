@@ -806,7 +806,7 @@
     },
     {
       "name": "github.com/aperturerobotics/cayley",
-      "version": "v0.15.1-0.20261018071117-9956219e1674",
+      "version": "v0.15.1-0.20261021195911-2e21d7b6adfe",
       "spdx": "Apache-2.0",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/cayley",
@@ -830,7 +830,7 @@
     },
     {
       "name": "github.com/aperturerobotics/controllerbus",
-      "version": "v0.53.6-0.20261018071028-dd2495c0aa2c",
+      "version": "v0.53.6-0.20261021005226-3d7ed787e11b",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/controllerbus",
@@ -942,7 +942,7 @@
     },
     {
       "name": "github.com/aperturerobotics/starpc",
-      "version": "v0.52.4-0.20261018110213-574a40428279",
+      "version": "v0.52.4-0.20261021005057-f60467d0da35",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/starpc",
@@ -950,7 +950,7 @@
     },
     {
       "name": "github.com/aperturerobotics/util",
-      "version": "v1.34.10-0.20261018211851-3e8e694574ad",
+      "version": "v1.34.10-0.20261021005056-6e84f021eba1",
       "spdx": "MIT",
       "source": "go",
       "repo": "https://github.com/aperturerobotics/util",
