@@ -70,8 +70,9 @@ func StandingRun(
 // run has or would have, and whether the run exists. An object under that key
 // that is not a standing run is an error.
 func FindStandingRun(ctx context.Context, ws world.WorldState, flowgraphKey string) (string, bool, error) {
+	// Report a missing run before reading it.
 	runKey := StandingRunKey(flowgraphKey)
-	_, found, err := ws.GetObject(ctx, runKey)
+	found, err := ws.HasObject(ctx, runKey)
 	if err != nil || !found {
 		return runKey, false, err
 	}

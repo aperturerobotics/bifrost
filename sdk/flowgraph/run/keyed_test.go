@@ -268,20 +268,20 @@ func (e *env) waitStandingRun(what string, done func(*s4wave_flowgraph.Flowgraph
 }
 
 // release lets n Step executions complete.
-func (s *liveSteps) release(n int) {
+func (f *liveSteps) release(n int) {
 	for range n {
-		s.tokens <- struct{}{}
+		f.tokens <- struct{}{}
 	}
 }
 
 // nextEcho waits for the next event ID a Step read live.
-func (s *liveSteps) nextEcho() string {
-	s.e.t.Helper()
+func (f *liveSteps) nextEcho() string {
+	f.e.t.Helper()
 	select {
-	case id := <-s.echoed:
+	case id := <-f.echoed:
 		return id
 	case <-time.After(30 * time.Second):
-		s.e.t.Fatal("timed out waiting for an echoed live input")
+		f.e.t.Fatal("timed out waiting for an echoed live input")
 		return ""
 	}
 }
