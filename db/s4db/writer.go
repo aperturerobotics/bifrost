@@ -566,7 +566,7 @@ func (w *writer) runPunch(sp *space, runs []run) {
 		return
 	}
 	if w.sp == sp {
-		sp.reserved = slices.DeleteFunc(sp.reserved, func(r run) bool { return slices.Contains(runs, r) })
+		sp.reserved = dropRuns(sp.reserved, runs)
 		for _, r := range runs[:done] {
 			sp.returnFree(r)
 		}
@@ -581,6 +581,24 @@ func (w *writer) runPunch(sp *space, runs []run) {
 	}
 	w.punching.Store(false)
 	w.unlock(nil)
+}
+
+// dropRuns removes from reserved every run in runs, keeping the order. It
+// looks runs up in a set, since both lists can hold hundreds of thousands of
+// runs and the caller holds the writer lock: a scan of runs for each reserved
+// run held every commit for minutes.
+func dropRuns(reserved, runs []run) []run {
+	if len(runs) == 0 {
+		return reserved
+	}
+	drop := make(map[run]struct{}, len(runs))
+	for _, r := range runs {
+		drop[r] = struct{}{}
+	}
+	return slices.DeleteFunc(reserved, func(r run) bool {
+		_, ok := drop[r]
+		return ok
+	})
 }
 
 // punchRun punches r while sp is the current space, excluding its
@@ -923,7 +941,7 @@ func (w *writer) saveTree(ctx context.Context, t *tree) error {
 		return nil
 	}
 	out := b.out
-	sp.reserved = slices.DeleteFunc(sp.reserved, func(r run) bool { return slices.Contains(out.runs, r) })
+	sp.reserved = dropRuns(sp.reserved, out.runs)
 	if cur.gen != st.gen {
 		t.evict()
 		for _, r := range out.runs {
