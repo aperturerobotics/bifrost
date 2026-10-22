@@ -16,6 +16,7 @@ import (
 	"github.com/s4wave/spacewave/core/bstore"
 	"github.com/s4wave/spacewave/core/provider"
 	"github.com/s4wave/spacewave/db/block"
+	block_gc "github.com/s4wave/spacewave/db/block/gc"
 	block_store "github.com/s4wave/spacewave/db/block/store"
 	block_store_controller "github.com/s4wave/spacewave/db/block/store/controller"
 	block_store_writeback "github.com/s4wave/spacewave/db/block/store/writeback"
@@ -55,6 +56,46 @@ type placementState struct {
 	local block.StoreOps
 	// remote is the open storage backend store, or nil.
 	remote *atomic.Pointer[openBackend]
+	// tracker reports the blocks the volume's reference graph tracks, or nil
+	// when the volume has no graph that can.
+	tracker block_gc.BlockTracker
+}
+
+// live reports which blocks a bucket reclaim must keep: the blocks the
+// volume's reference graph tracks, and any the local store holds. Only a
+// block pass ends a tracked block's life, so a block whose local value was
+// dropped stays live, and a volume without a graph keeps what it stores.
+func (p *placementState) live(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	// Keep the blocks the graph tracks.
+	live := make([]bool, len(refs))
+	if p.tracker != nil {
+		tracked, err := p.tracker.TrackedBlocks(ctx, refs)
+		if err != nil {
+			return nil, err
+		}
+		live = tracked
+	}
+
+	// Keep the untracked blocks the local store holds.
+	var rest []*block.BlockRef
+	var restAt []int
+	for i, ok := range live {
+		if !ok {
+			rest = append(rest, refs[i])
+			restAt = append(restAt, i)
+		}
+	}
+	if len(rest) == 0 {
+		return live, nil
+	}
+	held, err := p.local.GetBlockExistsBatch(ctx, rest)
+	if err != nil {
+		return nil, err
+	}
+	for j, ok := range held {
+		live[restAt[j]] = ok
+	}
+	return live, nil
 }
 
 // UploadStatus is a block store's storage backend and upload status.
@@ -121,8 +162,8 @@ func (b *BlockStore) WaitUploaded(ctx context.Context) error {
 	}
 }
 
-// ReclaimStorage drops the blocks the local store no longer holds from the
-// storage backend's bucket. Returns zero without calling fence when no storage
+// ReclaimStorage drops the blocks the volume no longer tracks or holds from
+// the storage backend's bucket. Returns zero without calling fence when no storage
 // backend is open.
 func (b *BlockStore) ReclaimStorage(ctx context.Context, fence bstore.ReclaimFence) (time.Time, error) {
 	// Skip the pass without a storage backend.
@@ -131,12 +172,13 @@ func (b *BlockStore) ReclaimStorage(ctx context.Context, fence bstore.ReclaimFen
 		return time.Time{}, nil
 	}
 
-	// Judge liveness by local existence once the fence copied the live roots.
+	// Judge liveness by the reference graph once the fence copied the live
+	// roots.
 	copyRoots := func(ctx context.Context) error {
 		_, err := fence(ctx, true)
 		return err
 	}
-	return remote.store.Reclaim(ctx, copyRoots, b.placement.local.GetBlockExistsBatch)
+	return remote.store.Reclaim(ctx, copyRoots, b.placement.live)
 }
 
 // GetCopySource returns the store a graph copy reads from. A copy writes each
@@ -427,6 +469,7 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 
 	// Build the handle, which places new writes and reclaims backend storage.
 	placement := &placementState{wb: wb, local: localBucket, remote: &t.remote}
+	placement.tracker, _ = t.a.vol.GetRefGraph().(block_gc.BlockTracker)
 	placement.backend.Store(backend)
 	bstoreHandle := &BlockStore{
 		store:         localStore,

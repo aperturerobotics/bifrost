@@ -103,6 +103,12 @@ func (g *transactionRefGraph) GetUnreferencedNodes(ctx context.Context) ([]strin
 	return g.GetOutgoingRefs(ctx, block_gc.NodeUnreferenced)
 }
 
+// TrackedBlocks reports which blocks the graph tracks in one read snapshot.
+func (g *transactionRefGraph) TrackedBlocks(ctx context.Context, refs []*block.BlockRef) (tracked []bool, err error) {
+	err = g.read(ctx, func(rg *block_gc.RefGraph) error { tracked, err = rg.TrackedBlocks(ctx, refs); return err })
+	return
+}
+
 // MarkBlocks marks the graph's blocks in one read snapshot.
 func (g *transactionRefGraph) MarkBlocks(ctx context.Context) (mark *block_gc.BlockMark, err error) {
 	err = g.read(ctx, func(rg *block_gc.RefGraph) error { mark, err = rg.MarkBlocks(ctx); return err })

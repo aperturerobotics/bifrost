@@ -297,6 +297,44 @@ func TestPlacedStoreGraphCopyAfterCacheLoss(t *testing.T) {
 	p.checkLocalGraph(ctx, t, bs)
 }
 
+// TestPlacedStoreLivenessFromGraph drops the local values of a placed Space's
+// blocks: the bucket reclaim keeps them while the graph tracks them, and drops
+// them once a block pass sweeps them.
+func TestPlacedStoreLivenessFromGraph(t *testing.T) {
+	// Bound the liveness checks.
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	// Drop the local values and require the tracked blocks to stay live.
+	p := setupPlacedStore(ctx, t)
+	bs := p.loseLocalBlocks(ctx, t)
+	refs := []*block.BlockRef{p.rootRef, p.childRef}
+	live, err := bs.placement.live(ctx, refs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(live, []bool{true, true}) {
+		t.Fatalf("live = %v, want both tracked blocks live", live)
+	}
+
+	// Release the root and sweep: the reclaim may now drop both.
+	rg := p.acc.GetVolume().GetRefGraph()
+	bucketIRI := block_gc.BucketIRI(BlockStoreBucketID(p.acc.GetProviderID(), p.acc.GetAccountID(), p.tkr.id))
+	if err := rg.RemoveRef(ctx, bucketIRI, block_gc.BlockIRI(p.rootRef)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := block_gc.NewCollector(rg, p.acc.GetVolume(), nil).Collect(ctx); err != nil {
+		t.Fatal(err)
+	}
+	live, err = bs.placement.live(ctx, refs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(live, []bool{false, false}) {
+		t.Fatalf("live = %v, want both swept blocks dead", live)
+	}
+}
+
 // TestMoveSpaceStorageUnreachableBackend loses the local blocks of a placed
 // Space and moves it off a backend that cannot be reached: the move fails and
 // keeps the placement and the bucket's objects.

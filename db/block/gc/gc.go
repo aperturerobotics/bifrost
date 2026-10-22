@@ -52,6 +52,13 @@ type BlockMarker interface {
 	MarkBlocks(ctx context.Context) (*BlockMark, error)
 }
 
+// BlockTracker reports which blocks a reference graph tracks, as
+// RefGraph.TrackedBlocks describes.
+type BlockTracker interface {
+	// TrackedBlocks reports, for each ref, whether the graph tracks the block.
+	TrackedBlocks(ctx context.Context, refs []*block.BlockRef) ([]bool, error)
+}
+
 // Collector sweeps unreferenced nodes and unreachable blocks from the ref
 // graph.
 //

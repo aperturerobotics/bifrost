@@ -538,6 +538,32 @@ func (g *RefGraph) GetIncomingRefs(ctx context.Context, node string) ([]string, 
 	return answer, nil
 }
 
+// TrackedBlocks reports, for each ref, whether the graph tracks the block, in
+// one read. A block is tracked from its first write until a block pass sweeps
+// it, which removes its child list and its value together, so a tracked block
+// is one no pass has collected, whether or not its value is stored locally.
+func (g *RefGraph) TrackedBlocks(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	tracked := make([]bool, len(refs))
+	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
+		for i, ref := range refs {
+			node := BlockIRI(ref)
+			if node == "" {
+				continue
+			}
+			ok, err := tx.Exists(ctx, graphKey(kindChildren, node))
+			if err != nil {
+				return err
+			}
+			tracked[i] = ok
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return tracked, nil
+}
+
 // GetUnreferencedNodes returns the nodes marked for collector reconsideration,
 // none of which is a block.
 func (g *RefGraph) GetUnreferencedNodes(ctx context.Context) ([]string, error) {

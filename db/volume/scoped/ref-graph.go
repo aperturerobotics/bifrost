@@ -160,6 +160,16 @@ func (g *refGraph) GetUnreferencedNodes(ctx context.Context) ([]string, error) {
 	return nil, errors.Wrap(ErrRefused, "list unreferenced nodes")
 }
 
+// TrackedBlocks reports which blocks the volume's graph tracks. Block nodes
+// are shared by content address, so the view reads them unscoped.
+func (g *refGraph) TrackedBlocks(ctx context.Context, refs []*block.BlockRef) ([]bool, error) {
+	tracker, ok := g.inner.(block_gc.BlockTracker)
+	if !ok {
+		return nil, errors.Wrap(ErrRefused, "track blocks")
+	}
+	return tracker.TrackedBlocks(ctx, refs)
+}
+
 // AddBlockRef adds gc/ref from source block to target block.
 func (g *refGraph) AddBlockRef(ctx context.Context, source, target *block.BlockRef) error {
 	return g.inner.AddBlockRef(ctx, source, target)
