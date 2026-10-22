@@ -7,6 +7,8 @@ import (
 	"io"
 	"math/rand/v2"
 	"os"
+	"path/filepath"
+	"runtime/pprof"
 	"slices"
 	"strconv"
 	"strings"
@@ -108,6 +110,39 @@ func (s *gcStorage) BuildVolumeConfig(id string, base *volume_controller.Config)
 	}
 	base.GcIntervalDur = s.interval
 	return s.Storage.BuildVolumeConfig(id, base)
+}
+
+// dumpStall writes every goroutine's stack to AGED_STORE_DUMP once write i
+// has been pending AGED_STORE_DUMP_AFTER (default 5s), so a stall shows what
+// the write waited on. It returns the function that ends the wait.
+func dumpStall(t *testing.T, i int) func() {
+	// Dump only when a directory is set.
+	dir := os.Getenv("AGED_STORE_DUMP")
+	if dir == "" {
+		return func() {}
+	}
+	after := 5 * time.Second
+	if v := os.Getenv("AGED_STORE_DUMP_AFTER"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			t.Fatalf("AGED_STORE_DUMP_AFTER: %v", err)
+		}
+		after = d
+	}
+
+	// Write the dump when the timer fires before the write ends.
+	timer := time.AfterFunc(after, func() {
+		f, err := os.Create(filepath.Join(dir, "stall-"+strconv.Itoa(i)+".txt"))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer f.Close()
+		if err := pprof.Lookup("goroutine").WriteTo(f, 2); err != nil {
+			t.Error(err)
+		}
+	})
+	return func() { timer.Stop() }
 }
 
 // envInt reads a positive integer from the environment, or def.
@@ -213,6 +248,9 @@ func TestAgedStoreWriterHolds(t *testing.T) {
 	// dead space.
 	rng := rand.New(rand.NewPCG(1, 2))
 	write := func(ctx context.Context, i int) {
+		// Dump every goroutine once a write has been pending a while.
+		defer dumpStall(t, i)()
+
 		err := world.ExecTransaction(ctx, eng, true, func(ctx context.Context, ws world.WorldState) error {
 			for j := range perWrite {
 				key := "aged/" + strconv.Itoa(rng.IntN(population))
