@@ -22,3 +22,12 @@ func ExecuteWorld(ctx context.Context, c *Controller, so sobject.SharedObject) e
 	defer cancel()
 	return c.executeSharedObject(ctx, cancel, so)
 }
+
+// SetSlowHoldThreshold sets the writer lock hold after which a release logs
+// its holder and returns a function that restores the previous one. Set it
+// before the engine starts.
+func SetSlowHoldThreshold(threshold time.Duration) func() {
+	previous := slowHoldThreshold
+	slowHoldThreshold = threshold
+	return func() { slowHoldThreshold = previous }
+}
