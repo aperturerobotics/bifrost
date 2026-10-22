@@ -25,6 +25,10 @@ type BlockMark struct {
 	Unknown int
 	// UnknownSample lists up to unknownSample of those blocks.
 	UnknownSample []string
+	// UnknownNamers lists, for each block in UnknownSample, the node whose
+	// record made it live: a root, an owner or a parent block. A walk
+	// leaves it empty.
+	UnknownNamers []string
 	// Scans counts the scans of the child lists a scan mark made, zero for
 	// a walk.
 	Scans int

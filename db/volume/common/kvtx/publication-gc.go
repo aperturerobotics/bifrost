@@ -291,7 +291,7 @@ func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, s
 			// A rescued block of unknown references may name any unreached
 			// block, so report it and stop sweeping.
 			if mark.Unknown != 0 {
-				stats.UnknownBlocks, stats.UnknownSample = mark.Unknown, mark.UnknownSample
+				stats.UnknownBlocks, stats.UnknownSample, stats.UnknownNamers = mark.Unknown, mark.UnknownSample, mark.UnknownNamers
 				nodes = nil
 				return nil
 			}

@@ -72,6 +72,40 @@ func TestMarkBlocksKeepsChildrenOfUnknownBlock(t *testing.T) {
 		t.Fatal("collection swept past a block of unknown references")
 	}
 
+	// A scan mark names the bucket as the record that made the parent live.
+	mark, err = rg.markScan(env.ctx, markLimit{records: 1}, nil)
+	if err != nil || mark.Unknown != 1 || !slices.Equal(mark.UnknownNamers, []string{"bucket"}) {
+		t.Fatalf("scan mark unknown %d namers %v err=%v, want the bucket", mark.Unknown, mark.UnknownNamers, err)
+	}
+
+	// A write that records the parent's references between any two read
+	// transactions settles it before the mark ends: the mark reaches the
+	// child and finds nothing unknown. A mark that ends before the write
+	// still reports the parent.
+	record := []RefEdge{{Subject: NodeUnreferenced, Object: BlockIRI(parent)}, {Subject: BlockIRI(parent), Object: BlockIRI(child)}}
+	for at := 1; ; at++ {
+		var calls int
+		mark, err = rg.markScan(env.ctx, markLimit{records: 1}, func() error {
+			if calls++; calls != at {
+				return nil
+			}
+			return rg.ApplyRefBatch(env.ctx, record, nil)
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if calls < at {
+			if mark.Unknown != 1 {
+				t.Fatalf("mark without the write: unknown %d, want the parent", mark.Unknown)
+			}
+			break
+		}
+		if mark.Unknown != 0 || !mark.Live.Has(BlockIRI(child)) || len(mark.Unreached) != 0 {
+			t.Fatalf("write at transaction %d: unknown %d %v, child live %v, unreached %v", at, mark.Unknown, mark.UnknownSample, mark.Live.Has(BlockIRI(child)), mark.Unreached)
+		}
+		deleteChildList(t, env.kvStore, BlockIRI(parent))
+	}
+
 	// Recording the parent's references lets the next pass decide: the
 	// parent keeps the child.
 	if err := rg.ApplyRefBatch(env.ctx, []RefEdge{{Subject: BlockIRI(parent), Object: BlockIRI(child)}}, nil); err != nil {

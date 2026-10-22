@@ -45,7 +45,7 @@ func (g *RefGraph) MarkBlocksScan(ctx context.Context) (*BlockMark, error) {
 // expanded every child it added after its position. A scan reads each index
 // page of the lists once, so a mark costs scans times pages instead of a page
 // a block. It counts the blocks without a list in mark.Unknown and names a
-// sample of them, as sampleUnknown describes.
+// sample of them, as settleUnknown describes.
 //
 // Each read transaction stays within limit, and the next resumes after the
 // last record read, calling between first when set. The adopt log of an open
@@ -139,13 +139,17 @@ func (g *RefGraph) markScan(ctx context.Context, limit markLimit, between func()
 		}
 	}
 
-	// A live block without a list has unknown references. List the
+	// A live block without a list has unknown references. Settle those a
+	// write gave a list after the scans passed them, then list the
 	// unreached blocks with one more key scan.
 	mark.Unknown = liveBlocks - expanded.Len()
 	if mark.Unknown != 0 {
-		if err := g.sampleUnknown(ctx, mark, expanded, limit, between); err != nil {
+		added, err := g.settleUnknown(ctx, mark, expanded, limit, between)
+		if err != nil {
 			return nil, err
 		}
+		liveBlocks += added
+		mark.Unknown = liveBlocks - expanded.Len()
 	}
 	err = g.scanRecords(ctx, mark, lists, limit, between, func(key []byte, _ kvtx.Iterator) error {
 		if block := lastNode(lists, key); !live.Has(block) {
@@ -159,24 +163,119 @@ func (g *RefGraph) markScan(ctx context.Context, limit markLimit, between func()
 	return mark, nil
 }
 
-// errSampleFull stops sampleUnknown's scans once the sample is full.
-var errSampleFull = errors.New("unknown sample full")
+// settleLimit bounds the unexpanded live blocks settleUnknown checks.
+const settleLimit = 4096
 
-// sampleUnknown names up to unknownSample of the live blocks a scan mark left
-// unexpanded, which have no child list. Only the records that made them live
-// name them, so it scans the roots, the edges from text nodes and the
-// expanded lists, within limit like the mark, and stops once the sample is
-// full.
-func (g *RefGraph) sampleUnknown(ctx context.Context, mark *BlockMark, expanded *NodeSet, limit markLimit, between func() error) error {
+// errSettleFull stops findUnknown's scans once it holds settleLimit blocks.
+var errSettleFull = errors.New("unknown blocks to settle full")
+
+// unknownBlock is a live block a scan mark left unexpanded, with the node
+// whose record made it live: a root, an owner, or a parent block.
+type unknownBlock struct {
+	enc   []byte
+	namer string
+}
+
+// settleUnknown checks the child list of each live block the scans left
+// unexpanded, up to settleLimit of them, as findUnknown lists them. A write
+// can stage a block after the scans passed its key, so its list may exist
+// now: settleUnknown expands it, then checks each child it makes live the
+// same way. It names the blocks still without a list, and their namers, in
+// mark.UnknownSample and mark.UnknownNamers, and returns how many blocks it
+// made live. Reading a list later than the scans is safe for the same reason
+// the scans' later transactions are: the adopt log covers edges added since.
+func (g *RefGraph) settleUnknown(ctx context.Context, mark *BlockMark, expanded *NodeSet, limit markLimit, between func() error) (int, error) {
+	// List the unexpanded live blocks.
+	pending, err := g.findUnknown(ctx, mark, expanded, limit, between)
+	if err != nil {
+		return 0, err
+	}
+
+	// Check the lists in transactions within limit until none is pending.
+	var added int
+	for first := true; len(pending) != 0; first = false {
+		if !first && between != nil {
+			if err := between(); err != nil {
+				return 0, err
+			}
+		}
+		var n int
+		err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) (err error) {
+			pending, n, err = settleTx(ctx, tx, mark, expanded, pending, limit)
+			return err
+		})
+		added += n
+		if err != nil {
+			return 0, err
+		}
+	}
+	return added, nil
+}
+
+// settleTx checks the lists of the pending blocks in order until limit, as
+// settleUnknown describes, and returns the blocks still pending and how many
+// blocks it made live. It records its duration in mark.LongestRead.
+func settleTx(ctx context.Context, tx kvtx.Tx, mark *BlockMark, expanded *NodeSet, pending []unknownBlock, limit markLimit) ([]unknownBlock, int, error) {
+	// Time the transaction.
+	start := time.Now()
+	defer func() { mark.LongestRead = max(mark.LongestRead, time.Since(start)) }()
+
+	// Settle blocks until none is pending or the limit is reached.
+	var added int
+	for n := 0; len(pending) != 0; n++ {
+		// Read the next block's list, sampling the block when it has none.
+		if n != 0 && limitReached(limit, n, start) {
+			break
+		}
+		next := pending[0]
+		pending = pending[1:]
+		block := prefixBlock + string(next.enc)
+		value, found, err := tx.Get(ctx, graphKey(kindChildren, block))
+		if err != nil {
+			return nil, 0, err
+		}
+		if !found {
+			if len(mark.UnknownSample) < unknownSample {
+				mark.UnknownSample = append(mark.UnknownSample, block)
+				mark.UnknownNamers = append(mark.UnknownNamers, next.namer)
+			}
+			continue
+		}
+
+		// Expand the list, queueing the children it makes live.
+		if !expanded.addBlock(next.enc) {
+			continue
+		}
+		for len(value) != 0 {
+			size := blockNodeLen(value)
+			if size == 0 || size > len(value) {
+				return nil, 0, errChildNotBlock
+			}
+			if child := value[:size]; mark.Live.addBlock(child) {
+				added++
+				pending = append(pending, unknownBlock{enc: slices.Clone(child), namer: block})
+			}
+			value = value[size:]
+		}
+	}
+	return pending, added, nil
+}
+
+// findUnknown lists up to settleLimit of the live blocks a scan mark left
+// unexpanded, each with its namer. Only the records that made them live name
+// them, so it scans the roots, the edges from text nodes and the expanded
+// lists, within limit like the mark, and stops once the list is full.
+func (g *RefGraph) findUnknown(ctx context.Context, mark *BlockMark, expanded *NodeSet, limit markLimit, between func() error) ([]unknownBlock, error) {
 	// Note each unexpanded block once.
+	var found []unknownBlock
 	noted := NewNodeSet()
-	note := func(enc []byte) error {
+	note := func(enc []byte, namer string) error {
 		if len(enc) == 0 || enc[0] == textNode || expanded.hasBlock(enc) || !noted.addBlock(enc) {
 			return nil
 		}
-		mark.UnknownSample = append(mark.UnknownSample, prefixBlock+string(enc))
-		if len(mark.UnknownSample) == unknownSample {
-			return errSampleFull
+		found = append(found, unknownBlock{enc: slices.Clone(enc), namer: namer})
+		if len(found) == settleLimit {
+			return errSettleFull
 		}
 		return nil
 	}
@@ -188,20 +287,21 @@ func (g *RefGraph) sampleUnknown(ctx context.Context, mark *BlockMark, expanded 
 		prefix []byte
 		visit  func(key []byte, it kvtx.Iterator) error
 	}{
-		{roots, func(key []byte, _ kvtx.Iterator) error { return note(key[len(roots):]) }},
+		{roots, func(key []byte, _ kvtx.Iterator) error { return note(key[len(roots):], NodeGCRoot) }},
 		{owners, func(key []byte, _ kvtx.Iterator) error {
-			_, rest, err := readNode(key[1:])
+			subject, rest, err := readNode(key[1:])
 			if err != nil {
 				return err
 			}
 			if n := blockNodeLen(rest); n != 0 && n <= len(rest) {
-				return note(rest[:n])
+				return note(rest[:n], subject)
 			}
 			return nil
 		}},
 		{lists, func(key []byte, it kvtx.Iterator) error {
 			// Read only the lists the mark expanded.
-			if !expanded.hasBlock(key[len(lists):]) {
+			enc := key[len(lists):]
+			if !expanded.hasBlock(enc) {
 				return nil
 			}
 			value, err := it.Value()
@@ -213,7 +313,7 @@ func (g *RefGraph) sampleUnknown(ctx context.Context, mark *BlockMark, expanded 
 				if n == 0 || n > len(value) {
 					return errChildNotBlock
 				}
-				if err := note(value[:n]); err != nil {
+				if err := note(value[:n], prefixBlock+string(enc)); err != nil {
 					return err
 				}
 				value = value[n:]
@@ -223,14 +323,14 @@ func (g *RefGraph) sampleUnknown(ctx context.Context, mark *BlockMark, expanded 
 	}
 	for _, scan := range scans {
 		err := g.scanRecords(ctx, mark, scan.prefix, limit, between, scan.visit)
-		if errors.Is(err, errSampleFull) {
-			return nil
+		if errors.Is(err, errSettleFull) {
+			break
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return found, nil
 }
 
 // scanRecords calls visit with each record under prefix in key order, in read

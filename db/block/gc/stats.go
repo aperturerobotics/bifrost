@@ -56,6 +56,9 @@ type Stats struct {
 	UnknownBlocks int
 	// UnknownSample lists some of those blocks.
 	UnknownSample []string
+	// UnknownNamers lists the node that made each sampled block live, empty
+	// for a walk.
+	UnknownNamers []string
 	// RescuedNodes is the number of nodes sweeps rescued from the adopt log.
 	RescuedNodes int
 	// BlocksSwept is the number of blocks block passes removed.
@@ -69,7 +72,7 @@ func (s *Stats) RecordMark(mark *BlockMark) {
 	s.LiveNodes = mark.Live.Len()
 	s.UnreachedBlocks = len(mark.Unreached)
 	s.UnknownBlocks = mark.Unknown
-	s.UnknownSample = mark.UnknownSample
+	s.UnknownSample, s.UnknownNamers = mark.UnknownSample, mark.UnknownNamers
 	s.MarkScans = mark.Scans
 	s.MarkLongestRead = mark.LongestRead
 }

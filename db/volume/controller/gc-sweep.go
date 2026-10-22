@@ -132,6 +132,7 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 			c.le.
 				WithField("unknown", stats.UnknownBlocks).
 				WithField("sample", block_gc.FormatIRIs(stats.UnknownSample)).
+				WithField("named-by", block_gc.FormatIRIs(stats.UnknownNamers)).
 				WithField("blocks-swept", stats.BlocksSwept).
 				Warn("gc block pass reached blocks of unknown references and stopped sweeping")
 		}
