@@ -40,7 +40,8 @@ message AccountSettings {
   // A block store without a placement is on the account's own storage.
   repeated BlockStorePlacement block_store_placements = 12;
   // StorageReleases are former placements whose objects remain in the
-  // backend's bucket. A device deletes them, then completes the release.
+  // backend's bucket. A device deletes them, then completes the release. A
+  // release carries only its block store and backend ids.
   repeated BlockStorePlacement storage_releases = 13;
   // DeveloperSpaceId names the account's developer Space, which holds the
   // repositories the user adds and what is built from them. Empty until the
@@ -85,6 +86,21 @@ message BlockStorePlacement {
   string block_store_id = 1;
   // StorageBackendId identifies the StorageBackend that holds its blocks.
   string storage_backend_id = 2;
+  // Cache sets how the local disk holds the placed store. Empty uploads each
+  // write at once and keeps every block local.
+  BlockStoreCache cache = 3;
+}
+
+// BlockStoreCache sets how the local disk holds a placed block store.
+message BlockStoreCache {
+  // SettleSeconds is how long a written block stays local before it uploads,
+  // so a block the garbage collector sweeps meanwhile never reaches the
+  // bucket. Set it above the volume's block pass interval. Zero uploads at
+  // once. A storage move waits for the blocks written during it to settle.
+  uint32 settle_seconds = 1;
+  // MaxPendingBytes uploads the oldest blocks before they settle while the
+  // blocks awaiting upload exceed it. Zero sets no limit.
+  uint64 max_pending_bytes = 2;
 }
 
 // AccountSession is an approved account replica, distinct from a managed Device.

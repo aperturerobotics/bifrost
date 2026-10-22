@@ -72,7 +72,8 @@ export interface AccountSettings {
   blockStorePlacements?: BlockStorePlacement[]
   /**
    * StorageReleases are former placements whose objects remain in the
-   * backend's bucket. A device deletes them, then completes the release.
+   * backend's bucket. A device deletes them, then completes the release. A
+   * release carries only its block store and backend ids.
    */
   storageReleases?: BlockStorePlacement[]
   /**
@@ -201,6 +202,11 @@ export interface BlockStorePlacement {
    * StorageBackendId identifies the StorageBackend that holds its blocks.
    */
   storageBackendId?: string
+  /**
+   * Cache sets how the local disk holds the placed store. Empty uploads each
+   * write at once and keeps every block local.
+   */
+  cache?: BlockStoreCache
 }
 
 export const BlockStorePlacement: MessageType<BlockStorePlacement> =
@@ -209,6 +215,36 @@ export const BlockStorePlacement: MessageType<BlockStorePlacement> =
     () => [
       [1, 'block_store_id', 9],
       [2, 'storage_backend_id', 9],
+      [3, 'cache', 11, 0, BlockStoreCache.codec],
+    ],
+  )
+
+/**
+ * BlockStoreCache sets how the local disk holds a placed block store.
+ *
+ * @generated from message account.settings.BlockStoreCache
+ */
+export interface BlockStoreCache {
+  /**
+   * SettleSeconds is how long a written block stays local before it uploads,
+   * so a block the garbage collector sweeps meanwhile never reaches the
+   * bucket. Set it above the volume's block pass interval. Zero uploads at
+   * once. A storage move waits for the blocks written during it to settle.
+   */
+  settleSeconds?: number
+  /**
+   * MaxPendingBytes uploads the oldest blocks before they settle while the
+   * blocks awaiting upload exceed it. Zero sets no limit.
+   */
+  maxPendingBytes?: bigint
+}
+
+export const BlockStoreCache: MessageType<BlockStoreCache> =
+  /* @__PURE__ */ createMessageType<BlockStoreCache>(
+    'account.settings.BlockStoreCache',
+    () => [
+      [1, 'settle_seconds', 13],
+      [2, 'max_pending_bytes', 4],
     ],
   )
 

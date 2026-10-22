@@ -52,7 +52,8 @@ type AccountSettings struct {
 	// A block store without a placement is on the account's own storage.
 	BlockStorePlacements []*BlockStorePlacement `protobuf:"bytes,12,rep,name=block_store_placements,json=blockStorePlacements,proto3" json:"blockStorePlacements,omitempty"`
 	// StorageReleases are former placements whose objects remain in the
-	// backend's bucket. A device deletes them, then completes the release.
+	// backend's bucket. A device deletes them, then completes the release. A
+	// release carries only its block store and backend ids.
 	StorageReleases []*BlockStorePlacement `protobuf:"bytes,13,rep,name=storage_releases,json=storageReleases,proto3" json:"storageReleases,omitempty"`
 	// DeveloperSpaceId names the account's developer Space, which holds the
 	// repositories the user adds and what is built from them. Empty until the
@@ -286,6 +287,9 @@ type BlockStorePlacement struct {
 	BlockStoreId string `protobuf:"bytes,1,opt,name=block_store_id,json=blockStoreId,proto3" json:"blockStoreId,omitempty"`
 	// StorageBackendId identifies the StorageBackend that holds its blocks.
 	StorageBackendId string `protobuf:"bytes,2,opt,name=storage_backend_id,json=storageBackendId,proto3" json:"storageBackendId,omitempty"`
+	// Cache sets how the local disk holds the placed store. Empty uploads each
+	// write at once and keeps every block local.
+	Cache *BlockStoreCache `protobuf:"bytes,3,opt,name=cache,proto3" json:"cache,omitempty"`
 }
 
 func (x *BlockStorePlacement) Reset() {
@@ -306,6 +310,46 @@ func (x *BlockStorePlacement) GetStorageBackendId() string {
 		return x.StorageBackendId
 	}
 	return ""
+}
+
+func (x *BlockStorePlacement) GetCache() *BlockStoreCache {
+	if x != nil {
+		return x.Cache
+	}
+	return nil
+}
+
+// BlockStoreCache sets how the local disk holds a placed block store.
+type BlockStoreCache struct {
+	unknownFields []byte
+	// SettleSeconds is how long a written block stays local before it uploads,
+	// so a block the garbage collector sweeps meanwhile never reaches the
+	// bucket. Set it above the volume's block pass interval. Zero uploads at
+	// once. A storage move waits for the blocks written during it to settle.
+	SettleSeconds uint32 `protobuf:"varint,1,opt,name=settle_seconds,json=settleSeconds,proto3" json:"settleSeconds,omitempty"`
+	// MaxPendingBytes uploads the oldest blocks before they settle while the
+	// blocks awaiting upload exceed it. Zero sets no limit.
+	MaxPendingBytes uint64 `protobuf:"varint,2,opt,name=max_pending_bytes,json=maxPendingBytes,proto3" json:"maxPendingBytes,omitempty"`
+}
+
+func (x *BlockStoreCache) Reset() {
+	*x = BlockStoreCache{}
+}
+
+func (*BlockStoreCache) ProtoMessage() {}
+
+func (x *BlockStoreCache) GetSettleSeconds() uint32 {
+	if x != nil {
+		return x.SettleSeconds
+	}
+	return 0
+}
+
+func (x *BlockStoreCache) GetMaxPendingBytes() uint64 {
+	if x != nil {
+		return x.MaxPendingBytes
+	}
+	return 0
 }
 
 // AccountSession is an approved account replica, distinct from a managed Device.
@@ -1045,6 +1089,7 @@ func (m *BlockStorePlacement) CloneVT() *BlockStorePlacement {
 	r := new(BlockStorePlacement)
 	r.BlockStoreId = m.BlockStoreId
 	r.StorageBackendId = m.StorageBackendId
+	r.Cache = protobuf_go_lite.CloneVTValue(m.Cache)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1052,6 +1097,23 @@ func (m *BlockStorePlacement) CloneVT() *BlockStorePlacement {
 }
 
 func (m *BlockStorePlacement) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *BlockStoreCache) CloneVT() *BlockStoreCache {
+	if m == nil {
+		return (*BlockStoreCache)(nil)
+	}
+	r := new(BlockStoreCache)
+	r.SettleSeconds = m.SettleSeconds
+	r.MaxPendingBytes = m.MaxPendingBytes
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *BlockStoreCache) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1647,11 +1709,37 @@ func (this *BlockStorePlacement) EqualVT(that *BlockStorePlacement) bool {
 	if this.StorageBackendId != that.StorageBackendId {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.Cache, that.Cache) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *BlockStorePlacement) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*BlockStorePlacement)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *BlockStoreCache) EqualVT(that *BlockStoreCache) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.SettleSeconds != that.SettleSeconds {
+		return false
+	}
+	if this.MaxPendingBytes != that.MaxPendingBytes {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *BlockStoreCache) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*BlockStoreCache)
 	if !ok {
 		return false
 	}
@@ -2793,6 +2881,11 @@ func (x *BlockStorePlacement) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("storageBackendId")
 		s.WriteString(x.StorageBackendId)
 	}
+	if x.Cache != nil || s.HasField("cache") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("cache")
+		x.Cache.MarshalProtoJSON(s.WithField("cache"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -2816,12 +2909,69 @@ func (x *BlockStorePlacement) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "storage_backend_id", "storageBackendId":
 			s.AddField("storage_backend_id")
 			x.StorageBackendId = s.ReadString()
+		case "cache":
+			if s.ReadNil() {
+				x.Cache = nil
+				return
+			}
+			x.Cache = &BlockStoreCache{}
+			x.Cache.UnmarshalProtoJSON(s.WithField("cache", true))
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the BlockStorePlacement from JSON.
 func (x *BlockStorePlacement) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the BlockStoreCache message to JSON.
+func (x *BlockStoreCache) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.SettleSeconds != 0 || s.HasField("settleSeconds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("settleSeconds")
+		s.WriteUint32(x.SettleSeconds)
+	}
+	if x.MaxPendingBytes != 0 || s.HasField("maxPendingBytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("maxPendingBytes")
+		s.WriteUint64(x.MaxPendingBytes)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the BlockStoreCache to JSON.
+func (x *BlockStoreCache) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the BlockStoreCache message from JSON.
+func (x *BlockStoreCache) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "settle_seconds", "settleSeconds":
+			s.AddField("settle_seconds")
+			x.SettleSeconds = s.ReadUint32()
+		case "max_pending_bytes", "maxPendingBytes":
+			s.AddField("max_pending_bytes")
+			x.MaxPendingBytes = s.ReadUint64()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the BlockStoreCache from JSON.
+func (x *BlockStoreCache) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -4050,6 +4200,16 @@ func (m *BlockStorePlacement) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Cache != nil {
+		size, err := m.Cache.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if len(m.StorageBackendId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.StorageBackendId)
 		i--
@@ -4059,6 +4219,48 @@ func (m *BlockStorePlacement) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.BlockStoreId)
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *BlockStoreCache) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *BlockStoreCache) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *BlockStoreCache) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.MaxPendingBytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MaxPendingBytes))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.SettleSeconds != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.SettleSeconds))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -5176,6 +5378,22 @@ func (m *BlockStorePlacement) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.BlockStoreId)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.StorageBackendId)
+	if m.Cache != nil {
+		l = m.Cache.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *BlockStoreCache) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.SettleSeconds)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.MaxPendingBytes)
 	n += len(m.unknownFields)
 	return n
 }
@@ -5826,10 +6044,32 @@ func (x *BlockStorePlacement) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "storage_backend_id")
 		protobuf_go_lite.TextWriteString(&sb, x.StorageBackendId)
 	}
+	if x.Cache != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "cache")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Cache)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *BlockStorePlacement) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *BlockStoreCache) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "BlockStoreCache")
+	if x.SettleSeconds != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "settle_seconds")
+		protobuf_go_lite.TextWriteUint(&sb, x.SettleSeconds)
+	}
+	if x.MaxPendingBytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "max_pending_bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.MaxPendingBytes)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *BlockStoreCache) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -6652,6 +6892,82 @@ func (m *BlockStorePlacement) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.StorageBackendId = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Cache", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Cache == nil {
+				m.Cache = &BlockStoreCache{}
+			}
+			if err := m.Cache.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *BlockStoreCache) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BlockStoreCache: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BlockStoreCache: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SettleSeconds", wireType)
+			}
+			m.SettleSeconds = 0
+			m.SettleSeconds, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxPendingBytes", wireType)
+			}
+			m.MaxPendingBytes = 0
+			m.MaxPendingBytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

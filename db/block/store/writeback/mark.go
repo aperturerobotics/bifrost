@@ -2,6 +2,7 @@ package block_store_writeback
 
 import (
 	"context"
+	"time"
 
 	"github.com/s4wave/spacewave/net/hash"
 )
@@ -12,6 +13,9 @@ type Mark struct {
 	Hash *hash.Hash
 	// Size is the block size in bytes.
 	Size int64
+	// At is when the block was written. The zero time uploads it without
+	// waiting to settle, as a backfill does.
+	At time.Time
 }
 
 // MarkFunc durably records written blocks before their writes are

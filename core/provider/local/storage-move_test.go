@@ -297,17 +297,37 @@ func TestPlacedStoreGraphCopyAfterCacheLoss(t *testing.T) {
 	p.checkLocalGraph(ctx, t, bs)
 }
 
-// TestPlacedStoreLivenessFromGraph drops the local values of a placed Space's
-// blocks: the bucket reclaim keeps them while the graph tracks them, and drops
-// them once a block pass sweeps them.
-func TestPlacedStoreLivenessFromGraph(t *testing.T) {
-	// Bound the liveness checks.
+// TestPlacedStoreSettleAndLiveness places a Space with a settle age and
+// writes a block it then drops: the GC sweep frees it before it settles, so it
+// never reaches the bucket. The bucket reclaim keeps blocks the graph tracks
+// after their local values are gone, and drops them once a block pass sweeps
+// them. A pending-bytes cap uploads a fresh block before it settles.
+func TestPlacedStoreSettleAndLiveness(t *testing.T) {
+	// Bound the settle and liveness checks.
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
-	// Drop the local values and require the tracked blocks to stay live.
+	// Hold writes for an hour before upload.
 	p := setupPlacedStore(ctx, t)
-	bs := p.loseLocalBlocks(ctx, t)
+	p.place(ctx, t, &account_settings.BlockStoreCache{SettleSeconds: 3600})
+	bs := p.waitUpload(ctx, t, func(status UploadStatus) bool {
+		return status.Policy.Settle == time.Hour
+	})
+
+	// Write a block and drop it before it settles.
+	garbage, _, err := bs.PutBlock(ctx, []byte("settling garbage"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status, _ := bs.GetUploadStatus(); status.Pending != 1 {
+		t.Fatalf("pending = %d, want the settling block", status.Pending)
+	}
+	if err := bs.RmBlock(ctx, garbage); err != nil {
+		t.Fatal(err)
+	}
+
+	// Drop the local values and require the tracked blocks to stay live.
+	bs = p.loseLocalBlocks(ctx, t)
 	refs := []*block.BlockRef{p.rootRef, p.childRef}
 	live, err := bs.placement.live(ctx, refs)
 	if err != nil {
@@ -317,7 +337,8 @@ func TestPlacedStoreLivenessFromGraph(t *testing.T) {
 		t.Fatalf("live = %v, want both tracked blocks live", live)
 	}
 
-	// Release the root and sweep: the reclaim may now drop both.
+	// Release the root and sweep: the reclaim may now drop both, and the
+	// dropped block is gone before it settled.
 	rg := p.acc.GetVolume().GetRefGraph()
 	bucketIRI := block_gc.BucketIRI(BlockStoreBucketID(p.acc.GetProviderID(), p.acc.GetAccountID(), p.tkr.id))
 	if err := rg.RemoveRef(ctx, bucketIRI, block_gc.BlockIRI(p.rootRef)); err != nil {
@@ -326,12 +347,74 @@ func TestPlacedStoreLivenessFromGraph(t *testing.T) {
 	if _, err := block_gc.NewCollector(rg, p.acc.GetVolume(), nil).Collect(ctx); err != nil {
 		t.Fatal(err)
 	}
-	live, err = bs.placement.live(ctx, refs)
+	live, err = bs.placement.live(ctx, append(refs, garbage))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(live, []bool{false, false}) {
-		t.Fatalf("live = %v, want both swept blocks dead", live)
+	if !slices.Equal(live, []bool{false, false, false}) {
+		t.Fatalf("live = %v, want every swept block dead", live)
+	}
+
+	// Upload at once: the swept block's marker clears without an upload, and
+	// re-placing with other cache settings releases nothing.
+	p.place(ctx, t, nil)
+	p.waitUpload(ctx, t, func(status UploadStatus) bool {
+		return status.Policy.Settle == 0 && status.Pending == 0
+	})
+	if n := p.bucket.count(); n != 2 {
+		t.Fatalf("bucket holds %d objects, want the 2 from setup", n)
+	}
+
+	// A one-byte cap uploads a fresh block before its hour settles.
+	p.place(ctx, t, &account_settings.BlockStoreCache{SettleSeconds: 3600, MaxPendingBytes: 1})
+	bs = p.waitUpload(ctx, t, func(status UploadStatus) bool {
+		return status.Policy.MaxPendingBytes == 1
+	})
+	if _, _, err := bs.PutBlock(ctx, []byte("capped block"), nil); err != nil {
+		t.Fatal(err)
+	}
+	p.waitUpload(ctx, t, func(status UploadStatus) bool {
+		return status.Pending == 0
+	})
+	if n := p.bucket.count(); n <= 2 {
+		t.Fatalf("bucket holds %d objects, want the capped block's upload", n)
+	}
+}
+
+// place re-places the Space on its backend with the cache settings.
+func (p *placedStoreTest) place(ctx context.Context, t *testing.T, cache *account_settings.BlockStoreCache) {
+	t.Helper()
+	err := p.acc.PlaceBlockStore(ctx, &account_settings.BlockStorePlacement{
+		BlockStoreId:     p.tkr.id,
+		StorageBackendId: p.backendID,
+		Cache:            cache,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// waitUpload waits for the store's upload status to satisfy cond and returns
+// the store.
+func (p *placedStoreTest) waitUpload(ctx context.Context, t *testing.T, cond func(UploadStatus) bool) *BlockStore {
+	t.Helper()
+	bs, err := p.tkr.bstoreCtr.WaitValue(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		status, changed := bs.GetUploadStatus()
+		if status.Err != nil {
+			t.Fatal(status.Err)
+		}
+		if cond(status) {
+			return bs
+		}
+		select {
+		case <-ctx.Done():
+			t.Fatalf("upload status %+v never matched", status)
+		case <-changed:
+		}
 	}
 }
 

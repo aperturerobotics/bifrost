@@ -150,17 +150,25 @@ func (s *AccountSettings) setBlockStorePlacement(placement *BlockStorePlacement)
 }
 
 // unplaceBlockStore removes the block store's placement and releases its
-// objects on the backend it leaves.
+// objects on the backend it leaves. The release keeps only the ids, so
+// returning with other cache settings still cancels it.
 func (s *AccountSettings) unplaceBlockStore(blockStoreID string) {
+	// Find the current placement, if any.
 	placement := s.FindBlockStorePlacement(blockStoreID)
 	if placement == nil {
 		return
 	}
+
+	// Remove it and record the release by ids.
 	s.BlockStorePlacements = slices.DeleteFunc(s.BlockStorePlacements, func(current *BlockStorePlacement) bool {
 		return current.GetBlockStoreId() == blockStoreID
 	})
-	if !slices.ContainsFunc(s.StorageReleases, placement.EqualVT) {
-		s.StorageReleases = append(s.StorageReleases, placement)
+	release := &BlockStorePlacement{
+		BlockStoreId:     blockStoreID,
+		StorageBackendId: placement.GetStorageBackendId(),
+	}
+	if !slices.ContainsFunc(s.StorageReleases, release.sameStore) {
+		s.StorageReleases = append(s.StorageReleases, release)
 	}
 }
 
@@ -176,7 +184,14 @@ func (s *AccountSettings) completeStorageRelease(release *BlockStorePlacement) e
 
 // dropStorageRelease removes a pending release, if any.
 func (s *AccountSettings) dropStorageRelease(release *BlockStorePlacement) {
-	s.StorageReleases = slices.DeleteFunc(s.StorageReleases, release.EqualVT)
+	s.StorageReleases = slices.DeleteFunc(s.StorageReleases, release.sameStore)
+}
+
+// sameStore reports whether two placements name the same block store on the
+// same backend, whatever their cache settings.
+func (p *BlockStorePlacement) sameStore(other *BlockStorePlacement) bool {
+	return p.GetBlockStoreId() == other.GetBlockStoreId() &&
+		p.GetStorageBackendId() == other.GetStorageBackendId()
 }
 
 // Validate checks that the storage backend is complete.

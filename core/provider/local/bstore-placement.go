@@ -2,6 +2,7 @@ package provider_local
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/aperturerobotics/util/ccontainer"
@@ -66,26 +67,37 @@ func (w *settingsWatch) next(ctx context.Context) (*account_settings.AccountSett
 	return settings, err
 }
 
-// nextBackend waits for the next settings change and returns the storage
-// backend holding the store, or nil when the store is on the account's own
-// storage.
-func (t *bstoreTracker) nextBackend(ctx context.Context, watch *settingsWatch) (*account_settings.StorageBackend, error) {
+// nextBackend waits for the next settings change and returns the store's
+// placement and the storage backend holding it, or nil for both when the store
+// is on the account's own storage.
+func (t *bstoreTracker) nextBackend(
+	ctx context.Context,
+	watch *settingsWatch,
+) (*account_settings.BlockStorePlacement, *account_settings.StorageBackend, error) {
 	// Read the next settings change and resolve this store's backend.
 	settings, err := watch.next(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Resolve the placement and its storage backend for this store.
 	placement := settings.FindBlockStorePlacement(t.id)
 	if placement == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 	backend := settings.FindStorageBackend(placement.GetStorageBackendId())
 	if backend == nil {
-		return nil, errors.Wrap(account_settings.ErrStorageBackendNotFound, placement.GetStorageBackendId())
+		return nil, nil, errors.Wrap(account_settings.ErrStorageBackendNotFound, placement.GetStorageBackendId())
 	}
-	return backend, nil
+	return placement, backend, nil
+}
+
+// uploadPolicy returns when a placement's cache settings upload its writes.
+func uploadPolicy(cache *account_settings.BlockStoreCache) block_store_writeback.Policy {
+	return block_store_writeback.Policy{
+		Settle:          time.Duration(cache.GetSettleSeconds()) * time.Second,
+		MaxPendingBytes: int64(min(cache.GetMaxPendingBytes(), math.MaxInt64)),
+	}
 }
 
 // runPlacedUploads keeps every placed block store mounted while the account
