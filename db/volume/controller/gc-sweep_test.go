@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/s4wave/spacewave/db/block"
@@ -141,4 +142,49 @@ func newTestController(vol volume.Volume, ctx context.Context) *Controller {
 	}
 	c.volume.SetValue(&volumeCtxPair{vol: vol, ctx: ctx})
 	return c
+}
+
+// TestRunGCSweepResumesSchedule checks that a block pass a restart left
+// overdue runs at the first collection and saves the next one to the volume.
+func TestRunGCSweepResumesSchedule(t *testing.T) {
+	// Save a schedule an hour overdue, as a restart mid-pass leaves it.
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	vol := newTestVolume(t)
+	start := time.Now()
+	if err := writeGcSchedule(ctx, vol, start.Add(-time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+
+	// Collect every 100ms, so an unrestored schedule would hold the pass
+	// for 1.5s.
+	const interval = 100 * time.Millisecond
+	c := newTestController(vol, ctx)
+	c.config.GcIntervalDur = interval.String()
+	done := make(chan error, 1)
+	go func() { done <- c.runGCSweep(ctx) }()
+
+	// Wait, short of that hold, for the pass to save its successor.
+	deadline := time.After(markIntervals * interval * 2 / 3)
+	var next time.Time
+	for !next.After(start) {
+		select {
+		case err := <-done:
+			t.Fatalf("runGCSweep returned early: %v", err)
+		case <-deadline:
+			t.Fatalf("no block pass saved a schedule, last %v", next)
+		case <-time.After(time.Millisecond):
+		}
+		var err error
+		if next, err = readGcSchedule(ctx, vol); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cancel()
+	<-done
+
+	// The saved pass is due within the longest gap after the pass.
+	if limit := time.Now().Add(8 * markIntervals * interval); next.After(limit) {
+		t.Fatalf("next pass %v after the pass, want at most %v", time.Until(next), 8*markIntervals*interval)
+	}
 }

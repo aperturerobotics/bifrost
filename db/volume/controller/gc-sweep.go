@@ -4,7 +4,10 @@ import (
 	"context"
 	"time"
 
+	timestamppb "github.com/aperturerobotics/protobuf-go-lite/types/known/timestamppb"
 	block_gc "github.com/s4wave/spacewave/db/block/gc"
+	"github.com/s4wave/spacewave/db/kvtx"
+	"github.com/s4wave/spacewave/db/volume"
 )
 
 // gcDelegator is implemented by a volume that views another controller's
@@ -62,9 +65,18 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 
 	// Construct the collector for the volume reference graph. A block pass
 	// reads the whole graph, so it runs markIntervals intervals after the
-	// last one ended, or up to 8x that after passes that find little.
+	// last one ended, or up to 8x that after passes that find little. The
+	// schedule resumes from the volume, so a pass a restart cut short or
+	// postponed runs at the first collection.
 	collector := block_gc.NewCollector(rg, vol, nil)
-	collector.SetMarkInterval(markIntervals * interval)
+	next, err := readGcSchedule(ctx, vol)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		c.le.WithError(err).Warn("gc schedule unreadable, scheduling the block pass from now")
+	}
+	collector.SetMarkInterval(markIntervals*interval, next)
 	c.le.WithField("interval", interval.String()).Debug("gc sweep routine started")
 
 	// Collect unreferenced volume nodes on each maintenance deadline, for at
@@ -122,6 +134,12 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 				WithField("sample", stats.UnknownSample).
 				Warn("gc block pass reached blocks of unknown references and swept no block")
 		}
+		// Save the next block pass so a restart resumes the schedule.
+		if stats.BlockPasses != 0 {
+			if err := writeGcSchedule(ctx, vol, collector.NextMark()); err != nil && ctx.Err() == nil {
+				c.le.WithError(err).Warn("gc schedule not saved")
+			}
+		}
 		// Let the storage reclaim the space of the swept blocks.
 		if stats.NodesSwept != 0 || stats.BlocksSwept != 0 {
 			if m, ok := vol.(storageMaintainer); ok {
@@ -136,4 +154,54 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 			timer.Reset(interval)
 		}
 	}
+}
+
+// gcScheduleStoreID names the volume object store holding the GC schedule.
+const gcScheduleStoreID = "volume-gc"
+
+// gcScheduleKey is the GcSchedule key in that store.
+var gcScheduleKey = []byte("schedule")
+
+// readGcSchedule returns when the volume's next block pass is due, or zero
+// when no pass has saved one.
+func readGcSchedule(ctx context.Context, vol volume.Volume) (time.Time, error) {
+	// Open the schedule store and read the saved schedule.
+	store, release, err := vol.AccessObjectStore(ctx, gcScheduleStoreID, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer release()
+	sched := &GcSchedule{}
+	err = kvtx.RunTransaction(ctx, false, func(ctx context.Context) (kvtx.Tx, error) {
+		return store.NewTransaction(ctx, false)
+	}, func(ctx context.Context, tx kvtx.Tx) error {
+		data, found, err := tx.Get(ctx, gcScheduleKey)
+		if err != nil || !found {
+			return err
+		}
+		return sched.UnmarshalVT(data)
+	})
+	if err != nil || sched.GetNextBlockPass() == nil {
+		return time.Time{}, err
+	}
+	return sched.GetNextBlockPass().AsTime(), nil
+}
+
+// writeGcSchedule saves when the volume's next block pass is due.
+func writeGcSchedule(ctx context.Context, vol volume.Volume, next time.Time) error {
+	// Encode the schedule and write it to the schedule store.
+	data, err := (&GcSchedule{NextBlockPass: timestamppb.New(next)}).MarshalVT()
+	if err != nil {
+		return err
+	}
+	store, release, err := vol.AccessObjectStore(ctx, gcScheduleStoreID, nil)
+	if err != nil {
+		return err
+	}
+	defer release()
+	return kvtx.RunTransaction(ctx, true, func(ctx context.Context) (kvtx.Tx, error) {
+		return store.NewTransaction(ctx, true)
+	}, func(ctx context.Context, tx kvtx.Tx) error {
+		return tx.Set(ctx, gcScheduleKey, data)
+	})
 }

@@ -2442,7 +2442,7 @@
       ]
     },
     "github.com/s4wave/spacewave/db/volume/controller": {
-      "hash": "9d5210effc74524d7c9ad499ac32d5544117bce9a5537b19a0dabee2ea384e67",
+      "hash": "55f38e9037a49c723099863962dafd7334878d4d321d201246e7cdda4814991c",
       "generatedFiles": [
         "db/volume/controller/controller.pb.go",
         "db/volume/controller/controller.pb.ts"

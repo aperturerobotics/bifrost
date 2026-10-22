@@ -99,12 +99,27 @@ func NewCollector(
 }
 
 // SetMarkInterval spaces the block passes of CollectFor at least interval
-// apart, counting from now and then from the end of each pass, since a mark
-// reads the whole graph. Each pass that finds fewer than 1/16 of its live
-// blocks unreached doubles the gap before the next, up to 8x; a pass that
-// finds more resets it. Collect and CollectGraphOnly always run one.
-func (c *Collector) SetMarkInterval(interval time.Duration) {
-	c.markInterval, c.markBackoff, c.nextMark = interval, 0, time.Now().Add(interval)
+// apart, counting from the end of each pass, since a mark reads the whole
+// graph. The first pass is due at next, the NextMark a caller saved before a
+// restart, so restarts neither postpone a pass nor repeat one; a zero next
+// counts one interval from now, and a next past the longest gap is pulled in
+// to it. Each pass that finds fewer than 1/16 of its live blocks unreached
+// doubles the gap before the next, up to 8x; a pass that finds more resets
+// it. Collect and CollectGraphOnly always run one.
+func (c *Collector) SetMarkInterval(interval time.Duration, next time.Time) {
+	now := time.Now()
+	if next.IsZero() {
+		next = now.Add(interval)
+	}
+	if latest := now.Add(interval << maxMarkBackoff); next.After(latest) {
+		next = latest
+	}
+	c.markInterval, c.markBackoff, c.nextMark = interval, 0, next
+}
+
+// NextMark returns when the next budgeted block pass is due.
+func (c *Collector) NextMark() time.Time {
+	return c.nextMark
 }
 
 // scheduleMark backs the mark interval off after a sparse pass, resets it

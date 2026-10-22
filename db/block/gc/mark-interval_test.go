@@ -20,7 +20,7 @@ func TestCollector_MarkIntervalFromPassEnd(t *testing.T) {
 
 	// A pass is not due right after the interval is set.
 	const interval = time.Hour
-	env.gc.SetMarkInterval(interval)
+	env.gc.SetMarkInterval(interval, time.Time{})
 	stats, err := env.gc.CollectFor(env.ctx, time.Minute)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -29,9 +29,10 @@ func TestCollector_MarkIntervalFromPassEnd(t *testing.T) {
 		t.Fatalf("expected no block pass before the interval, got %d", stats.BlockPasses)
 	}
 
-	// A due pass runs and schedules the next one twice the interval after it
-	// ended, since it found nothing to sweep.
-	env.gc.nextMark = time.Now()
+	// A pass a restart restored as overdue runs at once and schedules the
+	// next one twice the interval after it ended, since it found nothing to
+	// sweep.
+	env.gc.SetMarkInterval(interval, time.Now().Add(-interval))
 	stats, err = env.gc.CollectFor(env.ctx, time.Minute)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -43,7 +44,7 @@ func TestCollector_MarkIntervalFromPassEnd(t *testing.T) {
 	if env.gc.markBackoff != 1 {
 		t.Fatalf("expected backoff 1, got %d", env.gc.markBackoff)
 	}
-	if next := env.gc.nextMark; next.After(ended.Add(2*interval)) || next.Before(ended.Add(2*interval-time.Second)) {
+	if next := env.gc.NextMark(); next.After(ended.Add(2*interval)) || next.Before(ended.Add(2*interval-time.Second)) {
 		t.Fatalf("expected the next pass 2h after the pass ended, got %v after", next.Sub(ended))
 	}
 }
@@ -53,7 +54,7 @@ func TestCollector_MarkIntervalFromPassEnd(t *testing.T) {
 func TestCollector_ScheduleMark(t *testing.T) {
 	// Take the yields of the Mac's first two passes on October 18.
 	c := &Collector{}
-	c.SetMarkInterval(time.Minute)
+	c.SetMarkInterval(time.Minute, time.Time{})
 	sparse := &Stats{LiveNodes: 9_087_280, UnreachedBlocks: 166_086}
 	productive := &Stats{LiveNodes: 9_064_682, UnreachedBlocks: 3_381_500}
 
