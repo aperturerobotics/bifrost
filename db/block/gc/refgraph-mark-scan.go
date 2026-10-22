@@ -2,6 +2,7 @@ package block_gc
 
 import (
 	"context"
+	"errors"
 	"hash/maphash"
 	"slices"
 	"time"
@@ -32,9 +33,8 @@ type markLimit struct {
 // its adopt log lets the sweep's rescue keep every block a write adopts
 // between the mark's transactions.
 //
-// It counts the reached blocks without a child list but leaves
-// UnknownSample empty: naming them takes a MarkBlocks walk, which holds one
-// snapshot for the whole graph, and a mark with any sweeps nothing either way.
+// It never falls back to MarkBlocks to name the reached blocks without a
+// child list: that walk would hold one snapshot for the whole graph.
 func (g *RefGraph) MarkBlocksScan(ctx context.Context) (*BlockMark, error) {
 	return g.markScan(ctx, markLimit{budget: MarkReadBudget}, nil)
 }
@@ -44,8 +44,8 @@ func (g *RefGraph) MarkBlocksScan(ctx context.Context) (*BlockMark, error) {
 // and the scans repeat until one adds no child behind its position, since it
 // expanded every child it added after its position. A scan reads each index
 // page of the lists once, so a mark costs scans times pages instead of a page
-// a block. It counts the blocks without a list in mark.Unknown but cannot
-// name them.
+// a block. It counts the blocks without a list in mark.Unknown and names a
+// sample of them, as sampleUnknown describes.
 //
 // Each read transaction stays within limit, and the next resumes after the
 // last record read, calling between first when set. The adopt log of an open
@@ -142,6 +142,11 @@ func (g *RefGraph) markScan(ctx context.Context, limit markLimit, between func()
 	// A live block without a list has unknown references. List the
 	// unreached blocks with one more key scan.
 	mark.Unknown = liveBlocks - expanded.Len()
+	if mark.Unknown != 0 {
+		if err := g.sampleUnknown(ctx, mark, expanded, limit, between); err != nil {
+			return nil, err
+		}
+	}
 	err = g.scanRecords(ctx, mark, lists, limit, between, func(key []byte, _ kvtx.Iterator) error {
 		if block := lastNode(lists, key); !live.Has(block) {
 			mark.Unreached = append(mark.Unreached, block)
@@ -152,6 +157,80 @@ func (g *RefGraph) markScan(ctx context.Context, limit markLimit, between func()
 		return nil, err
 	}
 	return mark, nil
+}
+
+// errSampleFull stops sampleUnknown's scans once the sample is full.
+var errSampleFull = errors.New("unknown sample full")
+
+// sampleUnknown names up to unknownSample of the live blocks a scan mark left
+// unexpanded, which have no child list. Only the records that made them live
+// name them, so it scans the roots, the edges from text nodes and the
+// expanded lists, within limit like the mark, and stops once the sample is
+// full.
+func (g *RefGraph) sampleUnknown(ctx context.Context, mark *BlockMark, expanded *NodeSet, limit markLimit, between func() error) error {
+	// Note each unexpanded block once.
+	noted := NewNodeSet()
+	note := func(enc []byte) error {
+		if len(enc) == 0 || enc[0] == textNode || expanded.hasBlock(enc) || !noted.addBlock(enc) {
+			return nil
+		}
+		mark.UnknownSample = append(mark.UnknownSample, prefixBlock+string(enc))
+		if len(mark.UnknownSample) == unknownSample {
+			return errSampleFull
+		}
+		return nil
+	}
+
+	// Scan the roots, the objects of edges from text nodes, then the
+	// children of the expanded lists.
+	roots, owners, lists := graphKey(kindRoot), []byte{kindForward, textNode}, graphKey(kindChildren)
+	scans := []struct {
+		prefix []byte
+		visit  func(key []byte, it kvtx.Iterator) error
+	}{
+		{roots, func(key []byte, _ kvtx.Iterator) error { return note(key[len(roots):]) }},
+		{owners, func(key []byte, _ kvtx.Iterator) error {
+			_, rest, err := readNode(key[1:])
+			if err != nil {
+				return err
+			}
+			if n := blockNodeLen(rest); n != 0 && n <= len(rest) {
+				return note(rest[:n])
+			}
+			return nil
+		}},
+		{lists, func(key []byte, it kvtx.Iterator) error {
+			// Read only the lists the mark expanded.
+			if !expanded.hasBlock(key[len(lists):]) {
+				return nil
+			}
+			value, err := it.Value()
+			if err != nil {
+				return err
+			}
+			for len(value) != 0 {
+				n := blockNodeLen(value)
+				if n == 0 || n > len(value) {
+					return errChildNotBlock
+				}
+				if err := note(value[:n]); err != nil {
+					return err
+				}
+				value = value[n:]
+			}
+			return nil
+		}},
+	}
+	for _, scan := range scans {
+		err := g.scanRecords(ctx, mark, scan.prefix, limit, between, scan.visit)
+		if errors.Is(err, errSampleFull) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // scanRecords calls visit with each record under prefix in key order, in read

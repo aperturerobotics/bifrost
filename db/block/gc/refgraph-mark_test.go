@@ -204,7 +204,7 @@ func testMarkBlocksMatchesReachability(t *testing.T, rnd *rand.Rand) {
 		if !slices.Equal(unreached, wantUnreached) || mark.Unknown != wantUnknown {
 			t.Fatalf("%s: unreached %d unknown %d, want %d and %d", name, len(unreached), mark.Unknown, len(wantUnreached), wantUnknown)
 		}
-		if name == "walk" && len(mark.UnknownSample) != wantUnknown {
+		if len(mark.UnknownSample) != min(wantUnknown, unknownSample) {
 			t.Fatalf("%s: sampled %d unknown blocks, want %d", name, len(mark.UnknownSample), wantUnknown)
 		}
 		for _, node := range blocks {
