@@ -1,9 +1,5 @@
 package s4db
 
-import (
-	"github.com/tidwall/btree"
-)
-
 // state is one immutable view of the database.
 type state struct {
 	// seq is the last record applied.
@@ -19,7 +15,7 @@ type state struct {
 	// count is the number of keys.
 	count int64
 	// overlay holds changes after ckpt.
-	overlay *btree.BTreeG[overlayItem]
+	overlay *overlay
 	// filter holds every key the overlay has held since ckpt, so lookups of
 	// other keys skip the overlay.
 	filter *filter
@@ -88,7 +84,7 @@ type carried struct {
 	// seq is the last commit the checkpoint includes.
 	seq uint64
 	// overlay holds the entries after seq.
-	overlay *btree.BTreeG[overlayItem]
+	overlay *overlay
 	// filter holds their keys.
 	filter *filter
 	// bytes estimates their memory.

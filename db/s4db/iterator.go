@@ -43,6 +43,8 @@ type Iterator struct {
 	layers []layer
 	// tree is the index tree layer.
 	tree *pageIter
+	// st is the state the overlay and tree layers read.
+	st *state
 	// prefix bounds the keys.
 	prefix []byte
 	// reverse iterates in descending order.
@@ -62,7 +64,7 @@ type Iterator struct {
 // newIterator returns an unpositioned iterator over st and changes.
 func newIterator(p *pager, st *state, changes *btree.BTreeG[tentry], prefix []byte, reverse bool) *Iterator {
 	// Buffered changes come first.
-	it := &Iterator{p: p, prefix: prefix, reverse: reverse, tree: &pageIter{cursor{p: p, root: st.root}}}
+	it := &Iterator{p: p, st: st, prefix: prefix, reverse: reverse, tree: &pageIter{cursor{p: p, root: st.root}}}
 	if changes != nil {
 		it.layers = append(it.layers, &treeIter[tentry]{
 			it:    changes.Iter(),
@@ -72,13 +74,14 @@ func newIterator(p *pager, st *state, changes *btree.BTreeG[tentry], prefix []by
 		})
 	}
 
-	// The overlay shadows the tree.
+	// The overlay's live entries shadow the tree. settle hides the tree keys
+	// the overlay deletes.
 	it.layers = append(it.layers,
 		&treeIter[overlayItem]{
-			it:    st.overlay.Iter(),
+			it:    st.overlay.live.Iter(),
 			keyOf: func(it overlayItem) []byte { return it.key },
 			probe: overlayProbe,
-			conv:  func(it overlayItem) mentry { return mentry{del: it.e.del, val: it.e.val} },
+			conv:  func(it overlayItem) mentry { return mentry{val: it.e.val} },
 		},
 		it.tree,
 	)
@@ -213,7 +216,12 @@ func (it *Iterator) settle() {
 			continue
 		}
 
-		// Skip deleted keys.
+		// Skip deleted keys: a buffered delete, or a tree key the overlay
+		// deletes. A layer before the tree on the same key comes first.
+		if best == layer(it.tree) && it.overlayDeletes(key) {
+			it.stepPast(key)
+			continue
+		}
 		e := best.entry()
 		if e.del {
 			it.stepPast(key)
@@ -222,6 +230,14 @@ func (it *Iterator) settle() {
 		it.ok, it.key, it.cur = true, key, e
 		return
 	}
+}
+
+// overlayDeletes reports whether the overlay holds a delete of key.
+func (it *Iterator) overlayDeletes(key []byte) bool {
+	if !it.st.filter.has(key) {
+		return false
+	}
+	return it.st.overlay.getDead(overlayProbe(key))
 }
 
 // front returns the layer on the next key in the direction, the first such
