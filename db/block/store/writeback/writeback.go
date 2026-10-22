@@ -51,10 +51,15 @@ type Store struct {
 
 	// local holds every block and serves the uploads.
 	local block.StoreOps
+	// values holds the local block values below any ownership tracking, so
+	// eviction and refill change values alone.
+	values block.StoreOps
 	// markers holds one marker per block awaiting upload.
 	markers kvtx.Store
 	// mtx orders marker mutations with their projection into status.
 	mtx csync.Mutex
+	// evictMtx runs one eviction pass at a time.
+	evictMtx csync.Mutex
 	// bcast guards status, and wakes Upload and status watchers.
 	bcast broadcast.Broadcast
 	// status projects the committed markers and the upload policy.
@@ -62,12 +67,18 @@ type Store struct {
 }
 
 // NewStore builds a Store over local, counting the markers left by a previous
-// run. Queued blocks upload at once until SetPolicy sets a settle age.
+// run. Queued blocks upload at once until SetPolicy sets a settle age. values
+// holds the same blocks as local without its ownership tracking.
 //
 // When enabled is false, writes are not queued until SetEnabled enables them.
-func NewStore(ctx context.Context, local block.StoreOps, markers kvtx.Store, enabled bool) (*Store, error) {
+func NewStore(
+	ctx context.Context,
+	local, values block.StoreOps,
+	markers kvtx.Store,
+	enabled bool,
+) (*Store, error) {
 	// Connect local block writes to the durable upload markers.
-	s := &Store{local: local, markers: markers}
+	s := &Store{local: local, values: values, markers: markers}
 	s.MarkingStore = NewMarkingStore(local, s.mark)
 
 	// Restore the pending upload counts and completed backfill target.
@@ -136,8 +147,9 @@ func (s *Store) GetStatus() (Status, <-chan struct{}) {
 
 // SetEnabled starts or stops queueing writes for upload.
 //
-// Disabling drops the queued markers and the backfill target: the local store
-// keeps every block, and the remote store no longer needs them.
+// Disabling drops the queued markers, the eviction queue and the backfill
+// target: the remote store no longer needs the markers, and the local store
+// must keep the blocks it holds.
 func (s *Store) SetEnabled(ctx context.Context, enabled bool) error {
 	// Serialize upload enablement with marker mutations.
 	release, err := s.mtx.Lock(ctx)
@@ -149,7 +161,7 @@ func (s *Store) SetEnabled(ctx context.Context, enabled bool) error {
 	// Drop pending markers and the backfill target when uploads are disabled.
 	if !enabled {
 		err := kvtx.RunTransaction(ctx, true, s.writeTx, func(ctx context.Context, tx kvtx.Tx) error {
-			for _, prefix := range []string{markedPrefix, queuePrefix} {
+			for _, prefix := range []string{markedPrefix, queuePrefix, evictPrefix} {
 				if err := deletePrefix(ctx, tx, prefix); err != nil {
 					return err
 				}
@@ -454,7 +466,8 @@ func (s *Store) mark(ctx context.Context, marks []Mark) error {
 	return nil
 }
 
-// clear removes the markers of uploaded blocks and clears the last failure.
+// clear removes the markers of uploaded blocks, queues them for eviction at
+// the current epoch, and clears the last failure.
 //
 // A dropped block written again since the batch read it keeps its marker: the
 // write found the marker and queued nothing, so clearing it would leave the
@@ -489,7 +502,12 @@ func (s *Store) clear(ctx context.Context, batch []pendingBlock) error {
 	var clearedBytes int64
 	var oldest time.Time
 	err = kvtx.RunTransaction(ctx, true, s.writeTx, func(ctx context.Context, tx kvtx.Tx) error {
-		// Delete the markers still queued, counting what they held.
+		// Delete the markers still queued, counting what they held, and queue
+		// the uploaded blocks for eviction.
+		epoch, err := readEpoch(ctx, tx)
+		if err != nil {
+			return err
+		}
 		cleared, clearedBytes = 0, 0
 		for _, pending := range batch {
 			if pending.queueKey == nil {
@@ -508,13 +526,19 @@ func (s *Store) clear(ctx context.Context, batch []pendingBlock) error {
 			if err := tx.Delete(ctx, pending.markedKey); err != nil {
 				return err
 			}
+			if !pending.dropped {
+				err := tx.Set(ctx, evictKey(epoch, pending.ref.GetHash()), []byte(strconv.FormatInt(pending.size, 10)))
+				if err != nil {
+					return err
+				}
+			}
 			cleared++
 			clearedBytes += pending.size
 		}
 
 		// Read the new queue head's write time.
 		oldest = time.Time{}
-		err := scanQueue(ctx, tx, func(entry queueEntry) error {
+		err = scanQueue(ctx, tx, func(entry queueEntry) error {
 			oldest = entry.at
 			return errScanDone
 		})

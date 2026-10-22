@@ -104,7 +104,7 @@ func (c *CloudBlockStoreForwarder) Execute(ctx context.Context) error {
 		var handled bool
 		err := c.access(stream.Context(), nil, func(cursor *bucket_lookup.Cursor) error {
 			// Invoke the block store handler over the read-only store.
-			readOnly := block_store.NewStoreReadThrough(func() block.StoreOps { return cursor.GetBlockStore() }, nil, false)
+			readOnly := block_store.NewStoreReadThrough(func() block.StoreOps { return cursor.GetBlockStore() }, nil, nil)
 			handler := block_rpc.NewSRPCBlockStoreHandler(block_rpc_server.NewBlockStore(readOnly), serviceID)
 			var err error
 			handled, err = handler.InvokeMethod(requestService, method, stream)

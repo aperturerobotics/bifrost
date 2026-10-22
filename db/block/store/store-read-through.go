@@ -13,20 +13,34 @@ import (
 // its next source.
 type StoreSource func() block.StoreOps
 
+// Fill writes a block read from the lower source, with its known refs, into
+// the primary source.
+type Fill func(ctx context.Context, primary block.StoreOps, ref *block.BlockRef, stored *block.StoredBlock) error
+
+// CacheFill writes the block into primary as a cache fill, which takes no
+// ownership.
+func CacheFill(ctx context.Context, primary block.StoreOps, ref *block.BlockRef, stored *block.StoredBlock) error {
+	opts := stored.PutOpts(ref)
+	opts.CacheFill = true
+	_, _, err := primary.PutBlock(ctx, stored.Data, opts)
+	return err
+}
+
 // StoreReadThrough reads from a primary source, then an optional lower source.
-// When writeback is enabled, lower hits are synchronously written to primary.
+// With a fill, lower hits are synchronously written to primary.
 //
 // StoreReadThrough is separate from block.StoreOverlay because StoreOverlay
 // readback is asynchronous.
 type StoreReadThrough struct {
-	primary   StoreSource
-	lower     StoreSource
-	writeback bool
+	primary StoreSource
+	lower   StoreSource
+	fill    Fill
 }
 
-// NewStoreReadThrough constructs a synchronous read-through store.
-func NewStoreReadThrough(primary, lower StoreSource, writeback bool) *StoreReadThrough {
-	return &StoreReadThrough{primary: primary, lower: lower, writeback: writeback}
+// NewStoreReadThrough constructs a synchronous read-through store. A nil fill
+// serves lower hits without writing them back.
+func NewStoreReadThrough(primary, lower StoreSource, fill Fill) *StoreReadThrough {
+	return &StoreReadThrough{primary: primary, lower: lower, fill: fill}
 }
 
 // GetHashType returns the first available source hash type.
@@ -50,7 +64,7 @@ func (s *StoreReadThrough) GetSupportedFeatures() block.StoreFeature {
 }
 
 // BeginReadOperation opens read scopes on the currently available sources.
-// Writeback keeps the primary source writable because lower-source hits are
+// A fill keeps the primary source writable because lower-source hits are
 // inserted into it before the scoped read returns.
 func (s *StoreReadThrough) BeginReadOperation(ctx context.Context) (block.StoreOps, func(), error) {
 	// Resolve the primary and lower stores for this read operation.
@@ -59,7 +73,7 @@ func (s *StoreReadThrough) BeginReadOperation(ctx context.Context) (block.StoreO
 
 	// Scope the primary store when lower hits will not be written back.
 	var releasePrimary, releaseLower func()
-	if primary != nil && !s.writeback {
+	if primary != nil && s.fill == nil {
 		scoped, release, err := primary.BeginReadOperation(ctx)
 		if err != nil {
 			return nil, nil, err
@@ -83,9 +97,9 @@ func (s *StoreReadThrough) BeginReadOperation(ctx context.Context) (block.StoreO
 
 	// Bind the read-through view to the acquired scopes and their cleanup.
 	scoped := &StoreReadThrough{
-		primary:   s.primary,
-		lower:     s.lower,
-		writeback: s.writeback,
+		primary: s.primary,
+		lower:   s.lower,
+		fill:    s.fill,
 	}
 	if primary != nil {
 		scoped.primary = func() block.StoreOps { return primary }
@@ -121,10 +135,9 @@ func (*StoreReadThrough) RmBlock(context.Context, *block.BlockRef) error {
 // Sync reports that no durability barrier is needed for this read-only view.
 func (*StoreReadThrough) Sync(context.Context) (bool, error) { return true, nil }
 
-// GetBlock reads the primary source, then the current lower source. When
-// writeback is enabled, a lower hit with known refs is synchronously inserted
-// into primary with its refs. A lower hit with unknown refs is served without
-// the writeback.
+// GetBlock reads the primary source, then the current lower source. With a
+// fill, a lower hit with known refs is synchronously inserted into primary
+// with its refs. A lower hit with unknown refs is served without the fill.
 func (s *StoreReadThrough) GetBlock(ctx context.Context, ref *block.BlockRef) ([]byte, bool, error) {
 	// Serve the block from the primary store when it is available there.
 	primary := s.source(s.primary)
@@ -135,12 +148,12 @@ func (s *StoreReadThrough) GetBlock(ctx context.Context, ref *block.BlockRef) ([
 		}
 	}
 
-	// Resolve the lower store and serve directly when writeback is disabled.
+	// Resolve the lower store and serve directly without a fill.
 	lower := s.source(s.lower)
 	if lower == nil {
 		return nil, false, nil
 	}
-	if !s.writeback || primary == nil {
+	if s.fill == nil || primary == nil {
 		return lower.GetBlock(ctx, ref)
 	}
 
@@ -153,9 +166,9 @@ func (s *StoreReadThrough) GetBlock(ctx context.Context, ref *block.BlockRef) ([
 }
 
 // GetStoredBlock reads the block and its refs from the primary source, then
-// the current lower source. The refs come from the source that answered. When
-// writeback is enabled, a lower hit with known refs is synchronously inserted
-// into primary with its refs.
+// the current lower source. The refs come from the source that answered. With
+// a fill, a lower hit with known refs is synchronously inserted into primary
+// with its refs.
 func (s *StoreReadThrough) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
 	// Serve the stored block and its refs from the primary store when present.
 	primary := s.source(s.primary)
@@ -182,19 +195,16 @@ func (s *StoreReadThrough) source(src StoreSource) block.StoreOps {
 	return src()
 }
 
-// readLower reads a block and its refs from lower. With writeback enabled, a
-// hit with known refs is written into primary with them as a cache fill, which
-// takes no ownership; a block with unknown refs would look like a leaf there, so
-// it is served without the writeback.
+// readLower reads a block and its refs from lower. With a fill, a hit with
+// known refs is written into primary; a block with unknown refs would look
+// like a leaf there, so it is served without the fill.
 func (s *StoreReadThrough) readLower(ctx context.Context, primary, lower block.StoreOps, ref *block.BlockRef) (*block.StoredBlock, error) {
 	stored, err := lower.GetStoredBlock(ctx, ref)
 	if err != nil || stored == nil {
 		return nil, err
 	}
-	if s.writeback && primary != nil && stored.RefsKnown {
-		opts := stored.PutOpts(ref)
-		opts.CacheFill = true
-		if _, _, err := primary.PutBlock(ctx, stored.Data, opts); err != nil {
+	if s.fill != nil && primary != nil && stored.RefsKnown {
+		if err := s.fill(ctx, primary, ref, stored); err != nil {
 			return nil, err
 		}
 	}

@@ -77,7 +77,7 @@ func TestGCStoreOpsGetStoredBlockUntracked(t *testing.T) {
 	readThrough := block_store.NewStoreReadThrough(
 		func() block.StoreOps { return destination.gcStore },
 		func() block.StoreOps { return env.gcStore },
-		true,
+		block_store.CacheFill,
 	)
 	got, err := readThrough.GetStoredBlock(env.ctx, ref)
 	if err != nil || got == nil || got.RefsKnown {

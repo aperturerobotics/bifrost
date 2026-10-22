@@ -142,12 +142,12 @@ func (b *BlockStore) newSessionBlockStore(
 	}
 	remote := block_store.NewStoreReadThrough(direct, func() block.StoreOps {
 		return b.cloudStore
-	}, false)
+	}, nil)
 	readStore := block_store.NewStoreReadThrough(func() block.StoreOps {
 		return b.cacheStore
 	}, func() block.StoreOps {
 		return remote
-	}, true)
+	}, block_store.CacheFill)
 	return &sessionBlockStore{
 		BlockStore: b,
 		readStore:  block_store.NewStore(b.GetID(), readStore),

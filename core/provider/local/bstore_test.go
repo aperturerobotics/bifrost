@@ -269,7 +269,7 @@ func TestLocalBlockStoreMissRoutesToSessionChildDEX(t *testing.T) {
 	readOps := block_store.NewStoreReadThrough(
 		func() block.StoreOps { return local },
 		func() block.StoreOps { return dexStore },
-		true,
+		block_store.CacheFill,
 	)
 	store := &BlockStore{
 		store:     block_store.NewStore("local-store", local),
