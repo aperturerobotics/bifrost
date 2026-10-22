@@ -92,11 +92,20 @@ func (t *bstoreTracker) nextBackend(
 	return placement, backend, nil
 }
 
-// uploadPolicy returns when a placement's cache settings upload its writes.
+// uploadPolicy returns when a placement's cache settings upload its writes and
+// how many bytes the local disk keeps. A low mark of zero or past the high
+// mark is nine tenths of the high mark.
 func uploadPolicy(cache *account_settings.BlockStoreCache) block_store_writeback.Policy {
+	high := min(cache.GetResidentHighBytes(), math.MaxInt64)
+	low := cache.GetResidentLowBytes()
+	if low == 0 || low > high {
+		low = high / 10 * 9
+	}
 	return block_store_writeback.Policy{
 		Settle:          time.Duration(cache.GetSettleSeconds()) * time.Second,
 		MaxPendingBytes: int64(min(cache.GetMaxPendingBytes(), math.MaxInt64)),
+		ResidentHigh:    int64(high),
+		ResidentLow:     int64(low),
 	}
 }
 

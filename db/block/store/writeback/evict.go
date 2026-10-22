@@ -21,6 +21,9 @@ const evictPrefix = "evictable/"
 // epochKey holds the current eviction epoch, which each pass advances.
 const epochKey = "epoch"
 
+// evictableBytesKey holds the summed size of the eviction queue entries.
+const evictableBytesKey = "evictable-bytes"
+
 // evictBatchBlocks bounds the entries one eviction step reads and commits.
 const evictBatchBlocks = 256
 
@@ -103,6 +106,65 @@ func scanEvictable(ctx context.Context, tx kvtx.Tx, cb func(evictEntry) error) e
 	return it.Err()
 }
 
+// queueEvict sets a block's eviction queue entry at epoch, returning the bytes
+// it added to the queue: zero when the entry was already there.
+func queueEvict(ctx context.Context, tx kvtx.Tx, epoch uint64, h *hash.Hash, size int64) (int64, error) {
+	key := evictKey(epoch, h)
+	found, err := tx.Exists(ctx, key)
+	if err != nil || found {
+		return 0, err
+	}
+	return size, tx.Set(ctx, key, []byte(strconv.FormatInt(size, 10)))
+}
+
+// readEvictableBytes reads the summed size of the eviction queue entries.
+func readEvictableBytes(ctx context.Context, tx kvtx.Tx) (int64, error) {
+	value, found, err := tx.Get(ctx, []byte(evictableBytesKey))
+	if err != nil || !found {
+		return 0, err
+	}
+	return strconv.ParseInt(string(value), 10, 64)
+}
+
+// addEvictableBytes adds delta to the summed size of the eviction queue
+// entries, in the transaction that changed them.
+func addEvictableBytes(ctx context.Context, tx kvtx.Tx, delta int64) error {
+	if delta == 0 {
+		return nil
+	}
+	total, err := readEvictableBytes(ctx, tx)
+	if err != nil {
+		return err
+	}
+	return tx.Set(ctx, []byte(evictableBytesKey), []byte(strconv.FormatInt(total+delta, 10)))
+}
+
+// EvictBytes returns how many uploaded bytes a pass drops to bring the
+// resident bytes from past the high mark down to the low mark, or zero.
+func (s Status) EvictBytes() int64 {
+	resident := s.ResidentBytes()
+	if s.Policy.ResidentHigh <= 0 || resident <= s.Policy.ResidentHigh {
+		return 0
+	}
+	return min(resident-s.Policy.ResidentLow, s.EvictableBytes)
+}
+
+// addEvictStatus projects committed eviction queue changes into the status:
+// deltas commute, so concurrent transactions project in any order. A change
+// of nothing wakes no watcher, so a budget watcher whose pass changed nothing
+// waits for the next write.
+func (s *Store) addEvictStatus(evictable, evicted, refills int64) {
+	if evictable == 0 && evicted == 0 && refills == 0 {
+		return
+	}
+	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		s.status.EvictableBytes += evictable
+		s.status.EvictedBytes += evicted
+		s.status.Refills += refills
+		broadcast()
+	})
+}
+
 // readEpoch reads the current eviction epoch, zero before the first pass.
 func readEpoch(ctx context.Context, tx kvtx.Tx) (uint64, error) {
 	value, found, err := tx.Get(ctx, []byte(epochKey))
@@ -122,13 +184,24 @@ func (s *Store) Refill(ctx context.Context, ref *block.BlockRef, stored *block.S
 	}
 
 	// Queue the refilled block for eviction.
-	return kvtx.RunTransaction(ctx, true, s.writeTx, func(ctx context.Context, tx kvtx.Tx) error {
+	var added int64
+	err := kvtx.RunTransaction(ctx, true, s.writeTx, func(ctx context.Context, tx kvtx.Tx) error {
+		// Queue the entry at the current epoch and count its bytes.
 		epoch, err := readEpoch(ctx, tx)
 		if err != nil {
 			return err
 		}
-		return tx.Set(ctx, evictKey(epoch, ref.GetHash()), []byte(strconv.Itoa(len(stored.Data))))
+		added, err = queueEvict(ctx, tx, epoch, ref.GetHash(), int64(len(stored.Data)))
+		if err != nil {
+			return err
+		}
+		return addEvictableBytes(ctx, tx, added)
 	})
+	if err != nil {
+		return errors.Wrap(err, "queue refilled block")
+	}
+	s.addEvictStatus(added, 0, 1)
+	return nil
 }
 
 // Evict runs one eviction pass, one at a time: it advances the epoch, then walks the queue
@@ -142,6 +215,10 @@ func (s *Store) Refill(ctx context.Context, ref *block.BlockRef, stored *block.S
 // collector swept, is deleted. Values are dropped before their entries, so an
 // interrupted pass leaves only entries the next pass deletes. The pass takes
 // no lock a write waits on, since asking remote can wait on the network.
+//
+// The volume shares values by hash across its block stores. Eviction relies on
+// each placed store sealing its blocks with its own transform keys, so no other
+// store holds the same hash.
 func (s *Store) Evict(
 	ctx context.Context,
 	remote block.StoreOps,
@@ -244,6 +321,7 @@ func (s *Store) evictBatch(
 
 	// Drop the values the remote holds, and decide each entry.
 	var requeue []evictEntry
+	var evictedBytes int64
 	for i, entry := range batch {
 		switch {
 		case !held[i]:
@@ -256,28 +334,37 @@ func (s *Store) evictBatch(
 				return false, errors.Wrap(err, "evict block")
 			}
 			result.Evicted++
-			result.EvictedBytes += entry.size
+			evictedBytes += entry.size
 		}
 	}
 
 	// Delete the walked entries and queue the kept ones at the new epoch. A
 	// refused block's next upload queues it again.
+	var delta int64
 	err = kvtx.RunTransaction(ctx, true, s.writeTx, func(ctx context.Context, tx kvtx.Tx) error {
+		delta = 0
 		for _, entry := range batch {
 			if err := tx.Delete(ctx, entry.key); err != nil {
 				return err
 			}
+			delta -= entry.size
 		}
 		for _, entry := range requeue {
-			if err := tx.Set(ctx, evictKey(epoch, entry.hash), []byte(strconv.FormatInt(entry.size, 10))); err != nil {
+			added, err := queueEvict(ctx, tx, epoch, entry.hash, entry.size)
+			if err != nil {
 				return err
 			}
+			delta += added
 		}
-		return nil
+		return addEvictableBytes(ctx, tx, delta)
 	})
 	if err != nil {
 		return false, errors.Wrap(err, "update eviction queue")
 	}
+
+	// Report the batch.
+	s.addEvictStatus(delta, evictedBytes, 0)
+	result.EvictedBytes += evictedBytes
 	result.Requeued += len(requeue)
 	return done, nil
 }

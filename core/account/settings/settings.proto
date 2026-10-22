@@ -101,6 +101,14 @@ message BlockStoreCache {
   // MaxPendingBytes uploads the oldest blocks before they settle while the
   // blocks awaiting upload exceed it. Zero sets no limit.
   uint64 max_pending_bytes = 2;
+  // ResidentHighBytes is the disk budget for the store's blocks: past it, the
+  // local disk drops the uploaded blocks read least recently, which read back
+  // from the bucket when used again. Zero keeps every block local.
+  uint64 resident_high_bytes = 3;
+  // ResidentLowBytes is where eviction stops once the high mark starts it.
+  // Blocks awaiting upload past it upload before they settle. Zero, or a value
+  // above the high mark, uses nine tenths of the high mark.
+  uint64 resident_low_bytes = 4;
 }
 
 // AccountSession is an approved account replica, distinct from a managed Device.

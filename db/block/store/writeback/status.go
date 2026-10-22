@@ -18,6 +18,22 @@ type Status struct {
 	// Target is the remote every block stored before it was chosen is queued
 	// for, empty until a backfill completes.
 	Target string
-	// Policy sets when queued blocks upload.
+	// Policy sets when queued blocks upload and the resident budget.
 	Policy Policy
+	// EvictableBytes is the size of the uploaded blocks the eviction queue
+	// holds. It can overcount blocks the garbage collector swept until an
+	// eviction pass meets their entries.
+	EvictableBytes int64
+	// EvictedBytes is the size of the values eviction dropped since the store
+	// opened.
+	EvictedBytes int64
+	// Refills is the number of evicted blocks read back from the remote since
+	// the store opened. Each one was a read that waited on the remote.
+	Refills int64
+}
+
+// ResidentBytes is the size of the store's blocks the local store holds: the
+// blocks awaiting upload and the uploaded blocks not yet evicted.
+func (s Status) ResidentBytes() int64 {
+	return s.PendingBytes + s.EvictableBytes
 }

@@ -58,7 +58,8 @@ type Store struct {
 	markers kvtx.Store
 	// mtx orders marker mutations with their projection into status.
 	mtx csync.Mutex
-	// evictMtx runs one eviction pass at a time.
+	// evictMtx runs one eviction pass at a time, and disabling uploads waits
+	// for the pass to end.
 	evictMtx csync.Mutex
 	// bcast guards status, and wakes Upload and status watchers.
 	bcast broadcast.Broadcast
@@ -81,9 +82,10 @@ func NewStore(
 	s := &Store{local: local, values: values, markers: markers}
 	s.MarkingStore = NewMarkingStore(local, s.mark)
 
-	// Restore the pending upload counts and completed backfill target.
+	// Restore the pending upload counts, eviction queue size and completed
+	// backfill target.
 	var pending int
-	var pendingBytes int64
+	var pendingBytes, evictableBytes int64
 	var target []byte
 	var oldest time.Time
 	err := kvtx.RunTransaction(ctx, true, s.writeTx, func(ctx context.Context, tx kvtx.Tx) error {
@@ -94,10 +96,15 @@ func NewStore(
 			}
 		}
 
-		// Read the completed backfill target before counting its queue.
+		// Read the completed backfill target and the eviction queue size, then
+		// count the upload queue.
 		pending, pendingBytes, oldest = 0, 0, time.Time{}
 		var err error
 		target, _, err = tx.Get(ctx, []byte(backfillKey))
+		if err != nil {
+			return err
+		}
+		evictableBytes, err = readEvictableBytes(ctx, tx)
 		if err != nil {
 			return err
 		}
@@ -116,16 +123,18 @@ func NewStore(
 
 	// Initialize upload status from the committed marker records.
 	s.status = Status{
-		Enabled:      enabled,
-		Pending:      pending,
-		PendingBytes: pendingBytes,
-		Oldest:       oldest,
-		Target:       string(target),
+		Enabled:        enabled,
+		Pending:        pending,
+		PendingBytes:   pendingBytes,
+		Oldest:         oldest,
+		Target:         string(target),
+		EvictableBytes: evictableBytes,
 	}
 	return s, nil
 }
 
-// SetPolicy sets when queued blocks upload, waking Upload to apply it.
+// SetPolicy sets when queued blocks upload and the resident budget, waking
+// Upload and budget watchers to apply it.
 func (s *Store) SetPolicy(policy Policy) {
 	s.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
 		if s.status.Policy != policy {
@@ -158,13 +167,22 @@ func (s *Store) SetEnabled(ctx context.Context, enabled bool) error {
 	}
 	defer release()
 
-	// Drop pending markers and the backfill target when uploads are disabled.
+	// Drop pending markers and the backfill target when uploads are disabled,
+	// after any eviction pass, whose commits would count entries dropped here.
 	if !enabled {
-		err := kvtx.RunTransaction(ctx, true, s.writeTx, func(ctx context.Context, tx kvtx.Tx) error {
+		releaseEvict, err := s.evictMtx.Lock(ctx)
+		if err != nil {
+			return err
+		}
+		defer releaseEvict()
+		err = kvtx.RunTransaction(ctx, true, s.writeTx, func(ctx context.Context, tx kvtx.Tx) error {
 			for _, prefix := range []string{markedPrefix, queuePrefix, evictPrefix} {
 				if err := deletePrefix(ctx, tx, prefix); err != nil {
 					return err
 				}
+			}
+			if err := tx.Delete(ctx, []byte(evictableBytesKey)); err != nil {
+				return err
 			}
 			return tx.Delete(ctx, []byte(backfillKey))
 		})
@@ -178,6 +196,7 @@ func (s *Store) SetEnabled(ctx context.Context, enabled bool) error {
 		s.status.Enabled = enabled
 		if !enabled {
 			s.status.Pending, s.status.PendingBytes = 0, 0
+			s.status.EvictableBytes = 0
 			s.status.Oldest = time.Time{}
 			s.status.Err, s.status.Target = nil, ""
 		}
@@ -499,7 +518,7 @@ func (s *Store) clear(ctx context.Context, batch []pendingBlock) error {
 	// Remove uploaded block markers, count their cleared bytes, and read the
 	// write time of the queue's new head.
 	var cleared int
-	var clearedBytes int64
+	var clearedBytes, queuedBytes int64
 	var oldest time.Time
 	err = kvtx.RunTransaction(ctx, true, s.writeTx, func(ctx context.Context, tx kvtx.Tx) error {
 		// Delete the markers still queued, counting what they held, and queue
@@ -508,7 +527,7 @@ func (s *Store) clear(ctx context.Context, batch []pendingBlock) error {
 		if err != nil {
 			return err
 		}
-		cleared, clearedBytes = 0, 0
+		cleared, clearedBytes, queuedBytes = 0, 0, 0
 		for _, pending := range batch {
 			if pending.queueKey == nil {
 				continue
@@ -527,13 +546,17 @@ func (s *Store) clear(ctx context.Context, batch []pendingBlock) error {
 				return err
 			}
 			if !pending.dropped {
-				err := tx.Set(ctx, evictKey(epoch, pending.ref.GetHash()), []byte(strconv.FormatInt(pending.size, 10)))
+				added, err := queueEvict(ctx, tx, epoch, pending.ref.GetHash(), pending.size)
 				if err != nil {
 					return err
 				}
+				queuedBytes += added
 			}
 			cleared++
 			clearedBytes += pending.size
+		}
+		if err := addEvictableBytes(ctx, tx, queuedBytes); err != nil {
+			return err
 		}
 
 		// Read the new queue head's write time.
@@ -556,6 +579,7 @@ func (s *Store) clear(ctx context.Context, batch []pendingBlock) error {
 		// Apply the cleared counts and the new head, then wake watchers.
 		s.status.Pending -= cleared
 		s.status.PendingBytes -= clearedBytes
+		s.status.EvictableBytes += queuedBytes
 		s.status.Err = nil
 		s.status.Oldest = oldest
 		broadcast()

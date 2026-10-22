@@ -9,6 +9,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller"
 	"github.com/aperturerobotics/controllerbus/controller/configset"
 	"github.com/aperturerobotics/util/ccontainer"
+	"github.com/aperturerobotics/util/csync"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/routine"
 	account_settings "github.com/s4wave/spacewave/core/account/settings"
@@ -58,6 +59,10 @@ type placementState struct {
 	// tracker reports the blocks the volume's reference graph tracks, or nil
 	// when the volume has no graph that can.
 	tracker block_gc.BlockTracker
+	// reads records the blocks read since the last eviction pass.
+	reads readSet
+	// evictGate is held by each eviction pass and by a storage move.
+	evictGate *csync.Mutex
 }
 
 // live reports which blocks a bucket reclaim must keep: the blocks the
@@ -114,16 +119,6 @@ func (p *placementState) fill(ctx context.Context, primary block.StoreOps, ref *
 
 	// Fill any other block as a cache fill.
 	return block_store.CacheFill(ctx, primary, ref, stored)
-}
-
-// evict drops up to maxBytes of uploaded local values that the backend holds,
-// oldest queued first. Returns a zero result without a storage backend.
-func (p *placementState) evict(ctx context.Context, maxBytes int64) (block_store_writeback.EvictResult, error) {
-	remote := p.remote.Load()
-	if remote == nil {
-		return block_store_writeback.EvictResult{}, nil
-	}
-	return p.wb.Evict(ctx, remote.store, maxBytes, nil)
 }
 
 // UploadStatus is a block store's storage backend and upload status.
@@ -322,6 +317,10 @@ type bstoreTracker struct {
 	bstoreCtr *ccontainer.CContainer[*BlockStore]
 	// remote is the open storage backend store, or nil.
 	remote atomic.Pointer[openBackend]
+	// evictGate holds eviction passes off while a storage move fetches the
+	// blocks a backend holds and switches the placement. It outlives each
+	// mount, so a remounted store still waits.
+	evictGate csync.Mutex
 }
 
 // buildBlockStoreTracker builds a new bstoreTracker for a bstore id.
@@ -458,7 +457,7 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 
 	// Track the store's placement, which places new writes, refills evicted
 	// blocks and reclaims backend storage.
-	placement := &placementState{wb: wb, local: localBucket, remote: &t.remote}
+	placement := &placementState{wb: wb, local: localBucket, remote: &t.remote, evictGate: &t.evictGate}
 	placement.tracker, _ = t.a.vol.GetRefGraph().(block_gc.BlockTracker)
 	placement.backend.Store(backend)
 
@@ -469,8 +468,9 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 		func() block.StoreOps { return t.a.getP2PStore(bucketID) },
 		nil,
 	)
+	recorded := &readRecorder{StoreOps: localBucket, reads: &placement.reads}
 	readOps := block_store.NewStoreReadThrough(
-		func() block.StoreOps { return localBucket },
+		func() block.StoreOps { return recorded },
 		func() block.StoreOps { return lowerOps },
 		placement.fill,
 	)
@@ -489,8 +489,18 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 		placement:     placement,
 	}
 
-	// Serve the local store to block store directives.
-	bstoreCtrl := newLocalBlockStoreController(le, blockStoreLocalID, localStore)
+	// Keep the store under its placement's resident budget.
+	eviction := routine.NewRoutineContainerWithLogger(
+		le.WithField("routine", "storage-evict"),
+		routine.WithRetry(providerBackoff),
+	)
+	eviction.SetRoutine(placement.runEviction)
+	eviction.SetContext(ctx, true)
+	defer eviction.ClearContext()
+
+	// Serve the handle to block store directives, so their reads of evicted
+	// blocks read through to the backend.
+	bstoreCtrl := newLocalBlockStoreController(le, blockStoreLocalID, bstoreHandle)
 	relBstoreCtrl, err := t.a.t.p.b.AddController(ctx, bstoreCtrl, nil)
 	if err != nil {
 		return err
@@ -530,17 +540,17 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 	return context.Canceled
 }
 
-// newLocalBlockStoreController builds the controller that serves localStore
-// under blockStoreLocalID.
+// newLocalBlockStoreController builds the controller that serves store under
+// blockStoreLocalID.
 func newLocalBlockStoreController(
 	le *logrus.Entry,
 	blockStoreLocalID string,
-	localStore block_store.Store,
+	store block_store.Store,
 ) *block_store_controller.Controller {
 	return block_store_controller.NewController(
 		le,
 		controller.NewInfo(ControllerID+"/bstore", Version, "local block store for: "+blockStoreLocalID),
-		block_store_controller.NewBlockStoreBuilder(localStore),
+		block_store_controller.NewBlockStoreBuilder(store),
 		[]string{blockStoreLocalID},
 		true,
 		[]string{blockStoreLocalID},
