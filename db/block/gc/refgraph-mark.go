@@ -196,8 +196,44 @@ func walkRecordsTx(ctx context.Context, tx kvtx.Tx, key []byte, visit, untracked
 	})
 }
 
-// passKey marks a running block pass.
+// passKey marks a running block pass. Its value is the pass's adopt log
+// range, so no write scans the log: deleted records stay in the store until
+// it compacts, and a scan steps past each one while it holds the writer.
 var passKey = []byte{kindPass}
+
+// adoptRange is the adopt log of a running pass: records lo up to hi.
+type adoptRange struct {
+	// lo is the first record not yet consumed.
+	lo uint64
+	// hi is the sequence of the next record.
+	hi uint64
+	// legacy marks a pass record written without a range, whose log only a
+	// scan can find.
+	legacy bool
+}
+
+// encode returns the pass record value of r.
+func (r adoptRange) encode() []byte {
+	return binary.BigEndian.AppendUint64(binary.BigEndian.AppendUint64(nil, r.lo), r.hi)
+}
+
+// readPassTx returns the adopt log range of the running pass, or false when
+// no pass runs.
+func readPassTx(ctx context.Context, tx kvtx.Tx) (adoptRange, bool, error) {
+	// A pass record without a range predates the range.
+	value, open, err := tx.Get(ctx, passKey)
+	if err != nil || !open {
+		return adoptRange{}, false, err
+	}
+	if len(value) != 16 {
+		return adoptRange{legacy: true}, true, nil
+	}
+	r := adoptRange{lo: binary.BigEndian.Uint64(value), hi: binary.BigEndian.Uint64(value[8:])}
+	if r.lo > r.hi {
+		return adoptRange{legacy: true}, true, nil
+	}
+	return r, true, nil
+}
 
 // BeginBlockPass opens a block pass. From its commit until EndBlockPass, each
 // write appends the blocks it adopts to the adopt log, so a sweep after the
@@ -205,10 +241,17 @@ var passKey = []byte{kindPass}
 // earlier pass that never ended. The caller runs one pass at a time per graph.
 func (g *RefGraph) BeginBlockPass(ctx context.Context) error {
 	return g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
-		if err := deleteAdoptLogTx(ctx, tx); err != nil {
+		// The new log starts where the earlier one ended, so it never
+		// rewrites a sequence the earlier pass used.
+		r, open, err := readPassTx(ctx, tx)
+		if err != nil {
 			return err
 		}
-		return tx.Set(ctx, passKey, nil)
+		next, err := deleteAdoptLogTx(ctx, tx, r, open)
+		if err != nil {
+			return err
+		}
+		return tx.Set(ctx, passKey, adoptRange{lo: next, hi: next}.encode())
 	})
 }
 
@@ -216,10 +259,15 @@ func (g *RefGraph) BeginBlockPass(ctx context.Context) error {
 // only what writes logged since the last rescue.
 func (g *RefGraph) EndBlockPass(ctx context.Context) error {
 	return g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
-		if err := tx.Delete(ctx, passKey); err != nil {
+		// Delete the log, then the marker.
+		r, open, err := readPassTx(ctx, tx)
+		if err != nil || !open {
 			return err
 		}
-		return deleteAdoptLogTx(ctx, tx)
+		if _, err := deleteAdoptLogTx(ctx, tx, r, open); err != nil {
+			return err
+		}
+		return tx.Delete(ctx, passKey)
 	})
 }
 
@@ -231,12 +279,20 @@ func (g *RefGraph) EndBlockPass(ctx context.Context) error {
 func (g *RefGraph) RescueAdopted(ctx context.Context, mark *BlockMark) (int, error) {
 	var rescued int
 	err := g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
-		// Consume the log.
-		blocks, err := readAdoptLogTx(ctx, tx)
+		// Consume the log and advance the pass past it.
+		r, open, err := readPassTx(ctx, tx)
+		if err != nil || !open {
+			return err
+		}
+		blocks, err := readAdoptLogTx(ctx, tx, r)
 		if err != nil {
 			return err
 		}
-		if err := deleteAdoptLogTx(ctx, tx); err != nil {
+		next, err := deleteAdoptLogTx(ctx, tx, r, open)
+		if err != nil {
+			return err
+		}
+		if err := tx.Set(ctx, passKey, adoptRange{lo: next, hi: next}.encode()); err != nil {
 			return err
 		}
 
@@ -255,45 +311,89 @@ func (g *RefGraph) RescueAdopted(ctx context.Context, mark *BlockMark) (int, err
 	return rescued, err
 }
 
-// readAdoptLogTx returns the blocks of every adopt log record.
-func readAdoptLogTx(ctx context.Context, tx kvtx.Tx) ([]string, error) {
+// readAdoptLogTx returns the blocks of every record in the adopt log r.
+func readAdoptLogTx(ctx context.Context, tx kvtx.Tx, r adoptRange) ([]string, error) {
+	// A legacy log is found by its prefix.
 	var blocks []string
-	err := tx.ScanPrefix(ctx, []byte{kindAdopt}, func(_, value []byte) error {
+	if r.legacy {
+		err := tx.ScanPrefix(ctx, []byte{kindAdopt}, func(_, value []byte) error {
+			logged, err := decodeChildren(value)
+			blocks = append(blocks, logged...)
+			return err
+		})
+		return blocks, err
+	}
+
+	// Read each record of the range.
+	for seq := r.lo; seq < r.hi; seq++ {
+		value, found, err := tx.Get(ctx, adoptKey(seq))
+		if err != nil {
+			return nil, err
+		}
+		if !found {
+			continue
+		}
 		logged, err := decodeChildren(value)
+		if err != nil {
+			return nil, err
+		}
 		blocks = append(blocks, logged...)
-		return err
-	})
-	return blocks, err
+	}
+	return blocks, nil
 }
 
 // logAdoptedTx appends the blocks a write adopted to the adopt log while a
-// block pass runs.
+// block pass runs. It reads and writes only the pass record and the new log
+// record, so its cost does not grow with the log or its deleted records.
 func logAdoptedTx(ctx context.Context, tx kvtx.Tx, blocks []string) error {
 	// Log only during a pass.
 	if len(blocks) == 0 {
 		return nil
 	}
-	open, err := tx.Exists(ctx, passKey)
+	r, open, err := readPassTx(ctx, tx)
 	if err != nil || !open {
 		return err
 	}
 
-	// Number the record after the last.
-	var seq uint64
-	it := tx.Iterate(ctx, []byte{kindAdopt}, true, true)
-	if it.Next() {
-		seq = binary.BigEndian.Uint64(it.Key()[1:]) + 1
-	}
-	err = it.Err()
-	it.Close()
-	if err != nil {
-		return err
+	// A legacy pass numbers its log once by a scan, then keeps the range.
+	if r.legacy {
+		if r, err = legacyRangeTx(ctx, tx); err != nil {
+			return err
+		}
 	}
 
-	// Write the sorted, distinct blocks.
+	// Write the sorted, distinct blocks at the next sequence.
 	blocks = slices.Clone(blocks)
 	slices.Sort(blocks)
-	return tx.Set(ctx, adoptKey(seq), encodeChildren(slices.Compact(blocks)))
+	if err := tx.Set(ctx, adoptKey(r.hi), encodeChildren(slices.Compact(blocks))); err != nil {
+		return err
+	}
+	r.hi++
+	return tx.Set(ctx, passKey, r.encode())
+}
+
+// legacyRangeTx returns the range of a legacy pass's log, from its first
+// record to after its last.
+func legacyRangeTx(ctx context.Context, tx kvtx.Tx) (adoptRange, error) {
+	// Find the first and the last record.
+	var r adoptRange
+	for _, reverse := range []bool{false, true} {
+		it := tx.Iterate(ctx, []byte{kindAdopt}, false, reverse)
+		if it.Next() {
+			seq := binary.BigEndian.Uint64(it.Key()[1:])
+			if reverse {
+				r.hi = seq + 1
+			} else {
+				r.lo = seq
+			}
+		}
+		err := it.Err()
+		it.Close()
+		if err != nil {
+			return adoptRange{}, err
+		}
+	}
+	return r, nil
 }
 
 // adoptKey returns the key of the adopt log record seq.
@@ -301,21 +401,39 @@ func adoptKey(seq uint64) []byte {
 	return binary.BigEndian.AppendUint64([]byte{kindAdopt}, seq)
 }
 
-// deleteAdoptLogTx deletes the adopt log.
-func deleteAdoptLogTx(ctx context.Context, tx kvtx.Tx) error {
-	// List the keys, then delete them.
-	var keys [][]byte
-	err := tx.ScanPrefixKeys(ctx, []byte{kindAdopt}, func(key []byte) error {
-		keys = append(keys, slices.Clone(key))
-		return nil
-	})
-	if err != nil {
-		return err
+// deleteAdoptLogTx deletes the adopt log r of a running pass, when open, and
+// returns the sequence after it.
+func deleteAdoptLogTx(ctx context.Context, tx kvtx.Tx, r adoptRange, open bool) (uint64, error) {
+	// Without a pass there is no log.
+	if !open {
+		return 0, nil
 	}
-	for _, key := range keys {
-		if err := tx.Delete(ctx, key); err != nil {
-			return err
+
+	// A legacy log is found by its prefix.
+	if r.legacy {
+		var keys [][]byte
+		var next uint64
+		err := tx.ScanPrefixKeys(ctx, []byte{kindAdopt}, func(key []byte) error {
+			keys = append(keys, slices.Clone(key))
+			next = max(next, binary.BigEndian.Uint64(key[1:])+1)
+			return nil
+		})
+		if err != nil {
+			return 0, err
+		}
+		for _, key := range keys {
+			if err := tx.Delete(ctx, key); err != nil {
+				return 0, err
+			}
+		}
+		return next, nil
+	}
+
+	// Delete each record of the range.
+	for seq := r.lo; seq < r.hi; seq++ {
+		if err := tx.Delete(ctx, adoptKey(seq)); err != nil {
+			return 0, err
 		}
 	}
-	return nil
+	return r.hi, nil
 }
