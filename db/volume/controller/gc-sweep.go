@@ -131,8 +131,9 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 		if stats.UnknownBlocks != 0 {
 			c.le.
 				WithField("unknown", stats.UnknownBlocks).
-				WithField("sample", stats.UnknownSample).
-				Warn("gc block pass reached blocks of unknown references and swept no block")
+				WithField("sample", block_gc.FormatIRIs(stats.UnknownSample)).
+				WithField("blocks-swept", stats.BlocksSwept).
+				Warn("gc block pass reached blocks of unknown references and stopped sweeping")
 		}
 		// Save the next block pass so a restart resumes the schedule.
 		if stats.BlockPasses != 0 {

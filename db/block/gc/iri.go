@@ -79,6 +79,15 @@ func FormatIRI(iri string) string {
 	return iri
 }
 
+// FormatIRIs returns iris spelled for people, as FormatIRI spells each.
+func FormatIRIs(iris []string) []string {
+	out := make([]string, len(iris))
+	for i, iri := range iris {
+		out[i] = FormatIRI(iri)
+	}
+	return out
+}
+
 // LegacyBlockIRI converts a block IRI spelled with the base58 text of its
 // reference, as earlier volumes stored it, to its BlockIRI. It returns any
 // other IRI unchanged. Base58 text never begins with a byte that is a hash

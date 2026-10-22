@@ -159,7 +159,7 @@ func repairVolume(ctx context.Context, le *logrus.Entry, path string, compact bo
 			return errors.Wrap(err, "sweep orphans")
 		}
 		if stats.UnknownBlocks != 0 {
-			le.Warnf("kept every block: %d reached blocks have unknown references, such as %v", stats.UnknownBlocks, stats.UnknownSample)
+			le.Warnf("kept every block: %d reached blocks have unknown references, such as %v", stats.UnknownBlocks, block_gc.FormatIRIs(stats.UnknownSample))
 		}
 		le.Infof("swept %d orphaned nodes", stats.NodesSwept)
 		res.nodesSwept += uint64(stats.NodesSwept)        //nolint:gosec // a count is nonnegative.
