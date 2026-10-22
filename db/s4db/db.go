@@ -653,6 +653,7 @@ func (db *DB) Close() error {
 	}
 	db.w.closing.Store(true)
 	db.w.builds.Wait()
+	db.w.punches.Wait()
 
 	// Flush and release freed space when no other process is writing. The
 	// flush raises the durability marks that bound the release.

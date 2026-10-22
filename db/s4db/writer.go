@@ -61,6 +61,11 @@ type writer struct {
 	// closing is set by Close, so a running background checkpoint drops
 	// its tree instead of finishing it.
 	closing atomic.Bool
+	// punching is set while a single-process handle punches released runs
+	// in the background. It and punches are safe without the writer lock.
+	punching atomic.Bool
+	// punches counts running background punches, so Close can wait.
+	punches sync.WaitGroup
 	// changed lists the commit records published since the state a
 	// background checkpoint builds.
 	changed []*record
@@ -478,8 +483,20 @@ func (w *writer) releaseSpace(ctx context.Context, base *state, r *record) error
 // batches to the next checkpoint.
 const punchBatchPages = 8 << 20 / pageSize
 
-// punch deallocates released runs and shrinks the file to the space end.
+// punch deallocates released runs and shrinks the file to the space end. A
+// single-process handle punches in the background, since a hole punch can
+// wait on a busy disk for minutes and every writer would wait with it.
 func (w *writer) punch() error {
+	if w.db.opts.SingleProcess && !w.closing.Load() {
+		w.startPunch()
+		return w.truncate()
+	}
+	return w.punchNow()
+}
+
+// punchNow deallocates released runs under the writer lock and shrinks the
+// file to the space end.
+func (w *writer) punchNow() error {
 	// Deallocate released runs below the end.
 	db, sp := w.db, w.sp
 	for _, r := range sp.drain() {
@@ -493,6 +510,88 @@ func (w *writer) punch() error {
 		}
 	}
 	return w.truncate()
+}
+
+// startPunch takes the released runs out of the free runs and punches them
+// in the background, unless a punch already runs, which leaves them queued
+// for the next. The space lists the runs as reserved, so allocation skips
+// them and a saved space frees them. Only a single-process handle punches
+// in the background: another process could allocate the runs from the space
+// it reads from the file. The caller holds the writer lock.
+func (w *writer) startPunch() {
+	// Take the released runs below the end.
+	if !w.punching.CompareAndSwap(false, true) {
+		return
+	}
+	db, sp := w.db, w.sp
+	var runs []run
+	for _, r := range sp.drain() {
+		if r.start >= sp.end {
+			continue
+		}
+		r.n = min(r.n, sp.end-r.start)
+		db.p.cache.drop(r)
+		sp.take(r)
+		sp.reserved = append(sp.reserved, r)
+		runs = append(runs, r)
+	}
+	if len(runs) == 0 {
+		w.punching.Store(false)
+		return
+	}
+
+	// Punch them without the writer lock.
+	w.punches.Add(1)
+	go w.runPunch(sp, runs)
+}
+
+// runPunch punches runs taken from sp, then returns them to its free runs
+// under the writer lock. A space reloaded meanwhile already holds them free,
+// and Close stops the punch, queuing the rest for its own.
+func (w *writer) runPunch(sp *space, runs []run) {
+	// Punch each run while the space still holds it.
+	defer w.punches.Done()
+	var err error
+	done := 0
+	for _, r := range runs {
+		if err = w.punchRun(sp, r); err != nil {
+			break
+		}
+		done++
+	}
+
+	// Return the runs, queuing those left unpunched.
+	if lerr := w.lock(context.Background()); lerr != nil {
+		w.punching.Store(false)
+		return
+	}
+	if w.sp == sp {
+		sp.reserved = slices.DeleteFunc(sp.reserved, func(r run) bool { return slices.Contains(runs, r) })
+		for _, r := range runs[:done] {
+			sp.returnFree(r)
+		}
+		for _, r := range runs[done:] {
+			sp.addFree(r)
+		}
+	}
+
+	// Report a failed punch with the next commit.
+	if err != nil && !errors.Is(err, errDropped) && w.ckptErr == nil {
+		w.ckptErr = err
+	}
+	w.punching.Store(false)
+	w.unlock(nil)
+}
+
+// punchRun punches r while sp is the current space, excluding its
+// replacement, whose free runs may hand r out, for the call.
+func (w *writer) punchRun(sp *space, r run) error {
+	w.spMtx.Lock()
+	defer w.spMtx.Unlock()
+	if w.sp != sp || w.closing.Load() {
+		return errDropped
+	}
+	return w.db.s.punch(pageOff(r.start), pageOff(r.n))
 }
 
 // truncate shrinks the file to the space end.
