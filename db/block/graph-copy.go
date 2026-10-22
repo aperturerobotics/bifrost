@@ -8,8 +8,11 @@ import (
 )
 
 // DefaultGraphCopyReads is the number of source reads a graph copy keeps in
-// flight when the caller sets none.
-const DefaultGraphCopyReads = 16
+// flight when the caller sets none. A peer source serves one block per round
+// trip, so the copy runs at most this many blocks per round trip: about
+// 13,600 blocks a second at a 4.7 ms ping. More reads raise that ceiling and
+// the source's lookup load with it.
+const DefaultGraphCopyReads = 64
 
 // GraphCopyOptions configures CopyGraph.
 type GraphCopyOptions struct {

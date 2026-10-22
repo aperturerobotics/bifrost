@@ -97,10 +97,40 @@ func TestAccountReplicaCopyRate(t *testing.T) {
 
 	// Compare the local copy rate with DEX copies at several read widths.
 	local := measure("local", source.GetBlockStore(), 16)
-	for _, reads := range []int{1, 8, 32} {
+	for _, reads := range []int{16, 64, 128} {
 		rate := measure("dex", replica.GetBlockStore(), reads)
 		t.Logf("dex reads=%d runs at %.2f of the local rate", reads, rate/local)
 	}
+
+	// Add a WAN round trip to each DEX read: the copy is latency bound when
+	// the in-process rate exceeds reads per round trip.
+	var wan block.StoreOps = replica.GetBlockStore()
+	if cs, ok := wan.(block.CopySource); ok {
+		wan = cs.GetCopySource()
+	}
+	wan = rateRoundTrip{StoreOps: wan, rtt: rateRoundTripTime}
+	for _, reads := range []int{16, 64, 128} {
+		measure(fmt.Sprintf("dex+%v", rateRoundTripTime), wan, reads)
+	}
+}
+
+// rateRoundTripTime is the measured ping between two production hosts.
+const rateRoundTripTime = 4700 * time.Microsecond
+
+// rateRoundTrip delays each block read by a network round trip.
+type rateRoundTrip struct {
+	block.StoreOps
+	rtt time.Duration
+}
+
+// GetStoredBlock waits a round trip, then reads the block.
+func (s rateRoundTrip) GetStoredBlock(ctx context.Context, ref *block.BlockRef) (*block.StoredBlock, error) {
+	select {
+	case <-time.After(s.rtt):
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	return s.StoreOps.GetStoredBlock(ctx, ref)
 }
 
 // seedRateGraph writes a tree of unique blocks with their edges and returns
