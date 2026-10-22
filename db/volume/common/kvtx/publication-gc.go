@@ -307,13 +307,16 @@ func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, s
 		// Rescue the rest and sweep a budget of chunks under the writer.
 		var batch []string
 		var commit <-chan struct{}
+		var held time.Time
 		err = v.withDirectAtomic(ctx, func(blocks block.StoreOps, rg *block_gc.RefGraph) error {
 			// Rescue the blocks adopted since the last transaction.
+			held = time.Now()
 			rescued, err := rg.RescueAdopted(ctx, mark)
 			if err != nil {
 				return err
 			}
 			stats.RescuedNodes += rescued
+			stats.SweepLongestRescue = max(stats.SweepLongestRescue, time.Since(held))
 
 			// A block of unknown references may name any unreached block.
 			// Wait for a later commit to add the lists of the blocks the
@@ -348,8 +351,12 @@ func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, s
 			return nil
 		})
 
-		// Forget the pending proofs of the blocks the transaction may have
-		// removed, and count only the blocks of committed transactions.
+		// Time the transaction through its commit, forget the pending proofs
+		// of the blocks it may have removed, and count only the blocks of
+		// committed transactions.
+		if !held.IsZero() {
+			stats.SweepLongestTx = max(stats.SweepLongestTx, time.Since(held))
+		}
 		v.forgetSweptProofs(batch)
 		if err != nil {
 			return err

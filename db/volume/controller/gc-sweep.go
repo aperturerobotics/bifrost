@@ -115,7 +115,15 @@ func (c *Controller) runGCSweep(ctx context.Context) error {
 		// pass that blocks of unknown references stopped, and continue a
 		// collection the budget stopped.
 		if stats.UnreferencedNodeCount != 0 || stats.BlockPasses != 0 {
-			c.le.
+			le := c.le
+			if stats.BlockPasses != 0 {
+				le = le.
+					WithField("roots", stats.MarkRoots).
+					WithField("owners", block_gc.FormatOwners(stats.MarkOwners)).
+					WithField("sweep-longest-tx", stats.SweepLongestTx.String()).
+					WithField("sweep-longest-rescue", stats.SweepLongestRescue.String())
+			}
+			le.
 				WithField("swept", stats.NodesSwept).
 				WithField("candidates", stats.Candidates).
 				WithField("live", stats.LiveNodes).

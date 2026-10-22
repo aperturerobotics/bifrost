@@ -35,6 +35,13 @@ type BlockMark struct {
 	// LongestRead is the longest read transaction of a scan mark, zero for
 	// a walk.
 	LongestRead time.Duration
+	// Roots counts the registered roots the mark seeded.
+	Roots int
+	// Owners counts, by kind, the nodes that are not blocks whose forward
+	// records seeded the mark, and those records. A kind that grows from
+	// pass to pass while the World's data does not is an owner never
+	// released.
+	Owners map[string]OwnerCount
 
 	// awaiting lists the blocks Unknown counts, each with its namer, up to
 	// settleLimit of them. A write can commit the edge that adopts a block
@@ -103,7 +110,7 @@ func (g *RefGraph) MarkBlocks(ctx context.Context) (*BlockMark, error) {
 		mark = &BlockMark{Live: NewNodeSet()}
 		live := mark.Live
 		var stack []namedNode
-		err := seedMarkTx(ctx, tx, func(node, namer string) {
+		err := seedMarkTx(ctx, tx, mark, func(node, namer string) {
 			if node != NodeUnreferenced && live.Add(node) && isBlockNode(node) {
 				stack = append(stack, namedNode{node, namer})
 			}
@@ -135,12 +142,13 @@ func (g *RefGraph) MarkBlocks(ctx context.Context) (*BlockMark, error) {
 
 // seedMarkTx calls seed with the graph root, each registered root, and both
 // nodes of each forward record whose subject is not a block, each with the
-// node that names it.
-func seedMarkTx(ctx context.Context, tx kvtx.Tx, seed func(node, namer string)) error {
+// node that names it, counting the roots and owners in mark.
+func seedMarkTx(ctx context.Context, tx kvtx.Tx, mark *BlockMark, seed func(node, namer string)) error {
 	// Seed the graph root and the registered roots.
 	seed(NodeGCRoot, "")
 	roots := graphKey(kindRoot)
 	err := tx.ScanPrefixKeys(ctx, roots, func(key []byte) error {
+		mark.Roots++
 		seed(lastNode(roots, key), NodeGCRoot)
 		return nil
 	})
@@ -150,6 +158,7 @@ func seedMarkTx(ctx context.Context, tx kvtx.Tx, seed func(node, namer string)) 
 
 	// Seed both nodes of each edge from a text node.
 	owners := []byte{kindForward, textNode}
+	var last string
 	return tx.ScanPrefixKeys(ctx, owners, func(key []byte) error {
 		// Decode the subject and the object.
 		subject, rest, err := readNode(key[1:])
@@ -161,7 +170,9 @@ func seedMarkTx(ctx context.Context, tx kvtx.Tx, seed func(node, namer string)) 
 			return err
 		}
 
-		// Seed them.
+		// Count and seed them.
+		mark.countOwner(subject, last)
+		last = subject
 		seed(subject, "")
 		seed(object, subject)
 		return nil

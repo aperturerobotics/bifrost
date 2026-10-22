@@ -46,6 +46,15 @@ type Stats struct {
 	// MarkLongestRead is the last mark's longest read transaction, zero for
 	// a walk.
 	MarkLongestRead time.Duration
+	// MarkRoots is the number of registered roots the last mark seeded.
+	MarkRoots int
+	// MarkOwners counts the last mark's owners by kind.
+	MarkOwners map[string]OwnerCount
+	// SweepLongestTx is the longest sweep transaction, from the start of its
+	// work under the writer through its commit.
+	SweepLongestTx time.Duration
+	// SweepLongestRescue is the longest rescue inside a sweep transaction.
+	SweepLongestRescue time.Duration
 	// LiveNodes is the number of nodes the last mark reached.
 	LiveNodes int
 	// UnreachedBlocks is the number of tracked blocks the last mark did not
@@ -75,4 +84,5 @@ func (s *Stats) RecordMark(mark *BlockMark) {
 	s.UnknownSample, s.UnknownNamers = mark.UnknownSample, mark.UnknownNamers
 	s.MarkScans = mark.Scans
 	s.MarkLongestRead = mark.LongestRead
+	s.MarkRoots, s.MarkOwners = mark.Roots, mark.Owners
 }

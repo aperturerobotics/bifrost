@@ -68,6 +68,7 @@ func (g *RefGraph) markScan(ctx context.Context, limit markLimit, between func()
 	seed(NodeGCRoot)
 	roots := graphKey(kindRoot)
 	err := g.scanRecords(ctx, mark, roots, limit, between, func(key []byte, _ kvtx.Iterator) error {
+		mark.Roots++
 		seed(lastNode(roots, key))
 		return nil
 	})
@@ -77,6 +78,7 @@ func (g *RefGraph) markScan(ctx context.Context, limit markLimit, between func()
 
 	// Seed both ends of each edge from a text node.
 	owners := []byte{kindForward, textNode}
+	var last string
 	err = g.scanRecords(ctx, mark, owners, limit, between, func(key []byte, _ kvtx.Iterator) error {
 		// Decode the subject and the object.
 		subject, rest, err := readNode(key[1:])
@@ -88,7 +90,9 @@ func (g *RefGraph) markScan(ctx context.Context, limit markLimit, between func()
 			return err
 		}
 
-		// Seed them.
+		// Count and seed them.
+		mark.countOwner(subject, last)
+		last = subject
 		seed(subject)
 		seed(object)
 		return nil

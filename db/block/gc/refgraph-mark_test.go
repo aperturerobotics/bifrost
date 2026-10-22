@@ -2,9 +2,11 @@ package block_gc
 
 import (
 	"context"
+	"maps"
 	"math/rand/v2"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/s4wave/spacewave/db/kvtx"
@@ -220,6 +222,27 @@ func testMarkBlocksMatchesReachability(t *testing.T, rnd *rand.Rand) {
 	slices.Sort(wantUnreached)
 	wantUnreached = slices.Compact(wantUnreached)
 
+	// Count the owners of each kind and their distinct forward records. A
+	// staging edge to a block keeps no forward record.
+	wantOwners := make(map[string]OwnerCount)
+	ownerNodes := make(map[string]bool)
+	ownerEdges := make(map[RefEdge]bool)
+	for _, edge := range edges {
+		staged := edge.Subject == NodeUnreferenced && slices.Contains(blocks, edge.Object)
+		if staged || slices.Contains(blocks, edge.Subject) || ownerEdges[edge] {
+			continue
+		}
+		ownerEdges[edge] = true
+		kind, _, _ := strings.Cut(edge.Subject, ":")
+		c := wantOwners[kind]
+		c.Edges++
+		if !ownerNodes[edge.Subject] {
+			ownerNodes[edge.Subject] = true
+			c.Nodes++
+		}
+		wantOwners[kind] = c
+	}
+
 	// The walk, the scan in transactions of a few records, and the budgeted
 	// scan all agree with the direct walk.
 	marks := map[string]func() (*BlockMark, error){
@@ -237,6 +260,9 @@ func testMarkBlocksMatchesReachability(t *testing.T, rnd *rand.Rand) {
 		unreached := slices.Sorted(slices.Values(mark.Unreached))
 		if !slices.Equal(unreached, wantUnreached) || mark.Unknown != wantUnknown {
 			t.Fatalf("%s: unreached %d unknown %d, want %d and %d", name, len(unreached), mark.Unknown, len(wantUnreached), wantUnknown)
+		}
+		if !maps.Equal(mark.Owners, wantOwners) || mark.Roots != 0 {
+			t.Fatalf("%s: owners %s and %d roots, want %s and none", name, FormatOwners(mark.Owners), mark.Roots, FormatOwners(wantOwners))
 		}
 		if len(mark.UnknownSample) != min(wantUnknown, unknownSample) {
 			t.Fatalf("%s: sampled %d unknown blocks, want %d", name, len(mark.UnknownSample), wantUnknown)
