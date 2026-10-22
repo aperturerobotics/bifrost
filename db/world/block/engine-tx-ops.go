@@ -48,8 +48,10 @@ func (e *EngineTx) AccessWorldState(
 	}
 
 	// A read snapshot reads from the head it holds, without the Engine lock
-	// every reader would otherwise queue on for each object.
-	if held := e.readHead.Load(); held != nil && !e.rel.Load() {
+	// every reader would otherwise queue on for each object. The read holds
+	// the head so a concurrent detach cannot release it mid-clone.
+	if held := e.readHead.Load(); held != nil && !e.rel.Load() && held.tryHold() {
+		defer held.release()
 		root := held.root.Clone()
 		defer root.Release()
 		return e.engine.accessFrom(ctx, root, ref, func(cursor *bucket_lookup.Cursor) error {

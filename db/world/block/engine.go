@@ -1084,10 +1084,10 @@ func (e *Engine) openReadTx(ctx context.Context) (*EngineTx, error) {
 		engTx = newEngineTx(e, nil)
 		engTx.readTx.Store(NewTx(world))
 		engTx.readRoot = head.ref.Clone()
-		engTx.readHead.Store(&heldHead{root: root, release: func() {
+		engTx.readHead.Store(newHeldHead(root, func() {
 			root.Release()
 			head.release()
-		}})
+		}))
 		e.snapshotTxs[engTx] = struct{}{}
 	}
 	e.snapMu.Unlock()
@@ -1384,12 +1384,46 @@ func (e *Engine) AccessWorldState(
 	})
 }
 
-// heldHead is a cursor on a head and the hold that keeps its root pinned.
+// heldHead is a cursor on a head and the hold that keeps its root pinned. The
+// snapshot owning it holds one reference and every object read holds another,
+// so a detach releasing the snapshot's reference never releases the cursor
+// under a read cloning it.
 type heldHead struct {
+	// refs counts the holders. Zero means released, and a released head is
+	// never held again.
+	refs atomic.Int64
 	// root is the held cursor; only cloned, never changed.
 	root *bucket_lookup.Cursor
-	// release drops root and the pin.
-	release func()
+	// free drops root and the pin after the last holder.
+	free func()
+}
+
+// newHeldHead holds root for its first holder until free.
+func newHeldHead(root *bucket_lookup.Cursor, free func()) *heldHead {
+	h := &heldHead{root: root, free: free}
+	h.refs.Store(1)
+	return h
+}
+
+// tryHold adds a holder unless the head was released.
+func (h *heldHead) tryHold() bool {
+	// Count up only from a live count, so a released head stays released.
+	for {
+		n := h.refs.Load()
+		if n <= 0 {
+			return false
+		}
+		if h.refs.CompareAndSwap(n, n+1) {
+			return true
+		}
+	}
+}
+
+// release drops a holder and frees the head after the last one.
+func (h *heldHead) release() {
+	if h.refs.Add(-1) == 0 {
+		h.free()
+	}
 }
 
 // holdHeadLocked clones the published head and holds its pin until release.
