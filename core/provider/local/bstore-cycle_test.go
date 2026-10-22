@@ -50,7 +50,7 @@ func TestLocalBlockStoreNetworkLookupUsesLocalOwner(t *testing.T) {
 		readOps := block_store.NewStoreReadThrough(
 			func() block.StoreOps { return local },
 			nil,
-			true,
+			block_store.CacheFill,
 		)
 		store := &BlockStore{
 			store:     local,

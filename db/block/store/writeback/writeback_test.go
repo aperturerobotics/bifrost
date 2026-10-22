@@ -56,7 +56,7 @@ func TestUploadAfterRestart(t *testing.T) {
 	markers := store_kvtx_inmem.NewStore()
 
 	// Unplaced writes are not queued.
-	s, err := NewStore(ctx, local, markers, false)
+	s, err := NewStore(ctx, local, local, markers, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestUploadAfterRestart(t *testing.T) {
 	}
 
 	// A reopened store recounts the markers and drains them.
-	s, err = NewStore(ctx, local, markers, true)
+	s, err = NewStore(ctx, local, local, markers, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestDisableDropsMarkers(t *testing.T) {
 	// Create an enabled upload store over durable markers.
 	ctx := t.Context()
 	markers := store_kvtx_inmem.NewStore()
-	s, err := NewStore(ctx, newInmemBlockStore(), markers, true)
+	s, err := NewStore(ctx, newInmemBlockStore(), nil, markers, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TestDisableDropsMarkers(t *testing.T) {
 	}
 
 	// Require a reopened upload store to retain the empty queue.
-	reopened, err := NewStore(ctx, newInmemBlockStore(), markers, true)
+	reopened, err := NewStore(ctx, newInmemBlockStore(), nil, markers, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestBackfillQueuesStoredBlocks(t *testing.T) {
 	ctx := t.Context()
 	local := newInmemBlockStore()
 	markers := store_kvtx_inmem.NewStore()
-	s, err := NewStore(ctx, local, markers, false)
+	s, err := NewStore(ctx, local, local, markers, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +197,7 @@ func TestBackfillQueuesStoredBlocks(t *testing.T) {
 	}
 
 	// A reopened store remembers the completed backfill.
-	s, err = NewStore(ctx, local, markers, true)
+	s, err = NewStore(ctx, local, local, markers, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +222,7 @@ func TestBackfillQueuesStoredBlocks(t *testing.T) {
 func TestUploadUntrackedBlock(t *testing.T) {
 	// Queue a block that the local store holds without its refs.
 	ctx := t.Context()
-	s, err := NewStore(ctx, newUntrackedBlockStore(), store_kvtx_inmem.NewStore(), true)
+	s, err := NewStore(ctx, newUntrackedBlockStore(), nil, store_kvtx_inmem.NewStore(), true)
 	if err != nil {
 		t.Fatal(err)
 	}

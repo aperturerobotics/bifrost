@@ -97,6 +97,35 @@ func (p *placementState) live(ctx context.Context, refs []*block.BlockRef) ([]bo
 	return live, nil
 }
 
+// fill writes a block read from the backend or a peer into the local store. A
+// block the graph tracks lost only its value to eviction, so it is refilled
+// below the ownership layer; any other block is a cache fill.
+func (p *placementState) fill(ctx context.Context, primary block.StoreOps, ref *block.BlockRef, stored *block.StoredBlock) error {
+	// Refill a tracked block of a placed store.
+	if p.backend.Load() != nil && p.tracker != nil {
+		tracked, err := p.tracker.TrackedBlocks(ctx, []*block.BlockRef{ref})
+		if err != nil {
+			return err
+		}
+		if tracked[0] {
+			return p.wb.Refill(ctx, ref, stored)
+		}
+	}
+
+	// Fill any other block as a cache fill.
+	return block_store.CacheFill(ctx, primary, ref, stored)
+}
+
+// evict drops up to maxBytes of uploaded local values that the backend holds,
+// oldest queued first. Returns a zero result without a storage backend.
+func (p *placementState) evict(ctx context.Context, maxBytes int64) (block_store_writeback.EvictResult, error) {
+	remote := p.remote.Load()
+	if remote == nil {
+		return block_store_writeback.EvictResult{}, nil
+	}
+	return p.wb.Evict(ctx, remote.store, maxBytes, nil)
+}
+
 // UploadStatus is a block store's storage backend and upload status.
 type UploadStatus struct {
 	// Backend is the storage backend holding the store, nil for the account's
@@ -407,7 +436,7 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 		return err
 	}
 	defer markersRef.Release()
-	wb, err := block_store_writeback.NewStore(ctx, localBucket, markers.GetObjectStore(), backend != nil)
+	wb, err := block_store_writeback.NewStore(ctx, localBucket, t.a.vol, markers.GetObjectStore(), backend != nil)
 	if err != nil {
 		return err
 	}
@@ -427,28 +456,31 @@ func (t *bstoreTracker) executeBlockStoreTracker(rctx context.Context) error {
 	defer t.swapRemote(nil)
 	defer upload.ClearContext()
 
+	// Track the store's placement, which places new writes, refills evicted
+	// blocks and reclaims backend storage.
+	placement := &placementState{wb: wb, local: localBucket, remote: &t.remote}
+	placement.tracker, _ = t.a.vol.GetRefGraph().(block_gc.BlockTracker)
+	placement.backend.Store(backend)
+
 	// Read the local store first, then the backend's bucket, then peers.
 	localStore := block_store.NewStore(blockStoreLocalID, wb)
 	lowerOps := block_store.NewStoreReadThrough(
 		t.getRemote,
 		func() block.StoreOps { return t.a.getP2PStore(bucketID) },
-		false,
+		nil,
 	)
 	readOps := block_store.NewStoreReadThrough(
 		func() block.StoreOps { return localBucket },
 		func() block.StoreOps { return lowerOps },
-		true,
+		placement.fill,
 	)
 	copyOps := block_store.NewStoreReadThrough(
 		func() block.StoreOps { return localBucket },
 		func() block.StoreOps { return lowerOps },
-		false,
+		nil,
 	)
 
-	// Build the handle, which places new writes and reclaims backend storage.
-	placement := &placementState{wb: wb, local: localBucket, remote: &t.remote}
-	placement.tracker, _ = t.a.vol.GetRefGraph().(block_gc.BlockTracker)
-	placement.backend.Store(backend)
+	// Build the handle over the local store and its read paths.
 	bstoreHandle := &BlockStore{
 		store:         localStore,
 		readStore:     block_store.NewStore(blockStoreLocalID, readOps),

@@ -66,7 +66,7 @@ func TestStoreReadThroughScopesLowerWhenPrimaryUnavailable(t *testing.T) {
 	store := block_store.NewStoreReadThrough(
 		func() block.StoreOps { return nil },
 		func() block.StoreOps { return lower },
-		false,
+		nil,
 	)
 	scoped, release, err := store.BeginReadOperation(ctx)
 	if err != nil {

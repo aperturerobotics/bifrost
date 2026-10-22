@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -415,6 +416,72 @@ func (p *placedStoreTest) waitUpload(ctx context.Context, t *testing.T, cond fun
 			t.Fatalf("upload status %+v never matched", status)
 		case <-changed:
 		}
+	}
+}
+
+// TestPlacedStoreEvictAndRefill evicts the uploaded blocks of a placed store,
+// refuses a block whose rewrite awaits upload, reads the evicted block back,
+// and finds the refill staged no garbage candidate.
+func TestPlacedStoreEvictAndRefill(t *testing.T) {
+	// Bound the eviction checks.
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+
+	// Hold the child's rewrite for an hour, so its marker stays queued.
+	p := setupPlacedStore(ctx, t)
+	p.place(ctx, t, &account_settings.BlockStoreCache{SettleSeconds: 3600})
+	bs := p.waitUpload(ctx, t, func(status UploadStatus) bool {
+		return status.Policy.Settle == time.Hour && status.Pending == 0
+	})
+	if _, _, err := bs.PutBlock(ctx, p.blocks[p.childRef], nil); err != nil {
+		t.Fatal(err)
+	}
+
+	// Evict: the root leaves the disk and the marked child stays.
+	result, err := bs.placement.evict(ctx, math.MaxInt64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Evicted != 1 || result.Refused != 1 {
+		t.Fatalf("evict = %+v, want the root evicted and the child refused", result)
+	}
+	vol := p.acc.GetVolume()
+	held, err := vol.GetBlockExistsBatch(ctx, []*block.BlockRef{p.rootRef, p.childRef})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(held, []bool{false, true}) {
+		t.Fatalf("held = %v, want only the child on disk", held)
+	}
+
+	// Read the root back: it refills the disk and stages no candidate.
+	data, found, err := bs.GetBlock(ctx, p.rootRef)
+	if err != nil || !found || !bytes.Equal(data, p.blocks[p.rootRef]) {
+		t.Fatalf("read evicted root = %q/%v/%v", data, found, err)
+	}
+	if found, err := vol.GetBlockExists(ctx, p.rootRef); err != nil || !found {
+		t.Fatalf("refilled root on disk = %v/%v", found, err)
+	}
+	rg := vol.GetRefGraph()
+	staged, err := rg.GetUnreferencedNodes(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if slices.Contains(staged, block_gc.BlockIRI(p.rootRef)) {
+		t.Fatal("refill staged the root as a garbage candidate")
+	}
+
+	// A block pass keeps both blocks, and the refill queued the root again.
+	if _, err := block_gc.NewCollector(rg, vol, nil).Collect(ctx); err != nil {
+		t.Fatal(err)
+	}
+	p.checkLocalGraph(ctx, t, bs)
+	result, err = bs.placement.evict(ctx, math.MaxInt64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Evicted != 1 {
+		t.Fatalf("second evict = %+v, want the refilled root evicted", result)
 	}
 }
 

@@ -96,7 +96,7 @@ func TestStoreReadThroughWritebackUsesWritablePrimary(t *testing.T) {
 	store := block_store.NewStoreReadThrough(
 		func() block.StoreOps { return primary },
 		func() block.StoreOps { return lowerSource },
-		true,
+		block_store.CacheFill,
 	)
 	scoped, release, err := store.BeginReadOperation(ctx)
 	if err != nil {
@@ -137,7 +137,7 @@ func TestStoreReadThroughByteOnlySourceSkipsFill(t *testing.T) {
 	store := block_store.NewStoreReadThrough(
 		func() block.StoreOps { return primary },
 		func() block.StoreOps { return lower },
-		true,
+		block_store.CacheFill,
 	)
 	got, found, err := store.GetBlock(ctx, ref)
 	if err != nil || !found || string(got) != string(data) {

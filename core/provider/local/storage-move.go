@@ -193,7 +193,7 @@ func (a *ProviderAccount) fetchPlacedBlocks(
 	remote := block_store.NewStoreReadThrough(
 		func() block.StoreOps { return bucket },
 		func() block.StoreOps { return a.getP2PStore(bucketID) },
-		false,
+		nil,
 	)
 	refs, err := a.ListBlockStoreRefs(ctx, tkr.id)
 	if err != nil {
