@@ -237,6 +237,18 @@ export interface BlockStoreCache {
    * blocks awaiting upload exceed it. Zero sets no limit.
    */
   maxPendingBytes?: bigint
+  /**
+   * ResidentHighBytes is the disk budget for the store's blocks: past it, the
+   * local disk drops the uploaded blocks read least recently, which read back
+   * from the bucket when used again. Zero keeps every block local.
+   */
+  residentHighBytes?: bigint
+  /**
+   * ResidentLowBytes is where eviction stops once the high mark starts it.
+   * Blocks awaiting upload past it upload before they settle. Zero, or a value
+   * above the high mark, uses nine tenths of the high mark.
+   */
+  residentLowBytes?: bigint
 }
 
 export const BlockStoreCache: MessageType<BlockStoreCache> =
@@ -245,6 +257,8 @@ export const BlockStoreCache: MessageType<BlockStoreCache> =
     () => [
       [1, 'settle_seconds', 13],
       [2, 'max_pending_bytes', 4],
+      [3, 'resident_high_bytes', 4],
+      [4, 'resident_low_bytes', 4],
     ],
   )
 

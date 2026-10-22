@@ -83,12 +83,16 @@ class BlockStorePlacement(_message.Message):
     def __init__(self, block_store_id: _Optional[str] = ..., storage_backend_id: _Optional[str] = ..., cache: _Optional[_Union[BlockStoreCache, _Mapping]] = ...) -> None: ...
 
 class BlockStoreCache(_message.Message):
-    __slots__ = ("settle_seconds", "max_pending_bytes")
+    __slots__ = ("settle_seconds", "max_pending_bytes", "resident_high_bytes", "resident_low_bytes")
     SETTLE_SECONDS_FIELD_NUMBER: _ClassVar[int]
     MAX_PENDING_BYTES_FIELD_NUMBER: _ClassVar[int]
+    RESIDENT_HIGH_BYTES_FIELD_NUMBER: _ClassVar[int]
+    RESIDENT_LOW_BYTES_FIELD_NUMBER: _ClassVar[int]
     settle_seconds: int
     max_pending_bytes: int
-    def __init__(self, settle_seconds: _Optional[int] = ..., max_pending_bytes: _Optional[int] = ...) -> None: ...
+    resident_high_bytes: int
+    resident_low_bytes: int
+    def __init__(self, settle_seconds: _Optional[int] = ..., max_pending_bytes: _Optional[int] = ..., resident_high_bytes: _Optional[int] = ..., resident_low_bytes: _Optional[int] = ...) -> None: ...
 
 class AccountSession(_message.Message):
     __slots__ = ("peer_id", "storage_peer_id", "revoked", "revoked_by_storage_peer_id")

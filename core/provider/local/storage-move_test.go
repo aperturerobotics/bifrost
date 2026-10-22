@@ -422,7 +422,7 @@ func (p *placedStoreTest) waitUpload(ctx context.Context, t *testing.T, cond fun
 // TestPlacedStoreEvictAndRefill evicts the uploaded blocks of a placed store,
 // refuses a block whose rewrite awaits upload, reads the evicted block back,
 // and finds the refill staged no garbage candidate.
-func TestPlacedStoreEvictAndRefill(t *testing.T) {
+func TestPlacedStoreEviction(t *testing.T) {
 	// Bound the eviction checks.
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
@@ -482,6 +482,48 @@ func TestPlacedStoreEvictAndRefill(t *testing.T) {
 	}
 	if result.Evicted != 1 {
 		t.Fatalf("second evict = %+v, want the refilled root evicted", result)
+	}
+
+	// Refill the root, then hold eviction off while a budget that fits only
+	// the root uploads the child early.
+	if _, found, err := bs.GetBlock(ctx, p.rootRef); err != nil || !found {
+		t.Fatalf("refill root = %v/%v", found, err)
+	}
+	rootSize, childSize := int64(len(p.blocks[p.rootRef])), int64(len(p.blocks[p.childRef]))
+	release, err := bs.placement.evictGate.Lock(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bs.placement.reads.enabled.Store(true)
+	p.place(ctx, t, &account_settings.BlockStoreCache{
+		SettleSeconds:     3600,
+		MaxPendingBytes:   1,
+		ResidentHighBytes: uint64(rootSize + childSize - 1),
+		ResidentLowBytes:  uint64(rootSize),
+	})
+	bs = p.waitUpload(ctx, t, func(status UploadStatus) bool {
+		return status.Policy.ResidentLow == rootSize && status.Pending == 0
+	})
+
+	// Read the root, then let the budget pass run: it keeps the root it saw
+	// read and evicts the child down to the low mark.
+	if _, found, err := bs.GetBlock(ctx, p.rootRef); err != nil || !found {
+		t.Fatalf("read hot root = %v/%v", found, err)
+	}
+	release()
+	bs = p.waitUpload(ctx, t, func(status UploadStatus) bool {
+		return status.ResidentBytes() <= rootSize
+	})
+	final, _ := bs.placement.wb.GetStatus()
+	if final.EvictedBytes != 2*rootSize+childSize || final.Refills != 2 {
+		t.Fatalf("status = %+v, want the child evicted and the hot root never refilled", final)
+	}
+	held, err = vol.GetBlockExistsBatch(ctx, []*block.BlockRef{p.rootRef, p.childRef})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(held, []bool{true, false}) {
+		t.Fatalf("held = %v, want only the hot root on disk", held)
 	}
 }
 

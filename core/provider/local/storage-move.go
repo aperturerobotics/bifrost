@@ -22,8 +22,8 @@ const (
 	moveFetchConcurrency = 16
 )
 
-// errUploaded ends the upload watch once the new placement holds every block.
-var errUploaded = errors.New("uploaded")
+// errMoved ends a move's status watch once the store reached its new placement.
+var errMoved = errors.New("moved")
 
 // MovePhase is a step of a storage move.
 type MovePhase int
@@ -122,12 +122,19 @@ func (a *ProviderAccount) MoveSpaceStorage(
 	defer tkrRef.Release()
 
 	// Fetch blocks only the old backend holds, then place and wait for the
-	// blocks written before the move to upload.
+	// blocks written before the move to upload. Eviction waits until the
+	// store leaves the old backend, so no block the fetch found local is
+	// dropped from the disk before the switch.
 	since := time.Now().Round(0)
 	placement := settings.FindBlockStorePlacement(blockStoreID)
 	current := placement.GetStorageBackendId()
 	if current != backendID {
 		if current != "" {
+			release, err := tkr.evictGate.Lock(ctx)
+			if err != nil {
+				return err
+			}
+			defer release()
 			backend := settings.FindStorageBackend(current)
 			if backend == nil {
 				return errors.Wrap(account_settings.ErrStorageBackendNotFound, current)
@@ -146,6 +153,10 @@ func (a *ProviderAccount) MoveSpaceStorage(
 	}
 	if backendID != "" {
 		if err := waitUploaded(ctx, tkr, backendID, since, fn); err != nil {
+			return err
+		}
+	} else if current != "" {
+		if err := waitUnplaced(ctx, tkr); err != nil {
 			return err
 		}
 	}
@@ -254,6 +265,21 @@ func (a *ProviderAccount) fetchPlacedBlocks(
 	return nil
 }
 
+// waitUnplaced waits until the store leaves its backend and stops queueing
+// writes for upload.
+func waitUnplaced(ctx context.Context, tkr *bstoreTracker) error {
+	err := watchTrackerUploadStatus(ctx, tkr, func(status UploadStatus) error {
+		if status.Backend == nil && !status.Enabled {
+			return errMoved
+		}
+		return nil
+	})
+	if errors.Is(err, errMoved) {
+		return nil
+	}
+	return err
+}
+
 // waitUploaded reports upload progress until the store is placed on backendID,
 // its blocks are queued for upload, and every block written before since has
 // uploaded. Later writes wait out their settle age without holding the move.
@@ -271,7 +297,7 @@ func waitUploaded(
 			return nil
 		}
 		if status.Pending == 0 || !status.Oldest.Before(since) {
-			return errUploaded
+			return errMoved
 		}
 		if status.Pending == prev.Pending && status.PendingBytes == prev.PendingBytes && status.Err == prev.Err {
 			return nil
@@ -279,7 +305,7 @@ func waitUploaded(
 		prev = status
 		return fn(MoveProgress{Phase: MovePhaseUpload, Upload: status})
 	})
-	if errors.Is(err, errUploaded) {
+	if errors.Is(err, errMoved) {
 		return nil
 	}
 	return err

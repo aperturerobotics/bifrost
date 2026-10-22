@@ -330,6 +330,14 @@ type BlockStoreCache struct {
 	// MaxPendingBytes uploads the oldest blocks before they settle while the
 	// blocks awaiting upload exceed it. Zero sets no limit.
 	MaxPendingBytes uint64 `protobuf:"varint,2,opt,name=max_pending_bytes,json=maxPendingBytes,proto3" json:"maxPendingBytes,omitempty"`
+	// ResidentHighBytes is the disk budget for the store's blocks: past it, the
+	// local disk drops the uploaded blocks read least recently, which read back
+	// from the bucket when used again. Zero keeps every block local.
+	ResidentHighBytes uint64 `protobuf:"varint,3,opt,name=resident_high_bytes,json=residentHighBytes,proto3" json:"residentHighBytes,omitempty"`
+	// ResidentLowBytes is where eviction stops once the high mark starts it.
+	// Blocks awaiting upload past it upload before they settle. Zero, or a value
+	// above the high mark, uses nine tenths of the high mark.
+	ResidentLowBytes uint64 `protobuf:"varint,4,opt,name=resident_low_bytes,json=residentLowBytes,proto3" json:"residentLowBytes,omitempty"`
 }
 
 func (x *BlockStoreCache) Reset() {
@@ -348,6 +356,20 @@ func (x *BlockStoreCache) GetSettleSeconds() uint32 {
 func (x *BlockStoreCache) GetMaxPendingBytes() uint64 {
 	if x != nil {
 		return x.MaxPendingBytes
+	}
+	return 0
+}
+
+func (x *BlockStoreCache) GetResidentHighBytes() uint64 {
+	if x != nil {
+		return x.ResidentHighBytes
+	}
+	return 0
+}
+
+func (x *BlockStoreCache) GetResidentLowBytes() uint64 {
+	if x != nil {
+		return x.ResidentLowBytes
 	}
 	return 0
 }
@@ -1107,6 +1129,8 @@ func (m *BlockStoreCache) CloneVT() *BlockStoreCache {
 	r := new(BlockStoreCache)
 	r.SettleSeconds = m.SettleSeconds
 	r.MaxPendingBytes = m.MaxPendingBytes
+	r.ResidentHighBytes = m.ResidentHighBytes
+	r.ResidentLowBytes = m.ResidentLowBytes
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -1733,6 +1757,12 @@ func (this *BlockStoreCache) EqualVT(that *BlockStoreCache) bool {
 		return false
 	}
 	if this.MaxPendingBytes != that.MaxPendingBytes {
+		return false
+	}
+	if this.ResidentHighBytes != that.ResidentHighBytes {
+		return false
+	}
+	if this.ResidentLowBytes != that.ResidentLowBytes {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -2943,6 +2973,16 @@ func (x *BlockStoreCache) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("maxPendingBytes")
 		s.WriteUint64(x.MaxPendingBytes)
 	}
+	if x.ResidentHighBytes != 0 || s.HasField("residentHighBytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("residentHighBytes")
+		s.WriteUint64(x.ResidentHighBytes)
+	}
+	if x.ResidentLowBytes != 0 || s.HasField("residentLowBytes") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("residentLowBytes")
+		s.WriteUint64(x.ResidentLowBytes)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -2966,6 +3006,12 @@ func (x *BlockStoreCache) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "max_pending_bytes", "maxPendingBytes":
 			s.AddField("max_pending_bytes")
 			x.MaxPendingBytes = s.ReadUint64()
+		case "resident_high_bytes", "residentHighBytes":
+			s.AddField("resident_high_bytes")
+			x.ResidentHighBytes = s.ReadUint64()
+		case "resident_low_bytes", "residentLowBytes":
+			s.AddField("resident_low_bytes")
+			x.ResidentLowBytes = s.ReadUint64()
 		}
 	})
 }
@@ -4252,6 +4298,16 @@ func (m *BlockStoreCache) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.ResidentLowBytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ResidentLowBytes))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.ResidentHighBytes != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.ResidentHighBytes))
+		i--
+		dAtA[i] = 0x18
+	}
 	if m.MaxPendingBytes != 0 {
 		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.MaxPendingBytes))
 		i--
@@ -5394,6 +5450,8 @@ func (m *BlockStoreCache) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.SettleSeconds)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.MaxPendingBytes)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ResidentHighBytes)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.ResidentLowBytes)
 	n += len(m.unknownFields)
 	return n
 }
@@ -6065,6 +6123,14 @@ func (x *BlockStoreCache) MarshalProtoText() string {
 	if x.MaxPendingBytes != 0 {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "max_pending_bytes")
 		protobuf_go_lite.TextWriteUint(&sb, x.MaxPendingBytes)
+	}
+	if x.ResidentHighBytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "resident_high_bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.ResidentHighBytes)
+	}
+	if x.ResidentLowBytes != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "resident_low_bytes")
+		protobuf_go_lite.TextWriteUint(&sb, x.ResidentLowBytes)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -6965,6 +7031,24 @@ func (m *BlockStoreCache) UnmarshalVT(dAtA []byte) error {
 			}
 			m.MaxPendingBytes = 0
 			m.MaxPendingBytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResidentHighBytes", wireType)
+			}
+			m.ResidentHighBytes = 0
+			m.ResidentHighBytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResidentLowBytes", wireType)
+			}
+			m.ResidentLowBytes = 0
+			m.ResidentLowBytes, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
 			if err != nil {
 				return err
 			}
