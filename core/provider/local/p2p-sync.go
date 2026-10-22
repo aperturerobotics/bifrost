@@ -3,6 +3,8 @@ package provider_local
 import (
 	"bytes"
 	"context"
+	"maps"
+	"sync/atomic"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -69,6 +71,9 @@ type p2pSyncState struct {
 	relFns []func()
 	// stores indexes DEX stores by bucket ID for this generation.
 	stores map[string]block.StoreOps
+	// storeView mirrors stores and the predecessor reads fall back to, so
+	// block reads resolve their store without bcast.
+	storeView atomic.Pointer[p2pStoreView]
 	// exchanges owns the traffic counters for each mounted DEX bucket.
 	exchanges map[string]*dex_solicit.Controller
 	// soSync indexes restartable shared-object sync routines.
@@ -178,6 +183,24 @@ func (a *ProviderAccount) releaseP2PSyncState(state *p2pSyncState) {
 	}
 }
 
+// p2pStoreView is an immutable copy of the stores a generation serves.
+type p2pStoreView struct {
+	// stores indexes DEX stores by bucket ID, never changed.
+	stores map[string]block.StoreOps
+	// lower serves buckets this generation lacks until it starts, or nil.
+	lower *p2pSyncState
+}
+
+// publishStoreViewLocked republishes storeView after stores, started or
+// lowerSource change. The caller must hold bcast.
+func (s *p2pSyncState) publishStoreViewLocked() {
+	view := &p2pStoreView{stores: maps.Clone(s.stores)}
+	if !s.started {
+		view.lower = s.lowerSource
+	}
+	s.storeView.Store(view)
+}
+
 // releaseP2PSyncLowerSource releases the predecessor retained by state.
 func (a *ProviderAccount) releaseP2PSyncLowerSource(state *p2pSyncState) {
 	var lower *p2pSyncState
@@ -189,6 +212,7 @@ func (a *ProviderAccount) releaseP2PSyncLowerSource(state *p2pSyncState) {
 		lower = state.lowerSource
 		state.lowerSource = nil
 		state.lowerSourceHeld = false
+		state.publishStoreViewLocked()
 		bcast()
 	})
 	if lower != nil {
@@ -203,6 +227,7 @@ func (s *p2pSyncState) addStore(bucketID string, store block.StoreOps) {
 			s.stores = make(map[string]block.StoreOps)
 		}
 		s.stores[bucketID] = store
+		s.publishStoreViewLocked()
 		bcast()
 	})
 }
@@ -283,14 +308,18 @@ func (s *p2pSyncState) workerDone() {
 
 // getStore returns this generation's store or its startup predecessor's store.
 func (s *p2pSyncState) getStore(bucketID string) block.StoreOps {
-	var store block.StoreOps
-	s.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		store = s.stores[bucketID]
-		if store == nil && !s.started && s.lowerSource != nil {
-			store = s.lowerSource.getStore(bucketID)
-		}
-	})
-	return store
+	// Every block read resolves its store here, so read the view without bcast.
+	view := s.storeView.Load()
+	if view == nil {
+		return nil
+	}
+	if store := view.stores[bucketID]; store != nil {
+		return store
+	}
+	if view.lower != nil {
+		return view.lower.getStore(bucketID)
+	}
+	return nil
 }
 
 // getExchange returns the DEX controller of bucketID, or nil when none started.
@@ -386,8 +415,11 @@ func (a *ProviderAccount) startP2PSync(ctx, ownerCtx context.Context, sessionTra
 			state.lowerSource = previous
 			state.lowerSourceHeld = true
 			previousRetained = true
+			state.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+				state.publishStoreViewLocked()
+			})
 		}
-		a.p2pSync = state
+		a.setP2PSyncLocked(state)
 		bcast()
 		watch = true
 	})
@@ -608,9 +640,13 @@ func (s *p2pSyncState) finishStart(err error) bool {
 		if s.startComplete {
 			return
 		}
+
+		// Record the result. A started generation stops serving its
+		// predecessor's stores.
 		s.startErr = err
 		s.started = err == nil
 		s.startComplete = true
+		s.publishStoreViewLocked()
 		bcast()
 	})
 	return restart
@@ -708,10 +744,10 @@ func (a *ProviderAccount) restoreP2PSyncAfterFailedStart(
 				restorePrevious = !previous.stopping && previous.ctx.Err() == nil
 			})
 		}
-		a.p2pSync = nil
+		a.setP2PSyncLocked(nil)
 		retirePrevious = previous != nil
 		if restorePrevious {
-			a.p2pSync = previous
+			a.setP2PSyncLocked(previous)
 		}
 		bcast()
 	})
@@ -846,14 +882,20 @@ func (a *ProviderAccount) StopP2PSync() {
 // getP2PStore returns the active lifecycle's store for bucketID, including its
 // retained predecessor while replacement startup is incomplete.
 func (a *ProviderAccount) getP2PStore(bucketID string) block.StoreOps {
-	var state *p2pSyncState
-	a.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		state = a.p2pSync
-	})
+	// Every block read resolves its lower store here, so read the lifecycle
+	// without p2pSyncBcast.
+	state := a.p2pSyncCur.Load()
 	if state == nil {
 		return nil
 	}
 	return state.getStore(bucketID)
+}
+
+// setP2PSyncLocked replaces the current lifecycle and its lock-free mirror.
+// The caller must hold p2pSyncBcast.
+func (a *ProviderAccount) setP2PSyncLocked(state *p2pSyncState) {
+	a.p2pSync = state
+	a.p2pSyncCur.Store(state)
 }
 
 // retireP2PSyncState removes one state from the account lifecycle and releases
@@ -867,7 +909,7 @@ func (a *ProviderAccount) retireP2PSyncState(state *p2pSyncState) {
 			return
 		}
 		if a.p2pSync == state {
-			a.p2pSync = nil
+			a.setP2PSyncLocked(nil)
 			bcast()
 		}
 	})

@@ -60,7 +60,7 @@ func TestRetrySharedObjectSyncRestartsOnlySelectedSO(t *testing.T) {
 	// Publish both shared-object routines on the account.
 	account := &ProviderAccount{}
 	account.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		account.p2pSync = state
+		account.setP2PSyncLocked(state)
 	})
 
 	// Retry the target after both routines start.
@@ -242,7 +242,7 @@ func TestRetireP2PSyncStateWaitsForOwnedWork(t *testing.T) {
 	}
 	account := &ProviderAccount{}
 	account.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		account.p2pSync = state
+		account.setP2PSyncLocked(state)
 	})
 
 	// Retire the account sync in a background goroutine.
@@ -315,7 +315,7 @@ func TestRetireP2PSyncStateReleasesLowerChain(t *testing.T) {
 	third := makeState(second)
 	account := &ProviderAccount{}
 	account.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		account.p2pSync = third
+		account.setP2PSyncLocked(third)
 	})
 
 	// Retire the account sync and its lower chain.
@@ -360,7 +360,7 @@ func TestFailedP2PSyncStartDoesNotRestoreStoppedPrevious(t *testing.T) {
 	failed := makeState(true)
 	account := &ProviderAccount{}
 	account.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		account.p2pSync = failed
+		account.setP2PSyncLocked(failed)
 	})
 
 	// Attempt to restore the stopped predecessor.
@@ -401,7 +401,7 @@ func TestFailedP2PSyncStartDoesNotRestoreErroredPrevious(t *testing.T) {
 	}
 	account := &ProviderAccount{}
 	account.p2pSyncBcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
-		account.p2pSync = failed
+		account.setP2PSyncLocked(failed)
 	})
 
 	// Attempt to restore the errored predecessor.
@@ -445,13 +445,13 @@ func TestFailedP2PSyncStartDoesNotRestoreRetiredRetainedPredecessor(t *testing.T
 	account := &ProviderAccount{}
 	account.p2pSyncBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
 		// Retain the oldest state as the middle state lower source.
-		account.p2pSync = oldest
+		account.setP2PSyncLocked(oldest)
 		if !account.retainP2PSyncLowerSourceLocked(oldest) {
 			t.Fatal("middle start did not retain oldest state")
 		}
 		middle.lowerSource = oldest
 		middle.lowerSourceHeld = true
-		account.p2pSync = middle
+		account.setP2PSyncLocked(middle)
 
 		// Retain the middle state as the newest state lower source.
 		if !account.retainP2PSyncLowerSourceLocked(middle) {
@@ -459,7 +459,7 @@ func TestFailedP2PSyncStartDoesNotRestoreRetiredRetainedPredecessor(t *testing.T
 		}
 		newest.lowerSource = middle
 		newest.lowerSourceHeld = true
-		account.p2pSync = newest
+		account.setP2PSyncLocked(newest)
 		bcast()
 	})
 

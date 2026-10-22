@@ -136,7 +136,8 @@ func TestMountedBlockStoreReadUsesPriorSourceDuringReplacement(t *testing.T) {
 		stores:           map[string]block.StoreOps{bucketID: priorStore},
 	}
 	acc.p2pSyncBcast.HoldLock(func(bcast func(), _ func() <-chan struct{}) {
-		acc.p2pSync = prior
+		prior.publishStoreViewLocked()
+		acc.setP2PSyncLocked(prior)
 		bcast()
 	})
 
