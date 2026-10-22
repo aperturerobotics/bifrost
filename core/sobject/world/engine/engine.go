@@ -221,6 +221,10 @@ type soEngine struct {
 	// control is the local voter in the group's decisions, or nil when the
 	// shared object is not hosted here. Set before the engine is published.
 	control *sobject.Control
+	// stableNext is the latest prepared checkpoint at the stable point that
+	// the checkpoint routine has not taken, and stableWake wakes the routine.
+	stableNext atomic.Pointer[stableCheckpoint]
+	stableWake chan struct{}
 }
 
 // newSoEngine constructs the shared object engine. lifetime bounds the commits
@@ -238,6 +242,7 @@ func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObjec
 		replay:         replay,
 		backfillChoice: ccontainer.NewCContainer(false),
 		backfillState:  ccontainer.NewCContainerVT[*BackfillState](nil),
+		stableWake:     make(chan struct{}, 1),
 	}
 	e.backfill = routine.NewStateRoutineContainer[bool](
 		nil,
@@ -245,6 +250,7 @@ func newSoEngine(lifetime context.Context, c *Controller, so sobject.SharedObjec
 		routine.WithRetry(backfillBackoff),
 	)
 	e.backfill.SetStateRoutine(e.executeBackfill)
+	go e.executeStableCheckpoints()
 	return e
 }
 
@@ -492,7 +498,7 @@ func (e *soEngine) install(ctx context.Context, snap sobject.SharedObjectStateSn
 	e.reportUnordered(set)
 
 	// Trim the history every member has built on.
-	if err := e.checkpointStable(ctx, snap, set); err != nil {
+	if err := e.queueStableCheckpoint(ctx, snap, set); err != nil {
 		e.c.le.WithError(err).Warn("failed to checkpoint the stable point")
 	}
 	return outcomes, nil

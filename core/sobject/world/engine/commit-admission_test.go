@@ -265,7 +265,7 @@ func TestCheckpointSkipsPendingAdmission(t *testing.T) {
 	held := commitAsync(t, w.newWrite(t, "checkpoint/"+strconv.Itoa(n)))
 	waitReached(t, applying)
 
-	// The writer lock is free and the durable state has no checkpoint.
+	// The writer lock is free.
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 	write, err := w.eng.NewTransaction(ctx, true)
@@ -273,6 +273,8 @@ func TestCheckpointSkipsPendingAdmission(t *testing.T) {
 		t.Fatalf("write while the publication is held: %v", err)
 	}
 	write.Discard()
+
+	// The durable state has no checkpoint.
 	durable, relDurable, err := so.AccessSharedObjectState(t.Context(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -291,6 +293,69 @@ func TestCheckpointSkipsPendingAdmission(t *testing.T) {
 	if err := <-held; err != nil {
 		t.Fatal(err)
 	}
+	_, err = durable.WaitValueWithValidator(t.Context(), func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
+		return checkpointTrimmed(t.Context(), snap)
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestCheckpointWithoutWriterLock holds the host lock while the engine
+// checkpoints the stable operations. Writes take the writer lock meanwhile,
+// and the checkpoint lands once the host lock is free.
+func TestCheckpointWithoutWriterLock(t *testing.T) {
+	// Write one operation short of a checkpoint and hold the write that
+	// reaches it, so the engine does not checkpoint before the host lock is
+	// taken.
+	w, so := startGatedWorld(t, t.TempDir(), nil)
+	var n int
+	for ; admittedOps(t, so) < sobject.MinCheckpointOperations-1; n++ {
+		w.create(t, "checkpoint/"+strconv.Itoa(n))
+	}
+	applying, release := so.hold(nil)
+	held := commitAsync(t, w.newWrite(t, "checkpoint/"+strconv.Itoa(n)))
+	waitReached(t, applying)
+
+	// Take the host lock, which waits for the receipt, and keep it.
+	errKeep := errors.New("keep the host lock")
+	entered, gate := make(chan struct{}), make(chan struct{})
+	kept := make(chan error, 1)
+	go func() {
+		kept <- so.GetSOHost().UpdateSOState(t.Context(), func(*sobject.SOState) error {
+			close(entered)
+			<-gate
+			return errKeep
+		})
+	}()
+	release()
+	if err := <-held; err != nil {
+		t.Fatal(err)
+	}
+	waitReached(t, entered)
+
+	// Writes take the writer lock while the checkpoint waits for the host.
+	for start := time.Now(); time.Since(start) < 300*time.Millisecond; {
+		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+		write, err := w.eng.NewTransaction(ctx, true)
+		cancel()
+		if err != nil {
+			t.Fatalf("write while the checkpoint waits for the host lock: %v", err)
+		}
+		write.Discard()
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// Free the host lock: the engine checkpoints the stable operations.
+	close(gate)
+	if err := <-kept; !errors.Is(err, errKeep) {
+		t.Fatalf("host lock hold returned %v", err)
+	}
+	durable, relDurable, err := so.AccessSharedObjectState(t.Context(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer relDurable()
 	_, err = durable.WaitValueWithValidator(t.Context(), func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
 		return checkpointTrimmed(t.Context(), snap)
 	}, nil)

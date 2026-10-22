@@ -142,38 +142,85 @@ func ReplayWorld(
 // point a checkpoint was prepared for.
 var errStableCheckpointStale = errors.New("held state moved past the stable point")
 
-// checkpointStable signs and adopts a checkpoint at the stable point when the
+// stableCheckpoint is a checkpoint at the stable point, prepared under the
+// writer lock and adopted after it.
+type stableCheckpoint struct {
+	host   sobject.StateHost
+	prefix [][]byte
+	data   []byte
+}
+
+// queueStableCheckpoint prepares the checkpoint at the stable point and hands
+// it to the checkpoint routine, which signs and adopts it without the writer
+// lock: the state write can wait on the store for as long as a commit takes.
+// The caller holds the writer lock.
+func (e *soEngine) queueStableCheckpoint(ctx context.Context, snap sobject.SharedObjectStateSnapshot, set *sobject.SOOperationSet) error {
+	// Prepare the checkpoint while the replay is held.
+	ckpt, err := e.prepareStableCheckpoint(ctx, snap, set)
+	if err != nil || ckpt == nil {
+		return err
+	}
+
+	// Replace any checkpoint the routine has not taken and wake it.
+	e.stableNext.Store(ckpt)
+	select {
+	case e.stableWake <- struct{}{}:
+	default:
+	}
+	return nil
+}
+
+// executeStableCheckpoints adopts the latest prepared checkpoint each time one
+// is queued, until the engine's lifetime ends.
+func (e *soEngine) executeStableCheckpoints() {
+	for {
+		select {
+		case <-e.lifetime.Done():
+			return
+		case <-e.stableWake:
+		}
+		ckpt := e.stableNext.Swap(nil)
+		if ckpt == nil {
+			continue
+		}
+		if err := e.adoptStable(e.lifetime, ckpt); err != nil && e.lifetime.Err() == nil {
+			e.c.le.WithError(err).Warn("failed to checkpoint the stable point")
+		}
+	}
+}
+
+// prepareStableCheckpoint returns the checkpoint at the stable point when the
 // local peer is the checkpointer and at least MinCheckpointOperations
-// operations are stable, or any operation is when the local peer leads. The
-// World after the stable prefix comes from the replay, so nothing replays
+// operations are stable, or any operation is when the local peer leads, or nil.
+// The World after the stable prefix comes from the replay, so nothing replays
 // again. Under group control the voters decide the checkpoint instead, so the
 // replay only wakes the local voter. The caller holds the writer lock.
-func (e *soEngine) checkpointStable(ctx context.Context, snap sobject.SharedObjectStateSnapshot, set *sobject.SOOperationSet) error {
+func (e *soEngine) prepareStableCheckpoint(ctx context.Context, snap sobject.SharedObjectStateSnapshot, set *sobject.SOOperationSet) (*stableCheckpoint, error) {
 	// Only the checkpointer signs, and only from a host it can sign through.
 	host, ok := e.so.(sobject.StateHost)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	cfg, err := snap.GetConfig(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if cfg.IsGroupControl() {
 		if e.control != nil {
 			e.control.Wake()
 		}
-		return nil
+		return nil, nil
 	}
 	self := e.so.GetPeerID().String()
 	if cfg.Checkpointer() != self {
-		return nil
+		return nil, nil
 	}
 
 	// Skip while an admission waits for its receipt: the checkpoint writes
 	// the state directly, and the update after the last receipt settles
 	// checkpoints again.
 	if e.pending() {
-		return nil
+		return nil, nil
 	}
 
 	// Wait for enough stable operations whose World the replay holds. The
@@ -185,20 +232,27 @@ func (e *soEngine) checkpointStable(ctx context.Context, snap sobject.SharedObje
 	}
 	prefix := set.StablePoint(cfg.TrimRoster())
 	if len(prefix) < minStable {
-		return nil
+		return nil, nil
 	}
+
+	// Encode the World after the stable prefix.
 	world := e.replay.stateAfter(prefix)
 	if world == nil {
-		return nil
+		return nil, nil
 	}
 	data, err := world.MarshalVT()
 	if err != nil {
-		return err
+		return nil, err
 	}
+	return &stableCheckpoint{host: host, prefix: prefix, data: data}, nil
+}
 
-	// Sign and adopt it under the host lock, unless the held state moved.
-	err = host.GetSOHost().UpdateSOState(ctx, func(state *sobject.SOState) error {
-		return e.adoptStableCheckpoint(ctx, host, state, prefix, data)
+// adoptStable signs and adopts ckpt under the host lock, unless the held state
+// moved past its stable point. The host lock writes after any pending receipt,
+// on the durable state.
+func (e *soEngine) adoptStable(ctx context.Context, ckpt *stableCheckpoint) error {
+	err := ckpt.host.GetSOHost().UpdateSOState(ctx, func(state *sobject.SOState) error {
+		return e.adoptStableCheckpoint(ctx, ckpt.host, state, ckpt.prefix, ckpt.data)
 	})
 	if errors.Is(err, errStableCheckpointStale) {
 		return nil
