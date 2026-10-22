@@ -36,7 +36,7 @@ const CLOUD_EXPANDED_FEATURES = [
   { icon: LuServer, text: `${STORAGE_BASELINE_GB} GiB cloud storage included` },
   {
     icon: LuZap,
-    text: `Extra storage at ${STORAGE_RATE_DISPLAY}, reads and writes not billed`,
+    text: `Extra storage at ${STORAGE_RATE_DISPLAY}`,
   },
   {
     icon: LuShield,

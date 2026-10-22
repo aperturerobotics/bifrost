@@ -149,9 +149,7 @@ describe('PlanSelectionPage', () => {
       expect(screen.getByText('Shared Spaces with collaborators')).toBeDefined()
       expect(screen.getByText('100 GiB cloud storage included')).toBeDefined()
       expect(
-        screen.getByText(
-          'Extra storage at $0.02 per GiB-month, reads and writes not billed',
-        ),
+        screen.getByText('Extra storage at $0.02 per GiB-month'),
       ).toBeDefined()
       expect(
         screen.getByText('Always-on sync across all devices'),
