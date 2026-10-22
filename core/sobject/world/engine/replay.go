@@ -67,6 +67,8 @@ type replayFork struct {
 	base *InnerState
 	// index is the number of positions the fork followed.
 	index int
+	// start is the World the write applied to.
+	start *InnerState
 	// hash identifies the written operation.
 	hash []byte
 	// state is the World after the write.
@@ -76,6 +78,22 @@ type replayFork struct {
 	// published is set when the write committed with the replay save pending
 	// before it, and its World under the accepted World root.
 	published bool
+}
+
+// follows reports whether the fork's write applied to the World after the
+// first n positions of r. A checkpoint between the fork and the replay rebases
+// r, so the World is compared when the base or index moved. The outcome of an
+// operation depends only on the World it applies to, so an equal World gives
+// the write's World.
+func (f *replayFork) follows(r *replayer, n int) bool {
+	if f.base == r.base && f.index == n {
+		return true
+	}
+	prev := r.base
+	if n != 0 {
+		prev = r.positions[n-1].state
+	}
+	return f.start != nil && f.start.EqualVT(prev)
 }
 
 // replayer replays an operation set to a World in the set's deterministic
@@ -612,9 +630,8 @@ func (r *replayer) replay(
 	}
 	if n != len(r.positions) || n != len(order) {
 		// Defer the save of a published fork appended to a saved replay.
-		adopted := fork != nil && fork.published && fork.base == r.base &&
-			fork.index == n && n == len(r.positions) && len(order) == n+1 &&
-			bytes.Equal(fork.hash, order[n])
+		adopted := fork != nil && fork.published && n == len(r.positions) &&
+			len(order) == n+1 && bytes.Equal(fork.hash, order[n]) && fork.follows(r, n)
 		r.deferred = adopted && (!r.changed || r.deferred)
 		r.changed = true
 	}
@@ -637,9 +654,9 @@ func (r *replayer) replay(
 			r.c.le.Infof("replay placed %d of %d operations", n+i, len(order))
 		}
 
-		// Adopt a local write that follows exactly the positions it forked
-		// from.
-		if i == 0 && fork != nil && fork.base == r.base && fork.index == n && bytes.Equal(fork.hash, h) {
+		// Adopt a local write that applied to the World after the shared
+		// prefix.
+		if i == 0 && fork != nil && bytes.Equal(fork.hash, h) && fork.follows(r, n) {
 			state = fork.state
 			r.place(replayOutcome{hash: h, payloads: fork.payloads}, state)
 			continue
