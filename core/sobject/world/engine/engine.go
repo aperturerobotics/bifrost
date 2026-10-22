@@ -342,7 +342,7 @@ func (e *soEngine) NewTransaction(ctx context.Context, write bool) (world.Tx, er
 	}
 
 	// Return the txn wrapper.
-	fork := &replayFork{base: base, index: index, state: head}
+	fork := &replayFork{base: base, index: index, start: head, state: head}
 	clock.end(stageForkReplay)
 	return newSoEngineWriteTx(ttx, btx, e, fork, unlockWriteMtx, clock), nil
 }

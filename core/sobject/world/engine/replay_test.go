@@ -608,3 +608,38 @@ func TestReplaySpanHoldsOnlyNewPositions(t *testing.T) {
 		t.Fatalf("span after checkpoint holds %d Worlds after %v; want the World after a3 starting a chain", len(third.GetWorlds()), third.GetPrev())
 	}
 }
+
+// TestReplayAdoptsForkAcrossCheckpoint checks that replay adopts a local write
+// forked before a checkpoint rebased the replay, without applying it again.
+func TestReplayAdoptsForkAcrossCheckpoint(t *testing.T) {
+	// A writes a chain of three operations; another member computes the World
+	// after the third.
+	privA, pidA := newReplayTestKey(t)
+	space := newReplayTestSpace(t, pidA)
+	a1 := space.sign("a1", privA, "object-1", &sobject.SOOperationLink{Nonce: 1})
+	a2 := space.sign("a2", privA, "object-2", &sobject.SOOperationLink{Nonce: 2, PrevOpHash: a1.Hash()})
+	a3 := space.sign("a3", privA, "object-3", &sobject.SOOperationLink{Nonce: 3, PrevOpHash: a2.Hash()})
+	want := space.member(pidA, false).deliver(a1, a2, a3)
+
+	// The writer replays a1 and a2 and forks a3 from the World after them.
+	member := space.member(pidA, false)
+	afterA2 := member.deliver(a1, a2).state
+	base, head, index := member.replayer.head()
+	fork := &replayFork{base: base, index: index, start: head, hash: a3.Hash(), state: want.state.CloneVT()}
+
+	// A checkpoint at a2 rebases the replay before the write is replayed.
+	member.adopt(1, afterA2, a2)
+	if member.replayer.base == base || len(member.replayer.positions) != 0 {
+		t.Fatal("checkpoint did not rebase the replay")
+	}
+	if _, err := member.set.Add(a3); err != nil {
+		t.Fatal(err.Error())
+	}
+	state, outcomes, err := member.replayer.replay(context.Background(), member.snap, member.set, fork)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if state != fork.state || len(outcomes) != 1 || !bytes.Equal(outcomes[0].hash, a3.Hash()) {
+		t.Fatalf("replay applied the write again instead of adopting it: %d outcomes", len(outcomes))
+	}
+}
