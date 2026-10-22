@@ -334,8 +334,11 @@ func TestCompactorEmptiesSparsePages(t *testing.T) {
 
 	// Step the compactor by hand: the pages, a quarter live, empty until
 	// what is free inside value pages falls below the least worth moving.
+	// Each step waits for the background punch, which holds the runs it
+	// punches out of the free runs the moves fill.
 	c := &compactor{db: db}
 	for range 20 {
+		db.w.punches.Wait()
 		if _, err := c.step(ctx); err != nil {
 			t.Fatal(err)
 		}

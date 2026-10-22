@@ -342,7 +342,12 @@ func (s *space) addFree(r run) {
 	}
 	s.released = append(s.released, r)
 	s.releasedPages += r.n
+	s.returnFree(r)
+}
 
+// returnFree adds r to the free runs without queuing it for hole punching,
+// merging neighbors and shrinking the file when r reaches its end.
+func (s *space) returnFree(r run) {
 	// Merge with the free runs on either side.
 	if prev, ok := s.before(r.start); ok && prev.end() == r.start {
 		s.deleteFree(prev)
