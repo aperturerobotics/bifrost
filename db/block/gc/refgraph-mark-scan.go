@@ -32,15 +32,11 @@ type markLimit struct {
 // its adopt log lets the sweep's rescue keep every block a write adopts
 // between the mark's transactions.
 //
-// When the scan reaches blocks without a child list, it marks again with
-// MarkBlocks, which names them; that mark sweeps nothing unless the blocks
-// gained their lists meanwhile.
+// It counts the reached blocks without a child list but leaves
+// UnknownSample empty: naming them takes a MarkBlocks walk, which holds one
+// snapshot for the whole graph, and a mark with any sweeps nothing either way.
 func (g *RefGraph) MarkBlocksScan(ctx context.Context) (*BlockMark, error) {
-	mark, err := g.markScan(ctx, markLimit{budget: MarkReadBudget}, nil)
-	if err != nil || mark.Unknown == 0 {
-		return mark, err
-	}
-	return g.MarkBlocks(ctx)
+	return g.markScan(ctx, markLimit{budget: MarkReadBudget}, nil)
 }
 
 // markScan marks like MarkBlocks, but reads the child lists in key order:

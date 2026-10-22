@@ -186,14 +186,14 @@ func testMarkBlocksMatchesReachability(t *testing.T, rnd *rand.Rand) {
 	slices.Sort(wantUnreached)
 	wantUnreached = slices.Compact(wantUnreached)
 
-	// The walk, the scan in transactions of a few records, and the scan
-	// with its fallback all agree with the direct walk.
+	// The walk, the scan in transactions of a few records, and the budgeted
+	// scan all agree with the direct walk.
 	marks := map[string]func() (*BlockMark, error){
 		"walk": func() (*BlockMark, error) { return rg.MarkBlocks(ctx) },
 		"scan": func() (*BlockMark, error) {
 			return rg.markScan(ctx, markLimit{records: 1 + rnd.IntN(3)}, nil)
 		},
-		"scan with fallback": func() (*BlockMark, error) { return rg.MarkBlocksScan(ctx) },
+		"budgeted scan": func() (*BlockMark, error) { return rg.MarkBlocksScan(ctx) },
 	}
 	for name, markBlocks := range marks {
 		mark, err := markBlocks()
@@ -204,7 +204,7 @@ func testMarkBlocksMatchesReachability(t *testing.T, rnd *rand.Rand) {
 		if !slices.Equal(unreached, wantUnreached) || mark.Unknown != wantUnknown {
 			t.Fatalf("%s: unreached %d unknown %d, want %d and %d", name, len(unreached), mark.Unknown, len(wantUnreached), wantUnknown)
 		}
-		if name != "scan" && len(mark.UnknownSample) != wantUnknown {
+		if name == "walk" && len(mark.UnknownSample) != wantUnknown {
 			t.Fatalf("%s: sampled %d unknown blocks, want %d", name, len(mark.UnknownSample), wantUnknown)
 		}
 		for _, node := range blocks {
