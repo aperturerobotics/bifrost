@@ -16,6 +16,7 @@ import (
 	"github.com/s4wave/spacewave/db/kvtx"
 	kvtx_block "github.com/s4wave/spacewave/db/kvtx/block"
 	kvtx_cayley "github.com/s4wave/spacewave/db/kvtx/cayley"
+	kvtx_deferred "github.com/s4wave/spacewave/db/kvtx/deferred"
 	kvtx_vlogger "github.com/s4wave/spacewave/db/kvtx/vlogger"
 	"github.com/s4wave/spacewave/db/tx"
 	"github.com/s4wave/spacewave/db/world"
@@ -55,7 +56,10 @@ type WorldState struct {
 
 	objTree   kvtx.BlockTx
 	graphTree kvtx.BlockTx
-	graphHd   *cayley.Handle
+	// graphOps holds the graph writes until Commit or Fork applies them to
+	// graphTree in one batch.
+	graphOps *kvtx_deferred.Ops
+	graphHd  *cayley.Handle
 
 	storage  world.WorldStorage
 	lookupOp world.LookupOp
@@ -383,7 +387,11 @@ func (t *WorldState) Fork(ctx context.Context) (world.WorldState, error) {
 		return nil, tx.ErrDiscarded
 	}
 
-	// Detach a copy of the World root the fork owns.
+	// Apply the held graph writes, then detach a copy of the World root the
+	// fork owns.
+	if err := t.flushGraphWrites(ctx); err != nil {
+		return nil, err
+	}
 	bcs := t.bcs.DetachTransaction()
 	blk, _ := bcs.GetBlock()
 	var blkv *World
@@ -460,7 +468,7 @@ func (t *WorldState) setBlockTransaction(
 
 	// Build the graph tree.
 	taskCtx, subtask = trace.NewTask(ctx, "hydra/world-block/world-state/set-block-transaction/build-graph-tree")
-	graphTree, graphHandle, err := t.buildGraphTree(taskCtx, bcs)
+	graphTree, graphOps, graphHandle, err := t.buildGraphTree(taskCtx, bcs)
 	subtask.End()
 	if err != nil {
 		return err
@@ -478,7 +486,7 @@ func (t *WorldState) setBlockTransaction(
 	if t.objTree != nil {
 		t.objTree.Discard()
 	}
-	t.objTree, t.graphTree, t.graphHd = objTree, graphTree, graphHandle
+	t.objTree, t.graphTree, t.graphOps, t.graphHd = objTree, graphTree, graphOps, graphHandle
 
 	// The rebuilt block state supersedes any transaction-local object memo.
 	t.objectExistsMemo = nil
@@ -552,6 +560,14 @@ func (t *WorldState) Commit(ctx context.Context) error {
 		return err
 	}
 
+	// Apply the held graph writes to the graph tree.
+	taskCtx, subtask = trace.NewTask(ctx, "hydra/world-block/world-state/commit/flush-graph-writes")
+	err = t.flushGraphWrites(taskCtx)
+	subtask.End()
+	if err != nil {
+		return err
+	}
+
 	// Record the pending changes in the World root.
 	taskCtx, subtask = trace.NewTask(ctx, "hydra/world-block/world-state/commit/flush-world-changes")
 	err = t.flushWorldChanges(taskCtx, w)
@@ -583,8 +599,20 @@ func (t *WorldState) buildObjectTree(ctx context.Context, bcs *block.Cursor) (kv
 	return kvtx_block.BuildKvTransaction(ctx, bcs.FollowSubBlock(1), true)
 }
 
+// flushGraphWrites applies the held graph writes to the graph tree.
+func (t *WorldState) flushGraphWrites(ctx context.Context) error {
+	if t.graphOps == nil {
+		return nil
+	}
+	return t.graphOps.Flush(ctx)
+}
+
 // buildGraphTree builds the graph tree (kv storage) handle.
-func (t *WorldState) buildGraphTree(ctx context.Context, bcs *block.Cursor) (kvtx.BlockTx, *cayley.Handle, error) {
+//
+// The handle writes through deferred ops that hold the writes of many cayley
+// transactions, so a World transaction rehashes the graph tree once per
+// commit instead of once per graph write.
+func (t *WorldState) buildGraphTree(ctx context.Context, bcs *block.Cursor) (kvtx.BlockTx, *kvtx_deferred.Ops, *cayley.Handle, error) {
 	// Start the graph-tree trace.
 	ctx, task := trace.NewTask(ctx, "hydra/world-block/world-state/build-graph-tree")
 	defer task.End()
@@ -594,7 +622,7 @@ func (t *WorldState) buildGraphTree(ctx context.Context, bcs *block.Cursor) (kvt
 	ktx, err := kvtx_block.BuildKvTransaction(taskCtx, bcs.FollowSubBlock(2), true)
 	subtask.End()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Wrap the graph transaction in a verbose logger when requested.
@@ -613,14 +641,20 @@ func (t *WorldState) buildGraphTree(ctx context.Context, bcs *block.Cursor) (kvt
 	// NOTE: the ctx is used here for internal hidalgo k/v transactions!
 	// it must not be canceled while WorldState is in use!
 	taskCtx, subtask = trace.NewTask(ctx, "hydra/world-block/world-state/build-graph-tree/new-graph-handle")
-	graphHd, err := kvtx_cayley.NewGraph(taskCtx, kvtx.NewTxStore(ktx), graphOpts)
+	var graphOps *kvtx_deferred.Ops
+	var graphStore kvtx.TxOps = ktx
+	if batch, ok := ktx.(kvtx.WriteBatchTxOps); ok {
+		graphOps = kvtx_deferred.NewOps(ktx, batch, 0, 0)
+		graphStore = graphOps
+	}
+	graphHd, err := kvtx_cayley.NewGraph(taskCtx, kvtx.NewTxStore(graphStore), graphOpts)
 	subtask.End()
 	if err != nil {
 		ktx.Discard()
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return ktx, graphHd, nil
+	return ktx, graphOps, graphHd, nil
 }
 
 // _ is a type assertion
