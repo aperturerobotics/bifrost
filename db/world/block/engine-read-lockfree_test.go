@@ -102,15 +102,13 @@ func TestReadOpensWhileWriterHoldsEngineLock(t *testing.T) {
 	readErrs := make(chan error, readers)
 	var wg sync.WaitGroup
 	for range readers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if err := readPublishedHead(ctx, eng, seqno); err != nil {
 				readErrs <- err
 				return
 			}
 			completed.Add(1)
-		}()
+		})
 	}
 	readersDone := make(chan struct{})
 	go func() {
