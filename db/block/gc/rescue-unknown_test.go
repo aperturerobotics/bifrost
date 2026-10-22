@@ -11,7 +11,7 @@ import (
 // TestRescueAdoptedUntrackedParent checks that a rescue counts a block adopted
 // during a pass that has no child list as unknown, since a parent stored
 // untracked after the mark may name a child the mark found unreached, and
-// reaches the child once the parent's list is recorded.
+// that a catch-up reaches the child once the parent's list is recorded.
 func TestRescueAdoptedUntrackedParent(t *testing.T) {
 	// A tracked child that nothing owns.
 	ctx := context.Background()
@@ -54,16 +54,21 @@ func TestRescueAdoptedUntrackedParent(t *testing.T) {
 		}
 	}
 
-	// Once the parent's references are recorded, the next rescue reaches
-	// the child through it.
+	// Once the parent's references are recorded, a catch-up in read
+	// transactions reaches the child through it.
 	record := []RefEdge{{Subject: NodeUnreferenced, Object: parent}, {Subject: parent, Object: child}}
 	if err := rg.ApplyRefBatch(ctx, record, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := rg.RescueAdopted(ctx, mark); err != nil {
+	if _, err := rg.CatchUpAdopted(ctx, mark); err != nil {
 		t.Fatal(err)
 	}
 	if mark.Unknown != 0 || len(mark.UnknownSample) != 0 || !mark.Live.Has(child) {
 		t.Fatalf("unknown %d %v, child live %v", mark.Unknown, mark.UnknownSample, mark.Live.Has(child))
+	}
+
+	// The rescue then consumes the log without walking it again.
+	if n, err := rg.RescueAdopted(ctx, mark); err != nil || n != 0 || mark.logSeen == 0 {
+		t.Fatalf("rescue after catch-up added %d, log seen %d, err=%v", n, mark.logSeen, err)
 	}
 }

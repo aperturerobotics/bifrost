@@ -276,7 +276,8 @@ func (v *Volume) sweepBlockPass(ctx context.Context, actual *transactionRefGraph
 }
 
 // sweepUnreached removes all the blocks mark did not reach in budgeted
-// transactions, each first rescuing the blocks writes adopted since the last.
+// transactions, each first rescuing the blocks writes adopted since the last,
+// after walking most of them in read transactions that hold no writer.
 // Each transaction yields the writer after its budget or to a waiting writer,
 // and the next continues the same list. While a reached block has no child
 // list, it sweeps nothing and waits for the next commit, up to awaitLimit,
@@ -294,9 +295,19 @@ func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, s
 		}
 	}()
 	for len(nodes) != 0 {
+		// Walk the blocks writes adopted since the last transaction in
+		// short reads first, leaving the rescue under the writer only what
+		// arrived since.
+		caught, err := openRefGraph(&directReadStore{volume: v}).CatchUpAdopted(ctx, mark)
+		if err != nil {
+			return err
+		}
+		stats.RescuedNodes += caught
+
+		// Rescue the rest and sweep a budget of chunks under the writer.
 		var batch []string
 		var commit <-chan struct{}
-		err := v.withDirectAtomic(ctx, func(blocks block.StoreOps, rg *block_gc.RefGraph) error {
+		err = v.withDirectAtomic(ctx, func(blocks block.StoreOps, rg *block_gc.RefGraph) error {
 			// Rescue the blocks adopted since the last transaction.
 			rescued, err := rg.RescueAdopted(ctx, mark)
 			if err != nil {

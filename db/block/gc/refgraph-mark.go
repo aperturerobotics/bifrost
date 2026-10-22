@@ -42,6 +42,8 @@ type BlockMark struct {
 	// appear, and each rescue reads it again. The bound keeps that read
 	// within a rescue's writer transaction small.
 	awaiting []namedNode
+	// logSeen is the first adopt log record no rescue or catch-up walked.
+	logSeen uint64
 }
 
 // namedNode is a reached node with the node whose record reached it.
@@ -72,6 +74,19 @@ func (m *BlockMark) await(b namedNode) {
 func (m *BlockMark) noteUnknown(b namedNode) {
 	m.Unknown++
 	m.await(b)
+}
+
+// takeAwaiting returns the listed unknown blocks for a walk to read again and
+// stops counting them, sampling afresh when every unknown block is listed.
+func (m *BlockMark) takeAwaiting() []namedNode {
+	// Hand the list over and uncount it.
+	stack := m.awaiting
+	if m.Awaitable() {
+		m.UnknownSample, m.UnknownNamers = nil, nil
+	}
+	m.Unknown -= len(stack)
+	m.awaiting = nil
+	return stack
 }
 
 // MarkBlocks marks the blocks of the graph in one snapshot. Every node that is
@@ -320,14 +335,85 @@ func (g *RefGraph) EndBlockPass(ctx context.Context) error {
 	})
 }
 
+// CatchUpAdopted walks, like RescueAdopted, from the unknown blocks the mark
+// listed and from the blocks of the adopt log records no rescue or catch-up
+// walked yet, in read transactions of at most MarkReadBudget each, and
+// returns the number of nodes it added to mark.Live. It leaves the log for
+// RescueAdopted to consume, which then walks only the records written since,
+// so the walk a sweep transaction holds the writer for scales with the writes
+// since the catch-up, not with the mark's length. Reading a list before the
+// rescue is safe as the scan mark's later reads are: an edge added after the
+// read logs its object.
+func (g *RefGraph) CatchUpAdopted(ctx context.Context, mark *BlockMark) (int, error) {
+	before := mark.Live.Len()
+	stack := mark.takeAwaiting()
+	for done := false; !done; {
+		err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) (err error) {
+			done, err = catchUpTx(ctx, tx, mark, stack, MarkReadBudget)
+			return err
+		})
+		if err != nil {
+			return 0, err
+		}
+		stack = nil
+	}
+	return mark.Live.Len() - before, nil
+}
+
+// catchUpTx walks from stack, then from the blocks of the unwalked adopt log
+// records in order until budget, and reports whether it walked them all. A
+// legacy log has no order to resume in, so it leaves that to RescueAdopted.
+func catchUpTx(ctx context.Context, tx kvtx.Tx, mark *BlockMark, stack []namedNode, budget time.Duration) (bool, error) {
+	// Read the log's range, then walk from the blocks read again.
+	start := time.Now()
+	r, open, err := readPassTx(ctx, tx)
+	if err != nil {
+		return false, err
+	}
+	if err := walkTx(ctx, tx, mark.Live, stack, mark.noteUnknown); err != nil {
+		return false, err
+	}
+	if !open || r.legacy {
+		return true, nil
+	}
+
+	// Walk from each record's blocks until the budget runs out.
+	for seq := max(r.lo, mark.logSeen); seq < r.hi; seq++ {
+		if time.Since(start) >= budget {
+			return false, nil
+		}
+		blocks, err := readAdoptLogTx(ctx, tx, adoptRange{lo: seq, hi: seq + 1})
+		if err != nil {
+			return false, err
+		}
+		if err := walkTx(ctx, tx, mark.Live, adoptedStack(mark, blocks), mark.noteUnknown); err != nil {
+			return false, err
+		}
+		mark.logSeen = seq + 1
+	}
+	return true, nil
+}
+
+// adoptedStack adds the blocks to mark.Live and returns those it added, for a
+// walk from them.
+func adoptedStack(mark *BlockMark, blocks []string) []namedNode {
+	var stack []namedNode
+	for _, block := range blocks {
+		if mark.Live.Add(block) {
+			stack = append(stack, namedNode{node: block})
+		}
+	}
+	return stack
+}
+
 // RescueAdopted consumes the adopt log, adding each block it names and every
 // node reachable from one to mark.Live, and returns the number of nodes added.
 // A sweep runs it first in each transaction that removes blocks, so no block
-// a committed write adopted is removed. It reads again the lists of the
-// unknown blocks the mark listed and walks those it finds. A reached block
-// without a list counts in mark.Unknown, and the sweep must remove nothing
-// while any does. An empty log is left unwritten, so a rescue that finds
-// nothing new commits nothing.
+// a committed write adopted is removed. It skips the records CatchUpAdopted
+// walked. It reads again the lists of the unknown blocks the mark listed and
+// walks those it finds. A reached block without a list counts in
+// mark.Unknown, and the sweep must remove nothing while any does. An empty
+// log is left unwritten, so a rescue that finds nothing new commits nothing.
 func (g *RefGraph) RescueAdopted(ctx context.Context, mark *BlockMark) (int, error) {
 	var rescued int
 	err := g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
@@ -338,7 +424,8 @@ func (g *RefGraph) RescueAdopted(ctx context.Context, mark *BlockMark) (int, err
 		}
 		var blocks []string
 		if r.legacy || r.lo != r.hi {
-			if blocks, err = readAdoptLogTx(ctx, tx, r); err != nil {
+			unseen := adoptRange{lo: max(r.lo, mark.logSeen), hi: r.hi, legacy: r.legacy}
+			if blocks, err = readAdoptLogTx(ctx, tx, unseen); err != nil {
 				return err
 			}
 			next, err := deleteAdoptLogTx(ctx, tx, r, open)
@@ -348,25 +435,13 @@ func (g *RefGraph) RescueAdopted(ctx context.Context, mark *BlockMark) (int, err
 			if err := tx.Set(ctx, passKey, adoptRange{lo: next, hi: next}.encode()); err != nil {
 				return err
 			}
+			mark.logSeen = next
 		}
 
-		// Read the awaiting lists again, sampling afresh when every unknown
-		// block is listed.
-		stack := mark.awaiting
-		if mark.Awaitable() {
-			mark.UnknownSample, mark.UnknownNamers = nil, nil
-		}
-		mark.Unknown -= len(stack)
-		mark.awaiting = nil
-
-		// Walk from them and the logged blocks the mark and earlier rescues
-		// did not reach.
+		// Walk from the listed unknown blocks and the logged blocks the mark
+		// and earlier rescues did not reach.
 		before := mark.Live.Len()
-		for _, block := range blocks {
-			if mark.Live.Add(block) {
-				stack = append(stack, namedNode{node: block})
-			}
-		}
+		stack := append(mark.takeAwaiting(), adoptedStack(mark, blocks)...)
 		err = walkTx(ctx, tx, mark.Live, stack, mark.noteUnknown)
 		rescued = mark.Live.Len() - before
 		return err
