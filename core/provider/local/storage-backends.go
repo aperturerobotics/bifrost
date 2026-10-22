@@ -228,15 +228,13 @@ func (a *ProviderAccount) ResolveNewSpaceStorageBackend(ctx context.Context, req
 	return requestedID, nil
 }
 
-// PlaceBlockStore places a block store on a storage backend. An empty
-// backendID returns the store to the account's own storage.
-func (a *ProviderAccount) PlaceBlockStore(ctx context.Context, blockStoreID, backendID string) error {
+// PlaceBlockStore places a block store on a storage backend with its cache
+// settings. An empty backend id returns the store to the account's own
+// storage.
+func (a *ProviderAccount) PlaceBlockStore(ctx context.Context, placement *account_settings.BlockStorePlacement) error {
 	return a.commitAccountSettingsOps(ctx, &account_settings.AccountSettingsOp{
 		Op: &account_settings.AccountSettingsOp_SetBlockStorePlacement{
-			SetBlockStorePlacement: &account_settings.BlockStorePlacement{
-				BlockStoreId:     blockStoreID,
-				StorageBackendId: backendID,
-			},
+			SetBlockStorePlacement: placement,
 		},
 	})
 }

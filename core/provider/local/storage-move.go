@@ -3,6 +3,7 @@ package provider_local
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/pkg/errors"
 	account_settings "github.com/s4wave/spacewave/core/account/settings"
@@ -120,8 +121,11 @@ func (a *ProviderAccount) MoveSpaceStorage(
 	tkrRef, tkr, _ := a.bstores.AddKeyRef(blockStoreID)
 	defer tkrRef.Release()
 
-	// Fetch blocks only the old backend holds, then place and wait for upload.
-	current := settings.FindBlockStorePlacement(blockStoreID).GetStorageBackendId()
+	// Fetch blocks only the old backend holds, then place and wait for the
+	// blocks written before the move to upload.
+	since := time.Now().Round(0)
+	placement := settings.FindBlockStorePlacement(blockStoreID)
+	current := placement.GetStorageBackendId()
 	if current != backendID {
 		if current != "" {
 			backend := settings.FindStorageBackend(current)
@@ -132,12 +136,16 @@ func (a *ProviderAccount) MoveSpaceStorage(
 				return err
 			}
 		}
-		if err := a.PlaceBlockStore(ctx, blockStoreID, backendID); err != nil {
+		next := &account_settings.BlockStorePlacement{BlockStoreId: blockStoreID, StorageBackendId: backendID}
+		if backendID != "" {
+			next.Cache = placement.GetCache().CloneVT()
+		}
+		if err := a.PlaceBlockStore(ctx, next); err != nil {
 			return err
 		}
 	}
 	if backendID != "" {
-		if err := waitUploaded(ctx, tkr, backendID, fn); err != nil {
+		if err := waitUploaded(ctx, tkr, backendID, since, fn); err != nil {
 			return err
 		}
 	}
@@ -247,15 +255,22 @@ func (a *ProviderAccount) fetchPlacedBlocks(
 }
 
 // waitUploaded reports upload progress until the store is placed on backendID,
-// its blocks are queued for upload, and the queue is empty.
-func waitUploaded(ctx context.Context, tkr *bstoreTracker, backendID string, fn func(MoveProgress) error) error {
+// its blocks are queued for upload, and every block written before since has
+// uploaded. Later writes wait out their settle age without holding the move.
+func waitUploaded(
+	ctx context.Context,
+	tkr *bstoreTracker,
+	backendID string,
+	since time.Time,
+	fn func(MoveProgress) error,
+) error {
 	var prev UploadStatus
 	err := watchTrackerUploadStatus(ctx, tkr, func(status UploadStatus) error {
 		// Wait for the placement to reach the store and queue its blocks.
 		if status.Backend.GetId() != backendID || status.Target != backendID {
 			return nil
 		}
-		if status.Pending == 0 {
+		if status.Pending == 0 || !status.Oldest.Before(since) {
 			return errUploaded
 		}
 		if status.Pending == prev.Pending && status.PendingBytes == prev.PendingBytes && status.Err == prev.Err {

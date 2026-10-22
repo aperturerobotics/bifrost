@@ -230,7 +230,10 @@ func (r *SessionResource) placeNewSpaceBlockStore(
 
 	// Place the Space's block store on the resolved backend.
 	blockStoreID := provider_local.SobjectBlockStoreID(soID)
-	if err := localAcc.PlaceBlockStore(ctx, blockStoreID, backendID); err != nil {
+	if err := localAcc.PlaceBlockStore(ctx, &account_settings.BlockStorePlacement{
+		BlockStoreId:     blockStoreID,
+		StorageBackendId: backendID,
+	}); err != nil {
 		return "", err
 	}
 	return blockStoreID, nil
@@ -243,7 +246,9 @@ func (r *SessionResource) releaseNewSpaceBlockStore(ctx context.Context, blockSt
 	if err != nil {
 		return
 	}
-	if err := localAcc.PlaceBlockStore(context.WithoutCancel(ctx), blockStoreID, ""); err != nil {
+	if err := localAcc.PlaceBlockStore(context.WithoutCancel(ctx), &account_settings.BlockStorePlacement{
+		BlockStoreId: blockStoreID,
+	}); err != nil {
 		r.le.WithError(err).Warn("unable to remove placement of uncreated space")
 	}
 }

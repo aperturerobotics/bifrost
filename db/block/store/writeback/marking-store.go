@@ -2,6 +2,7 @@ package block_store_writeback
 
 import (
 	"context"
+	"time"
 
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/net/hash"
@@ -53,7 +54,7 @@ func (m *MarkingStore) PutBlock(ctx context.Context, data []byte, opts *block.Pu
 	// Store the block, then mark it when the write landed.
 	ref, existed, err := m.store.PutBlock(ctx, data, opts)
 	if err == nil && !ref.GetEmpty() {
-		err = m.mark(ctx, []Mark{{Hash: ref.GetHash(), Size: int64(len(data))}})
+		err = m.mark(ctx, []Mark{{Hash: ref.GetHash(), Size: int64(len(data)), At: time.Now()}})
 	}
 	return ref, existed, err
 }
@@ -71,7 +72,9 @@ func (m *MarkingStore) PutBlockBatch(ctx context.Context, entries []*block.PutBa
 // markEntries marks every non-tombstone entry of a written batch in one call
 // and invalidates the decoded values of its tombstones.
 func (m *MarkingStore) markEntries(ctx context.Context, entries []*block.PutBatchEntry) error {
+	// Collect the written blocks under one write time.
 	marks := make([]Mark, 0, len(entries))
+	now := time.Now()
 	for _, entry := range entries {
 		if entry == nil {
 			continue
@@ -83,7 +86,7 @@ func (m *MarkingStore) markEntries(ctx context.Context, entries []*block.PutBatc
 		if entry.Ref.GetEmpty() {
 			continue
 		}
-		marks = append(marks, Mark{Hash: entry.Ref.GetHash(), Size: int64(len(entry.Data))})
+		marks = append(marks, Mark{Hash: entry.Ref.GetHash(), Size: int64(len(entry.Data)), At: now})
 	}
 	if len(marks) == 0 {
 		return nil
