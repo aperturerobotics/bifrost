@@ -6,6 +6,7 @@ import (
 	"math/rand/v2"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/csync"
@@ -65,6 +66,11 @@ type DB struct {
 	retired []*state
 	// leases holds the lock bytes of this handle's leases and lease waits.
 	leases map[int64]struct{}
+	// writers counts this handle's write transactions from NewTransaction
+	// until Discard, or until Commit returns with its changes durable.
+	writers int
+	// stopping is set when Close begins, refusing new write transactions.
+	stopping bool
 	// lockWaits counts lease lock calls in progress. The file stays open
 	// until they return, so the system never grants a lock on a closed file.
 	lockWaits sync.WaitGroup
@@ -562,13 +568,60 @@ func (db *DB) NewTransaction(ctx context.Context, write bool) (kvtx.Tx, error) {
 		return &Tx{db: db, st: st, stripe: stripe}, nil
 	}
 
-	// Take the writer lock, then read the state it caught up to.
+	// Count the writer so Close waits for it, then take the writer lock and
+	// read the state it caught up to.
+	if err := db.beginWrite(); err != nil {
+		return nil, err
+	}
 	if err := db.w.lock(ctx); err != nil {
+		db.endWrite()
 		return nil, err
 	}
 	st, stripe := db.acquire()
 	return &Tx{db: db, st: st, stripe: stripe, changes: newChanges()}, nil
 }
+
+// beginWrite counts a write transaction, refusing it once Close began.
+func (db *DB) beginWrite() error {
+	// Count the writer unless Close began.
+	l := db.bcast.Lock()
+	defer l.Unlock()
+	if db.stopping {
+		return ErrClosed
+	}
+	db.writers++
+	return nil
+}
+
+// endWrite ends a write transaction beginWrite counted.
+func (db *DB) endWrite() {
+	l := db.bcast.Lock()
+	db.writers--
+	l.Broadcast()
+	l.Unlock()
+}
+
+// drainWriters refuses new write transactions and waits up to
+// closeDrainTimeout for the counted ones to end, so a commit's writes and
+// durable flush finish before Close flushes and closes the file. A writer
+// still open after the wait is left to fail on the closed file.
+func (db *DB) drainWriters() {
+	// Refuse new writers.
+	l := db.bcast.Lock()
+	db.stopping = true
+	l.Broadcast()
+	l.Unlock()
+
+	// Wait for the counted ones.
+	ctx, cancel := context.WithTimeout(context.Background(), closeDrainTimeout)
+	defer cancel()
+	_ = db.bcast.Wait(ctx, func(_ func(), _ func() <-chan struct{}) (bool, error) {
+		return db.writers == 0, nil
+	})
+}
+
+// closeDrainTimeout bounds how long Close waits for write transactions.
+const closeDrainTimeout = 10 * time.Second
 
 // WritersWaiting reports whether a writer of this handle waits for the writer
 // lock, so a holder doing deferrable work can commit early and let it in.
@@ -640,10 +693,14 @@ func (db *DB) WaitDurable(ctx context.Context) error {
 // lock without waiting, and closes the file. It leaves the overlay in the log
 // for the next open to replay, which reads the log in order, rather than
 // building a checkpoint, which reads index pages across the file. Transactions
-// must end first. A lease still held ends with the file, which drops its
+// should end first; Close refuses new write transactions and waits a bounded
+// time for open ones to commit or discard. A lease still held ends with the file, which drops its
 // lock, and releasing it afterwards returns nil. Close waits for an abandoned
 // lease wait to return.
 func (db *DB) Close() error {
+	// Let this handle's write transactions finish their commits.
+	db.drainWriters()
+
 	// Stop the warm-up and compaction so their snapshots do not hold
 	// space, and drop a running background checkpoint at its next page.
 	for _, rc := range []*routine.RoutineContainer{db.warmer, db.compactor} {

@@ -131,8 +131,9 @@ func (f *flusher) waitDurable(ctx context.Context, seq uint64) error {
 	})
 }
 
-// close stops the deadline flush and waits for a running one, so no flush
-// outlives the file. The caller flushes afterward.
+// close stops the deadline flush and waits for a running flush, so no flush
+// outlives the file. Later flushes fail with ErrClosed. The caller flushes
+// afterward.
 func (f *flusher) close() {
 	// Disarm the deadline.
 	l := f.bcast.Lock()
@@ -143,9 +144,9 @@ func (f *flusher) close() {
 	}
 	l.Unlock()
 
-	// Wait for a deadline that already fired.
+	// Wait for a deadline that already fired and a shared flush.
 	_ = f.bcast.Wait(context.Background(), func(_ func(), _ func() <-chan struct{}) (bool, error) {
-		return !f.deadlineFlushing, nil
+		return !f.deadlineFlushing && !f.flushing, nil
 	})
 }
 
@@ -160,6 +161,10 @@ func (f *flusher) syncThrough(ctx context.Context, seq, ckpt uint64) error {
 		if f.durable >= seq && f.ckptDurable >= ckpt {
 			l.Unlock()
 			return nil
+		}
+		if f.closed && !f.flushing {
+			l.Unlock()
+			return ErrClosed
 		}
 		if f.flushing {
 			wait := l.WaitCh()

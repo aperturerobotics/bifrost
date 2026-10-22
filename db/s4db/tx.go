@@ -297,6 +297,7 @@ func (t *Tx) commit(ctx context.Context, ordered bool) error {
 	// Write them, then run checkpoint and compaction work with the snapshot
 	// released, release the writer lock, and wait for a checkpoint the
 	// writes outpaced.
+	defer db.endWrite()
 	err := db.w.commit(ctx, t.st, changes, ordered)
 	db.release(t.st, t.stripe)
 	if err == nil {
@@ -328,6 +329,7 @@ func (t *Tx) Discard() {
 	t.db.release(t.st, t.stripe)
 	if t.changes != nil {
 		t.db.w.unlock(nil)
+		t.db.endWrite()
 	}
 }
 
