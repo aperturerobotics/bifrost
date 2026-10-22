@@ -162,6 +162,12 @@ const sweepBudget = 50 * time.Millisecond
 // for many budgets.
 const sweepChunkTime = sweepBudget / 4
 
+// awaitLimit bounds how long a sweep waits for the child lists of reached
+// blocks. A write commits a block's list in its staging flush, after the
+// edge that adopted it, so a list arrives within a flush or two; a block
+// still without one after the limit was stored untracked.
+const awaitLimit = 2 * time.Minute
+
 // SweepUnreferenced treats candidate snapshots as hints, not deletion authority.
 // Current owners, outgoing edges, orphan markers, and physical deletion of each
 // candidate share one raw transaction with the same serialization as grouped
@@ -254,7 +260,8 @@ func (v *Volume) sweepBlockPass(ctx context.Context, actual *transactionRefGraph
 	}
 
 	// Mark the blocks. A block of unknown references may name any
-	// unreached block, so the pass then sweeps nothing.
+	// unreached block, so the pass sweeps nothing unless it can wait for
+	// the lists of all of them.
 	start := time.Now()
 	mark, err := markBlocks(ctx)
 	stats.MarkDuration += time.Since(start)
@@ -262,7 +269,7 @@ func (v *Volume) sweepBlockPass(ctx context.Context, actual *transactionRefGraph
 		return err
 	}
 	stats.RecordMark(mark)
-	if mark.Unknown != 0 {
+	if !mark.Awaitable() {
 		return nil
 	}
 	return v.sweepUnreached(ctx, mark, stats)
@@ -271,15 +278,24 @@ func (v *Volume) sweepBlockPass(ctx context.Context, actual *transactionRefGraph
 // sweepUnreached removes all the blocks mark did not reach in budgeted
 // transactions, each first rescuing the blocks writes adopted since the last.
 // Each transaction yields the writer after its budget or to a waiting writer,
-// and the next continues the same list.
+// and the next continues the same list. While a reached block has no child
+// list, it sweeps nothing and waits for the next commit, up to awaitLimit,
+// then reports the blocks still unknown and stops.
 func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, stats *block_gc.Stats) error {
 	// Time the sweep, starting from the default chunk size.
 	nodes := mark.Unreached
 	size := sweepChunkSize
 	start := time.Now()
 	defer func() { stats.AtomicSweepDuration += time.Since(start) }()
+	var deadline *time.Timer
+	defer func() {
+		if deadline != nil {
+			deadline.Stop()
+		}
+	}()
 	for len(nodes) != 0 {
 		var batch []string
+		var commit <-chan struct{}
 		err := v.withDirectAtomic(ctx, func(blocks block.StoreOps, rg *block_gc.RefGraph) error {
 			// Rescue the blocks adopted since the last transaction.
 			rescued, err := rg.RescueAdopted(ctx, mark)
@@ -288,11 +304,16 @@ func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, s
 			}
 			stats.RescuedNodes += rescued
 
-			// A rescued block of unknown references may name any unreached
-			// block, so report it and stop sweeping.
+			// A block of unknown references may name any unreached block.
+			// Wait for a later commit to add the lists of the blocks the
+			// mark listed, or stop when it could not list them all.
 			if mark.Unknown != 0 {
-				stats.UnknownBlocks, stats.UnknownSample, stats.UnknownNamers = mark.Unknown, mark.UnknownSample, mark.UnknownNamers
-				nodes = nil
+				if !mark.Awaitable() {
+					stats.UnknownBlocks, stats.UnknownSample, stats.UnknownNamers = mark.Unknown, mark.UnknownSample, mark.UnknownNamers
+					nodes = nil
+					return nil
+				}
+				commit = v.nextCommit()
 				return nil
 			}
 
@@ -326,6 +347,23 @@ func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, s
 		stats.BlocksSwept += len(batch)
 		stats.RemoveNodeRefsCount += len(batch)
 		stats.RemoveBlockCount += len(batch)
+		if commit == nil {
+			continue
+		}
+
+		// Wait for a commit, or stop at the deadline, reporting the blocks
+		// still unknown.
+		if deadline == nil {
+			deadline = time.NewTimer(awaitLimit)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-commit:
+		case <-deadline.C:
+			stats.UnknownBlocks, stats.UnknownSample, stats.UnknownNamers = mark.Unknown, mark.UnknownSample, mark.UnknownNamers
+			return nil
+		}
 	}
 	return nil
 }
@@ -348,6 +386,17 @@ func sweepBlockChunk(ctx context.Context, blocks block.StoreOps, rg *block_gc.Re
 		swept = append(swept, node)
 	}
 	return swept, nil
+}
+
+// nextCommit returns a channel that closes at the next change of the Volume's
+// storage, which each committed direct operation broadcasts. Called inside
+// one, it closes on that operation's own commit, if it commits.
+func (v *Volume) nextCommit() <-chan struct{} {
+	var ch <-chan struct{}
+	v.statsBcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+		ch = getWaitCh()
+	})
+	return ch
 }
 
 // writersWaiting reports whether another writer queues for the store, so a

@@ -90,10 +90,11 @@ func TestPublicationSweepRescuesAdoptedBlock(t *testing.T) {
 	assertPublishedBlock(t, v, p, false)
 }
 
-// TestPublicationSweepStopsOnRescuedUnknown checks that a sweep removes
-// nothing once a rescue reports a block of unknown references, which may name
-// any unreached block.
-func TestPublicationSweepStopsOnRescuedUnknown(t *testing.T) {
+// TestPublicationSweepUnknownBlocks checks that a sweep removes nothing while
+// a block of unknown references, which may name any unreached block, remains:
+// it stops when the mark could not list them, and otherwise waits for a
+// commit that records their lists.
+func TestPublicationSweepUnknownBlocks(t *testing.T) {
 	// Publish a block, release it, and mark it unreached in an open pass.
 	v, _ := newPublicationTestVolume(t)
 	ctx := t.Context()
@@ -108,16 +109,51 @@ func TestPublicationSweepStopsOnRescuedUnknown(t *testing.T) {
 	}
 	mark := markBlocks(t, v)
 
-	// Stand in for a rescue that walked into a block without a child list.
+	// Stand in for a mark that counted a block without a list it could
+	// not name: the sweep keeps the block and reports the unknown block.
 	mark.Unknown, mark.UnknownSample = 1, []string{"untracked"}
-
-	// The sweep keeps the block and reports the unknown block.
 	var stats block_gc.Stats
 	if err := v.sweepUnreached(ctx, mark, &stats); err != nil {
 		t.Fatal(err)
 	}
 	if stats.BlocksSwept != 0 || stats.UnknownBlocks != 1 || !slices.Equal(stats.UnknownSample, []string{"untracked"}) {
 		t.Fatalf("stats=%+v", stats)
+	}
+	if _, found, err := v.GetBlock(ctx, p.Entries[0].Ref); err != nil || !found {
+		t.Fatalf("block found=%v err=%v", found, err)
+	}
+
+	// A bucket adopts a parent block whose staging flush, which records
+	// that it references the released block, has not committed yet.
+	mark.Unknown, mark.UnknownSample = 0, nil
+	parent := block_gc.BlockIRI(publicationFor(t, "parent", "", "two").Entries[0].Ref)
+	child := block_gc.BlockIRI(p.Entries[0].Ref)
+	if err := rg.AddRef(ctx, "bucket", parent); err != nil {
+		t.Fatal(err)
+	}
+
+	// The flush commits after the sweep's first rescue consumes the log,
+	// so the sweep waits for it.
+	rescued := v.nextCommit()
+	flushed := make(chan error, 1)
+	go func() {
+		<-rescued
+		flushed <- rg.ApplyRefBatch(ctx, []block_gc.RefEdge{
+			{Subject: block_gc.NodeUnreferenced, Object: parent},
+			{Subject: parent, Object: child},
+		}, nil)
+	}()
+	stats = block_gc.Stats{}
+	if err := v.sweepUnreached(ctx, mark, &stats); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-flushed; err != nil {
+		t.Fatal(err)
+	}
+
+	// The rescue after the flush reaches the block through the parent.
+	if stats.BlocksSwept != 0 || stats.UnknownBlocks != 0 || mark.Unknown != 0 || !mark.Live.Has(child) {
+		t.Fatalf("stats=%+v unknown=%d child live=%v", stats, mark.Unknown, mark.Live.Has(child))
 	}
 	if _, found, err := v.GetBlock(ctx, p.Entries[0].Ref); err != nil || !found {
 		t.Fatalf("block found=%v err=%v", found, err)

@@ -25,11 +25,11 @@ func (g *RefGraph) Reachable(ctx context.Context) (*NodeSet, error) {
 	err := g.transaction(ctx, false, func(ctx context.Context, tx kvtx.Tx) error {
 		// Seed the stack with the graph root and the registered roots.
 		reached.Add(NodeGCRoot)
-		stack := []string{NodeGCRoot}
+		stack := []namedNode{{node: NodeGCRoot}}
 		prefix := graphKey(kindRoot)
 		err := tx.ScanPrefixKeys(ctx, prefix, func(key []byte) error {
 			if node := lastNode(prefix, key); node != NodeUnreferenced && reached.Add(node) {
-				stack = append(stack, node)
+				stack = append(stack, namedNode{node, NodeGCRoot})
 			}
 			return nil
 		})

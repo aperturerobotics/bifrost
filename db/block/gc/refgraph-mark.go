@@ -19,15 +19,15 @@ type BlockMark struct {
 	Live *NodeSet
 	// Unreached lists the tracked blocks the mark did not reach, in key order.
 	Unreached []string
-	// Unknown counts the reached blocks without a child list, whose
-	// references were never recorded. A mark with any sweeps nothing, since
-	// such a block may reference any unreached one.
+	// Unknown counts the reached blocks without a child list as last read,
+	// whose references are not recorded. A sweep removes nothing while any
+	// remains, since such a block may reference any unreached one.
 	Unknown int
 	// UnknownSample lists up to unknownSample of those blocks.
 	UnknownSample []string
 	// UnknownNamers lists, for each block in UnknownSample, the node whose
-	// record made it live: a root, an owner or a parent block. A walk
-	// leaves it empty.
+	// record made it live: a root, an owner or a parent block, or empty for
+	// a block a write adopted during the pass.
 	UnknownNamers []string
 	// Scans counts the scans of the child lists a scan mark made, zero for
 	// a walk.
@@ -35,6 +35,43 @@ type BlockMark struct {
 	// LongestRead is the longest read transaction of a scan mark, zero for
 	// a walk.
 	LongestRead time.Duration
+
+	// awaiting lists the blocks Unknown counts, each with its namer, up to
+	// settleLimit of them. A write can commit the edge that adopts a block
+	// before the staging edge that creates its list, so the list may yet
+	// appear, and each rescue reads it again. The bound keeps that read
+	// within a rescue's writer transaction small.
+	awaiting []namedNode
+}
+
+// namedNode is a reached node with the node whose record reached it.
+type namedNode struct {
+	node  string
+	namer string
+}
+
+// Awaitable reports whether every unknown block is listed, so a sweep can
+// wait for their child lists instead of giving up.
+func (m *BlockMark) Awaitable() bool {
+	return m.Unknown == len(m.awaiting)
+}
+
+// await lists a reached block without a child list, up to settleLimit, and
+// samples it, without counting it.
+func (m *BlockMark) await(b namedNode) {
+	if len(m.awaiting) < settleLimit {
+		m.awaiting = append(m.awaiting, b)
+	}
+	if len(m.UnknownSample) < unknownSample {
+		m.UnknownSample = append(m.UnknownSample, b.node)
+		m.UnknownNamers = append(m.UnknownNamers, b.namer)
+	}
+}
+
+// noteUnknown counts, lists and samples a reached block without a child list.
+func (m *BlockMark) noteUnknown(b namedNode) {
+	m.Unknown++
+	m.await(b)
 }
 
 // MarkBlocks marks the blocks of the graph in one snapshot. Every node that is
@@ -50,10 +87,10 @@ func (g *RefGraph) MarkBlocks(ctx context.Context) (*BlockMark, error) {
 		// Mark the seeds, stacking the blocks to walk.
 		mark = &BlockMark{Live: NewNodeSet()}
 		live := mark.Live
-		var stack []string
-		err := seedMarkTx(ctx, tx, func(node string) {
+		var stack []namedNode
+		err := seedMarkTx(ctx, tx, func(node, namer string) {
 			if node != NodeUnreferenced && live.Add(node) && isBlockNode(node) {
-				stack = append(stack, node)
+				stack = append(stack, namedNode{node, namer})
 			}
 		})
 		if err != nil {
@@ -81,21 +118,15 @@ func (g *RefGraph) MarkBlocks(ctx context.Context) (*BlockMark, error) {
 	return mark, nil
 }
 
-// noteUnknown counts a reached block without a child list and samples it.
-func (m *BlockMark) noteUnknown(block string) {
-	if m.Unknown++; len(m.UnknownSample) < unknownSample {
-		m.UnknownSample = append(m.UnknownSample, block)
-	}
-}
-
 // seedMarkTx calls seed with the graph root, each registered root, and both
-// nodes of each forward record whose subject is not a block.
-func seedMarkTx(ctx context.Context, tx kvtx.Tx, seed func(string)) error {
+// nodes of each forward record whose subject is not a block, each with the
+// node that names it.
+func seedMarkTx(ctx context.Context, tx kvtx.Tx, seed func(node, namer string)) error {
 	// Seed the graph root and the registered roots.
-	seed(NodeGCRoot)
+	seed(NodeGCRoot, "")
 	roots := graphKey(kindRoot)
 	err := tx.ScanPrefixKeys(ctx, roots, func(key []byte) error {
-		seed(lastNode(roots, key))
+		seed(lastNode(roots, key), NodeGCRoot)
 		return nil
 	})
 	if err != nil {
@@ -116,49 +147,57 @@ func seedMarkTx(ctx context.Context, tx kvtx.Tx, seed func(string)) error {
 		}
 
 		// Seed them.
-		seed(subject)
-		seed(object)
+		seed(subject, "")
+		seed(object, subject)
 		return nil
 	})
 }
 
 // walkTx walks child lists and forward edges from the nodes on stack, adding
 // each node it reaches to reached. untracked, when set, is called with each
-// block it reaches that has no child list. It pops chunks of nodes and loads
-// the index pages of each chunk's records together in key order, so a cold
-// store costs a batch of reads per chunk instead of one read per node, and the
-// work list stays small however wide the graph is.
-func walkTx(ctx context.Context, tx kvtx.Tx, reached *NodeSet, stack []string, untracked func(string)) error {
-	visit := func(node string) {
+// block it reaches that has no child list, named by the node whose record
+// reached it. It pops chunks of nodes and loads the index pages of each
+// chunk's records together in key order, so a cold store costs a batch of
+// reads per chunk instead of one read per node, and the work list stays small
+// however wide the graph is.
+func walkTx(ctx context.Context, tx kvtx.Tx, reached *NodeSet, stack []namedNode, untracked func(namedNode)) error {
+	// Stack each node on its first visit, with the node that reached it.
+	visit := func(node, namer string) {
 		if reached.Add(node) {
-			stack = append(stack, node)
+			stack = append(stack, namedNode{node, namer})
 		}
 	}
-	keys := make([][]byte, 0, 2*reachChunk)
+
+	// Walk chunks until the stack is empty.
+	records := make([]walkRecord, 0, reachChunk)
+	keys := make([][]byte, 0, reachChunk)
 	for len(stack) != 0 {
 		// Pop a chunk and order the keys of its records.
 		chunk := stack[max(0, len(stack)-reachChunk):]
-		keys = keys[:0]
-		for _, node := range chunk {
-			if node == NodeUnreferenced {
-				continue
-			}
-			if isBlockNode(node) {
-				keys = append(keys, graphKey(kindChildren, node))
-			} else {
-				keys = append(keys, graphKey(kindForward, node))
+		records = records[:0]
+		for _, n := range chunk {
+			switch {
+			case n.node == NodeUnreferenced:
+			case isBlockNode(n.node):
+				records = append(records, walkRecord{graphKey(kindChildren, n.node), n})
+			default:
+				records = append(records, walkRecord{graphKey(kindForward, n.node), n})
 			}
 		}
 		stack = stack[:len(stack)-len(chunk)]
-		slices.SortFunc(keys, bytes.Compare)
+		slices.SortFunc(records, func(a, b walkRecord) int { return bytes.Compare(a.key, b.key) })
 
 		// Load the chunk's index pages together, then push each new child
 		// and target.
+		keys = keys[:0]
+		for _, r := range records {
+			keys = append(keys, r.key)
+		}
 		if err := kvtx.Prefetch(ctx, tx, keys); err != nil {
 			return err
 		}
-		for _, key := range keys {
-			if err := walkRecordsTx(ctx, tx, key, visit, untracked); err != nil {
+		for _, r := range records {
+			if err := walkRecordsTx(ctx, tx, r, visit, untracked); err != nil {
 				return err
 			}
 		}
@@ -166,20 +205,26 @@ func walkTx(ctx context.Context, tx kvtx.Tx, reached *NodeSet, stack []string, u
 	return nil
 }
 
-// walkRecordsTx calls visit with each node that key names as a target: the
-// children in a child list record, or the targets of the forward records
-// under a forward prefix. untracked, when set, is called with the block of a
-// missing child list.
-func walkRecordsTx(ctx context.Context, tx kvtx.Tx, key []byte, visit, untracked func(string)) error {
+// walkRecord is the key of the records of a node a walk reached.
+type walkRecord struct {
+	key  []byte
+	node namedNode
+}
+
+// walkRecordsTx calls visit with each node that r names as a target, named by
+// r's node: the children in a child list record, or the targets of the
+// forward records under a forward prefix. untracked, when set, is called with
+// the block of a missing child list.
+func walkRecordsTx(ctx context.Context, tx kvtx.Tx, r walkRecord, visit func(node, namer string), untracked func(namedNode)) error {
 	// Read the children of a child list.
-	if key[0] == kindChildren {
-		value, found, err := tx.Get(ctx, key)
+	if r.key[0] == kindChildren {
+		value, found, err := tx.Get(ctx, r.key)
 		if err != nil {
 			return err
 		}
 		if !found {
 			if untracked != nil {
-				untracked(lastNode(key[:1], key))
+				untracked(r.node)
 			}
 			return nil
 		}
@@ -188,14 +233,14 @@ func walkRecordsTx(ctx context.Context, tx kvtx.Tx, key []byte, visit, untracked
 			return err
 		}
 		for _, child := range children {
-			visit(child)
+			visit(child, r.node.node)
 		}
 		return nil
 	}
 
 	// Scan the targets of the forward records.
-	return tx.ScanPrefixKeys(ctx, key, func(record []byte) error {
-		visit(lastNode(key, record))
+	return tx.ScanPrefixKeys(ctx, r.key, func(record []byte) error {
+		visit(lastNode(r.key, record), r.node.node)
 		return nil
 	})
 }
@@ -278,8 +323,11 @@ func (g *RefGraph) EndBlockPass(ctx context.Context) error {
 // RescueAdopted consumes the adopt log, adding each block it names and every
 // node reachable from one to mark.Live, and returns the number of nodes added.
 // A sweep runs it first in each transaction that removes blocks, so no block
-// a committed write adopted is removed. A rescued block without a child list
-// counts in mark.Unknown, and the sweep must then remove nothing more.
+// a committed write adopted is removed. It reads again the lists of the
+// unknown blocks the mark listed and walks those it finds. A reached block
+// without a list counts in mark.Unknown, and the sweep must remove nothing
+// while any does. An empty log is left unwritten, so a rescue that finds
+// nothing new commits nothing.
 func (g *RefGraph) RescueAdopted(ctx context.Context, mark *BlockMark) (int, error) {
 	var rescued int
 	err := g.transaction(ctx, true, func(ctx context.Context, tx kvtx.Tx) error {
@@ -288,24 +336,35 @@ func (g *RefGraph) RescueAdopted(ctx context.Context, mark *BlockMark) (int, err
 		if err != nil || !open {
 			return err
 		}
-		blocks, err := readAdoptLogTx(ctx, tx, r)
-		if err != nil {
-			return err
-		}
-		next, err := deleteAdoptLogTx(ctx, tx, r, open)
-		if err != nil {
-			return err
-		}
-		if err := tx.Set(ctx, passKey, adoptRange{lo: next, hi: next}.encode()); err != nil {
-			return err
+		var blocks []string
+		if r.legacy || r.lo != r.hi {
+			if blocks, err = readAdoptLogTx(ctx, tx, r); err != nil {
+				return err
+			}
+			next, err := deleteAdoptLogTx(ctx, tx, r, open)
+			if err != nil {
+				return err
+			}
+			if err := tx.Set(ctx, passKey, adoptRange{lo: next, hi: next}.encode()); err != nil {
+				return err
+			}
 		}
 
-		// Walk from the blocks the mark and earlier rescues did not reach.
+		// Read the awaiting lists again, sampling afresh when every unknown
+		// block is listed.
+		stack := mark.awaiting
+		if mark.Awaitable() {
+			mark.UnknownSample, mark.UnknownNamers = nil, nil
+		}
+		mark.Unknown -= len(stack)
+		mark.awaiting = nil
+
+		// Walk from them and the logged blocks the mark and earlier rescues
+		// did not reach.
 		before := mark.Live.Len()
-		var stack []string
 		for _, block := range blocks {
 			if mark.Live.Add(block) {
-				stack = append(stack, block)
+				stack = append(stack, namedNode{node: block})
 			}
 		}
 		err = walkTx(ctx, tx, mark.Live, stack, mark.noteUnknown)

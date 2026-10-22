@@ -44,8 +44,8 @@ func (g *RefGraph) MarkBlocksScan(ctx context.Context) (*BlockMark, error) {
 // and the scans repeat until one adds no child behind its position, since it
 // expanded every child it added after its position. A scan reads each index
 // page of the lists once, so a mark costs scans times pages instead of a page
-// a block. It counts the blocks without a list in mark.Unknown and names a
-// sample of them, as settleUnknown describes.
+// a block. It counts the blocks without a list in mark.Unknown and lists
+// them, as settleUnknown describes.
 //
 // Each read transaction stays within limit, and the next resumes after the
 // last record read, calling between first when set. The adopt log of an open
@@ -142,15 +142,14 @@ func (g *RefGraph) markScan(ctx context.Context, limit markLimit, between func()
 	// A live block without a list has unknown references. Settle those a
 	// write gave a list after the scans passed them, then list the
 	// unreached blocks with one more key scan.
-	mark.Unknown = liveBlocks - expanded.Len()
-	if mark.Unknown != 0 {
+	if liveBlocks != expanded.Len() {
 		added, err := g.settleUnknown(ctx, mark, expanded, limit, between)
 		if err != nil {
 			return nil, err
 		}
 		liveBlocks += added
-		mark.Unknown = liveBlocks - expanded.Len()
 	}
+	mark.Unknown = liveBlocks - expanded.Len()
 	err = g.scanRecords(ctx, mark, lists, limit, between, func(key []byte, _ kvtx.Iterator) error {
 		if block := lastNode(lists, key); !live.Has(block) {
 			mark.Unreached = append(mark.Unreached, block)
@@ -180,10 +179,10 @@ type unknownBlock struct {
 // unexpanded, up to settleLimit of them, as findUnknown lists them. A write
 // can stage a block after the scans passed its key, so its list may exist
 // now: settleUnknown expands it, then checks each child it makes live the
-// same way. It names the blocks still without a list, and their namers, in
-// mark.UnknownSample and mark.UnknownNamers, and returns how many blocks it
-// made live. Reading a list later than the scans is safe for the same reason
-// the scans' later transactions are: the adopt log covers edges added since.
+// same way. It lists the blocks still without a list in mark, with their
+// namers, and returns how many blocks it made live. Reading a list later than
+// the scans is safe for the same reason the scans' later transactions are:
+// the adopt log covers edges added since.
 func (g *RefGraph) settleUnknown(ctx context.Context, mark *BlockMark, expanded *NodeSet, limit markLimit, between func() error) (int, error) {
 	// List the unexpanded live blocks.
 	pending, err := g.findUnknown(ctx, mark, expanded, limit, between)
@@ -235,10 +234,7 @@ func settleTx(ctx context.Context, tx kvtx.Tx, mark *BlockMark, expanded *NodeSe
 			return nil, 0, err
 		}
 		if !found {
-			if len(mark.UnknownSample) < unknownSample {
-				mark.UnknownSample = append(mark.UnknownSample, block)
-				mark.UnknownNamers = append(mark.UnknownNamers, next.namer)
-			}
+			mark.await(namedNode{block, next.namer})
 			continue
 		}
 

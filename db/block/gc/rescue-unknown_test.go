@@ -2,14 +2,16 @@ package block_gc
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	store_kvtx_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
 )
 
 // TestRescueAdoptedUntrackedParent checks that a rescue counts a block adopted
-// during a pass that has no child list as unknown: a parent stored untracked
-// after the mark may name a child the mark found unreached.
+// during a pass that has no child list as unknown, since a parent stored
+// untracked after the mark may name a child the mark found unreached, and
+// reaches the child once the parent's list is recorded.
 func TestRescueAdoptedUntrackedParent(t *testing.T) {
 	// A tracked child that nothing owns.
 	ctx := context.Background()
@@ -40,8 +42,28 @@ func TestRescueAdoptedUntrackedParent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The rescue reports the parent, so the sweep removes nothing.
-	if mark.Unknown != 1 || len(mark.UnknownSample) != 1 || mark.UnknownSample[0] != parent {
-		t.Fatalf("unknown %d %v, want the parent", mark.Unknown, mark.UnknownSample)
+	// The rescue reports the parent, so the sweep removes nothing, and
+	// lists it, so the sweep can wait for its list. A rescue with nothing
+	// logged reads the list again.
+	for range 2 {
+		if mark.Unknown != 1 || !mark.Awaitable() || !slices.Equal(mark.UnknownSample, []string{parent}) {
+			t.Fatalf("unknown %d %v, want the parent", mark.Unknown, mark.UnknownSample)
+		}
+		if _, err := rg.RescueAdopted(ctx, mark); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Once the parent's references are recorded, the next rescue reaches
+	// the child through it.
+	record := []RefEdge{{Subject: NodeUnreferenced, Object: parent}, {Subject: parent, Object: child}}
+	if err := rg.ApplyRefBatch(ctx, record, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := rg.RescueAdopted(ctx, mark); err != nil {
+		t.Fatal(err)
+	}
+	if mark.Unknown != 0 || len(mark.UnknownSample) != 0 || !mark.Live.Has(child) {
+		t.Fatalf("unknown %d %v, child live %v", mark.Unknown, mark.UnknownSample, mark.Live.Has(child))
 	}
 }
