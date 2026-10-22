@@ -138,7 +138,7 @@ Block-backed state forms a block DAG under its World object. Create a separate W
 
 ## Storage and controller lifetimes
 
-A Space can hold unbounded data. Opening a store, volume, World or index must not scan its contents or hold memory in proportion to them. Read through stored indexes so the work scales with the answer. When you change this behavior, measure opening a durable store at realistic sizes.
+A Space can hold unbounded data. Opening a store, volume, World or index, a commit, and any work under a writer or engine lock must scale with the change or the answer, never with the stored data. Read through stored indexes, and look up one list in another through a map or set: a `slices.Contains` inside a loop or a `DeleteFunc` callback costs the product of both lengths. A test at small sizes cannot show this cost, so when you change such a path, measure it at production size, with hundreds of thousands of runs, keys or blocks.
 
 `BeginReadOperation`, `NewTransaction(false)`, bucket cursors, GC wrappers, projection hydration and resource read scopes can hold transaction locks. Reuse the existing scope when you layer stores. A second read transaction on the same bbolt or kvtx store while the first is open can deadlock when the mmap grows.
 
