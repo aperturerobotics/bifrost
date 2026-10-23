@@ -114,10 +114,11 @@ func (e *testSessionTransportStatusError) StatusCode() int {
 // Session renews its registration and transport after the cloud rejects its
 // signal ticket, even when presentation metadata cannot be mirrored.
 func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
-	// Control the first rejected ticket and the replacement ticket independently.
+	// Bound the test.
 	ctx, cancel := context.WithTimeout(t.Context(), 8*time.Second)
 	defer cancel()
 
+	// Control the first rejected ticket and the replacement ticket independently.
 	firstTicketStarted := make(chan struct{})
 	releaseFirstTicket := make(chan struct{})
 	firstRegistration := make(chan struct{})
@@ -125,6 +126,8 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 	secondTicketStarted := make(chan struct{})
 	permitSecondTicket := make(chan struct{})
 	websocketAccepted := make(chan struct{})
+
+	// Track the requests the server sees.
 	var websocketAcceptedOnce sync.Once
 	var registrations atomic.Int32
 	var tickets atomic.Int32
@@ -187,14 +190,17 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	// Mount the real Session controller in the in-memory stack.
+	// Start the in-memory stack.
 	tb, err := testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tb.Release()
+
+	// Mount the real Session controller.
 	tb.StaticResolver.AddFactory(session_controller.NewFactory(tb.Bus))
 	_, controllerRef, err := tb.Bus.AddDirective(
+		ctx,
 		resolver.NewLoadControllerWithConfig(&session_controller.Config{
 			VolumeId: tb.Volume.GetID(),
 		}),
@@ -204,6 +210,8 @@ func TestMountedSessionReRegistersAfterUnauthorizedTransport(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer controllerRef.Release()
+
+	// Look up the Session controller.
 	sessionController, sessionControllerRef, err := session.ExLookupSessionController(ctx, tb.Bus, "", false, nil)
 	if err != nil {
 		t.Fatal(err)

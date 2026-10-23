@@ -120,7 +120,7 @@ func (noopBus) GetDirectivesBroadcast() *broadcast.Broadcast {
 	return nil
 }
 
-func (noopBus) AddDirective(directive.Directive, directive.ReferenceHandler) (directive.Instance, directive.Reference, error) {
+func (noopBus) AddDirective(context.Context, directive.Directive, directive.ReferenceHandler) (directive.Instance, directive.Reference, error) {
 	return nil, nil, nil
 }
 

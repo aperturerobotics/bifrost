@@ -56,6 +56,7 @@ func TestStoreReadWaitsForSolicitation(t *testing.T) {
 	writerPeerID := writerTransport.(*inproc.Inproc).GetPeerID()
 	linked := make(chan struct{}, 1)
 	_, linkRef, err := reader.tb.Bus.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer("", writerPeerID),
 		directive.NewTypedCallbackHandler(
 			func(directive.TypedAttachedValue[link.MountedLink]) {

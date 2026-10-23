@@ -366,7 +366,7 @@ func (c *Controller) Execute(ctx context.Context) (rerr error) {
 	// Call LoadPlugin for the list of Start plugins.
 	for _, pluginID := range devtoolInfo.GetStartPlugins() {
 		le.WithField("plugin-id", pluginID).Info("loading startup plugin")
-		_, plugRef, err := b.AddDirective(bldr_plugin.NewLoadPlugin(pluginID), nil)
+		_, plugRef, err := b.AddDirective(ctx, bldr_plugin.NewLoadPlugin(pluginID), nil)
 		if err != nil {
 			return err
 		}

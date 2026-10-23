@@ -142,6 +142,7 @@ func (t *pluginHostServerFsTracker) retainPlugin(
 	// Load the plugin at the manifest and count its running instances.
 	var running atomic.Int32
 	load, pluginRef, err := t.s.b.AddDirective(
+		ctx,
 		bldr_plugin.NewLoadPluginAtManifest(familyID, t.s.instanceKey, manifestRoot),
 		directive.NewCallbackHandler(
 			func(directive.AttachedValue) { running.Add(1) },

@@ -55,6 +55,7 @@ func waitJobState(t *testing.T, b bus.Bus, key string, run JobFunc, check func(*
 // share one background run that stops when the last one releases it.
 func TestRunJobSharesKeyAndCancelsOnLastRelease(t *testing.T) {
 	// Build a job that runs as background work until it is canceled.
+	ctx := t.Context()
 	b := newTestBus(t)
 	var runs atomic.Int32
 	started := make(chan struct{})
@@ -74,12 +75,12 @@ func TestRunJobSharesKeyAndCancelsOnLastRelease(t *testing.T) {
 	}
 
 	// Register the same key twice.
-	first, err := AddJob(b, "fill", run)
+	first, err := AddJob(ctx, b, "fill", run)
 	if err != nil {
 		t.Fatal(err)
 	}
 	<-started
-	second, err := AddJob(b, "fill", func(context.Context) error {
+	second, err := AddJob(ctx, b, "fill", func(context.Context) error {
 		t.Error("second registrant of the key started its own run")
 		return nil
 	})
@@ -121,7 +122,7 @@ func TestRunJobRetriesAfterError(t *testing.T) {
 		<-retried
 		return nil
 	}
-	ref, err := AddJob(b, "fill", run)
+	ref, err := AddJob(t.Context(), b, "fill", run)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +153,7 @@ func TestRunJobOneAtATime(t *testing.T) {
 	b := newTestBus(t)
 	release := make(chan struct{})
 	started := make(chan struct{})
-	first, err := AddJob(b, "first", func(context.Context) error {
+	first, err := AddJob(t.Context(), b, "first", func(context.Context) error {
 		close(started)
 		<-release
 		return nil
@@ -169,7 +170,7 @@ func TestRunJobOneAtATime(t *testing.T) {
 		secondRan.Store(true)
 		return nil
 	}
-	secondRef, err := AddJob(b, "second", second)
+	secondRef, err := AddJob(t.Context(), b, "second", second)
 	if err != nil {
 		t.Fatal(err)
 	}

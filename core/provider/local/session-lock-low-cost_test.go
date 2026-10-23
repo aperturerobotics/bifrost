@@ -1290,17 +1290,18 @@ func setupProviderAndSessionInternal(ctx context.Context, t *testing.T, configur
 	*Session,
 	func(),
 ) {
+	// Start the testbed.
 	t.Helper()
-
 	tb, err := testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// Create the provider controller.
 	providerID := "local"
 	peerID := tb.Volume.GetPeerID()
 	tb.StaticResolver.AddFactory(NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 		StorageId:  tb.StorageID,
@@ -1310,6 +1311,7 @@ func setupProviderAndSessionInternal(ctx context.Context, t *testing.T, configur
 		t.Fatal(err)
 	}
 
+	// Look up the provider.
 	prov, provRef, err := provider.ExLookupProvider(ctx, tb.Bus, providerID, false, nil)
 	if err != nil {
 		provCtrlRef.Release()
@@ -1317,6 +1319,7 @@ func setupProviderAndSessionInternal(ctx context.Context, t *testing.T, configur
 		t.Fatal(err)
 	}
 
+	// Configure the provider and create a local account and Session.
 	localProv := prov.(*Provider)
 	for _, apply := range configure {
 		apply(localProv)
@@ -1329,6 +1332,7 @@ func setupProviderAndSessionInternal(ctx context.Context, t *testing.T, configur
 		t.Fatal(err)
 	}
 
+	// Access the account.
 	accountID := sessRef.GetProviderResourceRef().GetProviderAccountId()
 	accIface, accRel, err := localProv.AccessProviderAccount(ctx, accountID, nil)
 	if err != nil {
@@ -1339,6 +1343,7 @@ func setupProviderAndSessionInternal(ctx context.Context, t *testing.T, configur
 	}
 	acc := accIface.(*ProviderAccount)
 
+	// Mount the Session.
 	sess, sessRelease, err := acc.MountSession(ctx, sessRef, nil)
 	if err != nil {
 		accRel()
@@ -1349,6 +1354,7 @@ func setupProviderAndSessionInternal(ctx context.Context, t *testing.T, configur
 	}
 	localSess := sess.(*Session)
 
+	// Release everything in reverse order.
 	release := func() {
 		sessRelease()
 		accRel()

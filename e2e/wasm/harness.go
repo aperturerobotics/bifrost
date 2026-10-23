@@ -701,7 +701,7 @@ func findFreePort() (int, error) {
 	return port, nil
 }
 
-func (h *Harness) assertStartupManifestFetches() error {
+func (h *Harness) assertStartupManifestFetches(ctx context.Context) error {
 	le := h.le.WithField("component", "harness")
 	b := h.devtool.GetBus()
 	for _, req := range h.startupManifestRequests() {
@@ -712,7 +712,7 @@ func (h *Harness) assertStartupManifestFetches() error {
 		waitState := newManifestWaitState(req.pluginID)
 
 		le.WithFields(req.logFields()).Info("asserting manifest fetch")
-		di, ref, err := b.AddDirective(req.directive(), waitState.handler())
+		di, ref, err := b.AddDirective(ctx, req.directive(), waitState.handler())
 		if err != nil {
 			return errors.Wrapf(err, "assert manifest fetch for %s", req.pluginID)
 		}
@@ -761,7 +761,7 @@ func (h *Harness) settleStartupManifests(ctx context.Context) error {
 func (h *Harness) preflightStartupManifests(ctx context.Context) (map[string]string, error) {
 	// Release prior fetches, wait for startup manifests, and return their digests.
 	h.releaseManifestFetches()
-	if err := h.assertStartupManifestFetches(); err != nil {
+	if err := h.assertStartupManifestFetches(ctx); err != nil {
 		return nil, errors.Wrap(err, "assert startup manifest fetches")
 	}
 	if err := h.waitForManifests(ctx); err != nil {
@@ -818,7 +818,7 @@ func (h *Harness) preflightManifestFetch(ctx context.Context, req manifestFetchR
 	// Assert the lazy fetch and register its idle callback.
 	waitState := newManifestWaitState(req.pluginID)
 	h.le.WithFields(req.logFields()).Info("asserting lazy manifest fetch")
-	di, ref, err := h.devtool.GetBus().AddDirective(req.directive(), waitState.handler())
+	di, ref, err := h.devtool.GetBus().AddDirective(ctx, req.directive(), waitState.handler())
 	if err != nil {
 		return "", errors.Wrapf(err, "assert manifest fetch for %s", req.pluginID)
 	}

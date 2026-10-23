@@ -93,7 +93,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 			le.WithError(err).Warn("apply bucket config was invalid")
 			continue
 		}
-		di, ref, err := c.bus.AddDirective(dir, nil)
+		di, ref, err := c.bus.AddDirective(ctx, dir, nil)
 		if err != nil {
 			le.WithError(err).Warn("apply bucket config failed")
 			continue

@@ -44,6 +44,7 @@ func (t *proxyVolumeTracker) execute(ctx context.Context) error {
 	// Watch the volume lookup for the lifetime of the tracker.
 	le.Debug("starting proxy volume")
 	valCh, _, valRef, err := bus.ExecOneOffWatchCh[volume.LookupVolumeValue](
+		ctx,
 		t.c.bus,
 		volume.NewLookupVolume(volumeID, ""),
 	)

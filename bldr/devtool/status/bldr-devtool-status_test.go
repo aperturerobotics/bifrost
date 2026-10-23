@@ -493,6 +493,7 @@ func TestBldrDevtoolStatusObserverInitialScan(t *testing.T) {
 
 	// Add a fetch manifest directive to the bus.
 	_, fetchRef, err := b.AddDirective(
+		ctx,
 		bldr_manifest.NewFetchManifest(
 			"web",
 			[]bldr_manifest.BuildType{bldr_manifest.BuildType_DEV},
@@ -508,6 +509,7 @@ func TestBldrDevtoolStatusObserverInitialScan(t *testing.T) {
 
 	// Add a load controller directive to the bus.
 	_, controllerRef, err := b.AddDirective(
+		ctx,
 		resolver.NewLoadControllerWithConfig(&bldr_web_view_observer.Config{}),
 		nil,
 	)
@@ -572,6 +574,7 @@ func TestBldrDevtoolStatusObserverDoesNotOverwriteSchedulerPluginRows(t *testing
 
 	// Add a fetch manifest directive to the bus.
 	_, fetchRef, err := b.AddDirective(
+		ctx,
 		bldr_manifest.NewFetchManifest(
 			"web",
 			[]bldr_manifest.BuildType{bldr_manifest.BuildType_DEV},
@@ -608,6 +611,7 @@ func TestBldrDevtoolStatusObserverReleaseClosesObservedDirectives(t *testing.T) 
 
 	// Add a fetch manifest directive to the bus.
 	di, fetchRef, err := b.AddDirective(
+		ctx,
 		bldr_manifest.NewFetchManifest(
 			"web",
 			[]bldr_manifest.BuildType{bldr_manifest.BuildType_DEV},
@@ -656,6 +660,7 @@ func TestBldrDevtoolStatusObserverCloseReleasesStateCallbacks(t *testing.T) {
 
 	// Add a fetch manifest directive to the bus.
 	di, fetchRef, err := b.AddDirective(
+		ctx,
 		bldr_manifest.NewFetchManifest(
 			"web",
 			[]bldr_manifest.BuildType{bldr_manifest.BuildType_DEV},
@@ -737,6 +742,7 @@ func TestBldrDevtoolStatusObserverDisposeCallbackRemovesKeyedDirective(t *testin
 
 	// Add a fetch manifest directive to the bus.
 	di, fetchRef, err := b.AddDirective(
+		ctx,
 		bldr_manifest.NewFetchManifest(
 			"web",
 			[]bldr_manifest.BuildType{bldr_manifest.BuildType_DEV},

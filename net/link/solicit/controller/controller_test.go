@@ -1350,6 +1350,7 @@ func TestSolicitProtocolNoMatch(t *testing.T) {
 
 	// Peer 1 solicits "proto/a", peer 2 solicits "proto/b" -- no match.
 	_, diRef1, err := tb1.Bus.AddDirective(
+		ctx,
 		link_solicit.NewSolicitProtocol(protocol.ID("proto/a"), nil, "", 0),
 		nil,
 	)
@@ -1360,6 +1361,7 @@ func TestSolicitProtocolNoMatch(t *testing.T) {
 
 	// Register the second peer's disjoint protocol offer.
 	_, diRef2, err := tb2.Bus.AddDirective(
+		ctx,
 		link_solicit.NewSolicitProtocol(protocol.ID("proto/b"), nil, "", 0),
 		nil,
 	)
@@ -1417,6 +1419,7 @@ func TestSolicitProtocolContextMismatch(t *testing.T) {
 
 	// Same protocol but different context bytes -- should not match.
 	_, diRef1, err := tb1.Bus.AddDirective(
+		ctx,
 		link_solicit.NewSolicitProtocol(protocol.ID("dex"), []byte("bucket-a"), "", 0),
 		nil,
 	)
@@ -1427,6 +1430,7 @@ func TestSolicitProtocolContextMismatch(t *testing.T) {
 
 	// Register the second peer's distinct context for the same protocol.
 	_, diRef2, err := tb2.Bus.AddDirective(
+		ctx,
 		link_solicit.NewSolicitProtocol(protocol.ID("dex"), []byte("bucket-b"), "", 0),
 		nil,
 	)

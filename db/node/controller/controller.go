@@ -58,6 +58,7 @@ func NewController(cc *Config, le *logrus.Entry, b bus.Bus) *Controller {
 func (c *Controller) Execute(ctx context.Context) error {
 	// Watch block-store values for bucket tracking.
 	_, vRef, err := c.b.AddDirective(
+		ctx,
 		block_store.NewLookupBlockStore(""),
 		newBlockStoreRefHandler(c),
 	)

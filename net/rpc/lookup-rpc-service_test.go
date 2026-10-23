@@ -11,6 +11,7 @@ import (
 
 // TestLookupRpcServiceIdleRetention checks reuse, renewal, and final disposal.
 func TestLookupRpcServiceIdleRetention(t *testing.T) {
+	ctx := t.Context()
 	for _, resolved := range []bool{false, true} {
 		name := "unresolved"
 		if resolved {
@@ -31,7 +32,7 @@ func TestLookupRpcServiceIdleRetention(t *testing.T) {
 				t.Cleanup(startMockHandler(t, tb))
 				_, instance, ref, err = ExLookupRpcService(t.Context(), tb.Bus, mockServiceID, "", true, nil)
 			} else {
-				instance, ref, err = tb.Bus.AddDirective(NewLookupRpcService(mockServiceID, ""), nil)
+				instance, ref, err = tb.Bus.AddDirective(ctx, NewLookupRpcService(mockServiceID, ""), nil)
 			}
 			if err != nil {
 				t.Fatal(err)
@@ -49,7 +50,7 @@ func TestLookupRpcServiceIdleRetention(t *testing.T) {
 				t.Fatal("lookup disposed during its idle grace period")
 			case <-time.After(250 * time.Millisecond):
 			}
-			reused, nextRef, err := tb.Bus.AddDirective(NewLookupRpcService(mockServiceID, ""), nil)
+			reused, nextRef, err := tb.Bus.AddDirective(ctx, NewLookupRpcService(mockServiceID, ""), nil)
 			if err != nil {
 				t.Fatal(err)
 			}

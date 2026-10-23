@@ -41,7 +41,7 @@ func TestResolveSpaceRetainsEngineMount(t *testing.T) {
 	tb.StaticResolver.AddFactory(space_sobject.NewFactory(tb.Bus))
 
 	// Start session controller.
-	_, sessCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{
+	_, sessCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{
 		VolumeId: tb.EngineVolumeID,
 	}), nil)
 	if err != nil {
@@ -51,7 +51,7 @@ func TestResolveSpaceRetainsEngineMount(t *testing.T) {
 
 	// Start local provider controller.
 	providerID := "local"
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 		StorageId:  tb.StorageID,
@@ -62,7 +62,7 @@ func TestResolveSpaceRetainsEngineMount(t *testing.T) {
 	defer provCtrlRef.Release()
 
 	// Start the space shared object controller.
-	_, spaceSobjectCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&space_sobject.Config{}), nil)
+	_, spaceSobjectCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&space_sobject.Config{}), nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

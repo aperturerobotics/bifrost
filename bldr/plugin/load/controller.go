@@ -63,6 +63,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	pluginIDs := c.GetConfig().CleanupPluginIds()
 	for _, pluginID := range pluginIDs {
 		_, dirRef, err := c.GetBus().AddDirective(
+			ctx,
 			bldr_plugin.NewLoadPlugin(
 				pluginID,
 			),

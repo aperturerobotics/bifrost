@@ -1,6 +1,7 @@
 package link_holdopen_controller
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -27,7 +28,7 @@ type holdInstance struct {
 }
 
 // AddReference blocks until proceed and returns a counted reference.
-func (h *holdInstance) AddReference(cb directive.ReferenceHandler, weakRef bool) directive.Reference {
+func (h *holdInstance) AddReference(ctx context.Context, cb directive.ReferenceHandler, weakRef bool) directive.Reference {
 	h.added <- struct{}{}
 	<-h.proceed
 	h.held.Add(1)
@@ -73,7 +74,7 @@ func TestHoldReleasedWhenValueRemovedBeforeAdd(t *testing.T) {
 		proceed:  make(chan struct{}),
 		released: make(chan struct{}, 4),
 	}
-	e := newEstablishLinkHandler(nil, logrus.NewEntry(logrus.New()), di, "")
+	e := newEstablishLinkHandler(context.Background(), nil, logrus.NewEntry(logrus.New()), di, "")
 
 	// Add two links and remove both while the reference is still pending.
 	e.HandleValueAdded(di, attachedValue{})

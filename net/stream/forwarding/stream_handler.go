@@ -37,6 +37,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 ) error {
 	// Hold the source link while forwarding the mounted stream.
 	_, elRef, err := m.bus.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(strm.GetLink().GetLocalPeer(), strm.GetPeerID()),
 		nil,
 	)

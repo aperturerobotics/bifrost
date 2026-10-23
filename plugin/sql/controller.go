@@ -68,7 +68,9 @@ func NewFactory(b bus.Bus) controller.Factory {
 
 			// Expose the SQL handler mux through the resource server.
 			serverMux := srpc.NewMux()
-			if err := resource_server.NewResourceServer(rootMux).Register(serverMux); err != nil {
+			resourceSrv := resource_server.NewResourceServer(rootMux)
+			resourceSrv.SetOriginController(ControllerID)
+			if err := resourceSrv.Register(serverMux); err != nil {
 				return nil, err
 			}
 			return &Controller{

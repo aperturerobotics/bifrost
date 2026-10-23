@@ -169,6 +169,7 @@ func runDaemon(c *cli.Context) error {
 
 	// ConfigSet controller
 	_, csRef, err := b.AddDirective(
+		ctx,
 		resolver.NewLoadControllerWithConfig(&configset_controller.Config{}),
 		nil,
 	)
@@ -199,6 +200,7 @@ func runDaemon(c *cli.Context) error {
 
 	// Apply the configuration set for the lifetime of the daemon command.
 	_, bdbRef, err := b.AddDirective(
+		ctx,
 		configset.NewApplyConfigSet(confSet),
 		nil,
 	)

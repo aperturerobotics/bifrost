@@ -35,6 +35,7 @@ func (a *API) ApplyBucketConfig(
 	// Watch the configuration and stream each result.
 	var emittedAny atomic.Bool
 	di, diRef, err := bus.ExecWatchEffect(
+		ctx,
 		func(val directive.TypedAttachedValue[*bucket.ApplyBucketConfigResult]) func() {
 			emittedAny.Store(true)
 			if err := serv.Send(&ApplyBucketConfigResponse{

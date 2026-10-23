@@ -471,12 +471,13 @@ func (c *Controller) handleMountedStream(
 
 // handleEstablishLink watches EstablishLinkWithPeer for link values.
 func (c *Controller) handleEstablishLink(
-	_ context.Context,
+	ctx context.Context,
 	di directive.Instance,
 	_ link.EstablishLinkWithPeer,
 ) ([]directive.Resolver, error) {
 	// Track mounted links through typed add/remove callbacks.
 	ref := di.AddReference(
+		ctx,
 		directive.NewTypedCallbackHandler[link.MountedLink](
 			func(v directive.TypedAttachedValue[link.MountedLink]) {
 				c.addLink(v.GetValue())

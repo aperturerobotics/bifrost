@@ -135,6 +135,7 @@ func TestAccessRpcServiceClientReplaced(t *testing.T) {
 	// Hold the lookup and signal each published service invoker.
 	added := make(chan struct{}, 8)
 	_, dirRef, err := clientBus.AddDirective(
+		ctx,
 		bifrost_rpc.NewLookupRpcService(echo.SRPCEchoerServiceID, ""),
 		directive.NewCallbackHandler(func(directive.AttachedValue) {
 			added <- struct{}{}

@@ -46,20 +46,19 @@ func lookupProviderVolume(
 // TestGarbageCollection tests the GC lifecycle: create space, put blocks,
 // delete space, verify blocks are swept by the collector.
 func TestGarbageCollection(t *testing.T) {
+	// Start the testbed.
 	ctx := t.Context()
-
 	tb, err := testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	defer tb.Release()
 
-	peerID := tb.Volume.GetPeerID()
-
 	// Create the provider controller.
+	peerID := tb.Volume.GetPeerID()
 	providerID := "local"
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 	}), nil)
@@ -168,20 +167,19 @@ func TestGarbageCollection(t *testing.T) {
 // TestGarbageCollection_MultipleSpaces tests that deleting one space does
 // not affect blocks in another space.
 func TestGarbageCollection_MultipleSpaces(t *testing.T) {
+	// Start the testbed.
 	ctx := t.Context()
-
 	tb, err := testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	defer tb.Release()
 
-	peerID := tb.Volume.GetPeerID()
-
 	// Create the provider controller.
+	peerID := tb.Volume.GetPeerID()
 	providerID := "local"
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 	}), nil)
@@ -190,6 +188,7 @@ func TestGarbageCollection_MultipleSpaces(t *testing.T) {
 	}
 	defer provCtrlRef.Release()
 
+	// Acquire a provider account handle.
 	accountID := "test-account"
 	provAcc, provAccRef, err := provider.ExAccessProviderAccount(ctx, tb.Bus, providerID, accountID, false, nil)
 	if err != nil {
@@ -200,6 +199,7 @@ func TestGarbageCollection_MultipleSpaces(t *testing.T) {
 	// Look up the provider's volume.
 	vol, _ := lookupProviderVolume(t, ctx, tb, providerID, accountID)
 
+	// Get the shared object provider feature.
 	wsProv, err := sobject.GetSharedObjectProviderAccountFeature(ctx, provAcc)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -215,23 +215,22 @@ func TestGarbageCollection_MultipleSpaces(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	// Mount both and put blocks.
+	// Mount both spaces.
 	soA, soARef, err := sobject.ExMountSharedObject(ctx, tb.Bus, spaceARef, false, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
 	soB, soBRef, err := sobject.ExMountSharedObject(ctx, tb.Bus, spaceBRef, false, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
+	// Put one block in each space.
 	blockA := block_mock.NewExample("block-in-space-a")
 	refA, _, err := block.PutBlock(ctx, soA.GetBlockStore(), blockA)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-
 	blockB := block_mock.NewExample("block-in-space-b")
 	refB, _, err := block.PutBlock(ctx, soB.GetBlockStore(), blockB)
 	if err != nil {
@@ -278,19 +277,19 @@ func TestGarbageCollection_MultipleSpaces(t *testing.T) {
 // This validates the intra-space GC mechanism: individual bucket -> block
 // edges can be removed and the collector sweeps the orphaned blocks.
 func TestStorageLifecycleGC(t *testing.T) {
+	// Start the testbed.
 	ctx := t.Context()
-
 	tb, err := testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	defer tb.Release()
 
+	// Create the provider controller.
 	peerID := tb.Volume.GetPeerID()
-
 	providerID := "local"
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 	}), nil)
@@ -299,6 +298,7 @@ func TestStorageLifecycleGC(t *testing.T) {
 	}
 	defer provCtrlRef.Release()
 
+	// Acquire a provider account handle.
 	accountID := "gc-lifecycle"
 	provAcc, provAccRef, err := provider.ExAccessProviderAccount(ctx, tb.Bus, providerID, accountID, false, nil)
 	if err != nil {
@@ -306,8 +306,10 @@ func TestStorageLifecycleGC(t *testing.T) {
 	}
 	defer provAccRef.Release()
 
+	// Look up the provider's volume.
 	vol, rg := lookupProviderVolume(t, ctx, tb, providerID, accountID)
 
+	// Get the shared object provider feature.
 	wsProv, err := sobject.GetSharedObjectProviderAccountFeature(ctx, provAcc)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -322,12 +324,14 @@ func TestStorageLifecycleGC(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
+	// Mount the space to get its block store.
 	so, soRef, err := sobject.ExMountSharedObject(ctx, tb.Bus, createdSoRef, false, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	blockStore := so.GetBlockStore()
 
+	// Resolve the bucket IRI for the ref graph assertions.
 	blockStoreID := provider_local.SobjectBlockStoreID(spaceID)
 	bucketID := provider_local.BlockStoreBucketID(providerID, accountID, blockStoreID)
 	bucketIRI := block_gc.BucketIRI(bucketID)
@@ -343,7 +347,6 @@ func TestStorageLifecycleGC(t *testing.T) {
 		}
 		keptRefs = append(keptRefs, ref)
 	}
-
 	var deletedRefs []*block.BlockRef
 	for i := range 3 {
 		ex := block_mock.NewExample("deleted-file-block-" + string(rune('x'+i)))
@@ -445,7 +448,6 @@ func TestStorageLifecycleGC(t *testing.T) {
 			t.Fatalf("deleted block %s should not have bucket -> block edge after GC", ref.MarshalString())
 		}
 	}
-
 	t.Logf("verified: %d deleted blocks swept, %d kept blocks intact", len(deletedRefs), len(keptRefs))
 
 	// Clean up: unmount and delete space, which sweeps remaining blocks.
@@ -457,6 +459,7 @@ func TestStorageLifecycleGC(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
+	// Verify the kept blocks were swept with the space.
 	for _, ref := range keptRefs {
 		exists, exErr := vol.GetBlockExists(ctx, ref)
 		if exErr != nil {
@@ -472,19 +475,19 @@ func TestStorageLifecycleGC(t *testing.T) {
 // TestStorageLifecycleGC_LargerBlocks tests GC with realistic block sizes
 // (1MB+ each) to verify the GC mechanism handles larger data volumes.
 func TestStorageLifecycleGC_LargerBlocks(t *testing.T) {
+	// Start the testbed.
 	ctx := t.Context()
-
 	tb, err := testbed.Default(ctx)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	defer tb.Release()
 
+	// Create the provider controller.
 	peerID := tb.Volume.GetPeerID()
-
 	providerID := "local"
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 	}), nil)
@@ -493,6 +496,7 @@ func TestStorageLifecycleGC_LargerBlocks(t *testing.T) {
 	}
 	defer provCtrlRef.Release()
 
+	// Acquire a provider account handle.
 	accountID := "gc-large"
 	provAcc, provAccRef, err := provider.ExAccessProviderAccount(ctx, tb.Bus, providerID, accountID, false, nil)
 	if err != nil {
@@ -500,13 +504,16 @@ func TestStorageLifecycleGC_LargerBlocks(t *testing.T) {
 	}
 	defer provAccRef.Release()
 
+	// Look up the provider's volume.
 	vol, rg := lookupProviderVolume(t, ctx, tb, providerID, accountID)
 
+	// Get the shared object provider feature.
 	wsProv, err := sobject.GetSharedObjectProviderAccountFeature(ctx, provAcc)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
+	// Create a space.
 	spaceID := "gc-large-space"
 	createdSoRef, err := wsProv.CreateSharedObject(ctx, spaceID, &sobject.SharedObjectMeta{
 		BodyType: "test",
@@ -515,12 +522,14 @@ func TestStorageLifecycleGC_LargerBlocks(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
+	// Mount the space to get its block store.
 	so, soRef, err := sobject.ExMountSharedObject(ctx, tb.Bus, createdSoRef, false, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	blockStore := so.GetBlockStore()
 
+	// Resolve the bucket IRI for the ref graph assertions.
 	blockStoreID := provider_local.SobjectBlockStoreID(spaceID)
 	bucketID := provider_local.BlockStoreBucketID(providerID, accountID, blockStoreID)
 	bucketIRI := block_gc.BucketIRI(bucketID)
@@ -600,7 +609,6 @@ func TestStorageLifecycleGC_LargerBlocks(t *testing.T) {
 			t.Fatalf("kept block size mismatch: want %d, got %d", blockSize, len(data))
 		}
 	}
-
 	t.Logf("verified: %d x 1MB blocks swept, %d x 1MB blocks intact", len(deletedRefs), len(keptRefs))
 
 	// Clean up.

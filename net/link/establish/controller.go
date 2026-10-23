@@ -50,6 +50,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	for _, peerID := range c.peers {
 		le := c.le.WithField("peer-id", peerID.String())
 		_, diRef, err := c.bus.AddDirective(
+			ctx,
 			link.NewEstablishLinkWithPeer(c.srcPeerID, peerID),
 			nil,
 		)

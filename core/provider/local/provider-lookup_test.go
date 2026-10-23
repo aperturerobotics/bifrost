@@ -24,7 +24,7 @@ func TestLookupLocalProviderDoesNotWaitForPeer(t *testing.T) {
 	sr.AddFactory(NewFactory(b))
 
 	// Load the local provider without waiting for a peer.
-	_, provCtrlRef, err := b.AddDirective(resolver.NewLoadControllerWithConfig(&Config{
+	_, provCtrlRef, err := b.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&Config{
 		ProviderId: ProviderID,
 	}), nil)
 	if err != nil {

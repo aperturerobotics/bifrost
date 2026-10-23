@@ -32,7 +32,7 @@ func newBucketMountWake(ctx context.Context, b bus.Bus, wake func()) *bucketMoun
 
 // watch looks up, once per bucket, each unmounted bucket a candidate names,
 // and wakes the loop when a lookup yields a mounted bucket.
-func (w *bucketMountWake) watch(candidates []*bldr_manifest_world.StartupManifestCandidateEligibility) error {
+func (w *bucketMountWake) watch(ctx context.Context, candidates []*bldr_manifest_world.StartupManifestCandidateEligibility) error {
 	for _, candidate := range candidates {
 		// Look up each unmounted bucket once.
 		bucketID := candidate.UnmountedBucketID
@@ -46,6 +46,7 @@ func (w *bucketMountWake) watch(candidates []*bldr_manifest_world.StartupManifes
 
 		// The resolver adds a value only once the bucket config is known.
 		_, ref, err := w.b.AddDirective(
+			ctx,
 			bucket_lookup.NewBuildBucketLookup(bucketID),
 			directive.NewCallbackHandler(func(directive.AttachedValue) { w.wake() }, nil, nil),
 		)

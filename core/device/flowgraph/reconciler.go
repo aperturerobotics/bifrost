@@ -104,7 +104,7 @@ func (r *Reconciler) Run(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "parse device peer id")
 	}
-	if err := r.applier.Watch(sessionPeerID); err != nil {
+	if err := r.applier.Watch(ctx, sessionPeerID); err != nil {
 		return err
 	}
 
@@ -218,7 +218,7 @@ func (r *Reconciler) reconcile(ctx context.Context, reads *world.ReadSet) error 
 	if err != nil {
 		return err
 	}
-	if err := r.applier.Apply(entries); err != nil {
+	if err := r.applier.Apply(ctx, entries); err != nil {
 		return err
 	}
 	r.setHeld(len(entries) != 0)
@@ -257,7 +257,7 @@ func (r *Reconciler) compilePlaced(ctx context.Context, reads *world.ReadSet) (m
 			wanted[node.Node.GetTypeId()] = struct{}{}
 		}
 	}
-	if err := r.types.Hold(wanted); err != nil {
+	if err := r.types.Hold(ctx, wanted); err != nil {
 		return nil, nil, err
 	}
 

@@ -38,6 +38,7 @@ func (t *webPkgTracker) execute(ctx context.Context) error {
 
 	// we need to resolve the web pkg to construct the server.
 	valCh, di, valRef, err := bus.ExecOneOffWatchCh[web_pkg.LookupWebPkgValue](
+		ctx,
 		t.c.bus,
 		web_pkg.NewLookupWebPkg(webPkgID),
 	)

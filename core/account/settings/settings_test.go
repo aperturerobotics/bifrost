@@ -33,7 +33,7 @@ func setupProviderAccount(ctx context.Context, t *testing.T) (*testbed.Testbed, 
 	providerID := "local"
 	peerID := tb.Volume.GetPeerID()
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 		StorageId:  tb.StorageID,

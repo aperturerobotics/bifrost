@@ -211,6 +211,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 	watchCtx, watchCancel := context.WithCancel(ctx)
 	defer watchCancel()
 	_, signalRef, err := s.w.b.AddDirective(
+		ctx,
 		signaling.NewSignalPeer(s.w.conf.GetSignalingId(), s.w.peerID, s.peerID),
 		directive.NewTypedCallbackHandler(
 			func(v directive.TypedAttachedValue[signaling.SignalPeerSession]) {

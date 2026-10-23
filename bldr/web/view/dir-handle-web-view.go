@@ -45,6 +45,7 @@ func ExHandleWebView(
 
 	// Keep the web view directive active until handling finishes.
 	di, diRef, err := b.AddDirective(
+		ctx,
 		NewHandleWebView(webView),
 		bus.NewCallbackHandler(nil, nil, ctxCancel),
 	)

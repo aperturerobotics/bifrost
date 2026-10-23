@@ -50,7 +50,7 @@ func TestPairingAccountChoice(t *testing.T) {
 					t.Fatal(err)
 				}
 				tb.StaticResolver.AddFactory(session_controller.NewFactory(tb.Bus))
-				_, reference, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{VolumeId: tb.EngineVolumeID}), nil)
+				_, reference, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{VolumeId: tb.EngineVolumeID}), nil)
 				if err != nil {
 					t.Fatal(err)
 				}

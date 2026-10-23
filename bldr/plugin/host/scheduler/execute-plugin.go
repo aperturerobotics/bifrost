@@ -232,7 +232,7 @@ func (t *pluginInstance) execPlugin(ctx context.Context, args *executePluginArgs
 		// alongside it: an import of a dependency's web package waits in
 		// LookupWebPkg until the provider forwards it.
 		for _, dep := range manifest.GetDeps() {
-			_, depRef, err := t.c.bus.AddDirective(bldr_plugin.NewLoadPlugin(dep), nil)
+			_, depRef, err := t.c.bus.AddDirective(ctx, bldr_plugin.NewLoadPlugin(dep), nil)
 			if err != nil {
 				return err
 			}

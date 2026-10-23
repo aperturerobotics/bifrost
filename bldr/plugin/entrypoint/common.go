@@ -48,6 +48,10 @@ type BuildConfigSetFunc func(ctx context.Context, b bus.Bus, le *logrus.Entry) (
 // when the handler is ready.
 type AcceptPluginHostStreamsFunc func(ctx context.Context, srv *srpc.Server, ready func()) error
 
+// EntrypointOriginID names the plugin entrypoint as a directive origin.
+// It covers directives the entrypoint and its served streams add outside a controller.
+const EntrypointOriginID = "bldr/plugin/entrypoint"
+
 // ExecutePluginEntrypoint builds the bus & starts common controllers.
 func ExecutePluginEntrypoint(
 	rctx context.Context,
@@ -69,6 +73,9 @@ func ExecutePluginEntrypoint(
 	// cancel the root context when exiting
 	ctx, ctxCancel := context.WithCancel(rctx)
 	defer ctxCancel()
+
+	// Name the entrypoint as the origin of what it adds outside a controller.
+	ctx = directive.WithOriginController(ctx, EntrypointOriginID)
 
 	// Look up the plugin information and attach it to the context.
 	pluginHost := bldr_plugin.NewSRPCPluginHostClient(pluginHostClient)
@@ -215,7 +222,7 @@ func ExecutePluginEntrypoint(
 
 	// apply config sets
 	mergedConfigSet := configset.MergeConfigSets(configSets...)
-	waitConfigSetStarted, csetRel, err := applyStartupConfigSet(b, mergedConfigSet)
+	waitConfigSetStarted, csetRel, err := applyStartupConfigSet(ctx, b, mergedConfigSet)
 	if err != nil {
 		rel()
 		return err
@@ -377,7 +384,7 @@ func startInitialCapabilityRegistration(
 // wait func returns once every controller in set is running or reported an
 // error, and the first pass of each running InitialCapabilityRegistrar has
 // settled.
-func applyStartupConfigSet(b bus.Bus, set configset.ConfigSet) (func(context.Context) error, func(), error) {
+func applyStartupConfigSet(ctx context.Context, b bus.Bus, set configset.ConfigSet) (func(context.Context) error, func(), error) {
 	// Wait for the set to settle, then for each registrar it started.
 	started := make(chan struct{})
 	var registrars []bldr_plugin.InitialCapabilityRegistrar
@@ -427,6 +434,7 @@ func applyStartupConfigSet(b bus.Bus, set configset.ConfigSet) (func(context.Con
 		close(started)
 	}
 	_, ref, err := b.AddDirective(
+		ctx,
 		configset.NewApplyConfigSet(set),
 		directive.NewCallbackHandler(
 			func(v directive.AttachedValue) {

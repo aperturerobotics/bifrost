@@ -168,7 +168,7 @@ func TestBrowserBootstrapMountsWorldAndColdStartsRemoteCore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve distribution Release World config: %v", err)
 	}
-	_, fetchSetRef, err := tb.GetBus().AddDirective(configset.NewApplyConfigSet(resolved), nil)
+	_, fetchSetRef, err := tb.GetBus().AddDirective(ctx, configset.NewApplyConfigSet(resolved), nil)
 	if err != nil {
 		t.Fatalf("mount distribution Release World on the dist bus: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestBrowserBootstrapMountsWorldAndColdStartsRemoteCore(t *testing.T) {
 	t.Cleanup(releaseHost)
 
 	// Start Core from its remote bucket while background copying is gated.
-	_, loadRef, err := tb.GetBus().AddDirective(bldr_plugin.NewLoadPlugin("spacewave-core"), nil)
+	_, loadRef, err := tb.GetBus().AddDirective(ctx, bldr_plugin.NewLoadPlugin("spacewave-core"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +234,7 @@ func TestBrowserBootstrapMountsWorldAndColdStartsRemoteCore(t *testing.T) {
 	}
 
 	// Apply the same deferred-copy rule to an unconfigured runtime plugin.
-	_, transientLoadRef, err := tb.GetBus().AddDirective(bldr_plugin.NewLoadPlugin("transient-plugin"), nil)
+	_, transientLoadRef, err := tb.GetBus().AddDirective(ctx, bldr_plugin.NewLoadPlugin("transient-plugin"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

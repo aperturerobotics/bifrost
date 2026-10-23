@@ -116,7 +116,7 @@ func TestGenerationKeepsUnavailableLocalPluginLocal(t *testing.T) {
 	}
 	t.Cleanup(ref.Release)
 	gen := waitGeneration(t, rt, nil)
-	addTestDirective(t, gen.GetBus(), bldr_plugin.NewLoadPluginInstanced(localID, "space-a"))
+	addTestDirective(ctx, t, gen.GetBus(), bldr_plugin.NewLoadPluginInstanced(localID, "space-a"))
 
 	// Only the approved manifest lookup reaches the parent, not the plugin load.
 	select {

@@ -58,6 +58,7 @@ func HandleLoadPluginRpc(
 
 	// Add the LoadPlugin directive with value add and remove callbacks.
 	di, ref, err := b.AddDirective(
+		ctx,
 		dir,
 		bus.NewCallbackHandler(
 			func(av directive.AttachedValue) {

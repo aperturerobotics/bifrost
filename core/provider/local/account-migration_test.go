@@ -215,8 +215,6 @@ func waitReplicaMigrationAdmission(ctx context.Context, t *testing.T, account *P
 
 // setupMigrationClient starts an independent account with retained Session routing.
 func setupMigrationClient(ctx context.Context, t *testing.T, network *inproc.Network) (*ProviderAccount, *Session, session.SessionController) {
-	t.Helper()
-
 	// Connect the provider to the test network under its original Session key.
 	tb, _, account, mounted, release := setupProviderAndSessionInternal(ctx, t, func(p *Provider) {
 		p.localNetwork = transport.WithInprocNetwork(network)
@@ -226,13 +224,15 @@ func setupMigrationClient(ctx context.Context, t *testing.T, network *inproc.Net
 		t.Fatal(err)
 	}
 
-	// Register the mounted Session so production recovery can reattach its entry.
+	// Run the Session controller so production recovery can reattach the entry.
 	tb.StaticResolver.AddFactory(session_controller.NewFactory(tb.Bus))
-	_, reference, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{VolumeId: tb.EngineVolumeID}), nil)
+	_, reference, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{VolumeId: tb.EngineVolumeID}), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(reference.Release)
+
+	// Look up the Session controller and register the mounted Session.
 	controller, lookup, err := session.ExLookupSessionController(ctx, tb.Bus, "", false, nil)
 	if err != nil {
 		t.Fatal(err)

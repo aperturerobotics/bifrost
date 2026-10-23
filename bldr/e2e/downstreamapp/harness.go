@@ -503,7 +503,7 @@ func (h *Harness) startupManifestRequests() []manifestFetchRequest {
 
 func (h *Harness) preflightStartupManifests(ctx context.Context) error {
 	h.releaseManifestFetches()
-	if err := h.assertStartupManifestFetches(); err != nil {
+	if err := h.assertStartupManifestFetches(ctx); err != nil {
 		return errors.Wrap(err, "assert startup manifest fetches")
 	}
 	if err := h.waitForManifests(ctx); err != nil {
@@ -512,14 +512,14 @@ func (h *Harness) preflightStartupManifests(ctx context.Context) error {
 	return nil
 }
 
-func (h *Harness) assertStartupManifestFetches() error {
+func (h *Harness) assertStartupManifestFetches(ctx context.Context) error {
 	b := h.devtool.GetBus()
 	for _, req := range h.startupManifestRequests() {
 		if _, ok := h.projConfig.GetManifests()[req.pluginID]; !ok {
 			return errors.Errorf("startup manifest %q not found in project config", req.pluginID)
 		}
 		waitState := newManifestWaitState(req.pluginID)
-		di, ref, err := b.AddDirective(req.directive(), waitState.handler())
+		di, ref, err := b.AddDirective(ctx, req.directive(), waitState.handler())
 		if err != nil {
 			return errors.Wrapf(err, "assert manifest fetch for %s", req.pluginID)
 		}

@@ -504,6 +504,7 @@ func (d *DevtoolBus) executeWebWasm(
 		}
 		for _, preflight := range startupManifestPreflights {
 			_, ref, err := d.GetBus().AddDirective(
+				ctx,
 				bldr_manifest.NewFetchManifest(
 					preflight.PluginID,
 					nil,

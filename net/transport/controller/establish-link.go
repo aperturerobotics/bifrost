@@ -33,7 +33,7 @@ func (o *establishLinkResolver) Resolve(ctx context.Context, handler directive.R
 	if sourcePeerID == "" {
 		// If the directive filtered only by destination peer ID, add a EstablishLink
 		// directive for the source to ensure there is a reference.
-		_, estLinkRef, err := o.c.bus.AddDirective(link.NewEstablishLinkWithPeer(tptSourcePeerID, targetPeerID), nil)
+		_, estLinkRef, err := o.c.bus.AddDirective(ctx, link.NewEstablishLinkWithPeer(tptSourcePeerID, targetPeerID), nil)
 		if err != nil {
 			return err
 		}

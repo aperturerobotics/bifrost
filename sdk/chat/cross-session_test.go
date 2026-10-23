@@ -49,7 +49,7 @@ func testChatResourceCrossSessionAppend(t *testing.T, transactionID string) {
 	// Start the local provider that hosts both Sessions.
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
 	tb.StaticResolver.AddFactory(sobject_world_engine.NewFactory(tb.Bus))
-	_, providerController, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, providerController, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: "local", PeerId: tb.Volume.GetPeerID().String(), StorageId: tb.StorageID,
 	}), nil)
 	if err != nil {

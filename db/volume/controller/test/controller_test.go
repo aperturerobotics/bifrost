@@ -39,6 +39,7 @@ func TestBucketHandleFlush(t *testing.T) {
 	// Request a bucket API before its configuration exists.
 	vals := make(chan bucket.BuildBucketAPIValue)
 	_, bapiRef, err := b.AddDirective(
+		ctx,
 		bucket.NewBuildBucketAPI(bucketID, volumeID),
 		bus.NewCallbackHandler(
 			func(av directive.AttachedValue) {

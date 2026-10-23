@@ -51,7 +51,7 @@ func StartEngine(
 	if factory != nil {
 		load = loader.NewExecController(factory, conf)
 	}
-	_, ref, err := b.AddDirective(load, nil)
+	_, ref, err := b.AddDirective(ctx, load, nil)
 	if err != nil {
 		return nil, nil, err
 	}

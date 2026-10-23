@@ -80,9 +80,11 @@ func ExWatchObjectTypeMetadata(
 	typeID, engineID string,
 	onChange func(metadata *ObjectTypeMetadata),
 ) (release func(), err error) {
+	// Watch the lookup and stop delivering values once released.
 	var mtx sync.Mutex
 	var released bool
 	di, ref, err := bus.ExecOneOffWatchCb(
+		ctx,
 		func(val directive.TypedAttachedValue[LookupObjectTypeMetadataValue]) bool {
 			mtx.Lock()
 			defer mtx.Unlock()

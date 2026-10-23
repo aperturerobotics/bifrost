@@ -148,6 +148,7 @@ func (h *deviceRemoteShellHandler) HandleMountedStream(ctx context.Context, ms l
 
 		// Retain the peer link while its remote shell session runs.
 		_, elRef, err := h.b.AddDirective(
+			ctx,
 			link.NewEstablishLinkWithPeer(ms.GetLink().GetLocalPeer(), ms.GetPeerID()),
 			nil,
 		)

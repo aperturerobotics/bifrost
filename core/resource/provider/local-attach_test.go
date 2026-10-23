@@ -50,7 +50,7 @@ func TestAttachAccountRecoversSpaceAfterCatalogLoss(t *testing.T) {
 		}
 
 		// Load the Session catalog on the mounted volume.
-		_, catalogRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{
+		_, catalogRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{
 			VolumeId: catalogVolume.GetID(),
 		}), nil)
 		if err != nil {
@@ -60,7 +60,7 @@ func TestAttachAccountRecoversSpaceAfterCatalogLoss(t *testing.T) {
 		}
 
 		// Load the local provider with the testbed storage and peer.
-		_, providerRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+		_, providerRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 			ProviderId: provider_local.ProviderID,
 			PeerId:     tb.Volume.GetPeerID().String(),
 			StorageId:  tb.StorageID,

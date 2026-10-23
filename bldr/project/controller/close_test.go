@@ -90,6 +90,7 @@ type startupTestBus struct {
 }
 
 func (b *startupTestBus) AddDirective(
+	ctx context.Context,
 	dir directive.Directive,
 	ref directive.ReferenceHandler,
 ) (directive.Instance, directive.Reference, error) {
@@ -99,7 +100,7 @@ func (b *startupTestBus) AddDirective(
 	if b.addDirectiveRelease != nil {
 		<-b.addDirectiveRelease
 	}
-	return b.Bus.AddDirective(dir, ref)
+	return b.Bus.AddDirective(ctx, dir, ref)
 }
 
 func (b *startupTestBus) GetControllers() []controllerbus_controller.Controller {

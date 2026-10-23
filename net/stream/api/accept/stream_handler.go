@@ -31,6 +31,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 	// Keep the peer link established while its mounted stream serves an RPC.
 	s := strm.GetStream()
 	_, estLinkInst, err := m.b.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(strm.GetLink().GetLocalPeer(), strm.GetPeerID()),
 		nil,
 	)

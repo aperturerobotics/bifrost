@@ -1,6 +1,7 @@
 package device_flowgraph
 
 import (
+	"context"
 	"sync"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -70,8 +71,9 @@ func newConfigApplier(b bus.Bus, notify func()) *configApplier {
 
 // Watch follows the running transport of the Session with peer ID id, and wakes
 // the reconciler as it starts, stops or restarts.
-func (a *configApplier) Watch(id peer.ID) error {
+func (a *configApplier) Watch(ctx context.Context, id peer.ID) error {
 	_, ref, err := bus.ExecOneOffWatchCb(
+		ctx,
 		func(val directive.TypedAttachedValue[*transport.SessionTransport]) bool {
 			// Follow the lookup as the transport starts and stops.
 			a.mtx.Lock()
@@ -98,7 +100,7 @@ func (a *configApplier) Watch(id peer.ID) error {
 // Session bus. It does nothing when the entries equal the applied ones. While
 // no Session runs the entries wait, and a Session bus that replaces the one
 // the ConfigSet runs on gets the entries applied again.
-func (a *configApplier) Apply(entries map[string]config.Config) error {
+func (a *configApplier) Apply(ctx context.Context, entries map[string]config.Config) error {
 	// Release the entries of a Session bus that stopped or was replaced.
 	sessionBus := a.currentBus()
 	if sessionBus != a.sessionBus {
@@ -127,7 +129,7 @@ func (a *configApplier) Apply(entries map[string]config.Config) error {
 	var applied *appliedConfigSet
 	if len(next) != 0 {
 		var err error
-		applied, err = a.add(next, a.current)
+		applied, err = a.add(ctx, next, a.current)
 		if err != nil {
 			return err
 		}
@@ -151,7 +153,7 @@ func (a *configApplier) entry(key string, conf config.Config) configset.Controll
 }
 
 // add applies set with a new ApplyConfigSet directive that replaces previous.
-func (a *configApplier) add(set configset.ConfigSet, previous *appliedConfigSet) (*appliedConfigSet, error) {
+func (a *configApplier) add(ctx context.Context, set configset.ConfigSet, previous *appliedConfigSet) (*appliedConfigSet, error) {
 	// Track each entry's state as the ConfigSet controller reports it.
 	applied := &appliedConfigSet{
 		set:            set,
@@ -159,6 +161,7 @@ func (a *configApplier) add(set configset.ConfigSet, previous *appliedConfigSet)
 		states:         make(map[uint32]configset.State),
 	}
 	_, ref, err := a.sessionBus.AddDirective(
+		ctx,
 		configset.NewApplyConfigSet(set),
 		bus.NewCallbackHandler(
 			func(av directive.AttachedValue) {

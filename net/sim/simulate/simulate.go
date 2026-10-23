@@ -102,7 +102,7 @@ func NewSimulator(
 
 	// Apply each peer's deferred configuration after all links exist.
 	for _, addedPeer := range allPeers {
-		if err := addedPeer.finishSetup(); err != nil {
+		if err := addedPeer.finishSetup(ctx); err != nil {
 			s.ctxCancel()
 			return nil, err
 		}

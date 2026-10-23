@@ -183,7 +183,7 @@ func BuildDistBus(
 			return nil, err
 		}
 	}
-	configSetAttached, releaseConfigSet, err := applyConfigSet(b, configSet)
+	configSetAttached, releaseConfigSet, err := applyConfigSet(ctx, b, configSet)
 	if err != nil {
 		rel()
 		return nil, err
@@ -452,7 +452,7 @@ func BuildDistBus(
 
 	// Create LoadPlugin directives for the startup plugins.
 	for _, pluginID := range distMeta.GetStartupPlugins() {
-		_, pluginRef, err := b.AddDirective(bldr_plugin.NewLoadPlugin(pluginID), nil)
+		_, pluginRef, err := b.AddDirective(ctx, bldr_plugin.NewLoadPlugin(pluginID), nil)
 		if err != nil {
 			le.WithError(err).WithField("plugin-id", pluginID).Warn("failed to load startup plugin")
 			continue
@@ -486,7 +486,7 @@ func BuildDistBus(
 // channel closes once every controller in the set is constructed or has
 // failed, so the directive resolvers of the constructed controllers are
 // attached to b.
-func applyConfigSet(b bus.Bus, configSet configset.ConfigSet) (attached <-chan struct{}, release func(), err error) {
+func applyConfigSet(ctx context.Context, b bus.Bus, configSet configset.ConfigSet) (attached <-chan struct{}, release func(), err error) {
 	// An empty set has nothing to attach.
 	done := make(chan struct{})
 	if len(configSet) == 0 {
@@ -520,7 +520,7 @@ func applyConfigSet(b bus.Bus, configSet configset.ConfigSet) (attached <-chan s
 			close(done)
 		}
 	}
-	_, ref, err := b.AddDirective(configset.NewApplyConfigSet(configSet), bus.NewCallbackHandler(settle, nil, nil))
+	_, ref, err := b.AddDirective(ctx, configset.NewApplyConfigSet(configSet), bus.NewCallbackHandler(settle, nil, nil))
 	if err != nil {
 		return nil, nil, err
 	}

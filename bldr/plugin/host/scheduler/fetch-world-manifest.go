@@ -100,6 +100,7 @@ func (t *pluginInstance) execFetchWorldManifestCore(ctx context.Context, hosts *
 
 	// Add the FetchManifest directive for this plugin and platform set.
 	di, ref, err := t.c.bus.AddDirective(
+		ctx,
 		bldr_manifest.NewFetchManifest(
 			// use pluginID as manifest id
 			t.pluginID,

@@ -145,7 +145,7 @@ func mountTestSpace(t *testing.T) world.Engine {
 
 	// Load the local provider controller.
 	providerID := "local"
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     tb.Volume.GetPeerID().String(),
 		StorageId:  tb.StorageID,
@@ -156,7 +156,7 @@ func mountTestSpace(t *testing.T) world.Engine {
 	t.Cleanup(provCtrlRef.Release)
 
 	// Load the space sobject controller.
-	_, spaceSobjectCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&Config{}), nil)
+	_, spaceSobjectCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&Config{}), nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

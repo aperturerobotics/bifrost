@@ -71,7 +71,7 @@ func (o *BldrDevtoolStatusObserver) GetStatusProducer() *BldrDevtoolStatusProduc
 func (o *BldrDevtoolStatusObserver) Execute(ctx context.Context) error {
 	defer o.Close()
 
-	o.rescanDirectives()
+	o.rescanDirectives(ctx)
 	bcast := o.b.GetDirectivesBroadcast()
 	for {
 		var waitCh <-chan struct{}
@@ -82,7 +82,7 @@ func (o *BldrDevtoolStatusObserver) Execute(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-waitCh:
-			o.rescanDirectives()
+			o.rescanDirectives(ctx)
 		}
 	}
 }
@@ -122,7 +122,7 @@ func (o *BldrDevtoolStatusObserver) newObservedDirective(key string) (keyed.Rout
 	return nil, &observedDirective{key: key}
 }
 
-func (o *BldrDevtoolStatusObserver) rescanDirectives() {
+func (o *BldrDevtoolStatusObserver) rescanDirectives(ctx context.Context) {
 	// Skip the rescan if the observer already closed.
 	o.mtx.Lock()
 	if o.closed {
@@ -174,7 +174,7 @@ func (o *BldrDevtoolStatusObserver) rescanDirectives() {
 			continue
 		}
 		obs.configure(spec)
-		obs.attach(spec.di)
+		obs.attach(ctx, spec.di)
 		if !o.observedStillActive(key, obs) {
 			obs.release()
 		}

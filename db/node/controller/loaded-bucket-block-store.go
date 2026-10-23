@@ -36,6 +36,7 @@ func (b *loadedBucket) newLoadedBucketBlockStore(blockStoreID string) (keyed.Rou
 func (l *loadedBucketBlockStore) execute(ctx context.Context) error {
 	// Watch the bucket API for this block store.
 	_, diRef, err := l.b.c.b.AddDirective(
+		ctx,
 		bucket.NewBuildBucketAPI(l.b.bucketID, l.blockStoreID),
 		l,
 	)

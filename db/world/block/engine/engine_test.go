@@ -680,7 +680,7 @@ func TestWorldEngineWatchReload(t *testing.T) {
 	initConfigSet := configset.ConfigSet{
 		engineID: configset.NewControllerConfig(1, initWorldEngConf),
 	}
-	_, initConfigSetRef, err := b.AddDirective(configset.NewApplyConfigSet(initConfigSet), nil)
+	_, initConfigSetRef, err := b.AddDirective(ctx, configset.NewApplyConfigSet(initConfigSet), nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -835,7 +835,7 @@ func TestWorldEngineWatchReload(t *testing.T) {
 	updConfigSet := configset.ConfigSet{
 		engineID: configset.NewControllerConfig(2, updWorldEngConf),
 	}
-	_, updConfigSetRef, err := b.AddDirective(configset.NewApplyConfigSet(updConfigSet), nil)
+	_, updConfigSetRef, err := b.AddDirective(ctx, configset.NewApplyConfigSet(updConfigSet), nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

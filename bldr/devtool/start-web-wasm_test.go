@@ -131,6 +131,7 @@ func TestCachedManifestFetchControllerDoesNotEmitEmptyManifestValue(t *testing.T
 		nil,
 	)
 	_, ref, err := d.GetBus().AddDirective(
+		ctx,
 		bldr_manifest.NewFetchManifest("missing-core", nil, []string{"web/js/wasm"}, 0),
 		handler,
 	)

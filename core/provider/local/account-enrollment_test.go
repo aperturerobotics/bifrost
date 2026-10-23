@@ -175,7 +175,7 @@ func TestAccountPairingExchange(t *testing.T) {
 
 			// Use the real local Session list controller and existing account fixtures.
 			tb.StaticResolver.AddFactory(session_controller.NewFactory(tb.Bus))
-			_, controllerRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{VolumeId: tb.EngineVolumeID}), nil)
+			_, controllerRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{VolumeId: tb.EngineVolumeID}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -5,6 +5,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/pkg/errors"
@@ -17,6 +18,8 @@ type ResourceServer struct {
 	rootResourceMux srpc.Invoker
 	// filter wraps the invoker of every served resource, or is nil.
 	filter InvokerFilter
+	// originID is the origin controller of directives added from resource calls.
+	originID string
 
 	// bcast guards the client and resource lifecycle state below.
 	bcast broadcast.Broadcast
@@ -52,6 +55,23 @@ func NewFilteredResourceServer(rootResourceMux srpc.Invoker, filter InvokerFilte
 	}
 }
 
+// SetOriginController names controllerID as the origin of directives from resource calls.
+// The resources those calls construct use the same origin.
+// A call whose context already names an origin controller keeps it.
+// Call it before serving.
+func (s *ResourceServer) SetOriginController(controllerID string) {
+	s.originID = controllerID
+}
+
+// withOrigin returns ctx naming the server's origin controller.
+// A ctx that already names an origin controller is returned unchanged.
+func (s *ResourceServer) withOrigin(ctx context.Context) context.Context {
+	if s.originID == "" || directive.OriginFromContext(ctx).ControllerID != "" {
+		return ctx
+	}
+	return directive.WithOriginController(ctx, s.originID)
+}
+
 // Register registers the Resource service with mux.
 func (s *ResourceServer) Register(mux srpc.Mux) error {
 	return resource.SRPCRegisterResourceService(mux, s)
@@ -71,7 +91,7 @@ func (s *ResourceServer) ResourceClient(strm resource.SRPCResourceService_Resour
 	}
 
 	// Register the immutable generation and its outbound wait channel.
-	clientCtx, clientCancel := context.WithCancel(ctx)
+	clientCtx, clientCancel := context.WithCancel(s.withOrigin(ctx))
 	var client *RemoteResourceClient
 	var clientHandleID uint32
 	var waitCh <-chan struct{}

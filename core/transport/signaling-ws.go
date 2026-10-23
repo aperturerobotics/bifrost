@@ -199,7 +199,7 @@ func (c *wsSignalingCtrl) executeGeneration(ctx context.Context) error {
 		peerRef := client.AddPeerRef(pid)
 		sess := signaling_rpc_client.NewSessionWithRef(peerRef)
 		di := signaling.NewHandleSignalPeer(c.sigID, sess)
-		_, ref, addErr := c.b.AddDirective(di, nil)
+		_, ref, addErr := c.b.AddDirective(ctx, di, nil)
 		if addErr != nil {
 			peerRef.Release()
 			c.le.WithError(addErr).Warn("failed to add HandleSignalPeer directive")

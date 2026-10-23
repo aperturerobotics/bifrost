@@ -53,6 +53,7 @@ func (s *sessionTracker) execute(ctx context.Context) error {
 	if !s.c.conf.GetDisableListen() {
 		sess := NewSessionWithRef(signalRef)
 		di, dirRef, err := s.c.b.AddDirective(
+			ctx,
 			signaling.NewHandleSignalPeer(
 				s.c.conf.GetSignalingId(),
 				sess,

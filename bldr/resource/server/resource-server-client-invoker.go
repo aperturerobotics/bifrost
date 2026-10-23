@@ -39,7 +39,7 @@ func (c *resourceServerClientInvoker) invokeMethod(serviceID, methodID string, s
 	resourceCtx := newResourceRPCContext(c.client, c.parentResourceID)
 	defer resourceCtx.releaseUnpublished()
 	resource.OnResourceRpcAbandon(strm.Context(), resourceCtx.abandon)
-	childCtx := WithResourceClientContext(strm.Context(), resourceCtx)
+	childCtx := WithResourceClientContext(c.client.server.withOrigin(strm.Context()), resourceCtx)
 	return c.mux.InvokeMethod(serviceID, methodID, &resourceRPCStream{
 		Stream:   srpc.NewStreamWithContext(strm, childCtx),
 		resource: resourceCtx,

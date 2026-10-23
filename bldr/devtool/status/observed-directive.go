@@ -1,6 +1,7 @@
 package status
 
 import (
+	"context"
 	"sync"
 
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -43,9 +44,9 @@ func (o *observedDirective) configure(spec observedDirectiveSpec) {
 	o.mtx.Unlock()
 }
 
-func (o *observedDirective) attach(di directive.Instance) {
+func (o *observedDirective) attach(ctx context.Context, di directive.Instance) {
 	// Observe directive state and disposal while retaining a weak reference.
-	weakRef := di.AddReference(nil, true)
+	weakRef := di.AddReference(ctx, nil, true)
 	releaseState := di.AddStateCallback(o.update)
 	releaseDispose := di.AddDisposeCallback(o.dispose)
 

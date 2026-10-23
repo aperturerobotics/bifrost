@@ -76,6 +76,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	c.streams.SetContext(ctx, false)
 	defer c.streams.ClearContext()
 	_, solicitRef, err := c.b.AddDirective(
+		ctx,
 		link_solicit.NewSolicitProtocol(ProtocolID, nil, "", 0),
 		directive.NewTypedCallbackHandler(
 			func(v directive.TypedAttachedValue[link_solicit.SolicitMountedStream]) {
@@ -92,6 +93,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 	defer solicitRef.Release()
 
+	// Wait for the controller to stop.
 	<-ctx.Done()
 	return ctx.Err()
 }

@@ -187,6 +187,7 @@ type remoteResourceHandler struct {
 func (h *remoteResourceHandler) HandleMountedStream(ctx context.Context, ms link.MountedStream) error {
 	// Keep the link to the remote session while its client is connected.
 	_, elRef, err := h.b.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(ms.GetLink().GetLocalPeer(), ms.GetPeerID()),
 		nil,
 	)

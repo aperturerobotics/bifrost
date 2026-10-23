@@ -199,6 +199,7 @@ func ExPluginLoadAccess(
 
 	// Start a one-off watch for the plugin load directive on the bus.
 	di, dirRef, err := bus.ExecOneOffWatchRoutine(
+		ctx,
 		routineCtr,
 		b,
 		NewLoadPlugin(pluginID),

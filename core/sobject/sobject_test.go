@@ -32,7 +32,7 @@ func TestSharedObject(t *testing.T) {
 	// Create the provider controller
 	providerID := "local"
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 	}), nil)

@@ -37,7 +37,7 @@ func TestResolveSpaceWithoutConcurrentMounter(t *testing.T) {
 	tb.StaticResolver.AddFactory(sobject_world_engine.NewFactory(tb.Bus))
 
 	// Load the session controller from the testbed bus.
-	_, sessCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{
+	_, sessCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{
 		VolumeId: tb.EngineVolumeID,
 	}), nil)
 	if err != nil {
@@ -47,7 +47,7 @@ func TestResolveSpaceWithoutConcurrentMounter(t *testing.T) {
 
 	// Load a local provider backed by the testbed volume.
 	providerID := "local"
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 		StorageId:  tb.StorageID,
@@ -58,7 +58,7 @@ func TestResolveSpaceWithoutConcurrentMounter(t *testing.T) {
 	defer provCtrlRef.Release()
 
 	// Load the Space SharedObject controller.
-	_, spaceSobjectCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&space_sobject.Config{}), nil)
+	_, spaceSobjectCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&space_sobject.Config{}), nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

@@ -111,6 +111,7 @@ func Main(
 			}
 			set := configset.MergeConfigSets(merged...)
 			_, ref, err := b.GetBus().AddDirective(
+				ctx,
 				configset.NewApplyConfigSet(set),
 				nil,
 			)

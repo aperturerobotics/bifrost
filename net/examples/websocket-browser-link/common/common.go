@@ -62,6 +62,7 @@ func BuildCommonBus(ctx context.Context) (bus.Bus, *static.Resolver, crypto.Priv
 	le = le.WithField("peer-id", peerID.String())
 	le.Debug("constructing peer controller")
 	_, _, err = b.AddDirective(
+		ctx,
 		resolver.NewLoadControllerWithConfig(&peer_controller.Config{
 			PrivKey: string(peerPrivKeyPem),
 		}),
@@ -84,7 +85,7 @@ func BuildCommonBus(ctx context.Context) (bus.Bus, *static.Resolver, crypto.Priv
 	}
 
 	// use pubsub: floodsub
-	_, _, err = b.AddDirective(resolver.NewLoadControllerWithConfig(&floodsub_controller.Config{
+	_, _, err = b.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&floodsub_controller.Config{
 		FloodsubConfig: &floodsub.Config{},
 	}), nil)
 	if err != nil {

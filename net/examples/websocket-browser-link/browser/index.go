@@ -60,6 +60,7 @@ func main() {
 
 // run runs the demo.
 func run(ctx context.Context, le *logrus.Entry) error {
+	// build the bus with the websocket transport factory
 	b, sr, privKey, err := common.BuildCommonBus(ctx)
 	if err != nil {
 		return err
@@ -81,6 +82,7 @@ func run(ctx context.Context, le *logrus.Entry) error {
 	}
 	_ = resp.Body.Close()
 
+	// parse the peer id
 	peerIDStr := string(body)
 	remotePeerID, err := peer.IDB58Decode(peerIDStr)
 	if err != nil {
@@ -88,14 +90,15 @@ func run(ctx context.Context, le *logrus.Entry) error {
 	}
 	peerIDStr = remotePeerID.String()
 
+	// load the websocket transport dialing the peer
+	// NOTE: deterministic due to the use of a prng to generate the key
 	wsBaseURL := getWSBaseURL()
 	le.
 		WithField("url", wsBaseURL).
 		WithField("peer", peerIDStr).
 		Debug("contacting websocket peer")
-
-	// NOTE: deterministic due to the use of a prng to generate the key
 	_, wsRef, err := b.AddDirective(
+		ctx,
 		resolver.NewLoadControllerWithConfig(&wtpt.Config{
 			Dialers: map[string]*dialer.DialerOpts{
 				peerIDStr: {
@@ -107,9 +110,14 @@ func run(ctx context.Context, le *logrus.Entry) error {
 			le.Infof("websocket transport resolved: %#v", val.GetValue())
 		}, nil, nil),
 	)
+	if err != nil {
+		return err
+	}
 	defer wsRef.Release()
 
+	// establish a link with the peer
 	_, dialRef, err := b.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer("", remotePeerID),
 		nil,
 	)
@@ -127,6 +135,7 @@ func run(ctx context.Context, le *logrus.Entry) error {
 	defer channelSubRef.Release()
 	le.Infof("built channel subscription for channel %s", channelID)
 
+	// publish a message every second
 	for {
 		select {
 		case <-ctx.Done():

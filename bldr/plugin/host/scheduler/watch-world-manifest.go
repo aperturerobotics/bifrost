@@ -114,7 +114,7 @@ func (t *pluginInstance) processManifestWorldStateCore(
 	// Watch the buckets of candidates that read as unmounted, since their
 	// mount wakes no World watch.
 	if mounts := t.bucketMounts.Load(); mounts != nil {
-		if err := mounts.watch(candidateEligibility); err != nil {
+		if err := mounts.watch(ctx, candidateEligibility); err != nil {
 			return true, nil, err
 		}
 	}

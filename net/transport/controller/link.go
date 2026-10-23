@@ -44,6 +44,7 @@ func newEstablishedLink(
 	// The controller will match the directive to this link.
 	// Note: the directive has an UnrefDisposeDur assigned: minimum hold-open time.
 	di, dir, err := b.AddDirective(
+		rctx,
 		link.NewEstablishLinkWithPeer(lnk.GetLocalPeer(), lnk.GetRemotePeer()),
 		nil,
 	)

@@ -548,6 +548,7 @@ func (c *Controller) reconcilePlugins(ctx context.Context, ws world.WorldState, 
 
 		// Add the LoadPlugin directive to the plugin bus.
 		di, ref, err := c.pluginBus().AddDirective(
+			ctx,
 			demand,
 			nil,
 		)

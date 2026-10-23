@@ -61,7 +61,7 @@ func TestOpenNewerFormatFails(t *testing.T) {
 		func() backoff.BackOff { return restarts },
 		directive.ValueOptions{},
 	)
-	_, execRef, err := b.AddDirective(execDir, nil)
+	_, execRef, err := b.AddDirective(ctx, execDir, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

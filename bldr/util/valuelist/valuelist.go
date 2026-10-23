@@ -80,6 +80,7 @@ func WatchDirective[T any, R WatchDirectiveResponse[T]](
 
 	// Add the directive with callbacks that queue added and removed values.
 	di, dirRef, err := b.AddDirective(
+		ctx,
 		dir,
 		bus.NewCallbackHandler(
 			func(av directive.AttachedValue) {

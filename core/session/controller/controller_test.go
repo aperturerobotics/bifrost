@@ -33,7 +33,7 @@ func TestRegisterSessionSetsCreatedAt(t *testing.T) {
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
 
 	// Load the Session controller against the testbed volume.
-	_, sessCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{
+	_, sessCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{
 		VolumeId: tb.EngineVolumeID,
 	}), nil)
 	if err != nil {
@@ -43,7 +43,7 @@ func TestRegisterSessionSetsCreatedAt(t *testing.T) {
 
 	// Load the local provider against the testbed peer and storage.
 	providerID := "local"
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 		StorageId:  tb.StorageID,

@@ -62,7 +62,7 @@ func TestAccountMergeCloudProviders(t *testing.T) {
 			// Load the session controller and register the local session.
 			tb.StaticResolver.AddFactory(session_controller.NewFactory(tb.Bus))
 			tb.StaticResolver.AddFactory(provider_spacewave.NewFactory(tb.Bus, transport.WithInprocNetwork(network)))
-			_, controllerRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{VolumeId: tb.EngineVolumeID}), nil)
+			_, controllerRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{VolumeId: tb.EngineVolumeID}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -92,7 +92,7 @@ func TestAccountMergeCloudProviders(t *testing.T) {
 			defer releaseDecoder()
 
 			// Load the spacewave cloud provider against the fixture endpoint.
-			_, cloudRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_spacewave.Config{ProviderId: "spacewave", Endpoint: endpoint, AccountEndpoint: endpoint, PublicBaseUrl: endpoint, SigningEnvPrefix: "spacewave"}), nil)
+			_, cloudRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_spacewave.Config{ProviderId: "spacewave", Endpoint: endpoint, AccountEndpoint: endpoint, PublicBaseUrl: endpoint, SigningEnvPrefix: "spacewave"}), nil)
 			if err != nil {
 				t.Fatal(err)
 			}

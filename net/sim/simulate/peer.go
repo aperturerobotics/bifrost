@@ -133,8 +133,9 @@ func newPeer(ctx context.Context, le *logrus.Entry, gp *graph.Peer, verbose bool
 }
 
 // finishSetup applies the peer config set once simulator startup is complete.
-func (p *Peer) finishSetup() error {
+func (p *Peer) finishSetup(ctx context.Context) error {
 	_, applyRef, err := p.testbed.Bus.AddDirective(
+		ctx,
 		configset.NewApplyConfigSet(p.graphPeer.GetConfigSet()),
 		nil,
 	)

@@ -190,6 +190,7 @@ func (s *SOSync) runSolicitationGeneration(ctx context.Context) (bool, error) {
 	// Publish one solicitation lifetime and classify each accepted stream result.
 	dir := link_solicit.NewSolicitProtocol(SyncProtocolID, []byte(s.soID), "", 0)
 	_, solicitRef, err := s.b.AddDirective(
+		ctx,
 		dir,
 		directive.NewTypedCallbackHandler[link_solicit.SolicitMountedStream](
 			func(v directive.TypedAttachedValue[link_solicit.SolicitMountedStream]) {

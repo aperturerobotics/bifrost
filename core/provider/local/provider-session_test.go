@@ -48,7 +48,7 @@ func setupProviderAndSession(ctx context.Context, t *testing.T, signalingURL ...
 		provCfg.SignalingEnvPrefix = signalingURL[1]
 	}
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(provCfg), nil)
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(provCfg), nil)
 	if err != nil {
 		tb.Release()
 		t.Fatal(err)

@@ -314,6 +314,7 @@ func (c *Controller) Execute(rctx context.Context) (rerr error) {
 	// discovery below that resolves its startup.
 	if matID := c.conf.GetMaterializerPluginId(); matID != "" && !c.conf.GetDisableCopyManifest() {
 		_, matRef, err := c.bus.AddDirective(
+			ctx,
 			bldr_plugin.NewLoadPluginInstanced(matID, c.conf.GetInstanceKey()),
 			nil,
 		)
@@ -559,6 +560,7 @@ func (c *Controller) buildPluginMux(
 		registrationDone,
 	)
 	resourceSrv := resource_server.NewResourceServer(pluginHostRoot.GetMux())
+	resourceSrv.SetOriginController(ControllerID)
 	_ = resourceSrv.Register(mux)
 
 	// export this scheduler's plugin hosts to trusted plugins

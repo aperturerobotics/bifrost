@@ -125,10 +125,9 @@ func getWSBaseURL() string {
 
 func connectWebRTC(this js.Value, args []js.Value) interface{} {
 	go func() {
+		// Create bus and resolver
 		le.Info("Initializing Bifrost bus...")
 		ctx := context.Background()
-
-		// Create bus and resolver
 		var err error
 		localB, sr, err := core.NewCoreBus(ctx, le)
 		if err != nil {
@@ -149,24 +148,24 @@ func connectWebRTC(this js.Value, args []js.Value) interface{} {
 			le.WithError(err).Error("failed to create local peer")
 			return
 		}
-
 		privKey, err = localPeer.GetPrivKey(ctx)
 		if err != nil {
 			le.WithError(err).Error("failed to get private key")
 			return
 		}
 
+		// Encode the private key for the peer controller
 		localPeerID := localPeer.GetPeerID()
 		peerPrivKeyPem, err := keypem.MarshalPrivKeyPem(privKey)
 		if err != nil {
 			le.WithError(err).Error("failed to marshal private key")
 			return
 		}
-
 		le.Infof("Local peer ID: %s", localPeerID.String())
 
 		// Load the peer controller
 		_, _, err = b.AddDirective(
+			ctx,
 			resolver.NewLoadControllerWithConfig(&peer_controller.Config{
 				PrivKey: string(peerPrivKeyPem),
 			}),
@@ -182,8 +181,8 @@ func connectWebRTC(this js.Value, args []js.Value) interface{} {
 		// Connect to signaling server via WebSocket
 		wsBaseURL := getWSBaseURL()
 		le.Infof("Connecting to signaling server at %s", wsBaseURL)
-
 		_, wsRef, err := b.AddDirective(
+			ctx,
 			resolver.NewLoadControllerWithConfig(&websocket.Config{
 				Dialers: map[string]*dialer.DialerOpts{
 					signalingServerID: {
@@ -204,6 +203,7 @@ func connectWebRTC(this js.Value, args []js.Value) interface{} {
 		// Start signaling client
 		le.Info("Starting signaling client...")
 		_, signalingRef, err := b.AddDirective(
+			ctx,
 			resolver.NewLoadControllerWithConfig(&signaling_rpc_client.Config{
 				SignalingId: "webrtc",
 				ProtocolId:  "webrtc/signaling",
@@ -224,6 +224,7 @@ func connectWebRTC(this js.Value, args []js.Value) interface{} {
 		// Start WebRTC transport
 		le.Info("Starting WebRTC transport...")
 		_, webrtcRef, err := b.AddDirective(
+			ctx,
 			resolver.NewLoadControllerWithConfig(&webrtc.Config{
 				SignalingId: "webrtc",
 				WebRtc: &webrtc.WebRtcConfig{
@@ -257,8 +258,8 @@ func connectWebRTC(this js.Value, args []js.Value) interface{} {
 			le.WithError(err).Error("failed to decode backend peer ID")
 			return
 		}
-
 		_, linkRef, err := b.AddDirective(
+			ctx,
 			link.NewEstablishLinkWithPeer("", remotePeerID),
 			bus.NewCallbackHandler(func(val directive.AttachedValue) {
 				le.Info("Link established with backend peer!")
@@ -270,9 +271,8 @@ func connectWebRTC(this js.Value, args []js.Value) interface{} {
 		}
 		defer linkRef.Release()
 
-		le.Info("WebRTC connection ready! You can now use fetchViaWebRTC().")
-
 		// Keep connection alive
+		le.Info("WebRTC connection ready! You can now use fetchViaWebRTC().")
 		<-ctx.Done()
 	}()
 

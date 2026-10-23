@@ -64,11 +64,14 @@ func (c *Controller) Close() error {
 // Missing helper binaries are logged and tolerated so the rest of the plugin
 // stack still boots on platforms without a helper.
 func (c *Controller) Execute(ctx context.Context) error {
+	// Find the helper binary.
 	helperPath, ok := resolveHelperPath(c.conf.GetHelperBinaryName())
 	if !ok {
 		c.le.Warn("spacewave-helper binary not found next to entrypoint or host executable; skipping loader UI")
 		return nil
 	}
+
+	// Create the storage root.
 	projectID := c.conf.ResolvedProjectID()
 	rootDir, err := bldr_dist_entrypoint.DetermineStorageRoot(projectID)
 	if err != nil {
@@ -78,6 +81,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		return errors.Wrap(err, "create storage root")
 	}
 
+	// Start the helper in loading mode.
 	iconPath := resolveIconPath(c.conf.GetIconPath())
 	client, err := launcher_helper.NewLoadingClient(ctx, c.le, rootDir, helperPath, iconPath)
 	if err != nil {
@@ -90,6 +94,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		}
 	}()
 
+	// Render the initial progress.
 	pluginIDs := c.conf.ResolvedWatchPluginIDs()
 	progress := ui.NewTracker(client, c.le, pluginIDs)
 	progress.Render()
@@ -99,6 +104,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	// window closes even if plugin-level progress never completes.
 	go c.drainEvents(ctx, client)
 
+	// Release the watch references on return.
 	refs := make([]directive.Reference, 0, len(pluginIDs)+1)
 	defer func() {
 		for _, ref := range refs {
@@ -123,6 +129,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		nil, nil,
 	)
 	_, fetchRef, err := c.bus.AddDirective(
+		ctx,
 		spacewave_launcher.NewWatchLauncherFetchStatus(projectID),
 		fetchHandler,
 	)
@@ -131,9 +138,8 @@ func (c *Controller) Execute(ctx context.Context) error {
 	}
 	refs = append(refs, fetchRef)
 
+	// Hold the window open for the fetch-status watcher when no plugins are watched.
 	if len(pluginIDs) == 0 {
-		// Nothing plugin-level to watch: still hold the window open so the
-		// fetch-status watcher above can drive the UI, then teardown.
 		<-ctx.Done()
 		return nil
 	}
@@ -152,7 +158,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 			},
 			nil, nil,
 		)
-		_, ref, err := c.bus.AddDirective(bldr_plugin.NewLoadPlugin(id), handler)
+		_, ref, err := c.bus.AddDirective(ctx, bldr_plugin.NewLoadPlugin(id), handler)
 		if err != nil {
 			return errors.Wrapf(err, "watch LoadPlugin %s", id)
 		}

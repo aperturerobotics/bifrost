@@ -31,6 +31,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 	strm link.MountedStream,
 ) error {
 	_, elRef, err := m.bus.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(strm.GetLink().GetLocalPeer(), strm.GetPeerID()),
 		nil,
 	)

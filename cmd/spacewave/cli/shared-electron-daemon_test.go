@@ -167,7 +167,7 @@ func newSharedElectronDaemon(t *testing.T, app sharedElectronApp, opts sharedEle
 		&space_sobject.Config{},
 		&provider_local.Config{ProviderId: "local", StorageId: default_storage.StorageID},
 	} {
-		_, ref, err := b.AddDirective(resolver.NewLoadControllerWithConfig(conf), nil)
+		_, ref, err := b.AddDirective(ctx, resolver.NewLoadControllerWithConfig(conf), nil)
 		if err != nil {
 			t.Fatal(err)
 		}

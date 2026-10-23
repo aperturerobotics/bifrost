@@ -41,7 +41,7 @@ func setupTestEnv(ctx context.Context, t *testing.T) *testEnv {
 	tb.StaticResolver.AddFactory(sobject_world_engine.NewFactory(tb.Bus))
 
 	// Load the Session controller.
-	_, sessCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{
+	_, sessCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{
 		VolumeId: tb.EngineVolumeID,
 	}), nil)
 	if err != nil {
@@ -52,7 +52,7 @@ func setupTestEnv(ctx context.Context, t *testing.T) *testEnv {
 	// Load the local provider on the testbed volume.
 	peerID := tb.Volume.GetPeerID()
 	providerID := "local"
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 		StorageId:  tb.StorageID,
@@ -63,7 +63,7 @@ func setupTestEnv(ctx context.Context, t *testing.T) *testEnv {
 	t.Cleanup(provCtrlRef.Release)
 
 	// Load the Space body controller.
-	_, spaceCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&space_sobject.Config{}), nil)
+	_, spaceCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&space_sobject.Config{}), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

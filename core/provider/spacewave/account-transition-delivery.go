@@ -80,7 +80,7 @@ func (a *ProviderAccount) deliverAccountTransitions(ctx context.Context, transpo
 					return err
 				}
 				handler := directive.NewTypedCallbackHandler[link.MountedLink](func(directive.TypedAttachedValue[link.MountedLink]) {}, nil, nil, nil)
-				_, reference, err := transport.GetChildBus().AddDirective(link.NewEstablishLinkWithPeer(transport.GetPeerID(), remote), handler)
+				_, reference, err := transport.GetChildBus().AddDirective(ctx, link.NewEstablishLinkWithPeer(transport.GetPeerID(), remote), handler)
 				if err != nil {
 					return err
 				}

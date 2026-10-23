@@ -64,7 +64,7 @@ func (s *AccessRpcServiceServer) LookupRpcService(
 	// Attach the service lookup and queue availability changes until release.
 	dir := bifrost_rpc.NewLookupRpcService(req.GetServiceId(), serverID)
 	vals := make(map[uint32]struct{})
-	di, ref, err := s.b.AddDirective(dir, bus.NewCallbackHandler(
+	di, ref, err := s.b.AddDirective(strm.Context(), dir, bus.NewCallbackHandler(
 		func(av directive.AttachedValue) {
 			// Accept only RPC service invokers from the lookup directive.
 			_, ok := av.GetValue().(bifrost_rpc.LookupRpcServiceValue)

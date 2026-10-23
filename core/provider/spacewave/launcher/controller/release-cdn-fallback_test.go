@@ -47,9 +47,11 @@ const (
 // TestHostConfigAppliesReleaseCDNBlockFallbackWithWriteback exercises the
 // producer-owned CDN transport and its durable writeback cache.
 func TestHostConfigAppliesReleaseCDNBlockFallbackWithWriteback(t *testing.T) {
+	// Bound the test.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Serve a release pack holding one block.
 	blockData := []byte("release world block from cdn pack")
 	pack := buildReleaseCDNFallbackPack(t, "01launcherpack00000000000001", blockData)
 	pointerBytes := encodeReleaseCDNFallbackPointer(t, pack)
@@ -57,6 +59,7 @@ func TestHostConfigAppliesReleaseCDNBlockFallbackWithWriteback(t *testing.T) {
 	hs := httptest.NewServer(http.HandlerFunc(server.handle))
 	defer hs.Close()
 
+	// Start a bus with the CDN block store factory.
 	ref := &block.BlockRef{Hash: pack.blockHash}
 	le := logrus.NewEntry(logrus.New())
 	b, sr, err := controllerbus_core.NewCoreBus(ctx, le)
@@ -65,6 +68,7 @@ func TestHostConfigAppliesReleaseCDNBlockFallbackWithWriteback(t *testing.T) {
 	}
 	sr.AddFactory(cdn_bstore_controller.NewFactory(b))
 
+	// Run the ConfigSet controller.
 	_, _, configSetRef, err := loader.WaitExecControllerRunning(
 		ctx,
 		b,
@@ -76,6 +80,7 @@ func TestHostConfigAppliesReleaseCDNBlockFallbackWithWriteback(t *testing.T) {
 	}
 	defer configSetRef.Release()
 
+	// Add the writeback cache block store.
 	cache := newReleaseCDNFallbackWritebackStore()
 	cacheCtrl := block_store_controller.NewController(
 		le,
@@ -93,22 +98,23 @@ func TestHostConfigAppliesReleaseCDNBlockFallbackWithWriteback(t *testing.T) {
 	}
 	defer relCacheCtrl()
 
+	// Apply the host configuration the producer installs.
+	// Signed runtime config no longer creates a competing Release World transport.
 	launcherConfigSet, err := buildReleaseCDNFallbackConfigSet(1, hs.URL)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	// The producer installs this configuration on the host; signed runtime
-	// config no longer creates a competing Release World transport.
 	cs, err := configset_proto.ConfigSetMap(launcherConfigSet).Resolve(ctx, b)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, refConfig, err := b.AddDirective(configset.NewApplyConfigSet(cs), nil)
+	_, refConfig, err := b.AddDirective(ctx, configset.NewApplyConfigSet(cs), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer refConfig.Release()
 
+	// Look up the CDN block store.
 	store, _, storeRef, err := block_store.ExLookupFirstBlockStore(ctx, b, releaseCDNFallbackStoreID, false, nil)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -118,6 +124,7 @@ func TestHostConfigAppliesReleaseCDNBlockFallbackWithWriteback(t *testing.T) {
 		t.Fatalf("block store id = %q, want %q", store.GetID(), releaseCDNFallbackStoreID)
 	}
 
+	// Look up the block and wait for the writeback cache to store it.
 	got := waitReleaseCDNFallbackLookup(t, ctx, b, ref)
 	if !bytes.Equal(got, blockData) {
 		t.Fatalf("lookup data = %q, want %q", got, blockData)
@@ -133,6 +140,7 @@ func TestHostConfigAppliesReleaseCDNBlockFallbackWithWriteback(t *testing.T) {
 		t.Fatalf("writeback cache found=%v data=%q", found, cached)
 	}
 
+	// Look up the block again and check it came from the cache.
 	rangesAfterFirst := server.ranges
 	got = waitReleaseCDNFallbackLookup(t, ctx, b, ref)
 	if !bytes.Equal(got, blockData) {

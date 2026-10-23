@@ -229,7 +229,7 @@ func (w *typedObjectWatch) run(ctx context.Context) (retErr error) {
 			w.retire()
 			w.releaseLookup()
 			if typeID != "" {
-				if err := w.addLookup(typeID, epoch); err != nil {
+				if err := w.addLookup(ctx, typeID, epoch); err != nil {
 					return err
 				}
 			}
@@ -319,7 +319,7 @@ func (w *typedObjectWatch) readObjectRoot(ctx context.Context) (*world.ObjectRoo
 }
 
 // addLookup attaches callbacks and retains the registry's standing scoped demand.
-func (w *typedObjectWatch) addLookup(typeID string, epoch uint64) error {
+func (w *typedObjectWatch) addLookup(ctx context.Context, typeID string, epoch uint64) error {
 	// Publish the callback token before AddDirective can report existing values.
 	lookup := &typedObjectWatchLookup{typeID: typeID, epoch: epoch, values: make(map[uint32]objecttype.ObjectType)}
 	w.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) { w.lookup = lookup })
@@ -351,7 +351,7 @@ func (w *typedObjectWatch) addLookup(typeID string, epoch uint64) error {
 	)
 
 	// Keep the reference after idle so a later registration can satisfy demand.
-	instance, ref, err := w.resource.b.AddDirective(objecttype.NewLookupObjectTypeForEngine(typeID, w.engineID), handler)
+	instance, ref, err := w.resource.b.AddDirective(ctx, objecttype.NewLookupObjectTypeForEngine(typeID, w.engineID), handler)
 	if err != nil {
 		return err
 	}

@@ -27,7 +27,7 @@ func TestProviderAccountPublishesBeforeLinkedCloudDiscovery(t *testing.T) {
 	// Load the session controller beside the local provider factory.
 	tb.StaticResolver.AddFactory(NewFactory(tb.Bus))
 	tb.StaticResolver.AddFactory(session_controller.NewFactory(tb.Bus))
-	_, sessCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{
+	_, sessCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{
 		VolumeId: tb.EngineVolumeID,
 	}), nil)
 	if err != nil {
@@ -36,7 +36,7 @@ func TestProviderAccountPublishesBeforeLinkedCloudDiscovery(t *testing.T) {
 	defer sessCtrlRef.Release()
 
 	// Load the local provider controller.
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&Config{
 		ProviderId: ProviderID,
 		PeerId:     tb.Volume.GetPeerID().String(),
 		StorageId:  tb.StorageID,

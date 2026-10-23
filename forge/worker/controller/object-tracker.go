@@ -168,7 +168,7 @@ func (t *objectTracker) executeController(ctx context.Context, objType string, c
 		WithField("config-id", ctrlConf.GetConfigID()).
 		WithField("obj-type", objType).
 		Debugf("starting controller for object: %s", t.objKey)
-	_, diRef, err := t.c.bus.AddDirective(resolver.NewLoadControllerWithConfig(ctrlConf), nil)
+	_, diRef, err := t.c.bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(ctrlConf), nil)
 	if err != nil {
 		if ctx.Err() == nil || !errors.Is(err, context.Canceled) {
 			t.c.le.WithError(err).Warn("unable to start object controller")

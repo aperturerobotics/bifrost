@@ -296,6 +296,7 @@ func (b *loadedBucket) execLookupController(
 	// Track lookup controller values until the directive is released.
 	var lastErr error
 	di, diRef, err := b.c.b.AddDirective(
+		ctx,
 		resolver.NewLoadControllerWithConfig(conf),
 		bus.NewCallbackHandler(
 			func(av directive.AttachedValue) {

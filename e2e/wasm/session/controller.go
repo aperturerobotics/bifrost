@@ -176,6 +176,7 @@ func (c *Controller) SignalRelay(strm SRPCSignalRelayService_SignalRelayStream) 
 		relay:        rs,
 	}
 	di, dirRef, err := b.AddDirective(
+		ctx,
 		signaling.NewHandleSignalPeer("webrtc", sess),
 		nil,
 	)
@@ -288,6 +289,7 @@ func (c *Controller) WatchState(
 
 	// Request the peer link and retain its directive while watching state.
 	di, diRef, err := b.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(peer.ID(""), targetPeer),
 		handler,
 	)

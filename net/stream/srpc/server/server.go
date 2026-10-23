@@ -152,6 +152,7 @@ func (s *Server) HandleMountedStream(ctx context.Context, ms link.MountedStream)
 	var err error
 	if !s.disableEstablishLink {
 		_, elRef, err = s.b.AddDirective(
+			ctx,
 			link.NewEstablishLinkWithPeer(ms.GetLink().GetLocalPeer(), ms.GetPeerID()),
 			nil,
 		)

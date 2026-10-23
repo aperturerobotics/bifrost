@@ -109,7 +109,7 @@ func setupLocalProvider(ctx context.Context, t *testing.T, tb *testbed.Testbed, 
 	peerID := tb.Volume.GetPeerID()
 
 	// Start the local provider controller with its configuration.
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     peerID.String(),
 		StorageId:  tb.StorageID,

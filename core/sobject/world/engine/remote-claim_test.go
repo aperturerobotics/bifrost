@@ -41,7 +41,7 @@ func TestRemoteSharedObjectWorldApplyPreservesExecutionClaim(t *testing.T) {
 
 	// Load the local provider.
 	peerID := tb.Volume.GetPeerID()
-	_, providerRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, providerRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: "local",
 		PeerId:     peerID.String(),
 	}), nil)

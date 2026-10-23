@@ -14,10 +14,10 @@ func (c *Controller) handleEstablishLink(
 	d link.EstablishLinkWithPeer,
 ) {
 	// Register a value handler for the target peer.
-	handler := newEstablishLinkHandler(c, c.le, di, d.EstablishLinkTargetPeerId())
+	handler := newEstablishLinkHandler(ctx, c, c.le, di, d.EstablishLinkTargetPeerId())
 
 	// Retain the directive reference until controller close.
-	ref := di.AddReference(handler, true)
+	ref := di.AddReference(ctx, handler, true)
 	if ref == nil {
 		return
 	}

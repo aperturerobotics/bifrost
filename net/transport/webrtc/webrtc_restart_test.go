@@ -147,6 +147,7 @@ func testTransportPeerRestart(t *testing.T, restart int, reconnectSignaling bool
 	// Hold a link from each endpoint to the other, as both daemons do.
 	for _, ids := range [][2]*graph.Peer{{p0, p2}, {p2, p0}} {
 		_, ref, err := sim.GetPeerByID(ids[0].GetPeerID()).GetTestbed().Bus.AddDirective(
+			ctx,
 			link.NewEstablishLinkWithPeer(ids[0].GetPeerID(), ids[1].GetPeerID()),
 			nil,
 		)

@@ -21,7 +21,7 @@ func (c *Controller) executeStartup(ctx context.Context, conf *bldr_project.Star
 	// Hold a load directive reference for every startup plugin.
 	for _, pluginID := range loadPluginIDs {
 		c.le.WithField("plugin-id", pluginID).Info("loading startup plugin")
-		_, plugRef, err := c.bus.AddDirective(bldr_plugin.NewLoadPlugin(pluginID), nil)
+		_, plugRef, err := c.bus.AddDirective(ctx, bldr_plugin.NewLoadPlugin(pluginID), nil)
 		if err != nil {
 			return err
 		}

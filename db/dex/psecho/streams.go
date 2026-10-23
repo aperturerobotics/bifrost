@@ -98,6 +98,7 @@ func (c *Controller) runIncomingStream(ctx context.Context, key sessionKey) erro
 
 	// Hold the link open while processing.
 	_, lnkRef, err := c.b.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(ms.GetLink().GetLocalPeer(), ms.GetPeerID()),
 		nil,
 	)

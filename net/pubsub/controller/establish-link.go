@@ -1,6 +1,8 @@
 package pubsub_controller
 
 import (
+	"context"
+
 	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/s4wave/spacewave/net/link"
 	"github.com/s4wave/spacewave/net/pubsub"
@@ -22,9 +24,9 @@ func newEstablishLinkHandler(c *Controller) *establishLinkHandler {
 }
 
 // handleEstablishLink handles an EstablishLink directive.
-func (c *Controller) handleEstablishLink(di directive.Instance) {
+func (c *Controller) handleEstablishLink(ctx context.Context, di directive.Instance) {
 	handler := newEstablishLinkHandler(c)
-	ref := di.AddReference(handler, true)
+	ref := di.AddReference(ctx, handler, true)
 	if ref == nil {
 		return
 	}

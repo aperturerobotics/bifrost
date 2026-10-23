@@ -118,6 +118,7 @@ func NewFactory(b bus.Bus, opts ...Option) controller.Factory {
 			// create the resource server
 			c.rootResourceMux = srpc.NewMux()
 			c.server = resource_server.NewResourceServer(c.rootResourceMux)
+			c.server.SetOriginController(ControllerID)
 
 			// register the resource server to the mux
 			serviceID := c.GetServiceID()

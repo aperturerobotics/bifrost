@@ -83,7 +83,7 @@ func TestPluginDist(t *testing.T) {
 	defer quickjsHostRef.Release()
 
 	// Request the plugin, then publish its manifest for the host platform.
-	_, pluginRef, err := b.AddDirective(bldr_plugin.NewLoadPlugin(pluginID), nil)
+	_, pluginRef, err := b.AddDirective(ctx, bldr_plugin.NewLoadPlugin(pluginID), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

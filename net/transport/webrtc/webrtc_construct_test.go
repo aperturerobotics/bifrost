@@ -145,7 +145,7 @@ func TestTransportRetriesFailedConstruction(t *testing.T) {
 
 	// Only p0 holds the link. Its first session fails to construct, and a
 	// later one in the same presence epoch links.
-	_, ref, err := b0.AddDirective(link.NewEstablishLinkWithPeer(p0.GetPeerID(), p2.GetPeerID()), nil)
+	_, ref, err := b0.AddDirective(ctx, link.NewEstablishLinkWithPeer(p0.GetPeerID(), p2.GetPeerID()), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

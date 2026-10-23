@@ -34,7 +34,7 @@ func (r *BusBridgeResolver) Resolve(ctx context.Context, handler directive.Resol
 	disposedCb := func() {
 		_ = handler.ClearValues()
 	}
-	_, diRef, err := r.target.AddDirective(r.dir, bus.NewPassThruHandler(handler, disposedCb))
+	_, diRef, err := r.target.AddDirective(ctx, r.dir, bus.NewPassThruHandler(handler, disposedCb))
 	if err != nil {
 		return err
 	}

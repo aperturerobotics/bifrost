@@ -126,6 +126,7 @@ func runDaemon(c *cli.Context) error {
 
 	// Load the ConfigSet controller.
 	_, csRef, err := b.AddDirective(
+		ctx,
 		resolver.NewLoadControllerWithConfig(&configset_controller.Config{}),
 		nil,
 	)
@@ -137,6 +138,7 @@ func runDaemon(c *cli.Context) error {
 	// Serve the daemon API when a listen address is configured.
 	if daemonFlags.APIListen != "" {
 		_, apiRef, err := b.AddDirective(
+			ctx,
 			resolver.NewLoadControllerWithConfig(&api_controller.Config{
 				ListenAddr: daemonFlags.APIListen,
 			}),
@@ -204,6 +206,7 @@ func runDaemon(c *cli.Context) error {
 
 	// Apply the configuration set for the lifetime of the daemon command.
 	_, bdbRef, err := b.AddDirective(
+		ctx,
 		configset.NewApplyConfigSet(confSet),
 		nil,
 	)

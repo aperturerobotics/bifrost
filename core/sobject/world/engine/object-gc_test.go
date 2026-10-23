@@ -92,7 +92,7 @@ func newSpaceWorldWithInit(ctx context.Context, t *testing.T, initOp *sobject_wo
 
 	// Create a local Space SharedObject.
 	providerID, accountID, sobjectID := "local", "test-account", "file-gc-space"
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     tb.Volume.GetPeerID().String(),
 	}), nil)

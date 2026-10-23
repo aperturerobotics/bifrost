@@ -63,6 +63,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 	for _, topic := range c.topics {
 		le := c.le.WithField("topic", topic)
 		_, diRef, err := c.bus.AddDirective(
+			ctx,
 			pubsub.NewBuildChannelSubscription(topic, privKey),
 			nil,
 		)

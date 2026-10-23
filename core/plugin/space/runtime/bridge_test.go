@@ -1,6 +1,7 @@
 package plugin_space_runtime
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -77,7 +78,7 @@ func testAppBridge(t *testing.T, plugins []string) {
 		forwarded = append(forwarded, bldr_plugin.NewLoadPlugin(id), bldr_plugin.NewLoadPluginInstanced(id, "space-a"))
 	}
 	for _, dir := range forwarded {
-		addTestDirective(t, child, dir)
+		addTestDirective(ctx, t, child, dir)
 		recorder.waitFor(t, dir)
 	}
 
@@ -98,7 +99,7 @@ func testAppBridge(t *testing.T, plugins []string) {
 		bifrost_rpc.NewLookupRpcService(bldr_plugin.SRPCPluginHostServiceID, "plugin-host"),
 	}
 	for _, dir := range kept {
-		addTestDirective(t, child, dir)
+		addTestDirective(ctx, t, child, dir)
 	}
 	recorder.assertNoMore(t)
 }
@@ -116,11 +117,11 @@ func addTestController(t *testing.T, b bus.Bus, ctrl controller.Controller) {
 }
 
 // addTestDirective adds dir to b until the test ends.
-func addTestDirective(t *testing.T, b bus.Bus, dir directive.Directive) {
+func addTestDirective(ctx context.Context, t *testing.T, b bus.Bus, dir directive.Directive) {
 	t.Helper()
 
 	// Retain the directive until test cleanup.
-	_, ref, err := b.AddDirective(dir, bus.NewCallbackHandler(nil, nil, nil))
+	_, ref, err := b.AddDirective(ctx, dir, bus.NewCallbackHandler(nil, nil, nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +166,7 @@ func TestParentFilterForwardsInstallationLoads(t *testing.T) {
 		unixfs_access.NewAccessUnixFS(bldr_plugin.PluginDistFsId(pinned)),
 	}
 	for _, dir := range forwarded {
-		addTestDirective(t, parent, dir)
+		addTestDirective(ctx, t, parent, dir)
 		recorder.waitFor(t, dir)
 	}
 
@@ -181,7 +182,7 @@ func TestParentFilterForwardsInstallationLoads(t *testing.T) {
 		unixfs_access.NewAccessUnixFS("other/" + pinned),
 	}
 	for _, dir := range kept {
-		addTestDirective(t, parent, dir)
+		addTestDirective(ctx, t, parent, dir)
 	}
 	recorder.assertNoMore(t)
 }
@@ -241,7 +242,7 @@ func TestBridgeScopedObjectTypeLifecycle(t *testing.T) {
 	added := make(chan objecttype.ObjectType, 8)
 	removed := make(chan objecttype.ObjectType, 8)
 	lookup := objecttype.NewLookupObjectTypeForEngine("test/bridged-type", "engine-a")
-	inst, ref, err := child.AddDirective(lookup, directive.NewTypedCallbackHandler[objecttype.ObjectType](
+	inst, ref, err := child.AddDirective(ctx, lookup, directive.NewTypedCallbackHandler[objecttype.ObjectType](
 		func(value directive.TypedAttachedValue[objecttype.ObjectType]) { added <- value.GetValue() },
 		func(value directive.TypedAttachedValue[objecttype.ObjectType]) { removed <- value.GetValue() },
 		nil, nil,

@@ -134,6 +134,7 @@ func TestTransportLinksOnPresence(t *testing.T) {
 	holdLink := func(a, b *graph.Peer) {
 		t.Helper()
 		_, ref, err := sim.GetPeerByID(a.GetPeerID()).GetTestbed().Bus.AddDirective(
+			ctx,
 			link.NewEstablishLinkWithPeer(a.GetPeerID(), b.GetPeerID()),
 			nil,
 		)

@@ -73,7 +73,7 @@ func TestLogoutReleasesCloudSessionForNextLogin(t *testing.T) {
 
 	// Attach the Session controller factory and its configured storage.
 	tb.StaticResolver.AddFactory(session_controller.NewFactory(tb.Bus))
-	_, loadRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{
+	_, loadRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{
 		VolumeId: tb.Volume.GetID(),
 	}), nil)
 	if err != nil {

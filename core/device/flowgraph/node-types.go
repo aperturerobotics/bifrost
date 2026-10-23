@@ -1,6 +1,7 @@
 package device_flowgraph
 
 import (
+	"context"
 	"sync"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -41,7 +42,7 @@ func newNodeTypes(b bus.Bus, notify func()) *nodeTypes {
 
 // Hold looks up the wanted node types and releases the lookup of every other
 // type.
-func (n *nodeTypes) Hold(wanted map[string]struct{}) error {
+func (n *nodeTypes) Hold(ctx context.Context, wanted map[string]struct{}) error {
 	// Release the types no placed node uses.
 	for typeID, held := range n.held {
 		if _, ok := wanted[typeID]; !ok {
@@ -58,6 +59,7 @@ func (n *nodeTypes) Hold(wanted map[string]struct{}) error {
 		// Hold a lookup that follows the controller supplying the type.
 		held := &heldNodeType{}
 		_, ref, err := bus.ExecOneOffWatchCb(
+			ctx,
 			func(val directive.TypedAttachedValue[s4wave_flowgraph.LookupFlowgraphNodeTypeValue]) bool {
 				// Follow the lookup as controllers supply and withdraw the type.
 				n.mtx.Lock()

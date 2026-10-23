@@ -359,7 +359,7 @@ func TestLoadLinkedCloudAccountID(t *testing.T) {
 
 	// Load the local provider controller.
 	tb.StaticResolver.AddFactory(NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&Config{
 		ProviderId: "local",
 		PeerId:     tb.Volume.GetPeerID().String(),
 		StorageId:  tb.StorageID,
@@ -454,7 +454,7 @@ func TestWaitForLinkedCloudSessionRef(t *testing.T) {
 
 	// Load the session controller.
 	tb.StaticResolver.AddFactory(session_controller.NewFactory(tb.Bus))
-	_, sessionCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&session_controller.Config{
+	_, sessionCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&session_controller.Config{
 		VolumeId: tb.EngineVolumeID,
 	}), nil)
 	if err != nil {

@@ -198,7 +198,7 @@ func setupSecretSpaceResourceTest(
 	// Register and start the local SharedObject provider.
 	providerID := "local"
 	tb.StaticResolver.AddFactory(provider_local.NewFactory(tb.Bus))
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     tb.Volume.GetPeerID().String(),
 	}), nil)

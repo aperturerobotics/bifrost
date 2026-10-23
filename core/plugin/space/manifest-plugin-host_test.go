@@ -54,6 +54,7 @@ func (h *manifestPluginHost) HandleDirective(
 	return directive.R(directive.NewFuncResolver(func(ctx context.Context, handler directive.ResolverHandler) error {
 		// Follow the plugin manifest until the load ends.
 		fetch, fetchRef, err := h.b.AddDirective(
+			ctx,
 			bldr_manifest.NewFetchManifest(spacePluginID, nil, []string{spacePlatformID}, 0),
 			nil,
 		)

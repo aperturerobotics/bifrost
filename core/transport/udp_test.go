@@ -65,6 +65,7 @@ func TestSessionTransportUDPAuthorizesPeers(t *testing.T) {
 				t.Fatal(err)
 			}
 			_, elRef, err := dialer.GetChildBus().AddDirective(
+				ctx,
 				link.NewEstablishLinkWithPeer(dialerID, listener.GetPeerID()),
 				nil,
 			)
@@ -135,6 +136,7 @@ func TestSessionTransportUDPAdmitsNamedPeers(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, elRef, err := strict.GetChildBus().AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(strict.GetPeerID(), remoteID),
 		nil,
 	)

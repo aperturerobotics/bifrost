@@ -37,7 +37,7 @@ func TestBucketMountWakeOnMount(t *testing.T) {
 		{ObjectKey: "ref/release", UnmountedBucketID: bucketID},
 		{ObjectKey: "ref/local"},
 	}
-	if err := mounts.watch(candidates); err != nil {
+	if err := mounts.watch(ctx, candidates); err != nil {
 		t.Fatal(err)
 	}
 

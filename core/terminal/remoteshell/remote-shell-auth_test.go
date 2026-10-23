@@ -92,7 +92,7 @@ func TestRemoteShellServesOnlyWithNode(t *testing.T) {
 	}
 
 	// The node's entry loads the controller on the Session bus.
-	_, loadRef, err := childBus.AddDirective(resolver.NewLoadControllerWithConfig(&Config{}), nil)
+	_, loadRef, err := childBus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&Config{}), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

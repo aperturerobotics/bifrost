@@ -150,6 +150,7 @@ func TestTransportReconnect(t *testing.T) {
 	// Hold a persistent EstablishLink so the session tracker stays alive across
 	// the data-path drop (provides the persistent dial reference).
 	_, esRef, err := px0.GetTestbed().Bus.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(p0.GetPeerID(), p2.GetPeerID()),
 		nil,
 	)

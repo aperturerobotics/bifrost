@@ -212,7 +212,7 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 	dir := di.GetDirective()
 	switch d := dir.(type) {
 	case link.EstablishLinkWithPeer:
-		c.handleEstablishLink(di)
+		c.handleEstablishLink(ctx, di)
 	case link.HandleMountedStream:
 		return c.handleMountedStream(ctx, di, d)
 	case pubsub.BuildChannelSubscription:

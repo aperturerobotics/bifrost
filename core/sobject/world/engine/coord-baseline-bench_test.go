@@ -32,7 +32,7 @@ func BenchmarkSharedObjectWorldEngineFinalizationBaseline(b *testing.B) {
 
 	// Load the local provider.
 	providerID := "local"
-	_, provCtrlRef, err := tb.Bus.AddDirective(resolver.NewLoadControllerWithConfig(&provider_local.Config{
+	_, provCtrlRef, err := tb.Bus.AddDirective(ctx, resolver.NewLoadControllerWithConfig(&provider_local.Config{
 		ProviderId: providerID,
 		PeerId:     tb.Volume.GetPeerID().String(),
 	}), nil)

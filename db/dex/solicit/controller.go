@@ -174,6 +174,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 		c.cc.GetTransportId(),
 	)
 	di, solicitRef, err := c.b.AddDirective(
+		ctx,
 		dir,
 		directive.NewTypedCallbackHandler[link_solicit.SolicitMountedStream](
 			func(v directive.TypedAttachedValue[link_solicit.SolicitMountedStream]) {

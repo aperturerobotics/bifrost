@@ -43,6 +43,7 @@ func (m *MountedStreamHandler) HandleMountedStream(
 	// Capture the local and remote identities for the hold-open directive.
 	localPeerID, remotePeerID := strm.GetLink().GetLocalPeer(), strm.GetPeerID()
 	_, elRef, err := m.bus.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(localPeerID, remotePeerID),
 		nil,
 	)

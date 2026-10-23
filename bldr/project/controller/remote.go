@@ -59,7 +59,7 @@ func (t *remoteTracker) execute(ctx context.Context) error {
 			resultPromise.SetResult(nil, err)
 			return err
 		}
-		_, configSetRef, err := t.c.bus.AddDirective(configset.NewApplyConfigSet(configSet), nil)
+		_, configSetRef, err := t.c.bus.AddDirective(ctx, configset.NewApplyConfigSet(configSet), nil)
 		if err != nil {
 			resultPromise.SetResult(nil, err)
 			return err

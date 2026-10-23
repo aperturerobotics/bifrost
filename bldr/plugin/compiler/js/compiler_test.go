@@ -76,7 +76,7 @@ func TestPluginCompilerJs(t *testing.T) {
 	platformID := quickjsHost.GetPluginHost().GetPlatformId()
 
 	// Load the plugin through the plugin scheduler directive.
-	_, pluginRef, err := b.AddDirective(bldr_plugin.NewLoadPlugin(pluginID), nil)
+	_, pluginRef, err := b.AddDirective(ctx, bldr_plugin.NewLoadPlugin(pluginID), nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

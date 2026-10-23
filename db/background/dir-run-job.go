@@ -50,8 +50,8 @@ func NewRunJob(key string, run JobFunc) RunJob {
 // AddJob registers a background job on the bus. The job runs until the
 // returned reference is released, unless another registrant of the same key
 // still holds it.
-func AddJob(b bus.Bus, key string, run JobFunc) (directive.Reference, error) {
-	_, ref, err := b.AddDirective(NewRunJob(key, run), nil)
+func AddJob(ctx context.Context, b bus.Bus, key string, run JobFunc) (directive.Reference, error) {
+	_, ref, err := b.AddDirective(ctx, NewRunJob(key, run), nil)
 	return ref, err
 }
 

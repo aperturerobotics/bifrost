@@ -30,7 +30,7 @@ func (c *Controller) observeHandleWebView(
 	})
 
 	// remove the web view when the directive is disposed
-	_ = di.AddReference(bus.NewCallbackHandler(nil, nil, func() {
+	_ = di.AddReference(ctx, bus.NewCallbackHandler(nil, nil, func() {
 		c.bcast.HoldLock(func(broadcast func(), getWaitCh func() <-chan struct{}) {
 			if c.webViews[webViewID] == webView {
 				delete(c.webViews, webViewID)

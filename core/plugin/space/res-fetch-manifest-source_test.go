@@ -195,7 +195,7 @@ func TestRequestedPluginIDsFollowFetchManifest(t *testing.T) {
 	}
 
 	// Add a FetchManifest demand and watch the requested IDs track it.
-	_, ref, err := b.AddDirective(bldr_manifest.NewFetchManifest("unlisted-plugin", nil, nil, 0), nil)
+	_, ref, err := b.AddDirective(ctx, bldr_manifest.NewFetchManifest("unlisted-plugin", nil, nil, 0), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -14,6 +14,7 @@ import (
 // DistConfig to the bus, replacing the previous set when the DistConfig
 // changes.
 func (c *Controller) applyDistConfigSet(ctx context.Context) error {
+	// Release the applied set on return.
 	var info *spacewave_launcher.LauncherInfo
 	var currRef directive.Reference
 	var currCs *configset_proto.ConfigSet
@@ -23,6 +24,7 @@ func (c *Controller) applyDistConfigSet(ctx context.Context) error {
 		}
 	}()
 
+	// Apply each new DistConfig's config set.
 	for {
 		var err error
 		info, err = c.launcherInfoCtr.WaitValueChange(ctx, info, nil)
@@ -81,7 +83,7 @@ func (c *Controller) applyDistConfigSet(ctx context.Context) error {
 
 		var nextRef directive.Reference
 		if len(cs) != 0 {
-			_, nextRef, err = c.bus.AddDirective(configset.NewApplyConfigSet(cs), nil)
+			_, nextRef, err = c.bus.AddDirective(ctx, configset.NewApplyConfigSet(cs), nil)
 			if err != nil {
 				c.le.WithError(err).Warn("unable to apply launcher config set")
 				continue

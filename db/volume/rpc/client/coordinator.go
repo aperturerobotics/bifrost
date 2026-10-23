@@ -99,7 +99,8 @@ func (c *Coordinator) Watch(ctx context.Context, scope coord.Scope, afterGenerat
 // WriteLease.Done when the stream ends first.
 func (c *Coordinator) TryAcquireWriteLease(ctx context.Context, scope coord.Scope) (coord.WriteLease, bool, error) {
 	// Open the write-lease stream while acquisition follows caller cancellation.
-	leaseCtx, cancel := context.WithCancel(context.Background())
+	// The stream outlives ctx but keeps its values, such as the origin.
+	leaseCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	stopAcquireCancel := context.AfterFunc(ctx, cancel)
 	stream, err := c.client.TryAcquireCoordinatorWriteLease(leaseCtx, &volume_rpc.TryAcquireCoordinatorWriteLeaseRequest{
 		Scope: volume_rpc.NewCoordinatorScope(scope),
@@ -153,7 +154,8 @@ func (c *Coordinator) TryAcquireWriteLease(ctx context.Context, scope coord.Scop
 // WaitAcquireWriteLease waits to acquire the remote write lease.
 func (c *Coordinator) WaitAcquireWriteLease(ctx context.Context, scope coord.Scope) (coord.WriteLease, error) {
 	// Open the write-lease stream while acquisition follows caller cancellation.
-	leaseCtx, cancel := context.WithCancel(context.Background())
+	// The stream outlives ctx but keeps its values, such as the origin.
+	leaseCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	stopAcquireCancel := context.AfterFunc(ctx, cancel)
 	stream, err := c.client.WaitAcquireCoordinatorWriteLease(leaseCtx, &volume_rpc.WaitAcquireCoordinatorWriteLeaseRequest{
 		Scope: volume_rpc.NewCoordinatorScope(scope),
@@ -315,7 +317,7 @@ func (l *lease) Publish(ctx context.Context, event coord.Event) (*coord.Snapshot
 	return resp.GetSnapshot().ToCoordSnapshot(), nil
 }
 
-func (l *lease) Release(context.Context) error {
+func (l *lease) Release(ctx context.Context) error {
 	// Mark the write lease released and wake waiters exactly once.
 	l.mtx.Lock()
 	if l.released {
@@ -336,7 +338,12 @@ func (l *lease) Release(context.Context) error {
 	if lost {
 		return nil
 	}
-	_, err := l.client.ReleaseCoordinatorWriteLease(context.Background(), &volume_rpc.CoordinatorWriteLeaseRequest{
+
+	// The release request ignores ctx cancellation but keeps its values.
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	_, err := l.client.ReleaseCoordinatorWriteLease(context.WithoutCancel(ctx), &volume_rpc.CoordinatorWriteLeaseRequest{
 		LeaseId: l.leaseID,
 	})
 	return normalizeCoordError(err)

@@ -40,6 +40,7 @@ func (e *Engine) runSolicit(ctx context.Context, active *attempt, transport *tra
 	// Retain the solicitation until this attempt ends or accepts a stream.
 	streams := make(chan link_solicit.SolicitMountedStream, 1)
 	_, ref, err := childBus.AddDirective(
+		ctx,
 		link_solicit.NewSolicitProtocol(ProtocolID, []byte("pairing-confirm"), "", 0),
 		directive.NewTypedCallbackHandler(func(value directive.TypedAttachedValue[link_solicit.SolicitMountedStream]) {
 			select {

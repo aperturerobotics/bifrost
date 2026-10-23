@@ -1,6 +1,7 @@
 package link_holdopen_controller
 
 import (
+	"context"
 	"sync"
 
 	"github.com/aperturerobotics/controllerbus/directive"
@@ -21,6 +22,8 @@ type establishLinkHandler struct {
 	peerID peer.ID
 	// di is the directive instance
 	di directive.Instance
+	// ctx is the handler context the hold-open reference is asked from
+	ctx context.Context
 
 	// mtx guards below fields
 	mtx sync.Mutex
@@ -34,12 +37,14 @@ type establishLinkHandler struct {
 
 // newEstablishLinkHandler constructs a new establishLinkHandler
 func newEstablishLinkHandler(
+	ctx context.Context,
 	c *Controller,
 	le *logrus.Entry,
 	di directive.Instance,
 	peerID peer.ID,
 ) *establishLinkHandler {
 	return &establishLinkHandler{
+		ctx:    ctx,
 		c:      c,
 		di:     di,
 		le:     le.WithField("peer-id", peerID.String()),
@@ -73,7 +78,7 @@ func (e *establishLinkHandler) HandleValueAdded(inst directive.Instance, val dir
 		Debug("starting peer hold-open tracking")
 	go func() {
 		// Store the reference unless the hold ended or another one won.
-		ref := e.di.AddReference(nil, false)
+		ref := e.di.AddReference(e.ctx, nil, false)
 		e.mtx.Lock()
 		keep := e.holding && e.rigidRef == nil
 		if keep {

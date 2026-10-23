@@ -82,7 +82,7 @@ func prepareSessionTransportBackends(ctx context.Context, t *testing.T, stA, stB
 // addEstablishLink adds an EstablishLinkWithPeer directive to the bus.
 func addEstablishLink(ctx context.Context, t *testing.T, b bus.Bus, src, dst peer.ID) {
 	t.Helper()
-	_, diRef, err := b.AddDirective(link.NewEstablishLinkWithPeer(src, dst), nil)
+	_, diRef, err := b.AddDirective(ctx, link.NewEstablishLinkWithPeer(src, dst), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

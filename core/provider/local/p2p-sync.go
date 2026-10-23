@@ -526,6 +526,7 @@ func (a *ProviderAccount) retainP2PPeerOnState(
 
 	// Attach peer demand to the bus captured at this generation's readiness.
 	_, ref, err := state.childBus.AddDirective(
+		ctx,
 		link.NewEstablishLinkWithPeer(state.sessionTransport.GetPeerID(), remotePeerID),
 		handler,
 	)

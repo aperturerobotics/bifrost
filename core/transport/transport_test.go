@@ -357,7 +357,7 @@ func TestSessionTransportKeepsProtocolsOnChildBus(t *testing.T) {
 	}
 
 	// Add the link, protocol, and controller-load directives on the child bus.
-	_, ref, err := st.GetChildBus().AddDirective(link.NewEstablishLinkWithPeer(localID, remoteID), nil)
+	_, ref, err := st.GetChildBus().AddDirective(ctx, link.NewEstablishLinkWithPeer(localID, remoteID), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -365,6 +365,7 @@ func TestSessionTransportKeepsProtocolsOnChildBus(t *testing.T) {
 
 	// Add the protocol solicitation directive.
 	_, bridgeRef, err := st.GetChildBus().AddDirective(
+		ctx,
 		link_solicit.NewSolicitProtocol(protocol.ID("test/bridge"), nil, "", 0),
 		nil,
 	)
@@ -375,6 +376,7 @@ func TestSessionTransportKeepsProtocolsOnChildBus(t *testing.T) {
 
 	// Add the controller load directive.
 	_, loadRef, err := st.GetChildBus().AddDirective(
+		ctx,
 		resolver.NewLoadControllerWithConfig(&transport_webrtc.Config{}), nil,
 	)
 	if err != nil {

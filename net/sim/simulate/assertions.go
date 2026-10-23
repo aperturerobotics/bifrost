@@ -16,7 +16,7 @@ func TestConnectivity(ctx context.Context, px0, px1 *Peer) error {
 	tb0 := px0.testbed
 
 	// Retain a directive establishing the link between the simulated peers.
-	_, esRef, err := tb0.Bus.AddDirective(link.NewEstablishLinkWithPeer(
+	_, esRef, err := tb0.Bus.AddDirective(ctx, link.NewEstablishLinkWithPeer(
 		px0.GetPeerID(),
 		px1.GetPeerID(),
 	), nil)
