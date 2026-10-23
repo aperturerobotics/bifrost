@@ -1,6 +1,8 @@
 syntax = "proto3";
 package s4wave.plugin.prom;
 
+import "github.com/s4wave/spacewave/sdk/prom/prom.proto";
+
 option go_package = "github.com/s4wave/spacewave/plugin/prom;prom_plugin";
 
 // ChunkEncoding identifies how a Chunk encodes its samples.
@@ -11,28 +13,6 @@ enum ChunkEncoding {
   CHUNK_ENCODING_XOR = 1;
 }
 
-// Label is one name and value of a series.
-message Label {
-  // Name is the label name.
-  string name = 1;
-  // Value is the label value.
-  string value = 2;
-}
-
-// LabelSet is the sorted label set that identifies one series.
-message LabelSet {
-  // Labels holds the labels in ascending name order.
-  repeated Label labels = 1;
-}
-
-// TargetMeta names the target a store holds samples for.
-message TargetMeta {
-  // Labels are the labels, such as job and instance, that every series in the
-  // store carries. A query skips the store when a matcher on one of these names
-  // rejects its value.
-  LabelSet labels = 1;
-}
-
 // SeriesPage appends series to a target's series table.
 // A commit writes a page only when its window introduced series.
 message SeriesPage {
@@ -41,7 +21,7 @@ message SeriesPage {
   // FirstSeries + len(series) - 1.
   uint64 first_series = 1;
   // Series holds the label sets of the added series in series number order.
-  repeated LabelSet series = 2;
+  repeated s4wave.prom.LabelSet series = 2;
 }
 
 // Chunk is a run of one series' samples in one encoding.

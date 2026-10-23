@@ -1,0 +1,119 @@
+syntax = "proto3";
+package s4wave.prom;
+
+option go_package = "github.com/s4wave/spacewave/sdk/prom;s4wave_prom";
+
+// Label is one name and value of a series.
+message Label {
+  // Name is the label name.
+  string name = 1;
+  // Value is the label value.
+  string value = 2;
+}
+
+// LabelSet is the sorted label set that identifies one series.
+message LabelSet {
+  // Labels holds the labels in ascending name order.
+  repeated Label labels = 1;
+}
+
+// ScrapeConfig says where and how often a target's process scrapes.
+message ScrapeConfig {
+  // Url is the http or https address of the exporter's metrics page.
+  string url = 1;
+  // IntervalMs is the time between scrapes. Zero scrapes every 15 seconds.
+  uint32 interval_ms = 2;
+  // TimeoutMs bounds one scrape. Zero or a value above the interval uses the
+  // interval.
+  uint32 timeout_ms = 3;
+}
+
+// TargetMeta is the identity and scrape configuration of a target.
+message TargetMeta {
+  // Labels are the labels, such as job and instance, that every series in the
+  // target carries. A query skips the target when a matcher on one of these
+  // names rejects its value.
+  LabelSet labels = 1;
+  // Scrape configures the target's scrape process.
+  ScrapeConfig scrape = 2;
+}
+
+// TargetStatus is the scrape process's report on its latest scrape. The
+// process writes it in the same transaction as the scrape's samples.
+message TargetStatus {
+  // Up is set when the latest scrape succeeded.
+  bool up = 1;
+  // LastScrapeMs is the start of the latest scrape in Unix milliseconds.
+  int64 last_scrape_ms = 2;
+  // LastDurationMs is how long the latest scrape took.
+  uint32 last_duration_ms = 3;
+  // LastError describes why the latest scrape failed, when it did.
+  string last_error = 4;
+  // Series is the number of series the latest successful scrape returned.
+  uint64 series = 5;
+  // DevicePeerId is the peer of the Device whose process scrapes the target.
+  string device_peer_id = 6;
+}
+
+// PromQueryResourceService answers PromQL over every target in the Space.
+service PromQueryResourceService {
+  // Query evaluates one PromQL expression.
+  rpc Query(QueryRequest) returns (QueryResponse);
+}
+
+// QueryRequest evaluates an expression at one instant or over a range.
+message QueryRequest {
+  // Expr is the PromQL expression.
+  string expr = 1;
+  // TimeMs is the instant of an instant query in Unix milliseconds. Zero uses
+  // the current time.
+  int64 time_ms = 2;
+  // StartMs is the first step of a range query in Unix milliseconds.
+  int64 start_ms = 3;
+  // EndMs is the last step of a range query in Unix milliseconds.
+  int64 end_ms = 4;
+  // StepMs is the step of a range query. Zero makes an instant query.
+  int64 step_ms = 5;
+}
+
+// ResultType is the PromQL value type of a query result.
+enum ResultType {
+  // RESULT_TYPE_UNKNOWN is the zero value.
+  RESULT_TYPE_UNKNOWN = 0;
+  // RESULT_TYPE_VECTOR is an instant vector: one sample per series.
+  RESULT_TYPE_VECTOR = 1;
+  // RESULT_TYPE_MATRIX is a range of samples per series.
+  RESULT_TYPE_MATRIX = 2;
+  // RESULT_TYPE_SCALAR is one sample with no labels.
+  RESULT_TYPE_SCALAR = 3;
+  // RESULT_TYPE_STRING is a string value.
+  RESULT_TYPE_STRING = 4;
+}
+
+// Sample is one value at one time.
+message Sample {
+  // TimeMs is the sample time in Unix milliseconds.
+  int64 time_ms = 1;
+  // Value is the sample value.
+  double value = 2;
+}
+
+// Series is the samples of one labeled series in a result.
+message Series {
+  // Labels identifies the series.
+  LabelSet labels = 1;
+  // Samples holds the series' samples in time order.
+  repeated Sample samples = 2;
+}
+
+// QueryResponse is the result of one PromQL expression.
+message QueryResponse {
+  // ResultType is the value type of the result.
+  ResultType result_type = 1;
+  // Series holds a vector, a matrix, or a scalar as one unlabeled series.
+  repeated Series series = 2;
+  // StringValue holds a string result.
+  string string_value = 3;
+  // Warnings are the query's annotations.
+  repeated string warnings = 4;
+}

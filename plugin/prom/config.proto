@@ -1,0 +1,11 @@
+syntax = "proto3";
+package s4wave.plugin.prom;
+
+option go_package = "github.com/s4wave/spacewave/plugin/prom;prom_plugin";
+
+// Config configures the Prometheus plugin controller.
+message Config {
+  // CommitWindowMs is how long a Device collects its targets' scrapes before
+  // committing them in one World transaction. Zero commits every minute.
+  uint32 commit_window_ms = 1;
+}

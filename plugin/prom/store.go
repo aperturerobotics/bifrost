@@ -12,6 +12,7 @@ import (
 	"github.com/s4wave/spacewave/db/block"
 	block_kvtx "github.com/s4wave/spacewave/db/kvtx/block"
 	"github.com/s4wave/spacewave/db/world"
+	s4wave_prom "github.com/s4wave/spacewave/sdk/prom"
 )
 
 // Store is the single writer of one target's samples.
@@ -45,39 +46,19 @@ type Store struct {
 	committedMax int64
 	// hasCommitted is set once the target holds a segment.
 	hasCommitted bool
+	// status is the encoded TargetStatus the next window commits, or nil.
+	status []byte
 }
 
 // CreateStore creates the World object key as an empty target carrying the
 // labels target on every series, and returns its writer.
 func CreateStore(ctx context.Context, eng world.Engine, key string, target labels.Labels) (*Store, error) {
-	// Encode the target's labels once; the transaction may replay.
-	metaData, err := (&TargetMeta{Labels: NewLabelSet(target)}).MarshalVT()
-	if err != nil {
-		return nil, err
-	}
-
-	// Create the object with an empty tree holding the target meta.
-	err = world.ExecTransaction(ctx, eng, true, func(ctx context.Context, wtx world.WorldState) error {
-		obj, _, err := world.CreateWorldObject(ctx, wtx, key, func(bcs *block.Cursor) error {
-			// Start an empty tree for the target.
-			bcs.SetBlock(block_kvtx.NewKeyValueStore(0), true)
-			kv, err := block_kvtx.BuildKvTransaction(ctx, bcs, true)
-			if err != nil {
-				return err
-			}
-			defer kv.Discard()
-
-			// Store the target's labels.
-			if err := kv.Set(ctx, metaKey(), metaData); err != nil {
-				return err
-			}
-			return kv.Commit(ctx)
-		})
-		world.ReleaseObjectState(obj)
-		return err
+	meta := &s4wave_prom.TargetMeta{Labels: NewLabelSet(target)}
+	err := world.ExecTransaction(ctx, eng, true, func(ctx context.Context, wtx world.WorldState) error {
+		return s4wave_prom.CreateTarget(ctx, wtx, key, meta)
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "create target %q", key)
+		return nil, err
 	}
 	return newStore(key, target.Copy(), NewSeriesTable(), 0, false, 0), nil
 }
@@ -187,6 +168,20 @@ func (s *Store) AppendStale(lset labels.Labels, t int64) error {
 	return s.Append(lset, t, math.Float64frombits(value.StaleNaN))
 }
 
+// SetStatus records status to commit with the next window that holds samples.
+// A later call replaces an uncommitted status.
+func (s *Store) SetStatus(status *s4wave_prom.TargetStatus) error {
+	// Encode the status and replace the pending one.
+	data, err := status.MarshalVT()
+	if err != nil {
+		return err
+	}
+	s.mtx.Lock()
+	s.status = data
+	s.mtx.Unlock()
+	return nil
+}
+
 // Rollback discards every uncommitted sample and the series only they
 // introduced. It returns ErrCommitInProgress while a commit is running.
 func (s *Store) Rollback() error {
@@ -225,11 +220,16 @@ func (s *Store) freeze() (*commitBatch, error) {
 		return nil, ErrCommitInProgress
 	}
 
-	// Encode the open window unless a failed commit left a batch to retry.
+	// Encode the open window with the pending status, unless a failed commit
+	// left a batch to retry.
 	if s.frozen == nil {
 		batch, err := newCommitBatch(s.open, s.table)
 		if err != nil || batch == nil {
 			return nil, err
+		}
+		if s.status != nil {
+			batch.entries = append(batch.entries, batchEntry{key: s4wave_prom.StatusKey(), value: s.status})
+			s.status = nil
 		}
 		s.frozen = batch
 		s.open = NewWindow(s.table.Len())

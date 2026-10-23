@@ -3,6 +3,7 @@
 /* eslint-disable */
 
 import { createEnumType } from '@aptre/protobuf-es-lite/enum'
+import { LabelSet } from '../../sdk/prom/prom.pb.js'
 import type { MessageType } from '@aptre/protobuf-es-lite/message'
 import { createMessageType } from '@aptre/protobuf-es-lite/message'
 
@@ -30,66 +31,6 @@ export const ChunkEncoding_Enum = /* @__PURE__ */ createEnumType(
     [1, 'CHUNK_ENCODING_XOR'],
   ],
 )
-
-/**
- * Label is one name and value of a series.
- *
- * @generated from message s4wave.plugin.prom.Label
- */
-export interface Label {
-  /**
-   * Name is the label name.
-   */
-  name?: string
-  /**
-   * Value is the label value.
-   */
-  value?: string
-}
-
-export const Label: MessageType<Label> =
-  /* @__PURE__ */ createMessageType<Label>('s4wave.plugin.prom.Label', () => [
-    [1, 'name', 9],
-    [2, 'value', 9],
-  ])
-
-/**
- * LabelSet is the sorted label set that identifies one series.
- *
- * @generated from message s4wave.plugin.prom.LabelSet
- */
-export interface LabelSet {
-  /**
-   * Labels holds the labels in ascending name order.
-   */
-  labels?: Label[]
-}
-
-export const LabelSet: MessageType<LabelSet> =
-  /* @__PURE__ */ createMessageType<LabelSet>(
-    's4wave.plugin.prom.LabelSet',
-    () => [[1, 'labels', 11, 1, Label.codec]],
-  )
-
-/**
- * TargetMeta names the target a store holds samples for.
- *
- * @generated from message s4wave.plugin.prom.TargetMeta
- */
-export interface TargetMeta {
-  /**
-   * Labels are the labels, such as job and instance, that every series in the
-   * store carries. A query skips the store when a matcher on one of these names
-   * rejects its value.
-   */
-  labels?: LabelSet
-}
-
-export const TargetMeta: MessageType<TargetMeta> =
-  /* @__PURE__ */ createMessageType<TargetMeta>(
-    's4wave.plugin.prom.TargetMeta',
-    () => [[1, 'labels', 11, 0, LabelSet.codec]],
-  )
 
 /**
  * SeriesPage appends series to a target's series table.

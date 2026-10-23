@@ -6,12 +6,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Key prefixes of a target's key-value tree. Keys sort by prefix, then by the
+// Key prefixes of a target's key-value tree that the segment store owns; the
+// meta and status keys are in s4wave_prom. Keys sort by prefix, then by the
 // big-endian numbers that follow, so a prefix scan returns series pages and
 // segments in the order they were committed.
 const (
-	// metaKeyPrefix is the key of the target's TargetMeta.
-	metaKeyPrefix byte = 0x00
 	// pageKeyPrefix starts the key of a SeriesPage: prefix, first series.
 	pageKeyPrefix byte = 0x01
 	// segmentKeyPrefix starts the key of a Segment: prefix, min time, max time.
@@ -30,11 +29,6 @@ func sortableTime(t int64) uint64 {
 // parseSortableTime inverts sortableTime.
 func parseSortableTime(u uint64) int64 {
 	return int64(u ^ signBit) //nolint:gosec // the wrap is the encoding.
-}
-
-// metaKey returns the key of the target's TargetMeta.
-func metaKey() []byte {
-	return []byte{metaKeyPrefix}
 }
 
 // pageKey returns the key of the SeriesPage whose first series is first.

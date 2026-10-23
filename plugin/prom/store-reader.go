@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"github.com/s4wave/spacewave/db/kvtx"
+	s4wave_prom "github.com/s4wave/spacewave/sdk/prom"
 )
 
 // StoreReader reads one target's key-value tree: its labels, series table and
@@ -26,18 +27,18 @@ func NewStoreReader(kv kvtx.Tx) *StoreReader {
 // Meta returns the labels every series of the target carries.
 func (r *StoreReader) Meta(ctx context.Context) (labels.Labels, error) {
 	// Read the target's TargetMeta.
-	data, found, err := r.kv.Get(ctx, metaKey())
+	data, found, err := r.kv.Get(ctx, s4wave_prom.MetaKey())
 	if err != nil {
 		return labels.EmptyLabels(), err
 	}
 	if !found {
 		return labels.EmptyLabels(), errors.Wrap(ErrCorruptStore, "missing target meta")
 	}
-	meta := &TargetMeta{}
+	meta := &s4wave_prom.TargetMeta{}
 	if err := meta.UnmarshalVT(data); err != nil {
 		return labels.EmptyLabels(), errors.Wrap(err, "decode target meta")
 	}
-	return meta.GetLabels().ToLabels(), nil
+	return ToLabels(meta.GetLabels()), nil
 }
 
 // Table reads the target's series table from its series pages.
@@ -63,7 +64,7 @@ func (r *StoreReader) Table(ctx context.Context) (*SeriesTable, error) {
 			return nil, errors.Wrap(err, "decode series page")
 		}
 		for _, set := range page.GetSeries() {
-			table.Add(set.ToLabels())
+			table.Add(ToLabels(set))
 		}
 	}
 	return table, it.Err()

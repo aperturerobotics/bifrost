@@ -12,6 +12,7 @@ import (
 
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
+	prom "github.com/s4wave/spacewave/sdk/prom"
 )
 
 // ChunkEncoding identifies how a Chunk encodes its samples.
@@ -50,77 +51,6 @@ func (x ChunkEncoding) String() string {
 	return strconv.Itoa(int(x))
 }
 
-// Label is one name and value of a series.
-type Label struct {
-	unknownFields []byte
-	// Name is the label name.
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Value is the label value.
-	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-}
-
-func (x *Label) Reset() {
-	*x = Label{}
-}
-
-func (*Label) ProtoMessage() {}
-
-func (x *Label) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *Label) GetValue() string {
-	if x != nil {
-		return x.Value
-	}
-	return ""
-}
-
-// LabelSet is the sorted label set that identifies one series.
-type LabelSet struct {
-	unknownFields []byte
-	// Labels holds the labels in ascending name order.
-	Labels []*Label `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty"`
-}
-
-func (x *LabelSet) Reset() {
-	*x = LabelSet{}
-}
-
-func (*LabelSet) ProtoMessage() {}
-
-func (x *LabelSet) GetLabels() []*Label {
-	if x != nil {
-		return x.Labels
-	}
-	return nil
-}
-
-// TargetMeta names the target a store holds samples for.
-type TargetMeta struct {
-	unknownFields []byte
-	// Labels are the labels, such as job and instance, that every series in the
-	// store carries. A query skips the store when a matcher on one of these names
-	// rejects its value.
-	Labels *LabelSet `protobuf:"bytes,1,opt,name=labels,proto3" json:"labels,omitempty"`
-}
-
-func (x *TargetMeta) Reset() {
-	*x = TargetMeta{}
-}
-
-func (*TargetMeta) ProtoMessage() {}
-
-func (x *TargetMeta) GetLabels() *LabelSet {
-	if x != nil {
-		return x.Labels
-	}
-	return nil
-}
-
 // SeriesPage appends series to a target's series table.
 // A commit writes a page only when its window introduced series.
 type SeriesPage struct {
@@ -130,7 +60,7 @@ type SeriesPage struct {
 	// FirstSeries + len(series) - 1.
 	FirstSeries uint64 `protobuf:"varint,1,opt,name=first_series,json=firstSeries,proto3" json:"firstSeries,omitempty"`
 	// Series holds the label sets of the added series in series number order.
-	Series []*LabelSet `protobuf:"bytes,2,rep,name=series,proto3" json:"series,omitempty"`
+	Series []*prom.LabelSet `protobuf:"bytes,2,rep,name=series,proto3" json:"series,omitempty"`
 }
 
 func (x *SeriesPage) Reset() {
@@ -146,7 +76,7 @@ func (x *SeriesPage) GetFirstSeries() uint64 {
 	return 0
 }
 
-func (x *SeriesPage) GetSeries() []*LabelSet {
+func (x *SeriesPage) GetSeries() []*prom.LabelSet {
 	if x != nil {
 		return x.Series
 	}
@@ -268,55 +198,6 @@ func (x *Segment) GetSeries() []*SeriesChunks {
 	return nil
 }
 
-func (m *Label) CloneVT() *Label {
-	if m == nil {
-		return (*Label)(nil)
-	}
-	r := new(Label)
-	r.Name = m.Name
-	r.Value = m.Value
-	if len(m.unknownFields) > 0 {
-		r.unknownFields = slices.Clone(m.unknownFields)
-	}
-	return r
-}
-
-func (m *Label) CloneMessageVT() protobuf_go_lite.CloneMessage {
-	return m.CloneVT()
-}
-
-func (m *LabelSet) CloneVT() *LabelSet {
-	if m == nil {
-		return (*LabelSet)(nil)
-	}
-	r := new(LabelSet)
-	r.Labels = protobuf_go_lite.CloneVTSlice(m.Labels)
-	if len(m.unknownFields) > 0 {
-		r.unknownFields = slices.Clone(m.unknownFields)
-	}
-	return r
-}
-
-func (m *LabelSet) CloneMessageVT() protobuf_go_lite.CloneMessage {
-	return m.CloneVT()
-}
-
-func (m *TargetMeta) CloneVT() *TargetMeta {
-	if m == nil {
-		return (*TargetMeta)(nil)
-	}
-	r := new(TargetMeta)
-	r.Labels = protobuf_go_lite.CloneVTValue(m.Labels)
-	if len(m.unknownFields) > 0 {
-		r.unknownFields = slices.Clone(m.unknownFields)
-	}
-	return r
-}
-
-func (m *TargetMeta) CloneMessageVT() protobuf_go_lite.CloneMessage {
-	return m.CloneVT()
-}
-
 func (m *SeriesPage) CloneVT() *SeriesPage {
 	if m == nil {
 		return (*SeriesPage)(nil)
@@ -388,69 +269,6 @@ func (m *Segment) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
-func (this *Label) EqualVT(that *Label) bool {
-	if this == that {
-		return true
-	} else if this == nil || that == nil {
-		return false
-	}
-	if this.Name != that.Name {
-		return false
-	}
-	if this.Value != that.Value {
-		return false
-	}
-	return string(this.unknownFields) == string(that.unknownFields)
-}
-
-func (this *Label) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*Label)
-	if !ok {
-		return false
-	}
-	return this.EqualVT(that)
-}
-
-func (this *LabelSet) EqualVT(that *LabelSet) bool {
-	if this == that {
-		return true
-	} else if this == nil || that == nil {
-		return false
-	}
-	if !protobuf_go_lite.EqualVTSliceImplicit(this.Labels, that.Labels, func() *Label { return &Label{} }) {
-		return false
-	}
-	return string(this.unknownFields) == string(that.unknownFields)
-}
-
-func (this *LabelSet) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*LabelSet)
-	if !ok {
-		return false
-	}
-	return this.EqualVT(that)
-}
-
-func (this *TargetMeta) EqualVT(that *TargetMeta) bool {
-	if this == that {
-		return true
-	} else if this == nil || that == nil {
-		return false
-	}
-	if !protobuf_go_lite.IsEqualVT(this.Labels, that.Labels) {
-		return false
-	}
-	return string(this.unknownFields) == string(that.unknownFields)
-}
-
-func (this *TargetMeta) EqualMessageVT(thatMsg any) bool {
-	that, ok := thatMsg.(*TargetMeta)
-	if !ok {
-		return false
-	}
-	return this.EqualVT(that)
-}
-
 func (this *SeriesPage) EqualVT(that *SeriesPage) bool {
 	if this == that {
 		return true
@@ -460,7 +278,7 @@ func (this *SeriesPage) EqualVT(that *SeriesPage) bool {
 	if this.FirstSeries != that.FirstSeries {
 		return false
 	}
-	if !protobuf_go_lite.EqualVTSliceImplicit(this.Series, that.Series, func() *LabelSet { return &LabelSet{} }) {
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Series, that.Series, func() *prom.LabelSet { return &prom.LabelSet{} }) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -592,165 +410,6 @@ func (x *ChunkEncoding) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-// MarshalProtoJSON marshals the Label message to JSON.
-func (x *Label) MarshalProtoJSON(s *json.MarshalState) {
-	if x == nil {
-		s.WriteNil()
-		return
-	}
-	s.WriteObjectStart()
-	var wroteField bool
-	if x.Name != "" || s.HasField("name") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("name")
-		s.WriteString(x.Name)
-	}
-	if x.Value != "" || s.HasField("value") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("value")
-		s.WriteString(x.Value)
-	}
-	s.WriteObjectEnd()
-}
-
-// MarshalJSON marshals the Label to JSON.
-func (x *Label) MarshalJSON() ([]byte, error) {
-	return json.DefaultMarshalerConfig.Marshal(x)
-}
-
-// UnmarshalProtoJSON unmarshals the Label message from JSON.
-func (x *Label) UnmarshalProtoJSON(s *json.UnmarshalState) {
-	if s.ReadNil() {
-		return
-	}
-	s.ReadObject(func(key string) {
-		switch key {
-		default:
-			s.Skip() // ignore unknown field
-		case "name":
-			s.AddField("name")
-			x.Name = s.ReadString()
-		case "value":
-			s.AddField("value")
-			x.Value = s.ReadString()
-		}
-	})
-}
-
-// UnmarshalJSON unmarshals the Label from JSON.
-func (x *Label) UnmarshalJSON(b []byte) error {
-	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
-}
-
-// MarshalProtoJSON marshals the LabelSet message to JSON.
-func (x *LabelSet) MarshalProtoJSON(s *json.MarshalState) {
-	if x == nil {
-		s.WriteNil()
-		return
-	}
-	s.WriteObjectStart()
-	var wroteField bool
-	if len(x.Labels) > 0 || s.HasField("labels") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("labels")
-		s.WriteArrayStart()
-		var wroteElement bool
-		for _, element := range x.Labels {
-			s.WriteMoreIf(&wroteElement)
-			element.MarshalProtoJSON(s.WithField("labels"))
-		}
-		s.WriteArrayEnd()
-	}
-	s.WriteObjectEnd()
-}
-
-// MarshalJSON marshals the LabelSet to JSON.
-func (x *LabelSet) MarshalJSON() ([]byte, error) {
-	return json.DefaultMarshalerConfig.Marshal(x)
-}
-
-// UnmarshalProtoJSON unmarshals the LabelSet message from JSON.
-func (x *LabelSet) UnmarshalProtoJSON(s *json.UnmarshalState) {
-	if s.ReadNil() {
-		return
-	}
-	s.ReadObject(func(key string) {
-		switch key {
-		default:
-			s.Skip() // ignore unknown field
-		case "labels":
-			s.AddField("labels")
-			if s.ReadNil() {
-				x.Labels = nil
-				return
-			}
-			s.ReadArray(func() {
-				if s.ReadNil() {
-					x.Labels = append(x.Labels, nil)
-					return
-				}
-				v := &Label{}
-				v.UnmarshalProtoJSON(s.WithField("labels", false))
-				if s.Err() != nil {
-					return
-				}
-				x.Labels = append(x.Labels, v)
-			})
-		}
-	})
-}
-
-// UnmarshalJSON unmarshals the LabelSet from JSON.
-func (x *LabelSet) UnmarshalJSON(b []byte) error {
-	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
-}
-
-// MarshalProtoJSON marshals the TargetMeta message to JSON.
-func (x *TargetMeta) MarshalProtoJSON(s *json.MarshalState) {
-	if x == nil {
-		s.WriteNil()
-		return
-	}
-	s.WriteObjectStart()
-	var wroteField bool
-	if x.Labels != nil || s.HasField("labels") {
-		s.WriteMoreIf(&wroteField)
-		s.WriteObjectField("labels")
-		x.Labels.MarshalProtoJSON(s.WithField("labels"))
-	}
-	s.WriteObjectEnd()
-}
-
-// MarshalJSON marshals the TargetMeta to JSON.
-func (x *TargetMeta) MarshalJSON() ([]byte, error) {
-	return json.DefaultMarshalerConfig.Marshal(x)
-}
-
-// UnmarshalProtoJSON unmarshals the TargetMeta message from JSON.
-func (x *TargetMeta) UnmarshalProtoJSON(s *json.UnmarshalState) {
-	if s.ReadNil() {
-		return
-	}
-	s.ReadObject(func(key string) {
-		switch key {
-		default:
-			s.Skip() // ignore unknown field
-		case "labels":
-			if s.ReadNil() {
-				x.Labels = nil
-				return
-			}
-			x.Labels = &LabelSet{}
-			x.Labels.UnmarshalProtoJSON(s.WithField("labels", true))
-		}
-	})
-}
-
-// UnmarshalJSON unmarshals the TargetMeta from JSON.
-func (x *TargetMeta) UnmarshalJSON(b []byte) error {
-	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
-}
-
 // MarshalProtoJSON marshals the SeriesPage message to JSON.
 func (x *SeriesPage) MarshalProtoJSON(s *json.MarshalState) {
 	if x == nil {
@@ -806,7 +465,7 @@ func (x *SeriesPage) UnmarshalProtoJSON(s *json.UnmarshalState) {
 					x.Series = append(x.Series, nil)
 					return
 				}
-				v := &LabelSet{}
+				v := &prom.LabelSet{}
 				v.UnmarshalProtoJSON(s.WithField("series", false))
 				if s.Err() != nil {
 					return
@@ -1038,134 +697,6 @@ func (x *Segment) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
-func (m *Label) MarshalVT() (dAtA []byte, err error) {
-	if m == nil {
-		return nil, nil
-	}
-	size := m.SizeVT()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Label) MarshalToVT(dAtA []byte) (int, error) {
-	size := m.SizeVT()
-	return m.MarshalToSizedBufferVT(dAtA[:size])
-}
-
-func (m *Label) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
-	if m == nil {
-		return 0, nil
-	}
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.unknownFields != nil {
-		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
-	}
-	if len(m.Value) > 0 {
-		i = protobuf_go_lite.EncodeString(dAtA, i, m.Value)
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Name) > 0 {
-		i = protobuf_go_lite.EncodeString(dAtA, i, m.Name)
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *LabelSet) MarshalVT() (dAtA []byte, err error) {
-	if m == nil {
-		return nil, nil
-	}
-	size := m.SizeVT()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *LabelSet) MarshalToVT(dAtA []byte) (int, error) {
-	size := m.SizeVT()
-	return m.MarshalToSizedBufferVT(dAtA[:size])
-}
-
-func (m *LabelSet) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
-	if m == nil {
-		return 0, nil
-	}
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.unknownFields != nil {
-		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
-	}
-	if len(m.Labels) > 0 {
-		for iNdEx := len(m.Labels) - 1; iNdEx >= 0; iNdEx-- {
-			size, err := m.Labels[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *TargetMeta) MarshalVT() (dAtA []byte, err error) {
-	if m == nil {
-		return nil, nil
-	}
-	size := m.SizeVT()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *TargetMeta) MarshalToVT(dAtA []byte) (int, error) {
-	size := m.SizeVT()
-	return m.MarshalToSizedBufferVT(dAtA[:size])
-}
-
-func (m *TargetMeta) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
-	if m == nil {
-		return 0, nil
-	}
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.unknownFields != nil {
-		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
-	}
-	if m.Labels != nil {
-		size, err := m.Labels.MarshalToSizedBufferVT(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *SeriesPage) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -1370,46 +901,6 @@ func (m *Segment) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *Label) SizeVT() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Name)
-	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Value)
-	n += len(m.unknownFields)
-	return n
-}
-
-func (m *LabelSet) SizeVT() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	for _, e := range m.Labels {
-		l = e.SizeVT()
-		n += protobuf_go_lite.SizeMessage(1, l)
-	}
-	n += len(m.unknownFields)
-	return n
-}
-
-func (m *TargetMeta) SizeVT() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Labels != nil {
-		l = m.Labels.SizeVT()
-		n += protobuf_go_lite.SizeMessage(1, l)
-	}
-	n += len(m.unknownFields)
-	return n
-}
-
 func (m *SeriesPage) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -1474,60 +965,6 @@ func (x ChunkEncoding) MarshalProtoText() string {
 	return x.String()
 }
 
-func (x *Label) MarshalProtoText() string {
-	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "Label")
-	if x.Name != "" {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "name")
-		protobuf_go_lite.TextWriteString(&sb, x.Name)
-	}
-	if x.Value != "" {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "value")
-		protobuf_go_lite.TextWriteString(&sb, x.Value)
-	}
-	return protobuf_go_lite.TextFinishMessage(&sb)
-}
-
-func (x *Label) String() string {
-	return x.MarshalProtoText()
-}
-
-func (x *LabelSet) MarshalProtoText() string {
-	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "LabelSet")
-	if len(x.Labels) > 0 {
-		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "labels")
-		for i, v := range x.Labels {
-			protobuf_go_lite.TextWriteListSeparator(&sb, i)
-			if v == nil {
-				protobuf_go_lite.TextWriteTextMarshaler(&sb, &Label{})
-			} else {
-				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
-			}
-		}
-		protobuf_go_lite.TextWriteListEnd(&sb)
-	}
-	return protobuf_go_lite.TextFinishMessage(&sb)
-}
-
-func (x *LabelSet) String() string {
-	return x.MarshalProtoText()
-}
-
-func (x *TargetMeta) MarshalProtoText() string {
-	var sb protobuf_go_lite.TextBuilder
-	initialLen := protobuf_go_lite.TextStartMessage(&sb, "TargetMeta")
-	if x.Labels != nil {
-		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "labels")
-		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Labels)
-	}
-	return protobuf_go_lite.TextFinishMessage(&sb)
-}
-
-func (x *TargetMeta) String() string {
-	return x.MarshalProtoText()
-}
-
 func (x *SeriesPage) MarshalProtoText() string {
 	var sb protobuf_go_lite.TextBuilder
 	initialLen := protobuf_go_lite.TextStartMessage(&sb, "SeriesPage")
@@ -1540,7 +977,7 @@ func (x *SeriesPage) MarshalProtoText() string {
 		for i, v := range x.Series {
 			protobuf_go_lite.TextWriteListSeparator(&sb, i)
 			if v == nil {
-				protobuf_go_lite.TextWriteTextMarshaler(&sb, &LabelSet{})
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &prom.LabelSet{})
 			} else {
 				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
 			}
@@ -1636,183 +1073,6 @@ func (x *Segment) String() string {
 	return x.MarshalProtoText()
 }
 
-func (m *Label) UnmarshalVT(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	var err error
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
-		if err != nil {
-			return err
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Label: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Label: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var v string
-			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.Name = v
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
-			}
-			var v string
-			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.Value = v
-		default:
-			iNdEx = preIndex
-			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return protobuf_go_lite.ErrInvalidLength
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-
-func (m *LabelSet) UnmarshalVT(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	var err error
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
-		if err != nil {
-			return err
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: LabelSet: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: LabelSet: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Labels", wireType)
-			}
-			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			m.Labels = append(m.Labels, &Label{})
-			if err := m.Labels[len(m.Labels)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return protobuf_go_lite.ErrInvalidLength
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-
-func (m *TargetMeta) UnmarshalVT(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	var err error
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
-		if err != nil {
-			return err
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: TargetMeta: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: TargetMeta: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Labels", wireType)
-			}
-			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
-			if err != nil {
-				return err
-			}
-			if m.Labels == nil {
-				m.Labels = &LabelSet{}
-			}
-			if err := m.Labels.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return protobuf_go_lite.ErrInvalidLength
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-
 func (m *SeriesPage) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1850,7 +1110,7 @@ func (m *SeriesPage) UnmarshalVT(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			m.Series = append(m.Series, &LabelSet{})
+			m.Series = append(m.Series, &prom.LabelSet{})
 			if err := m.Series[len(m.Series)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}

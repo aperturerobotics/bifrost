@@ -2,20 +2,20 @@ package prom_plugin
 
 import (
 	"github.com/prometheus/prometheus/model/labels"
+	s4wave_prom "github.com/s4wave/spacewave/sdk/prom"
 )
 
 // NewLabelSet converts a Prometheus label set to its stored form.
-func NewLabelSet(lset labels.Labels) *LabelSet {
-	out := &LabelSet{Labels: make([]*Label, 0, lset.Len())}
+func NewLabelSet(lset labels.Labels) *s4wave_prom.LabelSet {
+	out := &s4wave_prom.LabelSet{Labels: make([]*s4wave_prom.Label, 0, lset.Len())}
 	lset.Range(func(l labels.Label) {
-		out.Labels = append(out.Labels, &Label{Name: l.Name, Value: l.Value})
+		out.Labels = append(out.Labels, &s4wave_prom.Label{Name: l.Name, Value: l.Value})
 	})
 	return out
 }
 
 // ToLabels converts a stored label set to a Prometheus label set.
-// The stored labels are already sorted by name.
-func (s *LabelSet) ToLabels() labels.Labels {
+func ToLabels(s *s4wave_prom.LabelSet) labels.Labels {
 	b := labels.NewScratchBuilder(len(s.GetLabels()))
 	for _, l := range s.GetLabels() {
 		b.Add(l.GetName(), l.GetValue())

@@ -39,6 +39,11 @@ func NewSDKEngine(client ResourceClient, ref resource_client.ResourceRef) (*SDKE
 	}, nil
 }
 
+// GetEngineInfo returns the engine's identity and the session it serves.
+func (e *SDKEngine) GetEngineInfo(ctx context.Context) (*s4wave_world.GetEngineInfoResponse, error) {
+	return e.service.GetEngineInfo(ctx, &s4wave_world.GetEngineInfoRequest{})
+}
+
 // Release releases the underlying resource reference.
 func (e *SDKEngine) Release() {
 	e.ref.Release()

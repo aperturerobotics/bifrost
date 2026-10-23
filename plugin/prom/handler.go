@@ -1,0 +1,111 @@
+package prom_plugin
+
+import (
+	"context"
+	"sync"
+	"time"
+
+	"github.com/aperturerobotics/starpc/srpc"
+	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/promql"
+	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
+	s4wave_objecttype_registry "github.com/s4wave/spacewave/sdk/objecttype/registry"
+	s4wave_process "github.com/s4wave/spacewave/sdk/process"
+	s4wave_prom "github.com/s4wave/spacewave/sdk/prom"
+	sdk_world_engine "github.com/s4wave/spacewave/sdk/world/engine"
+	"github.com/sirupsen/logrus"
+)
+
+// handler serves the prom/target ObjectType to the core plugin.
+type handler struct {
+	// le is the logger.
+	le *logrus.Entry
+	// window is the time between a Device's commits in one Space.
+	window time.Duration
+	// promql evaluates every query this plugin serves.
+	promql *promql.Engine
+
+	// mtx guards groups.
+	mtx sync.Mutex
+	// groups holds the commit group of each World engine, by engine ID.
+	groups map[string]*commitGroup
+}
+
+// newHandler constructs a handler that commits every window.
+func newHandler(le *logrus.Entry, window time.Duration) *handler {
+	return &handler{
+		le:     le,
+		window: window,
+		promql: newQueryEngine(),
+		groups: make(map[string]*commitGroup),
+	}
+}
+
+// InvokeObjectType serves a target's scrape process and the Space's PromQL
+// queries on the attached engine.
+func (h *handler) InvokeObjectType(
+	ctx context.Context,
+	req *s4wave_objecttype_registry.InvokeObjectTypeRequest,
+) (*s4wave_objecttype_registry.InvokeObjectTypeResponse, error) {
+	// Require a target and the engine it lives in.
+	if req.GetTypeId() != s4wave_prom.TargetTypeID {
+		return nil, errors.Errorf("prom plugin: unhandled object type %s", req.GetTypeId())
+	}
+	if req.GetAttachedEngineResourceId() == 0 {
+		return nil, errors.New("prom plugin: attached engine resource is required")
+	}
+	resourceCtx, err := resource_server.MustGetResourceClientContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Open the engine and learn which World and Device it serves.
+	engine, err := sdk_world_engine.NewAttachedEngine(ctx, req.GetAttachedEngineResourceId())
+	if err != nil {
+		return nil, err
+	}
+	info, err := engine.GetEngineInfo(ctx)
+	if err != nil {
+		engine.Release()
+		return nil, errors.Wrap(err, "prom plugin: engine info")
+	}
+
+	// Serve the scrape process and the query service.
+	le := h.le.WithField("object-key", req.GetObjectKey())
+	proc := &targetProcess{
+		le:        le,
+		eng:       engine,
+		group:     h.group(info.GetEngineInfo().GetEngineId()),
+		objectKey: req.GetObjectKey(),
+		peerID:    info.GetSessionPeerId(),
+	}
+	query := &queryService{engine: h.promql, q: NewQueryable(engine, worldTargets{eng: engine})}
+	mux := resource_server.NewResourceMux(func(mux srpc.Mux) error {
+		if err := s4wave_process.SRPCRegisterPersistentExecutionService(mux, proc); err != nil {
+			return err
+		}
+		return s4wave_prom.SRPCRegisterPromQueryResourceService(mux, query)
+	})
+	resourceID, err := resourceCtx.AddResource(mux, engine.Release)
+	if err != nil {
+		engine.Release()
+		return nil, err
+	}
+	return &s4wave_objecttype_registry.InvokeObjectTypeResponse{ResourceId: resourceID}, nil
+}
+
+// group returns the commit group of the World engine engineID.
+func (h *handler) group(engineID string) *commitGroup {
+	// Create the group on first use.
+	h.mtx.Lock()
+	defer h.mtx.Unlock()
+	g := h.groups[engineID]
+	if g == nil {
+		g = newCommitGroup(h.le.WithField("engine-id", engineID), h.window)
+		h.groups[engineID] = g
+	}
+	return g
+}
+
+// _ is a type assertion.
+var _ s4wave_objecttype_registry.SRPCObjectTypeHandlerServiceServer = (*handler)(nil)
