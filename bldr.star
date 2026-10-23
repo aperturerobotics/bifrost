@@ -487,6 +487,24 @@ manifest("spacewave-sql",
     },
 )
 
+# spacewave-prom scrapes Prometheus exporters into prom/target objects from
+# approved Devices and answers PromQL over them. No release includes it yet; a
+# Space adds it as a Space plugin.
+manifest("spacewave-prom",
+    builder="bldr/plugin/compiler/go",
+    rev=1,
+    config={
+        "goPkgs": ["./plugin/prom"],
+        "configSet": {
+            "spacewave-prom": config_entry("plugin/prom", 1),
+        },
+        "webPkgs": EXCLUDED_WEB_PKGS,
+        "platformTypes": {
+            "js": {"goCompiler": "GO_COMPILER_GOSCRIPT"},
+        },
+    },
+)
+
 # spacewave-wasivm runs WebAssembly VMs. It is experimental: no release,
 # remote world or deploy includes it; only the -wasivm builds below do.
 manifest("spacewave-wasivm",

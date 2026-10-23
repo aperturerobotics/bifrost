@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
+	s4wave_prom "github.com/s4wave/spacewave/sdk/prom"
 )
 
 // commitBatch is an open window encoded for one transaction: the keys and
@@ -50,7 +51,7 @@ func newCommitBatch(w *Window, table *SeriesTable) (*commitBatch, error) {
 
 	// Encode the series the window introduced as a page, written first.
 	if added := table.LabelsFrom(w.FirstSeries()); len(added) != 0 {
-		page := &SeriesPage{FirstSeries: w.FirstSeries(), Series: make([]*LabelSet, 0, len(added))}
+		page := &SeriesPage{FirstSeries: w.FirstSeries(), Series: make([]*s4wave_prom.LabelSet, 0, len(added))}
 		for _, lset := range added {
 			page.Series = append(page.Series, NewLabelSet(lset))
 		}

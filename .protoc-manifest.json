@@ -3487,12 +3487,15 @@
       ]
     },
     "github.com/s4wave/spacewave/plugin/prom": {
-      "hash": "269673d893abe3dd5e86184998c6cd5ffa5acaf411985db4ab09766012fa3932",
+      "hash": "bcc8fdf4bb232f3db5ceded32250c58a739b13a0487c2173afd51b256c41cd8a",
       "generatedFiles": [
+        "plugin/prom/config.pb.go",
+        "plugin/prom/config.pb.ts",
         "plugin/prom/prom.pb.go",
         "plugin/prom/prom.pb.ts"
       ],
       "protoFiles": [
+        "plugin/prom/config.proto",
         "plugin/prom/prom.proto"
       ]
     },
@@ -3913,6 +3916,18 @@
         "sdk/process/process.proto"
       ]
     },
+    "github.com/s4wave/spacewave/sdk/prom": {
+      "hash": "9139c0a3b572c0b65a9c30725f921ddc0bdf233a201e315cfea441b746626b30",
+      "generatedFiles": [
+        "sdk/prom/prom.pb.go",
+        "sdk/prom/prom.pb.ts",
+        "sdk/prom/prom_srpc.pb.go",
+        "sdk/prom/prom_srpc.pb.ts"
+      ],
+      "protoFiles": [
+        "sdk/prom/prom.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/sdk/provider": {
       "hash": "73593cb1345abc82415e699a256180c5fa57505be878351d988baf2ffe7f29af",
       "generatedFiles": [
@@ -4230,7 +4245,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/trace": {
-      "hash": "71098f4e20036ac7cd477f52476c5017ad8aa6b05fcc48330ffbc29aaf9630c4",
+      "hash": "3fa94a40da16f0d249a26b7c934cf3e69d60313f896d4db4d6897fc62570910c",
       "generatedFiles": [
         "sdk/trace/trace.pb.go",
         "sdk/trace/trace.pb.ts",

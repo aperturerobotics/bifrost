@@ -10,6 +10,10 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 )
 
+// ChunkSamples is the number of samples after which a window starts a new
+// chunk for a series, the same cut Prometheus uses for its head chunks.
+const ChunkSamples = 120
+
 // Window collects the samples one commit appends, per series, in XOR chunks.
 //
 // A window holds only samples that are not yet committed, so the bytes a
