@@ -3,6 +3,7 @@ package s4db
 import (
 	"bytes"
 	"slices"
+	"sync"
 )
 
 // change is one key's change applied at a checkpoint.
@@ -97,23 +98,17 @@ func (b *builder) apply(page uint64, low []byte, changes []change) ([]child, err
 	// Split the changes among the children, and read the changed children
 	// together: each read is random, and one at a time they bound the
 	// checkpoint.
-	ends := make([]int, n.count())
-	var changed []uint64
-	start := 0
-	for i := range ends {
-		ends[i] = len(changes)
-		if i+1 < n.count() {
-			ends[i], _ = slices.BinarySearchFunc(changes, n.key(i+1), func(c change, k []byte) int { return bytes.Compare(c.key, k) })
-		}
-		if ends[i] > start {
-			changed = append(changed, n.kid(i))
-		}
-		start = ends[i]
-	}
+	ends, changed := splitChanges(n, changes)
 	nodes, err := b.p.nodes(changed)
 	if err != nil {
 		return nil, err
 	}
+
+	// Read the changed children of changed inner children ahead of their
+	// rewrite, so one child's reads overlap the rewrite of the one before.
+	ra := b.readAhead(nodes, ends, changes)
+	defer ra.close()
+	inner := 0
 
 	// Rewrite each child with changes in its range and keep the rest.
 	// Adjacent rewritten leaves pack together, so the checkpoint, which
@@ -129,7 +124,7 @@ func (b *builder) apply(page uint64, low []byte, changes []change) ([]child, err
 		}
 		leaves, inRun = nil, false
 	}
-	start = 0
+	start := 0
 	for i, end := range ends {
 		// Keep a child without changes. The first child's low is the
 		// page's own.
@@ -155,10 +150,13 @@ func (b *builder) apply(page uint64, low []byte, changes []change) ([]child, err
 			leaves = append(leaves, mergeLeaf(c, changes[start:end])...)
 		} else {
 			flush()
+			ra.wait(inner)
 			sub, err := b.apply(page, k, changes[start:end])
 			if err != nil {
 				return nil, err
 			}
+			ra.next()
+			inner++
 			kids = append(kids, sub...)
 		}
 		start = end
@@ -179,6 +177,124 @@ func (b *builder) apply(page uint64, low []byte, changes []change) ([]child, err
 		out[0].low = low
 	}
 	return out, nil
+}
+
+// splitChanges returns where changes end for each child of inner page n,
+// and the children with changes.
+func splitChanges(n *node, changes []change) ([]int, []uint64) {
+	// Find the end of each child's range in the sorted changes.
+	ends := make([]int, n.count())
+	var changed []uint64
+	start := 0
+	for i := range ends {
+		ends[i] = len(changes)
+		if i+1 < n.count() {
+			ends[i], _ = slices.BinarySearchFunc(changes, n.key(i+1), func(c change, k []byte) int { return bytes.Compare(c.key, k) })
+		}
+		if ends[i] > start {
+			changed = append(changed, n.kid(i))
+		}
+		start = ends[i]
+	}
+	return ends, changed
+}
+
+// readAhead returns a reader of the changed children of nodes, the changed
+// children of one inner page, split by ends. It has nothing to read when
+// nodes are leaves.
+func (b *builder) readAhead(nodes []*node, ends []int, changes []change) *readAhead {
+	// List the changed children of each changed inner child.
+	ra := &readAhead{slots: make(chan struct{}, aheadBatches), stop: make(chan struct{})}
+	if len(nodes) == 0 || nodes[0].leaf {
+		return ra
+	}
+	var batches [][]uint64
+	start := 0
+	for _, end := range ends {
+		if end > start {
+			_, changed := splitChanges(nodes[len(batches)], changes[start:end])
+			batches = append(batches, changed)
+		}
+		start = end
+	}
+
+	// Read them in order, up to aheadBatches past the rewrite, keeping
+	// nodeReads reads in flight across the batches so a batch's last reads
+	// overlap the next one's first. A failed read is left to the rewrite,
+	// which reads the page again and reports the error.
+	ra.ready = make([]chan struct{}, len(batches))
+	for i := range ra.ready {
+		ra.ready[i] = make(chan struct{})
+	}
+	ra.wg.Go(func() {
+		reads := make(chan struct{}, nodeReads)
+		for i, pages := range batches {
+			// Wait for the rewrite to come within aheadBatches.
+			select {
+			case ra.slots <- struct{}{}:
+			case <-ra.stop:
+				return
+			}
+
+			// Start the batch's reads, and mark it ready when they end.
+			var batch sync.WaitGroup
+			for _, page := range pages {
+				reads <- struct{}{}
+				batch.Add(1)
+				ra.wg.Go(func() {
+					_, _ = b.p.node(page)
+					<-reads
+					batch.Done()
+				})
+			}
+			ra.wg.Go(func() {
+				batch.Wait()
+				close(ra.ready[i])
+			})
+		}
+	})
+	return ra
+}
+
+// aheadBatches bounds the inner children whose changed children a
+// readAhead holds read before their rewrite.
+const aheadBatches = 4
+
+// readAhead reads the changed children of an inner page's changed inner
+// children into the cache in its own goroutine, in the order the build
+// rewrites them.
+type readAhead struct {
+	// ready closes as each inner child's changed children are read.
+	ready []chan struct{}
+	// slots holds a token for each inner child read and not yet rewritten.
+	slots chan struct{}
+	// stop ends the reader.
+	stop chan struct{}
+	// wg waits for the reader.
+	wg sync.WaitGroup
+}
+
+// wait waits until the changed children of the i-th changed inner child are
+// read.
+func (ra *readAhead) wait(i int) {
+	if ra.ready != nil {
+		<-ra.ready[i]
+	}
+}
+
+// next lets the reader read one more inner child ahead, after the build
+// rewrites one.
+func (ra *readAhead) next() {
+	if ra.ready != nil {
+		<-ra.slots
+	}
+}
+
+// close stops the reader and waits for it, so no read outlives the build's
+// snapshot of the tree.
+func (ra *readAhead) close() {
+	close(ra.stop)
+	ra.wg.Wait()
 }
 
 // rebalance merges each new child filled under half a page into a

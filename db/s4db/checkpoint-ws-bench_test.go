@@ -160,6 +160,11 @@ func BenchmarkCheckpointWorkingSet(b *testing.B) {
 	const changed = 262144
 	const reads = 200000
 	var updateTime, buildTime, saveTime, beforeTime, afterTime time.Duration
+	var buildReads int64
+
+	// Delay each index read of the build by S4DB_CHECKPOINT_READ_DELAY, such
+	// as 1ms, to model a cold build on a slow drive.
+	delay, _ := time.ParseDuration(os.Getenv("S4DB_CHECKPOINT_READ_DELAY"))
 	for b.Loop() {
 		// Copy the closed fixture without retaining its bytes in the Go heap.
 		b.StopTimer()
@@ -221,6 +226,13 @@ func BenchmarkCheckpointWorkingSet(b *testing.B) {
 		if err := db.w.lock(ctx); err != nil {
 			b.Fatal(err)
 		}
+		// Start the build cold behind a slow drive when asked.
+		file := db.p.r
+		if delay != 0 {
+			db.p.cache = newCache(db.opts.CacheBytes)
+			db.p.r = delayReader{r: file, delay: delay}
+		}
+		reads0 := db.p.reads.Load()
 		b.StartTimer()
 		start = time.Now()
 		tree := db.w.newTree(db.cur.Load())
@@ -231,6 +243,8 @@ func BenchmarkCheckpointWorkingSet(b *testing.B) {
 			b.Fatal(err)
 		}
 		buildTime += time.Since(start)
+		buildReads += db.p.reads.Load() - reads0
+		db.p.r = file
 		checkpointHeap(b, "built")
 		start = time.Now()
 		if err := db.w.saveTree(ctx, tree); err != nil {
@@ -271,4 +285,20 @@ func BenchmarkCheckpointWorkingSet(b *testing.B) {
 	} {
 		b.ReportMetric(float64(metric.elapsed.Nanoseconds())/1e6/float64(b.N), metric.name)
 	}
+	b.ReportMetric(float64(buildReads)/float64(b.N), "build-reads")
+}
+
+// delayReader adds a fixed latency to each read, like a drive serving a
+// cold page, while letting reads overlap.
+type delayReader struct {
+	// r reads the file.
+	r io.ReaderAt
+	// delay is the latency of each read.
+	delay time.Duration
+}
+
+// ReadAt sleeps for the delay, then reads.
+func (d delayReader) ReadAt(b []byte, off int64) (int, error) {
+	time.Sleep(d.delay)
+	return d.r.ReadAt(b, off)
 }
