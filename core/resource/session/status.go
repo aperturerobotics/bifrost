@@ -3,12 +3,15 @@ package resource_session
 import (
 	"cmp"
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
+	"github.com/aperturerobotics/controllerbus/controller"
+	"github.com/aperturerobotics/controllerbus/directive"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/ccontainer"
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
@@ -16,6 +19,7 @@ import (
 	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/core/space"
 	spacewave_transport "github.com/s4wave/spacewave/core/transport"
+	"github.com/s4wave/spacewave/db/block"
 	transport_controller "github.com/s4wave/spacewave/net/transport/controller"
 	s4wave_status "github.com/s4wave/spacewave/sdk/status"
 )
@@ -53,35 +57,88 @@ func NewStatusResourceWithSession(
 	}
 }
 
+// storeRefreshInterval is how often WatchControllers rereads the held stores.
+// A controller builds or replaces its store without a controller change.
+const storeRefreshInterval = 2 * time.Second
+
+// maxStoreDepth bounds the walk into a held store's parts.
+const maxStoreDepth = 8
+
 // WatchControllers streams the list of active controllers on change.
 func (r *StatusResource) WatchControllers(
 	_ *s4wave_status.WatchControllersRequest,
 	strm s4wave_status.SRPCSystemStatusService_WatchControllersStream,
 ) error {
-	bcast := r.b.GetControllersBroadcast()
-	return broadcast.WatchBroadcastVT(
-		strm.Context(),
-		bcast,
-		func() *s4wave_status.WatchControllersResponse {
-			ctrls := r.b.GetControllers()
-			infos := make([]*s4wave_status.ControllerInfo, len(ctrls))
-			for i, c := range ctrls {
-				ci := c.GetControllerInfo()
-				infos[i] = &s4wave_status.ControllerInfo{
-					Id:          ci.GetId(),
-					Version:     ci.GetVersion(),
-					Description: ci.GetDescription(),
-				}
+	// Refresh on a timer, since a held store's parts change without a signal.
+	ctx := strm.Context()
+	ticker := time.NewTicker(storeRefreshInterval)
+	defer ticker.Stop()
+
+	// Send the list whenever it changes.
+	var prev *s4wave_status.WatchControllersResponse
+	for {
+		waitCh := r.controllersWaitCh()
+		resp := buildControllersResponse(r.b.GetControllers())
+		if prev == nil || !resp.EqualVT(prev) {
+			if err := strm.Send(resp); err != nil {
+				return err
 			}
-			return &s4wave_status.WatchControllersResponse{
-				Controllers:     infos,
-				ControllerCount: uint32(len(infos)), //nolint:gosec // infos is the bounded response collection.
+			prev = resp
+		}
+		select {
+		case <-ctx.Done():
+			return context.Canceled
+		case <-waitCh:
+		case <-ticker.C:
+		}
+	}
+}
+
+// buildControllersResponse describes each controller and the store it holds.
+func buildControllersResponse(ctrls []controller.Controller) *s4wave_status.WatchControllersResponse {
+	infos := make([]*s4wave_status.ControllerInfo, len(ctrls))
+	for i, c := range ctrls {
+		ci := c.GetControllerInfo()
+		infos[i] = &s4wave_status.ControllerInfo{
+			Id:          ci.GetId(),
+			Version:     ci.GetVersion(),
+			Description: ci.GetDescription(),
+		}
+		if holder, ok := c.(block.StoreHolder); ok {
+			if store := holder.GetHeldStore(); store != nil {
+				infos[i].Store = buildStoreInfo("", store, 0)
 			}
-		},
-		func(resp *s4wave_status.WatchControllersResponse) error {
-			return strm.Send(resp)
-		},
-	)
+		}
+	}
+	return &s4wave_status.WatchControllersResponse{
+		Controllers:     infos,
+		ControllerCount: uint32(len(infos)), //nolint:gosec // infos is the bounded response collection.
+	}
+}
+
+// buildStoreInfo describes store and, below maxStoreDepth, the stores it is
+// built from.
+func buildStoreInfo(label string, store block.StoreOps, depth int) *s4wave_status.StoreInfo {
+	// Describe the store itself.
+	info := &s4wave_status.StoreInfo{
+		Label: label,
+		Type:  fmt.Sprintf("%T", store),
+	}
+	if ided, ok := store.(interface{ GetID() string }); ok {
+		info.Id = ided.GetID()
+	}
+
+	// Describe the stores it is built from.
+	parts, ok := store.(block.StoreParts)
+	if !ok || depth >= maxStoreDepth {
+		return info
+	}
+	for _, part := range parts.GetStoreParts() {
+		if part.Store != nil {
+			info.Parts = append(info.Parts, buildStoreInfo(part.Label, part.Store, depth+1))
+		}
+	}
+	return info
 }
 
 // WatchDirectives streams the list of active directives on change.
@@ -94,14 +151,7 @@ func (r *StatusResource) WatchDirectives(
 		strm.Context(),
 		bcast,
 		func() *s4wave_status.WatchDirectivesResponse {
-			dirs := r.b.GetDirectives()
-			infos := make([]*s4wave_status.DirectiveInfo, len(dirs))
-			for i, d := range dirs {
-				infos[i] = &s4wave_status.DirectiveInfo{
-					Name:  d.GetDirective().GetName(),
-					Ident: d.GetDirectiveIdent(),
-				}
-			}
+			infos := buildDirectiveInfos(r.b.GetDirectives())
 			return &s4wave_status.WatchDirectivesResponse{
 				Directives:     infos,
 				DirectiveCount: uint32(len(infos)), //nolint:gosec // infos is the bounded response collection.
@@ -111,6 +161,43 @@ func (r *StatusResource) WatchDirectives(
 			return strm.Send(resp)
 		},
 	)
+}
+
+// buildDirectiveInfos describes dirs with their references.
+// Each directive's id is its position in dirs plus one.
+// A reference names its origin directive by that id when the origin is in dirs.
+func buildDirectiveInfos(dirs []directive.Instance) []*s4wave_status.DirectiveInfo {
+	// Number the directives.
+	ids := make(map[directive.Instance]uint32, len(dirs))
+	for i, d := range dirs {
+		ids[d] = uint32(i + 1) //nolint:gosec // dirs is the bounded directive list.
+	}
+
+	// Describe each directive and its references.
+	infos := make([]*s4wave_status.DirectiveInfo, len(dirs))
+	for i, d := range dirs {
+		refs := d.GetReferences()
+		infoRefs := make([]*s4wave_status.DirectiveReference, len(refs))
+		for j, ref := range refs {
+			infoRef := &s4wave_status.DirectiveReference{
+				OriginControllerId: ref.Origin.ControllerID,
+				ConfigKey:          ref.Origin.ConfigKey,
+				Weak:               ref.Weak,
+			}
+			if origin := ref.Origin.Directive; origin != nil {
+				infoRef.OriginDirectiveId = ids[origin]
+				infoRef.OriginDirectiveIdent = origin.GetDirectiveIdent()
+			}
+			infoRefs[j] = infoRef
+		}
+		infos[i] = &s4wave_status.DirectiveInfo{
+			Name:       d.GetDirective().GetName(),
+			Ident:      d.GetDirectiveIdent(),
+			Id:         ids[d],
+			References: infoRefs,
+		}
+	}
+	return infos
 }
 
 // WatchPlugins streams the plugin instances of every plugin host scheduler

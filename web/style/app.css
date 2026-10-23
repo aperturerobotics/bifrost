@@ -528,6 +528,10 @@
     width: var(--progress-width);
   }
 
+  .directive-tree-indent {
+    padding-left: calc(1rem + var(--tree-depth) * 1.25rem);
+  }
+
   .progress-width-transition {
     transition: width 200ms;
   }

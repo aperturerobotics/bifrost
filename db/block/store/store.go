@@ -42,6 +42,11 @@ func (s *store) GetID() string {
 	return s.id
 }
 
+// GetStoreParts returns the wrapped store.
+func (s *store) GetStoreParts() []block.StorePart {
+	return []block.StorePart{{Label: "inner", Store: s.ops}}
+}
+
 // GetHashType returns the preferred hash type for the store.
 func (s *store) GetHashType() block_hash.HashType {
 	return s.ops.GetHashType()

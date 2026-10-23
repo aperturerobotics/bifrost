@@ -23,6 +23,9 @@ type ControllerInfo struct {
 	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	// Description is a human-readable description.
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// Store is the block store the controller built itself, outside the bus.
+	// Unset when the controller holds no store or has not built it yet.
+	Store *StoreInfo `protobuf:"bytes,4,opt,name=store,proto3" json:"store,omitempty"`
 }
 
 func (x *ControllerInfo) Reset() {
@@ -52,6 +55,61 @@ func (x *ControllerInfo) GetDescription() string {
 	return ""
 }
 
+func (x *ControllerInfo) GetStore() *StoreInfo {
+	if x != nil {
+		return x.Store
+	}
+	return nil
+}
+
+// StoreInfo describes a block store and the stores it is built from.
+type StoreInfo struct {
+	unknownFields []byte
+	// Label is the store's role in its parent, such as "lower" or "upper".
+	// Empty for a controller's top store.
+	Label string `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	// Type is the Go type implementing the store.
+	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	// Id is the store id, when the store has one.
+	Id string `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
+	// Parts are the stores this one is built from.
+	Parts []*StoreInfo `protobuf:"bytes,4,rep,name=parts,proto3" json:"parts,omitempty"`
+}
+
+func (x *StoreInfo) Reset() {
+	*x = StoreInfo{}
+}
+
+func (*StoreInfo) ProtoMessage() {}
+
+func (x *StoreInfo) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *StoreInfo) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *StoreInfo) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *StoreInfo) GetParts() []*StoreInfo {
+	if x != nil {
+		return x.Parts
+	}
+	return nil
+}
+
 // DirectiveInfo describes an active directive.
 type DirectiveInfo struct {
 	unknownFields []byte
@@ -59,6 +117,11 @@ type DirectiveInfo struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Ident is the human-readable directive identification string.
 	Ident string `protobuf:"bytes,2,opt,name=ident,proto3" json:"ident,omitempty"`
+	// Id identifies the directive within one WatchDirectivesResponse.
+	// Ids start at 1 and are not stable across responses.
+	Id uint32 `protobuf:"varint,3,opt,name=id,proto3" json:"id,omitempty"`
+	// References lists the directive's live references and their origins.
+	References []*DirectiveReference `protobuf:"bytes,4,rep,name=references,proto3" json:"references,omitempty"`
 }
 
 func (x *DirectiveInfo) Reset() {
@@ -79,6 +142,78 @@ func (x *DirectiveInfo) GetIdent() string {
 		return x.Ident
 	}
 	return ""
+}
+
+func (x *DirectiveInfo) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *DirectiveInfo) GetReferences() []*DirectiveReference {
+	if x != nil {
+		return x.References
+	}
+	return nil
+}
+
+// DirectiveReference describes one live reference to a directive.
+type DirectiveReference struct {
+	unknownFields []byte
+	// OriginDirectiveId is the id of the origin directive in the same response.
+	// Zero when there is no origin directive or it is on another bus.
+	OriginDirectiveId uint32 `protobuf:"varint,1,opt,name=origin_directive_id,json=originDirectiveId,proto3" json:"originDirectiveId,omitempty"`
+	// OriginDirectiveIdent is the ident of the origin directive, if any.
+	// Set even when the origin directive is on another bus.
+	OriginDirectiveIdent string `protobuf:"bytes,2,opt,name=origin_directive_ident,json=originDirectiveIdent,proto3" json:"originDirectiveIdent,omitempty"`
+	// OriginControllerId is the id of the origin controller, if known.
+	OriginControllerId string `protobuf:"bytes,3,opt,name=origin_controller_id,json=originControllerId,proto3" json:"originControllerId,omitempty"`
+	// ConfigKey is the ConfigSet entry key the reference was added under.
+	ConfigKey string `protobuf:"bytes,4,opt,name=config_key,json=configKey,proto3" json:"configKey,omitempty"`
+	// Weak is true for a reference that observes without holding the directive.
+	Weak bool `protobuf:"varint,5,opt,name=weak,proto3" json:"weak,omitempty"`
+}
+
+func (x *DirectiveReference) Reset() {
+	*x = DirectiveReference{}
+}
+
+func (*DirectiveReference) ProtoMessage() {}
+
+func (x *DirectiveReference) GetOriginDirectiveId() uint32 {
+	if x != nil {
+		return x.OriginDirectiveId
+	}
+	return 0
+}
+
+func (x *DirectiveReference) GetOriginDirectiveIdent() string {
+	if x != nil {
+		return x.OriginDirectiveIdent
+	}
+	return ""
+}
+
+func (x *DirectiveReference) GetOriginControllerId() string {
+	if x != nil {
+		return x.OriginControllerId
+	}
+	return ""
+}
+
+func (x *DirectiveReference) GetConfigKey() string {
+	if x != nil {
+		return x.ConfigKey
+	}
+	return ""
+}
+
+func (x *DirectiveReference) GetWeak() bool {
+	if x != nil {
+		return x.Weak
+	}
+	return false
 }
 
 // PluginInfo describes a runtime plugin load request.
@@ -926,6 +1061,7 @@ func (m *ControllerInfo) CloneVT() *ControllerInfo {
 	r.Id = m.Id
 	r.Version = m.Version
 	r.Description = m.Description
+	r.Store = protobuf_go_lite.CloneVTValue(m.Store)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -936,6 +1072,25 @@ func (m *ControllerInfo) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *StoreInfo) CloneVT() *StoreInfo {
+	if m == nil {
+		return (*StoreInfo)(nil)
+	}
+	r := new(StoreInfo)
+	r.Label = m.Label
+	r.Type = m.Type
+	r.Id = m.Id
+	r.Parts = protobuf_go_lite.CloneVTSlice(m.Parts)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *StoreInfo) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *DirectiveInfo) CloneVT() *DirectiveInfo {
 	if m == nil {
 		return (*DirectiveInfo)(nil)
@@ -943,6 +1098,8 @@ func (m *DirectiveInfo) CloneVT() *DirectiveInfo {
 	r := new(DirectiveInfo)
 	r.Name = m.Name
 	r.Ident = m.Ident
+	r.Id = m.Id
+	r.References = protobuf_go_lite.CloneVTSlice(m.References)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -950,6 +1107,26 @@ func (m *DirectiveInfo) CloneVT() *DirectiveInfo {
 }
 
 func (m *DirectiveInfo) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *DirectiveReference) CloneVT() *DirectiveReference {
+	if m == nil {
+		return (*DirectiveReference)(nil)
+	}
+	r := new(DirectiveReference)
+	r.OriginDirectiveId = m.OriginDirectiveId
+	r.OriginDirectiveIdent = m.OriginDirectiveIdent
+	r.OriginControllerId = m.OriginControllerId
+	r.ConfigKey = m.ConfigKey
+	r.Weak = m.Weak
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *DirectiveReference) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -1339,11 +1516,43 @@ func (this *ControllerInfo) EqualVT(that *ControllerInfo) bool {
 	if this.Description != that.Description {
 		return false
 	}
+	if !protobuf_go_lite.IsEqualVT(this.Store, that.Store) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *ControllerInfo) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*ControllerInfo)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *StoreInfo) EqualVT(that *StoreInfo) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Label != that.Label {
+		return false
+	}
+	if this.Type != that.Type {
+		return false
+	}
+	if this.Id != that.Id {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Parts, that.Parts, func() *StoreInfo { return &StoreInfo{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *StoreInfo) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*StoreInfo)
 	if !ok {
 		return false
 	}
@@ -1362,11 +1571,49 @@ func (this *DirectiveInfo) EqualVT(that *DirectiveInfo) bool {
 	if this.Ident != that.Ident {
 		return false
 	}
+	if this.Id != that.Id {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.References, that.References, func() *DirectiveReference { return &DirectiveReference{} }) {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *DirectiveInfo) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*DirectiveInfo)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *DirectiveReference) EqualVT(that *DirectiveReference) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.OriginDirectiveId != that.OriginDirectiveId {
+		return false
+	}
+	if this.OriginDirectiveIdent != that.OriginDirectiveIdent {
+		return false
+	}
+	if this.OriginControllerId != that.OriginControllerId {
+		return false
+	}
+	if this.ConfigKey != that.ConfigKey {
+		return false
+	}
+	if this.Weak != that.Weak {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *DirectiveReference) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*DirectiveReference)
 	if !ok {
 		return false
 	}
@@ -1949,6 +2196,11 @@ func (x *ControllerInfo) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("description")
 		s.WriteString(x.Description)
 	}
+	if x.Store != nil || s.HasField("store") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("store")
+		x.Store.MarshalProtoJSON(s.WithField("store"))
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1975,12 +2227,106 @@ func (x *ControllerInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "description":
 			s.AddField("description")
 			x.Description = s.ReadString()
+		case "store":
+			if s.ReadNil() {
+				x.Store = nil
+				return
+			}
+			x.Store = &StoreInfo{}
+			x.Store.UnmarshalProtoJSON(s.WithField("store", true))
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the ControllerInfo from JSON.
 func (x *ControllerInfo) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the StoreInfo message to JSON.
+func (x *StoreInfo) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Label != "" || s.HasField("label") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("label")
+		s.WriteString(x.Label)
+	}
+	if x.Type != "" || s.HasField("type") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("type")
+		s.WriteString(x.Type)
+	}
+	if x.Id != "" || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteString(x.Id)
+	}
+	if len(x.Parts) > 0 || s.HasField("parts") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("parts")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Parts {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("parts"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the StoreInfo to JSON.
+func (x *StoreInfo) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the StoreInfo message from JSON.
+func (x *StoreInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "label":
+			s.AddField("label")
+			x.Label = s.ReadString()
+		case "type":
+			s.AddField("type")
+			x.Type = s.ReadString()
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadString()
+		case "parts":
+			s.AddField("parts")
+			if s.ReadNil() {
+				x.Parts = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Parts = append(x.Parts, nil)
+					return
+				}
+				v := &StoreInfo{}
+				v.UnmarshalProtoJSON(s.WithField("parts", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Parts = append(x.Parts, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the StoreInfo from JSON.
+func (x *StoreInfo) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -2001,6 +2347,22 @@ func (x *DirectiveInfo) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteMoreIf(&wroteField)
 		s.WriteObjectField("ident")
 		s.WriteString(x.Ident)
+	}
+	if x.Id != 0 || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteUint32(x.Id)
+	}
+	if len(x.References) > 0 || s.HasField("references") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("references")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.References {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("references"))
+		}
+		s.WriteArrayEnd()
 	}
 	s.WriteObjectEnd()
 }
@@ -2025,12 +2387,107 @@ func (x *DirectiveInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "ident":
 			s.AddField("ident")
 			x.Ident = s.ReadString()
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadUint32()
+		case "references":
+			s.AddField("references")
+			if s.ReadNil() {
+				x.References = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.References = append(x.References, nil)
+					return
+				}
+				v := &DirectiveReference{}
+				v.UnmarshalProtoJSON(s.WithField("references", false))
+				if s.Err() != nil {
+					return
+				}
+				x.References = append(x.References, v)
+			})
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the DirectiveInfo from JSON.
 func (x *DirectiveInfo) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the DirectiveReference message to JSON.
+func (x *DirectiveReference) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.OriginDirectiveId != 0 || s.HasField("originDirectiveId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("originDirectiveId")
+		s.WriteUint32(x.OriginDirectiveId)
+	}
+	if x.OriginDirectiveIdent != "" || s.HasField("originDirectiveIdent") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("originDirectiveIdent")
+		s.WriteString(x.OriginDirectiveIdent)
+	}
+	if x.OriginControllerId != "" || s.HasField("originControllerId") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("originControllerId")
+		s.WriteString(x.OriginControllerId)
+	}
+	if x.ConfigKey != "" || s.HasField("configKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("configKey")
+		s.WriteString(x.ConfigKey)
+	}
+	if x.Weak || s.HasField("weak") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("weak")
+		s.WriteBool(x.Weak)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the DirectiveReference to JSON.
+func (x *DirectiveReference) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the DirectiveReference message from JSON.
+func (x *DirectiveReference) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "origin_directive_id", "originDirectiveId":
+			s.AddField("origin_directive_id")
+			x.OriginDirectiveId = s.ReadUint32()
+		case "origin_directive_ident", "originDirectiveIdent":
+			s.AddField("origin_directive_ident")
+			x.OriginDirectiveIdent = s.ReadString()
+		case "origin_controller_id", "originControllerId":
+			s.AddField("origin_controller_id")
+			x.OriginControllerId = s.ReadString()
+		case "config_key", "configKey":
+			s.AddField("config_key")
+			x.ConfigKey = s.ReadString()
+		case "weak":
+			s.AddField("weak")
+			x.Weak = s.ReadBool()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the DirectiveReference from JSON.
+func (x *DirectiveReference) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -3458,6 +3915,16 @@ func (m *ControllerInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Store != nil {
+		size, err := m.Store.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x22
+	}
 	if len(m.Description) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Description)
 		i--
@@ -3470,6 +3937,65 @@ func (m *ControllerInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	}
 	if len(m.Id) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Id)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *StoreInfo) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StoreInfo) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *StoreInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Parts) > 0 {
+		for iNdEx := len(m.Parts) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Parts[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.Id) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Id)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Type) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Type)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Label) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Label)
 		i--
 		dAtA[i] = 0xa
 	}
@@ -3505,6 +4031,23 @@ func (m *DirectiveInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.References) > 0 {
+		for iNdEx := len(m.References) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.References[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.Id != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x18
+	}
 	if len(m.Ident) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Ident)
 		i--
@@ -3514,6 +4057,63 @@ func (m *DirectiveInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.Name)
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DirectiveReference) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DirectiveReference) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *DirectiveReference) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Weak {
+		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Weak)
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.ConfigKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ConfigKey)
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.OriginControllerId) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.OriginControllerId)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.OriginDirectiveIdent) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.OriginDirectiveIdent)
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.OriginDirectiveId != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.OriginDirectiveId))
+		i--
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -4611,6 +5211,27 @@ func (m *ControllerInfo) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Id)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Version)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Description)
+	if m.Store != nil {
+		l = m.Store.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *StoreInfo) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Label)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Type)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Id)
+	for _, e := range m.Parts {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -4623,6 +5244,26 @@ func (m *DirectiveInfo) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Name)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Ident)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Id)
+	for _, e := range m.References {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *DirectiveReference) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.OriginDirectiveId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.OriginDirectiveIdent)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.OriginControllerId)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ConfigKey)
+	n += protobuf_go_lite.SizeBoolNonZero(1, m.Weak)
 	n += len(m.unknownFields)
 	return n
 }
@@ -4952,10 +5593,48 @@ func (x *ControllerInfo) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "description")
 		protobuf_go_lite.TextWriteString(&sb, x.Description)
 	}
+	if x.Store != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "store")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Store)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *ControllerInfo) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *StoreInfo) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "StoreInfo")
+	if x.Label != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "label")
+		protobuf_go_lite.TextWriteString(&sb, x.Label)
+	}
+	if x.Type != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "type")
+		protobuf_go_lite.TextWriteString(&sb, x.Type)
+	}
+	if x.Id != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteString(&sb, x.Id)
+	}
+	if len(x.Parts) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "parts")
+		for i, v := range x.Parts {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &StoreInfo{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *StoreInfo) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -4970,10 +5649,56 @@ func (x *DirectiveInfo) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "ident")
 		protobuf_go_lite.TextWriteString(&sb, x.Ident)
 	}
+	if x.Id != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteUint(&sb, x.Id)
+	}
+	if len(x.References) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "references")
+		for i, v := range x.References {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &DirectiveReference{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *DirectiveInfo) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *DirectiveReference) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "DirectiveReference")
+	if x.OriginDirectiveId != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "origin_directive_id")
+		protobuf_go_lite.TextWriteUint(&sb, x.OriginDirectiveId)
+	}
+	if x.OriginDirectiveIdent != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "origin_directive_ident")
+		protobuf_go_lite.TextWriteString(&sb, x.OriginDirectiveIdent)
+	}
+	if x.OriginControllerId != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "origin_controller_id")
+		protobuf_go_lite.TextWriteString(&sb, x.OriginControllerId)
+	}
+	if x.ConfigKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "config_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ConfigKey)
+	}
+	if x.Weak != false {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "weak")
+		protobuf_go_lite.TextWriteBool(&sb, x.Weak)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *DirectiveReference) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -5567,6 +6292,107 @@ func (m *ControllerInfo) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Description = v
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Store", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Store == nil {
+				m.Store = &StoreInfo{}
+			}
+			if err := m.Store.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *StoreInfo) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StoreInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StoreInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Label", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Label = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Type = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Id = v
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Parts", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Parts = append(m.Parts, &StoreInfo{})
+			if err := m.Parts[len(m.Parts)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -5630,6 +6456,120 @@ func (m *DirectiveInfo) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Ident = v
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			m.Id, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field References", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.References = append(m.References, &DirectiveReference{})
+			if err := m.References[len(m.References)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *DirectiveReference) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DirectiveReference: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DirectiveReference: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OriginDirectiveId", wireType)
+			}
+			m.OriginDirectiveId = 0
+			m.OriginDirectiveId, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OriginDirectiveIdent", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.OriginDirectiveIdent = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OriginControllerId", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.OriginControllerId = v
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ConfigKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ConfigKey = v
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Weak", wireType)
+			}
+			var v bool
+			v, iNdEx, err = protobuf_go_lite.DecodeVarintBool(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Weak = bool(v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

@@ -19,6 +19,11 @@ func NewVolumeBlockStore(vol Volume, blockStore block.StoreOps) *VolumeBlockStor
 	return &VolumeBlockStore{Volume: vol, store: blockStore}
 }
 
+// GetStoreParts returns the volume and the block store serving its blocks.
+func (v *VolumeBlockStore) GetStoreParts() []block.StorePart {
+	return []block.StorePart{{Label: "volume", Store: v.Volume}, {Label: "blocks", Store: v.store}}
+}
+
 // GetHashType returns the preferred hash type for the store.
 func (v *VolumeBlockStore) GetHashType() hash.HashType {
 	return v.store.GetHashType()
@@ -108,4 +113,5 @@ func (v *VolumeBlockStore) EndDeferFlush(ctx context.Context) error {
 var (
 	_ Volume            = (*VolumeBlockStore)(nil)
 	_ block_store.Store = (*VolumeBlockStore)(nil)
+	_ block.StoreParts  = (*VolumeBlockStore)(nil)
 )

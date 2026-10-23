@@ -30,6 +30,11 @@ func NewMarkingStore(store block.StoreOps, mark MarkFunc) *MarkingStore {
 	return &MarkingStore{store: store, mark: mark}
 }
 
+// GetStoreParts returns the wrapped store.
+func (m *MarkingStore) GetStoreParts() []block.StorePart {
+	return []block.StorePart{{Label: "inner", Store: m.store}}
+}
+
 // GetHashType returns the inner store hash type.
 func (m *MarkingStore) GetHashType() hash.HashType {
 	return m.store.GetHashType()
@@ -151,4 +156,7 @@ func (m *MarkingStore) invalidate(ctx context.Context, ref *block.BlockRef) {
 }
 
 // _ is a type assertion
-var _ block.StoreOps = (*MarkingStore)(nil)
+var (
+	_ block.StoreOps   = (*MarkingStore)(nil)
+	_ block.StoreParts = (*MarkingStore)(nil)
+)

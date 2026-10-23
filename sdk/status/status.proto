@@ -27,6 +27,22 @@ message ControllerInfo {
   string version = 2;
   // Description is a human-readable description.
   string description = 3;
+  // Store is the block store the controller built itself, outside the bus.
+  // Unset when the controller holds no store or has not built it yet.
+  StoreInfo store = 4;
+}
+
+// StoreInfo describes a block store and the stores it is built from.
+message StoreInfo {
+  // Label is the store's role in its parent, such as "lower" or "upper".
+  // Empty for a controller's top store.
+  string label = 1;
+  // Type is the Go type implementing the store.
+  string type = 2;
+  // Id is the store id, when the store has one.
+  string id = 3;
+  // Parts are the stores this one is built from.
+  repeated StoreInfo parts = 4;
 }
 
 // DirectiveInfo describes an active directive.
@@ -35,6 +51,27 @@ message DirectiveInfo {
   string name = 1;
   // Ident is the human-readable directive identification string.
   string ident = 2;
+  // Id identifies the directive within one WatchDirectivesResponse.
+  // Ids start at 1 and are not stable across responses.
+  uint32 id = 3;
+  // References lists the directive's live references and their origins.
+  repeated DirectiveReference references = 4;
+}
+
+// DirectiveReference describes one live reference to a directive.
+message DirectiveReference {
+  // OriginDirectiveId is the id of the origin directive in the same response.
+  // Zero when there is no origin directive or it is on another bus.
+  uint32 origin_directive_id = 1;
+  // OriginDirectiveIdent is the ident of the origin directive, if any.
+  // Set even when the origin directive is on another bus.
+  string origin_directive_ident = 2;
+  // OriginControllerId is the id of the origin controller, if known.
+  string origin_controller_id = 3;
+  // ConfigKey is the ConfigSet entry key the reference was added under.
+  string config_key = 4;
+  // Weak is true for a reference that observes without holding the directive.
+  bool weak = 5;
 }
 
 // PluginInfo describes a runtime plugin load request.

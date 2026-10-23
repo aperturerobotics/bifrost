@@ -234,6 +234,7 @@ export function SystemStatusDashboard({ onClose }: SystemStatusDashboardProps) {
                   plugins={model.plugins}
                   controllers={model.controllers}
                   directives={model.directives}
+                  directiveTree={model.directiveTree}
                   directiveCount={model.directiveCount}
                   view={runtimeView}
                   onViewChange={setRuntimeView}

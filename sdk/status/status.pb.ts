@@ -24,6 +24,11 @@ export interface ControllerInfo {
    * Description is a human-readable description.
    */
   description?: string
+  /**
+   * Store is the block store the controller built itself, outside the bus.
+   * Unset when the controller holds no store or has not built it yet.
+   */
+  store?: StoreInfo
 }
 
 export const ControllerInfo: MessageType<ControllerInfo> =
@@ -33,6 +38,43 @@ export const ControllerInfo: MessageType<ControllerInfo> =
       [1, 'id', 9],
       [2, 'version', 9],
       [3, 'description', 9],
+      [4, 'store', 11, 0, StoreInfo.codec],
+    ],
+  )
+
+/**
+ * StoreInfo describes a block store and the stores it is built from.
+ *
+ * @generated from message s4wave.status.StoreInfo
+ */
+export interface StoreInfo {
+  /**
+   * Label is the store's role in its parent, such as "lower" or "upper".
+   * Empty for a controller's top store.
+   */
+  label?: string
+  /**
+   * Type is the Go type implementing the store.
+   */
+  type?: string
+  /**
+   * Id is the store id, when the store has one.
+   */
+  id?: string
+  /**
+   * Parts are the stores this one is built from.
+   */
+  parts?: StoreInfo[]
+}
+
+export const StoreInfo: MessageType<StoreInfo> =
+  /* @__PURE__ */ createMessageType<StoreInfo>(
+    's4wave.status.StoreInfo',
+    () => [
+      [1, 'label', 9],
+      [2, 'type', 9],
+      [3, 'id', 9],
+      [4, 'parts', 11, 1, StoreInfo.codec],
     ],
   )
 
@@ -50,6 +92,15 @@ export interface DirectiveInfo {
    * Ident is the human-readable directive identification string.
    */
   ident?: string
+  /**
+   * Id identifies the directive within one WatchDirectivesResponse.
+   * Ids start at 1 and are not stable across responses.
+   */
+  id?: number
+  /**
+   * References lists the directive's live references and their origins.
+   */
+  references?: DirectiveReference[]
 }
 
 export const DirectiveInfo: MessageType<DirectiveInfo> =
@@ -58,6 +109,50 @@ export const DirectiveInfo: MessageType<DirectiveInfo> =
     () => [
       [1, 'name', 9],
       [2, 'ident', 9],
+      [3, 'id', 13],
+      [4, 'references', 11, 1, DirectiveReference.codec],
+    ],
+  )
+
+/**
+ * DirectiveReference describes one live reference to a directive.
+ *
+ * @generated from message s4wave.status.DirectiveReference
+ */
+export interface DirectiveReference {
+  /**
+   * OriginDirectiveId is the id of the origin directive in the same response.
+   * Zero when there is no origin directive or it is on another bus.
+   */
+  originDirectiveId?: number
+  /**
+   * OriginDirectiveIdent is the ident of the origin directive, if any.
+   * Set even when the origin directive is on another bus.
+   */
+  originDirectiveIdent?: string
+  /**
+   * OriginControllerId is the id of the origin controller, if known.
+   */
+  originControllerId?: string
+  /**
+   * ConfigKey is the ConfigSet entry key the reference was added under.
+   */
+  configKey?: string
+  /**
+   * Weak is true for a reference that observes without holding the directive.
+   */
+  weak?: boolean
+}
+
+export const DirectiveReference: MessageType<DirectiveReference> =
+  /* @__PURE__ */ createMessageType<DirectiveReference>(
+    's4wave.status.DirectiveReference',
+    () => [
+      [1, 'origin_directive_id', 13],
+      [2, 'origin_directive_ident', 9],
+      [3, 'origin_controller_id', 9],
+      [4, 'config_key', 9],
+      [5, 'weak', 8],
     ],
   )
 

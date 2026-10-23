@@ -77,6 +77,11 @@ func (b *BlockStore) GetID() string {
 	return b.store.GetID()
 }
 
+// GetStoreParts returns the overlay of the local cache and the cloud.
+func (b *BlockStore) GetStoreParts() []block.StorePart {
+	return []block.StorePart{{Label: "overlay", Store: b.store}}
+}
+
 // GetHashType returns the inner store hash type.
 func (b *BlockStore) GetHashType() hash.HashType {
 	return b.store.GetHashType()
@@ -560,6 +565,11 @@ type sourceTrackingStore struct {
 	demandFinished func()
 }
 
+// GetStoreParts returns the observed store.
+func (s *sourceTrackingStore) GetStoreParts() []block.StorePart {
+	return []block.StorePart{{Label: "inner", Store: s.StoreOps}}
+}
+
 // BeginReadOperation preserves source observation inside a scoped read.
 func (s *sourceTrackingStore) BeginReadOperation(ctx context.Context) (block.StoreOps, func(), error) {
 	scoped, release, err := s.StoreOps.BeginReadOperation(ctx)
@@ -859,4 +869,5 @@ var (
 	_ bstore.BlockStoreProvider = (*ProviderAccount)(nil)
 	_ bstore.BlockStore         = (*BlockStore)(nil)
 	_ block.StoreOps            = (*BlockStore)(nil)
+	_ block.StoreParts          = (*BlockStore)(nil)
 )

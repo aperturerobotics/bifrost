@@ -31,6 +31,7 @@ import {
   useWatchRecoveryStatus,
   useWatchSpacesList,
 } from './useSystemStatus.js'
+import { buildDirectiveTree, type DirectiveTree } from './directiveTree.js'
 
 // SubsystemId names one tile of the system dashboard.
 export type SubsystemId =
@@ -93,6 +94,7 @@ export interface SystemModel {
   network: WatchNetworkStatsResponse | null
   controllers: ControllerInfo[] | null
   directives: DirectiveGroup[] | null
+  directiveTree: DirectiveTree | null
   directiveCount: number
   plugins: PluginView[] | null
   recovery: RecoveryStatus | null
@@ -193,6 +195,9 @@ export function buildSystemModel(inputs: SystemModelInputs): SystemModel {
     network: inputs.network,
     controllers,
     directives: directiveGroups,
+    directiveTree: inputs.directives
+      ? buildDirectiveTree(inputs.directives)
+      : null,
     directiveCount: inputs.directives?.directiveCount ?? 0,
     plugins: pluginViews,
     recovery: inputs.recovery,

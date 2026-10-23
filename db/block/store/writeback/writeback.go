@@ -67,6 +67,11 @@ type Store struct {
 	status Status
 }
 
+// GetStoreParts returns the local store that holds every block.
+func (s *Store) GetStoreParts() []block.StorePart {
+	return []block.StorePart{{Label: "local", Store: s.local}}
+}
+
 // NewStore builds a Store over local, counting the markers left by a previous
 // run. Queued blocks upload at once until SetPolicy sets a settle age. values
 // holds the same blocks as local without its ownership tracking.
@@ -616,4 +621,7 @@ func (s *Store) writeTx(ctx context.Context) (kvtx.Tx, error) {
 }
 
 // _ is a type assertion
-var _ block.StoreOps = (*Store)(nil)
+var (
+	_ block.StoreOps   = (*Store)(nil)
+	_ block.StoreParts = (*Store)(nil)
+)

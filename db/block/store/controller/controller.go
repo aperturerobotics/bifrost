@@ -9,6 +9,7 @@ import (
 	"github.com/aperturerobotics/util/ccontainer"
 	"github.com/aperturerobotics/util/promise"
 	"github.com/aperturerobotics/util/refcount"
+	"github.com/s4wave/spacewave/db/block"
 	block_store "github.com/s4wave/spacewave/db/block/store"
 	"github.com/s4wave/spacewave/db/dex"
 	"github.com/sirupsen/logrus"
@@ -80,6 +81,14 @@ func NewController(
 // GetControllerInfo returns information about the controller.
 func (c *Controller) GetControllerInfo() *controller.Info {
 	return c.info.Clone()
+}
+
+// GetHeldStore returns the built block store, or nil while none is built.
+func (c *Controller) GetHeldStore() block.StoreOps {
+	if store := c.storeCtr.GetValue(); store != nil {
+		return store
+	}
+	return nil
 }
 
 // WaitBlockStore adds a reference to the block store and waits for it to be constructed.
@@ -155,4 +164,7 @@ func (c *Controller) Close() error {
 }
 
 // _ is a type assertion
-var _ controller.Controller = (*Controller)(nil)
+var (
+	_ controller.Controller = (*Controller)(nil)
+	_ block.StoreHolder     = (*Controller)(nil)
+)

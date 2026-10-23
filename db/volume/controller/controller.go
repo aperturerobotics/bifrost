@@ -276,6 +276,14 @@ func (c *Controller) GetControllerInfo() *controller.Info {
 	return c.controllerInfo
 }
 
+// GetHeldStore returns the ready volume, or nil before it is ready.
+func (c *Controller) GetHeldStore() block.StoreOps {
+	if pair := c.volume.GetValue(); pair != nil {
+		return pair.vol
+	}
+	return nil
+}
+
 // volumeConstructionWaiter is a transient construction error that clears when Wait returns.
 type volumeConstructionWaiter interface {
 	error
@@ -401,4 +409,7 @@ func (c *Controller) Close() error {
 }
 
 // _ is a type assertion
-var _ volume.Controller = (*Controller)(nil)
+var (
+	_ volume.Controller = (*Controller)(nil)
+	_ block.StoreHolder = (*Controller)(nil)
+)

@@ -925,3 +925,30 @@ func TestNewCloudOverlayDoesNotDirtyLowerReads(t *testing.T) {
 		t.Fatalf("expected no dirty marks from lower read, got %d", dirtyMarks)
 	}
 }
+
+// TestBlockStoreParts checks that the cloud handle opens into the overlay of
+// the cloud and the local cache.
+func TestBlockStoreParts(t *testing.T) {
+	// Build a handle over the cloud overlay.
+	ctx := t.Context()
+	le := logrus.NewEntry(logrus.New())
+	cloud := &sourceTrackingStore{StoreOps: block_mock.NewMockStore(0)}
+	cache := block_store_writeback.NewMarkingStore(block_mock.NewMockStore(0), nil)
+	handle := &BlockStore{
+		store: block_store.NewStore("test", newCloudOverlay(ctx, le, cloud, cache)),
+	}
+
+	// Walk handle, id wrapper, overlay.
+	parts := handle.GetStoreParts()
+	if len(parts) != 1 || parts[0].Label != "overlay" {
+		t.Fatalf("handle parts = %v", parts)
+	}
+	parts = parts[0].Store.(block.StoreParts).GetStoreParts()
+	if len(parts) != 1 {
+		t.Fatalf("id wrapper parts = %v", parts)
+	}
+	parts = parts[0].Store.(block.StoreParts).GetStoreParts()
+	if len(parts) != 2 || parts[0].Store != cloud || parts[1].Store != cache {
+		t.Fatalf("overlay parts = %v", parts)
+	}
+}
