@@ -23,6 +23,12 @@ message BuildPolicy {
   // output; DISABLE forces single-file output.
   .enabled.Enabled goscript_code_splitting = 3;
 
+  // GoScriptDeadCodeElimination controls whether GoScript leaves the code a
+  // program cannot reach out of its output.
+  // DEFAULT eliminates dead code in release builds only, because elimination
+  // compiles without the GoScript compiler cache.
+  .enabled.Enabled goscript_dead_code_elimination = 5;
+
   // FrontendDevelopment selects the active project service instead of immutable
   // frontend bundles. Only an attached web development session enables it.
   // It participates in build and startup-cache identity and propagates to children.

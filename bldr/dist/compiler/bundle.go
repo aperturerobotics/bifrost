@@ -103,6 +103,7 @@ func BuildDistBundle(
 	jsMinify := buildPolicy.ResolveJsMinification(buildType)
 	jsSourcemaps := buildPolicy.ResolveJsSourcemaps(buildType)
 	goScriptCodeSplitting := buildPolicy.ResolveGoScriptCodeSplitting(buildType)
+	goScriptDeadCodeElimination := buildPolicy.ResolveGoScriptDeadCodeElimination(buildType)
 
 	// Disable cgo by default.
 	enableCgo := enableCgoOpt.IsEnabled(false)
@@ -499,6 +500,7 @@ func BuildDistBundle(
 				BindingRoots:              goScriptBindingRoots,
 				DeferredFunctions:         goScriptDeferredFunctions,
 				ProtobufTypeScriptBinding: true,
+				EliminateDeadCode:         goScriptDeadCodeElimination,
 			}); err != nil {
 				return err
 			}

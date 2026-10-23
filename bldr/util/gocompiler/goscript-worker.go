@@ -90,16 +90,22 @@ func compileGoScriptRequest(r io.Reader) error {
 // marshalGoScriptWorkerRequest encodes the compile options and log level for
 // the worker.
 func marshalGoScriptWorkerRequest(opts GoScriptCompileOptions, level logrus.Level) []byte {
-	// Encode the log level and the scalar options.
+	// Encode the log level and the string options.
 	var a fastjson.Arena
 	o := a.NewObject()
 	o.Set("level", a.NewString(level.String()))
 	o.Set("workDir", a.NewString(opts.WorkDir))
 	o.Set("outputPath", a.NewString(opts.OutputPath))
 	o.Set("cacheRoot", a.NewString(opts.CacheRoot))
+
+	// Encode the boolean options.
 	o.Set("protobufTypeScriptBinding", a.NewFalse())
 	if opts.ProtobufTypeScriptBinding {
 		o.Set("protobufTypeScriptBinding", a.NewTrue())
+	}
+	o.Set("eliminateDeadCode", a.NewFalse())
+	if opts.EliminateDeadCode {
+		o.Set("eliminateDeadCode", a.NewTrue())
 	}
 
 	// Encode the list options.
@@ -137,6 +143,7 @@ func parseGoScriptWorkerRequest(data []byte) (GoScriptCompileOptions, logrus.Lev
 		BindingRoots:              getStringArray(v, "bindingRoots"),
 		DeferredFunctions:         getStringArray(v, "deferredFunctions"),
 		ProtobufTypeScriptBinding: v.GetBool("protobufTypeScriptBinding"),
+		EliminateDeadCode:         v.GetBool("eliminateDeadCode"),
 	}, level, nil
 }
 

@@ -43,6 +43,9 @@ type GoScriptCompileOptions struct {
 	DeferredFunctions []string
 	// ProtobufTypeScriptBinding uses generated TypeScript protobuf bindings.
 	ProtobufTypeScriptBinding bool
+	// EliminateDeadCode leaves the code a program cannot reach out of the
+	// output. GoScript then compiles without its cache.
+	EliminateDeadCode bool
 }
 
 // GoScriptCompilerCacheRootFromEnv resolves the compiler cache root for a Bldr
@@ -293,6 +296,7 @@ func newGoScriptConfig(opts GoScriptCompileOptions) (*goscript_compiler.Config, 
 		DeferredFunctions:         slices.Clone(opts.DeferredFunctions),
 		OutputPath:                opts.OutputPath,
 		ProtobufTypeScriptBinding: opts.ProtobufTypeScriptBinding,
+		EliminateDeadCode:         opts.EliminateDeadCode,
 	}
 	if opts.CacheRoot != "" {
 		cacheRoot := strings.TrimSpace(opts.CacheRoot)

@@ -439,11 +439,7 @@ func ConfigureGoScriptBrowserStartup(conf *bldr_project.ProjectConfig) error {
 	}
 
 	// Apply the source-map policy and GoScript startup plugins.
-	build.BuildPolicy = build.GetBuildPolicy().Merge(manifest_build.NewBuildPolicy(
-		enabled.Enabled_ENABLE,
-		sourceMaps,
-		enabled.Enabled_DEFAULT,
-	))
+	build.BuildPolicy = build.GetBuildPolicy().Merge(&manifest_build.BuildPolicy{JsMinification: enabled.Enabled_ENABLE, JsSourcemaps: sourceMaps})
 	for _, manifestID := range goScriptBrowserGoManifests {
 		if err := ConfigureGoScriptForManifest(manifestID)(conf); err != nil {
 			return err

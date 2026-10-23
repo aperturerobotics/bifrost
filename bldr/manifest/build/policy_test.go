@@ -49,18 +49,23 @@ func TestBuildPolicyValidateRejectsInvalidEnum(t *testing.T) {
 	}{
 		{
 			name:        "js minification",
-			policy:      NewBuildPolicy(enabled.Enabled(99), enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT),
+			policy:      &BuildPolicy{JsMinification: enabled.Enabled(99)},
 			wantInError: "js_minification",
 		},
 		{
 			name:        "js sourcemaps",
-			policy:      NewBuildPolicy(enabled.Enabled_DEFAULT, enabled.Enabled(99), enabled.Enabled_DEFAULT),
+			policy:      &BuildPolicy{JsSourcemaps: enabled.Enabled(99)},
 			wantInError: "js_sourcemaps",
 		},
 		{
 			name:        "goscript code splitting",
-			policy:      NewBuildPolicy(enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT, enabled.Enabled(99)),
+			policy:      &BuildPolicy{GoscriptCodeSplitting: enabled.Enabled(99)},
 			wantInError: "goscript_code_splitting",
+		},
+		{
+			name:        "goscript dead code elimination",
+			policy:      &BuildPolicy{GoscriptDeadCodeElimination: enabled.Enabled(99)},
+			wantInError: "goscript_dead_code_elimination",
 		},
 	}
 	for _, test := range tests {
@@ -80,8 +85,8 @@ func TestBuildPolicyValidateRejectsInvalidEnum(t *testing.T) {
 // is DEFAULT.
 func TestBuildPolicyMerge(t *testing.T) {
 	// Merge a policy with an override that sets JS minification to DEFAULT.
-	base := NewBuildPolicy(enabled.Enabled_ENABLE, enabled.Enabled_DISABLE, enabled.Enabled_DISABLE)
-	override := NewBuildPolicy(enabled.Enabled_DEFAULT, enabled.Enabled_ENABLE, enabled.Enabled_ENABLE)
+	base := &BuildPolicy{JsMinification: enabled.Enabled_ENABLE, JsSourcemaps: enabled.Enabled_DISABLE, GoscriptCodeSplitting: enabled.Enabled_DISABLE}
+	override := &BuildPolicy{JsSourcemaps: enabled.Enabled_ENABLE, GoscriptCodeSplitting: enabled.Enabled_ENABLE}
 
 	// The DEFAULT field keeps its base value and the explicit fields replace theirs.
 	got := base.Merge(override)
@@ -96,16 +101,16 @@ func TestBuildPolicyMerge(t *testing.T) {
 	}
 
 	// An explicit DISABLE replaces ENABLE.
-	disabled := NewBuildPolicy(enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT, enabled.Enabled_ENABLE).Merge(
-		NewBuildPolicy(enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT, enabled.Enabled_DISABLE),
+	disabled := (&BuildPolicy{GoscriptCodeSplitting: enabled.Enabled_ENABLE}).Merge(
+		&BuildPolicy{GoscriptCodeSplitting: enabled.Enabled_DISABLE},
 	)
 	if disabled.GetGoscriptCodeSplitting() != enabled.Enabled_DISABLE {
 		t.Fatalf("goscript_code_splitting: got %s, want DISABLE", disabled.GetGoscriptCodeSplitting())
 	}
 
 	// A DEFAULT override keeps the existing value.
-	defaulted := NewBuildPolicy(enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT, enabled.Enabled_DISABLE).Merge(
-		NewBuildPolicy(enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT),
+	defaulted := (&BuildPolicy{GoscriptCodeSplitting: enabled.Enabled_DISABLE}).Merge(
+		&BuildPolicy{},
 	)
 	if defaulted.GetGoscriptCodeSplitting() != enabled.Enabled_DISABLE {
 		t.Fatalf("goscript_code_splitting: got %s, want existing DISABLE when override is DEFAULT", defaulted.GetGoscriptCodeSplitting())
@@ -116,7 +121,7 @@ func TestBuildPolicyMerge(t *testing.T) {
 // release and dev builds.
 func TestBuildPolicyResolveDefaultsByBuildType(t *testing.T) {
 	// Release minifies without sourcemaps, dev emits sourcemaps unminified.
-	policy := NewBuildPolicy(enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT)
+	policy := &BuildPolicy{}
 	if !policy.ResolveJsMinification(bldr_manifest.BuildType_RELEASE) {
 		t.Fatal("release DEFAULT should minify JavaScript")
 	}
@@ -137,13 +142,21 @@ func TestBuildPolicyResolveDefaultsByBuildType(t *testing.T) {
 	if !policy.ResolveGoScriptCodeSplitting(bldr_manifest.BuildType_DEV) {
 		t.Fatal("dev DEFAULT should split GoScript bundles")
 	}
+
+	// Release eliminates GoScript dead code; dev keeps the compiler cache.
+	if !policy.ResolveGoScriptDeadCodeElimination(bldr_manifest.BuildType_RELEASE) {
+		t.Fatal("release DEFAULT should eliminate GoScript dead code")
+	}
+	if policy.ResolveGoScriptDeadCodeElimination(bldr_manifest.BuildType_DEV) {
+		t.Fatal("dev DEFAULT should not eliminate GoScript dead code")
+	}
 }
 
 // TestBuildPolicyResolveExplicitValues checks that explicit values override
 // the build type defaults.
 func TestBuildPolicyResolveExplicitValues(t *testing.T) {
 	// Explicit values apply to a release build.
-	policy := NewBuildPolicy(enabled.Enabled_DISABLE, enabled.Enabled_ENABLE, enabled.Enabled_ENABLE)
+	policy := &BuildPolicy{JsMinification: enabled.Enabled_DISABLE, JsSourcemaps: enabled.Enabled_ENABLE, GoscriptCodeSplitting: enabled.Enabled_ENABLE}
 	if policy.ResolveJsMinification(bldr_manifest.BuildType_RELEASE) {
 		t.Fatal("explicit DISABLE should keep release JavaScript readable")
 	}
@@ -155,7 +168,7 @@ func TestBuildPolicyResolveExplicitValues(t *testing.T) {
 	}
 
 	// An explicit DISABLE keeps both build types single-file.
-	disabled := NewBuildPolicy(enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT, enabled.Enabled_DISABLE)
+	disabled := &BuildPolicy{GoscriptCodeSplitting: enabled.Enabled_DISABLE}
 	if disabled.ResolveGoScriptCodeSplitting(bldr_manifest.BuildType_RELEASE) {
 		t.Fatal("explicit DISABLE should keep release GoScript bundles single-file")
 	}

@@ -16,6 +16,9 @@ type BuildPluginOpts struct {
 	JsSourcemaps bool
 	// GoScriptCodeSplitting enables code splitting for GoScript builds.
 	GoScriptCodeSplitting bool
+	// GoScriptDeadCodeElimination leaves unreachable code out of GoScript
+	// builds.
+	GoScriptDeadCodeElimination bool
 
 	// OutBinName is the file name of the compiled plugin binary.
 	OutBinName string

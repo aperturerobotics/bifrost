@@ -26,5 +26,16 @@ func (a *DevtoolArgs) BuildPolicyOverride() (*manifest_build.BuildPolicy, error)
 	if err != nil {
 		return nil, errors.Wrap(err, "goscript-code-splitting")
 	}
-	return manifest_build.NewBuildPolicy(jsMinification, jsSourcemaps, goScriptCodeSplitting), nil
+
+	// Parse the GoScript dead code elimination override.
+	goScriptDeadCodeElimination, err := manifest_build.ParseEnabled(a.GoScriptDeadCodeElimination)
+	if err != nil {
+		return nil, errors.Wrap(err, "goscript-dead-code-elimination")
+	}
+	return &manifest_build.BuildPolicy{
+		JsMinification:              jsMinification,
+		JsSourcemaps:                jsSourcemaps,
+		GoscriptCodeSplitting:       goScriptCodeSplitting,
+		GoscriptDeadCodeElimination: goScriptDeadCodeElimination,
+	}, nil
 }

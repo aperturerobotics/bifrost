@@ -77,6 +77,8 @@ type DevtoolArgs struct {
 	JSSourcemaps string
 	// GoScriptCodeSplitting controls GoScript bundle code splitting.
 	GoScriptCodeSplitting string
+	// GoScriptDeadCodeElimination controls GoScript dead code elimination.
+	GoScriptDeadCodeElimination string
 	// WebListenAddr is the address to listen for start:web.
 	WebListenAddr string
 	// WebUseWasm compiles browser Go plugins with standard Go/WASM.
@@ -154,6 +156,7 @@ func (a *DevtoolArgs) FillDefaults() {
 	a.JSMinification = "default"
 	a.JSSourcemaps = "default"
 	a.GoScriptCodeSplitting = "default"
+	a.GoScriptDeadCodeElimination = "default"
 	a.Watch = true
 
 	// Fill the Bldr version and checksum from the build metadata.
@@ -271,6 +274,13 @@ func (a *DevtoolArgs) BuildFlags() []cli.Flag {
 			EnvVars:     []string{"BLDR_GOSCRIPT_CODE_SPLITTING"},
 			Value:       a.GoScriptCodeSplitting,
 			Destination: &a.GoScriptCodeSplitting,
+		},
+		&cli.StringFlag{
+			Name:        "goscript-dead-code-elimination",
+			Usage:       "GoScript dead code elimination policy: default (release builds only), enable, or disable",
+			EnvVars:     []string{"BLDR_GOSCRIPT_DEAD_CODE_ELIMINATION"},
+			Value:       a.GoScriptDeadCodeElimination,
+			Destination: &a.GoScriptDeadCodeElimination,
 		},
 
 		&cli.BoolFlag{

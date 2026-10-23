@@ -334,6 +334,7 @@ func (m *ModuleCompiler) CompilePluginGoScript(
 	buildFlags []string,
 	overrideDirs []string,
 	deferredFunctions []string,
+	eliminateDeadCode bool,
 ) (string, error) {
 	// Resolve JavaScript binding roots using the existing module lookup.
 	bindingRoots, err := gocompiler.GoScriptBindingRoots(ctx, m.pluginCodegenPath, "GOOS=js", "GOARCH=wasm")
@@ -352,6 +353,7 @@ func (m *ModuleCompiler) CompilePluginGoScript(
 		BindingRoots:              bindingRoots,
 		DeferredFunctions:         deferredFunctions,
 		ProtobufTypeScriptBinding: true,
+		EliminateDeadCode:         eliminateDeadCode,
 	}); err != nil {
 		return "", err
 	}

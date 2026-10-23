@@ -344,6 +344,7 @@ func (c *Controller) BuildManifest(
 				JsMinification:                    builderConf.GetBuildPolicy().ResolveJsMinification(buildType),
 				JsSourcemaps:                      builderConf.GetBuildPolicy().ResolveJsSourcemaps(buildType),
 				GoScriptCodeSplitting:             builderConf.GetBuildPolicy().ResolveGoScriptCodeSplitting(buildType),
+				GoScriptDeadCodeElimination:       builderConf.GetBuildPolicy().ResolveGoScriptDeadCodeElimination(buildType),
 				OutBinName:                        outBinName,
 				WorkingPath:                       workingPath,
 				SourcePath:                        sourcePath,
@@ -1002,6 +1003,7 @@ func (c *Controller) BuildPlugin(
 			goScriptBuildFlags,
 			goScriptOverrideDirs,
 			conf.GetGoscriptDeferredFunctions(),
+			opts.GoScriptDeadCodeElimination,
 		)
 		if err != nil {
 			return nil, err

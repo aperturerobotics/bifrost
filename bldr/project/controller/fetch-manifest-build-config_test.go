@@ -75,7 +75,7 @@ func TestFetchManifestUsesActiveBuildConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	conf.BuilderConfigOverride = override
-	conf.BuildPolicy = manifest_build.NewBuildPolicy(enabled.Enabled_DISABLE, enabled.Enabled_ENABLE, enabled.Enabled_ENABLE)
+	conf.BuildPolicy = &manifest_build.BuildPolicy{JsMinification: enabled.Enabled_DISABLE, JsSourcemaps: enabled.Enabled_ENABLE, GoscriptCodeSplitting: enabled.Enabled_ENABLE}
 
 	// Register the active build configuration on the controller.
 	active, err := ctrl.AddManifestBuilderRef(conf)

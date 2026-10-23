@@ -35,6 +35,13 @@ export interface BuildPolicy {
    */
   goscriptCodeSplitting?: Enabled
   /**
+   * GoScriptDeadCodeElimination controls whether GoScript leaves the code a
+   * program cannot reach out of its output.
+   * DEFAULT eliminates dead code in release builds only, because elimination
+   * compiles without the GoScript compiler cache.
+   */
+  goscriptDeadCodeElimination?: Enabled
+  /**
    * FrontendDevelopment selects the active project service instead of immutable
    * frontend bundles. Only an attached web development session enables it.
    * It participates in build and startup-cache identity and propagates to children.
@@ -50,5 +57,6 @@ export const BuildPolicy: MessageType<BuildPolicy> =
       [2, 'js_sourcemaps', 14, 0, Enabled_Enum],
       [3, 'goscript_code_splitting', 14, 0, Enabled_Enum],
       [4, 'frontend_development', 8],
+      [5, 'goscript_dead_code_elimination', 14, 0, Enabled_Enum],
     ],
   )

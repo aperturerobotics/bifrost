@@ -89,6 +89,7 @@ func TestDevtoolArgsBuildPolicyOverride(t *testing.T) {
 	args.JSMinification = "disable"
 	args.JSSourcemaps = "enable"
 	args.GoScriptCodeSplitting = "disable"
+	args.GoScriptDeadCodeElimination = "enable"
 
 	// Parse the build policy overrides.
 	policy, err := args.BuildPolicyOverride()
@@ -105,6 +106,9 @@ func TestDevtoolArgsBuildPolicyOverride(t *testing.T) {
 	}
 	if policy.GetGoscriptCodeSplitting() != enabled.Enabled_DISABLE {
 		t.Fatalf("goscript code splitting: got %s, want DISABLE", policy.GetGoscriptCodeSplitting())
+	}
+	if policy.GetGoscriptDeadCodeElimination() != enabled.Enabled_ENABLE {
+		t.Fatalf("goscript dead code elimination: got %s, want ENABLE", policy.GetGoscriptDeadCodeElimination())
 	}
 }
 

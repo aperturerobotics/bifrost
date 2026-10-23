@@ -123,7 +123,7 @@ func TestBuildTargetsOverrideSelection(t *testing.T) {
 	manifestOverrides := map[string]*configset_proto.ControllerConfig{
 		"spacewave-dist": override,
 	}
-	buildPolicy := manifest_build.NewBuildPolicy(enabled.Enabled_DISABLE, enabled.Enabled_ENABLE, enabled.Enabled_ENABLE)
+	buildPolicy := &manifest_build.BuildPolicy{JsMinification: enabled.Enabled_DISABLE, JsSourcemaps: enabled.Enabled_ENABLE, GoscriptCodeSplitting: enabled.Enabled_ENABLE}
 
 	// Expand manifest selectors and capture their effective override and policy.
 	var gotOverride *configset_proto.ControllerConfig
@@ -185,18 +185,10 @@ func TestBuildTargetsOverrideSelection(t *testing.T) {
 func TestResolveBuildTargetMergesBuildPolicy(t *testing.T) {
 	// Prepare a browser build target and a partial policy override.
 	buildTarget := &bldr_project.BuildConfig{
-		Targets: []string{"browser"},
-		BuildPolicy: manifest_build.NewBuildPolicy(
-			enabled.Enabled_ENABLE,
-			enabled.Enabled_DISABLE,
-			enabled.Enabled_DISABLE,
-		),
+		Targets:     []string{"browser"},
+		BuildPolicy: &manifest_build.BuildPolicy{JsMinification: enabled.Enabled_ENABLE, JsSourcemaps: enabled.Enabled_DISABLE, GoscriptCodeSplitting: enabled.Enabled_DISABLE},
 	}
-	override := manifest_build.NewBuildPolicy(
-		enabled.Enabled_DISABLE,
-		enabled.Enabled_DEFAULT,
-		enabled.Enabled_ENABLE,
-	)
+	override := &manifest_build.BuildPolicy{JsMinification: enabled.Enabled_DISABLE, GoscriptCodeSplitting: enabled.Enabled_ENABLE}
 
 	// Resolve the build target with its partial policy override.
 	resolved, err := ResolveBuildTarget(buildTarget, nil, override)
@@ -222,7 +214,7 @@ func TestResolveBuildTargetMergesBuildPolicy(t *testing.T) {
 func TestResolveBuildTargetRejectsInvalidBuildPolicy(t *testing.T) {
 	buildTarget := &bldr_project.BuildConfig{
 		Targets:     []string{"browser"},
-		BuildPolicy: manifest_build.NewBuildPolicy(enabled.Enabled(99), enabled.Enabled_DEFAULT, enabled.Enabled_DEFAULT),
+		BuildPolicy: &manifest_build.BuildPolicy{JsMinification: enabled.Enabled(99)},
 	}
 
 	if _, err := ResolveBuildTarget(buildTarget, nil, nil); err == nil {

@@ -32,6 +32,11 @@ type BuildPolicy struct {
 	// DEFAULT emits split GoScript wrapper bundles. ENABLE also permits chunk
 	// output; DISABLE forces single-file output.
 	GoscriptCodeSplitting enabled.Enabled `protobuf:"varint,3,opt,name=goscript_code_splitting,json=goscriptCodeSplitting,proto3" json:"goscriptCodeSplitting,omitempty"`
+	// GoScriptDeadCodeElimination controls whether GoScript leaves the code a
+	// program cannot reach out of its output.
+	// DEFAULT eliminates dead code in release builds only, because elimination
+	// compiles without the GoScript compiler cache.
+	GoscriptDeadCodeElimination enabled.Enabled `protobuf:"varint,5,opt,name=goscript_dead_code_elimination,json=goscriptDeadCodeElimination,proto3" json:"goscriptDeadCodeElimination,omitempty"`
 	// FrontendDevelopment selects the active project service instead of immutable
 	// frontend bundles. Only an attached web development session enables it.
 	// It participates in build and startup-cache identity and propagates to children.
@@ -65,6 +70,13 @@ func (x *BuildPolicy) GetGoscriptCodeSplitting() enabled.Enabled {
 	return enabled.Enabled(0)
 }
 
+func (x *BuildPolicy) GetGoscriptDeadCodeElimination() enabled.Enabled {
+	if x != nil {
+		return x.GoscriptDeadCodeElimination
+	}
+	return enabled.Enabled(0)
+}
+
 func (x *BuildPolicy) GetFrontendDevelopment() bool {
 	if x != nil {
 		return x.FrontendDevelopment
@@ -80,6 +92,7 @@ func (m *BuildPolicy) CloneVT() *BuildPolicy {
 	r.JsMinification = m.JsMinification
 	r.JsSourcemaps = m.JsSourcemaps
 	r.GoscriptCodeSplitting = m.GoscriptCodeSplitting
+	r.GoscriptDeadCodeElimination = m.GoscriptDeadCodeElimination
 	r.FrontendDevelopment = m.FrontendDevelopment
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
@@ -107,6 +120,9 @@ func (this *BuildPolicy) EqualVT(that *BuildPolicy) bool {
 		return false
 	}
 	if this.FrontendDevelopment != that.FrontendDevelopment {
+		return false
+	}
+	if this.GoscriptDeadCodeElimination != that.GoscriptDeadCodeElimination {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -148,6 +164,11 @@ func (x *BuildPolicy) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("frontendDevelopment")
 		s.WriteBool(x.FrontendDevelopment)
 	}
+	if x.GoscriptDeadCodeElimination != 0 || s.HasField("goscriptDeadCodeElimination") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("goscriptDeadCodeElimination")
+		x.GoscriptDeadCodeElimination.MarshalProtoJSON(s)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -177,6 +198,9 @@ func (x *BuildPolicy) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "frontend_development", "frontendDevelopment":
 			s.AddField("frontend_development")
 			x.FrontendDevelopment = s.ReadBool()
+		case "goscript_dead_code_elimination", "goscriptDeadCodeElimination":
+			s.AddField("goscript_dead_code_elimination")
+			x.GoscriptDeadCodeElimination.UnmarshalProtoJSON(s)
 		}
 	})
 }
@@ -215,6 +239,11 @@ func (m *BuildPolicy) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.GoscriptDeadCodeElimination != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.GoscriptDeadCodeElimination))
+		i--
+		dAtA[i] = 0x28
+	}
 	if m.FrontendDevelopment {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.FrontendDevelopment)
 		i--
@@ -248,6 +277,7 @@ func (m *BuildPolicy) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.JsSourcemaps)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.GoscriptCodeSplitting)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.FrontendDevelopment)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.GoscriptDeadCodeElimination)
 	n += len(m.unknownFields)
 	return n
 }
@@ -270,6 +300,10 @@ func (x *BuildPolicy) MarshalProtoText() string {
 	if x.FrontendDevelopment != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "frontend_development")
 		protobuf_go_lite.TextWriteBool(&sb, x.FrontendDevelopment)
+	}
+	if x.GoscriptDeadCodeElimination != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "goscript_dead_code_elimination")
+		protobuf_go_lite.TextWriteStringer(&sb, enabled.Enabled(x.GoscriptDeadCodeElimination))
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -341,6 +375,17 @@ func (m *BuildPolicy) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.FrontendDevelopment = bool(v)
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GoscriptDeadCodeElimination", wireType)
+			}
+			m.GoscriptDeadCodeElimination = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.GoscriptDeadCodeElimination = enabled.Enabled(_v)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

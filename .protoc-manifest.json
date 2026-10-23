@@ -155,7 +155,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/manifest/build": {
-      "hash": "fbe1a5fa7767b6796d40db7f4ca3145885351411e282514ba6b6ac734030ae32",
+      "hash": "23d3413180b1e075ca2156fc9c5d0c47a6599769ad984b9ca31dbfb902e65eff",
       "generatedFiles": [
         "bldr/manifest/build/policy.pb.go",
         "bldr/manifest/build/policy.pb.ts"
@@ -4230,7 +4230,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/trace": {
-      "hash": "3fa94a40da16f0d249a26b7c934cf3e69d60313f896d4db4d6897fc62570910c",
+      "hash": "71098f4e20036ac7cd477f52476c5017ad8aa6b05fcc48330ffbc29aaf9630c4",
       "generatedFiles": [
         "sdk/trace/trace.pb.go",
         "sdk/trace/trace.pb.ts",

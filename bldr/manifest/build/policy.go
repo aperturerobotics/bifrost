@@ -34,15 +34,6 @@ func FormatEnabled(value enabled.Enabled) string {
 	}
 }
 
-// NewBuildPolicy constructs a BuildPolicy from JavaScript and GoScript policy options.
-func NewBuildPolicy(jsMinification, jsSourcemaps, goScriptCodeSplitting enabled.Enabled) *BuildPolicy {
-	return &BuildPolicy{
-		JsMinification:        jsMinification,
-		JsSourcemaps:          jsSourcemaps,
-		GoscriptCodeSplitting: goScriptCodeSplitting,
-	}
-}
-
 // Validate validates the BuildPolicy.
 func (p *BuildPolicy) Validate() error {
 	// Accept a nil policy and validate each option.
@@ -57,6 +48,9 @@ func (p *BuildPolicy) Validate() error {
 	}
 	if err := p.GetGoscriptCodeSplitting().Validate(); err != nil {
 		return errors.Wrap(err, "goscript_code_splitting")
+	}
+	if err := p.GetGoscriptDeadCodeElimination().Validate(); err != nil {
+		return errors.Wrap(err, "goscript_dead_code_elimination")
 	}
 	return nil
 }
@@ -77,6 +71,7 @@ func (p *BuildPolicy) Merge(override *BuildPolicy) *BuildPolicy {
 	merged.JsMinification = merged.GetJsMinification().Merge(override.GetJsMinification())
 	merged.JsSourcemaps = merged.GetJsSourcemaps().Merge(override.GetJsSourcemaps())
 	merged.GoscriptCodeSplitting = merged.GetGoscriptCodeSplitting().Merge(override.GetGoscriptCodeSplitting())
+	merged.GoscriptDeadCodeElimination = merged.GetGoscriptDeadCodeElimination().Merge(override.GetGoscriptDeadCodeElimination())
 	return merged
 }
 
@@ -93,4 +88,10 @@ func (p *BuildPolicy) ResolveJsSourcemaps(buildType bldr_manifest.BuildType) boo
 // ResolveGoScriptCodeSplitting resolves GoScript bundle splitting.
 func (p *BuildPolicy) ResolveGoScriptCodeSplitting(buildType bldr_manifest.BuildType) bool {
 	return p.GetGoscriptCodeSplitting().IsEnabled(true)
+}
+
+// ResolveGoScriptDeadCodeElimination resolves GoScript dead code elimination
+// against BuildType defaults.
+func (p *BuildPolicy) ResolveGoScriptDeadCodeElimination(buildType bldr_manifest.BuildType) bool {
+	return p.GetGoscriptDeadCodeElimination().IsEnabled(buildType.IsRelease())
 }

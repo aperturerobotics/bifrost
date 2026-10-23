@@ -33,7 +33,7 @@ import (
 	block_store "github.com/s4wave/spacewave/db/block/store/inmem"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
 	kvtx_block "github.com/s4wave/spacewave/db/kvtx/block"
-	"github.com/s4wave/spacewave/db/store/kvkey"
+	store_kvkey "github.com/s4wave/spacewave/db/store/kvkey"
 	store_inmem "github.com/s4wave/spacewave/db/store/kvtx/inmem"
 	db_testbed "github.com/s4wave/spacewave/db/testbed"
 	"github.com/s4wave/spacewave/db/unixfs"
@@ -193,7 +193,7 @@ export const lazy = () => import('./lazy.ts')
 		ManifestMeta: manifest.NewManifestMeta("block-plugin", manifest.BuildType_DEV, "js", 1),
 		EngineId:     tb.GetWorldEngineID(), PeerId: tb.GetVolume().GetPeerID().String(),
 		LinkObjectKeys: []string{tb.GetPluginHostObjKey()},
-		BuildPolicy:    build_policy.NewBuildPolicy(enabled.Enabled_DISABLE, enabled.Enabled_DISABLE, enabled.Enabled_DEFAULT),
+		BuildPolicy:    &build_policy.BuildPolicy{JsMinification: enabled.Enabled_DISABLE, JsSourcemaps: enabled.Enabled_DISABLE},
 	}}
 	var target builder.Controller = compiler
 
