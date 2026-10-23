@@ -55,6 +55,9 @@ type writer struct {
 	building atomic.Bool
 	// builds counts running background checkpoints, so Close can wait.
 	builds sync.WaitGroup
+	// beforeBuild, when set by a test, runs as a background checkpoint
+	// starts building its tree.
+	beforeBuild func()
 	// buildLocked is set while this handle's background checkpoint holds
 	// a shared file's build lock. It is set under the writer lock.
 	buildLocked atomic.Bool
@@ -695,14 +698,28 @@ func (w *writer) endBuild() {
 	})
 }
 
+// smallCommit is the most a commit can write and still wait only at
+// smallLimit times the bounds waitBuild holds bulk commits to.
+const smallCommit = 64 << 10
+
+// smallLimit multiplies the bounds for small commits, so a commit of a few
+// keys does not wait out a slow build that bulk commits outpaced, while a
+// stream of small commits still holds bounded memory and replay.
+const smallLimit = 2
+
 // waitBuild waits while a background checkpoint runs and the published
 // overlay exceeds twice CheckpointMax, or the log after the checkpoint four
 // times, so a writer that outpaces checkpoints holds bounded memory and
-// replay. The caller does not hold the writer lock, which the build needs.
-func (w *writer) waitBuild(ctx context.Context) error {
+// replay. A commit that wrote fewer than smallCommit bytes waits only past
+// smallLimit times those bounds. The caller does not hold the writer lock,
+// which the build needs.
+func (w *writer) waitBuild(ctx context.Context, wrote int64) error {
 	// Return at once while the state is within bounds.
 	db := w.db
 	limit := 2 * db.opts.CheckpointMax
+	if wrote < smallCommit {
+		limit *= smallLimit
+	}
 	within := func() bool {
 		st := db.cur.Load()
 		return st.overlayBytes <= limit && st.logBytes <= 2*limit
@@ -764,6 +781,9 @@ func (w *writer) runCheckpoint(st *state, stripe int) {
 
 	// Build the tree, then flush its pages without the writer lock, so the
 	// barrier under the lock flushes little.
+	if w.beforeBuild != nil {
+		w.beforeBuild()
+	}
 	err := t.build()
 	if err == nil {
 		_, err = w.db.s.flushBarrier()
