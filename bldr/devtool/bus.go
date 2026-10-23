@@ -128,6 +128,9 @@ func BuildDevtoolBus(
 		return nil, err
 	}
 
+	// Serve pprof on the debug socket while the lock is held.
+	serveDevtoolDebug(ctx, le, stateRoot)
+
 	// Start the core controller bus and static resolver.
 	b, sr, err := core.NewCoreBus(ctx, le)
 	if err != nil {
