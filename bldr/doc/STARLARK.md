@@ -73,6 +73,7 @@ manifest("my-plugin",
 | `rev` | int | Builder and minimum manifest revision (default 0). Maps to both `ControllerConfig.Rev` and `ManifestConfig.Rev`: bump to force a rebuild and to keep a fresh build World above published revisions. |
 | `config` | dict | Builder-specific configuration (use typed constructors below) |
 | `description` | string | Optional description |
+| `platformIds` / `platform_ids` | list[string] | Allowed base or fully qualified platform IDs. Empty allows all target platforms. Use `["desktop"]` for a native-only plugin. |
 
 ### build()
 

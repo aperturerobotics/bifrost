@@ -14,7 +14,9 @@ import (
 
 // StartupManifestPreflight describes one project-owned startup manifest request.
 type StartupManifestPreflight struct {
-	PluginID    string
+	// PluginID identifies the startup plugin.
+	PluginID string
+	// PlatformIDs lists the supported platforms selected by the startup mode.
 	PlatformIDs []string
 }
 
@@ -136,6 +138,19 @@ func ProjectOwnedStartupManifestPreflightsForPlatforms(
 // startupManifestPlatformIDs returns the platform ids a manifest builds
 // for, given the resolved wasm platform id.
 func startupManifestPlatformIDs(
+	manifest *bldr_project.ManifestConfig,
+	goPluginPlatformID,
+	wasmPlatformID string,
+) []string {
+	// Restrict inferred startup platforms to the manifest's declared support.
+	platformIDs := defaultStartupManifestPlatformIDs(manifest, goPluginPlatformID, wasmPlatformID)
+	return slices.DeleteFunc(platformIDs, func(platformID string) bool {
+		return !manifest.SupportsPlatform(platformID)
+	})
+}
+
+// defaultStartupManifestPlatformIDs infers platforms from the builder and mode.
+func defaultStartupManifestPlatformIDs(
 	manifest *bldr_project.ManifestConfig,
 	goPluginPlatformID,
 	wasmPlatformID string,

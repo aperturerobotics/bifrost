@@ -116,6 +116,10 @@ func (c *Controller) BuildTargets(ctx context.Context, remote string, targets []
 			buildTarget.GetManifests(),
 			platformIDs,
 			func(manifestID, platformID string) (bool, error) {
+				// Target expansion must not invent unsupported manifest platforms.
+				if !projConfig.GetManifests()[manifestID].SupportsPlatform(platformID) {
+					return true, nil
+				}
 				mbc := newBuildTargetManifestBuilderConfig(
 					manifestID,
 					platformID,

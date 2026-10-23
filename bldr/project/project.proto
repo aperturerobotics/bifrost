@@ -56,6 +56,10 @@ message ManifestConfig {
   // Background declares that the plugin can run without an open view.
   // Copied to the built manifest metadata.
   bool background = 4;
+  // PlatformIds limits this manifest to the listed base or fully qualified
+  // platform IDs. Empty allows every platform selected by the build target.
+  // For example, ["desktop"] excludes JavaScript and browser WebAssembly.
+  repeated string platform_ids = 5;
 }
 
 // StartConfig configures starting the program.

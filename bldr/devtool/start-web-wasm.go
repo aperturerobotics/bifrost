@@ -503,6 +503,10 @@ func (d *DevtoolBus) executeWebWasm(
 			return nil
 		}
 		for _, preflight := range startupManifestPreflights {
+			// An excluded startup manifest must not become an any-platform fetch.
+			if len(preflight.PlatformIDs) == 0 {
+				continue
+			}
 			_, ref, err := d.GetBus().AddDirective(
 				ctx,
 				bldr_manifest.NewFetchManifest(

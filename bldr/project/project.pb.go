@@ -123,6 +123,10 @@ type ManifestConfig struct {
 	// Background declares that the plugin can run without an open view.
 	// Copied to the built manifest metadata.
 	Background bool `protobuf:"varint,4,opt,name=background,proto3" json:"background,omitempty"`
+	// PlatformIds limits this manifest to the listed base or fully qualified
+	// platform IDs. Empty allows every platform selected by the build target.
+	// For example, ["desktop"] excludes JavaScript and browser WebAssembly.
+	PlatformIds []string `protobuf:"bytes,5,rep,name=platform_ids,json=platformIds,proto3" json:"platformIds,omitempty"`
 }
 
 func (x *ManifestConfig) Reset() {
@@ -157,6 +161,13 @@ func (x *ManifestConfig) GetBackground() bool {
 		return x.Background
 	}
 	return false
+}
+
+func (x *ManifestConfig) GetPlatformIds() []string {
+	if x != nil {
+		return x.PlatformIds
+	}
+	return nil
 }
 
 // StartConfig configures starting the program.
@@ -691,6 +702,7 @@ func (m *ManifestConfig) CloneVT() *ManifestConfig {
 	r.Description = m.Description
 	r.Background = m.Background
 	r.Builder = protobuf_go_lite.CloneVTValue(m.Builder)
+	r.PlatformIds = protobuf_go_lite.CloneSlice(m.PlatformIds)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -854,6 +866,9 @@ func (this *ManifestConfig) EqualVT(that *ManifestConfig) bool {
 		return false
 	}
 	if this.Background != that.Background {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.PlatformIds, that.PlatformIds) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1434,6 +1449,11 @@ func (x *ManifestConfig) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("background")
 		s.WriteBool(x.Background)
 	}
+	if len(x.PlatformIds) > 0 || s.HasField("platformIds") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("platformIds")
+		s.WriteStringArray(x.PlatformIds)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1467,6 +1487,13 @@ func (x *ManifestConfig) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "background":
 			s.AddField("background")
 			x.Background = s.ReadBool()
+		case "platform_ids", "platformIds":
+			s.AddField("platform_ids")
+			if s.ReadNil() {
+				x.PlatformIds = nil
+				return
+			}
+			x.PlatformIds = s.ReadStringArray()
 		}
 	})
 }
@@ -2270,6 +2297,13 @@ func (m *ManifestConfig) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.PlatformIds) > 0 {
+		for iNdEx := len(m.PlatformIds) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.PlatformIds[iNdEx])
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
 	if m.Background {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Background)
 		i--
@@ -2735,6 +2769,7 @@ func (m *ManifestConfig) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Rev)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Description)
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.Background)
+	n += protobuf_go_lite.SizeStringSlice(1, m.PlatformIds)
 	n += len(m.unknownFields)
 	return n
 }
@@ -3031,6 +3066,14 @@ func (x *ManifestConfig) MarshalProtoText() string {
 	if x.Background != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "background")
 		protobuf_go_lite.TextWriteBool(&sb, x.Background)
+	}
+	if len(x.PlatformIds) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "platform_ids")
+		for i, v := range x.PlatformIds {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -3638,6 +3681,16 @@ func (m *ManifestConfig) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Background = bool(v)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PlatformIds", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.PlatformIds = append(m.PlatformIds, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

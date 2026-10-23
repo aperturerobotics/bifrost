@@ -22,7 +22,7 @@ func TestEvaluateMinimal(t *testing.T) {
 	starFile := filepath.Join(dir, "bldr.star")
 	err := os.WriteFile(starFile, []byte(`
 project(id="test-project")
-manifest("test-manifest", builder="bldr/plugin/compiler/go", rev=1, config={"goPkgs": ["./pkg"]}, background=True)
+manifest("test-manifest", builder="bldr/plugin/compiler/go", rev=1, config={"goPkgs": ["./pkg"]}, background=True, platformIds=["desktop"])
 build("app", manifests=["test-manifest"], targets=["desktop"])
 `), 0o644)
 	if err != nil {
@@ -60,6 +60,11 @@ build("app", manifests=["test-manifest"], targets=["desktop"])
 	if !mc.GetBackground() {
 		t.Fatal("expected manifest to declare background")
 	}
+	if !slices.Equal(mc.GetPlatformIds(), []string{"desktop"}) {
+		t.Fatalf("manifest platforms = %v, want desktop", mc.GetPlatformIds())
+	}
+
+	// Assert the build target keeps its selected manifests.
 	if len(result.Config.GetBuild()) != 1 {
 		t.Fatalf("expected 1 build target, got %d", len(result.Config.GetBuild()))
 	}
@@ -366,6 +371,7 @@ func TestEvaluateRootDesktopReleaseBuildsJsEmbeds(t *testing.T) {
 	if launcherConf.GetConfigSet()["release-world-fetch"] != nil {
 		t.Fatal("spacewave-launcher plugin config set mounts release-world-fetch")
 	}
+
 	// Only the dist host composes the Release World factories.
 	if launcherConf.GetHostConfigSet()["release-world-fetch"] != nil {
 		t.Fatal("development spacewave-launcher host config set mounts release-world-fetch")

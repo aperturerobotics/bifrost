@@ -108,6 +108,17 @@ func TestProjectOwnedStartupManifestPreflightsSelectActivePlatforms(t *testing.T
 	if !reflect.DeepEqual(policies, wantPolicies) {
 		t.Fatalf("startupManifestPlatformSelectionPolicies() = %#v, want %#v", policies, wantPolicies)
 	}
+
+	// A native-only plugin must not gain browser platforms during startup.
+	projectConfig.Manifests["core"].PlatformIds = []string{"desktop"}
+	got = ProjectOwnedStartupManifestPreflightsForPlatforms(projectConfig, "js", "web/js/wasm")
+	if len(got[2].PlatformIDs) != 0 {
+		t.Fatalf("native-only browser preflight = %v, want no platforms", got[2].PlatformIDs)
+	}
+	got = ProjectOwnedStartupManifestPreflightsForPlatforms(projectConfig, "desktop/linux/amd64", "web/js/wasm")
+	if !reflect.DeepEqual(got[2].PlatformIDs, []string{"desktop/linux/amd64"}) {
+		t.Fatalf("native-only desktop preflight = %v", got[2].PlatformIDs)
+	}
 }
 
 func TestNativeDesktopQuickJSPluginIDsSelectsJSBuilders(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	manifest "github.com/s4wave/spacewave/bldr/manifest"
+	bldr_platform "github.com/s4wave/spacewave/bldr/platform"
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/net/peer"
@@ -223,10 +224,41 @@ func (c *StartConfig) ParseWebStartupPath() (string, error) {
 
 // Validate validates the plugin config.
 func (c *ManifestConfig) Validate() error {
+	// Validate the builder and each declared platform.
 	if err := c.GetBuilder().Validate(); err != nil {
 		return errors.Wrap(err, "builder")
 	}
+	for _, platformID := range c.GetPlatformIds() {
+		if _, err := bldr_platform.ParsePlatform(platformID); err != nil {
+			return errors.Wrap(err, "platform_ids")
+		}
+	}
 	return nil
+}
+
+// SupportsPlatform reports whether the manifest permits the requested platform.
+// An empty platform list is unrestricted; a base ID permits all its variants.
+func (c *ManifestConfig) SupportsPlatform(platformID string) bool {
+	// Preserve unrestricted manifests without changing platform resolution.
+	if len(c.GetPlatformIds()) == 0 {
+		return true
+	}
+	requested, err := bldr_platform.ParsePlatform(platformID)
+	if err != nil {
+		return false
+	}
+
+	// Match a whole platform family or one resolved platform.
+	for _, allowed := range c.GetPlatformIds() {
+		if allowed == requested.GetBasePlatformID() {
+			return true
+		}
+		platform, err := bldr_platform.ParsePlatform(allowed)
+		if err == nil && platform.GetPlatformID() == requested.GetPlatformID() {
+			return true
+		}
+	}
+	return false
 }
 
 // DedupeSrcObjectKeys sorts and cleans up the list of source object keys.

@@ -66,6 +66,11 @@ func (r *fetchManifestResolver) Resolve(ctx context.Context, handler directive.R
 	manifestMetas := bldr_manifest.NewFetchManifestBuildMatrix(r.dir)
 
 	for _, meta := range manifestMetas {
+		// Leave unsupported platforms to other manifest providers.
+		manifest := r.c.GetConfig().GetProjectConfig().GetManifests()[meta.GetManifestId()]
+		if !manifest.SupportsPlatform(meta.GetPlatformId()) {
+			continue
+		}
 		rel := handler.AddResolver(&fetchManifestWithMetaResolver{
 			c:    r.c,
 			di:   r.di,
@@ -76,9 +81,6 @@ func (r *fetchManifestResolver) Resolve(ctx context.Context, handler directive.R
 	}
 	return nil
 }
-
-// _ is a type assertion
-var _ directive.Resolver = (*fetchManifestResolver)(nil)
 
 // fetchManifestWithMetaResolver resolves FetchManifest with a ManifestMeta.
 type fetchManifestWithMetaResolver struct {
@@ -148,4 +150,7 @@ func (r *fetchManifestWithMetaResolver) Resolve(ctx context.Context, handler dir
 }
 
 // _ is a type assertion
-var _ directive.Resolver = (*fetchManifestWithMetaResolver)(nil)
+var (
+	_ directive.Resolver = (*fetchManifestResolver)(nil)
+	_ directive.Resolver = (*fetchManifestWithMetaResolver)(nil)
+)

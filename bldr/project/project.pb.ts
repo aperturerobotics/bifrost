@@ -101,6 +101,12 @@ export interface ManifestConfig {
    * Copied to the built manifest metadata.
    */
   background?: boolean
+  /**
+   * PlatformIds limits this manifest to the listed base or fully qualified
+   * platform IDs. Empty allows every platform selected by the build target.
+   * For example, ["desktop"] excludes JavaScript and browser WebAssembly.
+   */
+  platformIds?: string[]
 }
 
 export const ManifestConfig: MessageType<ManifestConfig> =
@@ -111,6 +117,7 @@ export const ManifestConfig: MessageType<ManifestConfig> =
       [2, 'rev', 4],
       [3, 'description', 9],
       [4, 'background', 8],
+      [5, 'platform_ids', 9, 1],
     ],
   )
 

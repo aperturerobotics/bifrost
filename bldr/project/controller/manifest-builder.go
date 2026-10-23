@@ -78,6 +78,7 @@ func NewManifestBuilderConfigWithTargetPlatforms(manifestID, buildType, platform
 // bufferedStoreSettingsTx is implemented by world transactions that
 // accept buffered store settings.
 type bufferedStoreSettingsTx interface {
+	// SetBufferedStoreSettings bounds the transaction's pending store writes.
 	SetBufferedStoreSettings(*block.BufferedStoreSettings)
 }
 
@@ -256,6 +257,15 @@ func (t *manifestBuilderTracker) execute(ctx context.Context) error {
 		t.setManifestBuilderStatus(ManifestBuilderStatusStateError, "load manifest config", bldr_project.ErrManifestConfNotFound)
 		return bldr_project.ErrManifestConfNotFound
 	}
+
+	// Explicit builds must also respect the manifest's platform declaration.
+	if !manifestConfig.SupportsPlatform(meta.GetPlatformId()) {
+		err := errors.Errorf("manifest %s does not support platform %s", manifestID, meta.GetPlatformId())
+		t.setManifestBuilderStatus(ManifestBuilderStatusStateError, "validate manifest platform", err)
+		return err
+	}
+
+	// Apply the build-specific compiler configuration after platform selection.
 	if err := applyBuilderConfigOverride(manifestConfig, manifestID, t.conf.GetBuilderConfigOverride()); err != nil {
 		t.setManifestBuilderStatus(ManifestBuilderStatusStateError, "apply builder config override", err)
 		return err

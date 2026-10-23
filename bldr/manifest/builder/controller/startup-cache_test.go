@@ -650,6 +650,29 @@ func TestControllerStartupCacheHitSkipsBuild(t *testing.T) {
 	if result.GetManifestRef().GetManifestRef().GetBucketId() != "startup-bucket" {
 		t.Fatal("expected startup builder result to be reused")
 	}
+
+	// Build Linux and Darwin from one source tree without reusing Linux output.
+	linux, buildCalls := runStartupExecuteTest(t, tmpDir, nil, true)
+	if buildCalls != 1 {
+		t.Fatalf("Linux compiler calls = %d, want 1", buildCalls)
+	}
+	darwin, buildCalls := runStartupExecuteTest(t, tmpDir, linux, true, "desktop/darwin/arm64")
+	if buildCalls != 1 {
+		t.Fatalf("Darwin compiler calls = %d, want 1", buildCalls)
+	}
+	if linux.GetManifest().GetMeta().GetPlatformId() != "desktop/linux/amd64" ||
+		darwin.GetManifest().GetMeta().GetPlatformId() != "desktop/darwin/arm64" {
+		t.Fatal("two platform builds did not produce two distinct manifests")
+	}
+
+	// Each platform can subsequently reuse its own result in the same tree.
+	for _, cached := range []*bldr_manifest_builder.BuilderResult{linux, darwin} {
+		platformID := cached.GetManifest().GetMeta().GetPlatformId()
+		reused, calls := runStartupExecuteTest(t, tmpDir, cached, true, platformID)
+		if calls != 0 || !reused.GetManifest().EqualVT(cached.GetManifest()) {
+			t.Fatalf("%s did not reuse its own manifest: compiler calls = %d", platformID, calls)
+		}
+	}
 }
 
 // TestControllerStartupCacheTracksLocalReplaceSources invalidates a hit when a local replacement changes.
@@ -1322,6 +1345,7 @@ func runStartupExecuteTest(
 	sourcePath string,
 	startupBuilderResult *bldr_manifest_builder.BuilderResult,
 	cacheSafe bool,
+	platformIDs ...string,
 ) (*bldr_manifest_builder.BuilderResult, int32) {
 	// Mark the failure path on the test.
 	t.Helper()
@@ -1347,6 +1371,7 @@ func runStartupExecuteTest(
 		startupBuilderResult,
 		cacheSafe,
 		"",
+		platformIDs...,
 	)
 }
 
@@ -1357,6 +1382,7 @@ func runStartupExecuteWithTestbed(
 	startupBuilderResult *bldr_manifest_builder.BuilderResult,
 	cacheSafe bool,
 	engineID string,
+	platformIDs ...string,
 ) (*bldr_manifest_builder.BuilderResult, int32) {
 	// Mark the failure path on the test.
 	t.Helper()
@@ -1383,6 +1409,9 @@ func runStartupExecuteWithTestbed(
 		SourcePath:     sourcePath,
 		EngineId:       engineID,
 		LinkObjectKeys: []string{tb.GetPluginHostObjKey()},
+	}
+	if len(platformIDs) != 0 {
+		builderConfig.ManifestMeta.PlatformId = platformIDs[0]
 	}
 	controllerConfig := NewConfig(
 		builderConfig,
