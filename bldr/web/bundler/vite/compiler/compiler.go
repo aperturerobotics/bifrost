@@ -719,11 +719,10 @@ func (c *Controller) tryFastRebuild(
 		return nil, err
 	}
 
-	// Compare web pkg refs to see if they changed
-	// If so, we must perform a full rebuild to pick up the new refs + rebuild the web pkgs
-
-	// Force a full rebuild when the web pkg refs changed.
-	if !(&InputManifestMeta{WebPkgRefs: inputMeta.WebPkgRefs}).EqualVT(&InputManifestMeta{WebPkgRefs: viteBuildResult.webPkgRefs}) {
+	// Force a full rebuild when Vite discovered a web pkg the previous build
+	// did not build. The stored refs also carry config-resolved imports and
+	// bldr dist refs, which Vite does not report, so only the ids compare.
+	if !web_pkg.WebPkgRefSlice(inputMeta.GetWebPkgRefs()).ContainsWebPkgIDs(viteBuildResult.webPkgRefs) {
 		le.Info("references to web pkgs changed: forcing a full re-build")
 		return nil, nil
 	}
@@ -750,14 +749,21 @@ func (c *Controller) tryFastRebuild(
 		return kind == InputFileKind_InputFileKind_VITE
 	})
 
-	// Add the updated vite files to the list
-
-	// Add the updated vite files to the list.
+	// Add the updated vite files to the list, skipping the paths a preserved
+	// file already lists, such as web pkg sources, as the full build does.
 	viteSrcFilesCopy := slices.Clone(viteBuildResult.viteSrcFiles)
 	viteSrcFilesCopy, err = filterSourceRelativePaths(sourcePath, viteSrcFilesCopy)
 	if err != nil {
 		return nil, err
 	}
+	preservedPaths := make(map[string]struct{}, len(updatedInputManifest.Files))
+	for _, f := range updatedInputManifest.Files {
+		preservedPaths[f.GetPath()] = struct{}{}
+	}
+	viteSrcFilesCopy = slices.DeleteFunc(viteSrcFilesCopy, func(srcPath string) bool {
+		_, ok := preservedPaths[srcPath]
+		return ok
+	})
 	viteFileMeta := &InputFileMeta{Kind: InputFileKind_InputFileKind_VITE}
 	viteFileMetaBin, err := viteFileMeta.MarshalVT()
 	if err != nil {

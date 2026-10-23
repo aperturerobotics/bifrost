@@ -163,3 +163,20 @@ func (sl WebPkgRefSlice) ToWebPkgIDList() []string {
 	// remove duplicates
 	return slices.Compact(ids)
 }
+
+// ContainsWebPkgIDs checks that every web pkg id in refs is in the slice.
+func (sl WebPkgRefSlice) ContainsWebPkgIDs(refs []*WebPkgRef) bool {
+	// Index the ids already in the slice.
+	ids := make(map[string]struct{}, len(sl))
+	for _, ref := range sl {
+		ids[ref.GetWebPkgId()] = struct{}{}
+	}
+
+	// Report the first id that the slice is missing.
+	for _, ref := range refs {
+		if _, ok := ids[ref.GetWebPkgId()]; !ok {
+			return false
+		}
+	}
+	return true
+}

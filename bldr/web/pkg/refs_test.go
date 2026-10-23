@@ -74,3 +74,21 @@ func TestWebPkgRefSliceAppendWebPkgRefValueMergesFields(t *testing.T) {
 		t.Fatalf("expected merged cross refs, got %v", got)
 	}
 }
+
+func TestWebPkgRefSliceContainsWebPkgIDs(t *testing.T) {
+	// Store refs as a full build merges them: roots plus config imports.
+	stored := WebPkgRefSlice{
+		{WebPkgId: "@s4wave/web", WebPkgRoot: "/repo/web", Imports: []string{"state/index.tsx"}},
+		{WebPkgId: "react", WebPkgRoot: "/repo/node_modules/react"},
+	}
+
+	// Vite reports roots only, so ids decide whether the refs changed.
+	if !stored.ContainsWebPkgIDs([]*WebPkgRef{{WebPkgId: "@s4wave/web", WebPkgRoot: "/repo/web"}}) {
+		t.Fatal("expected the stored refs to contain the vite-discovered id")
+	}
+
+	// A newly discovered web pkg is missing from the stored refs.
+	if stored.ContainsWebPkgIDs([]*WebPkgRef{{WebPkgId: "@s4wave/new"}}) {
+		t.Fatal("expected a new web pkg id to be missing")
+	}
+}
