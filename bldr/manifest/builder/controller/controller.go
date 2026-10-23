@@ -15,9 +15,7 @@ import (
 	"github.com/aperturerobotics/controllerbus/controller/loader"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
 	"github.com/aperturerobotics/controllerbus/directive"
-	"github.com/aperturerobotics/fsnotify"
 	backoff "github.com/aperturerobotics/util/backoff/cbackoff"
-	debounce_fswatcher "github.com/aperturerobotics/util/debounce-fswatcher"
 	"github.com/aperturerobotics/util/keyed"
 	"github.com/aperturerobotics/util/promise"
 	"github.com/pkg/errors"
@@ -227,6 +225,15 @@ func (c *Controller) Execute(ctx context.Context) error {
 	var startupValidated bool
 	buildOwner := newManifestBuildOwner(c, builderConfig)
 
+	// Watch sources across builds, so edits made during a build are kept.
+	var sourceWatcher *SourceWatcher
+	if c.c.GetWatch() {
+		sourceWatcher, err = NewSourceWatcher(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Rebuild the manifest on every restart until the context ends.
 	for {
 		// Stop when the controller context is canceled.
@@ -378,6 +385,9 @@ func (c *Controller) Execute(ctx context.Context) error {
 			le.WithError(err).Warn("build failed")
 		}
 		if !c.c.GetWatch() || (len(inputFiles) == 0 && subManifestCount == 0) {
+			if c.c.GetWatch() {
+				le.Info("builder provided no input files: not watching for changes")
+			}
 			attempt.release()
 			return buildOwner.prevErr
 		}
@@ -404,7 +414,6 @@ func (c *Controller) Execute(ctx context.Context) error {
 		}
 
 		if len(watchedFiles) == 0 {
-			le.Debug("builder provided no files to watch")
 			c.setLifecycleStatus(ManifestBuilderLifecycleStatus{
 				State:                   ManifestBuilderLifecycleStateDone,
 				CacheHit:                cacheHit,
@@ -417,6 +426,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 
 			if subManifestCount == 0 {
 				// nothing to wait for, return.
+				le.Info("builder provided no files to watch: not watching for changes")
 				attempt.release()
 				return nil
 			}
@@ -432,48 +442,18 @@ func (c *Controller) Execute(ctx context.Context) error {
 			}
 		}
 
-		// compare list of files with previous list of file
+		// Watch the directories of the watched source paths.
 		watchedSourcePaths := make(map[string]*bldr_manifest_builder.InputManifest_File, len(watchedFiles))
-		watchedSourceDirs := make(map[string]struct{}, len(watchedFiles))
 		for filePath, v := range watchedFiles {
-			sourcePath := filepath.Join(builderConfig.GetSourcePath(), filePath)
-			watchedSourcePaths[sourcePath] = v
-			sourceDir := filepath.Dir(sourcePath)
-			if _, ok := watchedSourceDirs[sourceDir]; !ok {
-				watchedSourceDirs[sourceDir] = struct{}{}
-			}
+			watchedSourcePaths[filepath.Join(builderConfig.GetSourcePath(), filePath)] = v
 		}
-
-		// It's best to watch the entire directory tree and filter the events.
-		//
-		// This is both more efficient on the kernel side and avoids nasty quriks
-		// with git and other editors deleting and re-creating files.
-		//
-		// See fsnotify comments:
-		//   Watching individual files (rather than directories) is generally not
-		//   recommended as many programs (especially editors) update files atomically: it
-		//   will write to a temporary file which is then moved to to destination,
-		//   overwriting the original (or some variant thereof). The watcher on the
-		//   original file is now lost, as that no longer exists.
-		//
-		// It's necessary to create one watcher per directory:
-		//   https://github.com/fsnotify/fsnotify/issues/18
-		watcher, err := fsnotify.NewWatcher()
-		if err != nil {
+		if err := sourceWatcher.SetPaths(watchedSourcePaths); err != nil {
 			attempt.release()
 			return err
 		}
 
-		for watchedDirPath := range watchedSourceDirs {
-			err = watcher.Add(watchedDirPath)
-			if err != nil {
-				attempt.release()
-				_ = watcher.Close()
-				return err
-			}
-		}
-
-		le.Debugf("watching for changes in %d files and %d directories and %d sub-manifests", len(watchedFiles), len(watchedSourceDirs), subManifestCount)
+		// Wait for a quiet period after the watched files change.
+		le.Debugf("watching for changes in %d files and %d directories and %d sub-manifests", len(watchedFiles), sourceWatcher.GetDirCount(), subManifestCount)
 		c.setLifecycleStatus(ManifestBuilderLifecycleStatus{
 			State:                   ManifestBuilderLifecycleStateDone,
 			CacheHit:                cacheHit,
@@ -483,20 +463,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 			DependencyRebuildReason: buildOwner.rebuildReasonSnapshot(),
 			Summary:                 "watching for changes",
 		})
-		happened, err := debounce_fswatcher.DebounceFSWatcherEvents(
-			attempt.ctx,
-			watcher,
-			time.Millisecond*100,
-			func(event fsnotify.Event) (match bool, err error) {
-				// filter for watchedSourcePaths
-				if _, ok := watchedSourcePaths[event.Name]; !ok {
-					return false, nil
-				}
-				return true, nil
-			},
-		)
-		_ = watcher.Close()
-
+		changedFiles, eventCount, err := sourceWatcher.Wait(attempt.ctx, time.Millisecond*100)
 		if ctx.Err() != nil {
 			attempt.release()
 			return context.Canceled
@@ -511,20 +478,7 @@ func (c *Controller) Execute(ctx context.Context) error {
 			return err
 		}
 
-		// build list of changed files
-		// DebounceFSWatcherEvents watches for Create, Rename, Write, Remove
-		// we know there is at least one event in happened
-		var changedFiles []*bldr_manifest_builder.InputManifest_File
-		seenChangedFiles := make(map[*bldr_manifest_builder.InputManifest_File]struct{}, len(happened))
-		for _, event := range happened {
-			inputFile := watchedSourcePaths[event.Name]
-			if _, ok := seenChangedFiles[inputFile]; !ok && inputFile != nil {
-				seenChangedFiles[inputFile] = struct{}{}
-				changedFiles = append(changedFiles, inputFile)
-			}
-		}
-
-		le.Infof("re-building after %d filesystem events with %d changed files", len(happened), len(changedFiles))
+		le.Infof("re-building after %d filesystem events with %d changed files", eventCount, len(changedFiles))
 		buildOwner.setChangedFiles(changedFiles)
 		attempt.release()
 	}
