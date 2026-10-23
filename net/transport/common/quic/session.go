@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Alpn is set to ensure quic does not talk to non-bifrost peers
+// Alpn is set to ensure quic does not talk to non-bifrost peers.
 const Alpn = "bifrost"
 
 // DialSession dials a remote addr on a packet conn to create a session.
@@ -101,7 +101,9 @@ func DialSessionViaTransport(
 
 // ListenSession listens for a single incoming session on a PacketConn.
 //
-// Negotiates a TLS session. Specify a empty peer ID to allow any.
+// Negotiates a TLS session. Specify a empty peer ID to allow any. The listener
+// is closed before returning. quic-go keeps the accepted session open after
+// the listener closes, and closes the single-use transport when it ends.
 func ListenSession(
 	ctx context.Context,
 	le *logrus.Entry,
@@ -121,10 +123,10 @@ func ListenSession(
 		return nil, err
 	}
 
-	// Accept one session and close the listener on failure.
+	// Accept one session, then close the listener.
 	sess, err := ln.Accept(ctx)
+	_ = ln.Close()
 	if err != nil {
-		_ = ln.Close()
 		return nil, err
 	}
 

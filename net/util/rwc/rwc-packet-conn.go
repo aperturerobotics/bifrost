@@ -4,6 +4,8 @@ import (
 	"io"
 	"net"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // RwcPacketConn wraps a ReadWriteCloser to implement net.PacketConn.
@@ -22,9 +24,14 @@ func NewRwcPacketConn(rwc io.ReadWriteCloser, laddr, raddr net.Addr) *RwcPacketC
 }
 
 // ReadFrom reads a packet from the connection, ignoring the provided address.
+//
+// Read errors are wrapped so they are not a net.Error: the wrapper has no
+// deadlines, so no read error clears by retrying. errors.Is still finds io.EOF.
 func (pc *RwcPacketConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
 	n, err = pc.rwc.Read(p)
-	// Address is set to remote address for each read packet
+	if err != nil {
+		err = errors.Wrap(err, "read packet")
+	}
 	return n, pc.raddr, err
 }
 
@@ -44,19 +51,19 @@ func (pc *RwcPacketConn) LocalAddr() net.Addr {
 }
 
 // SetDeadline sets the read and write deadlines associated with the connection.
-// No-op: RwcPacketConn does not support deadlines
+// It is a no-op: RwcPacketConn does not support deadlines.
 func (pc *RwcPacketConn) SetDeadline(t time.Time) error {
 	return nil
 }
 
 // SetReadDeadline sets the deadline for future Read calls.
-// No-op: RwcPacketConn does not support deadlines
+// It is a no-op: RwcPacketConn does not support deadlines.
 func (pc *RwcPacketConn) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
 // SetWriteDeadline sets the deadline for future Write calls.
-// No-op: RwcPacketConn does not support deadlines
+// It is a no-op: RwcPacketConn does not support deadlines.
 func (pc *RwcPacketConn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
