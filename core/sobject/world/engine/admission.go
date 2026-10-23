@@ -24,6 +24,9 @@ type writeAdmission struct {
 	// span and spanLen are the saved replay span before the publication.
 	span    *block.BlockRef
 	spanLen int
+	// baseUnheld is set when no durable save held base before the
+	// publication.
+	baseUnheld bool
 	// retained is the head held under the accepted World root before the
 	// publication.
 	retained *bucket.ObjectRef
@@ -35,11 +38,12 @@ type writeAdmission struct {
 // passes the World the publication holds under the accepted World root.
 func (e *soEngine) admit(receipt *block.PublicationReceipt, held *bucket.ObjectRef) {
 	e.admissions = append(e.admissions, &writeAdmission{
-		receipt:  receipt,
-		base:     e.replay.base,
-		span:     e.replay.span,
-		spanLen:  e.replay.spanLen,
-		retained: e.retained,
+		receipt:    receipt,
+		base:       e.replay.base,
+		span:       e.replay.span,
+		spanLen:    e.replay.spanLen,
+		baseUnheld: e.replay.baseUnheld,
+		retained:   e.retained,
 	})
 	e.retained = held
 	e.replay.saved()
@@ -82,7 +86,7 @@ func (e *soEngine) settle() {
 				e.c.failed[failed.localID] = struct{}{}
 			}
 		}
-		e.replay.unsave(adm.base, adm.span, adm.spanLen)
+		e.replay.unsave(adm.base, adm.span, adm.spanLen, adm.baseUnheld)
 		e.retained = adm.retained
 		e.admissions = nil
 	}

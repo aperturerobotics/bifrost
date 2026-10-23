@@ -105,6 +105,12 @@ func (h *rootHold) release(name string) {
 	}
 }
 
+// add gathers the blocks and roots of o.
+func (h *rootHold) add(o *rootHold) {
+	h.entries = append(h.entries, o.entries...)
+	h.roots = append(h.roots, o.roots...)
+}
+
 // apply writes the gathered blocks and moves every gathered root at once.
 func (h *rootHold) apply(ctx context.Context) error {
 	return block.SetRetainedRoots(ctx, h.store, h.entries, h.roots)

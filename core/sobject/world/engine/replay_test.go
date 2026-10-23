@@ -379,6 +379,8 @@ func TestReplayResumesSavedInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+
+	// Sign them in a chain.
 	opInit := space.signOp("A init", privA, initData, &sobject.SOOperationLink{Nonce: 1})
 	opA := space.sign("A own", privA, "object-a", &sobject.SOOperationLink{Nonce: 2, PrevOpHash: opInit.Hash()})
 	opB := space.sign("A next", privA, "object-b", &sobject.SOOperationLink{Nonce: 3, PrevOpHash: opA.Hash()})
@@ -641,5 +643,83 @@ func TestReplayAdoptsForkAcrossCheckpoint(t *testing.T) {
 	}
 	if state != fork.state || len(outcomes) != 1 || !bytes.Equal(outcomes[0].hash, a3.Hash()) {
 		t.Fatalf("replay applied the write again instead of adopting it: %d outcomes", len(outcomes))
+	}
+}
+
+// TestReplayCarriesBaseHoldUntilSaved checks that each save carries the hold
+// of a checkpoint World rebase adopted until one is durable, and that a failed
+// publication restores it, including when a later rebase replaced the World
+// the failed publication started from.
+func TestReplayCarriesBaseHoldUntilSaved(t *testing.T) {
+	// A writes a chain of three operations.
+	privA, pidA := newReplayTestKey(t)
+	space := newReplayTestSpace(t, pidA)
+	a1 := space.sign("a1", privA, "object-1", &sobject.SOOperationLink{Nonce: 1})
+	a2 := space.sign("a2", privA, "object-2", &sobject.SOOperationLink{Nonce: 2, PrevOpHash: a1.Hash()})
+	a3 := space.sign("a3", privA, "object-3", &sobject.SOOperationLink{Nonce: 3, PrevOpHash: a2.Hash()})
+
+	// The member replays them and saves its replay.
+	member := space.member(pidA, false)
+	r := member.replayer
+	afterA2 := member.deliver(a1, a2).state
+	afterA3 := member.deliver(a1, a2, a3).state
+	r.saved()
+
+	// adopt rebases onto a checkpoint and gathers a base hold naming its
+	// World. The test store owns no roots, so the hold is named here.
+	adopt := func(height uint64, world *InnerState, head *sobject.SOOperation) {
+		// Rebase and check the hold was gathered.
+		t.Helper()
+		member.adopt(height, world, head)
+		if r.baseHold == nil || !r.baseUnheld {
+			t.Fatal("rebase did not gather the base hold")
+		}
+
+		// Name the World under the replay base root.
+		ref := world.GetHeadRef().GetRootRef()
+		r.baseHold = &rootHold{
+			entries: []*block.PutBatchEntry{{Ref: ref}},
+			roots:   []block.NamedRoot{{Name: replayBaseRootName, Ref: ref}},
+		}
+	}
+
+	// carries reports whether the pending save names the base root.
+	carries := func() bool {
+		t.Helper()
+		_, roots, _, err := r.pendingSave(replayTestPublisher{}, nil)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		return slices.ContainsFunc(roots, func(root block.NamedRoot) bool { return root.Name == replayBaseRootName })
+	}
+
+	// The save after a rebase carries the base hold, and once it is durable
+	// the next save does not.
+	adopt(1, afterA2, a2)
+	if !carries() {
+		t.Fatal("save after a rebase does not hold the checkpoint World")
+	}
+	unheld, base, span, spanLen := r.baseUnheld, r.base, r.span, r.spanLen
+	r.saved()
+	if r.baseUnheld || carries() {
+		t.Fatal("save after a durable save still holds the checkpoint World")
+	}
+
+	// A failed publication that carried it restores it.
+	r.unsave(base, span, spanLen, unheld)
+	if !carries() {
+		t.Fatal("failed publication did not restore the base hold")
+	}
+
+	// A publication admitted with the base held, then a rebase whose hold
+	// only later publications carried: when the first fails, the new base
+	// is unheld again.
+	r.saved()
+	firstBase, firstSpan, firstLen := r.base, r.span, r.spanLen
+	adopt(2, afterA3, a3)
+	r.saved()
+	r.unsave(firstBase, firstSpan, firstLen, false)
+	if !carries() {
+		t.Fatal("failed publications did not restore the hold of the later checkpoint World")
 	}
 }

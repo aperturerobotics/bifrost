@@ -5,6 +5,7 @@ package sobject_world_engine_test
 import (
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/controllerbus/controller/resolver"
@@ -166,4 +167,56 @@ func TestLocalWorldCommitPhysicalCommits(t *testing.T) {
 	if got := w.seq() - before; got != n {
 		t.Fatalf("%d World commits made %d physical commits", n, got)
 	}
+}
+
+// TestCheckpointInstallPhysicalCommits checks that a checkpoint and its
+// install are two database commits: the SharedObject state, then the hold of
+// the checkpoint World, the replay span and the replay save together.
+func TestCheckpointInstallPhysicalCommits(t *testing.T) {
+	// Write one operation short of a checkpoint and let the engine settle.
+	w, so := startGatedWorld(t, t.TempDir(), nil)
+	var n int
+	for ; admittedOps(t, so) < sobject.MinCheckpointOperations-1; n++ {
+		w.create(t, "checkpoint/"+strconv.Itoa(n))
+	}
+	waitSeqIdle(t, w)
+
+	// Write the operation that reaches it, and wait for the checkpoint.
+	w.create(t, "checkpoint/"+strconv.Itoa(n))
+	written := w.seq()
+	durable, relDurable, err := so.AccessSharedObjectState(t.Context(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer relDurable()
+	_, err = durable.WaitValueWithValidator(t.Context(), func(snap sobject.SharedObjectStateSnapshot) (bool, error) {
+		return checkpointTrimmed(t.Context(), snap)
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The checkpoint and its install commit twice.
+	if got := waitSeqIdle(t, w) - written; got != 2 {
+		t.Fatalf("checkpoint and install made %d physical commits, want 2", got)
+	}
+}
+
+// waitSeqIdle waits until the database makes no commit for 300 ms and returns
+// its last sequence.
+func waitSeqIdle(t *testing.T, w *localWorld) uint64 {
+	// Poll the sequence until it holds still.
+	t.Helper()
+	last, since := w.seq(), time.Now()
+	deadline := since.Add(10 * time.Second)
+	for time.Since(since) < 300*time.Millisecond {
+		if time.Now().After(deadline) {
+			t.Fatal("database kept committing")
+		}
+		time.Sleep(10 * time.Millisecond)
+		if seq := w.seq(); seq != last {
+			last, since = seq, time.Now()
+		}
+	}
+	return last
 }

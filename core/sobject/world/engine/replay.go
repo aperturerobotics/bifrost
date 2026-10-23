@@ -142,6 +142,12 @@ type replayer struct {
 	// it holds. saved makes them span and spanLen.
 	next    *block.BlockRef
 	nextLen int
+	// baseHold holds base under the replay base root, gathered when rebase
+	// changed base.
+	baseHold *rootHold
+	// baseUnheld is set while no durable save carried baseHold. Each save
+	// carries it with the replay that starts from base.
+	baseUnheld bool
 	// served is set when positions are the replay of the World an engine
 	// serves. A replay that stops at an unavailable block then keeps that
 	// World and its positions when the stop would leave out an operation the
@@ -209,10 +215,13 @@ func (r *replayer) rebase(ctx context.Context, snap sobject.SharedObjectStateSna
 		return nil
 	}
 
-	// Hold it, judge it against the replay and start from it.
-	if err := holdWorldRoot(ctx, r.so, replayBaseRootName, base.GetHeadRef().GetRootRef()); err != nil {
+	// Gather its hold for the next save, judge it against the replay and
+	// start from it.
+	hold := newRootHold(r.so.GetBlockStore())
+	if err := hold.world(ctx, replayBaseRootName, base.GetHeadRef().GetRootRef()); err != nil {
 		return err
 	}
+	r.baseHold, r.baseUnheld = hold, true
 	if world, _, ok := r.coveredWorld(checkpoint); ok {
 		r.mismatch = nil
 		if !world.EqualVT(base) {
@@ -388,7 +397,7 @@ func restoredState(prev, head *InnerState, outcome *ReplayCursorOutcome) *InnerS
 // after the replay, so a later load resumes from Worlds whose blocks are kept.
 func (r *replayer) save(ctx context.Context) error {
 	// Skip a saved or deferred replay.
-	if !r.changed || r.deferred {
+	if !r.unsaved() {
 		return nil
 	}
 	cursor, err := r.encodeCursor()
@@ -413,12 +422,17 @@ func (r *replayer) save(ctx context.Context) error {
 	return nil
 }
 
+// unsaved reports whether save would write the replay.
+func (r *replayer) unsaved() bool {
+	return r.changed && !r.deferred
+}
+
 // holdSpan adds to hold the World after every position and the payloads of
 // every position under ReplaySpanRootName when save will write the replay,
 // releasing those of positions a checkpoint now covers.
 func (r *replayer) holdSpan(hold *rootHold) error {
 	// Skip a saved or deferred replay.
-	if !r.changed || r.deferred {
+	if !r.unsaved() {
 		return nil
 	}
 	entry, span, err := r.encodeSpan(nil)
@@ -439,6 +453,9 @@ func (r *replayer) holdSpan(hold *rootHold) error {
 	}
 	if hold.skip {
 		span = nil
+	}
+	if r.baseUnheld {
+		hold.add(r.baseHold)
 	}
 	r.pend(span)
 	return nil
@@ -471,6 +488,10 @@ func (r *replayer) pendingSave(publisher sobject.StatePublisher, payloads []*blo
 	case span == nil:
 		roots = []block.NamedRoot{{Name: ReplaySpanRootName}}
 	}
+	if r.baseUnheld {
+		entries = append(entries, r.baseHold.entries...)
+		roots = append(roots, r.baseHold.roots...)
+	}
 
 	// Write the cursor only when it changed.
 	var head *block.AtomicHeadUpdate
@@ -496,17 +517,20 @@ func (r *replayer) pend(span *block.BlockRef) {
 // saved records that the replay is durable as it stands, with the span the
 // pending save named.
 func (r *replayer) saved() {
-	r.changed, r.deferred = false, false
+	r.changed, r.deferred, r.baseUnheld = false, false, false
 	r.span, r.spanLen = r.next, r.nextLen
 	r.next, r.nextLen = nil, 0
 }
 
 // unsave records that the replay is durable only as it stood when base was
-// its checkpoint World and span held spanLen positions, since the
-// publications that carried later saves failed. A span saved on another
-// checkpoint World holds nothing replay keeps.
-func (r *replayer) unsave(base *InnerState, span *block.BlockRef, spanLen int) {
+// its checkpoint World, span held spanLen positions and baseUnheld was set,
+// since the publications that carried later saves failed. A span saved on
+// another checkpoint World holds nothing replay keeps, and only the failed
+// publications carried the hold of the current one.
+func (r *replayer) unsave(base *InnerState, span *block.BlockRef, spanLen int, baseUnheld bool) {
+	// Mark the replay unsaved from the last durable save.
 	r.changed, r.deferred = true, false
+	r.baseUnheld = baseUnheld || base != r.base
 	r.span, r.spanLen = span, spanLen
 	if base != r.base {
 		r.span, r.spanLen = nil, 0
@@ -715,13 +739,18 @@ func (r *replayer) replay(
 // is missing from it until replay places the operation again. An
 // acknowledgment applies nothing.
 func (r *replayer) leavesOut(set *sobject.SOOperationSet, dropped []replayPosition, n int) bool {
+	// Nothing dropped leaves nothing out.
 	if len(dropped) == 0 {
 		return false
 	}
+
+	// Collect the operations placed from n.
 	placed := make(map[string]struct{}, len(r.positions)-n)
 	for _, pos := range r.positions[n:] {
 		placed[string(pos.outcome.hash)] = struct{}{}
 	}
+
+	// Find a dropped operation that applied and was not placed again.
 	for _, pos := range dropped {
 		if pos.outcome.reason != "" || set.Get(pos.outcome.hash).IsAcknowledgment() {
 			continue

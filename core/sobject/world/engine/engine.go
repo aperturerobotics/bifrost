@@ -658,12 +658,12 @@ func (e *soEngine) queueOperation(ctx context.Context, opData []byte, fork *repl
 	return nil
 }
 
-// updateEngineState installs a replayed World, holds it, its retained roots
-// and the replay that reached it in this participant's block store in one
-// call, and saves the replay. While an admission waits for its receipt it only
-// installs the World: the pending publications hold its blocks, and the update
-// after the last receipt settles holds and saves what changed. The caller
-// holds the writer lock.
+// updateEngineState installs a replayed World, then holds it, its retained
+// roots and the replay that reached it in this participant's block store and
+// saves the replay, in one commit when the store can publish. While an
+// admission waits for its receipt it only installs the World: the pending
+// publications hold its blocks, and the update after the last receipt settles
+// holds and saves what changed. The caller holds the writer lock.
 func (e *soEngine) updateEngineState(ctx context.Context, state *InnerState) error {
 	// Trace the update.
 	ctx, task := trace.NewTask(ctx, "alpha/so-engine/update-engine-state")
@@ -708,7 +708,7 @@ func (e *soEngine) updateEngineState(ctx context.Context, state *InnerState) err
 	if err := e.replay.holdSpan(hold); err != nil {
 		return err
 	}
-	if err := hold.apply(ctx); err != nil {
+	if err := e.applyHold(ctx, hold); err != nil {
 		return err
 	}
 
@@ -719,24 +719,60 @@ func (e *soEngine) updateEngineState(ctx context.Context, state *InnerState) err
 	if rootsChanged {
 		e.retainedRoots = state.GetRetainedRoots()
 	}
+	return nil
+}
 
-	// Save the replay now that its World is held.
+// applyHold applies hold and saves the replay, in one publication when the
+// store can publish, so an update commits to the volume once. Otherwise it
+// applies hold, then saves the replay, so the save names held Worlds. The
+// caller holds the writer lock and no admission is pending.
+func (e *soEngine) applyHold(ctx context.Context, hold *rootHold) error {
+	// Fall back when there is no replay save to carry or the state or the
+	// store cannot join a publication.
+	publisher, publishes := e.so.(sobject.StatePublisher)
+	store, ok := e.so.GetBlockStore().(block.AtomicPublisher)
+	if !e.replay.unsaved() || !publishes || !ok || !store.SupportsAtomicPublication() {
+		return e.holdThenSave(ctx, hold)
+	}
+
+	// Submit the held blocks and roots with the replay cursor.
+	cursor, err := e.replay.encodeCursor()
+	if err != nil {
+		return err
+	}
+	receipt, err := store.SubmitAtomic(ctx, &block.AtomicPublication{
+		Entries: hold.entries,
+		Heads:   []*block.AtomicHeadUpdate{publisher.LocalStateHead(replayCursorStoreID, replayCursorKey, cursor)},
+		Roots:   hold.roots,
+	})
+	if errors.Is(err, block.ErrAtomicPublicationUnsupported) || errors.Is(err, block.ErrPublicationTooLarge) {
+		return e.holdThenSave(ctx, hold)
+	}
+	if err != nil {
+		return err
+	}
+
+	// Record the save once it is durable.
+	err = receipt.Wait(ctx)
+	receipt.Release()
+	if err != nil {
+		return err
+	}
+	e.replay.saved()
+	return nil
+}
+
+// holdThenSave applies hold, then saves the replay now that its World is
+// held.
+func (e *soEngine) holdThenSave(ctx context.Context, hold *rootHold) error {
+	if err := hold.apply(ctx); err != nil {
+		return err
+	}
 	return e.replay.save(ctx)
 }
 
 // acceptedWorldRootName names the local root that holds the installed World.
 const acceptedWorldRootName = "accepted-world"
-
-// holdWorldRoot holds the World graph under root in the local block store
-// under the local root name, or releases the name when root is empty. Callers
-// serialize calls through the writer lock.
-func holdWorldRoot(ctx context.Context, so sobject.SharedObject, name string, root *block.BlockRef) error {
-	hold := newRootHold(so.GetBlockStore())
-	if err := hold.world(ctx, name, root); err != nil {
-		return err
-	}
-	return hold.apply(ctx)
-}
 
 // _ is a type assertion
 var (
