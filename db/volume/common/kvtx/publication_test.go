@@ -40,7 +40,7 @@ type publicationTestStore struct {
 func (s *publicationTestStore) SupportsAtomicCommit() bool { return true }
 
 // WritersWaiting reports the injected writer queue, so a sweep transaction
-// yields after one chunk.
+// yields after one block.
 func (s *publicationTestStore) WritersWaiting() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()

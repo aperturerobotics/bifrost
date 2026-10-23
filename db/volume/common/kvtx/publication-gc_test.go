@@ -287,15 +287,23 @@ func TestPublicationBlockPassSweepsPastBudget(t *testing.T) {
 		published = append(published, p)
 	}
 
-	// A writer always waits, so each sweep transaction takes one chunk.
+	// A writer always waits, so each sweep transaction takes one block.
 	raw.mu.Lock()
 	raw.writersWaiting = true
+	before := raw.commits
 	raw.mu.Unlock()
 
-	// A spent budget still sweeps the whole pass.
+	// A spent budget still sweeps the whole pass, committing each block
+	// alone.
 	stats, err := block_gc.NewCollector(v.GetRefGraph(), v, nil).CollectFor(t.Context(), time.Nanosecond)
 	if err != nil || stats.BlockPasses != 1 || stats.BlocksSwept != len(published) || stats.More {
 		t.Fatalf("collection stats=%+v err=%v", stats, err)
+	}
+	raw.mu.Lock()
+	count := raw.commits - before
+	raw.mu.Unlock()
+	if count < len(published) {
+		t.Fatalf("pass used %d commits for %d blocks, want one per block", count, len(published))
 	}
 	for _, p := range published {
 		assertPublishedBlock(t, v, p, false)

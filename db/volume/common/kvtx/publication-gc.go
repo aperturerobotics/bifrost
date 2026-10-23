@@ -336,9 +336,9 @@ func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, s
 			for len(nodes) != 0 {
 				chunkStart := time.Now()
 				chunk := nodes[:min(len(nodes), size)]
-				nodes = nodes[len(chunk):]
-				stats.AtomicSweepCount += len(chunk)
-				removed, err := sweepBlockChunk(ctx, blocks, rg, mark.Live, chunk)
+				removed, done, err := sweepBlockChunk(ctx, blocks, rg, mark.Live, chunk, v.writersWaiting)
+				nodes = nodes[done:]
+				stats.AtomicSweepCount += done
 				if err != nil {
 					return err
 				}
@@ -387,23 +387,33 @@ func (v *Volume) sweepUnreached(ctx context.Context, mark *block_gc.BlockMark, s
 }
 
 // sweepBlockChunk removes the chunk's blocks that the mark and the rescues
-// did not reach, with their records, and returns them.
-func sweepBlockChunk(ctx context.Context, blocks block.StoreOps, rg *block_gc.RefGraph, live *block_gc.NodeSet, chunk []string) ([]string, error) {
+// did not reach, with their records, and returns them and how many of the
+// chunk's nodes it looked at. It stops before the next node once yield
+// reports a waiting writer, after at least one: a node's reads under the
+// writer can take a second on a cold store, so a whole chunk held a
+// checkpoint's page reservations, and every write behind it, for seconds.
+func sweepBlockChunk(ctx context.Context, blocks block.StoreOps, rg *block_gc.RefGraph, live *block_gc.NodeSet, chunk []string, yield func() bool) ([]string, int, error) {
 	var swept []string
-	for _, node := range chunk {
+	for i, node := range chunk {
+		// Let a waiting writer in.
+		if i != 0 && yield() {
+			return swept, i, nil
+		}
+
+		// Remove an unreached block with its records.
 		ref, ok := block_gc.ParseBlockIRI(node)
 		if !ok || live.Has(node) {
 			continue
 		}
 		if _, err := rg.RemoveNodeRefs(ctx, node, true); err != nil {
-			return nil, err
+			return nil, i, err
 		}
 		if err := blocks.RmBlock(ctx, ref); err != nil {
-			return nil, err
+			return nil, i, err
 		}
 		swept = append(swept, node)
 	}
-	return swept, nil
+	return swept, len(chunk), nil
 }
 
 // nextCommit returns a channel that closes at the next change of the Volume's
