@@ -32,6 +32,26 @@
       "web/*": ["./bldr/web/*"]
     }
   },
+  "contentMappers": [
+    {
+      "package": "@s4wave/frontmatter-mapper",
+      "extensions": [".md"],
+      "options": {
+        "schemas": [
+          {
+            "dir": "app/docs/content",
+            "module": "app/docs/types.js",
+            "type": "DocFrontmatter"
+          },
+          {
+            "dir": "app/blog/posts",
+            "module": "app/blog/types.js",
+            "type": "BlogPostFrontmatter"
+          }
+        ]
+      }
+    }
+  ],
   "include": [
     "global.d.ts",
     "csstype-augment.d.ts",

@@ -1,0 +1,4 @@
+[install]
+# Keep the flat node_modules layout that bldr and the type check resolve
+# through; bun picks the isolated linker by default once workspaces exist.
+linker = "hoisted"

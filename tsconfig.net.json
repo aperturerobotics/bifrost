@@ -1,5 +1,6 @@
 {
   "extends": "./tsconfig.json",
+  "contentMappers": [],
   "include": ["net/**/*.ts"],
   "exclude": ["node_modules", "vendor", "dist", "bldr"]
 }

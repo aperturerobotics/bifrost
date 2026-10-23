@@ -1,3 +1,8 @@
+import {
+  frontmatterRecord,
+  readFrontmatter,
+} from '@s4wave/app/frontmatter/frontmatter.js'
+
 import { getSectionKey, sectionDefs, siteDefs } from './sections.js'
 import type { DocPage, DocFrontmatter } from './types.js'
 
@@ -9,39 +14,6 @@ const docModules = import.meta.glob('./content/**/*.md', {
   import: 'default',
 })
 
-// parseFrontmatter extracts YAML frontmatter from a markdown string.
-function parseFrontmatter(raw: string): {
-  data: DocFrontmatter
-  content: string
-} {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
-  if (!match) return { data: {} as DocFrontmatter, content: raw }
-
-  const yamlBlock = match[1]
-  const content = match[2]
-
-  // Simple YAML parser for flat frontmatter.
-  const data: Record<string, unknown> = {}
-  for (const line of yamlBlock.split('\n')) {
-    const colonIdx = line.search(':')
-    if (colonIdx === -1) continue
-    const key = line.slice(0, colonIdx).trim()
-    let value: unknown = line.slice(colonIdx + 1).trim()
-
-    // Parse numbers.
-    if (typeof value === 'string' && /^\d+$/.test(value)) {
-      value = parseInt(value, 10)
-    }
-    // Parse booleans.
-    if (value === 'true') value = true
-    if (value === 'false') value = false
-
-    data[key] = value
-  }
-
-  return { data: data as unknown as DocFrontmatter, content }
-}
-
 // cachedDocs holds the parsed docs after first load.
 let cachedDocs: DocPage[] | null = null
 
@@ -52,9 +24,11 @@ export function loadDocs(): DocPage[] {
   const docs: DocPage[] = []
 
   for (const [path, raw] of Object.entries(docModules)) {
-    const { data: fm, content } = parseFrontmatter(raw as string)
-
-    if (!fm.title || !fm.section || fm.order == null || !fm.summary) continue
+    // The frontmatter content mapper checks each page against DocFrontmatter
+    // during the type check, so the record has that shape.
+    const parsed = readFrontmatter(raw as string)
+    const fm = frontmatterRecord(parsed) as unknown as DocFrontmatter
+    const content = parsed.body
     if (fm.draft === true) continue
 
     // Derive site and section from the content/{site}/{section}/{page}.md

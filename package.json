@@ -3,6 +3,9 @@
   "description": "spacewave application and monorepo",
   "version": "0.0.0-dev",
   "private": true,
+  "workspaces": [
+    "app/frontmatter/mapper"
+  ],
   "browserslist": [
     "defaults and fully supports es6-module"
   ],
@@ -129,7 +132,7 @@
     "format:go": "bun run go:aptre -- format && cross-env GOFLAGS=-mod=mod -tags=purego go fix -embedlit=false ./...",
     "format:config": "oxfmt '*.json' '!.protoc-manifest.json' '!.protoc-python-resource-manifest.json' '!.protoc-python-session-journey-manifest.json' '.github/**/*.json' '.github/**/*.yml' '.oxfmtrc.json' '.golangci.yml' 'tsconfig.json' 'tsconfig.net.json'",
     "vitecheck": "vite build --outDir vite-check",
-    "typecheck": "tsrs --noEmit -p tsconfig.json",
+    "typecheck": "tsrs --noEmit -p tsconfig.json --runExternalCode",
     "lint": "bun run lint:js && bun run lint:go",
     "lint:go": "bun run lint:go:auth && bun run lint:go:db && bun run lint:go:e2e && bun run lint:go:forge && bun run lint:go:identity && bun run lint:go:net",
     "lint:js": "oxlint .",
@@ -235,13 +238,14 @@
     "bldr:test:go": "bun run go:aptre -- test ./bldr/...",
     "bldr:test:js": "vitest run --config bldr/vitest.config.ts && bun run bldr:typecheck",
     "bldr:test:release:web": "bun run bldr:build:release:web && cross-env PLAYWRIGHT_WEB_PORT=30771 PLAYWRIGHT_RELEASE_DIST_PATH=.bldr-dist/build/web/js/wasm/bldr-demo-release/dist playwright test --config bldr/web/entrypoint/browser/playwright.config.ts",
-    "bldr:typecheck": "tsrs --noEmit -p tsconfig.json",
+    "bldr:typecheck": "tsrs --noEmit -p tsconfig.json --runExternalCode",
     "bldr:vendor": "go mod vendor"
   },
   "devDependencies": {
     "@aptre/common": "0.36.4",
     "@google/design.md": "^0.4.0",
     "@playwright/test": "^1.62.1",
+    "@s4wave/frontmatter-mapper": "workspace:*",
     "@shadcn/lint": "0.2.3",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/react": "^16.3.2",

@@ -85,6 +85,7 @@
         "@aptre/common": "0.36.4",
         "@google/design.md": "^0.4.0",
         "@playwright/test": "^1.62.1",
+        "@s4wave/frontmatter-mapper": "workspace:*",
         "@shadcn/lint": "0.2.3",
         "@tailwindcss/vite": "^4.3.3",
         "@testing-library/react": "^16.3.2",
@@ -115,6 +116,10 @@
         "vitest": "^5.0.0",
         "vitest-browser-react": "^2.2.0",
       },
+    },
+    "app/frontmatter/mapper": {
+      "name": "@s4wave/frontmatter-mapper",
+      "version": "0.1.0",
     },
   },
   "patchedDependencies": {
@@ -654,6 +659,8 @@
     "@rolldown/binding-win32-x64-msvc": ["@rolldown/binding-win32-x64-msvc@1.2.3", "", { "os": "win32", "cpu": "x64" }, "sha512-ekcqMMkI2PlhYnfzQnB/cEdYUVVJViWvoUyLrbzgDoi3Snfc1mVBwdnc306ufA5ejy8JSPjT2RlW1nQSjW7efg=="],
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.1", "", {}, "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="],
+
+    "@s4wave/frontmatter-mapper": ["@s4wave/frontmatter-mapper@workspace:app/frontmatter/mapper"],
 
     "@sentry-internal/server-utils": ["@sentry-internal/server-utils@10.57.0", "", { "dependencies": { "@sentry/core": "10.57.0" } }, "sha512-Qu8ETmX/ITzteG7Im46b9HOxKKzeaIeqNvftaIlFURu1RUQdHbtGerS7QOmXzwnhuqNGNeiCQYkduB798IfRqA=="],
 

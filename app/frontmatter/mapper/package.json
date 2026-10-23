@@ -1,0 +1,15 @@
+{
+  "name": "@s4wave/frontmatter-mapper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "typescript": {
+    "contentMapper": {
+      "exec": [
+        "bun",
+        "server.ts"
+      ],
+      "compilerOptions": []
+    }
+  }
+}

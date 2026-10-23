@@ -1,3 +1,8 @@
+import {
+  frontmatterRecord,
+  readFrontmatter,
+} from '@s4wave/app/frontmatter/frontmatter.js'
+
 import { authors } from './authors.js'
 import type { BlogPost, BlogPostFrontmatter } from './types.js'
 
@@ -9,49 +14,6 @@ const postModules = import.meta.glob('./posts/*.md', {
   import: 'default',
 })
 
-// parseFrontmatter extracts YAML frontmatter from a markdown string.
-function parseFrontmatter(raw: string): {
-  data: BlogPostFrontmatter
-  content: string
-} {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
-  if (!match) return { data: {} as BlogPostFrontmatter, content: raw }
-
-  const yamlBlock = match[1]
-  const content = match[2]
-
-  // Simple YAML parser for flat frontmatter.
-  const data: Record<string, unknown> = {}
-  for (const line of yamlBlock.split('\n')) {
-    const colonIdx = line.search(':')
-    if (colonIdx === -1) continue
-    const key = line.slice(0, colonIdx).trim()
-    let value: unknown = line.slice(colonIdx + 1).trim()
-
-    // Parse arrays: [tag1, tag2]
-    if (
-      typeof value === 'string' &&
-      value.startsWith('[') &&
-      value.endsWith(']')
-    ) {
-      value = value
-        .slice(1, -1)
-        .split(',')
-        .flatMap((s) => {
-          const part = s.trim()
-          return part ? [part] : []
-        })
-    }
-    // Parse booleans.
-    if (value === 'true') value = true
-    if (value === 'false') value = false
-
-    data[key] = value
-  }
-
-  return { data: data as unknown as BlogPostFrontmatter, content }
-}
-
 // cachedPosts holds the parsed posts after first load.
 let cachedPosts: BlogPost[] | null = null
 
@@ -62,9 +24,11 @@ export function loadPosts(): BlogPost[] {
   const posts: BlogPost[] = []
 
   for (const [path, raw] of Object.entries(postModules)) {
-    const { data: fm, content } = parseFrontmatter(raw as string)
-
-    if (!fm.title || !fm.date || !fm.author || !fm.summary) continue
+    // The frontmatter content mapper checks each post against
+    // BlogPostFrontmatter during the type check, so the record has that shape.
+    const parsed = readFrontmatter(raw as string)
+    const fm = frontmatterRecord(parsed) as unknown as BlogPostFrontmatter
+    const content = parsed.body
     if (fm.draft === true) continue
 
     // Derive slug from filename.
@@ -87,7 +51,7 @@ export function loadPosts(): BlogPost[] {
       author: author ?? { name: fm.author, avatar: '', url: '', bio: '' },
       authorSlug: fm.author,
       summary: fm.summary,
-      tags: Array.isArray(fm.tags) ? fm.tags : [],
+      tags: fm.tags ?? [],
       draft: false,
       ogImage: fm.ogImage,
       body: content,
