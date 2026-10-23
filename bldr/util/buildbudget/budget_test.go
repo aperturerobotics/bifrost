@@ -11,7 +11,7 @@ import (
 func TestBudgetAdmissionCoversGoScriptAndViteStages(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		// Prepare a shared build budget inside the deterministic concurrency test.
-		budget, err := NewBudget(4)
+		budget, err := NewBudget(GoScriptCompileWeight)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -55,7 +55,7 @@ func TestBudgetAdmissionCoversGoScriptAndViteStages(t *testing.T) {
 
 func TestBudgetContextCancellationDoesNotLeakCapacity(t *testing.T) {
 	// Prepare a shared build budget for cancellation coverage.
-	budget, err := NewBudget(4)
+	budget, err := NewBudget(GoScriptCompileWeight)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func TestBudgetContextCancellationDoesNotLeakCapacity(t *testing.T) {
 }
 
 func TestBudgetRejectsOversizedStage(t *testing.T) {
-	budget, err := NewBudget(4)
+	budget, err := NewBudget(GoScriptCompileWeight)
 	if err != nil {
 		t.Fatal(err)
 	}

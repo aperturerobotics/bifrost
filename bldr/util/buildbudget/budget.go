@@ -18,7 +18,7 @@ const (
 	MemoryBudgetEnv = "BLDR_BUILD_MEMORY_BUDGET_GIB"
 
 	// GoScriptCompileWeight is the estimated memory cost of one GoScript compile.
-	GoScriptCompileWeight int64 = 4
+	GoScriptCompileWeight int64 = 5
 
 	// GoScriptBundleWeight is the estimated memory cost of one Rolldown bundle
 	// of a GoScript plugin package tree.

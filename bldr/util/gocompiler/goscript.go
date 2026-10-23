@@ -44,7 +44,7 @@ type GoScriptCompileOptions struct {
 	// ProtobufTypeScriptBinding uses generated TypeScript protobuf bindings.
 	ProtobufTypeScriptBinding bool
 	// EliminateDeadCode leaves the code a program cannot reach out of the
-	// output. GoScript then compiles without its cache.
+	// output.
 	EliminateDeadCode bool
 }
 
