@@ -287,6 +287,7 @@ js_plugin_config(
 | `viteBundles` | list[dict] |
 | `viteConfigPaths` | list[string] |
 | `viteDisableProjectConfig` | bool |
+| `sqlSchemaPaths` | list[string] |
 | `backendEntrypoints` | list[string] |
 | `frontendEntrypoints` | list[string] |
 | `webPkgs` | list[web_pkg] |
@@ -295,6 +296,12 @@ js_plugin_config(
 | `webPluginId` | string |
 | `buildTypes` | dict[string, dict] |
 | `platformTypes` | dict[string, dict] |
+
+`sqlSchemaPaths` lists SQL schema files, or directories of `.sql` migrations
+applied in name order. Each Vite process then gets `DATABASE_URL` for an
+in-memory Spacewave SQL database built from them, so a query typer such as
+Reylo's Vite plugin prepares each query against the engine `sql/db` objects run
+on. Editing a schema file restarts Vite with a fresh database.
 
 ### cli_compiler_config()
 

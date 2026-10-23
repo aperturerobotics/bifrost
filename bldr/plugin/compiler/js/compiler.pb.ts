@@ -178,6 +178,12 @@ export interface Config {
    * "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
    */
   platformTypes?: { [key: string]: Config }
+  /**
+   * SqlSchemaPaths are SQL schema files, or directories of .sql migration
+   * files, served to the Vite bundles as an in-memory database through
+   * DATABASE_URL. See the Vite compiler's sql_schema_paths.
+   */
+  sqlSchemaPaths?: string[]
 }
 
 export const Config: MessageType<Config> =
@@ -198,6 +204,7 @@ export const Config: MessageType<Config> =
       [13, 'web_plugin_id', 9],
       [14, 'build_types', 11, 584, Config.codec],
       [15, 'platform_types', 11, 584, Config.codec],
+      [16, 'sql_schema_paths', 9, 1],
     ],
   )
 

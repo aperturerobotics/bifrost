@@ -338,6 +338,7 @@ func (a *DevtoolArgs) BuildSubCommands() []*cli.Command {
 		a.BuildTargetsCommand(),
 		BuildTraceCommand(),
 		BuildCallpathCommand(),
+		BuildSqlServeCommand(),
 	}
 }
 

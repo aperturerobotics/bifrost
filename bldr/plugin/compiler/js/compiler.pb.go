@@ -158,6 +158,10 @@ type Config struct {
 	// Both base platform IDs and full platform IDs are checked: a build for
 	// "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
 	PlatformTypes map[string]*Config `protobuf:"bytes,15,rep,name=platform_types,json=platformTypes,proto3" json:"platformTypes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// SqlSchemaPaths are SQL schema files, or directories of .sql migration
+	// files, served to the Vite bundles as an in-memory database through
+	// DATABASE_URL. See the Vite compiler's sql_schema_paths.
+	SqlSchemaPaths []string `protobuf:"bytes,16,rep,name=sql_schema_paths,json=sqlSchemaPaths,proto3" json:"sqlSchemaPaths,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -260,6 +264,13 @@ func (x *Config) GetBuildTypes() map[string]*Config {
 func (x *Config) GetPlatformTypes() map[string]*Config {
 	if x != nil {
 		return x.PlatformTypes
+	}
+	return nil
+}
+
+func (x *Config) GetSqlSchemaPaths() []string {
+	if x != nil {
+		return x.SqlSchemaPaths
 	}
 	return nil
 }
@@ -654,6 +665,7 @@ func (m *Config) CloneVT() *Config {
 	r.HostConfigSet = protobuf_go_lite.CloneVTMap(m.HostConfigSet)
 	r.BuildTypes = protobuf_go_lite.CloneVTMap(m.BuildTypes)
 	r.PlatformTypes = protobuf_go_lite.CloneVTMap(m.PlatformTypes)
+	r.SqlSchemaPaths = protobuf_go_lite.CloneSlice(m.SqlSchemaPaths)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -809,6 +821,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTMapImplicit(this.PlatformTypes, that.PlatformTypes, func() *Config { return &Config{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.SqlSchemaPaths, that.SqlSchemaPaths) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1319,6 +1334,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteObjectEnd()
 	}
+	if len(x.SqlSchemaPaths) > 0 || s.HasField("sqlSchemaPaths") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sqlSchemaPaths")
+		s.WriteStringArray(x.SqlSchemaPaths)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1503,6 +1523,13 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				v.UnmarshalProtoJSON(s)
 				x.PlatformTypes[key] = &v
 			})
+		case "sql_schema_paths", "sqlSchemaPaths":
+			s.AddField("sql_schema_paths")
+			if s.ReadNil() {
+				x.SqlSchemaPaths = nil
+				return
+			}
+			x.SqlSchemaPaths = s.ReadStringArray()
 		}
 	})
 }
@@ -2068,6 +2095,15 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.SqlSchemaPaths) > 0 {
+		for iNdEx := len(m.SqlSchemaPaths) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.SqlSchemaPaths[iNdEx])
+			i--
+			dAtA[i] = 0x1
+			i--
+			dAtA[i] = 0x82
+		}
 	}
 	if len(m.PlatformTypes) > 0 {
 		for k := range m.PlatformTypes {
@@ -2661,6 +2697,7 @@ func (m *Config) SizeVT() (n int) {
 		mapEntrySize := protobuf_go_lite.SizeStringValue(1, k) + protobuf_go_lite.SizeMessage(1, l)
 		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
 	}
+	n += protobuf_go_lite.SizeStringSlice(2, m.SqlSchemaPaths)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2983,6 +3020,14 @@ func (x *Config) MarshalProtoText() string {
 			}
 		}
 		protobuf_go_lite.TextWriteMapEnd(&sb)
+	}
+	if len(x.SqlSchemaPaths) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "sql_schema_paths")
+		for i, v := range x.SqlSchemaPaths {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -3486,6 +3531,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			}
 			m.PlatformTypes[mapkey] = mapvalue
 			iNdEx = postIndex
+		case 16:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SqlSchemaPaths", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SqlSchemaPaths = append(m.SqlSchemaPaths, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

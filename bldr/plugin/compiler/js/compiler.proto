@@ -119,6 +119,11 @@ message Config {
   // Both base platform IDs and full platform IDs are checked: a build for
   // "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
   map<string, Config> platform_types = 15;
+
+  // SqlSchemaPaths are SQL schema files, or directories of .sql migration
+  // files, served to the Vite bundles as an in-memory database through
+  // DATABASE_URL. See the Vite compiler's sql_schema_paths.
+  repeated string sql_schema_paths = 16;
 }
 
 // PreBuildHookResult is the output of a pre-build hook.

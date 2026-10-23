@@ -41,6 +41,13 @@ message Config {
   // Both base platform IDs and full platform IDs are checked: a build for
   // "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
   map<string, Config> platform_types = 6;
+
+  // SqlSchemaPaths are SQL schema files, or directories of .sql migration
+  // files applied in name order, relative to the project root. When set, each
+  // Vite process gets DATABASE_URL pointing at an in-memory Spacewave SQL
+  // database built from them, so a build-time query typer such as Reylo
+  // prepares queries against the engine sql/db objects run on.
+  repeated string sql_schema_paths = 7;
 }
 
 // PreBuildHookResult is the output of a pre-build hook.
@@ -58,6 +65,8 @@ enum InputFileKind {
   InputFileKind_VITE = 1;
   // InputFileKind_WEB_PKG is a third party bundled npm package.
   InputFileKind_WEB_PKG = 2;
+  // InputFileKind_SQL_SCHEMA is a SQL schema file served to Vite.
+  InputFileKind_SQL_SCHEMA = 3;
 }
 
 // InputFileMeta is metadata attached to an input manifest file.
@@ -81,6 +90,8 @@ message InputManifestMeta {
   repeated ViteBundleMeta vite_bundles = 5;
   // ViteOutputs contains a list of files written by vite.
   repeated .bldr.web.bundler.vite.ViteOutputMeta vite_outputs = 6;
+  // SqlSchemaPaths are the SQL schema paths served to the Vite processes.
+  repeated string sql_schema_paths = 7;
 }
 
 // ViteBundleMeta is information about an vite bundle.

@@ -284,7 +284,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/plugin/compiler/js": {
-      "hash": "510010b3bb7f3fbd2d1b7aa4b9cc506e90a98b0c89dcb1828edd4bdc963c5de7",
+      "hash": "eec5bf13a96f7ac87a33b2c9a0659127f09efed5997c88fb50378b4f22cdd46d",
       "generatedFiles": [
         "bldr/plugin/compiler/js/compiler.pb.go",
         "bldr/plugin/compiler/js/compiler.pb.ts"
@@ -646,7 +646,7 @@
       ]
     },
     "github.com/s4wave/spacewave/bldr/web/bundler/vite/compiler": {
-      "hash": "c94b939149972bd66fc92681cfe2232cebf652d6d80b9f8997c5dc24f0c2b186",
+      "hash": "3d1aac9844cd795f0a29a4490f962e5931821d4be6d742380e7f42a084230de7",
       "generatedFiles": [
         "bldr/web/bundler/vite/compiler/compiler.pb.go",
         "bldr/web/bundler/vite/compiler/compiler.pb.ts"

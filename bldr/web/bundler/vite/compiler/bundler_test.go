@@ -300,12 +300,14 @@ func TestBuildViteBundlePreservesExcludedWebPackageImports(t *testing.T) {
 	}
 }
 
-func TestBuildInputManifestDeduplicatesSharedSources(t *testing.T) {
+func TestBuildInputManifestFileKinds(t *testing.T) {
 
-	// Build an input manifest with shared vite and web pkg sources.
+	// Build an input manifest with shared vite and web pkg sources and a
+	// SQL schema file.
 	sourcePath := t.TempDir()
 	sharedPath := filepath.Join(sourcePath, "app", "shared.ts")
 	viteOnlyPath := filepath.Join(sourcePath, "app", "vite.ts")
+	schemaPath := filepath.Join(sourcePath, "migrations", "0001_init.sql")
 
 	// Build the input manifest from the shared sources.
 	inputManifest, err := (&Controller{}).buildInputManifest(
@@ -318,6 +320,8 @@ func TestBuildInputManifestDeduplicatesSharedSources(t *testing.T) {
 		nil,
 		nil,
 		[]string{sharedPath},
+		[]string{"migrations"},
+		[]string{schemaPath},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -325,8 +329,8 @@ func TestBuildInputManifestDeduplicatesSharedSources(t *testing.T) {
 	if err := inputManifest.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	if len(inputManifest.GetFiles()) != 2 {
-		t.Fatalf("input file count=%d want 2", len(inputManifest.GetFiles()))
+	if len(inputManifest.GetFiles()) != 3 {
+		t.Fatalf("input file count=%d want 3", len(inputManifest.GetFiles()))
 	}
 
 	// Check the deduplicated file kinds.
@@ -344,6 +348,9 @@ func TestBuildInputManifestDeduplicatesSharedSources(t *testing.T) {
 	if got := kinds["app/vite.ts"]; got != InputFileKind_InputFileKind_VITE {
 		t.Fatalf("vite source kind=%v want VITE", got)
 	}
+	if got := kinds["migrations/0001_init.sql"]; got != InputFileKind_InputFileKind_SQL_SCHEMA {
+		t.Fatalf("schema kind=%v want SQL_SCHEMA", got)
+	}
 }
 
 func TestStopViteBundlersRemovesReleaseKeys(t *testing.T) {
@@ -357,11 +364,11 @@ func TestStopViteBundlersRemovesReleaseKeys(t *testing.T) {
 	)
 
 	// Register a release bundle key and stop the bundlers.
-	key := newViteBundlerKey("/dist", "/src", "/work", "fe")
+	key := newViteBundlerKey("/dist", "/src", "/work", "fe", "")
 	ref, _, _ := controller.viteBundlers.AddKeyRef(key)
 
 	// Stop the bundlers and release the reference.
-	controller.stopViteBundlers("/dist", "/src", "/work", []*ViteBundleMeta{{
+	controller.stopViteBundlers("/dist", "/src", "/work", "", []*ViteBundleMeta{{
 		Id: "fe",
 	}})
 	ref.Release()

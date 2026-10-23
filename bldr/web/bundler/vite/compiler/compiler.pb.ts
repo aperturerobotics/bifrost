@@ -29,6 +29,11 @@ export enum InputFileKind {
    * InputFileKind_WEB_PKG is a third party bundled npm package.
    */
   InputFileKind_WEB_PKG = 2,
+
+  /**
+   * InputFileKind_SQL_SCHEMA is a SQL schema file served to Vite.
+   */
+  InputFileKind_SQL_SCHEMA = 3,
 }
 
 export const InputFileKind_Enum = /* @__PURE__ */ createEnumType(
@@ -37,6 +42,7 @@ export const InputFileKind_Enum = /* @__PURE__ */ createEnumType(
     [0, 'InputFileKind_UNKNOWN'],
     [1, 'InputFileKind_VITE'],
     [2, 'InputFileKind_WEB_PKG'],
+    [3, 'InputFileKind_SQL_SCHEMA'],
   ],
 )
 
@@ -87,6 +93,14 @@ export interface Config {
    * "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
    */
   platformTypes?: { [key: string]: Config }
+  /**
+   * SqlSchemaPaths are SQL schema files, or directories of .sql migration
+   * files applied in name order, relative to the project root. When set, each
+   * Vite process gets DATABASE_URL pointing at an in-memory Spacewave SQL
+   * database built from them, so a build-time query typer such as Reylo
+   * prepares queries against the engine sql/db objects run on.
+   */
+  sqlSchemaPaths?: string[]
 }
 
 export const Config: MessageType<Config> =
@@ -99,6 +113,7 @@ export const Config: MessageType<Config> =
       [4, 'disable_project_config', 8],
       [5, 'build_types', 11, 584, Config.codec],
       [6, 'platform_types', 11, 584, Config.codec],
+      [7, 'sql_schema_paths', 9, 1],
     ],
   )
 
@@ -169,6 +184,10 @@ export interface InputManifestMeta {
    * ViteOutputs contains a list of files written by vite.
    */
   viteOutputs?: ViteOutputMeta[]
+  /**
+   * SqlSchemaPaths are the SQL schema paths served to the Vite processes.
+   */
+  sqlSchemaPaths?: string[]
 }
 
 export const InputManifestMeta: MessageType<InputManifestMeta> =
@@ -181,6 +200,7 @@ export const InputManifestMeta: MessageType<InputManifestMeta> =
       [4, 'vite_disable_project_config', 8],
       [5, 'vite_bundles', 11, 1, ViteBundleMeta.codec],
       [6, 'vite_outputs', 11, 1, ViteOutputMeta.codec],
+      [7, 'sql_schema_paths', 9, 1],
     ],
   )
 

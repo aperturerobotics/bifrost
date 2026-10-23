@@ -28,6 +28,8 @@ const (
 	InputFileKind_InputFileKind_VITE InputFileKind = 1
 	// InputFileKind_WEB_PKG is a third party bundled npm package.
 	InputFileKind_InputFileKind_WEB_PKG InputFileKind = 2
+	// InputFileKind_SQL_SCHEMA is a SQL schema file served to Vite.
+	InputFileKind_InputFileKind_SQL_SCHEMA InputFileKind = 3
 )
 
 // Enum value maps for InputFileKind.
@@ -36,11 +38,13 @@ var (
 		0: "InputFileKind_UNKNOWN",
 		1: "InputFileKind_VITE",
 		2: "InputFileKind_WEB_PKG",
+		3: "InputFileKind_SQL_SCHEMA",
 	}
 	InputFileKind_value = map[string]int32{
-		"InputFileKind_UNKNOWN": 0,
-		"InputFileKind_VITE":    1,
-		"InputFileKind_WEB_PKG": 2,
+		"InputFileKind_UNKNOWN":    0,
+		"InputFileKind_VITE":       1,
+		"InputFileKind_WEB_PKG":    2,
+		"InputFileKind_SQL_SCHEMA": 3,
 	}
 )
 
@@ -90,6 +94,12 @@ type Config struct {
 	// Both base platform IDs and full platform IDs are checked: a build for
 	// "desktop/darwin/arm64" will match both "desktop/darwin/arm64" and "desktop".
 	PlatformTypes map[string]*Config `protobuf:"bytes,6,rep,name=platform_types,json=platformTypes,proto3" json:"platformTypes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// SqlSchemaPaths are SQL schema files, or directories of .sql migration
+	// files applied in name order, relative to the project root. When set, each
+	// Vite process gets DATABASE_URL pointing at an in-memory Spacewave SQL
+	// database built from them, so a build-time query typer such as Reylo
+	// prepares queries against the engine sql/db objects run on.
+	SqlSchemaPaths []string `protobuf:"bytes,7,rep,name=sql_schema_paths,json=sqlSchemaPaths,proto3" json:"sqlSchemaPaths,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -136,6 +146,13 @@ func (x *Config) GetBuildTypes() map[string]*Config {
 func (x *Config) GetPlatformTypes() map[string]*Config {
 	if x != nil {
 		return x.PlatformTypes
+	}
+	return nil
+}
+
+func (x *Config) GetSqlSchemaPaths() []string {
+	if x != nil {
+		return x.SqlSchemaPaths
 	}
 	return nil
 }
@@ -196,6 +213,8 @@ type InputManifestMeta struct {
 	ViteBundles []*ViteBundleMeta `protobuf:"bytes,5,rep,name=vite_bundles,json=viteBundles,proto3" json:"viteBundles,omitempty"`
 	// ViteOutputs contains a list of files written by vite.
 	ViteOutputs []*vite.ViteOutputMeta `protobuf:"bytes,6,rep,name=vite_outputs,json=viteOutputs,proto3" json:"viteOutputs,omitempty"`
+	// SqlSchemaPaths are the SQL schema paths served to the Vite processes.
+	SqlSchemaPaths []string `protobuf:"bytes,7,rep,name=sql_schema_paths,json=sqlSchemaPaths,proto3" json:"sqlSchemaPaths,omitempty"`
 }
 
 func (x *InputManifestMeta) Reset() {
@@ -242,6 +261,13 @@ func (x *InputManifestMeta) GetViteBundles() []*ViteBundleMeta {
 func (x *InputManifestMeta) GetViteOutputs() []*vite.ViteOutputMeta {
 	if x != nil {
 		return x.ViteOutputs
+	}
+	return nil
+}
+
+func (x *InputManifestMeta) GetSqlSchemaPaths() []string {
+	if x != nil {
+		return x.SqlSchemaPaths
 	}
 	return nil
 }
@@ -407,6 +433,7 @@ func (m *Config) CloneVT() *Config {
 	r.ViteConfigPaths = protobuf_go_lite.CloneSlice(m.ViteConfigPaths)
 	r.BuildTypes = protobuf_go_lite.CloneVTMap(m.BuildTypes)
 	r.PlatformTypes = protobuf_go_lite.CloneVTMap(m.PlatformTypes)
+	r.SqlSchemaPaths = protobuf_go_lite.CloneSlice(m.SqlSchemaPaths)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -460,6 +487,7 @@ func (m *InputManifestMeta) CloneVT() *InputManifestMeta {
 	r.ViteConfigPaths = protobuf_go_lite.CloneSlice(m.ViteConfigPaths)
 	r.ViteBundles = protobuf_go_lite.CloneVTSlice(m.ViteBundles)
 	r.ViteOutputs = protobuf_go_lite.CloneVTSlice(m.ViteOutputs)
+	r.SqlSchemaPaths = protobuf_go_lite.CloneSlice(m.SqlSchemaPaths)
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -530,6 +558,9 @@ func (this *Config) EqualVT(that *Config) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTMapImplicit(this.PlatformTypes, that.PlatformTypes, func() *Config { return &Config{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.SqlSchemaPaths, that.SqlSchemaPaths) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -605,6 +636,9 @@ func (this *InputManifestMeta) EqualVT(that *InputManifestMeta) bool {
 		return false
 	}
 	if !protobuf_go_lite.EqualVTSliceImplicit(this.ViteOutputs, that.ViteOutputs, func() *vite.ViteOutputMeta { return &vite.ViteOutputMeta{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.SqlSchemaPaths, that.SqlSchemaPaths) {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -890,6 +924,11 @@ func (x *Config) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteObjectEnd()
 	}
+	if len(x.SqlSchemaPaths) > 0 || s.HasField("sqlSchemaPaths") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sqlSchemaPaths")
+		s.WriteStringArray(x.SqlSchemaPaths)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -977,6 +1016,13 @@ func (x *Config) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				v.UnmarshalProtoJSON(s)
 				x.PlatformTypes[key] = &v
 			})
+		case "sql_schema_paths", "sqlSchemaPaths":
+			s.AddField("sql_schema_paths")
+			if s.ReadNil() {
+				x.SqlSchemaPaths = nil
+				return
+			}
+			x.SqlSchemaPaths = s.ReadStringArray()
 		}
 	})
 }
@@ -1136,6 +1182,11 @@ func (x *InputManifestMeta) MarshalProtoJSON(s *json.MarshalState) {
 		}
 		s.WriteArrayEnd()
 	}
+	if len(x.SqlSchemaPaths) > 0 || s.HasField("sqlSchemaPaths") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("sqlSchemaPaths")
+		s.WriteStringArray(x.SqlSchemaPaths)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1235,6 +1286,13 @@ func (x *InputManifestMeta) UnmarshalProtoJSON(s *json.UnmarshalState) {
 				}
 				x.ViteOutputs = append(x.ViteOutputs, v)
 			})
+		case "sql_schema_paths", "sqlSchemaPaths":
+			s.AddField("sql_schema_paths")
+			if s.ReadNil() {
+				x.SqlSchemaPaths = nil
+				return
+			}
+			x.SqlSchemaPaths = s.ReadStringArray()
 		}
 	})
 }
@@ -1434,6 +1492,13 @@ func (m *Config) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.SqlSchemaPaths) > 0 {
+		for iNdEx := len(m.SqlSchemaPaths) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.SqlSchemaPaths[iNdEx])
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
 	if len(m.PlatformTypes) > 0 {
 		for k := range m.PlatformTypes {
 			v := m.PlatformTypes[k]
@@ -1620,6 +1685,13 @@ func (m *InputManifestMeta) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	_ = l
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.SqlSchemaPaths) > 0 {
+		for iNdEx := len(m.SqlSchemaPaths) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.SqlSchemaPaths[iNdEx])
+			i--
+			dAtA[i] = 0x3a
+		}
 	}
 	if len(m.ViteOutputs) > 0 {
 		for iNdEx := len(m.ViteOutputs) - 1; iNdEx >= 0; iNdEx-- {
@@ -1835,6 +1907,7 @@ func (m *Config) SizeVT() (n int) {
 		mapEntrySize := protobuf_go_lite.SizeStringValue(1, k) + protobuf_go_lite.SizeMessage(1, l)
 		n += protobuf_go_lite.SizeMessage(1, mapEntrySize)
 	}
+	n += protobuf_go_lite.SizeStringSlice(1, m.SqlSchemaPaths)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1888,6 +1961,7 @@ func (m *InputManifestMeta) SizeVT() (n int) {
 		l = e.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeStringSlice(1, m.SqlSchemaPaths)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2032,6 +2106,14 @@ func (x *Config) MarshalProtoText() string {
 		}
 		protobuf_go_lite.TextWriteMapEnd(&sb)
 	}
+	if len(x.SqlSchemaPaths) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "sql_schema_paths")
+		for i, v := range x.SqlSchemaPaths {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
@@ -2127,6 +2209,14 @@ func (x *InputManifestMeta) MarshalProtoText() string {
 			} else {
 				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
 			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.SqlSchemaPaths) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "sql_schema_paths")
+		for i, v := range x.SqlSchemaPaths {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
 		}
 		protobuf_go_lite.TextWriteListEnd(&sb)
 	}
@@ -2365,6 +2455,16 @@ func (m *Config) UnmarshalVT(dAtA []byte) error {
 			}
 			m.PlatformTypes[mapkey] = mapvalue
 			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SqlSchemaPaths", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SqlSchemaPaths = append(m.SqlSchemaPaths, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -2592,6 +2692,16 @@ func (m *InputManifestMeta) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SqlSchemaPaths", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.SqlSchemaPaths = append(m.SqlSchemaPaths, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

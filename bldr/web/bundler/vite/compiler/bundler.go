@@ -51,15 +51,19 @@ type viteBundlerKey struct {
 	workingPath string
 	// bundleID is the ID of the Vite bundle
 	bundleID string
+	// sqlSchema is the SQL schema served to the process as DATABASE_URL.
+	// Empty when the bundle has no schema.
+	sqlSchema string
 }
 
 // newViteBundlerKey creates a new viteBundlerKey with the given parameters.
-func newViteBundlerKey(distPath, sourcePath, workingPath, bundleID string) viteBundlerKey {
+func newViteBundlerKey(distPath, sourcePath, workingPath, bundleID, sqlSchema string) viteBundlerKey {
 	return viteBundlerKey{
 		distPath:    distPath,
 		sourcePath:  sourcePath,
 		workingPath: workingPath,
 		bundleID:    bundleID,
+		sqlSchema:   sqlSchema,
 	}
 }
 
@@ -175,6 +179,20 @@ func (t *viteBundlerTracker) execute(ctx context.Context) error {
 		"BLDR_PROJECT_ROOT="+sourcePath,
 		"BLDR_DIST_ROOT="+distPath,
 	)
+
+	// Serve the SQL schema for the life of the process.
+	if t.key.sqlSchema != "" {
+		sqlSrv, err := startSqlSchemaServer(ctx, t.key.sqlSchema)
+		if err != nil {
+			err = errors.Wrap(err, "start sql schema database")
+			if ctx.Err() == nil {
+				t.instancePromiseCtr.SetResult(nil, err)
+			}
+			return err
+		}
+		defer sqlSrv.Close()
+		cmd.Env = append(cmd.Env, "DATABASE_URL="+sqlSrv.URL())
+	}
 
 	// Check if canceled
 

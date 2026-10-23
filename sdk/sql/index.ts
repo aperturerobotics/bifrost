@@ -1,4 +1,5 @@
 export * from './sql.js'
+export * from './reylo.js'
 export * from './query/index.js'
 export * from './schema/index.js'
 export * from './table-view/index.js'

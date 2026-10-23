@@ -78,6 +78,9 @@ func (c *Config) Merge(o *Config) {
 		// Note: order matters for vite config paths, do not sort/compact.
 	}
 
+	// Merge the SQL schema paths, keeping their order.
+	c.SqlSchemaPaths = append(c.SqlSchemaPaths, o.GetSqlSchemaPaths()...)
+
 	// Merge the disable project config flag.
 	// merge disable project config (true overrides false)
 	if o.GetDisableProjectConfig() {

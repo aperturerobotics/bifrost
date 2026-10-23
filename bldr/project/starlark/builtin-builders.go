@@ -61,6 +61,8 @@ var validJsPluginFields = map[string]bool{
 	"vite_config_paths":           true,
 	"viteDisableProjectConfig":    true,
 	"vite_disable_project_config": true,
+	"sqlSchemaPaths":              true,
+	"sql_schema_paths":            true,
 	"backendEntrypoints":          true,
 	"backend_entrypoints":         true,
 	"frontendEntrypoints":         true,

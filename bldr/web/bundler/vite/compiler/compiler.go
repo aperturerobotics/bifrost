@@ -146,7 +146,7 @@ func (c *Controller) RunDevelopment(
 	if err := os.MkdirAll(workingPath, 0o755); err != nil {
 		return err
 	}
-	key := newViteBundlerKey(conf.GetDistDir(), conf.GetRootDir(), workingPath, "frontend-"+conf.GetSessionId())
+	key := newViteBundlerKey(conf.GetDistDir(), conf.GetRootDir(), workingPath, "frontend-"+conf.GetSessionId(), "")
 	ref, tracker, _ := c.viteBundlers.AddKeyRef(key)
 	defer ref.Release()
 	defer c.viteBundlers.RemoveKey(key)
@@ -361,7 +361,8 @@ func (c *Controller) buildViteBundles(
 	le *logrus.Entry,
 	distSourcePath,
 	sourcePath,
-	workingPath string,
+	workingPath,
+	sqlSchema string,
 	viteConfigPaths []string,
 	bundleList []*ViteBundleMeta,
 	webPkgs []*bldr_web_bundler.WebPkgRefConfig,
@@ -394,6 +395,7 @@ func (c *Controller) buildViteBundles(
 				sourcePath,
 				workingPath,
 				bundleID,
+				sqlSchema,
 			)
 
 			// Build the bundle with retries on stream reset errors.
@@ -546,6 +548,8 @@ func (c *Controller) buildInputManifest(
 	webPkgs []*bldr_web_bundler.WebPkgRefConfig,
 	viteConfigPaths []string,
 	webPkgSrcFiles []string,
+	sqlSchemaPaths []string,
+	sqlSchemaFiles []string,
 ) (*bldr_manifest_builder.InputManifest, error) {
 
 	// Marshal the input manifest metadata.
@@ -555,6 +559,7 @@ func (c *Controller) buildInputManifest(
 		ViteBundles:     viteBuildResult.viteBundles,
 		ViteConfigPaths: viteConfigPaths,
 		ViteOutputs:     viteBuildResult.viteOutputs,
+		SqlSchemaPaths:  sqlSchemaPaths,
 	}
 	inputManifestMetaBin, err := inputManifestMeta.MarshalVT()
 	if err != nil {
@@ -571,6 +576,10 @@ func (c *Controller) buildInputManifest(
 	if err != nil {
 		return nil, err
 	}
+	sqlSchemaSrcPaths, err := filterSourceRelativePaths(sourcePath, slices.Clone(sqlSchemaFiles))
+	if err != nil {
+		return nil, err
+	}
 
 	// Build the file list for each input kind.
 	webPkgSrcSet := make(map[string]struct{}, len(webPkgSrcPaths))
@@ -583,6 +592,7 @@ func (c *Controller) buildInputManifest(
 	}{
 		{InputFileKind_InputFileKind_VITE, viteSrcPaths},
 		{InputFileKind_InputFileKind_WEB_PKG, webPkgSrcPaths},
+		{InputFileKind_InputFileKind_SQL_SCHEMA, sqlSchemaSrcPaths},
 	} {
 		metaBin, err := (&InputFileMeta{Kind: input.kind}).MarshalVT()
 		if err != nil {
@@ -691,6 +701,12 @@ func (c *Controller) tryFastRebuild(
 
 	// Build Vite bundles
 
+	// Read the unchanged SQL schema to find the running Vite processes.
+	_, sqlSchema, err := readSqlSchema(sourcePath, inputMeta.GetSqlSchemaPaths())
+	if err != nil {
+		return nil, err
+	}
+
 	// Rebuild the Vite bundles.
 	viteBuildResult, err := c.buildViteBundles(
 		ctx,
@@ -698,6 +714,7 @@ func (c *Controller) tryFastRebuild(
 		distSourcePath,
 		sourcePath,
 		workingPath,
+		sqlSchema,
 		inputMeta.GetViteConfigPaths(),
 		bundleList,
 		inputMeta.GetWebPkgs(),
@@ -756,6 +773,8 @@ func (c *Controller) tryFastRebuild(
 	if err != nil {
 		return nil, err
 	}
+
+	// Drop the paths a preserved file already lists.
 	preservedPaths := make(map[string]struct{}, len(updatedInputManifest.Files))
 	for _, f := range updatedInputManifest.Files {
 		preservedPaths[f.GetPath()] = struct{}{}
@@ -764,6 +783,8 @@ func (c *Controller) tryFastRebuild(
 		_, ok := preservedPaths[srcPath]
 		return ok
 	})
+
+	// Add the remaining vite files with the vite kind.
 	viteFileMeta := &InputFileMeta{Kind: InputFileKind_InputFileKind_VITE}
 	viteFileMetaBin, err := viteFileMeta.MarshalVT()
 	if err != nil {
@@ -883,8 +904,12 @@ func (c *Controller) performFullRebuild(
 	if err != nil {
 		return nil, err
 	}
+	sqlSchemaFiles, sqlSchema, err := readSqlSchema(sourcePath, buildCtrlConf.GetSqlSchemaPaths())
+	if err != nil {
+		return nil, err
+	}
 	if isRelease {
-		defer c.stopViteBundlers(distSourcePath, sourcePath, workingPath, bundleList)
+		defer c.stopViteBundlers(distSourcePath, sourcePath, workingPath, sqlSchema, bundleList)
 	}
 
 	// Build Vite bundles
@@ -896,6 +921,7 @@ func (c *Controller) performFullRebuild(
 		distSourcePath,
 		sourcePath,
 		workingPath,
+		sqlSchema,
 		buildCtrlConf.GetViteConfigPaths(),
 		bundleList,
 		buildCtrlConf.GetWebPkgs(),
@@ -964,7 +990,7 @@ func (c *Controller) performFullRebuild(
 		if len(bundleList) == 0 {
 			return nil, errors.New("no vite bundles configured, cannot build web pkgs")
 		}
-		bundlerKey := newViteBundlerKey(distSourcePath, sourcePath, workingPath, bundleList[0].Id)
+		bundlerKey := newViteBundlerKey(distSourcePath, sourcePath, workingPath, bundleList[0].Id, sqlSchema)
 		bundlerRef, bundlerTkr, _ := c.viteBundlers.AddKeyRef(bundlerKey)
 		defer bundlerRef.Release()
 		bundlerClient, awaitErr := bundlerTkr.instancePromiseCtr.Await(ctx)
@@ -1013,6 +1039,8 @@ func (c *Controller) performFullRebuild(
 		buildCtrlConf.GetWebPkgs(),
 		buildCtrlConf.GetViteConfigPaths(),
 		webPkgSrcFiles,
+		buildCtrlConf.GetSqlSchemaPaths(),
+		sqlSchemaFiles,
 	)
 }
 
@@ -1020,7 +1048,8 @@ func (c *Controller) performFullRebuild(
 func (c *Controller) stopViteBundlers(
 	distSourcePath,
 	sourcePath,
-	workingPath string,
+	workingPath,
+	sqlSchema string,
 	bundleList []*ViteBundleMeta,
 ) {
 
@@ -1034,6 +1063,7 @@ func (c *Controller) stopViteBundlers(
 			sourcePath,
 			workingPath,
 			bundle.GetId(),
+			sqlSchema,
 		)
 		c.viteBundlers.RemoveKey(key)
 	}

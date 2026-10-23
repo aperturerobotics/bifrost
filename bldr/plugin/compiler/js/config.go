@@ -174,6 +174,9 @@ func (c *Config) Merge(o *Config) {
 	if o.GetViteDisableProjectConfig() {
 		c.ViteDisableProjectConfig = true
 	}
+
+	// Merge SqlSchemaPaths, keeping their order
+	c.SqlSchemaPaths = append(c.SqlSchemaPaths, o.GetSqlSchemaPaths()...)
 }
 
 // FlattenBuildTypes flattens the build_type tree given the current build type.

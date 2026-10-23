@@ -459,6 +459,7 @@ func (c *Controller) BuildManifest(
 			WebPkgs:              webPkgs,
 			ViteConfigPaths:      baseViteConfPaths,
 			DisableProjectConfig: viteDisableProjectConfig,
+			SqlSchemaPaths:       buildCtrlConf.GetSqlSchemaPaths(),
 		}
 		if err := viteBundlerConf.Validate(); err != nil {
 			return nil, errors.Wrap(err, "invalid vite bundler config")
