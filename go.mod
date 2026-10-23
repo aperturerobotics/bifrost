@@ -7,9 +7,9 @@ tool github.com/s4wave/goscript/cmd/goscript
 replace (
 	github.com/cloudflare/circl => github.com/aperturerobotics/circl v1.6.4-0.20260922203741-ec4e0985fb65
 	github.com/dgraph-io/ristretto/v2 => github.com/aperturerobotics/ristretto/v2 v2.0.0-20260922205806-ef08161157dc // main
-	github.com/dolthub/go-mysql-server => github.com/aperturerobotics/go-mysql-server v0.20.1-0.20261015183839-0b9e83abe84a
+	github.com/dolthub/go-mysql-server => github.com/aperturerobotics/go-mysql-server v0.20.1-0.20261023075718-18bdfe60fa6f
 	github.com/dolthub/jsonpath => github.com/aperturerobotics/jsonpath v0.1.1-0.20260922211658-605a6e457746
-	github.com/dolthub/vitess => github.com/aperturerobotics/vitess v0.0.0-20261014224653-6c6d9725c46d // aperture
+	github.com/dolthub/vitess => github.com/aperturerobotics/vitess v0.0.0-20261023075545-a866921b7d09 // aperture
 	github.com/go-git/go-git/v6 => github.com/aperturerobotics/go-git/v6 v6.0.0-alpha.3.0.20261003021338-72ab61d58aa6
 	github.com/pion/ice/v4 => github.com/aperturerobotics/pion-ice/v4 v4.0.0-20260923005200-d591ff5895c0
 	github.com/pion/webrtc/v4 => github.com/aperturerobotics/pion-webrtc/v4 v4.2.16-0.20260922235615-c5c6104de130
