@@ -3,6 +3,7 @@ name = "spacewave-resource"
 version = "0.0.0"
 requires-python = ">=3.11,<3.12"
 dependencies = [
+    "aperturerobotics-util @ git+https://github.com/aperturerobotics/util.git@104de78e8992f52da60788d11e6d25ba0070d9bc",
     "go-prometheus-client-lite @ git+https://github.com/aperturerobotics/go-prometheus-client-lite.git@92147463582b194318f1198ae4c61df0cb112c87",
     "starpc @ git+https://github.com/aperturerobotics/starpc.git@60aebb7f3a140f0772a63269afce10859d45b27f",
 ]

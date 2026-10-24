@@ -1,8 +1,32 @@
 {
   "version": 2,
   "protocFlagsHash": "f3371eb4a4768e3b7f3e3ac546ec7bb7da05b08dda4ec8d0fe2f6c63f6b19da9",
-  "toolVersions": "protoc=embedded,protobuf-go-lite=v0.19.1-0.20261018054529-f60c4d2691ea,starpc=v0.52.3,protobuf-es-lite=1.2.4,uv.lock=48ed9f69bb958f36f133646c8b50fb06517d1960eb7d164bd9b3f1a86263ab3d",
+  "toolVersions": "protoc=embedded,protobuf-go-lite=v0.19.1-0.20261018054529-f60c4d2691ea,starpc=v0.52.3,protobuf-es-lite=1.2.4,uv.lock=5fef778497d63d28449c9a89ab28965344bfa3244b9dfeac9bdfd84d98d9678c",
   "packages": {
+    "github.com/s4wave/spacewave/bldr/frontend": {
+      "hash": "a6b59b0033433fb2c5cfc6751bad4b7eb0e261544cf248018dfc7e11372e59b5",
+      "generatedFiles": [
+        "bldr/frontend/frontend_pb2.py",
+        "bldr/frontend/frontend_pb2.pyi",
+        "bldr/frontend/frontend_srpc.py",
+        "bldr/frontend/frontend_srpc.pyi"
+      ],
+      "protoFiles": [
+        "bldr/frontend/frontend.proto"
+      ]
+    },
+    "github.com/s4wave/spacewave/bldr/web/fetch": {
+      "hash": "a6af469ad4130039cbaaec92d8e92cee37917f24bd8cc702eec6bee56e5b5ce6",
+      "generatedFiles": [
+        "bldr/web/fetch/fetch_pb2.py",
+        "bldr/web/fetch/fetch_pb2.pyi",
+        "bldr/web/fetch/fetch_srpc.py",
+        "bldr/web/fetch/fetch_srpc.pyi"
+      ],
+      "protoFiles": [
+        "bldr/web/fetch/fetch.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/bldr/web/plugin": {
       "hash": "96cbc1676aa5cd27d0ab5c1ace19c4a90763401d9667bb481081aca9417d87ab",
       "generatedFiles": [
@@ -13,6 +37,28 @@
       ],
       "protoFiles": [
         "bldr/web/plugin/plugin.proto"
+      ]
+    },
+    "github.com/s4wave/spacewave/bldr/web/view": {
+      "hash": "eecd83233ff0533860eef13360ccf0e7a44c61fda86b9179a9ba1b4e80120e82",
+      "generatedFiles": [
+        "bldr/web/view/view_pb2.py",
+        "bldr/web/view/view_pb2.pyi",
+        "bldr/web/view/view_srpc.py",
+        "bldr/web/view/view_srpc.pyi"
+      ],
+      "protoFiles": [
+        "bldr/web/view/view.proto"
+      ]
+    },
+    "github.com/s4wave/spacewave/bldr/web/view/handler": {
+      "hash": "62cf018b7a37df8a454978a206d9d5f40b0e43e4bdefd2ef429569dc102c79c1",
+      "generatedFiles": [
+        "bldr/web/view/handler/handler_pb2.py",
+        "bldr/web/view/handler/handler_pb2.pyi"
+      ],
+      "protoFiles": [
+        "bldr/web/view/handler/handler.proto"
       ]
     }
   }

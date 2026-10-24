@@ -3,6 +3,14 @@ revision = 5
 requires-python = "==3.11.*"
 
 [[package]]
+name = "aperturerobotics-util"
+version = "0.0.0"
+source = { git = "https://github.com/aperturerobotics/util.git?rev=104de78e8992f52da60788d11e6d25ba0070d9bc#104de78e8992f52da60788d11e6d25ba0070d9bc" }
+dependencies = [
+    { name = "protobuf" },
+]
+
+[[package]]
 name = "ast-serialize"
 version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
@@ -162,6 +170,7 @@ name = "spacewave-resource"
 version = "0.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aperturerobotics-util" },
     { name = "go-prometheus-client-lite" },
     { name = "starpc" },
 ]
@@ -175,6 +184,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aperturerobotics-util", git = "https://github.com/aperturerobotics/util.git?rev=104de78e8992f52da60788d11e6d25ba0070d9bc" },
     { name = "go-prometheus-client-lite", git = "https://github.com/aperturerobotics/go-prometheus-client-lite.git?rev=92147463582b194318f1198ae4c61df0cb112c87" },
     { name = "starpc", git = "https://github.com/aperturerobotics/starpc.git?rev=60aebb7f3a140f0772a63269afce10859d45b27f" },
 ]

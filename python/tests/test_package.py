@@ -44,6 +44,16 @@ class PackageContractTest(unittest.TestCase):
         self.assertTrue(hasattr(session_services, "SessionResourceServiceClient"))
         self.assertTrue(hasattr(spaces, "SpaceSoListEntry"))
 
+    def test_generated_web_plugin_modules_import(self) -> None:
+        # The web plugin imports util's backoff, which util's package installs.
+        try:
+            messages = importlib.import_module("bldr.web.plugin.plugin_pb2")
+            services = importlib.import_module("bldr.web.plugin.plugin_srpc")
+        except ModuleNotFoundError as exc:
+            self.fail(f"generated web plugin modules are absent: {exc}")
+        self.assertTrue(hasattr(messages, "OpenOrFocusDesktopRequest"))
+        self.assertTrue(hasattr(services, "WebPluginClient"))
+
 
 if __name__ == "__main__":
     unittest.main()
