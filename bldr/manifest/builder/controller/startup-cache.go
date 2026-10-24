@@ -366,12 +366,11 @@ func addSubManifestResultForStartupReuse(
 // validateStartupFiles validates cached file identities against the filesystem.
 func validateStartupFiles(sourcePath string, inputManifest *bldr_manifest_builder.InputManifest) error {
 	for _, inputFile := range inputManifest.GetFiles() {
-		fileIdentity := inputFile.GetIdentity()
-		if fileIdentity == nil {
+		if inputFile.GetIdentity() == nil {
 			return errors.Errorf("startup file %q is missing cached identity", inputFile.GetPath())
 		}
 		filePath := resolveStartupInputPath(sourcePath, inputFile.GetPath())
-		match, err := fileIdentity.MatchesFile(filePath)
+		match, err := inputFile.MatchesPath(filePath)
 		if err != nil {
 			return errors.Wrapf(err, "validate startup file %q", inputFile.GetPath())
 		}
@@ -460,7 +459,7 @@ func newStartupCacheFormatInput() *bldr_manifest_builder.InputManifest_StartupIn
 // captureFileIdentities captures file identities on all input manifest files.
 func captureFileIdentities(sourcePath string, inputManifest *bldr_manifest_builder.InputManifest) error {
 	for _, inputFile := range inputManifest.GetFiles() {
-		fileIdentity, err := bldr_manifest_builder.CaptureFileIdentity(
+		fileIdentity, err := inputFile.CaptureIdentity(
 			resolveStartupInputPath(sourcePath, inputFile.GetPath()),
 		)
 		if err != nil {

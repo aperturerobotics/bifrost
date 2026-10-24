@@ -104,6 +104,12 @@ message InputManifest {
     // StartupOnly records files needed only for startup validation.
     // These files are ignored by the live watch loop.
     bool startup_only = 4;
+    // DirSuffix marks Path as a directory whose files ending in DirSuffix,
+    // such as ".sql", are read as inputs. The input is the list of those file
+    // names, so adding or removing one changes it; each file's content is an
+    // input of its own.
+    // Optional.
+    string dir_suffix = 5;
   }
 
   // StartupInput declares a typed non-file startup validation input.

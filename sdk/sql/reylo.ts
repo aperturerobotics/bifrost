@@ -129,10 +129,10 @@ function columnDecoder(col: ColumnSchema): Decoder {
     case 'UNSIGNED BIGINT':
       return (v) => scalar(v)
     case 'DATE':
-      return (v) => dateText(scalar(v), true)
+      return (v) => dateText(scalar(v), -1)
     case 'DATETIME':
     case 'TIMESTAMP':
-      return (v) => dateText(scalar(v), false)
+      return (v) => dateText(scalar(v), col.scale ?? 0)
     case 'JSON':
       return (v) => {
         const s = textOf(scalar(v))
@@ -169,10 +169,14 @@ function textOf(s: unknown): string | null {
   return String(s)
 }
 
-// dateText turns the engine's RFC 3339 time into MySQL's wall clock text, the
-// date alone for a DATE.
-function dateText(s: unknown, dateOnly: boolean): unknown {
+// dateText turns the engine's RFC 3339 time into MySQL's wall clock text: the
+// date alone for a DATE (scale -1), and otherwise the fraction padded to the
+// column's scale, which RFC 3339 trims of trailing zeros.
+function dateText(s: unknown, scale: number): unknown {
   if (typeof s !== 'string') return s
   const wall = s.replace(/(?:Z|[+-]00:00)$/, '')
-  return dateOnly ? wall.slice(0, 10) : wall
+  if (scale < 0) return wall.slice(0, 10)
+  if (scale === 0) return wall
+  const [whole, fraction = ''] = wall.split('.')
+  return `${whole}.${fraction.padEnd(scale, '0')}`
 }

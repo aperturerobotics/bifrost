@@ -30,6 +30,7 @@ import (
 	web_pkg "github.com/s4wave/spacewave/bldr/web/pkg"
 	web_pkg_external "github.com/s4wave/spacewave/bldr/web/pkg/external"
 	web_pkg_vite "github.com/s4wave/spacewave/bldr/web/pkg/vite"
+	mysql_devserver "github.com/s4wave/spacewave/db/sql/mysql/devserver"
 	"github.com/s4wave/spacewave/db/world"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -581,6 +582,22 @@ func (c *Controller) buildInputManifest(
 		return nil, err
 	}
 
+	// List each schema directory, so a schema file added to it or removed from
+	// it changes the input.
+	var sqlSchemaDirs []string
+	for _, schemaPath := range sqlSchemaPaths {
+		if !filepath.IsAbs(schemaPath) {
+			schemaPath = filepath.Join(sourcePath, schemaPath)
+		}
+		if st, err := os.Stat(schemaPath); err == nil && st.IsDir() {
+			sqlSchemaDirs = append(sqlSchemaDirs, schemaPath)
+		}
+	}
+	sqlSchemaDirPaths, err := filterSourceRelativePaths(sourcePath, sqlSchemaDirs)
+	if err != nil {
+		return nil, err
+	}
+
 	// Build the file list for each input kind.
 	webPkgSrcSet := make(map[string]struct{}, len(webPkgSrcPaths))
 	for _, srcPath := range webPkgSrcPaths {
@@ -607,6 +624,21 @@ func (c *Controller) buildInputManifest(
 			updatedManifestMeta.Files = append(updatedManifestMeta.Files, &bldr_manifest_builder.InputManifest_File{
 				Path:     srcPath,
 				Metadata: metaBin,
+			})
+		}
+	}
+
+	// Add each schema directory as a listing of its schema files.
+	if len(sqlSchemaDirPaths) != 0 {
+		metaBin, err := (&InputFileMeta{Kind: InputFileKind_InputFileKind_SQL_SCHEMA}).MarshalVT()
+		if err != nil {
+			return nil, err
+		}
+		for _, dirPath := range sqlSchemaDirPaths {
+			updatedManifestMeta.Files = append(updatedManifestMeta.Files, &bldr_manifest_builder.InputManifest_File{
+				Path:      dirPath,
+				Metadata:  metaBin,
+				DirSuffix: mysql_devserver.SchemaFileSuffix,
 			})
 		}
 	}

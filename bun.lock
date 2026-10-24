@@ -107,6 +107,7 @@
         "oxlint-tsgolint": "^7.0.0",
         "playwright": "^1.62.1",
         "react-doctor": "^0.9.5",
+        "reylo": "0.5.0",
         "rimraf": "^6.1.3",
         "tailwindcss": "^4.3.3",
         "tailwindcss-animate": "^1.0.7",
@@ -1525,6 +1526,8 @@
     "require-main-filename": ["require-main-filename@2.0.0", "", {}, "sha512-NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg=="],
 
     "reusify": ["reusify@1.1.0", "", {}, "sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw=="],
+
+    "reylo": ["reylo@0.5.0", "", { "peerDependencies": { "@reylosql/mysql": "0.5.0", "@reylosql/postgres": "0.5.0", "@reylosql/sqlite": "0.5.0" }, "optionalPeers": ["@reylosql/mysql", "@reylosql/postgres", "@reylosql/sqlite"], "bin": { "reylo": "src/cli.js" } }, "sha512-FlPUnP1FOpAqSjFfQQ23L+PSLsd0nPSrXVuLABXpAwIoWe7CNcLb3qWXYBtpLbxjqIRKSveyOwwwlunlF+1Huw=="],
 
     "rimraf": ["rimraf@6.1.3", "", { "dependencies": { "glob": "^13.0.3", "package-json-from-dist": "^1.0.1" }, "bin": { "rimraf": "dist/esm/bin.mjs" } }, "sha512-LKg+Cr2ZF61fkcaK1UdkH2yEBBKnYjTyWzTJT6KNPcSPaiT7HSdhtMXQuN5wkTX0Xu72KQ1l8S42rlmexS2hSA=="],
 

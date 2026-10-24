@@ -402,6 +402,12 @@ type InputManifest_File struct {
 	// StartupOnly records files needed only for startup validation.
 	// These files are ignored by the live watch loop.
 	StartupOnly bool `protobuf:"varint,4,opt,name=startup_only,json=startupOnly,proto3" json:"startupOnly,omitempty"`
+	// DirSuffix marks Path as a directory whose files ending in DirSuffix,
+	// such as ".sql", are read as inputs. The input is the list of those file
+	// names, so adding or removing one changes it; each file's content is an
+	// input of its own.
+	// Optional.
+	DirSuffix string `protobuf:"bytes,5,opt,name=dir_suffix,json=dirSuffix,proto3" json:"dirSuffix,omitempty"`
 }
 
 func (x *InputManifest_File) Reset() {
@@ -436,6 +442,13 @@ func (x *InputManifest_File) GetStartupOnly() bool {
 		return x.StartupOnly
 	}
 	return false
+}
+
+func (x *InputManifest_File) GetDirSuffix() string {
+	if x != nil {
+		return x.DirSuffix
+	}
+	return ""
 }
 
 // StartupInput declares a typed non-file startup validation input.
@@ -556,6 +569,7 @@ func (m *InputManifest_File) CloneVT() *InputManifest_File {
 	r := new(InputManifest_File)
 	r.Path = m.Path
 	r.StartupOnly = m.StartupOnly
+	r.DirSuffix = m.DirSuffix
 	r.Metadata = protobuf_go_lite.CloneBytes(m.Metadata)
 	r.Identity = protobuf_go_lite.CloneVTValue(m.Identity)
 	if len(m.unknownFields) > 0 {
@@ -747,6 +761,9 @@ func (this *InputManifest_File) EqualVT(that *InputManifest_File) bool {
 		return false
 	}
 	if this.StartupOnly != that.StartupOnly {
+		return false
+	}
+	if this.DirSuffix != that.DirSuffix {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1270,6 +1287,11 @@ func (x *InputManifest_File) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("startupOnly")
 		s.WriteBool(x.StartupOnly)
 	}
+	if x.DirSuffix != "" || s.HasField("dirSuffix") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("dirSuffix")
+		s.WriteString(x.DirSuffix)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1303,6 +1325,9 @@ func (x *InputManifest_File) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "startup_only", "startupOnly":
 			s.AddField("startup_only")
 			x.StartupOnly = s.ReadBool()
+		case "dir_suffix", "dirSuffix":
+			s.AddField("dir_suffix")
+			x.DirSuffix = s.ReadString()
 		}
 	})
 }
@@ -1836,6 +1861,11 @@ func (m *InputManifest_File) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if len(m.DirSuffix) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.DirSuffix)
+		i--
+		dAtA[i] = 0x2a
+	}
 	if m.StartupOnly {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.StartupOnly)
 		i--
@@ -2130,6 +2160,7 @@ func (m *InputManifest_File) SizeVT() (n int) {
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
 	n += protobuf_go_lite.SizeBoolNonZero(1, m.StartupOnly)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.DirSuffix)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2358,6 +2389,10 @@ func (x *InputManifest_File) MarshalProtoText() string {
 	if x.StartupOnly != false {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "startup_only")
 		protobuf_go_lite.TextWriteBool(&sb, x.StartupOnly)
+	}
+	if x.DirSuffix != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "dir_suffix")
+		protobuf_go_lite.TextWriteString(&sb, x.DirSuffix)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2905,6 +2940,16 @@ func (m *InputManifest_File) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.StartupOnly = bool(v)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DirSuffix", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.DirSuffix = v
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

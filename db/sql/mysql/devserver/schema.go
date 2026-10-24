@@ -9,6 +9,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// SchemaFileSuffix ends the name of each schema file a directory contributes.
+const SchemaFileSuffix = ".sql"
+
 // ReadSchemaFiles reads the SQL schema at each path in order. A directory
 // contributes its .sql files sorted by name, the order migration files are
 // numbered in; subdirectories are not read. Returns the files read and their
@@ -28,7 +31,7 @@ func ReadSchemaFiles(paths []string) (files []string, texts []string, err error)
 			}
 			pathFiles = pathFiles[:0]
 			for _, ent := range entries {
-				if !ent.IsDir() && strings.HasSuffix(ent.Name(), ".sql") {
+				if !ent.IsDir() && strings.HasSuffix(ent.Name(), SchemaFileSuffix) {
 					pathFiles = append(pathFiles, filepath.Join(path, ent.Name()))
 				}
 			}

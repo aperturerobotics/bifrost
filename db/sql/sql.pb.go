@@ -125,6 +125,10 @@ type ColumnSchema struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// DatabaseTypeName is the database-specific type name, if known.
 	DatabaseTypeName string `protobuf:"bytes,2,opt,name=database_type_name,json=databaseTypeName,proto3" json:"databaseTypeName,omitempty"`
+	// Scale is the digits after the point of a DECIMAL column, or the fractional
+	// second digits of a DATETIME, TIMESTAMP or TIME column, when the driver
+	// reports them.
+	Scale uint32 `protobuf:"varint,3,opt,name=scale,proto3" json:"scale,omitempty"`
 }
 
 func (x *ColumnSchema) Reset() {
@@ -145,6 +149,13 @@ func (x *ColumnSchema) GetDatabaseTypeName() string {
 		return x.DatabaseTypeName
 	}
 	return ""
+}
+
+func (x *ColumnSchema) GetScale() uint32 {
+	if x != nil {
+		return x.Scale
+	}
+	return 0
 }
 
 // RowBatch contains a batch of query rows.
@@ -260,6 +271,7 @@ func (m *ColumnSchema) CloneVT() *ColumnSchema {
 	r := new(ColumnSchema)
 	r.Name = m.Name
 	r.DatabaseTypeName = m.DatabaseTypeName
+	r.Scale = m.Scale
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -411,6 +423,9 @@ func (this *ColumnSchema) EqualVT(that *ColumnSchema) bool {
 		return false
 	}
 	if this.DatabaseTypeName != that.DatabaseTypeName {
+		return false
+	}
+	if this.Scale != that.Scale {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -599,6 +614,11 @@ func (x *ColumnSchema) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("databaseTypeName")
 		s.WriteString(x.DatabaseTypeName)
 	}
+	if x.Scale != 0 || s.HasField("scale") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("scale")
+		s.WriteUint32(x.Scale)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -622,6 +642,9 @@ func (x *ColumnSchema) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "database_type_name", "databaseTypeName":
 			s.AddField("database_type_name")
 			x.DatabaseTypeName = s.ReadString()
+		case "scale":
+			s.AddField("scale")
+			x.Scale = s.ReadUint32()
 		}
 	})
 }
@@ -860,6 +883,11 @@ func (m *ColumnSchema) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.Scale != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Scale))
+		i--
+		dAtA[i] = 0x18
+	}
 	if len(m.DatabaseTypeName) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.DatabaseTypeName)
 		i--
@@ -992,6 +1020,7 @@ func (m *ColumnSchema) SizeVT() (n int) {
 	_ = l
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Name)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.DatabaseTypeName)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Scale)
 	n += len(m.unknownFields)
 	return n
 }
@@ -1066,6 +1095,10 @@ func (x *ColumnSchema) MarshalProtoText() string {
 	if x.DatabaseTypeName != "" {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "database_type_name")
 		protobuf_go_lite.TextWriteString(&sb, x.DatabaseTypeName)
+	}
+	if x.Scale != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "scale")
+		protobuf_go_lite.TextWriteUint(&sb, x.Scale)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -1277,6 +1310,15 @@ func (m *ColumnSchema) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.DatabaseTypeName = v
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scale", wireType)
+			}
+			m.Scale = 0
+			m.Scale, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

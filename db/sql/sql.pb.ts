@@ -61,12 +61,19 @@ export interface ColumnSchema {
    * DatabaseTypeName is the database-specific type name, if known.
    */
   databaseTypeName?: string
+  /**
+   * Scale is the digits after the point of a DECIMAL column, or the fractional
+   * second digits of a DATETIME, TIMESTAMP or TIME column, when the driver
+   * reports them.
+   */
+  scale?: number
 }
 
 export const ColumnSchema: MessageType<ColumnSchema> =
   /* @__PURE__ */ createMessageType<ColumnSchema>('sql.ColumnSchema', () => [
     [1, 'name', 9],
     [2, 'database_type_name', 9],
+    [3, 'scale', 13],
   ])
 
 /**

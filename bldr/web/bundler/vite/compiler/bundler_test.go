@@ -303,11 +303,14 @@ func TestBuildViteBundlePreservesExcludedWebPackageImports(t *testing.T) {
 func TestBuildInputManifestFileKinds(t *testing.T) {
 
 	// Build an input manifest with shared vite and web pkg sources and a
-	// SQL schema file.
+	// SQL schema directory holding one file.
 	sourcePath := t.TempDir()
 	sharedPath := filepath.Join(sourcePath, "app", "shared.ts")
 	viteOnlyPath := filepath.Join(sourcePath, "app", "vite.ts")
 	schemaPath := filepath.Join(sourcePath, "migrations", "0001_init.sql")
+	if err := os.MkdirAll(filepath.Dir(schemaPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	// Build the input manifest from the shared sources.
 	inputManifest, err := (&Controller{}).buildInputManifest(
@@ -329,18 +332,20 @@ func TestBuildInputManifestFileKinds(t *testing.T) {
 	if err := inputManifest.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	if len(inputManifest.GetFiles()) != 3 {
-		t.Fatalf("input file count=%d want 3", len(inputManifest.GetFiles()))
+	if len(inputManifest.GetFiles()) != 4 {
+		t.Fatalf("input file count=%d want 4", len(inputManifest.GetFiles()))
 	}
 
 	// Check the deduplicated file kinds.
 	kinds := make(map[string]InputFileKind, len(inputManifest.GetFiles()))
+	suffixes := make(map[string]string, len(inputManifest.GetFiles()))
 	for _, inputFile := range inputManifest.GetFiles() {
 		meta := &InputFileMeta{}
 		if err := meta.UnmarshalVT(inputFile.GetMetadata()); err != nil {
 			t.Fatal(err)
 		}
 		kinds[filepath.ToSlash(inputFile.GetPath())] = meta.GetKind()
+		suffixes[filepath.ToSlash(inputFile.GetPath())] = inputFile.GetDirSuffix()
 	}
 	if got := kinds["app/shared.ts"]; got != InputFileKind_InputFileKind_WEB_PKG {
 		t.Fatalf("shared source kind=%v want WEB_PKG", got)
@@ -350,6 +355,9 @@ func TestBuildInputManifestFileKinds(t *testing.T) {
 	}
 	if got := kinds["migrations/0001_init.sql"]; got != InputFileKind_InputFileKind_SQL_SCHEMA {
 		t.Fatalf("schema kind=%v want SQL_SCHEMA", got)
+	}
+	if got := kinds["migrations"]; got != InputFileKind_InputFileKind_SQL_SCHEMA || suffixes["migrations"] != ".sql" {
+		t.Fatalf("schema dir kind=%v suffix=%q want SQL_SCHEMA .sql", got, suffixes["migrations"])
 	}
 }
 

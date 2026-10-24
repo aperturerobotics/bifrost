@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aperturerobotics/fsnotify"
@@ -21,6 +22,9 @@ import (
 // It watches directories rather than files: editors replace files atomically,
 // which drops a watch on the original file. fsnotify needs one watch per
 // directory: https://github.com/fsnotify/fsnotify/issues/18
+//
+// A DirSuffix input is a directory, watched itself, and a matching file
+// created, removed or renamed in it changes that input.
 type SourceWatcher struct {
 	// watcher is the fsnotify watcher, closed when the watch context ends.
 	watcher *fsnotify.Watcher
@@ -33,6 +37,9 @@ type SourceWatcher struct {
 	paths map[string]*bldr_manifest_builder.InputManifest_File
 	// changed is the set of paths changed since the last take.
 	changed map[string]struct{}
+	// listed is the set of paths created, removed or renamed since the last
+	// take, which change the DirSuffix input of their directory.
+	listed map[string]struct{}
 	// events counts the events recorded since the last take.
 	events int
 	// lastEvent is when the last change was recorded.
@@ -56,19 +63,24 @@ func NewSourceWatcher(ctx context.Context) (*SourceWatcher, error) {
 		watcher: watcher,
 		dirs:    make(map[string]struct{}),
 		changed: make(map[string]struct{}),
+		listed:  make(map[string]struct{}),
 		takenAt: time.Now(),
 	}
 	go w.readEvents(ctx)
 	return w, nil
 }
 
-// SetPaths replaces the watched source paths, watching each path's directory.
-// Changes recorded before the call stay pending and are filtered against the
-// new paths when taken.
+// SetPaths replaces the watched source paths, watching each path's directory,
+// or the path itself for a DirSuffix input. Changes recorded before the call
+// stay pending and are filtered against the new paths when taken.
 func (w *SourceWatcher) SetPaths(paths map[string]*bldr_manifest_builder.InputManifest_File) error {
 	// Collect the directories the new paths need.
 	dirs := make(map[string]struct{}, len(paths))
-	for sourcePath := range paths {
+	for sourcePath, file := range paths {
+		if file.GetDirSuffix() != "" {
+			dirs[sourcePath] = struct{}{}
+			continue
+		}
 		dirs[filepath.Dir(sourcePath)] = struct{}{}
 	}
 
@@ -118,6 +130,7 @@ func (w *SourceWatcher) Wait(
 		var err error
 		var waitCh <-chan struct{}
 		w.bcast.HoldLock(func(_ func(), getWaitCh func() <-chan struct{}) {
+			// Read the state under the lock, then take settled changes.
 			waitCh = getWaitCh()
 			err = w.err
 			if err != nil || len(w.changed) == 0 {
@@ -165,21 +178,38 @@ func (w *SourceWatcher) takeChanges() ([]*bldr_manifest_builder.InputManifest_Fi
 	// Map the changed paths to their input files, once each.
 	var files []*bldr_manifest_builder.InputManifest_File
 	seen := make(map[*bldr_manifest_builder.InputManifest_File]struct{}, len(w.changed))
-	for sourcePath := range w.changed {
-		file := w.paths[sourcePath]
+	take := func(file *bldr_manifest_builder.InputManifest_File) {
 		if file == nil {
-			continue
+			return
 		}
 		if _, ok := seen[file]; ok {
-			continue
+			return
 		}
 		seen[file] = struct{}{}
 		files = append(files, file)
+	}
+	for sourcePath := range w.changed {
+		// A DirSuffix directory's own write reports an entry change, which
+		// the listed paths below decide; only its creation or removal counts.
+		file := w.paths[sourcePath]
+		if _, listed := w.listed[sourcePath]; file.GetDirSuffix() != "" && !listed {
+			continue
+		}
+		take(file)
+	}
+
+	// Map each listed path to the DirSuffix input of its directory.
+	for sourcePath := range w.listed {
+		dir := w.paths[filepath.Dir(sourcePath)]
+		if suffix := dir.GetDirSuffix(); suffix != "" && strings.HasSuffix(sourcePath, suffix) {
+			take(dir)
+		}
 	}
 
 	// Clear the pending changes.
 	events := w.events
 	clear(w.changed)
+	clear(w.listed)
 	w.events = 0
 	w.takenAt = time.Now()
 	return files, events
@@ -233,10 +263,18 @@ func (w *SourceWatcher) recordEvent(event fsnotify.Event) {
 
 	// Record the change and wake the waiter.
 	w.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		// Skip a chmod that predates the last take.
 		if !modTime.IsZero() && !modTime.After(w.takenAt) {
 			return
 		}
+
+		// Mark the path, and its directory listing when an entry changed.
 		w.changed[event.Name] = struct{}{}
+		if event.Op&(fsnotify.Create|fsnotify.Remove|fsnotify.Rename) != 0 {
+			w.listed[event.Name] = struct{}{}
+		}
+
+		// Count the event and wake the waiter.
 		w.events++
 		w.lastEvent = time.Now()
 		broadcast()

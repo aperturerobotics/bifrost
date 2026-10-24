@@ -254,6 +254,14 @@ export interface InputManifest_File {
    * These files are ignored by the live watch loop.
    */
   startupOnly?: boolean
+  /**
+   * DirSuffix marks Path as a directory whose files ending in DirSuffix,
+   * such as ".sql", are read as inputs. The input is the list of those file
+   * names, so adding or removing one changes it; each file's content is an
+   * input of its own.
+   * Optional.
+   */
+  dirSuffix?: string
 }
 
 export const InputManifest_File: MessageType<InputManifest_File> =
@@ -264,6 +272,7 @@ export const InputManifest_File: MessageType<InputManifest_File> =
       [2, 'metadata', 12],
       [3, 'identity', 11, 0, InputManifest_FileIdentity.codec],
       [4, 'startup_only', 8],
+      [5, 'dir_suffix', 9],
     ],
   )
 

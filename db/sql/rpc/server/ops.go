@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"io"
+	"math"
 
 	hydra_sql "github.com/s4wave/spacewave/db/sql"
 	sql_rpc "github.com/s4wave/spacewave/db/sql/rpc"
@@ -74,14 +75,20 @@ func (o *Ops) Query(strm sql_rpc.SRPCSqlOps_QueryStream) error {
 	}
 	defer rows.Close()
 
-	// Describe query columns and any driver-provided database types.
+	// Describe query columns and any driver-provided database types and scales.
 	columns := rows.Columns()
 	columnSchemas := make([]*hydra_sql.ColumnSchema, len(columns))
 	columnTypes, _ := rows.(driver.RowsColumnTypeDatabaseTypeName)
+	columnScales, _ := rows.(driver.RowsColumnTypePrecisionScale)
 	for i, name := range columns {
 		columnSchemas[i] = &hydra_sql.ColumnSchema{Name: name}
 		if columnTypes != nil {
 			columnSchemas[i].DatabaseTypeName = columnTypes.ColumnTypeDatabaseTypeName(i)
+		}
+		if columnScales != nil {
+			if _, scale, ok := columnScales.ColumnTypePrecisionScale(i); ok && scale > 0 && scale <= math.MaxUint32 {
+				columnSchemas[i].Scale = uint32(scale)
+			}
 		}
 	}
 

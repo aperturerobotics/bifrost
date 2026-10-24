@@ -27,6 +27,10 @@ message ColumnSchema {
   string name = 1;
   // DatabaseTypeName is the database-specific type name, if known.
   string database_type_name = 2;
+  // Scale is the digits after the point of a DECIMAL column, or the fractional
+  // second digits of a DATETIME, TIMESTAMP or TIME column, when the driver
+  // reports them.
+  uint32 scale = 3;
 }
 
 // RowBatch contains a batch of query rows.

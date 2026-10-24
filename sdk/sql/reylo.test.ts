@@ -1,3 +1,4 @@
+import { defineQuery } from 'reylo'
 import { describe, expect, test } from 'vitest'
 
 import type { SqlValue } from '../../db/sql/sql.pb.js'
@@ -14,12 +15,14 @@ describe('reyloClient', () => {
       },
       query(query, args) {
         calls.push({ kind: 'query', query, args })
-        const cols = [
+        const cols: [string, string, number?][] = [
           ['id', 'BIGINT'],
           ['n', 'INT'],
-          ['price', 'DECIMAL'],
-          ['at', 'DATETIME'],
+          ['price', 'DECIMAL', 2],
+          ['at', 'DATETIME', 3],
+          ['stamp', 'TIMESTAMP', 2],
           ['day', 'DATE'],
+          ['role', 'ENUM'],
           ['doc', 'JSON'],
           ['raw', 'BLOB'],
           ['name', 'TEXT'],
@@ -30,16 +33,19 @@ describe('reyloClient', () => {
           { value: { case: 'intValue', value: 7n } },
           { value: { case: 'strValue', value: '1.50' } },
           { value: { case: 'strValue', value: '2026-10-23T08:24:40.5Z' } },
+          { value: { case: 'strValue', value: '2026-10-23T08:24:40Z' } },
           { value: { case: 'strValue', value: '2026-10-23T00:00:00Z' } },
+          { value: { case: 'strValue', value: 'member' } },
           { value: { case: 'strValue', value: '{"a":[1]}' } },
           { value: { case: 'blobValue', value: new Uint8Array([1, 2]) } },
           { value: { case: 'strValue', value: 'ada' } },
           {},
         ]
         return Promise.resolve({
-          columns: cols.map(([name, databaseTypeName]) => ({
+          columns: cols.map(([name, databaseTypeName, scale]) => ({
             name,
             databaseTypeName,
+            scale,
           })),
           rows: [{ values }],
         })
@@ -57,8 +63,10 @@ describe('reyloClient', () => {
         id: 9007199254740993n,
         n: 7,
         price: '1.50',
-        at: '2026-10-23T08:24:40.5',
+        at: '2026-10-23T08:24:40.500',
+        stamp: '2026-10-23T08:24:40.00',
         day: '2026-10-23',
+        role: 'member',
         doc: { a: [1] },
         raw: new Uint8Array([1, 2]),
         name: 'ada',
@@ -88,5 +96,66 @@ describe('reyloClient', () => {
       await expect(client.query('select ?', [bad])).rejects.toThrow()
     }
     expect(calls).toHaveLength(2)
+  })
+
+  test('runs a query compiled by reylo/vite on its own runtime', async () => {
+    // Answer the read with the row the engine returns for it.
+    const calls: { query: string; args?: SqlValue[] }[] = []
+    const runner: SqlStatementRunner = {
+      exec() {
+        return Promise.reject(new Error('unexpected exec'))
+      },
+      query(query, args) {
+        calls.push({ query, args })
+        return Promise.resolve({
+          columns: [
+            { name: 'id', databaseTypeName: 'INT' },
+            { name: 'email', databaseTypeName: 'VARCHAR' },
+            { name: 'created_at', databaseTypeName: 'DATETIME', scale: 3 },
+          ],
+          rows: [
+            {
+              values: [
+                { value: { case: 'intValue', value: 3n } },
+                {},
+                { value: { case: 'strValue', value: '2026-10-23T08:24:40Z' } },
+              ],
+            },
+          ],
+        })
+      },
+    }
+
+    // The definition is what reylo/vite emits for this query.
+    const getUser = defineQuery({
+      dialect: 'mysql',
+      sql: 'select u.id, u.email, u.created_at from users u where u.id = :id\n',
+      params: ['id'],
+      cardinality: 'maybeOne',
+      text: 'select u.id, u.email, u.created_at from users u where u.id = ?',
+      order: ['id'],
+      inputs: {
+        id: { type: { kind: 'scalar', name: 'int4' }, nullable: false },
+      },
+      columns: [
+        ['id', 'int'],
+        ['email', 'text'],
+        ['created_at', 'timestamp'],
+      ],
+    })
+
+    // Reylo binds the parameter and shapes the one row.
+    const user = await getUser.run(reyloClient(runner), { id: 3 })
+    expect(user).toEqual({
+      id: 3,
+      email: null,
+      created_at: '2026-10-23T08:24:40.000',
+    })
+    expect(calls).toEqual([
+      {
+        query: 'select u.id, u.email, u.created_at from users u where u.id = ?',
+        args: [{ value: { case: 'intValue', value: 3n } }],
+      },
+    ])
   })
 })
