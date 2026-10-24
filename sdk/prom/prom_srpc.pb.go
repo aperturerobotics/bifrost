@@ -16,6 +16,10 @@ type SRPCPromQueryResourceServiceClient interface {
 
 	// Query evaluates one PromQL expression.
 	Query(ctx context.Context, in *QueryRequest) (*QueryResponse, error)
+	// LabelNames lists the label names of the matching series.
+	LabelNames(ctx context.Context, in *LabelNamesRequest) (*LabelsResponse, error)
+	// LabelValues lists the values of one label among the matching series.
+	LabelValues(ctx context.Context, in *LabelValuesRequest) (*LabelsResponse, error)
 }
 
 type srpcPromQueryResourceServiceClient struct {
@@ -45,9 +49,31 @@ func (c *srpcPromQueryResourceServiceClient) Query(ctx context.Context, in *Quer
 	return out, nil
 }
 
+func (c *srpcPromQueryResourceServiceClient) LabelNames(ctx context.Context, in *LabelNamesRequest) (*LabelsResponse, error) {
+	out := new(LabelsResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "LabelNames", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcPromQueryResourceServiceClient) LabelValues(ctx context.Context, in *LabelValuesRequest) (*LabelsResponse, error) {
+	out := new(LabelsResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "LabelValues", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 type SRPCPromQueryResourceServiceServer interface {
 	// Query evaluates one PromQL expression.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	// LabelNames lists the label names of the matching series.
+	LabelNames(context.Context, *LabelNamesRequest) (*LabelsResponse, error)
+	// LabelValues lists the values of one label among the matching series.
+	LabelValues(context.Context, *LabelValuesRequest) (*LabelsResponse, error)
 }
 
 const SRPCPromQueryResourceServiceServiceID = "s4wave.prom.PromQueryResourceService"
@@ -77,6 +103,8 @@ func (d *SRPCPromQueryResourceServiceHandler) GetServiceID() string { return d.s
 func (SRPCPromQueryResourceServiceHandler) GetMethodIDs() []string {
 	return []string{
 		"Query",
+		"LabelNames",
+		"LabelValues",
 	}
 }
 
@@ -91,6 +119,10 @@ func (d *SRPCPromQueryResourceServiceHandler) InvokeMethod(
 	switch methodID {
 	case "Query":
 		return true, d.InvokeMethod_Query(d.impl, strm)
+	case "LabelNames":
+		return true, d.InvokeMethod_LabelNames(d.impl, strm)
+	case "LabelValues":
+		return true, d.InvokeMethod_LabelValues(d.impl, strm)
 	default:
 		return false, nil
 	}
@@ -108,10 +140,50 @@ func (SRPCPromQueryResourceServiceHandler) InvokeMethod_Query(impl SRPCPromQuery
 	return strm.MsgSend(out)
 }
 
+func (SRPCPromQueryResourceServiceHandler) InvokeMethod_LabelNames(impl SRPCPromQueryResourceServiceServer, strm srpc.Stream) error {
+	req := new(LabelNamesRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.LabelNames(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCPromQueryResourceServiceHandler) InvokeMethod_LabelValues(impl SRPCPromQueryResourceServiceServer, strm srpc.Stream) error {
+	req := new(LabelValuesRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.LabelValues(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
 type SRPCPromQueryResourceService_QueryStream interface {
 	srpc.Stream
 }
 
 type srpcPromQueryResourceService_QueryStream struct {
+	srpc.Stream
+}
+
+type SRPCPromQueryResourceService_LabelNamesStream interface {
+	srpc.Stream
+}
+
+type srpcPromQueryResourceService_LabelNamesStream struct {
+	srpc.Stream
+}
+
+type SRPCPromQueryResourceService_LabelValuesStream interface {
+	srpc.Stream
+}
+
+type srpcPromQueryResourceService_LabelValuesStream struct {
 	srpc.Stream
 }

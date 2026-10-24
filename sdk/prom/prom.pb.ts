@@ -201,6 +201,69 @@ export const TargetStatus: MessageType<TargetStatus> =
   )
 
 /**
+ * LabelNamesRequest lists label names. Label lookups ignore time: they read
+ * every committed series of every target.
+ *
+ * @generated from message s4wave.prom.LabelNamesRequest
+ */
+export interface LabelNamesRequest {
+  /**
+   * Match holds series selectors such as up{job="node"}. A series matches
+   * when any selector matches it; none matches every series.
+   */
+  match?: string[]
+}
+
+export const LabelNamesRequest: MessageType<LabelNamesRequest> =
+  /* @__PURE__ */ createMessageType<LabelNamesRequest>(
+    's4wave.prom.LabelNamesRequest',
+    () => [[1, 'match', 9, 1]],
+  )
+
+/**
+ * LabelValuesRequest lists the values of one label.
+ *
+ * @generated from message s4wave.prom.LabelValuesRequest
+ */
+export interface LabelValuesRequest {
+  /**
+   * Name is the label name, such as job or __name__.
+   */
+  name?: string
+  /**
+   * Match holds series selectors as in LabelNamesRequest.
+   */
+  match?: string[]
+}
+
+export const LabelValuesRequest: MessageType<LabelValuesRequest> =
+  /* @__PURE__ */ createMessageType<LabelValuesRequest>(
+    's4wave.prom.LabelValuesRequest',
+    () => [
+      [1, 'name', 9],
+      [2, 'match', 9, 1],
+    ],
+  )
+
+/**
+ * LabelsResponse is a sorted list of label names or values without repeats.
+ *
+ * @generated from message s4wave.prom.LabelsResponse
+ */
+export interface LabelsResponse {
+  /**
+   * Values holds the names or values.
+   */
+  values?: string[]
+}
+
+export const LabelsResponse: MessageType<LabelsResponse> =
+  /* @__PURE__ */ createMessageType<LabelsResponse>(
+    's4wave.prom.LabelsResponse',
+    () => [[1, 'values', 9, 1]],
+  )
+
+/**
  * QueryRequest evaluates an expression at one instant or over a range.
  *
  * @generated from message s4wave.prom.QueryRequest

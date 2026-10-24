@@ -64,6 +64,32 @@ message TargetStatus {
 service PromQueryResourceService {
   // Query evaluates one PromQL expression.
   rpc Query(QueryRequest) returns (QueryResponse);
+  // LabelNames lists the label names of the matching series.
+  rpc LabelNames(LabelNamesRequest) returns (LabelsResponse);
+  // LabelValues lists the values of one label among the matching series.
+  rpc LabelValues(LabelValuesRequest) returns (LabelsResponse);
+}
+
+// LabelNamesRequest lists label names. Label lookups ignore time: they read
+// every committed series of every target.
+message LabelNamesRequest {
+  // Match holds series selectors such as up{job="node"}. A series matches
+  // when any selector matches it; none matches every series.
+  repeated string match = 1;
+}
+
+// LabelValuesRequest lists the values of one label.
+message LabelValuesRequest {
+  // Name is the label name, such as job or __name__.
+  string name = 1;
+  // Match holds series selectors as in LabelNamesRequest.
+  repeated string match = 2;
+}
+
+// LabelsResponse is a sorted list of label names or values without repeats.
+message LabelsResponse {
+  // Values holds the names or values.
+  repeated string values = 1;
 }
 
 // QueryRequest evaluates an expression at one instant or over a range.

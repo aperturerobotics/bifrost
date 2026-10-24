@@ -2,10 +2,14 @@ package prom_plugin
 
 import (
 	"context"
+	"math"
+	"slices"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/promql"
+	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/storage"
 	s4wave_prom "github.com/s4wave/spacewave/sdk/prom"
 )
@@ -67,6 +71,58 @@ func (s *queryService) Query(ctx context.Context, req *s4wave_prom.QueryRequest)
 		resp.Warnings = append(resp.Warnings, w.Error())
 	}
 	return resp, nil
+}
+
+// LabelNames lists the label names of the series matching any selector.
+func (s *queryService) LabelNames(ctx context.Context, req *s4wave_prom.LabelNamesRequest) (*s4wave_prom.LabelsResponse, error) {
+	return s.lookupLabels(ctx, req.GetMatch(), func(q storage.Querier, matchers []*labels.Matcher) ([]string, error) {
+		names, _, err := q.LabelNames(ctx, nil, matchers...)
+		return names, err
+	})
+}
+
+// LabelValues lists the values of one label among the series matching any
+// selector.
+func (s *queryService) LabelValues(ctx context.Context, req *s4wave_prom.LabelValuesRequest) (*s4wave_prom.LabelsResponse, error) {
+	if req.GetName() == "" {
+		return nil, errors.New("label name is required")
+	}
+	return s.lookupLabels(ctx, req.GetMatch(), func(q storage.Querier, matchers []*labels.Matcher) ([]string, error) {
+		values, _, err := q.LabelValues(ctx, req.GetName(), nil, matchers...)
+		return values, err
+	})
+}
+
+// lookupLabels runs lookup once per selector, or once with no matchers when
+// there are none, and returns the sorted union of the results.
+func (s *queryService) lookupLabels(ctx context.Context, match []string, lookup func(storage.Querier, []*labels.Matcher) ([]string, error)) (*s4wave_prom.LabelsResponse, error) {
+	// Parse every selector before reading.
+	sets, err := parser.NewParser(parser.Options{}).ParseMetricSelectors(match)
+	if err != nil {
+		return nil, err
+	}
+	if len(sets) == 0 {
+		sets = append(sets, nil)
+	}
+
+	// Label lookups ignore time, so read over all of it.
+	q, err := s.q.Querier(math.MinInt64, math.MaxInt64)
+	if err != nil {
+		return nil, err
+	}
+	defer q.Close()
+
+	// Union the results of each selector.
+	var out []string
+	for _, matchers := range sets {
+		values, err := lookup(q, matchers)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, values...)
+	}
+	slices.Sort(out)
+	return &s4wave_prom.LabelsResponse{Values: slices.Compact(out)}, nil
 }
 
 // convertValue converts a PromQL value to its wire form. Histogram samples
