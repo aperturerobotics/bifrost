@@ -135,6 +135,12 @@ export interface TargetMeta {
    * Scrape configures the target's scrape process.
    */
   scrape?: ScrapeConfig
+  /**
+   * RetentionMs is how long the target keeps samples, measured back from its
+   * latest sample. Expired samples are dropped every two hours, so they can
+   * outlive it by that much. Zero keeps 15 days, as Prometheus does.
+   */
+  retentionMs?: bigint
 }
 
 export const TargetMeta: MessageType<TargetMeta> =
@@ -143,6 +149,7 @@ export const TargetMeta: MessageType<TargetMeta> =
     () => [
       [1, 'labels', 11, 0, LabelSet.codec],
       [2, 'scrape', 11, 0, ScrapeConfig.codec],
+      [3, 'retention_ms', 4],
     ],
   )
 

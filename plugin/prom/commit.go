@@ -19,6 +19,9 @@ type commitBatch struct {
 	endSeries uint64
 	// maxTime is the latest sample time in the segment.
 	maxTime int64
+	// maintain is set when the batch closes a CompactSpan bucket, so its
+	// commit also drops expired segments and merges the closed buckets.
+	maintain bool
 	// samples is the number of samples in the segment.
 	samples int
 }

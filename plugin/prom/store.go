@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/labels"
@@ -21,12 +22,16 @@ import (
 // The Store keeps the open window and the target's series table in memory;
 // Append adds to the window and CommitStores writes the window as one segment.
 // A crash or Rollback loses only the uncommitted window. Exactly one Store
-// writes a target, so a Store never reads the tree again after it opens.
+// writes a target, so a Store reads the tree after it opens only to maintain
+// its segments: the commit that closes a CompactSpan bucket drops expired
+// segments and merges the closed buckets' segments in the same transaction.
 type Store struct {
 	// key is the World object key of the target.
 	key string
 	// meta holds the labels that every series of the target carries.
 	meta labels.Labels
+	// retention is how long the target keeps samples.
+	retention time.Duration
 
 	// mtx guards the fields below.
 	mtx sync.Mutex
@@ -60,7 +65,7 @@ func CreateStore(ctx context.Context, eng world.Engine, key string, target label
 	if err != nil {
 		return nil, err
 	}
-	return newStore(key, target.Copy(), NewSeriesTable(), 0, false, 0), nil
+	return newStore(key, meta, NewSeriesTable(), 0, false, 0), nil
 }
 
 // OpenStore opens the existing target key for writing, reading its labels,
@@ -83,7 +88,7 @@ func OpenStore(ctx context.Context, eng world.Engine, key string) (*Store, error
 			}
 			defer kv.Discard()
 
-			// Read the labels, the series table and the latest committed time.
+			// Read the meta, the series table and the latest committed time.
 			r := NewStoreReader(kv)
 			meta, err := r.Meta(ctx)
 			if err != nil {
@@ -111,10 +116,11 @@ func OpenStore(ctx context.Context, eng world.Engine, key string) (*Store, error
 }
 
 // newStore constructs a store over already committed state.
-func newStore(key string, meta labels.Labels, table *SeriesTable, committedSeries uint64, hasCommitted bool, committedMax int64) *Store {
+func newStore(key string, meta *s4wave_prom.TargetMeta, table *SeriesTable, committedSeries uint64, hasCommitted bool, committedMax int64) *Store {
 	return &Store{
 		key:             key,
-		meta:            meta,
+		meta:            ToLabels(meta.GetLabels()),
+		retention:       meta.Retention(),
 		table:           table,
 		open:            NewWindow(table.Len()),
 		committedSeries: committedSeries,
@@ -231,6 +237,7 @@ func (s *Store) freeze() (*commitBatch, error) {
 			batch.entries = append(batch.entries, batchEntry{key: s4wave_prom.StatusKey(), value: s.status})
 			s.status = nil
 		}
+		batch.maintain = s.hasCommitted && compactBucket(batch.maxTime+1) > compactBucket(s.committedMax+1)
 		s.frozen = batch
 		s.open = NewWindow(s.table.Len())
 	}
@@ -277,10 +284,16 @@ func (s *Store) write(ctx context.Context, wtx world.WorldState, batch *commitBa
 		}
 		defer kv.Discard()
 
-		// Set every entry, then commit the tree to move the object root.
+		// Set every entry and maintain the segments when the batch opens a
+		// bucket, then commit the tree to move the object root.
 		for _, e := range batch.entries {
 			if err := kv.Set(ctx, e.key, e.value); err != nil {
 				return err
+			}
+		}
+		if batch.maintain {
+			if err := maintain(ctx, kv, batch.maxTime, s.retention); err != nil {
+				return errors.Wrap(err, "maintain segments")
 			}
 		}
 		return kv.Commit(ctx)

@@ -160,6 +160,10 @@ type TargetMeta struct {
 	Labels *LabelSet `protobuf:"bytes,1,opt,name=labels,proto3" json:"labels,omitempty"`
 	// Scrape configures the target's scrape process.
 	Scrape *ScrapeConfig `protobuf:"bytes,2,opt,name=scrape,proto3" json:"scrape,omitempty"`
+	// RetentionMs is how long the target keeps samples, measured back from its
+	// latest sample. Expired samples are dropped every two hours, so they can
+	// outlive it by that much. Zero keeps 15 days, as Prometheus does.
+	RetentionMs uint64 `protobuf:"varint,3,opt,name=retention_ms,json=retentionMs,proto3" json:"retentionMs,omitempty"`
 }
 
 func (x *TargetMeta) Reset() {
@@ -180,6 +184,13 @@ func (x *TargetMeta) GetScrape() *ScrapeConfig {
 		return x.Scrape
 	}
 	return nil
+}
+
+func (x *TargetMeta) GetRetentionMs() uint64 {
+	if x != nil {
+		return x.RetentionMs
+	}
+	return 0
 }
 
 // TargetStatus is the scrape process's report on its latest scrape. The
@@ -466,6 +477,7 @@ func (m *TargetMeta) CloneVT() *TargetMeta {
 		return (*TargetMeta)(nil)
 	}
 	r := new(TargetMeta)
+	r.RetentionMs = m.RetentionMs
 	r.Labels = protobuf_go_lite.CloneVTValue(m.Labels)
 	r.Scrape = protobuf_go_lite.CloneVTValue(m.Scrape)
 	if len(m.unknownFields) > 0 {
@@ -651,6 +663,9 @@ func (this *TargetMeta) EqualVT(that *TargetMeta) bool {
 		return false
 	}
 	if !protobuf_go_lite.IsEqualVT(this.Scrape, that.Scrape) {
+		return false
+	}
+	if this.RetentionMs != that.RetentionMs {
 		return false
 	}
 	return string(this.unknownFields) == string(that.unknownFields)
@@ -1035,6 +1050,11 @@ func (x *TargetMeta) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("scrape")
 		x.Scrape.MarshalProtoJSON(s.WithField("scrape"))
 	}
+	if x.RetentionMs != 0 || s.HasField("retentionMs") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("retentionMs")
+		s.WriteUint64(x.RetentionMs)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1066,6 +1086,9 @@ func (x *TargetMeta) UnmarshalProtoJSON(s *json.UnmarshalState) {
 			}
 			x.Scrape = &ScrapeConfig{}
 			x.Scrape.UnmarshalProtoJSON(s.WithField("scrape", true))
+		case "retention_ms", "retentionMs":
+			s.AddField("retention_ms")
+			x.RetentionMs = s.ReadUint64()
 		}
 	})
 }
@@ -1609,6 +1632,11 @@ func (m *TargetMeta) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.RetentionMs != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.RetentionMs))
+		i--
+		dAtA[i] = 0x18
+	}
 	if m.Scrape != nil {
 		size, err := m.Scrape.MarshalToSizedBufferVT(dAtA[:i])
 		if err != nil {
@@ -1961,6 +1989,7 @@ func (m *TargetMeta) SizeVT() (n int) {
 		l = m.Scrape.SizeVT()
 		n += protobuf_go_lite.SizeMessage(1, l)
 	}
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.RetentionMs)
 	n += len(m.unknownFields)
 	return n
 }
@@ -2119,6 +2148,10 @@ func (x *TargetMeta) MarshalProtoText() string {
 	if x.Scrape != nil {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "scrape")
 		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Scrape)
+	}
+	if x.RetentionMs != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "retention_ms")
+		protobuf_go_lite.TextWriteUint(&sb, x.RetentionMs)
 	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
@@ -2513,6 +2546,15 @@ func (m *TargetMeta) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RetentionMs", wireType)
+			}
+			m.RetentionMs = 0
+			m.RetentionMs, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

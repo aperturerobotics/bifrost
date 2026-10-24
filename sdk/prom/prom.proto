@@ -36,6 +36,10 @@ message TargetMeta {
   LabelSet labels = 1;
   // Scrape configures the target's scrape process.
   ScrapeConfig scrape = 2;
+  // RetentionMs is how long the target keeps samples, measured back from its
+  // latest sample. Expired samples are dropped every two hours, so they can
+  // outlive it by that much. Zero keeps 15 days, as Prometheus does.
+  uint64 retention_ms = 3;
 }
 
 // TargetStatus is the scrape process's report on its latest scrape. The
