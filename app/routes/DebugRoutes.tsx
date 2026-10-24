@@ -1,5 +1,6 @@
 import { Route } from '@s4wave/web/router/router.js'
 import { KeybindingsDebug } from '@s4wave/app/debug/keybindings/KeybindingsDebug.js'
+import { PromViewerDebug } from '@s4wave/app/debug/prom/PromViewerDebug.js'
 import { CanvasGraphLinksDebug } from '@s4wave/web/debug/CanvasGraphLinksDebug.js'
 import { DebugDbBench } from '@s4wave/web/debug/DebugDbBench.js'
 import { ForgeViewerDebug } from '@s4wave/web/debug/ForgeViewerDebug.js'
@@ -74,6 +75,12 @@ const debugRouteEntries = [
     title: 'Forge viewer',
     description: 'Inspect Forge task and job viewer fixtures.',
     element: <ForgeViewerDebug />,
+  },
+  {
+    path: '/debug/ui/prom-viewer',
+    title: 'Metrics viewers',
+    description: 'Review Dashboard panel and Scrape target states.',
+    element: <PromViewerDebug />,
   },
   {
     path: '/debug/ui/unixfs-browser',
