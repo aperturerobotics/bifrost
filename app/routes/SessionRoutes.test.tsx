@@ -199,7 +199,7 @@ describe('SessionRoutes join redirect', () => {
 
     await waitFor(() => {
       expect(mockLookupInviteCode).not.toHaveBeenCalled()
-      expect(mockJoinSpaceViaInvite).toHaveBeenCalledWith(invite)
+      expect(mockJoinSpaceViaInvite).toHaveBeenCalledWith(invite, undefined, '')
     })
   })
 

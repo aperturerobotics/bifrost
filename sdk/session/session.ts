@@ -569,13 +569,16 @@ export class Session extends Resource {
   }
 
   // joinSpaceViaInvite joins a space using an out-of-band invite message.
+  // ownerUdpAddr is the host:port where a local account reaches the owner
+  // over UDP, or empty to reach it through signaling.
   public async joinSpaceViaInvite(
     inviteMessage: SOInviteMessage,
     targetedInvitationEnvelope?: Uint8Array,
+    ownerUdpAddr = '',
     abortSignal?: AbortSignal,
   ): Promise<JoinSpaceViaInviteResponse> {
     return await this.service.JoinSpaceViaInvite(
-      { inviteMessage, targetedInvitationEnvelope },
+      { inviteMessage, targetedInvitationEnvelope, ownerUdpAddr },
       abortSignal,
     )
   }

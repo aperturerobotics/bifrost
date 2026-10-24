@@ -2,6 +2,7 @@ package provider_local
 
 import (
 	"context"
+	"net"
 	"slices"
 	"strings"
 	"time"
@@ -49,6 +50,13 @@ func (a *ProviderAccount) JoinViaInvite(
 	inviteMsg *sobject.SOInviteMessage,
 	ownerUDPAddr string,
 ) (*sobject_invite.JoinResult, error) {
+	// Reject a malformed address before the join contacts anyone.
+	if ownerUDPAddr != "" {
+		if _, _, err := net.SplitHostPort(ownerUDPAddr); err != nil {
+			return nil, errors.Wrap(err, "server address")
+		}
+	}
+
 	// Reach the owner the invite names.
 	st, ownerPeerID, err := a.reachInviteOwner(ctx, sessionKey, inviteMsg)
 	if err != nil {

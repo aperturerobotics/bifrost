@@ -27,6 +27,7 @@ import { useResourceValue } from '@aptre/bldr-sdk/hooks/useResource.js'
 import { useSessionInfo } from '@s4wave/web/hooks/useSessionInfo.js'
 import { SessionContext } from '@s4wave/web/contexts/contexts.js'
 import { cn } from '@s4wave/web/style/utils.js'
+import { CopyableField } from '@s4wave/web/ui/CopyableField.js'
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,8 @@ type JoinPhase =
 
 interface JoinState {
   code: string
+  // serverAddr is the owner's UDP host:port a dev build may join through.
+  serverAddr: string
   phase: JoinPhase
   error: string | undefined
   spaceId: string | undefined
@@ -66,6 +69,7 @@ interface JoinState {
 type JoinAction =
   | { type: 'reset' }
   | { type: 'set_code'; code: string }
+  | { type: 'set_server_addr'; serverAddr: string }
   | { type: 'resolving' }
   | { type: 'connecting' }
   | { type: 'pending' }
@@ -76,6 +80,7 @@ type JoinAction =
 
 const initialState: JoinState = {
   code: '',
+  serverAddr: '',
   phase: 'input',
   error: undefined,
   spaceId: undefined,
@@ -89,6 +94,14 @@ function reducer(state: JoinState, action: JoinAction): JoinState {
       return {
         ...state,
         code: action.code,
+        phase: 'input',
+        error: undefined,
+        spaceId: undefined,
+      }
+    case 'set_server_addr':
+      return {
+        ...state,
+        serverAddr: action.serverAddr,
         phase: 'input',
         error: undefined,
         spaceId: undefined,
@@ -268,6 +281,14 @@ function JoinPhasePanel({
         </JoinNoticePanel>
       )
     case 'owner_online_required':
+      if (state.serverAddr.trim()) {
+        return (
+          <JoinNoticePanel title="Server did not answer" onClose={onClose}>
+            No reply from {state.serverAddr.trim()}. Check the address and that
+            the server lists this Session.
+          </JoinNoticePanel>
+        )
+      }
       return (
         <JoinNoticePanel title="Owner must be online" onClose={onClose}>
           This local-first join path completes directly through the space owner.
@@ -337,6 +358,50 @@ function JoinInviteField({
   )
 }
 
+/**
+ * JoinServerField renders the dev build's owner address input and the Session
+ * peer a server must list before it answers.
+ */
+function JoinServerField({
+  inputId,
+  state,
+  peerId,
+  busy,
+  onChange,
+}: {
+  inputId: string
+  state: JoinState
+  peerId: string
+  busy: boolean
+  onChange: (serverAddr: string) => void
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <label
+          htmlFor={inputId}
+          className="text-foreground mb-1.5 block text-xs font-medium"
+        >
+          Server address
+        </label>
+        <input
+          id={inputId}
+          value={state.serverAddr}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="100.64.0.1:4101"
+          disabled={busy || state.phase === 'enrolled'}
+          className={cn(
+            'border-foreground/20 bg-background/30 text-foreground placeholder:text-foreground-alt/50 w-full rounded-md border px-3 py-2 font-mono text-sm transition-colors outline-none',
+            'focus:border-brand/50 focus:ring-brand/20 focus:ring-2',
+            'disabled:opacity-50',
+          )}
+        />
+      </div>
+      {peerId && <CopyableField label="This Session" value={peerId} />}
+    </div>
+  )
+}
+
 /** JoinError renders the join failure announced by the invite input. */
 function JoinError({ id, message }: { id: string; message: string }) {
   return (
@@ -359,9 +424,11 @@ export function JoinSpaceDialog({
   initialCode,
 }: JoinSpaceDialogProps) {
   const inputId = useId()
+  const serverInputId = useId()
   const submitGenerationRef = useRef(0)
   const session = useResourceValue(SessionContext.useContext())
-  const { isCloud } = useSessionInfo(session)
+  const { isCloud, peerId } = useSessionInfo(session)
+  const showServer = !!import.meta.env?.DEV && !isCloud
   const [state, dispatch] = useReducer(reducer, {
     ...initialState,
     code: initialCode ?? '',
@@ -399,7 +466,11 @@ export function JoinSpaceDialog({
       const inviteMsg = await resolveInvite(session, input, isCloud)
       if (generation !== submitGenerationRef.current) return
       dispatch({ type: 'connecting' })
-      const resp = await session.joinSpaceViaInvite(inviteMsg)
+      const resp = await session.joinSpaceViaInvite(
+        inviteMsg,
+        undefined,
+        showServer ? state.serverAddr.trim() : '',
+      )
       if (generation !== submitGenerationRef.current) return
       dispatch(joinResultAction(session, resp, backfill))
     } catch (err) {
@@ -409,7 +480,7 @@ export function JoinSpaceDialog({
         message: err instanceof Error ? err.message : 'Failed to join space',
       })
     }
-  }, [session, state.code, isCloud, backfill])
+  }, [session, state.code, state.serverAddr, showServer, isCloud, backfill])
 
   const busy = state.phase === 'resolving' || state.phase === 'connecting'
   const showBackfill = state.phase !== 'enrolled' && state.phase !== 'pending'
@@ -447,6 +518,18 @@ export function JoinSpaceDialog({
             busy={busy}
             onChange={(code) => dispatch({ type: 'set_code', code })}
           />
+
+          {showServer && (
+            <JoinServerField
+              inputId={serverInputId}
+              state={state}
+              peerId={peerId}
+              busy={busy}
+              onChange={(serverAddr) =>
+                dispatch({ type: 'set_server_addr', serverAddr })
+              }
+            />
+          )}
 
           {showBackfill && (
             <label className="text-foreground-alt flex items-start gap-2 text-xs select-none">
