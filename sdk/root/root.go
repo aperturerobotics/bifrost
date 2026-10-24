@@ -3,6 +3,8 @@ package s4wave_root
 import (
 	"context"
 
+	io_prometheus_client "github.com/aperturerobotics/go-prometheus-client-lite/client_model/go"
+
 	resource_client "github.com/s4wave/spacewave/bldr/resource/client"
 	"github.com/s4wave/spacewave/core/changelog"
 	"github.com/s4wave/spacewave/core/provider"
@@ -250,6 +252,16 @@ func (r *Root) GetChangelog(ctx context.Context) (*changelog.Changelog, error) {
 		return nil, err
 	}
 	return resp.GetChangelog(), nil
+}
+
+// GatherMetrics gathers the metric families of the process running core,
+// sorted by name.
+func (r *Root) GatherMetrics(ctx context.Context) ([]*io_prometheus_client.MetricFamily, error) {
+	resp, err := r.service.GatherMetrics(ctx, &GatherMetricsRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetMetricFamilies(), nil
 }
 
 // GetCdn accesses a configured CDN resource by id.

@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	io_prometheus_client "github.com/aperturerobotics/go-prometheus-client-lite/client_model/go"
+	"github.com/aperturerobotics/go-prometheus-client-lite/prometheus"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/s4wave/spacewave/db/world"
 	world_testbed "github.com/s4wave/spacewave/db/world/testbed"
@@ -17,8 +19,8 @@ import (
 
 // TestScrapeRunThrough scrapes a live exporter into a target, commits, and
 // reads the result back through the status and the PromQL service: a good
-// scrape, a failed one that marks its series stale, and a reopened store
-// that resumes the history.
+// scrape, a failed one that marks its series stale, a reopened store that
+// resumes the history, and a device target that gathers a registry.
 func TestScrapeRunThrough(t *testing.T) {
 	// Share the context and logger.
 	ctx := t.Context()
@@ -68,7 +70,7 @@ func TestScrapeRunThrough(t *testing.T) {
 
 	// A good scrape stores the page, the scrape series and an up status.
 	t0 := time.Now().Add(-time.Minute).Truncate(time.Second)
-	sc := newScraper(le, store, cfg, "peer-a")
+	sc := newScraper(le, store, cfg, "peer-a", httpSource(srv.URL))
 	sc.scrape(ctx, t0)
 	commit(store)
 	_, status := readTarget(ctx, t, eng, key)
@@ -107,7 +109,7 @@ func TestScrapeRunThrough(t *testing.T) {
 
 	// Scrape through it and read up over the whole run.
 	t2 := t1.Add(15 * time.Second)
-	newScraper(le, reopened, cfg, "peer-b").scrape(ctx, t2)
+	newScraper(le, reopened, cfg, "peer-b", httpSource(srv.URL)).scrape(ctx, t2)
 	commit(reopened)
 	resp, err := svc.Query(ctx, &s4wave_prom.QueryRequest{
 		Expr:    "up",
@@ -126,6 +128,55 @@ func TestScrapeRunThrough(t *testing.T) {
 	}
 	if len(got) != 3 || got[0] != 1 || got[1] != 0 || got[2] != 1 {
 		t.Fatalf("up over the run = %v", got)
+	}
+
+	// A device target gathers a registry with the Go runtime collector and a
+	// histogram, plus a summary, which only exporters still produce.
+	reg := prometheus.NewRegistry()
+	hist := prometheus.NewHistogram(prometheus.HistogramOpts{Name: "op_seconds", Buckets: []float64{0.1, 1}})
+	reg.MustRegister(prometheus.NewGoCollector(), hist)
+	hist.Observe(0.5)
+	hist.Observe(2)
+
+	// Build the summary family by hand.
+	summary := &io_prometheus_client.MetricFamily{
+		Name: new("rpc_seconds"),
+		Type: io_prometheus_client.MetricType_SUMMARY.Enum(),
+		Metric: []*io_prometheus_client.Metric{{Summary: &io_prometheus_client.Summary{
+			SampleCount: new(uint64(1)),
+			SampleSum:   new(3.0),
+			Quantile:    []*io_prometheus_client.Quantile{{Quantile: new(0.5), Value: new(3.0)}},
+		}}},
+	}
+
+	// Create the device target and scrape the registry into it.
+	device, err := CreateStore(ctx, eng, "prom/target/device", labels.FromStrings("job", "spacewave"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gather := func(context.Context) ([]*io_prometheus_client.MetricFamily, error) {
+		families, err := reg.Gather()
+		return append(families, summary), err
+	}
+	deviceCfg := &s4wave_prom.ScrapeConfig{Url: s4wave_prom.DeviceMetricsURL}
+	newScraper(le, device, deviceCfg, "peer-a", gatherSource(gather)).scrape(ctx, t2)
+	commit(device)
+
+	// Its series answer as the text format would carry them.
+	if v := singleValue(t, query(`go_goroutines{job="spacewave"}`, t2)); v < 1 {
+		t.Fatalf("go_goroutines = %v", v)
+	}
+	for expr, want := range map[string]float64{
+		`op_seconds_bucket{le="1"}`:    1,
+		`op_seconds_bucket{le="+Inf"}`: 2,
+		`op_seconds_count`:             2,
+		`rpc_seconds{quantile="0.5"}`:  3,
+		`rpc_seconds_sum`:              3,
+		`up{job="spacewave"}`:          1,
+	} {
+		if v := singleValue(t, query(expr, t2)); v != want {
+			t.Fatalf("%s = %v, want %v", expr, v, want)
+		}
 	}
 }
 

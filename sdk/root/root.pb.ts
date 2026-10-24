@@ -20,6 +20,7 @@ import type { HashType } from '../../net/hash/hash.pb.js'
 import { Hash, HashType_Enum } from '../../net/hash/hash.pb.js'
 import { SpaceSoListEntry } from '../../core/space/space.pb.js'
 import { Changelog } from '../../core/changelog/changelog.pb.js'
+import { MetricFamily } from '@go/github.com/aperturerobotics/go-prometheus-client-lite/client_model/go/metrics.pb.js'
 
 /**
  * SpaceRootKind is the storage shape selected for a configured root.
@@ -1295,6 +1296,38 @@ export const GetChangelogResponse: MessageType<GetChangelogResponse> =
   /* @__PURE__ */ createMessageType<GetChangelogResponse>(
     's4wave.root.GetChangelogResponse',
     () => [[1, 'changelog', 11, 0, Changelog.codec]],
+  )
+
+/**
+ * GatherMetricsRequest is the request type for GatherMetrics.
+ *
+ * @generated from message s4wave.root.GatherMetricsRequest
+ */
+export interface GatherMetricsRequest {}
+
+export const GatherMetricsRequest: MessageType<GatherMetricsRequest> =
+  /* @__PURE__ */ createMessageType<GatherMetricsRequest>(
+    's4wave.root.GatherMetricsRequest',
+    () => [],
+  )
+
+/**
+ * GatherMetricsResponse is the response type for GatherMetrics.
+ *
+ * @generated from message s4wave.root.GatherMetricsResponse
+ */
+export interface GatherMetricsResponse {
+  /**
+   * MetricFamilies are the families of the core process's metrics registry,
+   * sorted by name.
+   */
+  metricFamilies?: MetricFamily[]
+}
+
+export const GatherMetricsResponse: MessageType<GatherMetricsResponse> =
+  /* @__PURE__ */ createMessageType<GatherMetricsResponse>(
+    's4wave.root.GatherMetricsResponse',
+    () => [[1, 'metric_families', 11, 1, MetricFamily.codec]],
   )
 
 /**

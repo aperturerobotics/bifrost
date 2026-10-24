@@ -19,7 +19,8 @@ message LabelSet {
 
 // ScrapeConfig says where and how often a target's process scrapes.
 message ScrapeConfig {
-  // Url is the http or https address of the exporter's metrics page.
+  // Url is the http or https address of the exporter's metrics page, or
+  // device:metrics for the Spacewave process on the Device running the target.
   string url = 1;
   // IntervalMs is the time between scrapes. Zero scrapes every 15 seconds.
   uint32 interval_ms = 2;

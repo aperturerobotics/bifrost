@@ -9,6 +9,8 @@ import {
   AccessWebListenerResponse,
   DeleteSessionRequest,
   DeleteSessionResponse,
+  GatherMetricsRequest,
+  GatherMetricsResponse,
   GetCdnRequest,
   GetCdnResponse,
   GetChangelogRequest,
@@ -314,6 +316,15 @@ export const RootResourceServiceDefinition = {
       kind: MethodKind.Unary,
     },
     /**
+     * @generated from rpc s4wave.root.RootResourceService.GatherMetrics
+     */
+    GatherMetrics: {
+      name: 'GatherMetrics',
+      I: GatherMetricsRequest,
+      O: GatherMetricsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
      * @generated from rpc s4wave.root.RootResourceService.GetDebugDb
      */
     GetDebugDb: {
@@ -609,6 +620,14 @@ export interface RootResourceService {
     request: GetChangelogRequest,
     abortSignal?: AbortSignal,
   ): Promise<GetChangelogResponse>
+
+  /**
+   * @generated from rpc s4wave.root.RootResourceService.GatherMetrics
+   */
+  GatherMetrics(
+    request: GatherMetricsRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GatherMetricsResponse>
 
   /**
    * @generated from rpc s4wave.root.RootResourceService.GetDebugDb
@@ -921,6 +940,15 @@ export interface RootResourceServiceHandler {
   ): Promise<GetChangelogResponse>
 
   /**
+   * @generated from rpc s4wave.root.RootResourceService.GatherMetrics
+   */
+  GatherMetrics(
+    request: GatherMetricsRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<GatherMetricsResponse>
+
+  /**
    * @generated from rpc s4wave.root.RootResourceService.GetDebugDb
    */
   GetDebugDb(
@@ -1045,6 +1073,7 @@ export class RootResourceServiceClient implements RootResourceService {
     this.HashSum = this.HashSum.bind(this)
     this.HashValidate = this.HashValidate.bind(this)
     this.GetChangelog = this.GetChangelog.bind(this)
+    this.GatherMetrics = this.GatherMetrics.bind(this)
     this.GetDebugDb = this.GetDebugDb.bind(this)
     this.GetCdn = this.GetCdn.bind(this)
     this.AccessWebListener = this.AccessWebListener.bind(this)
@@ -1480,6 +1509,23 @@ export class RootResourceServiceClient implements RootResourceService {
       abortSignal || undefined,
     )
     return GetChangelogResponse.fromBinary(result)
+  }
+
+  /**
+   * @generated from rpc s4wave.root.RootResourceService.GatherMetrics
+   */
+  async GatherMetrics(
+    request: GatherMetricsRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<GatherMetricsResponse> {
+    const requestMsg = GatherMetricsRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      RootResourceServiceDefinition.methods.GatherMetrics.name,
+      GatherMetricsRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return GatherMetricsResponse.fromBinary(result)
   }
 
   /**

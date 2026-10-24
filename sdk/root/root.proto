@@ -1,6 +1,7 @@
 syntax = "proto3";
 package s4wave.root;
 
+import "github.com/aperturerobotics/go-prometheus-client-lite/client_model/go/metrics.proto";
 import "github.com/s4wave/spacewave/core/changelog/changelog.proto";
 import "github.com/s4wave/spacewave/core/provider/provider.proto";
 import "github.com/s4wave/spacewave/core/session/session.proto";
@@ -38,6 +39,8 @@ service RootResourceService {
   rpc HashValidate(HashValidateRequest) returns (HashValidateResponse);
 
   rpc GetChangelog(GetChangelogRequest) returns (GetChangelogResponse);
+
+  rpc GatherMetrics(GatherMetricsRequest) returns (GatherMetricsResponse);
 
   rpc GetDebugDb(GetDebugDbRequest) returns (GetDebugDbResponse);
 
@@ -467,6 +470,16 @@ message GetChangelogRequest {}
 message GetChangelogResponse {
   // changelog is the application changelog.
   .changelog.Changelog changelog = 1;
+}
+
+// GatherMetricsRequest is the request type for GatherMetrics.
+message GatherMetricsRequest {}
+
+// GatherMetricsResponse is the response type for GatherMetrics.
+message GatherMetricsResponse {
+  // MetricFamilies are the families of the core process's metrics registry,
+  // sorted by name.
+  repeated .io.prometheus.client.MetricFamily metric_families = 1;
 }
 
 // GetDebugDbRequest is the request type for GetDebugDb.
