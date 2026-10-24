@@ -540,6 +540,12 @@ export interface SharedObjectListEntry {
    * Unix milliseconds, or zero when the provider does not track it.
    */
   updatedAt?: bigint
+  /**
+   * UdpPeerAddrs maps a peer ID to the static UDP host:port it listens on,
+   * for an owner reached outside signaling, such as over a private network.
+   * The account dials each one while the object stays listed.
+   */
+  udpPeerAddrs?: { [key: string]: string }
 }
 
 export const SharedObjectListEntry: MessageType<SharedObjectListEntry> =
@@ -550,6 +556,7 @@ export const SharedObjectListEntry: MessageType<SharedObjectListEntry> =
       [2, 'meta', 11, 0, SharedObjectMeta.codec],
       [3, 'source', 9],
       [5, 'updated_at', 3],
+      [6, 'udp_peer_addrs', 9, 584],
     ],
   )
 

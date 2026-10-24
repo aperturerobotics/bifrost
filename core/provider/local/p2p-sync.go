@@ -82,6 +82,8 @@ type p2pSyncState struct {
 	copyProgress map[string]*AccountReplicaCopyState
 	// replicaSync follows the canonical account catalog and Session membership.
 	replicaSync *routine.RoutineContainer
+	// udp dials the static peer addresses the listed objects carry.
+	udp staticUDP
 }
 
 // retainP2PSyncStateLocked adds an owner while a.p2pSyncBcast is locked.
@@ -772,6 +774,7 @@ func (a *ProviderAccount) startP2PSyncControllers(
 	if err := a.retainConfiguredP2PPeers(state); err != nil {
 		return errors.Wrap(err, "retain configured P2P peers")
 	}
+	a.reconcileStaticUDP(state, soList)
 	for _, entry := range soList.GetSharedObjects() {
 		ref := entry.GetRef()
 		provRef := ref.GetProviderResourceRef()
