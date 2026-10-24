@@ -17,7 +17,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// handler serves the prom/target ObjectType to the core plugin.
+// handler serves the prom/target and prom/dashboard ObjectTypes to the core
+// plugin.
 type handler struct {
 	// le is the logger.
 	le *logrus.Entry
@@ -45,14 +46,15 @@ func newHandler(le *logrus.Entry, b bus.Bus, window time.Duration) *handler {
 	}
 }
 
-// InvokeObjectType serves a target's scrape process and the Space's PromQL
-// queries on the attached engine.
+// InvokeObjectType serves the Space's PromQL queries on the attached engine,
+// with a target's scrape process or a Dashboard's edits.
 func (h *handler) InvokeObjectType(
 	ctx context.Context,
 	req *s4wave_objecttype_registry.InvokeObjectTypeRequest,
 ) (*s4wave_objecttype_registry.InvokeObjectTypeResponse, error) {
-	// Require a target and the engine it lives in.
-	if req.GetTypeId() != s4wave_prom.TargetTypeID {
+	// Require a target or a Dashboard and the engine it lives in.
+	typeID := req.GetTypeId()
+	if typeID != s4wave_prom.TargetTypeID && typeID != s4wave_prom.DashboardTypeID {
 		return nil, errors.Errorf("prom plugin: unhandled object type %s", req.GetTypeId())
 	}
 	if req.GetAttachedEngineResourceId() == 0 {
@@ -74,22 +76,24 @@ func (h *handler) InvokeObjectType(
 		return nil, errors.Wrap(err, "prom plugin: engine info")
 	}
 
-	// Serve the scrape process and the query service.
-	le := h.le.WithField("object-key", req.GetObjectKey())
-	proc := &targetProcess{
-		le:        le,
-		b:         h.b,
-		eng:       engine,
-		group:     h.group(info.GetEngineInfo().GetEngineId()),
-		objectKey: req.GetObjectKey(),
-		peerID:    info.GetSessionPeerId(),
-	}
-	query := &queryService{engine: h.promql, q: NewQueryable(engine, worldTargets{eng: engine})}
+	// Serve the query service with the target's scrape process or the
+	// Dashboard's edits.
+	query := &queryService{engine: h.promql, eng: engine, q: NewQueryable(engine, worldTargets{eng: engine})}
 	mux := resource_server.NewResourceMux(func(mux srpc.Mux) error {
-		if err := s4wave_process.SRPCRegisterPersistentExecutionService(mux, proc); err != nil {
+		if err := s4wave_prom.SRPCRegisterPromQueryResourceService(mux, query); err != nil {
 			return err
 		}
-		return s4wave_prom.SRPCRegisterPromQueryResourceService(mux, query)
+		if typeID == s4wave_prom.DashboardTypeID {
+			return s4wave_prom.SRPCRegisterPromDashboardResourceService(mux, &dashboardService{eng: engine, objectKey: req.GetObjectKey()})
+		}
+		return s4wave_process.SRPCRegisterPersistentExecutionService(mux, &targetProcess{
+			le:        h.le.WithField("object-key", req.GetObjectKey()),
+			b:         h.b,
+			eng:       engine,
+			group:     h.group(info.GetEngineInfo().GetEngineId()),
+			objectKey: req.GetObjectKey(),
+			peerID:    info.GetSessionPeerId(),
+		})
 	})
 	resourceID, err := resourceCtx.AddResource(mux, engine.Release)
 	if err != nil {

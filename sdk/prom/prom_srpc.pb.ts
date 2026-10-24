@@ -3,14 +3,31 @@
 /* eslint-disable */
 
 import {
+  CreateTargetRequest,
+  CreateTargetResponse,
+  Dashboard,
   LabelNamesRequest,
   LabelsResponse,
   LabelValuesRequest,
+  MovePanelRequest,
+  MovePanelResponse,
+  PutPanelRequest,
+  PutPanelResponse,
   QueryRequest,
   QueryResponse,
+  RemovePanelRequest,
+  RemovePanelResponse,
+  WatchDashboardRequest,
+  WatchTargetsRequest,
+  WatchTargetsResponse,
 } from './prom.pb.js'
 import { MethodKind } from '@aptre/protobuf-es-lite'
-import { ProtoRpc, ServerContext } from 'starpc'
+import {
+  buildDecodeMessageTransform,
+  MessageStream,
+  ProtoRpc,
+  ServerContext,
+} from 'starpc'
 
 /**
  * PromQueryResourceService answers PromQL over every target in the Space.
@@ -53,6 +70,20 @@ export const PromQueryResourceServiceDefinition = {
       O: LabelsResponse,
       kind: MethodKind.Unary,
     },
+    /**
+     * WatchTargets sends every target, then each target that changed or was
+     * removed. A target changes on each scrape commit, so the stream also tells
+     * a reader when query answers may have changed. Changes are sent at most
+     * once per second.
+     *
+     * @generated from rpc s4wave.prom.PromQueryResourceService.WatchTargets
+     */
+    WatchTargets: {
+      name: 'WatchTargets',
+      I: WatchTargetsRequest,
+      O: WatchTargetsResponse,
+      kind: MethodKind.ServerStreaming,
+    },
   },
 } as const
 
@@ -91,6 +122,19 @@ export interface PromQueryResourceService {
     request: LabelValuesRequest,
     abortSignal?: AbortSignal,
   ): Promise<LabelsResponse>
+
+  /**
+   * WatchTargets sends every target, then each target that changed or was
+   * removed. A target changes on each scrape commit, so the stream also tells
+   * a reader when query answers may have changed. Changes are sent at most
+   * once per second.
+   *
+   * @generated from rpc s4wave.prom.PromQueryResourceService.WatchTargets
+   */
+  WatchTargets(
+    request: WatchTargetsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WatchTargetsResponse>
 }
 
 /**
@@ -131,6 +175,20 @@ export interface PromQueryResourceServiceHandler {
     abortSignal: AbortSignal,
     context: ServerContext,
   ): Promise<LabelsResponse>
+
+  /**
+   * WatchTargets sends every target, then each target that changed or was
+   * removed. A target changes on each scrape commit, so the stream also tells
+   * a reader when query answers may have changed. Changes are sent at most
+   * once per second.
+   *
+   * @generated from rpc s4wave.prom.PromQueryResourceService.WatchTargets
+   */
+  WatchTargets(
+    request: WatchTargetsRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<WatchTargetsResponse>
 }
 
 export const PromQueryResourceServiceServiceName =
@@ -145,6 +203,7 @@ export class PromQueryResourceServiceClient implements PromQueryResourceService 
     this.Query = this.Query.bind(this)
     this.LabelNames = this.LabelNames.bind(this)
     this.LabelValues = this.LabelValues.bind(this)
+    this.WatchTargets = this.WatchTargets.bind(this)
   }
   /**
    * Query evaluates one PromQL expression.
@@ -201,5 +260,332 @@ export class PromQueryResourceServiceClient implements PromQueryResourceService 
       abortSignal || undefined,
     )
     return LabelsResponse.fromBinary(result)
+  }
+
+  /**
+   * WatchTargets sends every target, then each target that changed or was
+   * removed. A target changes on each scrape commit, so the stream also tells
+   * a reader when query answers may have changed. Changes are sent at most
+   * once per second.
+   *
+   * @generated from rpc s4wave.prom.PromQueryResourceService.WatchTargets
+   */
+  WatchTargets(
+    request: WatchTargetsRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<WatchTargetsResponse> {
+    const requestMsg = WatchTargetsRequest.create(request)
+    const result = this.rpc.serverStreamingRequest(
+      this.service,
+      PromQueryResourceServiceDefinition.methods.WatchTargets.name,
+      WatchTargetsRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(WatchTargetsResponse)(result)
+  }
+}
+/**
+ * PromDashboardResourceService reads and edits one Dashboard. Edits apply to
+ * the Dashboard as it is when they commit, so concurrent edits to different
+ * panels all land.
+ *
+ * @generated from service s4wave.prom.PromDashboardResourceService
+ */
+export const PromDashboardResourceServiceDefinition = {
+  typeName: 's4wave.prom.PromDashboardResourceService',
+  methods: {
+    /**
+     * WatchDashboard sends the Dashboard, then the Dashboard after each commit
+     * that changes it.
+     *
+     * @generated from rpc s4wave.prom.PromDashboardResourceService.WatchDashboard
+     */
+    WatchDashboard: {
+      name: 'WatchDashboard',
+      I: WatchDashboardRequest,
+      O: Dashboard,
+      kind: MethodKind.ServerStreaming,
+    },
+    /**
+     * PutPanel adds a panel or replaces one by its id.
+     *
+     * @generated from rpc s4wave.prom.PromDashboardResourceService.PutPanel
+     */
+    PutPanel: {
+      name: 'PutPanel',
+      I: PutPanelRequest,
+      O: PutPanelResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * RemovePanel removes a panel by its id.
+     *
+     * @generated from rpc s4wave.prom.PromDashboardResourceService.RemovePanel
+     */
+    RemovePanel: {
+      name: 'RemovePanel',
+      I: RemovePanelRequest,
+      O: RemovePanelResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * MovePanel moves a panel to a new position.
+     *
+     * @generated from rpc s4wave.prom.PromDashboardResourceService.MovePanel
+     */
+    MovePanel: {
+      name: 'MovePanel',
+      I: MovePanelRequest,
+      O: MovePanelResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * CreateTarget creates a target in the Dashboard's World.
+     *
+     * @generated from rpc s4wave.prom.PromDashboardResourceService.CreateTarget
+     */
+    CreateTarget: {
+      name: 'CreateTarget',
+      I: CreateTargetRequest,
+      O: CreateTargetResponse,
+      kind: MethodKind.Unary,
+    },
+  },
+} as const
+
+/**
+ * PromDashboardResourceService reads and edits one Dashboard. Edits apply to
+ * the Dashboard as it is when they commit, so concurrent edits to different
+ * panels all land.
+ *
+ * @generated from service s4wave.prom.PromDashboardResourceService
+ */
+export interface PromDashboardResourceService {
+  /**
+   * WatchDashboard sends the Dashboard, then the Dashboard after each commit
+   * that changes it.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.WatchDashboard
+   */
+  WatchDashboard(
+    request: WatchDashboardRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<Dashboard>
+
+  /**
+   * PutPanel adds a panel or replaces one by its id.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.PutPanel
+   */
+  PutPanel(
+    request: PutPanelRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<PutPanelResponse>
+
+  /**
+   * RemovePanel removes a panel by its id.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.RemovePanel
+   */
+  RemovePanel(
+    request: RemovePanelRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<RemovePanelResponse>
+
+  /**
+   * MovePanel moves a panel to a new position.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.MovePanel
+   */
+  MovePanel(
+    request: MovePanelRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<MovePanelResponse>
+
+  /**
+   * CreateTarget creates a target in the Dashboard's World.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.CreateTarget
+   */
+  CreateTarget(
+    request: CreateTargetRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<CreateTargetResponse>
+}
+
+/**
+ * PromDashboardResourceService reads and edits one Dashboard. Edits apply to
+ * the Dashboard as it is when they commit, so concurrent edits to different
+ * panels all land.
+ *
+ * @generated from service s4wave.prom.PromDashboardResourceService
+ */
+export interface PromDashboardResourceServiceHandler {
+  /**
+   * WatchDashboard sends the Dashboard, then the Dashboard after each commit
+   * that changes it.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.WatchDashboard
+   */
+  WatchDashboard(
+    request: WatchDashboardRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): MessageStream<Dashboard>
+
+  /**
+   * PutPanel adds a panel or replaces one by its id.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.PutPanel
+   */
+  PutPanel(
+    request: PutPanelRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<PutPanelResponse>
+
+  /**
+   * RemovePanel removes a panel by its id.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.RemovePanel
+   */
+  RemovePanel(
+    request: RemovePanelRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<RemovePanelResponse>
+
+  /**
+   * MovePanel moves a panel to a new position.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.MovePanel
+   */
+  MovePanel(
+    request: MovePanelRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<MovePanelResponse>
+
+  /**
+   * CreateTarget creates a target in the Dashboard's World.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.CreateTarget
+   */
+  CreateTarget(
+    request: CreateTargetRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<CreateTargetResponse>
+}
+
+export const PromDashboardResourceServiceServiceName =
+  PromDashboardResourceServiceDefinition.typeName
+
+export class PromDashboardResourceServiceClient implements PromDashboardResourceService {
+  private readonly rpc: ProtoRpc
+  private readonly service: string
+  constructor(rpc: ProtoRpc, opts?: { service?: string }) {
+    this.service = opts?.service || PromDashboardResourceServiceServiceName
+    this.rpc = rpc
+    this.WatchDashboard = this.WatchDashboard.bind(this)
+    this.PutPanel = this.PutPanel.bind(this)
+    this.RemovePanel = this.RemovePanel.bind(this)
+    this.MovePanel = this.MovePanel.bind(this)
+    this.CreateTarget = this.CreateTarget.bind(this)
+  }
+  /**
+   * WatchDashboard sends the Dashboard, then the Dashboard after each commit
+   * that changes it.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.WatchDashboard
+   */
+  WatchDashboard(
+    request: WatchDashboardRequest,
+    abortSignal?: AbortSignal,
+  ): MessageStream<Dashboard> {
+    const requestMsg = WatchDashboardRequest.create(request)
+    const result = this.rpc.serverStreamingRequest(
+      this.service,
+      PromDashboardResourceServiceDefinition.methods.WatchDashboard.name,
+      WatchDashboardRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return buildDecodeMessageTransform(Dashboard)(result)
+  }
+
+  /**
+   * PutPanel adds a panel or replaces one by its id.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.PutPanel
+   */
+  async PutPanel(
+    request: PutPanelRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<PutPanelResponse> {
+    const requestMsg = PutPanelRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      PromDashboardResourceServiceDefinition.methods.PutPanel.name,
+      PutPanelRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return PutPanelResponse.fromBinary(result)
+  }
+
+  /**
+   * RemovePanel removes a panel by its id.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.RemovePanel
+   */
+  async RemovePanel(
+    request: RemovePanelRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<RemovePanelResponse> {
+    const requestMsg = RemovePanelRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      PromDashboardResourceServiceDefinition.methods.RemovePanel.name,
+      RemovePanelRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return RemovePanelResponse.fromBinary(result)
+  }
+
+  /**
+   * MovePanel moves a panel to a new position.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.MovePanel
+   */
+  async MovePanel(
+    request: MovePanelRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<MovePanelResponse> {
+    const requestMsg = MovePanelRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      PromDashboardResourceServiceDefinition.methods.MovePanel.name,
+      MovePanelRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return MovePanelResponse.fromBinary(result)
+  }
+
+  /**
+   * CreateTarget creates a target in the Dashboard's World.
+   *
+   * @generated from rpc s4wave.prom.PromDashboardResourceService.CreateTarget
+   */
+  async CreateTarget(
+    request: CreateTargetRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<CreateTargetResponse> {
+    const requestMsg = CreateTargetRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      PromDashboardResourceServiceDefinition.methods.CreateTarget.name,
+      CreateTargetRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return CreateTargetResponse.fromBinary(result)
   }
 }

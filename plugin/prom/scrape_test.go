@@ -2,6 +2,7 @@ package prom_plugin
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -71,7 +72,7 @@ func TestScrapeRunThrough(t *testing.T) {
 
 	// A good scrape stores the page, the scrape series and an up status.
 	t0 := time.Now().Add(-time.Minute).Truncate(time.Second)
-	sc := newScraper(le, store, cfg, "peer-a", httpSource(srv.URL))
+	sc := newScraper(le, store, cfg, "peer-a", time.Minute, httpSource(srv.URL))
 	sc.scrape(ctx, t0)
 	commit(store)
 	_, status := readTarget(ctx, t, eng, key)
@@ -108,10 +109,28 @@ func TestScrapeRunThrough(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Scrape through it and read up over the whole run.
+	// Scrape through it from another Device, which takes the target over.
 	t2 := t1.Add(15 * time.Second)
-	newScraper(le, reopened, cfg, "peer-b", httpSource(srv.URL)).scrape(ctx, t2)
+	newScraper(le, reopened, cfg, "peer-b", time.Minute, httpSource(srv.URL)).scrape(ctx, t2)
 	commit(reopened)
+	meta, status := readTarget(ctx, t, eng, key)
+	if status.GetDevicePeerId() != "peer-b" || status.Stale(meta, t2.Add(time.Minute)) || !status.Stale(meta, t2.Add(2*time.Minute)) {
+		t.Fatalf("status after takeover: %v", status)
+	}
+
+	// The first Device stands down at its next commit, writing nothing.
+	sc.scrape(ctx, t2.Add(time.Second))
+	commit(store)
+	select {
+	case <-store.Lost():
+	default:
+		t.Fatal("first Device did not stand down")
+	}
+	if _, status = readTarget(ctx, t, eng, key); status.GetDevicePeerId() != "peer-b" {
+		t.Fatalf("status after stand-down: %v", status)
+	}
+
+	// Read up over the whole run.
 	resp, err := svc.Query(ctx, &s4wave_prom.QueryRequest{
 		Expr:    "up",
 		StartMs: t0.UnixMilli(),
@@ -160,7 +179,7 @@ func TestScrapeRunThrough(t *testing.T) {
 		return append(families, summary), err
 	}
 	deviceCfg := &s4wave_prom.ScrapeConfig{Url: s4wave_prom.DeviceMetricsURL}
-	newScraper(le, device, deviceCfg, "peer-a", gatherSource(gather)).scrape(ctx, t2)
+	newScraper(le, device, deviceCfg, "peer-a", time.Minute, gatherSource(gather)).scrape(ctx, t2)
 	commit(device)
 
 	// Its series answer as the text format would carry them.
@@ -211,6 +230,68 @@ func TestScrapeRunThrough(t *testing.T) {
 	}
 	if _, err := svc.LabelNames(ctx, &s4wave_prom.LabelNamesRequest{Match: []string{`up{`}}); err == nil {
 		t.Fatal("bad selector accepted")
+	}
+
+	// A new Dashboard starts with the starter panels of the Space's jobs.
+	dashKey := "prom/dashboard/hosts"
+	err = world.ExecTransaction(ctx, eng, true, func(ctx context.Context, tx world.WorldState) error {
+		jobs, err := s4wave_prom.TargetJobs(ctx, tx)
+		if err != nil {
+			return err
+		}
+		return s4wave_prom.CreateDashboard(ctx, tx, dashKey, s4wave_prom.StarterDashboard(jobs))
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Serve its edits, with a helper that reads its panel titles.
+	dashSvc := &dashboardService{eng: eng, objectKey: dashKey}
+	titles := func() []string {
+		// Read the Dashboard.
+		t.Helper()
+		var dash *s4wave_prom.Dashboard
+		err := world.ExecTransaction(ctx, eng, false, func(ctx context.Context, tx world.WorldState) error {
+			var err error
+			dash, err = s4wave_prom.ReadDashboard(ctx, tx, dashKey)
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// List its titles in order.
+		var out []string
+		for _, p := range dash.GetPanels() {
+			out = append(out, p.GetTitle())
+		}
+		return out
+	}
+	want := []string{"CPU busy", "Memory used", "Filesystem used", "Network received", "Heap in use", "Goroutines"}
+	if got := titles(); !slices.Equal(got, want) {
+		t.Fatalf("starter panels = %v, want %v", got, want)
+	}
+
+	// Add, move and remove panels; editing a removed panel fails.
+	added, err := dashSvc.PutPanel(ctx, &s4wave_prom.PutPanelRequest{Panel: &s4wave_prom.Panel{Title: "Load", Expr: "node_load1"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dashSvc.MovePanel(ctx, &s4wave_prom.MovePanelRequest{Id: added.GetId()}); err != nil {
+		t.Fatal(err)
+	}
+	if got := titles(); got[0] != "Load" || len(got) != 7 {
+		t.Fatalf("panels after move = %v", got)
+	}
+	if _, err := dashSvc.RemovePanel(ctx, &s4wave_prom.RemovePanelRequest{Id: added.GetId()}); err != nil {
+		t.Fatal(err)
+	}
+	_, err = dashSvc.PutPanel(ctx, &s4wave_prom.PutPanelRequest{Panel: &s4wave_prom.Panel{Id: added.GetId(), Title: "Load"}})
+	if !errors.Is(err, s4wave_prom.ErrPanelRemoved) {
+		t.Fatalf("edit of removed panel: %v", err)
+	}
+	if got := titles(); !slices.Equal(got, want) {
+		t.Fatalf("panels after remove = %v, want %v", got, want)
 	}
 }
 

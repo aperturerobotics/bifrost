@@ -63,6 +63,98 @@ func (x ResultType) String() string {
 	return strconv.Itoa(int(x))
 }
 
+// PanelKind is how a panel shows its expression.
+type PanelKind int32
+
+const (
+	// PANEL_KIND_UNKNOWN is the zero value, shown as a chart.
+	PanelKind_PANEL_KIND_UNKNOWN PanelKind = 0
+	// PANEL_KIND_CHART draws a range query as lines over time.
+	PanelKind_PANEL_KIND_CHART PanelKind = 1
+	// PANEL_KIND_VALUE shows an instant query's value for each series.
+	PanelKind_PANEL_KIND_VALUE PanelKind = 2
+)
+
+// Enum value maps for PanelKind.
+var (
+	PanelKind_name = map[int32]string{
+		0: "PANEL_KIND_UNKNOWN",
+		1: "PANEL_KIND_CHART",
+		2: "PANEL_KIND_VALUE",
+	}
+	PanelKind_value = map[string]int32{
+		"PANEL_KIND_UNKNOWN": 0,
+		"PANEL_KIND_CHART":   1,
+		"PANEL_KIND_VALUE":   2,
+	}
+)
+
+func (x PanelKind) Enum() *PanelKind {
+	p := new(PanelKind)
+	*p = x
+	return p
+}
+
+func (x PanelKind) String() string {
+	name, valid := PanelKind_name[int32(x)]
+	if valid {
+		return name
+	}
+	return strconv.Itoa(int(x))
+}
+
+// PanelUnit is the unit of a panel's values.
+type PanelUnit int32
+
+const (
+	// PANEL_UNIT_UNKNOWN shows plain numbers.
+	PanelUnit_PANEL_UNIT_UNKNOWN PanelUnit = 0
+	// PANEL_UNIT_PERCENT shows values from 0 to 100 as percentages.
+	PanelUnit_PANEL_UNIT_PERCENT PanelUnit = 1
+	// PANEL_UNIT_BYTES shows sizes in bytes.
+	PanelUnit_PANEL_UNIT_BYTES PanelUnit = 2
+	// PANEL_UNIT_BYTES_PER_SECOND shows rates in bytes per second.
+	PanelUnit_PANEL_UNIT_BYTES_PER_SECOND PanelUnit = 3
+	// PANEL_UNIT_SECONDS shows durations in seconds.
+	PanelUnit_PANEL_UNIT_SECONDS PanelUnit = 4
+	// PANEL_UNIT_CELSIUS shows temperatures in degrees Celsius.
+	PanelUnit_PANEL_UNIT_CELSIUS PanelUnit = 5
+)
+
+// Enum value maps for PanelUnit.
+var (
+	PanelUnit_name = map[int32]string{
+		0: "PANEL_UNIT_UNKNOWN",
+		1: "PANEL_UNIT_PERCENT",
+		2: "PANEL_UNIT_BYTES",
+		3: "PANEL_UNIT_BYTES_PER_SECOND",
+		4: "PANEL_UNIT_SECONDS",
+		5: "PANEL_UNIT_CELSIUS",
+	}
+	PanelUnit_value = map[string]int32{
+		"PANEL_UNIT_UNKNOWN":          0,
+		"PANEL_UNIT_PERCENT":          1,
+		"PANEL_UNIT_BYTES":            2,
+		"PANEL_UNIT_BYTES_PER_SECOND": 3,
+		"PANEL_UNIT_SECONDS":          4,
+		"PANEL_UNIT_CELSIUS":          5,
+	}
+)
+
+func (x PanelUnit) Enum() *PanelUnit {
+	p := new(PanelUnit)
+	*p = x
+	return p
+}
+
+func (x PanelUnit) String() string {
+	name, valid := PanelUnit_name[int32(x)]
+	if valid {
+		return name
+	}
+	return strconv.Itoa(int(x))
+}
+
 // Label is one name and value of a series.
 type Label struct {
 	unknownFields []byte
@@ -210,6 +302,8 @@ type TargetStatus struct {
 	Series uint64 `protobuf:"varint,5,opt,name=series,proto3" json:"series,omitempty"`
 	// DevicePeerId is the peer of the Device whose process scrapes the target.
 	DevicePeerId string `protobuf:"bytes,6,opt,name=device_peer_id,json=devicePeerId,proto3" json:"devicePeerId,omitempty"`
+	// CommitWindowMs is how often that Device commits the target's samples.
+	CommitWindowMs uint32 `protobuf:"varint,7,opt,name=commit_window_ms,json=commitWindowMs,proto3" json:"commitWindowMs,omitempty"`
 }
 
 func (x *TargetStatus) Reset() {
@@ -258,6 +352,92 @@ func (x *TargetStatus) GetDevicePeerId() string {
 		return x.DevicePeerId
 	}
 	return ""
+}
+
+func (x *TargetStatus) GetCommitWindowMs() uint32 {
+	if x != nil {
+		return x.CommitWindowMs
+	}
+	return 0
+}
+
+// WatchTargetsRequest watches the targets of the World.
+type WatchTargetsRequest struct {
+	unknownFields []byte
+}
+
+func (x *WatchTargetsRequest) Reset() {
+	*x = WatchTargetsRequest{}
+}
+
+func (*WatchTargetsRequest) ProtoMessage() {}
+
+// WatchTargetsResponse is one change to the World's targets. The first
+// response lists every target.
+type WatchTargetsResponse struct {
+	unknownFields []byte
+	// Changed holds each target that appeared or changed, by object key order.
+	Changed []*TargetInfo `protobuf:"bytes,1,rep,name=changed,proto3" json:"changed,omitempty"`
+	// Removed holds the object keys of targets that no longer exist.
+	Removed []string `protobuf:"bytes,2,rep,name=removed,proto3" json:"removed,omitempty"`
+}
+
+func (x *WatchTargetsResponse) Reset() {
+	*x = WatchTargetsResponse{}
+}
+
+func (*WatchTargetsResponse) ProtoMessage() {}
+
+func (x *WatchTargetsResponse) GetChanged() []*TargetInfo {
+	if x != nil {
+		return x.Changed
+	}
+	return nil
+}
+
+func (x *WatchTargetsResponse) GetRemoved() []string {
+	if x != nil {
+		return x.Removed
+	}
+	return nil
+}
+
+// TargetInfo is one target's configuration and latest status.
+type TargetInfo struct {
+	unknownFields []byte
+	// ObjectKey is the target's World object key.
+	ObjectKey string `protobuf:"bytes,1,opt,name=object_key,json=objectKey,proto3" json:"objectKey,omitempty"`
+	// Meta is the target's identity and scrape configuration.
+	Meta *TargetMeta `protobuf:"bytes,2,opt,name=meta,proto3" json:"meta,omitempty"`
+	// Status is the latest scrape's report, unset until the first commit.
+	Status *TargetStatus `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+}
+
+func (x *TargetInfo) Reset() {
+	*x = TargetInfo{}
+}
+
+func (*TargetInfo) ProtoMessage() {}
+
+func (x *TargetInfo) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *TargetInfo) GetMeta() *TargetMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+func (x *TargetInfo) GetStatus() *TargetStatus {
+	if x != nil {
+		return x.Status
+	}
+	return nil
 }
 
 // LabelNamesRequest lists label names. Label lookups ignore time: they read
@@ -493,6 +673,248 @@ func (x *QueryResponse) GetWarnings() []string {
 	return nil
 }
 
+// Panel is one PromQL expression on a Dashboard.
+type Panel struct {
+	unknownFields []byte
+	// Id identifies the panel within its Dashboard.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Title names the panel. A panel always has one.
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// Expr is the PromQL expression, stored as typed even when it does not
+	// parse.
+	Expr string `protobuf:"bytes,3,opt,name=expr,proto3" json:"expr,omitempty"`
+	// Unit is the unit of the expression's values.
+	Unit PanelUnit `protobuf:"varint,4,opt,name=unit,proto3" json:"unit,omitempty"`
+	// Kind is how the panel shows the expression.
+	Kind PanelKind `protobuf:"varint,5,opt,name=kind,proto3" json:"kind,omitempty"`
+}
+
+func (x *Panel) Reset() {
+	*x = Panel{}
+}
+
+func (*Panel) ProtoMessage() {}
+
+func (x *Panel) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Panel) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *Panel) GetExpr() string {
+	if x != nil {
+		return x.Expr
+	}
+	return ""
+}
+
+func (x *Panel) GetUnit() PanelUnit {
+	if x != nil {
+		return x.Unit
+	}
+	return PanelUnit_PANEL_UNIT_UNKNOWN
+}
+
+func (x *Panel) GetKind() PanelKind {
+	if x != nil {
+		return x.Kind
+	}
+	return PanelKind_PANEL_KIND_UNKNOWN
+}
+
+// Dashboard is the root of a prom/dashboard object: its panels in display
+// order. Every panel queries every target in the World.
+type Dashboard struct {
+	unknownFields []byte
+	// Panels holds the panels in display order.
+	Panels []*Panel `protobuf:"bytes,1,rep,name=panels,proto3" json:"panels,omitempty"`
+}
+
+func (x *Dashboard) Reset() {
+	*x = Dashboard{}
+}
+
+func (*Dashboard) ProtoMessage() {}
+
+func (x *Dashboard) GetPanels() []*Panel {
+	if x != nil {
+		return x.Panels
+	}
+	return nil
+}
+
+// WatchDashboardRequest watches the Dashboard.
+type WatchDashboardRequest struct {
+	unknownFields []byte
+}
+
+func (x *WatchDashboardRequest) Reset() {
+	*x = WatchDashboardRequest{}
+}
+
+func (*WatchDashboardRequest) ProtoMessage() {}
+
+// PutPanelRequest adds or replaces a panel.
+type PutPanelRequest struct {
+	unknownFields []byte
+	// Panel is the panel to store. An empty id adds it at the end under a new
+	// id; any other id replaces that panel, and fails with ErrPanelRemoved when
+	// another writer removed it.
+	Panel *Panel `protobuf:"bytes,1,opt,name=panel,proto3" json:"panel,omitempty"`
+}
+
+func (x *PutPanelRequest) Reset() {
+	*x = PutPanelRequest{}
+}
+
+func (*PutPanelRequest) ProtoMessage() {}
+
+func (x *PutPanelRequest) GetPanel() *Panel {
+	if x != nil {
+		return x.Panel
+	}
+	return nil
+}
+
+// PutPanelResponse is the stored panel's id.
+type PutPanelResponse struct {
+	unknownFields []byte
+	// Id identifies the stored panel.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *PutPanelResponse) Reset() {
+	*x = PutPanelResponse{}
+}
+
+func (*PutPanelResponse) ProtoMessage() {}
+
+func (x *PutPanelResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+// RemovePanelRequest removes a panel. Removing a missing panel succeeds.
+type RemovePanelRequest struct {
+	unknownFields []byte
+	// Id identifies the panel.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *RemovePanelRequest) Reset() {
+	*x = RemovePanelRequest{}
+}
+
+func (*RemovePanelRequest) ProtoMessage() {}
+
+func (x *RemovePanelRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+// RemovePanelResponse is the response to RemovePanel.
+type RemovePanelResponse struct {
+	unknownFields []byte
+}
+
+func (x *RemovePanelResponse) Reset() {
+	*x = RemovePanelResponse{}
+}
+
+func (*RemovePanelResponse) ProtoMessage() {}
+
+// MovePanelRequest moves a panel.
+type MovePanelRequest struct {
+	unknownFields []byte
+	// Id identifies the panel.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Index is the panel's new position, clamped to the last one.
+	Index uint32 `protobuf:"varint,2,opt,name=index,proto3" json:"index,omitempty"`
+}
+
+func (x *MovePanelRequest) Reset() {
+	*x = MovePanelRequest{}
+}
+
+func (*MovePanelRequest) ProtoMessage() {}
+
+func (x *MovePanelRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *MovePanelRequest) GetIndex() uint32 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
+}
+
+// MovePanelResponse is the response to MovePanel.
+type MovePanelResponse struct {
+	unknownFields []byte
+}
+
+func (x *MovePanelResponse) Reset() {
+	*x = MovePanelResponse{}
+}
+
+func (*MovePanelResponse) ProtoMessage() {}
+
+// CreateTargetRequest creates a target.
+type CreateTargetRequest struct {
+	unknownFields []byte
+	// ObjectKey is the new target's World object key.
+	ObjectKey string `protobuf:"bytes,1,opt,name=object_key,json=objectKey,proto3" json:"objectKey,omitempty"`
+	// Meta is the target's identity and scrape configuration.
+	Meta *TargetMeta `protobuf:"bytes,2,opt,name=meta,proto3" json:"meta,omitempty"`
+}
+
+func (x *CreateTargetRequest) Reset() {
+	*x = CreateTargetRequest{}
+}
+
+func (*CreateTargetRequest) ProtoMessage() {}
+
+func (x *CreateTargetRequest) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *CreateTargetRequest) GetMeta() *TargetMeta {
+	if x != nil {
+		return x.Meta
+	}
+	return nil
+}
+
+// CreateTargetResponse is the response to CreateTarget.
+type CreateTargetResponse struct {
+	unknownFields []byte
+}
+
+func (x *CreateTargetResponse) Reset() {
+	*x = CreateTargetResponse{}
+}
+
+func (*CreateTargetResponse) ProtoMessage() {}
+
 func (m *Label) CloneVT() *Label {
 	if m == nil {
 		return (*Label)(nil)
@@ -573,6 +995,7 @@ func (m *TargetStatus) CloneVT() *TargetStatus {
 	r.LastError = m.LastError
 	r.Series = m.Series
 	r.DevicePeerId = m.DevicePeerId
+	r.CommitWindowMs = m.CommitWindowMs
 	if len(m.unknownFields) > 0 {
 		r.unknownFields = slices.Clone(m.unknownFields)
 	}
@@ -580,6 +1003,56 @@ func (m *TargetStatus) CloneVT() *TargetStatus {
 }
 
 func (m *TargetStatus) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WatchTargetsRequest) CloneVT() *WatchTargetsRequest {
+	if m == nil {
+		return (*WatchTargetsRequest)(nil)
+	}
+	r := new(WatchTargetsRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WatchTargetsRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WatchTargetsResponse) CloneVT() *WatchTargetsResponse {
+	if m == nil {
+		return (*WatchTargetsResponse)(nil)
+	}
+	r := new(WatchTargetsResponse)
+	r.Changed = protobuf_go_lite.CloneVTSlice(m.Changed)
+	r.Removed = protobuf_go_lite.CloneSlice(m.Removed)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WatchTargetsResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *TargetInfo) CloneVT() *TargetInfo {
+	if m == nil {
+		return (*TargetInfo)(nil)
+	}
+	r := new(TargetInfo)
+	r.ObjectKey = m.ObjectKey
+	r.Meta = protobuf_go_lite.CloneVTValue(m.Meta)
+	r.Status = protobuf_go_lite.CloneVTValue(m.Status)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *TargetInfo) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
@@ -705,6 +1178,184 @@ func (m *QueryResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *Panel) CloneVT() *Panel {
+	if m == nil {
+		return (*Panel)(nil)
+	}
+	r := new(Panel)
+	r.Id = m.Id
+	r.Title = m.Title
+	r.Expr = m.Expr
+	r.Unit = m.Unit
+	r.Kind = m.Kind
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *Panel) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *Dashboard) CloneVT() *Dashboard {
+	if m == nil {
+		return (*Dashboard)(nil)
+	}
+	r := new(Dashboard)
+	r.Panels = protobuf_go_lite.CloneVTSlice(m.Panels)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *Dashboard) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *WatchDashboardRequest) CloneVT() *WatchDashboardRequest {
+	if m == nil {
+		return (*WatchDashboardRequest)(nil)
+	}
+	r := new(WatchDashboardRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *WatchDashboardRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *PutPanelRequest) CloneVT() *PutPanelRequest {
+	if m == nil {
+		return (*PutPanelRequest)(nil)
+	}
+	r := new(PutPanelRequest)
+	r.Panel = protobuf_go_lite.CloneVTValue(m.Panel)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *PutPanelRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *PutPanelResponse) CloneVT() *PutPanelResponse {
+	if m == nil {
+		return (*PutPanelResponse)(nil)
+	}
+	r := new(PutPanelResponse)
+	r.Id = m.Id
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *PutPanelResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *RemovePanelRequest) CloneVT() *RemovePanelRequest {
+	if m == nil {
+		return (*RemovePanelRequest)(nil)
+	}
+	r := new(RemovePanelRequest)
+	r.Id = m.Id
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *RemovePanelRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *RemovePanelResponse) CloneVT() *RemovePanelResponse {
+	if m == nil {
+		return (*RemovePanelResponse)(nil)
+	}
+	r := new(RemovePanelResponse)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *RemovePanelResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *MovePanelRequest) CloneVT() *MovePanelRequest {
+	if m == nil {
+		return (*MovePanelRequest)(nil)
+	}
+	r := new(MovePanelRequest)
+	r.Id = m.Id
+	r.Index = m.Index
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *MovePanelRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *MovePanelResponse) CloneVT() *MovePanelResponse {
+	if m == nil {
+		return (*MovePanelResponse)(nil)
+	}
+	r := new(MovePanelResponse)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *MovePanelResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *CreateTargetRequest) CloneVT() *CreateTargetRequest {
+	if m == nil {
+		return (*CreateTargetRequest)(nil)
+	}
+	r := new(CreateTargetRequest)
+	r.ObjectKey = m.ObjectKey
+	r.Meta = protobuf_go_lite.CloneVTValue(m.Meta)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *CreateTargetRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *CreateTargetResponse) CloneVT() *CreateTargetResponse {
+	if m == nil {
+		return (*CreateTargetResponse)(nil)
+	}
+	r := new(CreateTargetResponse)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *CreateTargetResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (this *Label) EqualVT(that *Label) bool {
 	if this == that {
 		return true
@@ -824,11 +1475,80 @@ func (this *TargetStatus) EqualVT(that *TargetStatus) bool {
 	if this.DevicePeerId != that.DevicePeerId {
 		return false
 	}
+	if this.CommitWindowMs != that.CommitWindowMs {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
 func (this *TargetStatus) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*TargetStatus)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WatchTargetsRequest) EqualVT(that *WatchTargetsRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WatchTargetsRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WatchTargetsRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WatchTargetsResponse) EqualVT(that *WatchTargetsResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Changed, that.Changed, func() *TargetInfo { return &TargetInfo{} }) {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Removed, that.Removed) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WatchTargetsResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WatchTargetsResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *TargetInfo) EqualVT(that *TargetInfo) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.ObjectKey != that.ObjectKey {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Meta, that.Meta) {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Status, that.Status) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *TargetInfo) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*TargetInfo)
 	if !ok {
 		return false
 	}
@@ -1005,6 +1725,232 @@ func (this *QueryResponse) EqualMessageVT(thatMsg any) bool {
 	return this.EqualVT(that)
 }
 
+func (this *Panel) EqualVT(that *Panel) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Id != that.Id {
+		return false
+	}
+	if this.Title != that.Title {
+		return false
+	}
+	if this.Expr != that.Expr {
+		return false
+	}
+	if this.Unit != that.Unit {
+		return false
+	}
+	if this.Kind != that.Kind {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *Panel) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*Panel)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *Dashboard) EqualVT(that *Dashboard) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.Panels, that.Panels, func() *Panel { return &Panel{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *Dashboard) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*Dashboard)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *WatchDashboardRequest) EqualVT(that *WatchDashboardRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *WatchDashboardRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*WatchDashboardRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *PutPanelRequest) EqualVT(that *PutPanelRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Panel, that.Panel) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *PutPanelRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*PutPanelRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *PutPanelResponse) EqualVT(that *PutPanelResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Id != that.Id {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *PutPanelResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*PutPanelResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *RemovePanelRequest) EqualVT(that *RemovePanelRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Id != that.Id {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *RemovePanelRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*RemovePanelRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *RemovePanelResponse) EqualVT(that *RemovePanelResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *RemovePanelResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*RemovePanelResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *MovePanelRequest) EqualVT(that *MovePanelRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Id != that.Id {
+		return false
+	}
+	if this.Index != that.Index {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *MovePanelRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*MovePanelRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *MovePanelResponse) EqualVT(that *MovePanelResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *MovePanelResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*MovePanelResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *CreateTargetRequest) EqualVT(that *CreateTargetRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.ObjectKey != that.ObjectKey {
+		return false
+	}
+	if !protobuf_go_lite.IsEqualVT(this.Meta, that.Meta) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *CreateTargetRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*CreateTargetRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *CreateTargetResponse) EqualVT(that *CreateTargetResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *CreateTargetResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*CreateTargetResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
 // MarshalProtoJSON marshals the ResultType to JSON.
 func (x ResultType) MarshalProtoJSON(s *json.MarshalState) {
 	s.WriteEnum(int32(x), ResultType_name)
@@ -1042,6 +1988,86 @@ func (x *ResultType) UnmarshalText(b []byte) error {
 
 // UnmarshalJSON unmarshals the ResultType from JSON.
 func (x *ResultType) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the PanelKind to JSON.
+func (x PanelKind) MarshalProtoJSON(s *json.MarshalState) {
+	s.WriteEnum(int32(x), PanelKind_name)
+}
+
+// MarshalText marshals the PanelKind to text.
+func (x PanelKind) MarshalText() ([]byte, error) {
+	return []byte(json.GetEnumString(int32(x), PanelKind_name)), nil
+}
+
+// MarshalJSON marshals the PanelKind to JSON.
+func (x PanelKind) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the PanelKind from JSON.
+func (x *PanelKind) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	v := s.ReadEnum(PanelKind_value)
+	if err := s.Err(); err != nil {
+		s.SetErrorf("could not read PanelKind enum: %v", err)
+		return
+	}
+	*x = PanelKind(v)
+}
+
+// UnmarshalText unmarshals the PanelKind from text.
+func (x *PanelKind) UnmarshalText(b []byte) error {
+	i, err := json.ParseEnumString(string(b), PanelKind_value)
+	if err != nil {
+		return err
+	}
+	*x = PanelKind(i)
+	return nil
+}
+
+// UnmarshalJSON unmarshals the PanelKind from JSON.
+func (x *PanelKind) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the PanelUnit to JSON.
+func (x PanelUnit) MarshalProtoJSON(s *json.MarshalState) {
+	s.WriteEnum(int32(x), PanelUnit_name)
+}
+
+// MarshalText marshals the PanelUnit to text.
+func (x PanelUnit) MarshalText() ([]byte, error) {
+	return []byte(json.GetEnumString(int32(x), PanelUnit_name)), nil
+}
+
+// MarshalJSON marshals the PanelUnit to JSON.
+func (x PanelUnit) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the PanelUnit from JSON.
+func (x *PanelUnit) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	v := s.ReadEnum(PanelUnit_value)
+	if err := s.Err(); err != nil {
+		s.SetErrorf("could not read PanelUnit enum: %v", err)
+		return
+	}
+	*x = PanelUnit(v)
+}
+
+// UnmarshalText unmarshals the PanelUnit from text.
+func (x *PanelUnit) UnmarshalText(b []byte) error {
+	i, err := json.ParseEnumString(string(b), PanelUnit_value)
+	if err != nil {
+		return err
+	}
+	*x = PanelUnit(i)
+	return nil
+}
+
+// UnmarshalJSON unmarshals the PanelUnit from JSON.
+func (x *PanelUnit) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -1320,6 +2346,11 @@ func (x *TargetStatus) MarshalProtoJSON(s *json.MarshalState) {
 		s.WriteObjectField("devicePeerId")
 		s.WriteString(x.DevicePeerId)
 	}
+	if x.CommitWindowMs != 0 || s.HasField("commitWindowMs") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("commitWindowMs")
+		s.WriteUint32(x.CommitWindowMs)
+	}
 	s.WriteObjectEnd()
 }
 
@@ -1355,12 +2386,186 @@ func (x *TargetStatus) UnmarshalProtoJSON(s *json.UnmarshalState) {
 		case "device_peer_id", "devicePeerId":
 			s.AddField("device_peer_id")
 			x.DevicePeerId = s.ReadString()
+		case "commit_window_ms", "commitWindowMs":
+			s.AddField("commit_window_ms")
+			x.CommitWindowMs = s.ReadUint32()
 		}
 	})
 }
 
 // UnmarshalJSON unmarshals the TargetStatus from JSON.
 func (x *TargetStatus) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WatchTargetsRequest message to JSON.
+func (x *WatchTargetsRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WatchTargetsRequest to JSON.
+func (x *WatchTargetsRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WatchTargetsRequest message from JSON.
+func (x *WatchTargetsRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the WatchTargetsRequest from JSON.
+func (x *WatchTargetsRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WatchTargetsResponse message to JSON.
+func (x *WatchTargetsResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Changed) > 0 || s.HasField("changed") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("changed")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Changed {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("changed"))
+		}
+		s.WriteArrayEnd()
+	}
+	if len(x.Removed) > 0 || s.HasField("removed") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("removed")
+		s.WriteStringArray(x.Removed)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WatchTargetsResponse to JSON.
+func (x *WatchTargetsResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WatchTargetsResponse message from JSON.
+func (x *WatchTargetsResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "changed":
+			s.AddField("changed")
+			if s.ReadNil() {
+				x.Changed = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Changed = append(x.Changed, nil)
+					return
+				}
+				v := &TargetInfo{}
+				v.UnmarshalProtoJSON(s.WithField("changed", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Changed = append(x.Changed, v)
+			})
+		case "removed":
+			s.AddField("removed")
+			if s.ReadNil() {
+				x.Removed = nil
+				return
+			}
+			x.Removed = s.ReadStringArray()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the WatchTargetsResponse from JSON.
+func (x *WatchTargetsResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the TargetInfo message to JSON.
+func (x *TargetInfo) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.ObjectKey != "" || s.HasField("objectKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("objectKey")
+		s.WriteString(x.ObjectKey)
+	}
+	if x.Meta != nil || s.HasField("meta") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("meta")
+		x.Meta.MarshalProtoJSON(s.WithField("meta"))
+	}
+	if x.Status != nil || s.HasField("status") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("status")
+		x.Status.MarshalProtoJSON(s.WithField("status"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the TargetInfo to JSON.
+func (x *TargetInfo) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the TargetInfo message from JSON.
+func (x *TargetInfo) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "object_key", "objectKey":
+			s.AddField("object_key")
+			x.ObjectKey = s.ReadString()
+		case "meta":
+			if s.ReadNil() {
+				x.Meta = nil
+				return
+			}
+			x.Meta = &TargetMeta{}
+			x.Meta.UnmarshalProtoJSON(s.WithField("meta", true))
+		case "status":
+			if s.ReadNil() {
+				x.Status = nil
+				return
+			}
+			x.Status = &TargetStatus{}
+			x.Status.UnmarshalProtoJSON(s.WithField("status", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the TargetInfo from JSON.
+func (x *TargetInfo) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -1800,6 +3005,497 @@ func (x *QueryResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
+// MarshalProtoJSON marshals the Panel message to JSON.
+func (x *Panel) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Id != "" || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteString(x.Id)
+	}
+	if x.Title != "" || s.HasField("title") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("title")
+		s.WriteString(x.Title)
+	}
+	if x.Expr != "" || s.HasField("expr") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("expr")
+		s.WriteString(x.Expr)
+	}
+	if x.Unit != 0 || s.HasField("unit") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("unit")
+		x.Unit.MarshalProtoJSON(s)
+	}
+	if x.Kind != 0 || s.HasField("kind") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("kind")
+		x.Kind.MarshalProtoJSON(s)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the Panel to JSON.
+func (x *Panel) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the Panel message from JSON.
+func (x *Panel) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadString()
+		case "title":
+			s.AddField("title")
+			x.Title = s.ReadString()
+		case "expr":
+			s.AddField("expr")
+			x.Expr = s.ReadString()
+		case "unit":
+			s.AddField("unit")
+			x.Unit.UnmarshalProtoJSON(s)
+		case "kind":
+			s.AddField("kind")
+			x.Kind.UnmarshalProtoJSON(s)
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the Panel from JSON.
+func (x *Panel) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the Dashboard message to JSON.
+func (x *Dashboard) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Panels) > 0 || s.HasField("panels") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("panels")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.Panels {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("panels"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the Dashboard to JSON.
+func (x *Dashboard) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the Dashboard message from JSON.
+func (x *Dashboard) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "panels":
+			s.AddField("panels")
+			if s.ReadNil() {
+				x.Panels = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.Panels = append(x.Panels, nil)
+					return
+				}
+				v := &Panel{}
+				v.UnmarshalProtoJSON(s.WithField("panels", false))
+				if s.Err() != nil {
+					return
+				}
+				x.Panels = append(x.Panels, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the Dashboard from JSON.
+func (x *Dashboard) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the WatchDashboardRequest message to JSON.
+func (x *WatchDashboardRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the WatchDashboardRequest to JSON.
+func (x *WatchDashboardRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the WatchDashboardRequest message from JSON.
+func (x *WatchDashboardRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the WatchDashboardRequest from JSON.
+func (x *WatchDashboardRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the PutPanelRequest message to JSON.
+func (x *PutPanelRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Panel != nil || s.HasField("panel") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("panel")
+		x.Panel.MarshalProtoJSON(s.WithField("panel"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the PutPanelRequest to JSON.
+func (x *PutPanelRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the PutPanelRequest message from JSON.
+func (x *PutPanelRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "panel":
+			if s.ReadNil() {
+				x.Panel = nil
+				return
+			}
+			x.Panel = &Panel{}
+			x.Panel.UnmarshalProtoJSON(s.WithField("panel", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the PutPanelRequest from JSON.
+func (x *PutPanelRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the PutPanelResponse message to JSON.
+func (x *PutPanelResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Id != "" || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteString(x.Id)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the PutPanelResponse to JSON.
+func (x *PutPanelResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the PutPanelResponse message from JSON.
+func (x *PutPanelResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the PutPanelResponse from JSON.
+func (x *PutPanelResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the RemovePanelRequest message to JSON.
+func (x *RemovePanelRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Id != "" || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteString(x.Id)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the RemovePanelRequest to JSON.
+func (x *RemovePanelRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the RemovePanelRequest message from JSON.
+func (x *RemovePanelRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadString()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the RemovePanelRequest from JSON.
+func (x *RemovePanelRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the RemovePanelResponse message to JSON.
+func (x *RemovePanelResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the RemovePanelResponse to JSON.
+func (x *RemovePanelResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the RemovePanelResponse message from JSON.
+func (x *RemovePanelResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the RemovePanelResponse from JSON.
+func (x *RemovePanelResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the MovePanelRequest message to JSON.
+func (x *MovePanelRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Id != "" || s.HasField("id") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("id")
+		s.WriteString(x.Id)
+	}
+	if x.Index != 0 || s.HasField("index") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("index")
+		s.WriteUint32(x.Index)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the MovePanelRequest to JSON.
+func (x *MovePanelRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the MovePanelRequest message from JSON.
+func (x *MovePanelRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "id":
+			s.AddField("id")
+			x.Id = s.ReadString()
+		case "index":
+			s.AddField("index")
+			x.Index = s.ReadUint32()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the MovePanelRequest from JSON.
+func (x *MovePanelRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the MovePanelResponse message to JSON.
+func (x *MovePanelResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the MovePanelResponse to JSON.
+func (x *MovePanelResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the MovePanelResponse message from JSON.
+func (x *MovePanelResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the MovePanelResponse from JSON.
+func (x *MovePanelResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the CreateTargetRequest message to JSON.
+func (x *CreateTargetRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.ObjectKey != "" || s.HasField("objectKey") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("objectKey")
+		s.WriteString(x.ObjectKey)
+	}
+	if x.Meta != nil || s.HasField("meta") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("meta")
+		x.Meta.MarshalProtoJSON(s.WithField("meta"))
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the CreateTargetRequest to JSON.
+func (x *CreateTargetRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the CreateTargetRequest message from JSON.
+func (x *CreateTargetRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "object_key", "objectKey":
+			s.AddField("object_key")
+			x.ObjectKey = s.ReadString()
+		case "meta":
+			if s.ReadNil() {
+				x.Meta = nil
+				return
+			}
+			x.Meta = &TargetMeta{}
+			x.Meta.UnmarshalProtoJSON(s.WithField("meta", true))
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the CreateTargetRequest from JSON.
+func (x *CreateTargetRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the CreateTargetResponse message to JSON.
+func (x *CreateTargetResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the CreateTargetResponse to JSON.
+func (x *CreateTargetResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the CreateTargetResponse message from JSON.
+func (x *CreateTargetResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the CreateTargetResponse from JSON.
+func (x *CreateTargetResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
 func (m *Label) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -2019,6 +3715,11 @@ func (m *TargetStatus) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	if m.unknownFields != nil {
 		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
 	}
+	if m.CommitWindowMs != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.CommitWindowMs))
+		i--
+		dAtA[i] = 0x38
+	}
 	if len(m.DevicePeerId) > 0 {
 		i = protobuf_go_lite.EncodeString(dAtA, i, m.DevicePeerId)
 		i--
@@ -2048,6 +3749,146 @@ func (m *TargetStatus) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i = protobuf_go_lite.EncodeBool(dAtA, i, m.Up)
 		i--
 		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WatchTargetsRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchTargetsRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WatchTargetsRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WatchTargetsResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchTargetsResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WatchTargetsResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Removed) > 0 {
+		for iNdEx := len(m.Removed) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Removed[iNdEx])
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Changed) > 0 {
+		for iNdEx := len(m.Changed) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Changed[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *TargetInfo) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *TargetInfo) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *TargetInfo) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Status != nil {
+		size, err := m.Status.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Meta != nil {
+		size, err := m.Meta.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ObjectKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ObjectKey)
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -2388,6 +4229,440 @@ func (m *QueryResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *Panel) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Panel) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *Panel) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Kind != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Kind))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.Unit != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Unit))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Expr) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Expr)
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Title) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Title)
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Id) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Id)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Dashboard) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Dashboard) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *Dashboard) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Panels) > 0 {
+		for iNdEx := len(m.Panels) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.Panels[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WatchDashboardRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchDashboardRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *WatchDashboardRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PutPanelRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PutPanelRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *PutPanelRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Panel != nil {
+		size, err := m.Panel.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PutPanelResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PutPanelResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *PutPanelResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Id) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Id)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RemovePanelRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RemovePanelRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *RemovePanelRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Id) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Id)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RemovePanelResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RemovePanelResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *RemovePanelResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MovePanelRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MovePanelRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *MovePanelRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Index != 0 {
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(m.Index))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Id) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Id)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MovePanelResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MovePanelResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *MovePanelResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateTargetRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateTargetRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *CreateTargetRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if m.Meta != nil {
+		size, err := m.Meta.MarshalToSizedBufferVT(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ObjectKey) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.ObjectKey)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateTargetResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateTargetResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *CreateTargetResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *Label) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -2458,6 +4733,51 @@ func (m *TargetStatus) SizeVT() (n int) {
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.LastError)
 	n += protobuf_go_lite.SizeVarintNonZero(1, m.Series)
 	n += protobuf_go_lite.SizeStringNonEmpty(1, m.DevicePeerId)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.CommitWindowMs)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WatchTargetsRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WatchTargetsResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Changed {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += protobuf_go_lite.SizeStringSlice(1, m.Removed)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *TargetInfo) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ObjectKey)
+	if m.Meta != nil {
+		l = m.Meta.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	if m.Status != nil {
+		l = m.Status.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -2558,7 +4878,147 @@ func (m *QueryResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *Panel) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Id)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Title)
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Expr)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Unit)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Kind)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *Dashboard) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.Panels {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *WatchDashboardRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *PutPanelRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Panel != nil {
+		l = m.Panel.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *PutPanelResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Id)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *RemovePanelRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Id)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *RemovePanelResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *MovePanelRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Id)
+	n += protobuf_go_lite.SizeVarintNonZero(1, m.Index)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *MovePanelResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *CreateTargetRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.ObjectKey)
+	if m.Meta != nil {
+		l = m.Meta.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *CreateTargetResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
 func (x ResultType) MarshalProtoText() string {
+	return x.String()
+}
+
+func (x PanelKind) MarshalProtoText() string {
+	return x.String()
+}
+
+func (x PanelUnit) MarshalProtoText() string {
 	return x.String()
 }
 
@@ -2673,10 +5133,76 @@ func (x *TargetStatus) MarshalProtoText() string {
 		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "device_peer_id")
 		protobuf_go_lite.TextWriteString(&sb, x.DevicePeerId)
 	}
+	if x.CommitWindowMs != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "commit_window_ms")
+		protobuf_go_lite.TextWriteUint(&sb, x.CommitWindowMs)
+	}
 	return protobuf_go_lite.TextFinishMessage(&sb)
 }
 
 func (x *TargetStatus) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WatchTargetsRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "WatchTargetsRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WatchTargetsRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WatchTargetsResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "WatchTargetsResponse")
+	if len(x.Changed) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "changed")
+		for i, v := range x.Changed {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &TargetInfo{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	if len(x.Removed) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "removed")
+		for i, v := range x.Removed {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WatchTargetsResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *TargetInfo) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "TargetInfo")
+	if x.ObjectKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "object_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ObjectKey)
+	}
+	if x.Meta != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "meta")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Meta)
+	}
+	if x.Status != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "status")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Status)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *TargetInfo) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -2847,6 +5373,176 @@ func (x *QueryResponse) MarshalProtoText() string {
 }
 
 func (x *QueryResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *Panel) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "Panel")
+	if x.Id != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteString(&sb, x.Id)
+	}
+	if x.Title != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "title")
+		protobuf_go_lite.TextWriteString(&sb, x.Title)
+	}
+	if x.Expr != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "expr")
+		protobuf_go_lite.TextWriteString(&sb, x.Expr)
+	}
+	if x.Unit != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "unit")
+		protobuf_go_lite.TextWriteStringer(&sb, PanelUnit(x.Unit))
+	}
+	if x.Kind != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "kind")
+		protobuf_go_lite.TextWriteStringer(&sb, PanelKind(x.Kind))
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *Panel) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *Dashboard) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "Dashboard")
+	if len(x.Panels) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "panels")
+		for i, v := range x.Panels {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &Panel{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *Dashboard) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *WatchDashboardRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "WatchDashboardRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *WatchDashboardRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *PutPanelRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "PutPanelRequest")
+	if x.Panel != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "panel")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Panel)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *PutPanelRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *PutPanelResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "PutPanelResponse")
+	if x.Id != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteString(&sb, x.Id)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *PutPanelResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *RemovePanelRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "RemovePanelRequest")
+	if x.Id != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteString(&sb, x.Id)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *RemovePanelRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *RemovePanelResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "RemovePanelResponse")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *RemovePanelResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *MovePanelRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "MovePanelRequest")
+	if x.Id != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "id")
+		protobuf_go_lite.TextWriteString(&sb, x.Id)
+	}
+	if x.Index != 0 {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "index")
+		protobuf_go_lite.TextWriteUint(&sb, x.Index)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *MovePanelRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *MovePanelResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "MovePanelResponse")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *MovePanelResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *CreateTargetRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "CreateTargetRequest")
+	if x.ObjectKey != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "object_key")
+		protobuf_go_lite.TextWriteString(&sb, x.ObjectKey)
+	}
+	if x.Meta != nil {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "meta")
+		protobuf_go_lite.TextWriteTextMarshaler(&sb, x.Meta)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *CreateTargetRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *CreateTargetResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "CreateTargetResponse")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *CreateTargetResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -3199,6 +5895,207 @@ func (m *TargetStatus) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.DevicePeerId = v
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CommitWindowMs", wireType)
+			}
+			m.CommitWindowMs = 0
+			m.CommitWindowMs, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WatchTargetsRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchTargetsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchTargetsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WatchTargetsResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchTargetsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchTargetsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Changed", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Changed = append(m.Changed, &TargetInfo{})
+			if err := m.Changed[len(m.Changed)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Removed", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Removed = append(m.Removed, v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *TargetInfo) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: TargetInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: TargetInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ObjectKey = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Meta", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Meta == nil {
+				m.Meta = &TargetMeta{}
+			}
+			if err := m.Meta.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Status == nil {
+				m.Status = &TargetStatus{}
+			}
+			if err := m.Status.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
@@ -3679,6 +6576,623 @@ func (m *QueryResponse) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.Warnings = append(m.Warnings, v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *Panel) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Panel: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Panel: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Id = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Title", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Title = v
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Expr", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Expr = v
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Unit", wireType)
+			}
+			m.Unit = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.Unit = PanelUnit(_v)
+			if err != nil {
+				return err
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
+			}
+			m.Kind = 0
+			var _v uint64
+			_v, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+			m.Kind = PanelKind(_v)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *Dashboard) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Dashboard: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Dashboard: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Panels", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Panels = append(m.Panels, &Panel{})
+			if err := m.Panels[len(m.Panels)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *WatchDashboardRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchDashboardRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchDashboardRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *PutPanelRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PutPanelRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PutPanelRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Panel", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Panel == nil {
+				m.Panel = &Panel{}
+			}
+			if err := m.Panel.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *PutPanelResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PutPanelResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PutPanelResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Id = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *RemovePanelRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RemovePanelRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RemovePanelRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Id = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *RemovePanelResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RemovePanelResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RemovePanelResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *MovePanelRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MovePanelRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MovePanelRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Id = v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			m.Index = 0
+			m.Index, iNdEx, err = protobuf_go_lite.DecodeVarintUint32(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *MovePanelResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MovePanelResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MovePanelResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *CreateTargetRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateTargetRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateTargetRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectKey", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.ObjectKey = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Meta", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			if m.Meta == nil {
+				m.Meta = &TargetMeta{}
+			}
+			if err := m.Meta.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *CreateTargetResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateTargetResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateTargetResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])

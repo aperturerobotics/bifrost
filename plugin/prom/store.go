@@ -1,6 +1,7 @@
 package prom_plugin
 
 import (
+	"bytes"
 	"context"
 	"math"
 	"sync"
@@ -23,8 +24,10 @@ import (
 // Append adds to the window and CommitStores writes the window as one segment.
 // A crash or Rollback loses only the uncommitted window. Exactly one Store
 // writes a target, so a Store reads the tree after it opens only to maintain
-// its segments: the commit that closes a CompactSpan bucket drops expired
-// segments and merges the closed buckets' segments in the same transaction.
+// its segments and to check that it is still the writer: the commit that
+// closes a CompactSpan bucket drops expired segments and merges the closed
+// buckets' segments in the same transaction, and a commit that finds a status
+// this Store did not write stands the Store down instead of writing.
 type Store struct {
 	// key is the World object key of the target.
 	key string
@@ -53,6 +56,13 @@ type Store struct {
 	hasCommitted bool
 	// status is the encoded TargetStatus the next window commits, or nil.
 	status []byte
+	// seen is the encoded TargetStatus the target held when this Store last
+	// opened or wrote it, or nil if it held none.
+	seen []byte
+	// lost is closed when a commit stands the Store down.
+	lost chan struct{}
+	// isLost is set once lost is closed.
+	isLost bool
 }
 
 // CreateStore creates the World object key as an empty target carrying the
@@ -65,7 +75,7 @@ func CreateStore(ctx context.Context, eng world.Engine, key string, target label
 	if err != nil {
 		return nil, err
 	}
-	return newStore(key, meta, NewSeriesTable(), 0, false, 0), nil
+	return newStore(key, meta, NewSeriesTable(), 0, false, 0, nil), nil
 }
 
 // OpenStore opens the existing target key for writing, reading its labels,
@@ -103,8 +113,14 @@ func OpenStore(ctx context.Context, eng world.Engine, key string) (*Store, error
 				return err
 			}
 
+			// Read the status this writer must find at its first commit.
+			seen, _, err := kv.Get(ctx, s4wave_prom.StatusKey())
+			if err != nil {
+				return err
+			}
+
 			// Resume the writer after the committed state.
-			st = newStore(key, meta, table, table.Len(), has, maxTime)
+			st = newStore(key, meta, table, table.Len(), has, maxTime, seen)
 			return nil
 		})
 		return err
@@ -115,8 +131,9 @@ func OpenStore(ctx context.Context, eng world.Engine, key string) (*Store, error
 	return st, nil
 }
 
-// newStore constructs a store over already committed state.
-func newStore(key string, meta *s4wave_prom.TargetMeta, table *SeriesTable, committedSeries uint64, hasCommitted bool, committedMax int64) *Store {
+// newStore constructs a store over already committed state, whose target
+// held the encoded status seen.
+func newStore(key string, meta *s4wave_prom.TargetMeta, table *SeriesTable, committedSeries uint64, hasCommitted bool, committedMax int64, seen []byte) *Store {
 	return &Store{
 		key:             key,
 		meta:            ToLabels(meta.GetLabels()),
@@ -126,12 +143,21 @@ func newStore(key string, meta *s4wave_prom.TargetMeta, table *SeriesTable, comm
 		committedSeries: committedSeries,
 		committedMax:    committedMax,
 		hasCommitted:    hasCommitted,
+		seen:            seen,
+		lost:            make(chan struct{}),
 	}
 }
 
 // Key returns the World object key of the target.
 func (s *Store) Key() string {
 	return s.key
+}
+
+// Lost returns a channel closed when a commit finds that another writer wrote
+// the target's status since this Store opened it. A lost Store writes nothing
+// more; the writer reopens the target to write again.
+func (s *Store) Lost() <-chan struct{} {
+	return s.lost
 }
 
 // Append adds a sample of the series lset to the open window.
@@ -233,8 +259,10 @@ func (s *Store) freeze() (*commitBatch, error) {
 		if err != nil || batch == nil {
 			return nil, err
 		}
+		batch.expect = s.seen
 		if s.status != nil {
 			batch.entries = append(batch.entries, batchEntry{key: s4wave_prom.StatusKey(), value: s.status})
+			batch.status = s.status
 			s.status = nil
 		}
 		batch.maintain = s.hasCommitted && compactBucket(batch.maxTime+1) > compactBucket(s.committedMax+1)
@@ -262,11 +290,27 @@ func (s *Store) finish(batch *commitBatch, written bool) {
 	s.frozen = nil
 	s.committedSeries = batch.endSeries
 	s.committedMax, s.hasCommitted = batch.maxTime, true
+	if batch.status != nil {
+		s.seen = batch.status
+	}
+}
+
+// standDown ends the in-flight commit of batch without writing it and closes
+// Lost.
+func (s *Store) standDown() {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	s.inFlight = false
+	if !s.isLost {
+		s.isLost = true
+		close(s.lost)
+	}
 }
 
 // write stores batch in the target's tree within wtx. Writing a batch again
 // stores the same keys with the same values, so a replayed or retried commit
-// is harmless.
+// is harmless. It returns ErrStoodDown, writing nothing, when the target's
+// status is not the one the Store last saw.
 func (s *Store) write(ctx context.Context, wtx world.WorldState, batch *commitBatch) error {
 	// Open the target; it must exist because a Store is created or opened on it.
 	obj, err := world.MustGetObject(ctx, wtx, s.key)
@@ -283,6 +327,15 @@ func (s *Store) write(ctx context.Context, wtx world.WorldState, batch *commitBa
 			return err
 		}
 		defer kv.Discard()
+
+		// Stand down when another writer has written the status since.
+		status, _, err := kv.Get(ctx, s4wave_prom.StatusKey())
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(status, batch.expect) {
+			return ErrStoodDown
+		}
 
 		// Set every entry and maintain the segments when the batch opens a
 		// bucket, then commit the tree to move the object root.

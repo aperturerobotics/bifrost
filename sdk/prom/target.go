@@ -92,6 +92,19 @@ func (m *TargetMeta) Retention() time.Duration {
 	return DefaultRetention
 }
 
+// StaleAfter returns how long after its last scrape the status goes stale:
+// two scrape intervals of meta plus one commit window of the scraping Device.
+func (s *TargetStatus) StaleAfter(meta *TargetMeta) time.Duration {
+	window := time.Duration(s.GetCommitWindowMs()) * time.Millisecond
+	return 2*meta.GetScrape().Interval() + window
+}
+
+// Stale reports whether the scraping Device has stopped committing the target
+// by now, judged by StaleAfter.
+func (s *TargetStatus) Stale(meta *TargetMeta, now time.Time) bool {
+	return now.Sub(time.UnixMilli(s.GetLastScrapeMs())) > s.StaleAfter(meta)
+}
+
 // CreateTarget creates the World object key as an empty prom/target holding
 // meta. A target without a scrape config only stores samples written to it.
 func CreateTarget(ctx context.Context, ws world.WorldState, key string, meta *TargetMeta) error {

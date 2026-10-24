@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"slices"
 	"strconv"
@@ -25,6 +26,10 @@ import (
 // promTargetKeyPrefix prefixes the object key of a target created from a bare
 // ID.
 const promTargetKeyPrefix = "prom/target/"
+
+// promDashboardKeyPrefix prefixes the object key of a Dashboard created from a
+// bare ID.
+const promDashboardKeyPrefix = "prom/dashboard/"
 
 // promArgs selects the daemon, session and Space of a prom command.
 type promArgs struct {
@@ -87,6 +92,14 @@ func newPromCommand(_ func() cli_entrypoint.CliBus) *cli.Command {
 					buildPromTargetListCommand(),
 					buildPromTargetApproveCommand(true),
 					buildPromTargetApproveCommand(false),
+				},
+			},
+			{
+				Name:    "dashboard",
+				Aliases: []string{"dashboards"},
+				Usage:   "manage Dashboards",
+				Subcommands: []*cli.Command{
+					buildPromDashboardCreateCommand(),
 				},
 			},
 			buildPromQueryCommand(),
@@ -162,7 +175,11 @@ func (a *promTargetCreateArgs) buildMeta() (*s4wave_prom.TargetMeta, error) {
 	// Collect the labels, defaulting the instance to the URL host.
 	instance := a.instance
 	if instance == "" {
-		instance = strings.SplitN(strings.SplitN(a.url, "://", 2)[1], "/", 2)[0]
+		u, err := url.Parse(a.url)
+		if err != nil || u.Host == "" {
+			return nil, errors.Errorf("--instance is required for %q", a.url)
+		}
+		instance = u.Host
 	}
 	byName := map[string]string{"job": a.job, "instance": instance}
 	for _, kv := range a.labels.Value() {
@@ -184,6 +201,55 @@ func (a *promTargetCreateArgs) buildMeta() (*s4wave_prom.TargetMeta, error) {
 		set.Labels = append(set.Labels, &s4wave_prom.Label{Name: k, Value: byName[k]})
 	}
 	return &s4wave_prom.TargetMeta{Labels: set, Scrape: scrape, RetentionMs: uint64(max(a.retention.Milliseconds(), 0))}, nil
+}
+
+// promDashboardCreateArgs creates a Dashboard.
+type promDashboardCreateArgs struct {
+	promArgs
+}
+
+// Run creates the Dashboard at the key argument, or at a new key, with the
+// starter panels of the jobs the Space's targets carry.
+func (a *promDashboardCreateArgs) Run(c *cli.Context) error {
+	// Choose the key.
+	key := c.Args().First()
+	switch {
+	case key == "":
+		key = promDashboardKeyPrefix + ulid.NewULID()
+	case !strings.Contains(key, "/"):
+		key = promDashboardKeyPrefix + key
+	}
+
+	// Create it with starter panels in one transaction.
+	err := a.withSpace(c, func(_ *sdkClient, _ s4wave_space.SRPCSpaceResourceServiceClient, engine world.Engine) error {
+		return world.ExecTransaction(c.Context, engine, true, func(ctx context.Context, tx world.WorldState) error {
+			if err := requireNewObject(ctx, tx, key, "dashboard"); err != nil {
+				return err
+			}
+			jobs, err := s4wave_prom.TargetJobs(ctx, tx)
+			if err != nil {
+				return err
+			}
+			return s4wave_prom.CreateDashboard(ctx, tx, key, s4wave_prom.StarterDashboard(jobs))
+		})
+	})
+	if err != nil {
+		return err
+	}
+	_, err = io.WriteString(os.Stdout, key+"\n")
+	return err
+}
+
+// buildPromDashboardCreateCommand builds the dashboard create subcommand.
+func buildPromDashboardCreateCommand() *cli.Command {
+	args := &promDashboardCreateArgs{}
+	return &cli.Command{
+		Name:      "create",
+		Usage:     "create a Dashboard with starter panels for the Space's targets",
+		ArgsUsage: "[id-or-object-key]",
+		Flags:     args.BuildFlags(),
+		Action:    args.Run,
+	}
 }
 
 // buildPromTargetCreateCommand builds the target create subcommand.

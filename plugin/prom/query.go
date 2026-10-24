@@ -11,6 +11,7 @@ import (
 	"github.com/prometheus/prometheus/promql"
 	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/storage"
+	"github.com/s4wave/spacewave/db/world"
 	s4wave_prom "github.com/s4wave/spacewave/sdk/prom"
 )
 
@@ -31,6 +32,8 @@ func newQueryEngine() *promql.Engine {
 type queryService struct {
 	// engine evaluates PromQL.
 	engine *promql.Engine
+	// eng is the World engine, which WatchTargets watches.
+	eng world.Engine
 	// q reads the World's targets.
 	q storage.Queryable
 }

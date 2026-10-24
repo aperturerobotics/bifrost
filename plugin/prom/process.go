@@ -2,6 +2,7 @@ package prom_plugin
 
 import (
 	"context"
+	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/pkg/errors"
@@ -66,26 +67,80 @@ func (p *targetProcess) Execute(_ *s4wave_process.ExecuteRequest, stream s4wave_
 	}
 	defer release()
 
-	// Resume the target's writer after its committed history.
-	store, err := OpenStore(ctx, p.eng, p.objectKey)
-	if err != nil {
-		return send(s4wave_process.ExecutionState_ExecutionState_ERROR, err)
-	}
-
-	// Join the Device's commit group and report running.
-	leave := p.group.join(store, p.eng)
-	defer leave()
+	// Write the target until the process stops, standing by while another
+	// Device holds it. A stop is not an error.
 	if err := send(s4wave_process.ExecutionState_ExecutionState_RUNNING, nil); err != nil {
 		return err
 	}
-
-	// Scrape until the process stops; a stop is not an error.
 	p.le.WithField("url", cfg.GetUrl()).WithField("interval", cfg.Interval().String()).Info("scraping target")
-	err = newScraper(p.le, store, cfg, p.peerID, source).run(ctx)
-	if ctx.Err() != nil {
-		return nil
+	for {
+		err := p.standBy(ctx)
+		if err == nil {
+			err = p.scrape(ctx, cfg, source)
+		}
+		if ctx.Err() != nil {
+			return nil
+		}
+		if errors.Is(err, ErrStoodDown) {
+			p.le.Info("another Device took over the target, standing by")
+			continue
+		}
+		return send(s4wave_process.ExecutionState_ExecutionState_ERROR, err)
 	}
-	return send(s4wave_process.ExecutionState_ExecutionState_ERROR, err)
+}
+
+// scrape opens the target's writer after its committed history and scrapes
+// source into it in the Device's commit group until ctx ends or another
+// Device takes the target over.
+func (p *targetProcess) scrape(ctx context.Context, cfg *s4wave_prom.ScrapeConfig, source scrapeSource) error {
+	// Open the writer and join the commit group.
+	store, err := OpenStore(ctx, p.eng, p.objectKey)
+	if err != nil {
+		return err
+	}
+	leave := p.group.join(store, p.eng)
+	defer leave()
+
+	// Scrape until stopped or stood down.
+	return newScraper(p.le, store, cfg, p.peerID, p.group.window, source).run(ctx)
+}
+
+// standBy waits until the target's status is gone, names this Device, or goes
+// stale, waking on each commit to the World and when the status would go
+// stale.
+func (p *targetProcess) standBy(ctx context.Context) error {
+	for {
+		// Read the status as of the current seqno.
+		seqno, err := p.eng.GetSeqno(ctx)
+		if err != nil {
+			return err
+		}
+		var meta *s4wave_prom.TargetMeta
+		var status *s4wave_prom.TargetStatus
+		err = world.ExecTransaction(ctx, p.eng, false, func(ctx context.Context, ws world.WorldState) error {
+			var err error
+			meta, status, err = s4wave_prom.ReadTarget(ctx, ws, p.objectKey)
+			return err
+		})
+		if err != nil {
+			return err
+		}
+		if status == nil || status.GetDevicePeerId() == p.peerID || status.Stale(meta, time.Now()) {
+			return nil
+		}
+
+		// Wait for the next commit or for the status to go stale.
+		staleAt := time.UnixMilli(status.GetLastScrapeMs()).Add(status.StaleAfter(meta))
+		waitCtx, cancel := context.WithDeadline(ctx, staleAt)
+		_, err = p.eng.WaitSeqno(waitCtx, seqno+1)
+		cancel()
+		if ctx.Err() != nil {
+			return context.Cause(ctx)
+		}
+		if err != nil && waitCtx.Err() == nil {
+			return err
+		}
+	}
 }
 
 // openSource returns the scrape source cfg names and the function that
