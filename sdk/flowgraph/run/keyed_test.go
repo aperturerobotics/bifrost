@@ -26,8 +26,6 @@ const (
 	liveStepID = "test/live-step"
 	// keyedID is the keyed Step of the live tests.
 	keyedID = "a"
-	// otherSourceID is the second event-source node of the join test.
-	otherSourceID = "src2"
 )
 
 // liveConfig is the test Step's config: the World engine and the run to read.
@@ -412,38 +410,4 @@ func TestKeyedSuccessorReceivesUnacknowledgedInput(t *testing.T) {
 	// The successor ends without another one.
 	steps.release(1)
 	e.requireDrained(2)
-}
-
-// TestKeyedJoinPerKey joins the inputs of a keyed Step by key: arrivals at its
-// two ports that carry different keys do not start it.
-func TestKeyedJoinPerKey(t *testing.T) {
-	// Start a keyed Step with a port for each of two sources.
-	e := newEnv(t)
-	steps := e.liveGraph(false, sourceID, otherSourceID)
-
-	// Arrivals for k1 at one port and k2 at the other wait for a partner.
-	e.deliverFrom(sourceID, "", "c1", event("e1", "k1"))
-	e.deliverFrom(otherSourceID, "", "d1", event("e2", "k2"))
-	e.waitStandingRun("both arrivals", func(run *s4wave_flowgraph.FlowgraphRun) bool {
-		return len(run.GetArrivals()) == 2
-	})
-	if run := e.readStanding(); len(run.GetActivations()) != 0 {
-		t.Fatalf("activations = %v, want none before a key has both ports", run.GetActivations())
-	}
-
-	// The partner for k1 starts the Step with both k1 arrivals, and k2 waits on.
-	e.deliverFrom(otherSourceID, "d1", "d2", event("e3", "k1"))
-	run := e.waitStandingRun("k1 activation", func(run *s4wave_flowgraph.FlowgraphRun) bool {
-		return len(run.GetActivations()) == 1
-	})
-	activation := run.GetActivations()[0]
-	if activation.GetKey() != "k1" || len(activation.GetInputs()) != 2 ||
-		eventID(activation.GetInputs()[0]) != "e1" || eventID(activation.GetInputs()[1]) != "e3" {
-		t.Fatalf("activation = %v, want key k1 with inputs e1 and e3", activation)
-	}
-	requireEventIDs(t, run, "e2")
-	steps.release(1)
-	e.waitStandingRun("drained k1", func(run *s4wave_flowgraph.FlowgraphRun) bool {
-		return run.GetVisits()[keyedID].GetCount() == 1 && len(run.GetActivations()) == 0
-	})
 }

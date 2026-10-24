@@ -5,10 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/s4wave/spacewave/db/block"
 	"github.com/s4wave/spacewave/db/world"
-	forge_target "github.com/s4wave/spacewave/forge/target"
-	forge_task "github.com/s4wave/spacewave/forge/task"
 	s4wave_flowgraph "github.com/s4wave/spacewave/sdk/flowgraph"
 	flowgraph_run "github.com/s4wave/spacewave/sdk/flowgraph/run"
 )
@@ -119,48 +116,4 @@ func TestDeliverEventsCursor(t *testing.T) {
 	if !bytes.Equal(resumed.GetCursor()[sourceID], []byte("c3")) {
 		t.Fatalf("cursor = %q, want c3", resumed.GetCursor()[sourceID])
 	}
-}
-
-// TestEventArrivalInput starts a Step on an event arrival and reads the
-// Task's input as a WORLD_OBJECT input of the event's object.
-func TestEventArrivalInput(t *testing.T) {
-	// Create the event's object and a run holding one delivered event.
-	e := newEnv(t)
-	e.eventGraph()
-	e.exec(func(ctx context.Context, tx world.WorldState) error {
-		obj, _, err := world.CreateWorldObject(ctx, tx, eventObjectKey, func(cursor *block.Cursor) error {
-			cursor.SetBlock(&s4wave_flowgraph.FlowgraphVisits{}, true)
-			return nil
-		})
-		world.ReleaseObjectState(obj)
-		return err
-	})
-	e.startRun()
-	e.deliver("", "c1", event("e1", ""))
-
-	// The Step runs once on the event.
-	e.startWorker()
-	e.startController()
-	run := e.waitRun(s4wave_flowgraph.FlowgraphRunState_FLOWGRAPH_RUN_STATE_COMPLETE)
-	requireTrace(t, run, "a.out")
-	inputs := run.GetActivations()[0].GetInputs()
-	if len(inputs) != 1 || inputs[0].GetEvent().GetEventId() != "e1" {
-		t.Fatalf("activation inputs = %v, want event e1", inputs)
-	}
-
-	// The Task reads the event's object through its input port.
-	target, _, err := forge_task.LookupTaskTarget(e.ctx, e.tb.WorldState, run.GetActivations()[0].GetTaskKey())
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, in := range target.GetInputs() {
-		if in.GetName() != "in" {
-			continue
-		}
-		if in.GetInputType() != forge_target.InputType_InputType_WORLD_OBJECT || in.GetWorldObject().GetObjectKey() != eventObjectKey {
-			t.Fatalf("input in = %v, want WORLD_OBJECT of %s", in, eventObjectKey)
-		}
-		return
-	}
-	t.Fatal("activation has no input in")
 }

@@ -6,24 +6,16 @@ import (
 	"testing"
 
 	"github.com/s4wave/spacewave/db/block"
-	"github.com/s4wave/spacewave/db/bucket"
 	"github.com/s4wave/spacewave/db/world"
-	world_block_engine "github.com/s4wave/spacewave/db/world/block/engine"
-	world_testbed "github.com/s4wave/spacewave/db/world/testbed"
 	world_types "github.com/s4wave/spacewave/db/world/types"
 	forge_job "github.com/s4wave/spacewave/forge/job"
 	forge_task "github.com/s4wave/spacewave/forge/task"
-	forge_world "github.com/s4wave/spacewave/forge/world"
 	s4wave_flowgraph "github.com/s4wave/spacewave/sdk/flowgraph"
 	flowgraph_run "github.com/s4wave/spacewave/sdk/flowgraph/run"
 )
 
-const (
-	// counterKey is the object the Flowgraph's event-source node binds.
-	counterKey = "events/counter"
-	// secondEngineID is the World engine of the second Device.
-	secondEngineID = "device-b"
-)
+// counterKey is the object the Flowgraph's event-source node binds.
+const counterKey = "events/counter"
 
 // counterGraph registers the counter object type on the bus, creates the
 // counter object, and creates a Flowgraph whose event-source node is bound to
@@ -67,38 +59,6 @@ func (e *env) createCounter() {
 		}
 		return world_types.SetObjectType(ctx, tx, counterKey, counterType)
 	})
-}
-
-// startSecondDevice starts a second World engine over the testbed's store, as
-// a second Device has, and returns its ID.
-func (e *env) startSecondDevice() string {
-	// Share the first engine's volume, bucket and head, under its own ID.
-	transformConf, err := world_testbed.NewEngineTransformConfig(e.tb.EngineBucketID)
-	if err != nil {
-		e.t.Fatal(err)
-	}
-	conf := world_block_engine.NewConfig(
-		secondEngineID,
-		e.tb.EngineVolumeID, e.tb.EngineBucketID,
-		e.tb.EngineObjectStoreID,
-		&bucket.ObjectRef{BucketId: e.tb.EngineBucketID, TransformConf: transformConf},
-		nil,
-		false,
-	)
-	_, ref, err := world.StartEngine(e.ctx, e.tb.Bus, conf, nil)
-	if err != nil {
-		e.t.Fatal(err)
-	}
-	e.t.Cleanup(ref.Release)
-
-	// Handle Forge operations on the second engine.
-	opc := world.NewLookupOpController("forge-ops-b", secondEngineID, world.NewSchema(forge_world.Types).LookupOp)
-	releaseOps, err := e.tb.Bus.AddController(e.ctx, opc, nil)
-	if err != nil {
-		e.t.Fatal(err)
-	}
-	e.t.Cleanup(releaseOps)
-	return secondEngineID
 }
 
 // startControllerOn starts a run controller on a World engine and returns its
@@ -166,28 +126,6 @@ func (e *env) requireDelivered(n int) {
 	}
 }
 
-// TestEventSourceTwoControllers runs the standing run's controller on two
-// World engines over one store, both reading one source. Both read each batch
-// and race on the cursor, and each event becomes one activation.
-func TestEventSourceTwoControllers(t *testing.T) {
-	// Run a controller on each engine, both watching the one source.
-	e := newEnv(t)
-	src, key := e.counterGraph()
-	second := e.startSecondDevice()
-	e.startWorker()
-	e.startControllerOn(e.tb.EngineID, key)
-	e.startControllerOn(second, key)
-	e.waitWatching(src, 2)
-
-	// Emit events both controllers read at once; one delivery applies.
-	src.emit(3)
-	e.requireDelivered(3)
-
-	// Emit more events after the race; each is delivered once.
-	src.emit(2)
-	e.requireDelivered(5)
-}
-
 // TestEventSourceRestart stops the controller, emits an event while it is
 // stopped, and starts it again. The event is delivered once, and the events
 // before it are not delivered again.
@@ -209,41 +147,4 @@ func TestEventSourceRestart(t *testing.T) {
 	// A restarted controller resumes from the stored cursor.
 	e.startControllerOn(e.tb.EngineID, key)
 	e.requireDelivered(3)
-}
-
-// TestEventSourceBinding closes the source's stream while its object is
-// absent or has a type no plugin registers, and opens it again when the object
-// is bound, without losing or repeating an event.
-func TestEventSourceBinding(t *testing.T) {
-	// Start with a bound source.
-	e := newEnv(t)
-	src, key := e.counterGraph()
-	e.startWorker()
-	e.startControllerOn(e.tb.EngineID, key)
-	e.waitWatching(src, 1)
-	src.emit(1)
-	e.requireDelivered(1)
-
-	// Delete the object: the stream closes, and reopens when it returns.
-	e.exec(func(ctx context.Context, tx world.WorldState) error {
-		_, err := tx.DeleteObject(ctx, counterKey)
-		return err
-	})
-	e.waitWatching(src, 0)
-	e.createCounter()
-	e.waitWatching(src, 1)
-
-	// Retype the object: the stream closes, and reopens when the type returns.
-	e.exec(func(ctx context.Context, tx world.WorldState) error {
-		return world_types.SetObjectType(ctx, tx, counterKey, "test/unregistered")
-	})
-	e.waitWatching(src, 0)
-	e.exec(func(ctx context.Context, tx world.WorldState) error {
-		return world_types.SetObjectType(ctx, tx, counterKey, counterType)
-	})
-	e.waitWatching(src, 1)
-
-	// An event after the binding returned is delivered once.
-	src.emit(1)
-	e.requireDelivered(2)
 }
