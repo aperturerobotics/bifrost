@@ -41,7 +41,7 @@ require (
 	github.com/aperturerobotics/go-websocket v1.8.15-0.20260910142736-349504d079da
 	github.com/aperturerobotics/go-winjob v0.0.0-20260705010911-656e088d1b05
 	github.com/aperturerobotics/json-iterator-lite v1.1.0 // latest
-	github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261018054529-f60c4d2691ea // master
+	github.com/aperturerobotics/protobuf-go-lite v0.19.1-0.20261024022728-f0dcc8ef200f // master
 	github.com/aperturerobotics/starpc v0.52.4-0.20261021005057-f60467d0da35 // master
 	github.com/aperturerobotics/util v1.34.10-0.20261021005056-6e84f021eba1 // master
 	github.com/cloudflare/circl v1.6.5
@@ -80,7 +80,7 @@ require (
 	github.com/prometheus/prometheus v0.315.1
 	github.com/quic-go/quic-go v0.64.1
 	github.com/restic/chunker v0.5.0
-	github.com/s4wave/goscript v0.4.7-0.20261023233859-6a8065a8472b
+	github.com/s4wave/goscript v0.5.0
 	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/satori/go.uuid v1.2.0
 	github.com/sergi/go-diff v1.4.0
