@@ -47,6 +47,14 @@ wheels = [
 ]
 
 [[package]]
+name = "go-prometheus-client-lite"
+version = "0.0.0"
+source = { git = "https://github.com/aperturerobotics/go-prometheus-client-lite.git?rev=92147463582b194318f1198ae4c61df0cb112c87#92147463582b194318f1198ae4c61df0cb112c87" }
+dependencies = [
+    { name = "protobuf" },
+]
+
+[[package]]
 name = "librt"
 version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -154,6 +162,7 @@ name = "spacewave-resource"
 version = "0.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "go-prometheus-client-lite" },
     { name = "starpc" },
 ]
 
@@ -165,7 +174,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "starpc", git = "https://github.com/aperturerobotics/starpc.git?rev=60aebb7f3a140f0772a63269afce10859d45b27f" }]
+requires-dist = [
+    { name = "go-prometheus-client-lite", git = "https://github.com/aperturerobotics/go-prometheus-client-lite.git?rev=92147463582b194318f1198ae4c61df0cb112c87" },
+    { name = "starpc", git = "https://github.com/aperturerobotics/starpc.git?rev=60aebb7f3a140f0772a63269afce10859d45b27f" },
+]
 
 [package.metadata.requires-dev]
 dev = [
