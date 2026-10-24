@@ -190,6 +190,13 @@ ROOTRESOURCESERVICE_SERVICE = ServiceDescriptor(
             False,
         ),
         MethodDescriptor(
+            "GatherMetrics",
+            _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsRequest,
+            _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsResponse,
+            False,
+            False,
+        ),
+        MethodDescriptor(
             "GetDebugDb",
             _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbRequest,
             _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbResponse,
@@ -797,6 +804,29 @@ class RootResourceServiceClient:
         finally:
             await call.aclose()
 
+    async def gather_metrics(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsResponse:
+        call = await self._client.open_call(
+            self._service,
+            "GatherMetrics",
+            request.SerializeToString(deterministic=True),
+        )
+        try:
+            data = await call.receive()
+            if data is None:
+                raise CallProtocolError("missing unary response")
+            response = (
+                _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsResponse()
+            )
+            response.ParseFromString(data)
+            if await call.receive() is not None:
+                raise CallProtocolError("extra unary response")
+            return response
+        finally:
+            await call.aclose()
+
     async def get_debug_db(
         self, request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbRequest
     ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbResponse:
@@ -1127,6 +1157,10 @@ class RootResourceServiceServer(Protocol):
         self,
         request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GetChangelogRequest,
     ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GetChangelogResponse: ...
+    async def gather_metrics(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsResponse: ...
     async def get_debug_db(
         self, request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbRequest
     ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbResponse: ...
@@ -1480,6 +1514,17 @@ def register_root_resource_service(
         await call.send(response.SerializeToString(deterministic=True))
 
     registry.register(service, "GetChangelog", get_changelog_handler)
+
+    async def gather_metrics_handler(call: Call) -> None:
+        first = await call.receive()
+        if first is None:
+            raise CallProtocolError("missing initial request")
+        request = _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsRequest()
+        request.ParseFromString(first)
+        response = await implementation.gather_metrics(request)
+        await call.send(response.SerializeToString(deterministic=True))
+
+    registry.register(service, "GatherMetrics", gather_metrics_handler)
 
     async def get_debug_db_handler(call: Call) -> None:
         first = await call.receive()

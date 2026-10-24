@@ -1,3 +1,4 @@
+from client_model.go import metrics_pb2 as _metrics_pb2
 from core.changelog import changelog_pb2 as _changelog_pb2
 from core.provider import provider_pb2 as _provider_pb2
 from core.session import session_pb2 as _session_pb2
@@ -427,6 +428,16 @@ class GetChangelogResponse(_message.Message):
     CHANGELOG_FIELD_NUMBER: _ClassVar[int]
     changelog: _changelog_pb2.Changelog
     def __init__(self, changelog: _Optional[_Union[_changelog_pb2.Changelog, _Mapping]] = ...) -> None: ...
+
+class GatherMetricsRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class GatherMetricsResponse(_message.Message):
+    __slots__ = ("metric_families",)
+    METRIC_FAMILIES_FIELD_NUMBER: _ClassVar[int]
+    metric_families: _containers.RepeatedCompositeFieldContainer[_metrics_pb2.MetricFamily]
+    def __init__(self, metric_families: _Optional[_Iterable[_Union[_metrics_pb2.MetricFamily, _Mapping]]] = ...) -> None: ...
 
 class GetDebugDbRequest(_message.Message):
     __slots__ = ()

@@ -126,6 +126,10 @@ class RootResourceServiceClient:
         self,
         request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GetChangelogRequest,
     ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GetChangelogResponse: ...
+    async def gather_metrics(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsResponse: ...
     async def get_debug_db(
         self, request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbRequest
     ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbResponse: ...
@@ -288,6 +292,10 @@ class RootResourceServiceServer(Protocol):
         self,
         request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GetChangelogRequest,
     ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GetChangelogResponse: ...
+    async def gather_metrics(
+        self,
+        request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsRequest,
+    ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GatherMetricsResponse: ...
     async def get_debug_db(
         self, request: _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbRequest
     ) -> _github_com_s4wave_spacewave_sdk_root_root_pb2.GetDebugDbResponse: ...
