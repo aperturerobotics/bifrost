@@ -127,6 +127,18 @@ jobs:
       - name: Setup aptre tools and vendor
         run: bun run prepare
 
+      # Both caches check every entry against its inputs' content, so a
+      # restored cache from an older revision is safe and replays what held.
+      - name: Cache GoScript and bldr build outputs
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/goscript
+            ~/.cache/bldr/build
+          key: ${{ runner.os }}-build-outputs-${{ matrix.compiler }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-build-outputs-${{ matrix.compiler }}-
+
       - name: Build release-WASM ${{ matrix.compiler }} assets with resource telemetry
         shell: bash
         run: |

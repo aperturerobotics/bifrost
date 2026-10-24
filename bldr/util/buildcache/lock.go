@@ -1,6 +1,6 @@
 //go:build !js
 
-package entrypoint_browser_bundle
+package bldr_util_buildcache
 
 import (
 	"os"
@@ -9,30 +9,34 @@ import (
 	"github.com/pkg/errors"
 )
 
-type bundleCacheLock struct {
+// Lock is an exclusive lock on a file, held across processes until Close.
+type Lock struct {
 	file *os.File
 }
 
-func acquireBundleCacheLock(lockPath string) (*bundleCacheLock, error) {
-	// Create the cache directory and open the lock file.
+// LockFile creates lockPath and its parent directories if needed and waits
+// for an exclusive lock on it.
+func LockFile(lockPath string) (*Lock, error) {
+	// Create the lock directory and open the lock file.
 	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
 		return nil, err
 	}
 	file, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
-		return nil, errors.Wrap(err, "open browser bundle cache lock")
+		return nil, errors.Wrap(err, "open lock file")
 	}
 
 	// Take the exclusive file lock, closing the file on failure.
-	lock := &bundleCacheLock{file: file}
+	lock := &Lock{file: file}
 	if err := lock.lock(); err != nil {
 		_ = file.Close()
-		return nil, errors.Wrap(err, "lock browser bundle cache")
+		return nil, errors.Wrap(err, "lock file")
 	}
 	return lock, nil
 }
 
-func (lock *bundleCacheLock) Close() error {
+// Close releases the lock and closes its file.
+func (lock *Lock) Close() error {
 	// Skip closing an already closed or empty lock.
 	if lock == nil || lock.file == nil {
 		return nil
@@ -43,10 +47,10 @@ func (lock *bundleCacheLock) Close() error {
 	closeErr := lock.file.Close()
 	lock.file = nil
 	if unlockErr != nil {
-		return errors.Wrap(unlockErr, "unlock browser bundle cache")
+		return errors.Wrap(unlockErr, "unlock file")
 	}
 	if closeErr != nil {
-		return errors.Wrap(closeErr, "close browser bundle cache lock")
+		return errors.Wrap(closeErr, "close lock file")
 	}
 	return nil
 }

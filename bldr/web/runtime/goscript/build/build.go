@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/bldr"
 	bldr_buildbudget "github.com/s4wave/spacewave/bldr/util/buildbudget"
+	bldr_util_buildcache "github.com/s4wave/spacewave/bldr/util/buildcache"
 	bldr_rolldown "github.com/s4wave/spacewave/bldr/web/bundler/rolldown"
 	entrypoint_browser_bundle "github.com/s4wave/spacewave/bldr/web/entrypoint/browser/bundle"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,8 @@ import (
 const (
 	webRuntimeGoScriptDir = "web/runtime/goscript"
 
+	// GoScriptSharedWebPkgID is the default web package of the shared GoScript
+	// provider.
 	GoScriptSharedWebPkgID       = "@s4wave/goscript-shared"
 	goScriptBundleReportFilename = "plugin-goscript-bundle-report.json"
 )
@@ -56,27 +59,45 @@ type GoScriptSharedImportMap map[string]string
 // GoScriptSharedBundleOptions configures shared provider publication and
 // consumer externalization.
 type GoScriptSharedBundleOptions struct {
+	// WebPkgID names the provider web package, or the default when empty.
 	WebPkgID string
-	Enabled  bool
+	// Enabled externalizes shared modules to the provider.
+	Enabled bool
 }
 
+// goScriptBundleReport is the build-private record of one GoScript bundle,
+// written by marshalGoScriptBundleReport.
 type goScriptBundleReport struct {
-	SchemaVersion    int                        `json:"schemaVersion"`
-	OutputPath       string                     `json:"outputPath"`
-	OutputBytes      int64                      `json:"outputBytes"`
-	TotalOutputBytes int64                      `json:"totalOutputBytes"`
-	OutputFileCount  int                        `json:"outputFileCount"`
-	OutputFiles      []goScriptBundleOutputFile `json:"outputFiles"`
-	Minify           bool                       `json:"minify"`
-	Sourcemaps       bool                       `json:"sourcemaps"`
-	CodeSplitting    bool                       `json:"codeSplitting"`
-	InputCount       int                        `json:"inputCount"`
-	InputPaths       []string                   `json:"inputPaths"`
+	// SchemaVersion is the report format version.
+	SchemaVersion int
+	// OutputPath is the bundle entry output, or the provider directory.
+	OutputPath string
+	// OutputBytes is the size of the entry output.
+	OutputBytes int64
+	// TotalOutputBytes is the size of every output file.
+	TotalOutputBytes int64
+	// OutputFileCount is the number of output files.
+	OutputFileCount int
+	// OutputFiles lists every output file with its size.
+	OutputFiles []goScriptBundleOutputFile
+	// Minify records whether the bundle was minified.
+	Minify bool
+	// Sourcemaps records whether the bundle has source maps.
+	Sourcemaps bool
+	// CodeSplitting records whether the bundle splits into chunks.
+	CodeSplitting bool
+	// InputCount is the number of bundle inputs.
+	InputCount int
+	// InputPaths are the absolute paths of the bundle inputs.
+	InputPaths []string
 }
 
+// goScriptBundleOutputFile is one output file of a GoScript bundle.
 type goScriptBundleOutputFile struct {
-	Path  string `json:"path"`
-	Bytes int64  `json:"bytes"`
+	// Path is the absolute output path.
+	Path string
+	// Bytes is the file size.
+	Bytes int64
 }
 
 // BuildWebGoScriptPluginScript builds the web plugin runtime entrypoint script.
@@ -331,20 +352,9 @@ func runRolldownGoScriptBundle(
 		},
 	}
 
-	// Reserve the build budget for the GoScript bundle.
-	budget, err := bldr_buildbudget.Default()
-	if err != nil {
-		return nil, err
-	}
-	permit, err := budget.Acquire(ctx, bldr_buildbudget.GoScriptBundleWeight)
-	if err != nil {
-		return nil, err
-	}
-	defer permit.Release()
-
-	// Build the GoScript bundle with Rolldown.
-	stateDir := filepath.Join(workDir, "..", "..", "bun")
-	result, err := bldr_rolldown.Build(ctx, le, stateDir, bldrDistRoot, request)
+	// Replay an earlier bundle of the same GoScript output, or build it with
+	// Rolldown inside the build budget.
+	result, err := buildGoScriptBundleCached(ctx, le, bldrDistRoot, workDir, request)
 	if err != nil {
 		return nil, err
 	}
@@ -416,9 +426,8 @@ func runRolldownGoScriptSharedProvider(
 		},
 	}
 
-	// Build the shared provider modules with Rolldown.
-	stateDir := filepath.Join(workDir, "..", "..", "bun")
-	result, err := bldr_rolldown.Build(ctx, le, stateDir, bldrDistRoot, request)
+	// Replay or build the shared provider modules.
+	result, err := buildGoScriptBundleCached(ctx, le, bldrDistRoot, workDir, request)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -428,6 +437,37 @@ func runRolldownGoScriptSharedProvider(
 		return nil, nil, err
 	}
 	return importMap, result.Inputs, nil
+}
+
+// buildGoScriptBundleCached replays request from the build cache, or builds
+// it with Rolldown while holding a GoScript bundle permit from the build
+// budget.
+func buildGoScriptBundleCached(
+	ctx context.Context,
+	le *logrus.Entry,
+	bldrDistRoot, workDir string,
+	request *bldr_rolldown.BuildRequest,
+) (*bldr_rolldown.BuildResult, error) {
+	cache, err := bldr_util_buildcache.Default()
+	if err != nil {
+		return nil, err
+	}
+	return bldr_rolldown.BuildCached(le, cache, bldrDistRoot, request, func() (*bldr_rolldown.BuildResult, error) {
+		// Hold a bundle permit while Rolldown runs.
+		budget, err := bldr_buildbudget.Default()
+		if err != nil {
+			return nil, err
+		}
+		permit, err := budget.Acquire(ctx, bldr_buildbudget.GoScriptBundleWeight)
+		if err != nil {
+			return nil, err
+		}
+		defer permit.Release()
+
+		// Build with the Bun state shared by the build tree.
+		stateDir := filepath.Join(workDir, "..", "..", "bun")
+		return bldr_rolldown.Build(ctx, le, stateDir, bldrDistRoot, request)
+	})
 }
 
 func goScriptSourceMapPolicy(enabled, codeSplitting bool) string {

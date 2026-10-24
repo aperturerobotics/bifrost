@@ -583,6 +583,16 @@
         "bldr/storage/volume/config.proto"
       ]
     },
+    "github.com/s4wave/spacewave/bldr/util/buildcache": {
+      "hash": "45f1949be9f14073c44f17b93084d2eb3cb31bbe5678990ea1d390c35bea4666",
+      "generatedFiles": [
+        "bldr/util/buildcache/buildcache.pb.go",
+        "bldr/util/buildcache/buildcache.pb.ts"
+      ],
+      "protoFiles": [
+        "bldr/util/buildcache/buildcache.proto"
+      ]
+    },
     "github.com/s4wave/spacewave/bldr/web/boot": {
       "hash": "73c3519e4a1e00ba89f25c7d54367b53bf9b852006a68d1072653ccfa7e19ac0",
       "generatedFiles": [

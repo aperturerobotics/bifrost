@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/s4wave/spacewave/bldr/distpath"
 	bldr_platform "github.com/s4wave/spacewave/bldr/platform"
+	bldr_util_buildcache "github.com/s4wave/spacewave/bldr/util/buildcache"
 	"github.com/s4wave/spacewave/bldr/util/npm"
 	bldr_web_bundler_rolldown "github.com/s4wave/spacewave/bldr/web/bundler/rolldown"
 	bldr_vite "github.com/s4wave/spacewave/bldr/web/bundler/vite"
@@ -1160,7 +1161,7 @@ func BuildBrowserBundle(
 	}
 
 	// Take the exclusive build lock, releasing it when the bundle completes.
-	buildLock, err := acquireBundleCacheLock(filepath.Join(buildDir, bundleCacheDirName, "build.lock"))
+	buildLock, err := bldr_util_buildcache.LockFile(filepath.Join(buildDir, bundleCacheDirName, "build.lock"))
 	if err != nil {
 		return nil, err
 	}

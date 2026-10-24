@@ -74,10 +74,6 @@ import (
 //go:embed web/entrypoint/browser/browser.proto
 //go:embed web/entrypoint/browser/browser_js.go
 //go:embed web/entrypoint/browser/build/build.go
-//go:embed web/entrypoint/browser/bundle/bundle-cache-lock-unix.go
-//go:embed web/entrypoint/browser/bundle/bundle-cache-lock-unsupported.go
-//go:embed web/entrypoint/browser/bundle/bundle-cache-lock-windows.go
-//go:embed web/entrypoint/browser/bundle/bundle-cache-lock.go
 //go:embed web/entrypoint/browser/bundle/bundle-cache.go
 //go:embed web/entrypoint/browser/bundle/bundle.go
 //go:embed web/entrypoint/browser/bundle/internal-build.go

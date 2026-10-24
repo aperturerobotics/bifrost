@@ -1,12 +1,12 @@
 //go:build !js && windows
 
-package entrypoint_browser_bundle
+package bldr_util_buildcache
 
 import (
 	"golang.org/x/sys/windows"
 )
 
-func (lock *bundleCacheLock) lock() error {
+func (lock *Lock) lock() error {
 	var overlapped windows.Overlapped
 	return windows.LockFileEx(
 		windows.Handle(lock.file.Fd()),
@@ -18,7 +18,7 @@ func (lock *bundleCacheLock) lock() error {
 	)
 }
 
-func (lock *bundleCacheLock) unlock() error {
+func (lock *Lock) unlock() error {
 	var overlapped windows.Overlapped
 	return windows.UnlockFileEx(
 		windows.Handle(lock.file.Fd()),

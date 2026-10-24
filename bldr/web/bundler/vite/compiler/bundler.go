@@ -19,6 +19,7 @@ import (
 	"github.com/aperturerobotics/util/promise"
 	b58 "github.com/mr-tron/base58/base58"
 	"github.com/pkg/errors"
+	bldr_util_buildcache "github.com/s4wave/spacewave/bldr/util/buildcache"
 	bldr_pipesock "github.com/s4wave/spacewave/bldr/util/pipesock"
 	singleton_muxed_conn "github.com/s4wave/spacewave/bldr/util/singleton-muxed-conn"
 	bldr_web_bundler "github.com/s4wave/spacewave/bldr/web/bundler"
@@ -272,7 +273,9 @@ func (t *viteBundlerTracker) execute(ctx context.Context) error {
 	return err
 }
 
-// BuildViteBundle builds a Vite bundle with the given bundle args.
+// BuildViteBundle builds a Vite bundle with the given bundle args, or replays
+// an earlier build of the same inputs from the build cache.
+//
 // Parameters:
 // - ctx: context for the build operation
 // - le: logger entry
@@ -281,7 +284,8 @@ func (t *viteBundlerTracker) execute(ctx context.Context) error {
 // - workingPath: path to the working directory
 // - baseViteConfigPaths: list of base Vite configuration file paths
 // - viteBundleMeta: metadata about the Vite bundle to build
-// - viteBundler: RPC client for the Vite bundler service
+// - build: runs the Vite build when the build cache has no matching entry
+// - sqlSchema: the schema the Vite process serves to plugins, or empty
 // - webPkgs: list of web packages to externalize
 // - outAssetsPath: output path for assets
 // - pluginID: identifier for the plugin
@@ -301,7 +305,8 @@ func BuildViteBundle(
 	workingPath string,
 	baseViteConfigPaths []string,
 	viteBundleMeta *ViteBundleMeta,
-	viteBundler bldr_vite.SRPCViteBundlerClient,
+	build bldr_vite.BuildFunc,
+	sqlSchema string,
 	webPkgs []*bldr_web_bundler.WebPkgRefConfig,
 	outAssetsPath string,
 	pluginID string,
@@ -382,6 +387,7 @@ func BuildViteBundle(
 	// Build entrypoint configs
 	entrypoints := make([]*bldr_vite.ViteBuildRequestEntrypoint, 0)
 	usedNames := make(map[string]bool)
+	seenPaths := make(map[string]bool)
 
 	// Build the deconflicted entrypoint configs.
 	for _, entrypointConf := range viteBundleMeta.GetEntrypoints() {
@@ -391,29 +397,25 @@ func BuildViteBundle(
 			return nil, nil, nil, errors.New("entrypoint path is required for vite bundle")
 		}
 
-		// Skip if we already have this entrypoint
-		found := slices.ContainsFunc(entrypoints, func(e *bldr_vite.ViteBuildRequestEntrypoint) bool { return e.GetInputPath() == entrypointPath })
-		if !found {
-			// Use filename (without extension) as entrypoint name
-			baseName := filepath.Base(entrypointPath)
-			baseEntryName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
-
-			// Deconflict names by adding incremental numbers if necessary
-			entryName := baseEntryName
-			for i := 1; ; i++ {
-				if _, ok := usedNames[entryName]; !ok {
-					break
-				}
-
-				entryName = baseEntryName + strconv.Itoa(i)
-			}
-			usedNames[entryName] = true
-
-			entrypoints = append(entrypoints, &bldr_vite.ViteBuildRequestEntrypoint{
-				Name:      entryName,
-				InputPath: entrypointPath,
-			})
+		// Skip an entrypoint listed twice.
+		if seenPaths[entrypointPath] {
+			continue
 		}
+		seenPaths[entrypointPath] = true
+
+		// Name the entrypoint by its file name without the extension, numbered
+		// when another entrypoint already has that name.
+		baseName := filepath.Base(entrypointPath)
+		baseEntryName := strings.TrimSuffix(baseName, filepath.Ext(baseName))
+		entryName := baseEntryName
+		for i := 1; usedNames[entryName]; i++ {
+			entryName = baseEntryName + strconv.Itoa(i)
+		}
+		usedNames[entryName] = true
+		entrypoints = append(entrypoints, &bldr_vite.ViteBuildRequestEntrypoint{
+			Name:      entryName,
+			InputPath: entrypointPath,
+		})
 	}
 
 	// Store vite cache in cache dir
@@ -427,8 +429,12 @@ func BuildViteBundle(
 		extWebPkgs = nil
 	}
 
-	// Run the build rpc
-	buildResp, err := viteBundler.Build(ctx, &bldr_vite.BuildRequest{
+	// Run the build, or replay an earlier build that read the same files.
+	buildCache, err := bldr_util_buildcache.Default()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	buildResp, err := bldr_vite.BuildCached(ctx, le, buildCache, sqlSchema, &bldr_vite.BuildRequest{
 		ConfigPaths:    viteConfigPaths,
 		Mode:           mode,
 		RootDir:        codeRootPath,
@@ -441,7 +447,7 @@ func BuildViteBundle(
 		WebPkgs:        extWebPkgs,
 		JsMinification: jsMinification,
 		JsSourcemaps:   jsSourcemaps,
-	})
+	}, build)
 	if ctx.Err() != nil {
 		return nil, nil, nil, context.Canceled
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/aperturerobotics/fastjson"
 	"github.com/pkg/errors"
 	bldr_manifest_builder "github.com/s4wave/spacewave/bldr/manifest/builder"
+	bldr_util_buildcache "github.com/s4wave/spacewave/bldr/util/buildcache"
 	web_entrypoint_index "github.com/s4wave/spacewave/bldr/web/entrypoint/index"
 	"github.com/sirupsen/logrus"
 )
@@ -91,7 +92,7 @@ func (bc *bundleCache) build(
 	}
 
 	// Take the exclusive cache lock for this bundle name.
-	lock, err := acquireBundleCacheLock(filepath.Join(bc.dir, name+".lock"))
+	lock, err := bldr_util_buildcache.LockFile(filepath.Join(bc.dir, name+".lock"))
 	if err != nil {
 		return nil, err
 	}
