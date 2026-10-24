@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/pkg/errors"
+	"github.com/s4wave/spacewave/bldr/plugin/pluginid"
 	"github.com/s4wave/spacewave/core/session"
 	"github.com/s4wave/spacewave/core/sobject"
 	s4wave_command "github.com/s4wave/spacewave/sdk/command"
@@ -126,6 +127,10 @@ func (s *AccountSettings) applyOpData(opData []byte) error {
 		return s.completeStorageRelease(body.CompleteStorageRelease)
 	case *AccountSettingsOp_SetDeveloperSpace:
 		return s.setDeveloperSpace(body.SetDeveloperSpace)
+	case *AccountSettingsOp_AddPlugin:
+		return s.addPlugin(body.AddPlugin.GetPluginId())
+	case *AccountSettingsOp_RemovePlugin:
+		return s.removePlugin(body.RemovePlugin.GetPluginId())
 	default:
 		return errors.New("unknown op type")
 	}
@@ -147,6 +152,28 @@ func (s *AccountSettings) setDeveloperSpace(op *SetDeveloperSpaceOp) error {
 		return ErrDeveloperSpaceChanged
 	}
 	s.DeveloperSpaceId = spaceID
+	return nil
+}
+
+// addPlugin adds a plugin to the account plugin list once.
+func (s *AccountSettings) addPlugin(pluginID string) error {
+	if err := pluginid.Validate(pluginID, false); err != nil {
+		return err
+	}
+	if !slices.Contains(s.PluginIds, pluginID) {
+		s.PluginIds = append(s.PluginIds, pluginID)
+	}
+	return nil
+}
+
+// removePlugin removes a plugin from the account plugin list.
+func (s *AccountSettings) removePlugin(pluginID string) error {
+	if pluginID == "" {
+		return pluginid.ErrEmptyPluginID
+	}
+	s.PluginIds = slices.DeleteFunc(s.PluginIds, func(id string) bool {
+		return id == pluginID
+	})
 	return nil
 }
 

@@ -20,3 +20,21 @@ func FilterValid(le *logrus.Entry, ids []string) []string {
 	}
 	return filtered
 }
+
+// Missing returns the IDs in ids that have does not contain, in order.
+func Missing(have, ids []string) []string {
+	// Index the IDs already present.
+	present := make(map[string]struct{}, len(have))
+	for _, pid := range have {
+		present[pid] = struct{}{}
+	}
+
+	// Keep each ID not yet present.
+	var missing []string
+	for _, pid := range ids {
+		if _, ok := present[pid]; !ok {
+			missing = append(missing, pid)
+		}
+	}
+	return missing
+}

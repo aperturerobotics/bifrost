@@ -108,6 +108,9 @@ type SRPCSessionResourceServiceClient interface {
 	// EnsureDeveloperSpace returns the account's developer Space, creating and
 	// recording it when the account has none.
 	EnsureDeveloperSpace(ctx context.Context, in *EnsureDeveloperSpaceRequest) (*EnsureDeveloperSpaceResponse, error)
+	// SetAccountPlugin adds a plugin to or removes it from the account plugin
+	// list, which loads into every Space the account mounts afterwards.
+	SetAccountPlugin(ctx context.Context, in *SetAccountPluginRequest) (*SetAccountPluginResponse, error)
 	// WatchStorageBackends streams the account's storage backends and the
 	// Spaces placed on each.
 	WatchStorageBackends(ctx context.Context, in *WatchStorageBackendsRequest) (SRPCSessionResourceService_WatchStorageBackendsClient, error)
@@ -781,6 +784,15 @@ func (c *srpcSessionResourceServiceClient) EnsureDeveloperSpace(ctx context.Cont
 	return out, nil
 }
 
+func (c *srpcSessionResourceServiceClient) SetAccountPlugin(ctx context.Context, in *SetAccountPluginRequest) (*SetAccountPluginResponse, error) {
+	out := new(SetAccountPluginResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "SetAccountPlugin", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *srpcSessionResourceServiceClient) WatchStorageBackends(ctx context.Context, in *WatchStorageBackendsRequest) (SRPCSessionResourceService_WatchStorageBackendsClient, error) {
 	stream, err := c.cc.NewStream(ctx, c.serviceID, "WatchStorageBackends", in)
 	if err != nil {
@@ -1020,6 +1032,9 @@ type SRPCSessionResourceServiceServer interface {
 	// EnsureDeveloperSpace returns the account's developer Space, creating and
 	// recording it when the account has none.
 	EnsureDeveloperSpace(context.Context, *EnsureDeveloperSpaceRequest) (*EnsureDeveloperSpaceResponse, error)
+	// SetAccountPlugin adds a plugin to or removes it from the account plugin
+	// list, which loads into every Space the account mounts afterwards.
+	SetAccountPlugin(context.Context, *SetAccountPluginRequest) (*SetAccountPluginResponse, error)
 	// WatchStorageBackends streams the account's storage backends and the
 	// Spaces placed on each.
 	WatchStorageBackends(*WatchStorageBackendsRequest, SRPCSessionResourceService_WatchStorageBackendsStream) error
@@ -1117,6 +1132,7 @@ func (SRPCSessionResourceServiceHandler) GetMethodIDs() []string {
 		"AcceptLocalPairingOffer",
 		"AcceptLocalPairingAnswer",
 		"EnsureDeveloperSpace",
+		"SetAccountPlugin",
 		"WatchStorageBackends",
 		"CheckStorageBackend",
 		"AddStorageBackend",
@@ -1229,6 +1245,8 @@ func (d *SRPCSessionResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_AcceptLocalPairingAnswer(d.impl, strm)
 	case "EnsureDeveloperSpace":
 		return true, d.InvokeMethod_EnsureDeveloperSpace(d.impl, strm)
+	case "SetAccountPlugin":
+		return true, d.InvokeMethod_SetAccountPlugin(d.impl, strm)
 	case "WatchStorageBackends":
 		return true, d.InvokeMethod_WatchStorageBackends(d.impl, strm)
 	case "CheckStorageBackend":
@@ -1769,6 +1787,18 @@ func (SRPCSessionResourceServiceHandler) InvokeMethod_EnsureDeveloperSpace(impl 
 		return err
 	}
 	out, err := impl.EnsureDeveloperSpace(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCSessionResourceServiceHandler) InvokeMethod_SetAccountPlugin(impl SRPCSessionResourceServiceServer, strm srpc.Stream) error {
+	req := new(SetAccountPluginRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.SetAccountPlugin(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -2362,6 +2392,14 @@ type SRPCSessionResourceService_EnsureDeveloperSpaceStream interface {
 }
 
 type srpcSessionResourceService_EnsureDeveloperSpaceStream struct {
+	srpc.Stream
+}
+
+type SRPCSessionResourceService_SetAccountPluginStream interface {
+	srpc.Stream
+}
+
+type srpcSessionResourceService_SetAccountPluginStream struct {
 	srpc.Stream
 }
 

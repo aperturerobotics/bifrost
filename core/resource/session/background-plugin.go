@@ -155,6 +155,7 @@ func (r *SessionResource) MountSpace(
 		r.hostPluginID,
 	)
 	spaceResource.SetAppPluginIDs(r.appPluginIDs)
+	spaceResource.SetAccountPlugins(r.accountPluginSource())
 	spaceResource.SetBindingRegistry(r.bindingRegistry)
 
 	// Release the body before the SharedObject.

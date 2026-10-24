@@ -9,6 +9,7 @@ import (
 	"github.com/aperturerobotics/util/ccontainer"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	process_binding "github.com/s4wave/spacewave/core/plugin/process"
+	resource_space "github.com/s4wave/spacewave/core/resource/space"
 	"github.com/s4wave/spacewave/core/sobject"
 	s4wave_sobject "github.com/s4wave/spacewave/sdk/sobject"
 	"github.com/sirupsen/logrus"
@@ -26,6 +27,8 @@ type SharedObjectResource struct {
 	hostPluginID  string
 	// appPluginIDs is the immutable application declaration supplied before publication.
 	appPluginIDs []string
+	// accountPlugins follows the account plugin list of each Space mounted.
+	accountPlugins resource_space.AccountPluginSource
 	// bindingRegistry carries binding changes from the Resource root.
 	bindingRegistry *process_binding.BindingRegistry
 }
@@ -228,6 +231,12 @@ func waitSharedObjectHealth(
 // SetAppPluginIDs supplies application composition before the resource is published.
 func (r *SharedObjectResource) SetAppPluginIDs(ids []string) {
 	r.appPluginIDs = slices.Clone(ids)
+}
+
+// SetAccountPlugins supplies the account plugin list of each Space mounted
+// before the resource is published.
+func (r *SharedObjectResource) SetAccountPlugins(source resource_space.AccountPluginSource) {
+	r.accountPlugins = source
 }
 
 // SetBindingRegistry supplies the Resource root's binding event source.

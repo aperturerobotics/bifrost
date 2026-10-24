@@ -11,10 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/aperturerobotics/starpc/srpc"
-	resource "github.com/s4wave/spacewave/bldr/resource"
 	resource_client "github.com/s4wave/spacewave/bldr/resource/client"
-	s4wave_root "github.com/s4wave/spacewave/sdk/root"
-	s4wave_session "github.com/s4wave/spacewave/sdk/session"
 	s4wave_sobject "github.com/s4wave/spacewave/sdk/sobject"
 	s4wave_space "github.com/s4wave/spacewave/sdk/space"
 )
@@ -236,65 +233,26 @@ func (sa *SpaceArgs) RunPlugins(c *appcli.Context) error {
 	for _, p := range plugins {
 		w.WriteString("  - id=" + p.GetPluginId() +
 			" loaded=" + strconv.FormatBool(p.GetLoaded()) +
+			" account=" + strconv.FormatBool(p.GetAccount()) +
 			" desc=" + strconv.Quote(p.GetDescription()) + "\n")
 	}
 	return nil
 }
 
-// mountSpaceResource navigates the Resource SDK to the SpaceResourceService.
+// mountSpaceResource mounts the Space SharedObject body in the selected Session
+// and returns its Space resource service. Call cleanup when done.
 func (sa *SpaceArgs) mountSpaceResource(ctx context.Context) (s4wave_space.SRPCSpaceResourceServiceClient, func(), error) {
-	// Connect to the core plugin that exposes the Resource service.
-	coreClient, err := sa.client.BuildCoreClient()
+	// Mount the selected Session.
+	resClient, sess, releaseSess, err := sa.client.mountSession(ctx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "connect to core plugin")
-	}
-
-	// Open and retain the Resource client for the mounted Space.
-	resourceSvc := resource.NewSRPCResourceServiceClient(coreClient)
-	resClient, err := resource_client.NewClient(ctx, resourceSvc)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "resource client")
+		return nil, nil, err
 	}
 	sa.resClient = resClient
-
-	// Access the root resource used to mount the selected Session.
-	rootRef := resClient.AccessRootResource()
-	root, err := s4wave_root.NewRoot(resClient, rootRef)
-	if err != nil {
-		rootRef.Release()
-		resClient.Release()
-		return nil, nil, errors.Wrap(err, "root resource")
-	}
-
-	// Mount the selected Session or release the root on failure.
-	resp, err := root.MountSessionByIdx(ctx, sessionIndex32(sa.client.SessionIdx))
-	if err != nil {
-		root.Release()
-		resClient.Release()
-		return nil, nil, errors.Wrap(err, "mount session")
-	}
-	if resp.GetNotFound() {
-		root.Release()
-		resClient.Release()
-		return nil, nil, errors.Errorf("no session at index %d", sa.client.SessionIdx)
-	}
-
-	// Open the mounted Session resource for SharedObject access.
-	sessRef := resClient.CreateResourceReference(resp.GetResourceId())
-	sess, err := s4wave_session.NewSession(resClient, sessRef)
-	if err != nil {
-		sessRef.Release()
-		root.Release()
-		resClient.Release()
-		return nil, nil, errors.Wrap(err, "session resource")
-	}
 
 	// Mount the Space SharedObject in the selected Session.
 	soResp, err := sess.MountSharedObject(ctx, sa.SpaceID)
 	if err != nil {
-		sess.Release()
-		root.Release()
-		resClient.Release()
+		releaseSess()
 		return nil, nil, errors.Wrap(err, "mount shared object")
 	}
 
@@ -303,9 +261,7 @@ func (sa *SpaceArgs) mountSpaceResource(ctx context.Context) (s4wave_space.SRPCS
 	soClient, err := soRef.GetClient()
 	if err != nil {
 		soRef.Release()
-		sess.Release()
-		root.Release()
-		resClient.Release()
+		releaseSess()
 		return nil, nil, errors.Wrap(err, "shared object client")
 	}
 
@@ -314,39 +270,28 @@ func (sa *SpaceArgs) mountSpaceResource(ctx context.Context) (s4wave_space.SRPCS
 	bodyResp, err := s4wave_sobject.MountSharedObjectBody(ctx, soSvc)
 	if err != nil {
 		soRef.Release()
-		sess.Release()
-		root.Release()
-		resClient.Release()
+		releaseSess()
 		return nil, nil, errors.Wrap(err, "mount shared object body")
 	}
 
-	// Open the Space body client and release acquired resources on failure.
+	// Open the Space body client.
 	bodyRef := resClient.CreateResourceReference(bodyResp.GetResourceId())
 	bodyClient, err := bodyRef.GetClient()
 	if err != nil {
-		// Release the Space body, SharedObject, Session, root and Resource client.
 		bodyRef.Release()
 		soRef.Release()
-		sess.Release()
-		root.Release()
-		resClient.Release()
+		releaseSess()
 		return nil, nil, errors.Wrap(err, "space body client")
 	}
 
-	// Expose the mounted body through the Space resource service.
-	spaceSvc := s4wave_space.NewSRPCSpaceResourceServiceClient(bodyClient)
-
-	// Provide cleanup for every resource retained by the mounted Space.
+	// Release the Space body, SharedObject, and Session on cleanup.
 	cleanup := func() {
-		// Release the Space body, SharedObject, Session, root and Resource client.
 		bodyRef.Release()
 		soRef.Release()
-		sess.Release()
-		root.Release()
-		resClient.Release()
+		releaseSess()
 		sa.resClient = nil
 	}
-	return spaceSvc, cleanup, nil
+	return s4wave_space.NewSRPCSpaceResourceServiceClient(bodyClient), cleanup, nil
 }
 
 // getResourceClient gets an SRPC client for a resource ID using the resource

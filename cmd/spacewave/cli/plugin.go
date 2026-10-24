@@ -35,8 +35,8 @@ func newPluginCommand(getBus func() cli_entrypoint.CliBus) *cli.Command {
 		Usage:   "manage space plugins",
 		Subcommands: []*cli.Command{
 			buildPluginListCommand(),
-			buildPluginAddCommand(),
-			buildPluginRemoveCommand(),
+			buildPluginSetCommand(true),
+			buildPluginSetCommand(false),
 			buildPluginBackgroundCommand(),
 			buildPluginImportManifestCommand(getBus),
 		},
@@ -471,85 +471,30 @@ func buildPluginListCommand() *cli.Command {
 	}
 }
 
-// buildPluginAddCommand builds the plugin add subcommand.
-func buildPluginAddCommand() *cli.Command {
+// buildPluginSetCommand builds the subcommand that adds a plugin to, or
+// removes it from, the Space settings or, with --account, the account plugin
+// list every Space of the account loads.
+func buildPluginSetCommand(add bool) *cli.Command {
+	// Name the subcommand for its direction.
 	var statePath string
 	var sessionIdx uint
-	return &cli.Command{
-		Name:      "add",
-		Usage:     "add a plugin to space settings",
-		ArgsUsage: "<manifest-id>",
-		Flags: append(clientFlags(&statePath, &sessionIdx),
-			&cli.StringFlag{
-				Name:    "space",
-				Usage:   "space ID (auto-detected if only one space)",
-				EnvVars: []string{"SPACEWAVE_SPACE"},
-			},
-		),
-		Action: func(c *cli.Context) error {
-			// Require a manifest ID.
-			manifestID := c.Args().First()
-			if manifestID == "" {
-				return errors.New("manifest ID required")
-			}
-
-			// Connect to the daemon.
-			ctx := c.Context
-			spaceID := c.String("space")
-			client, err := connectDaemonFromContext(ctx, c, statePath)
-			if err != nil {
-				return err
-			}
-			defer client.close()
-
-			// Mount the selected session.
-			sess, err := client.mountSession(ctx, sessionIndex32(sessionIdx))
-			if err != nil {
-				return err
-			}
-			defer sess.Release()
-
-			// Resolve the Space ID.
-			spaceID, err = client.resolveSpaceID(ctx, sess, spaceID)
-			if err != nil {
-				return err
-			}
-
-			// Mount the Space service.
-			spaceSvc, spaceCleanup, err := client.mountSpace(ctx, sess, spaceID)
-			if err != nil {
-				return err
-			}
-			defer spaceCleanup()
-
-			// Add the plugin to the Space.
-			_, err = spaceSvc.AddSpacePlugin(ctx, &s4wave_space.AddSpacePluginRequest{
-				PluginId: manifestID,
-			})
-			if err != nil {
-				return errors.Wrap(err, "add space plugin")
-			}
-
-			// Report that the plugin was added.
-			os.Stdout.WriteString("added: " + manifestID + "\n")
-			return nil
-		},
+	name, usage, verb := "remove", "remove a plugin from space or account settings", "removed"
+	if add {
+		name, usage, verb = "add", "add a plugin to space or account settings", "added"
 	}
-}
-
-// buildPluginRemoveCommand builds the plugin remove subcommand.
-func buildPluginRemoveCommand() *cli.Command {
-	var statePath string
-	var sessionIdx uint
 	return &cli.Command{
-		Name:      "remove",
-		Usage:     "remove a plugin from space settings",
+		Name:      name,
+		Usage:     usage,
 		ArgsUsage: "<manifest-id>",
 		Flags: append(clientFlags(&statePath, &sessionIdx),
 			&cli.StringFlag{
 				Name:    "space",
 				Usage:   "space ID (auto-detected if only one space)",
 				EnvVars: []string{"SPACEWAVE_SPACE"},
+			},
+			&cli.BoolFlag{
+				Name:  "account",
+				Usage: "change the account plugin list instead of one Space",
 			},
 		),
 		Action: func(c *cli.Context) error {
@@ -561,7 +506,6 @@ func buildPluginRemoveCommand() *cli.Command {
 
 			// Connect to the daemon.
 			ctx := c.Context
-			spaceID := c.String("space")
 			client, err := connectDaemonFromContext(ctx, c, statePath)
 			if err != nil {
 				return err
@@ -575,29 +519,36 @@ func buildPluginRemoveCommand() *cli.Command {
 			}
 			defer sess.Release()
 
-			// Resolve the Space ID.
-			spaceID, err = client.resolveSpaceID(ctx, sess, spaceID)
+			// Change the account plugin list.
+			if c.Bool("account") {
+				if err := sess.SetAccountPlugin(ctx, manifestID, add); err != nil {
+					return errors.Wrap(err, "set account plugin")
+				}
+				os.Stdout.WriteString("account " + verb + ": " + manifestID + "\n")
+				return nil
+			}
+
+			// Resolve and mount the Space.
+			spaceID, err := client.resolveSpaceID(ctx, sess, c.String("space"))
 			if err != nil {
 				return err
 			}
-
-			// Mount the Space service.
 			spaceSvc, spaceCleanup, err := client.mountSpace(ctx, sess, spaceID)
 			if err != nil {
 				return err
 			}
 			defer spaceCleanup()
 
-			// Remove the plugin from the Space.
-			_, err = spaceSvc.RemoveSpacePlugin(ctx, &s4wave_space.RemoveSpacePluginRequest{
-				PluginId: manifestID,
-			})
-			if err != nil {
-				return errors.Wrap(err, "remove space plugin")
+			// Change the Space settings.
+			if add {
+				_, err = spaceSvc.AddSpacePlugin(ctx, &s4wave_space.AddSpacePluginRequest{PluginId: manifestID})
+			} else {
+				_, err = spaceSvc.RemoveSpacePlugin(ctx, &s4wave_space.RemoveSpacePluginRequest{PluginId: manifestID})
 			}
-
-			// Report that the plugin was removed.
-			os.Stdout.WriteString("removed: " + manifestID + "\n")
+			if err != nil {
+				return errors.Wrap(err, name+" space plugin")
+			}
+			os.Stdout.WriteString(verb + ": " + manifestID + "\n")
 			return nil
 		},
 	}

@@ -17,8 +17,9 @@ import (
 )
 
 // TestPluginDemandLoadsOnlyDemandedPlugins checks that the Space loads only
-// the listed plugins its demand selects, and that withdrawing one plugin stops
-// exactly that plugin's load without restarting the others.
+// the listed plugins its demand selects, including the account's, and that
+// withdrawing one plugin stops exactly that plugin's load without restarting
+// the others.
 func TestPluginDemandLoadsOnlyDemandedPlugins(t *testing.T) {
 	// Bound the test and build the testbed.
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
@@ -42,13 +43,19 @@ func TestPluginDemandLoadsOnlyDemandedPlugins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Demand two of them.
+	// Demand two of them and the account's plugin.
 	var mtx sync.Mutex
-	demanded := []string{"bridge", "server"}
+	demanded := []string{"bridge", "inspector", "server"}
 	isDemanded := func(pluginID string) bool {
 		mtx.Lock()
 		defer mtx.Unlock()
 		return slices.Contains(demanded, pluginID)
+	}
+	accountIDs := []string{"inspector"}
+	getAccountIDs := func() []string {
+		mtx.Lock()
+		defer mtx.Unlock()
+		return accountIDs
 	}
 
 	// Record every LoadPlugin the Space adds.
@@ -60,7 +67,11 @@ func TestPluginDemandLoadsOnlyDemandedPlugins(t *testing.T) {
 	defer releaseLoads()
 
 	// Start the Space controller with the demand.
-	tb.StaticResolver.AddFactory(NewFactory(tb.Bus, WithPluginDemand(isDemanded)))
+	tb.StaticResolver.AddFactory(NewFactory(
+		tb.Bus,
+		WithPluginDemand(isDemanded),
+		WithAccountPlugins(getAccountIDs),
+	))
 	space, _, spaceRef, err := StartControllerWithConfig(ctx, tb.Bus, &Config{
 		SpaceId:       "space-test",
 		VolumeId:      tb.EngineVolumeID,
@@ -72,6 +83,22 @@ func TestPluginDemandLoadsOnlyDemandedPlugins(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer spaceRef.Release()
+	loads.wait(ctx, t, []string{"bridge", "inspector", "server"})
+
+	// The account plugin's manifest is approved like a listed one.
+	var approved []string
+	space.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		approved = space.pluginIDs
+	})
+	if !slices.Contains(approved, "inspector") {
+		t.Fatalf("approved plugin IDs = %v, want inspector", approved)
+	}
+
+	// The account drops its plugin.
+	mtx.Lock()
+	accountIDs = nil
+	mtx.Unlock()
+	space.NotifyChanged()
 	loads.wait(ctx, t, []string{"bridge", "server"})
 
 	// Withdraw the bridge.

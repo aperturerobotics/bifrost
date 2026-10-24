@@ -102,6 +102,7 @@ func (r *SharedObjectResource) MountSharedObjectBody(ctx context.Context, req *s
 		r.hostPluginID,
 	)
 	spaceResource.SetAppPluginIDs(r.appPluginIDs)
+	spaceResource.SetAccountPlugins(r.accountPlugins)
 	spaceResource.SetBindingRegistry(r.bindingRegistry)
 	id, err := resourceCtx.AddResourceValue(spaceResource.GetMux(), spaceResource, mountedSpaceRef.Release)
 	if err != nil {

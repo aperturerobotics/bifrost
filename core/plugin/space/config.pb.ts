@@ -18,10 +18,6 @@ export interface Config {
    */
   spaceId?: string
   /**
-   * PluginIds lists manifest IDs of plugins to load (from SpaceSettings).
-   */
-  pluginIds?: string[]
-  /**
    * VolumeId is the volume ID for the PlatformAccount object store.
    * If empty, uses the default bldr plugin volume.
    */
@@ -68,7 +64,6 @@ export interface Config {
 export const Config: MessageType<Config> =
   /* @__PURE__ */ createMessageType<Config>('plugin.space.Config', () => [
     [1, 'space_id', 9],
-    [2, 'plugin_ids', 9, 1],
     [3, 'volume_id', 9],
     [4, 'object_store_id', 9],
     [5, 'engine_id', 9],

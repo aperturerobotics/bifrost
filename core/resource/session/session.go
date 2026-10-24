@@ -363,6 +363,7 @@ func (r *SessionResource) addSharedObjectResource(
 		r.hostPluginID,
 	)
 	soResource.SetAppPluginIDs(r.appPluginIDs)
+	soResource.SetAccountPlugins(r.accountPluginSource())
 	soResource.SetBindingRegistry(r.bindingRegistry)
 	id, err := resourceCtx.AddResource(soResource.GetMux(), mountedSoRef.Release)
 	if err != nil {
@@ -477,6 +478,7 @@ func (r *SessionResource) mountSpaceResponse(
 		r.hostPluginID,
 	)
 	spaceResource.SetAppPluginIDs(r.appPluginIDs)
+	spaceResource.SetAccountPlugins(r.accountPluginSource())
 	spaceResource.SetBindingRegistry(r.bindingRegistry)
 	spaceBodyID, err := mountedresource.Add(
 		resourceCtx,
@@ -977,6 +979,7 @@ func (r *SessionResource) mountCdnSharedObject(
 		r.hostPluginID,
 	)
 	soResource.SetAppPluginIDs(r.appPluginIDs)
+	soResource.SetAccountPlugins(r.accountPluginSource())
 	soResource.SetBindingRegistry(r.bindingRegistry)
 	id, err := resourceCtx.AddResource(soResource.GetMux(), func() {})
 	if err != nil {

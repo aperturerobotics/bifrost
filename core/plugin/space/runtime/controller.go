@@ -2,6 +2,7 @@ package plugin_space_runtime
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -36,7 +37,7 @@ var controllerDescrip = "runs the shared plugin runtime of one Space"
 type Controller struct {
 	*bus.BusController[*Config]
 
-	// bcast guards gen, err, prefixes, and demands.
+	// bcast guards gen, err, prefixes, demands, and accountPluginIDs.
 	bcast broadcast.Broadcast
 	// gen is the running generation, or nil while none runs.
 	gen *Generation
@@ -47,6 +48,8 @@ type Controller struct {
 	prefixes map[string]struct{}
 	// demands is the set of holder plugin demands.
 	demands map[*PluginDemand]struct{}
+	// accountPluginIDs is the account plugin list the holders last reported.
+	accountPluginIDs []string
 	// bindingRegistry reports binding writes and orphan deletions to Resource watches.
 	bindingRegistry *process_binding.BindingRegistry
 }
@@ -117,6 +120,35 @@ func (c *Controller) GetGeneration() (*Generation, <-chan struct{}, error) {
 	})
 
 	return gen, waitCh, err
+}
+
+// GetAccountPluginIDs returns the account plugin list of the runtime.
+func (c *Controller) GetAccountPluginIDs() []string {
+	var ids []string
+	c.bcast.HoldLock(func(_ func(), _ func() <-chan struct{}) {
+		ids = c.accountPluginIDs
+	})
+	return ids
+}
+
+// SetAccountPluginIDs replaces the account plugin list, which loads alongside
+// the plugins the Space lists, and wakes every mount and the running
+// generation. Every holder of the runtime reports the same account's list.
+func (c *Controller) SetAccountPluginIDs(ids []string) {
+	// Store the canonical list and wake the mounts when it changed.
+	ids = canonicalPluginIDs(ids)
+	var gen *Generation
+	var changed bool
+	c.bcast.HoldLock(func(broadcast func(), _ func() <-chan struct{}) {
+		if slices.Equal(c.accountPluginIDs, ids) {
+			return
+		}
+		c.accountPluginIDs, gen, changed = ids, c.gen, true
+		broadcast()
+	})
+	if changed && gen != nil {
+		gen.GetSpaceController().NotifyChanged()
+	}
 }
 
 // ReserveServicePrefix reserves an attached RPC service ID prefix for every
@@ -250,6 +282,7 @@ func (c *Controller) runGeneration(ctx context.Context, retry backoff.BackOff) e
 		c.GetLogger(),
 		c.GetConfig(),
 		c.IsPluginDemanded,
+		c.GetAccountPluginIDs,
 		c.NotifyProcessBindingsChanged,
 	)
 	if err != nil {

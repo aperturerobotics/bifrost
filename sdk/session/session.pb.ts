@@ -2888,6 +2888,45 @@ export const EnsureDeveloperSpaceResponse: MessageType<EnsureDeveloperSpaceRespo
   )
 
 /**
+ * SetAccountPluginRequest is the request for SetAccountPlugin.
+ *
+ * @generated from message s4wave.session.SetAccountPluginRequest
+ */
+export interface SetAccountPluginRequest {
+  /**
+   * PluginId is the manifest ID of the plugin.
+   */
+  pluginId?: string
+  /**
+   * Enabled adds the plugin to the account plugin list when true and removes
+   * it when false.
+   */
+  enabled?: boolean
+}
+
+export const SetAccountPluginRequest: MessageType<SetAccountPluginRequest> =
+  /* @__PURE__ */ createMessageType<SetAccountPluginRequest>(
+    's4wave.session.SetAccountPluginRequest',
+    () => [
+      [1, 'plugin_id', 9],
+      [2, 'enabled', 8],
+    ],
+  )
+
+/**
+ * SetAccountPluginResponse is the response for SetAccountPlugin.
+ *
+ * @generated from message s4wave.session.SetAccountPluginResponse
+ */
+export interface SetAccountPluginResponse {}
+
+export const SetAccountPluginResponse: MessageType<SetAccountPluginResponse> =
+  /* @__PURE__ */ createMessageType<SetAccountPluginResponse>(
+    's4wave.session.SetAccountPluginResponse',
+    () => [],
+  )
+
+/**
  * WatchStorageBackendsRequest is the request for WatchStorageBackends.
  *
  * @generated from message s4wave.session.WatchStorageBackendsRequest

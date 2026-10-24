@@ -455,18 +455,27 @@ function InstalledPluginList({
                 </span>
               )}
               <PluginLifecycleBadge plugin={plugin} />
-              <button
-                type="button"
-                onClick={() => onRequestRemove(id)}
-                disabled={!!pending}
-                aria-label={`Remove ${id}`}
-                className={cn(
-                  'text-foreground-alt/50 hover:text-destructive flex size-6 items-center justify-center rounded-md transition-colors',
-                  !!pending && 'cursor-not-allowed opacity-50',
-                )}
-              >
-                <LuTrash2 className="size-3.5" />
-              </button>
+              {plugin.account ? (
+                <span
+                  className="bg-foreground/5 text-foreground-alt rounded-full px-2 py-0.5 text-xs"
+                  title="Installed on your account for every Space. Remove it from the account plugin list."
+                >
+                  Account
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onRequestRemove(id)}
+                  disabled={!!pending}
+                  aria-label={`Remove ${id}`}
+                  className={cn(
+                    'text-foreground-alt/50 hover:text-destructive flex size-6 items-center justify-center rounded-md transition-colors',
+                    !!pending && 'cursor-not-allowed opacity-50',
+                  )}
+                >
+                  <LuTrash2 className="size-3.5" />
+                </button>
+              )}
             </div>
           </div>
         )
