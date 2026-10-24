@@ -3917,7 +3917,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/prom": {
-      "hash": "75a0750a89aa0234fbaeab393cfa26fbf3ac4562744e497661eb26001d66582d",
+      "hash": "55bc7fda4e809d5a7fa1ae1a48f3467b0e9c64748a92b880c7e7aaabfb36930b",
       "generatedFiles": [
         "sdk/prom/prom.pb.go",
         "sdk/prom/prom.pb.ts",
@@ -3977,7 +3977,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/root": {
-      "hash": "5f539136c687ddca35e5304bea0242456ebc4b259de1c9e9e53cae9059961bc3",
+      "hash": "58bf1ff6115590ef1f75aad293325a284eca8d7e5b8b62bad410b123dafa4356",
       "generatedFiles": [
         "sdk/root/root.pb.go",
         "sdk/root/root.pb.ts",

@@ -10,6 +10,7 @@ import (
 	slices "slices"
 	strconv "strconv"
 
+	_go "github.com/aperturerobotics/go-prometheus-client-lite/client_model/go"
 	protobuf_go_lite "github.com/aperturerobotics/protobuf-go-lite"
 	json "github.com/aperturerobotics/protobuf-go-lite/json"
 	changelog "github.com/s4wave/spacewave/core/changelog"
@@ -1483,6 +1484,38 @@ func (*GetChangelogResponse) ProtoMessage() {}
 func (x *GetChangelogResponse) GetChangelog() *changelog.Changelog {
 	if x != nil {
 		return x.Changelog
+	}
+	return nil
+}
+
+// GatherMetricsRequest is the request type for GatherMetrics.
+type GatherMetricsRequest struct {
+	unknownFields []byte
+}
+
+func (x *GatherMetricsRequest) Reset() {
+	*x = GatherMetricsRequest{}
+}
+
+func (*GatherMetricsRequest) ProtoMessage() {}
+
+// GatherMetricsResponse is the response type for GatherMetrics.
+type GatherMetricsResponse struct {
+	unknownFields []byte
+	// MetricFamilies are the families of the core process's metrics registry,
+	// sorted by name.
+	MetricFamilies []*_go.MetricFamily `protobuf:"bytes,1,rep,name=metric_families,json=metricFamilies,proto3" json:"metricFamilies,omitempty"`
+}
+
+func (x *GatherMetricsResponse) Reset() {
+	*x = GatherMetricsResponse{}
+}
+
+func (*GatherMetricsResponse) ProtoMessage() {}
+
+func (x *GatherMetricsResponse) GetMetricFamilies() []*_go.MetricFamily {
+	if x != nil {
+		return x.MetricFamilies
 	}
 	return nil
 }
@@ -3030,6 +3063,37 @@ func (m *GetChangelogResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *GatherMetricsRequest) CloneVT() *GatherMetricsRequest {
+	if m == nil {
+		return (*GatherMetricsRequest)(nil)
+	}
+	r := new(GatherMetricsRequest)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GatherMetricsRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *GatherMetricsResponse) CloneVT() *GatherMetricsResponse {
+	if m == nil {
+		return (*GatherMetricsResponse)(nil)
+	}
+	r := new(GatherMetricsResponse)
+	r.MetricFamilies = protobuf_go_lite.CloneVTSlice(m.MetricFamilies)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *GatherMetricsResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *GetDebugDbRequest) CloneVT() *GetDebugDbRequest {
 	if m == nil {
 		return (*GetDebugDbRequest)(nil)
@@ -4572,6 +4636,43 @@ func (this *GetChangelogResponse) EqualVT(that *GetChangelogResponse) bool {
 
 func (this *GetChangelogResponse) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*GetChangelogResponse)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *GatherMetricsRequest) EqualVT(that *GatherMetricsRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GatherMetricsRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GatherMetricsRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *GatherMetricsResponse) EqualVT(that *GatherMetricsResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualVTSliceImplicit(this.MetricFamilies, that.MetricFamilies, func() *_go.MetricFamily { return &_go.MetricFamily{} }) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *GatherMetricsResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*GatherMetricsResponse)
 	if !ok {
 		return false
 	}
@@ -7933,6 +8034,99 @@ func (x *GetChangelogResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the GetChangelogResponse from JSON.
 func (x *GetChangelogResponse) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the GatherMetricsRequest message to JSON.
+func (x *GatherMetricsRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GatherMetricsRequest to JSON.
+func (x *GatherMetricsRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GatherMetricsRequest message from JSON.
+func (x *GatherMetricsRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		// no fields
+	})
+}
+
+// UnmarshalJSON unmarshals the GatherMetricsRequest from JSON.
+func (x *GatherMetricsRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the GatherMetricsResponse message to JSON.
+func (x *GatherMetricsResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.MetricFamilies) > 0 || s.HasField("metricFamilies") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("metricFamilies")
+		s.WriteArrayStart()
+		var wroteElement bool
+		for _, element := range x.MetricFamilies {
+			s.WriteMoreIf(&wroteElement)
+			element.MarshalProtoJSON(s.WithField("metricFamilies"))
+		}
+		s.WriteArrayEnd()
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the GatherMetricsResponse to JSON.
+func (x *GatherMetricsResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the GatherMetricsResponse message from JSON.
+func (x *GatherMetricsResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "metric_families", "metricFamilies":
+			s.AddField("metric_families")
+			if s.ReadNil() {
+				x.MetricFamilies = nil
+				return
+			}
+			s.ReadArray(func() {
+				if s.ReadNil() {
+					x.MetricFamilies = append(x.MetricFamilies, nil)
+					return
+				}
+				v := &_go.MetricFamily{}
+				v.UnmarshalProtoJSON(s.WithField("metric_families", false))
+				if s.Err() != nil {
+					return
+				}
+				x.MetricFamilies = append(x.MetricFamilies, v)
+			})
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the GatherMetricsResponse from JSON.
+func (x *GatherMetricsResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -11345,6 +11539,82 @@ func (m *GetChangelogResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
+func (m *GatherMetricsRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GatherMetricsRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GatherMetricsRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GatherMetricsResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GatherMetricsResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *GatherMetricsResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.MetricFamilies) > 0 {
+		for iNdEx := len(m.MetricFamilies) - 1; iNdEx >= 0; iNdEx-- {
+			size, err := m.MetricFamilies[iNdEx].MarshalToSizedBufferVT(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = protobuf_go_lite.EncodeVarint(dAtA, i, uint64(size))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *GetDebugDbRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -13001,6 +13271,30 @@ func (m *GetChangelogResponse) SizeVT() (n int) {
 	return n
 }
 
+func (m *GatherMetricsRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *GatherMetricsResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	for _, e := range m.MetricFamilies {
+		l = e.SizeVT()
+		n += protobuf_go_lite.SizeMessage(1, l)
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *GetDebugDbRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -14223,6 +14517,38 @@ func (x *GetChangelogResponse) MarshalProtoText() string {
 }
 
 func (x *GetChangelogResponse) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *GatherMetricsRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	protobuf_go_lite.TextStartMessage(&sb, "GatherMetricsRequest")
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GatherMetricsRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *GatherMetricsResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "GatherMetricsResponse")
+	if len(x.MetricFamilies) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "metric_families")
+		for i, v := range x.MetricFamilies {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			if v == nil {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, &_go.MetricFamily{})
+			} else {
+				protobuf_go_lite.TextWriteTextMarshaler(&sb, v)
+			}
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *GatherMetricsResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -17824,6 +18150,105 @@ func (m *GetChangelogResponse) UnmarshalVT(dAtA []byte) error {
 				m.Changelog = &changelog.Changelog{}
 			}
 			if err := m.Changelog.UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *GatherMetricsRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GatherMetricsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GatherMetricsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *GatherMetricsResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GatherMetricsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GatherMetricsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MetricFamilies", wireType)
+			}
+			msgStart, postIndex, err := protobuf_go_lite.DecodeLengthDelimited(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.MetricFamilies = append(m.MetricFamilies, &_go.MetricFamily{})
+			if err := m.MetricFamilies[len(m.MetricFamilies)-1].UnmarshalVT(dAtA[msgStart:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

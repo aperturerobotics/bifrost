@@ -108,7 +108,7 @@ type promTargetCreateArgs struct {
 // BuildFlags returns the create flags.
 func (a *promTargetCreateArgs) BuildFlags() []cli.Flag {
 	return append(a.promArgs.BuildFlags(),
-		&cli.StringFlag{Name: "url", Usage: "exporter metrics URL", Required: true, Destination: &a.url},
+		&cli.StringFlag{Name: "url", Usage: "exporter metrics URL, or " + s4wave_prom.DeviceMetricsURL + " for the Device's own Spacewave process", Required: true, Destination: &a.url},
 		&cli.StringFlag{Name: "job", Usage: "job label of every series", Required: true, Destination: &a.job},
 		&cli.StringFlag{Name: "instance", Usage: "instance label of every series (default: the URL host)", Destination: &a.instance},
 		&cli.StringSliceFlag{Name: "label", Usage: "extra NAME=VALUE label of every series", Destination: &a.labels},

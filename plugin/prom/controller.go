@@ -51,7 +51,7 @@ func NewFactory(b bus.Bus) controller.Factory {
 		},
 		func(base *bus.BusController[*Config]) (*Controller, error) {
 			// Serve the target ObjectType through the resource server.
-			h := newHandler(base.GetLogger(), base.GetConfig().CommitWindow())
+			h := newHandler(base.GetLogger(), base.GetBus(), base.GetConfig().CommitWindow())
 			rootMux := resource_server.NewResourceMux(func(mux srpc.Mux) error {
 				return s4wave_objecttype_registry.SRPCRegisterObjectTypeHandlerService(mux, h)
 			})

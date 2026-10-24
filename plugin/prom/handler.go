@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aperturerobotics/controllerbus/bus"
 	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/promql"
@@ -20,6 +21,8 @@ import (
 type handler struct {
 	// le is the logger.
 	le *logrus.Entry
+	// b is the plugin's bus.
+	b bus.Bus
 	// window is the time between a Device's commits in one Space.
 	window time.Duration
 	// promql evaluates every query this plugin serves.
@@ -31,10 +34,11 @@ type handler struct {
 	groups map[string]*commitGroup
 }
 
-// newHandler constructs a handler that commits every window.
-func newHandler(le *logrus.Entry, window time.Duration) *handler {
+// newHandler constructs a handler on b that commits every window.
+func newHandler(le *logrus.Entry, b bus.Bus, window time.Duration) *handler {
 	return &handler{
 		le:     le,
+		b:      b,
 		window: window,
 		promql: newQueryEngine(),
 		groups: make(map[string]*commitGroup),
@@ -74,6 +78,7 @@ func (h *handler) InvokeObjectType(
 	le := h.le.WithField("object-key", req.GetObjectKey())
 	proc := &targetProcess{
 		le:        le,
+		b:         h.b,
 		eng:       engine,
 		group:     h.group(info.GetEngineInfo().GetEngineId()),
 		objectKey: req.GetObjectKey(),

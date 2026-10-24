@@ -64,6 +64,8 @@ type SRPCRootResourceServiceClient interface {
 
 	GetChangelog(ctx context.Context, in *GetChangelogRequest) (*GetChangelogResponse, error)
 
+	GatherMetrics(ctx context.Context, in *GatherMetricsRequest) (*GatherMetricsResponse, error)
+
 	GetDebugDb(ctx context.Context, in *GetDebugDbRequest) (*GetDebugDbResponse, error)
 
 	GetCdn(ctx context.Context, in *GetCdnRequest) (*GetCdnResponse, error)
@@ -472,6 +474,15 @@ func (c *srpcRootResourceServiceClient) GetChangelog(ctx context.Context, in *Ge
 	return out, nil
 }
 
+func (c *srpcRootResourceServiceClient) GatherMetrics(ctx context.Context, in *GatherMetricsRequest) (*GatherMetricsResponse, error) {
+	out := new(GatherMetricsResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "GatherMetrics", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *srpcRootResourceServiceClient) GetDebugDb(ctx context.Context, in *GetDebugDbRequest) (*GetDebugDbResponse, error) {
 	out := new(GetDebugDbResponse)
 	err := c.cc.ExecCall(ctx, c.serviceID, "GetDebugDb", in, out)
@@ -709,6 +720,8 @@ type SRPCRootResourceServiceServer interface {
 
 	GetChangelog(context.Context, *GetChangelogRequest) (*GetChangelogResponse, error)
 
+	GatherMetrics(context.Context, *GatherMetricsRequest) (*GatherMetricsResponse, error)
+
 	GetDebugDb(context.Context, *GetDebugDbRequest) (*GetDebugDbResponse, error)
 
 	GetCdn(context.Context, *GetCdnRequest) (*GetCdnResponse, error)
@@ -781,6 +794,7 @@ func (SRPCRootResourceServiceHandler) GetMethodIDs() []string {
 		"HashSum",
 		"HashValidate",
 		"GetChangelog",
+		"GatherMetrics",
 		"GetDebugDb",
 		"GetCdn",
 		"AccessWebListener",
@@ -853,6 +867,8 @@ func (d *SRPCRootResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_HashValidate(d.impl, strm)
 	case "GetChangelog":
 		return true, d.InvokeMethod_GetChangelog(d.impl, strm)
+	case "GatherMetrics":
+		return true, d.InvokeMethod_GatherMetrics(d.impl, strm)
 	case "GetDebugDb":
 		return true, d.InvokeMethod_GetDebugDb(d.impl, strm)
 	case "GetCdn":
@@ -1154,6 +1170,18 @@ func (SRPCRootResourceServiceHandler) InvokeMethod_GetChangelog(impl SRPCRootRes
 		return err
 	}
 	out, err := impl.GetChangelog(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCRootResourceServiceHandler) InvokeMethod_GatherMetrics(impl SRPCRootResourceServiceServer, strm srpc.Stream) error {
+	req := new(GatherMetricsRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.GatherMetrics(strm.Context(), req)
 	if err != nil {
 		return err
 	}
@@ -1555,6 +1583,14 @@ type SRPCRootResourceService_GetChangelogStream interface {
 }
 
 type srpcRootResourceService_GetChangelogStream struct {
+	srpc.Stream
+}
+
+type SRPCRootResourceService_GatherMetricsStream interface {
+	srpc.Stream
+}
+
+type srpcRootResourceService_GatherMetricsStream struct {
 	srpc.Stream
 }
 

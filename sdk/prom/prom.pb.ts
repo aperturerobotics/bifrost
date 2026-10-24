@@ -95,7 +95,8 @@ export const LabelSet: MessageType<LabelSet> =
  */
 export interface ScrapeConfig {
   /**
-   * Url is the http or https address of the exporter's metrics page.
+   * Url is the http or https address of the exporter's metrics page, or
+   * device:metrics for the Spacewave process on the Device running the target.
    */
   url?: string
   /**

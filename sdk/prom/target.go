@@ -44,8 +44,19 @@ func StatusKey() []byte {
 	return []byte{StatusKeyPrefix}
 }
 
-// Validate checks that the config names an http or https URL.
+// DeviceMetricsURL is the scrape URL of the metrics of the Spacewave process
+// on the Device that runs the target, gathered without HTTP.
+const DeviceMetricsURL = "device:metrics"
+
+// Validate checks that the config names an http or https URL, or
+// DeviceMetricsURL.
 func (c *ScrapeConfig) Validate() error {
+	// The device source needs no address.
+	if c.GetUrl() == DeviceMetricsURL {
+		return nil
+	}
+
+	// Any other URL is a metrics page.
 	u, err := url.Parse(c.GetUrl())
 	if err != nil {
 		return errors.Wrap(err, "scrape url")

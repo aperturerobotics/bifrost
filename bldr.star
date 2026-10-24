@@ -493,7 +493,7 @@ manifest("spacewave-sql",
 # plugin.
 manifest("spacewave-prom",
     builder="bldr/plugin/compiler/go",
-    rev=2,
+    rev=3,
     platformIds=["desktop"],
     config={
         "goPkgs": ["./plugin/prom"],
