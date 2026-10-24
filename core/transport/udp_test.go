@@ -55,13 +55,13 @@ func TestSessionTransportUDPAuthorizesPeers(t *testing.T) {
 			}
 
 			// Listen on loopback and dial the listener from the other Session.
-			addr, err := listener.StartUDP(ctx, "127.0.0.1:0", nil)
+			addr, err := listener.StartUDP(ctx, transport.UDPConfig{ListenAddr: "127.0.0.1:0"})
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, err := dialer.StartUDP(ctx, "127.0.0.1:0", map[peer.ID]string{
+			if _, err := dialer.StartUDP(ctx, transport.UDPConfig{ListenAddr: "127.0.0.1:0", Peers: map[peer.ID]string{
 				listener.GetPeerID(): addr.String(),
-			}); err != nil {
+			}}); err != nil {
 				t.Fatal(err)
 			}
 			_, elRef, err := dialer.GetChildBus().AddDirective(
@@ -126,13 +126,13 @@ func TestSessionTransportUDPAdmitsNamedPeers(t *testing.T) {
 	}
 
 	// The strict Session names the remote one and dials it.
-	addr, err := remote.StartUDP(ctx, "127.0.0.1:0", nil)
+	addr, err := remote.StartUDP(ctx, transport.UDPConfig{ListenAddr: "127.0.0.1:0"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := strict.StartUDP(ctx, "127.0.0.1:0", map[peer.ID]string{
+	if _, err := strict.StartUDP(ctx, transport.UDPConfig{ListenAddr: "127.0.0.1:0", Peers: map[peer.ID]string{
 		remoteID: addr.String(),
-	}); err != nil {
+	}}); err != nil {
 		t.Fatal(err)
 	}
 	_, elRef, err := strict.GetChildBus().AddDirective(
@@ -156,6 +156,86 @@ func TestSessionTransportUDPAdmitsNamedPeers(t *testing.T) {
 		case <-ctx.Done():
 			t.Fatal("named peer did not link")
 		}
+	}
+}
+
+// TestSessionTransportUDPNamedOnly checks that a named-only listener links a
+// peer it names without an address and refuses one its authorizer would admit.
+func TestSessionTransportUDPNamedOnly(t *testing.T) {
+	// Build a listener whose authorizer admits anyone but reports each
+	// question, and two dialers that admit any peer.
+	asked := make(chan peer.ID, 2)
+	ctx, _, listener := newTestSessionTransport(t, "", transport.WithPeerAuthorizer(
+		func(_ context.Context, remote peer.ID) error {
+			asked <- remote
+			return nil
+		},
+	))
+	_, _, unnamed := newTestSessionTransport(t, "", transport.WithPeerAuthorizer(
+		func(context.Context, peer.ID) error { return nil },
+	))
+	_, _, named := newTestSessionTransport(t, "", transport.WithPeerAuthorizer(
+		func(context.Context, peer.ID) error { return nil },
+	))
+	for _, st := range []*transport.SessionTransport{listener, unnamed, named} {
+		go func() { _ = st.Execute(ctx) }()
+		if err := st.AwaitReady(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// The listener names only one dialer, which dials in, so it has no
+	// address to dial.
+	addr, err := listener.StartUDP(ctx, transport.UDPConfig{
+		ListenAddr: "127.0.0.1:0",
+		Peers:      map[peer.ID]string{named.GetPeerID(): ""},
+		NamedOnly:  true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The unnamed dialer dials first, then the named one.
+	for _, d := range []*transport.SessionTransport{unnamed, named} {
+		if _, err := d.StartUDP(ctx, transport.UDPConfig{ListenAddr: "127.0.0.1:0", Peers: map[peer.ID]string{
+			listener.GetPeerID(): addr.String(),
+		}}); err != nil {
+			t.Fatal(err)
+		}
+		_, elRef, err := d.GetChildBus().AddDirective(
+			ctx,
+			link.NewEstablishLinkWithPeer(d.GetPeerID(), listener.GetPeerID()),
+			nil,
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer elRef.Release()
+	}
+
+	// The named dialer links.
+	ids := []peer.ID{unnamed.GetPeerID(), named.GetPeerID()}
+	for {
+		linked, waitChs := listener.GetLinkedPeerIDsSnapshotWithWait(ids)
+		if _, ok := linked[named.GetPeerID()]; ok {
+			break
+		}
+		select {
+		case <-waitAny(waitChs):
+		case <-ctx.Done():
+			t.Fatal("named peer did not link")
+		}
+	}
+
+	// The unnamed one never links, and the authorizer was never asked.
+	linked, _ := listener.GetLinkedPeerIDsSnapshotWithWait(ids)
+	if _, ok := linked[unnamed.GetPeerID()]; ok {
+		t.Fatal("named-only listener linked an unnamed peer")
+	}
+	select {
+	case remote := <-asked:
+		t.Fatalf("named-only listener asked its authorizer about %s", remote)
+	default:
 	}
 }
 
@@ -208,13 +288,13 @@ func TestSessionTransportReauthorizeClosesRevokedPeer(t *testing.T) {
 	defer release()
 
 	// Listen and dial over loopback UDP.
-	addr, err := listener.StartUDP(ctx, "127.0.0.1:0", nil)
+	addr, err := listener.StartUDP(ctx, transport.UDPConfig{ListenAddr: "127.0.0.1:0"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := dialer.StartUDP(ctx, "127.0.0.1:0", map[peer.ID]string{
+	if _, err := dialer.StartUDP(ctx, transport.UDPConfig{ListenAddr: "127.0.0.1:0", Peers: map[peer.ID]string{
 		listener.GetPeerID(): addr.String(),
-	}); err != nil {
+	}}); err != nil {
 		t.Fatal(err)
 	}
 

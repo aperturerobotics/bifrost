@@ -4,6 +4,7 @@ package transport
 
 import (
 	"context"
+	"maps"
 	"net"
 
 	"github.com/aperturerobotics/controllerbus/bus"
@@ -15,15 +16,25 @@ import (
 	transport_udp "github.com/s4wave/spacewave/net/transport/udp"
 )
 
+// UDPConfig configures one UDP transport run under the Session's peer.
+type UDPConfig struct {
+	// ListenAddr is the host:port to listen on, or an ephemeral port when empty.
+	ListenAddr string
+	// Peers names the remote peers whose links mount, each with the host:port
+	// it listens on. A peer with an empty address is admitted when it dials
+	// in but is never dialed.
+	Peers map[peer.ID]string
+	// NamedOnly mounts only the links of named peers. Otherwise a link from an
+	// unnamed peer mounts when it passes AuthorizePeer.
+	NamedOnly bool
+}
+
 // StartUDP runs a UDP transport under the Session's peer until ctx ends or the
-// current transport run stops. It listens on listenAddr, or an ephemeral port
-// when empty, and dials each peer in peerAddrs at its host:port address. A link,
-// inbound or dialed, mounts when its remote peer is named in peerAddrs or
-// passes AuthorizePeer. Naming a peer admits only its link: services that
-// grant authority, such as those served with ServeAuthorized, still apply
-// AuthorizePeer to each stream. StartUDP returns the bound local address once
-// the socket is open.
-func (t *SessionTransport) StartUDP(ctx context.Context, listenAddr string, peerAddrs map[peer.ID]string) (net.Addr, error) {
+// current transport run stops. It dials each named peer that has an address.
+// Naming a peer admits only its link: services that grant authority, such as
+// those served with ServeAuthorized, still apply AuthorizePeer to each stream.
+// StartUDP returns the bound local address once the socket is open.
+func (t *SessionTransport) StartUDP(ctx context.Context, conf UDPConfig) (net.Addr, error) {
 	// Capture the running child bus and the lifetime that owns it.
 	var b bus.Bus
 	var lifecycleCtx context.Context
@@ -34,23 +45,27 @@ func (t *SessionTransport) StartUDP(ctx context.Context, listenAddr string, peer
 		return nil, errors.New("session transport is not running")
 	}
 
-	// Build the gated controller with a static dialer for each named peer,
-	// admitting the named peers' links beside the Session's own rule.
-	dialers := make(map[string]*dialer.DialerOpts, len(peerAddrs))
-	named := make(map[peer.ID]struct{}, len(peerAddrs))
-	for id, addr := range peerAddrs {
-		dialers[id.String()] = &dialer.DialerOpts{Address: addr}
-		named[id] = struct{}{}
+	// Build the gated controller with a static dialer for each named peer
+	// that has an address, admitting the named peers' links.
+	peers := maps.Clone(conf.Peers)
+	dialers := make(map[string]*dialer.DialerOpts, len(peers))
+	for id, addr := range peers {
+		if addr != "" {
+			dialers[id.String()] = &dialer.DialerOpts{Address: addr}
+		}
 	}
 	authorize := func(ctx context.Context, remotePeer peer.ID) error {
-		if _, ok := named[remotePeer]; ok {
+		if _, ok := peers[remotePeer]; ok {
 			return nil
+		}
+		if conf.NamedOnly {
+			return errors.Errorf("peer %s is not named on this udp transport", remotePeer)
 		}
 		return t.AuthorizePeer(ctx, remotePeer)
 	}
 	ctrl, err := transport_udp.NewController(t.le, b, &transport_udp.Config{
 		TransportPeerId: t.peerID.String(),
-		ListenAddr:      listenAddr,
+		ListenAddr:      conf.ListenAddr,
 		Dialers:         dialers,
 	}, transport_controller.WithPeerAuthorizer(authorize))
 	if err != nil {

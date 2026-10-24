@@ -131,7 +131,7 @@ func (r *SessionResource) startPeerTransportServices(
 		}
 		peerAddrs[remote] = addr
 	}
-	addr, err := st.StartUDP(runCtx, req.GetUdpListenAddr(), peerAddrs)
+	addr, err := st.StartUDP(runCtx, transport.UDPConfig{ListenAddr: req.GetUdpListenAddr(), Peers: peerAddrs})
 	if err != nil {
 		return "", errors.Wrap(err, "start UDP transport")
 	}
