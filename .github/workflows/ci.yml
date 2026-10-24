@@ -118,6 +118,10 @@ jobs:
       - name: Install Bun dependencies
         run: bun install --frozen-lockfile --ignore-scripts
 
+      - name: Install Python Resource environment
+        if: ${{ matrix.name == 'bldr' }}
+        run: uv sync --frozen --all-groups
+
       - name: Cache aptre tools
         uses: actions/cache@v6
         with:
