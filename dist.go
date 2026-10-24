@@ -48,6 +48,7 @@ import "embed"
 //go:embed sdk/forge/dashboard/init-forge-quickstart.ts sdk/forge/watch.ts sdk/kv/index.ts sdk/kv/kv.ts sdk/layout/layout-host.ts
 //go:embed sdk/layout/layout.pb.ts sdk/layout/layout.ts sdk/layout/layout_srpc.pb.ts
 //go:embed sdk/layout/world/object-layout.ts sdk/layout/world/world.pb.ts
+//go:embed sdk/prom/prom.pb.ts sdk/prom/prom.ts sdk/prom/prom_srpc.pb.ts
 //go:embed sdk/objecttype/registry/registry.pb.ts sdk/objecttype/registry/registry_srpc.pb.ts
 //go:embed sdk/provider/index.ts sdk/provider/local/local.pb.ts sdk/provider/local/local.ts
 //go:embed sdk/provider/local/local_srpc.pb.ts sdk/provider/provider.pb.ts sdk/provider/provider.ts

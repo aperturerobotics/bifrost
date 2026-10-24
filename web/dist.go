@@ -40,7 +40,7 @@ import "embed"
 //go:embed hooks/useEmailManagement.ts hooks/useMediaQuery.ts hooks/useMountAccount.ts
 //go:embed hooks/useObjectTypeMetadata.ts hooks/usePhoneShell.ts hooks/usePromise.tsx hooks/useRootResource.tsx hooks/useSessionInfo.ts
 //go:embed hooks/useTypedObjectState.ts hooks/useUnixFSHandle.tsx hooks/useViewerRegistry.tsx
-//go:embed hooks/useWorldQuery.ts images/AppLogo.tsx
+//go:embed hooks/useClock.ts hooks/useWatchTypedHandle.ts hooks/useWorldQuery.ts images/AppLogo.tsx
 //go:embed images/spacewave-icon.png launcher/UpdateNotifier.tsx layout/BaseLayout.tsx
 //go:embed layout/BaseLayoutContext.tsx layout/FlexTabContextMenu.tsx layout/FlexTabNameInput.tsx
 //go:embed layout/layout.ts object/ComponentSelector.tsx object/DebugObjectViewer.tsx
@@ -72,7 +72,7 @@ import "embed"
 //go:embed ui/list/index.ts ui/loading/LoadingCard.tsx ui/loading/LoadingInline.tsx ui/loading/LoadingScreen.tsx
 //go:embed ui/loading/ProgressBar.tsx ui/loading/Spinner.tsx ui/loading/index.ts ui/loading/types.ts
 //go:embed ui/loading/loading-screen-style.ts
-//go:embed ui/loading/useReducedMotion.ts ui/login-form.tsx ui/path/PathInput.tsx ui/path/index.ts
+//go:embed ui/loading/useReducedMotion.ts ui/login-form.tsx ui/phosphor-icons.tsx ui/path/PathInput.tsx ui/path/index.ts
 //go:embed ui/range-slider.tsx ui/separator.tsx ui/sheet.tsx ui/shine-border.tsx ui/tabs.tsx ui/toaster.tsx
 //go:embed ui/context.tsx ui/message.tsx ui/plan.tsx ui/queue.tsx ui/reasoning.tsx ui/stack-trace.tsx ui/subagent.tsx ui/terminal.tsx ui/tool.tsx
 //go:embed ui/tooltip.tsx ui/trace-status.tsx ui/trace.tsx ui/tree/Tree.tsx ui/tree/TreeNode.tsx ui/tree/TreeRow.tsx ui/tree/TreeState.tsx
