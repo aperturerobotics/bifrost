@@ -210,6 +210,28 @@ const productObjectViewers: ObjectViewerComponent[] = [
     ),
   },
   {
+    componentID: 'spacewave.prom.dashboard',
+    typeID: 'prom/dashboard',
+    name: 'Dashboard',
+    category: 'Data',
+    component: lazy(() =>
+      import('@s4wave/app/prom/PromDashboardViewer.js').then((module) => ({
+        default: module.PromDashboardViewer,
+      })),
+    ),
+  },
+  {
+    componentID: 'spacewave.prom.target',
+    typeID: 'prom/target',
+    name: 'Scrape target',
+    category: 'Data',
+    component: lazy(() =>
+      import('@s4wave/app/prom/PromTargetViewer.js').then((module) => ({
+        default: module.PromTargetViewer,
+      })),
+    ),
+  },
+  {
     componentID: 'spacewave.sql.db',
     typeID: 'sql/db',
     name: 'SQL Database',
