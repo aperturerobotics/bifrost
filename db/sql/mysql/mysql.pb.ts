@@ -273,6 +273,7 @@ export interface TableColumn {
     | { value: Blob; case: 'jsonBlob' }
     | { value: TableTimestamp; case: 'timestampValue' }
     | { value: bigint; case: 'timespanMicros' }
+    | { value: string; case: 'decimalText' }
 }
 
 export const TableColumn: MessageType<TableColumn> =
@@ -286,6 +287,7 @@ export const TableColumn: MessageType<TableColumn> =
     [8, 'json_blob', 11, 0, Blob.codec, 'value'],
     [9, 'timestamp_value', 11, 0, TableTimestamp.codec, 'value'],
     [10, 'timespan_micros', 3, 0, 0, 'value'],
+    [11, 'decimal_text', 9, 0, 0, 'value'],
   ])
 
 /**

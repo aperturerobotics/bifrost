@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
 	"github.com/dolthub/go-mysql-server/sql"
 	"github.com/dolthub/go-mysql-server/sql/types"
 	"github.com/pkg/errors"
@@ -89,6 +90,8 @@ func (t *TableColumn) setValue(
 		}
 	case types.Timespan:
 		t.Value = &TableColumn_TimespanMicros{TimespanMicros: int64(v)}
+	case *apd.Decimal:
+		t.Value = &TableColumn_DecimalText{DecimalText: v.String()}
 	case sql.JSONWrapper:
 		jsonString, err := encodeJsonWrapper(ctx, v)
 		if err != nil {
@@ -195,6 +198,9 @@ func (t *TableColumn) FetchSqlColumn(ctx context.Context, bcs *block.Cursor) (an
 		return time.Unix(tv.GetUnixSeconds(), int64(tv.GetNanos())).UTC(), nil
 	case *TableColumn_TimespanMicros:
 		return types.Timespan(v.TimespanMicros), nil
+	case *TableColumn_DecimalText:
+		d, _, err := apd.NewFromString(v.DecimalText)
+		return d, err
 	default:
 		return nil, errors.Errorf("unsupported table column value %T", v)
 	}
@@ -210,6 +216,7 @@ func (t *TableColumn) Validate() error {
 	case *TableColumn_FloatValue:
 	case *TableColumn_TimestampValue:
 	case *TableColumn_TimespanMicros:
+	case *TableColumn_DecimalText:
 	case *TableColumn_StringBlob:
 		return t.GetStringBlob().Validate()
 	case *TableColumn_BytesBlob:

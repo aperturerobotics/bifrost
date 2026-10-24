@@ -46,6 +46,7 @@ require (
 	github.com/aperturerobotics/starpc v0.52.4-0.20261021005057-f60467d0da35 // master
 	github.com/aperturerobotics/util v1.34.10-0.20261021005056-6e84f021eba1 // master
 	github.com/cloudflare/circl v1.6.5
+	github.com/cockroachdb/apd/v3 v3.2.3
 	github.com/creack/pty v1.1.24
 	github.com/dgraph-io/ristretto/v2 v2.4.2
 	github.com/dolthub/go-mysql-server v0.20.1-0.20261021193703-f4a05913b71f
@@ -119,7 +120,6 @@ require (
 	github.com/bwesterb/go-ristretto v1.2.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
-	github.com/cockroachdb/apd/v3 v3.2.3 // indirect
 	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/dolthub/flatbuffers/v23 v23.3.3-dh.2 // indirect
 	github.com/dolthub/go-icu-regex v0.0.0-20260610153742-72563bc7ca83 // indirect

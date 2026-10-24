@@ -2,8 +2,9 @@ import type { ColumnSchema, SqlValue } from '../../db/sql/sql.pb.js'
 import type { SqlQueryResult } from './sql.js'
 import type { SqlExecResponse } from '../../db/sql/rpc/sql.pb.js'
 
-// SqlStatementRunner runs statements on a sql/db: a SqlDatabase, which runs
-// each statement in its own transaction, or an open SqlTransaction.
+// SqlStatementRunner runs statements on a sql/db: an open SqlTransaction, or a
+// SqlDatabase, which runs each statement in its own transaction with no default
+// database, so its queries must name their tables' database.
 export interface SqlStatementRunner {
   exec(
     query: string,

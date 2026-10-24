@@ -119,6 +119,8 @@ message TableColumn {
     TableTimestamp timestamp_value = 9;
     // TimespanMicros is a TIME SQL value in microseconds.
     int64 timespan_micros = 10;
+    // DecimalText is a DECIMAL SQL value as its exact text, with its scale.
+    string decimal_text = 11;
   }
 }
 

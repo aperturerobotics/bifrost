@@ -2191,7 +2191,7 @@
       ]
     },
     "github.com/s4wave/spacewave/db/sql/mysql": {
-      "hash": "e1defb7b0a61f45719fab3c512b900ffa8188f0d7b71fae98ad6a1753a9d0d1c",
+      "hash": "39ef6cb903a6e9679fe9acea701185970be88ecac5f1facebb60d8641431369a",
       "generatedFiles": [
         "db/sql/mysql/mysql.pb.go",
         "db/sql/mysql/mysql.pb.ts"

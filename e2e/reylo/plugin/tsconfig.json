@@ -1,0 +1,5 @@
+{
+  "extends": "../../../tsconfig.json",
+  "contentMappers": [{ "package": "reylo", "extensions": [".sql"] }],
+  "include": ["../../../global.d.ts", "main.ts"]
+}
