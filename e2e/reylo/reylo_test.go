@@ -71,6 +71,7 @@ func TestReyloPluginTransactions(t *testing.T) {
 		{Statements: []string{list}, Outcome: "discarded"},
 		{Write: true, Statements: []string{insert}, Outcome: "discarded"},
 		{Statements: []string{get}, Outcome: "discarded"},
+		{Statements: []string{get}, Outcome: "discarded"},
 		{Write: true, Statements: []string{insert}, Outcome: "discarded"},
 		{Write: true, Statements: []string{statements["renameItems"]}, Outcome: "committed"},
 		{Write: true, Outcome: "discarded"},

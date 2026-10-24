@@ -3,8 +3,8 @@ import type { SqlQueryResult } from './sql.js'
 import type { SqlExecResponse } from '../../db/sql/rpc/sql.pb.js'
 
 // SqlStatementRunner runs statements on a sql/db: an open SqlTransaction, or a
-// SqlDatabase, which runs each statement in its own transaction with no default
-// database, so its queries must name their tables' database.
+// SqlDatabase, which runs each statement in its own transaction using the default
+// database selected by the DSN passed when the handle was opened.
 export interface SqlStatementRunner {
   exec(
     query: string,
@@ -89,6 +89,7 @@ function isReadStatement(text: string): boolean {
 // value it cannot send without loss: an unsafe or non-finite number, a bigint
 // outside int64, or a Date, whose wall clock text depends on the time zone.
 function toSqlValue(v: unknown): SqlValue {
+  // Encode supported parameter types without losing their values.
   if (v === null || v === undefined) return {}
   if (typeof v === 'bigint') {
     if (BigInt.asIntN(64, v) !== v) {
@@ -174,6 +175,7 @@ function textOf(s: unknown): string | null {
 // date alone for a DATE (scale -1), and otherwise the fraction padded to the
 // column's scale, which RFC 3339 trims of trailing zeros.
 function dateText(s: unknown, scale: number): unknown {
+  // Keep the wall clock text and normalize its fractional precision.
   if (typeof s !== 'string') return s
   const wall = s.replace(/(?:Z|[+-]00:00)$/, '')
   if (scale < 0) return wall.slice(0, 10)

@@ -71,7 +71,7 @@ async function main() {
     `unix://${socket}`,
     AbortSignal.timeout(30_000),
   )
-  const db = new SqlDatabase(resourceRef(conn.rpc))
+  const db = new SqlDatabase(resourceRef(conn.rpc), '/app')
   const write = <T>(
     fn: (tx: SqlTransaction) => Promise<T>,
     signal?: AbortSignal,
@@ -108,6 +108,7 @@ async function main() {
     `row order follows ORDER BY: ${rows.map((r) => r.id)}`,
   )
   const [g, a] = rows
+
   // Reylo reads a DATETIME back as ISO 8601 wall clock text, and a BOOLEAN
   // column is a TINYINT.
   checkRow(a, { ...first, flag: 1, created: '2026-10-23T12:34:56' })
@@ -125,6 +126,10 @@ async function main() {
     getItem.run(reyloClient(tx), { id: 3n }),
   )
   expect(rolledBack === null, 'the rolled back row is absent')
+
+  // The database handle resolves an unqualified table in its default database.
+  const standalone = await getItem.run(reyloClient(db), { id: 1n })
+  expect(standalone?.name === first.name, 'the handle sees the committed row')
 
   // An engine error rejects the query with the engine's message.
   await rejects(

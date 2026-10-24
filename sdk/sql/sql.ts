@@ -51,7 +51,11 @@ export interface ISqlDatabase {
 export class SqlDatabase extends Resource implements ISqlDatabase {
   private service: SqlClient
 
-  constructor(resourceRef: ClientResourceRef) {
+  // constructor opens a handle whose defaultDsn selects the database for statements.
+  constructor(
+    resourceRef: ClientResourceRef,
+    private readonly defaultDsn = '',
+  ) {
     super(resourceRef)
     this.service = new SqlClient(resourceRef.client)
   }
@@ -64,7 +68,7 @@ export class SqlDatabase extends Resource implements ISqlDatabase {
   ): Promise<SqlExecResponse> {
     return this.withTransaction(
       true,
-      '',
+      this.defaultDsn,
       async (tx) => tx.exec(query, args, abortSignal),
       abortSignal,
     )
@@ -78,7 +82,7 @@ export class SqlDatabase extends Resource implements ISqlDatabase {
   ): Promise<SqlQueryResult> {
     return this.withTransaction(
       false,
-      '',
+      this.defaultDsn,
       async (tx) => tx.query(query, args, abortSignal),
       abortSignal,
     )
@@ -122,18 +126,20 @@ export class SqlDatabase extends Resource implements ISqlDatabase {
     }
   }
 
-  // openTransaction opens a SQL transaction.
+  // openTransaction opens a SQL transaction, using the handle's DSN by default.
   public async openTransaction(
     write: boolean,
-    dsn = '',
+    dsn = this.defaultDsn,
     abortSignal?: AbortSignal,
   ): Promise<SqlTransaction> {
+    // Keep the transaction control stream open for its lifetime.
     const requests = pushable<Message<SqlTransactionRequest>>({
       objectMode: true,
     })
     const responses = this.service.SqlTransaction(requests, abortSignal)
     const iterator = responses[Symbol.asyncIterator]()
 
+    // Select the transaction's database and require its acknowledgement.
     requests.push({
       body: {
         case: 'init',
@@ -155,6 +161,7 @@ export class SqlDatabase extends Resource implements ISqlDatabase {
       throw new Error('sql/db: transaction ack missing transaction id')
     }
 
+    // Route statement operations to the acknowledged transaction.
     const opsRpc = new SRPCClient(() =>
       openRpcStream(
         transactionId,
@@ -193,12 +200,14 @@ export class SqlTransaction {
     args: SqlValue[] = [],
     abortSignal?: AbortSignal,
   ): Promise<SqlQueryResult> {
+    // Open the query control stream on this transaction's operations.
     const requests = pushable<Message<SqlQueryRequest>>({
       objectMode: true,
     })
     const responses = this.ops.Query(requests, abortSignal)
     const iterator = responses[Symbol.asyncIterator]()
 
+    // Start the query and require the column schema before reading rows.
     requests.push({
       body: {
         case: 'init',
@@ -215,6 +224,7 @@ export class SqlTransaction {
       throw new Error('sql/db: query did not return ack')
     }
 
+    // Read every batch and release the stream when the query ends.
     const columns = ack.body.value.columns ?? []
     const rows: Row[] = []
     try {
