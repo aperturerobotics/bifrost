@@ -5,14 +5,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aperturerobotics/controllerbus/bus"
 	controllerbus_core "github.com/aperturerobotics/controllerbus/core"
 	"github.com/aperturerobotics/controllerbus/directive"
+	"github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/keyed"
 	bldr_manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_manifest_world "github.com/s4wave/spacewave/bldr/manifest/world"
+	plugin_objecttype "github.com/s4wave/spacewave/core/plugin/objecttype"
 	space_world "github.com/s4wave/spacewave/core/space/world"
 	space_world_ops "github.com/s4wave/spacewave/core/space/world/ops"
 	bucket_lookup "github.com/s4wave/spacewave/db/bucket/lookup"
+	"github.com/s4wave/spacewave/db/world"
 	"github.com/s4wave/spacewave/sdk/world/objecttype"
 	"github.com/s4wave/spacewave/testbed"
 	"github.com/sirupsen/logrus"
@@ -46,6 +50,99 @@ func TestReconcileProcessConfigsClearsWhenStoreUnavailable(t *testing.T) {
 	}
 	if got := len(c.processConfigs); got != 0 {
 		t.Fatalf("process config count after unavailable store = %d, want 0", got)
+	}
+}
+
+func TestProcessResolvesObjectTypeAfterPluginReload(t *testing.T) {
+	// Run the process against a real bus and plugin type registration.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	le := logrus.NewEntry(logrus.New())
+	b, _, err := controllerbus_core.NewCoreBus(ctx, le)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := &Controller{
+		BusController: bus.NewBusController(le, b, &Config{}, ControllerID, Version, controllerDescrip),
+	}
+
+	// Observe each factory's lifetime as the type registration changes.
+	started := make(chan context.Context, 2)
+	ot := objecttype.NewObjectType("test/reload-process", func(
+		ctx context.Context,
+		_ *logrus.Entry,
+		_ bus.Bus,
+		_ world.Engine,
+		_ world.WorldState,
+		_ string,
+	) (srpc.Invoker, func(), error) {
+		// Hold the factory open until its type is withdrawn or the lookup stops.
+		started <- ctx
+		<-ctx.Done()
+		return nil, nil, ctx.Err()
+	})
+	register := func() func() {
+		// Publish the object type with the same controller used by loaded plugins.
+		t.Helper()
+		release, err := b.AddController(ctx, plugin_objecttype.NewController(
+			map[string]objecttype.ObjectType{ot.GetObjectTypeID(): ot},
+		), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(release)
+		return release
+	}
+	release := register()
+
+	// Start the keyed routine without a retry policy hiding a lost lookup.
+	run, stop := context.WithCancel(ctx)
+	defer stop()
+	exited := make(chan error, 1)
+	go func() {
+		exited <- c.runProcess(run, nil, "test/process", ot.GetObjectTypeID())
+	}()
+	waitStarted := func() context.Context {
+		t.Helper()
+		select {
+		case processCtx := <-started:
+			return processCtx
+		case err := <-exited:
+			t.Fatalf("process exited instead of waiting for its type: %v", err)
+		case <-ctx.Done():
+			t.Fatal("process did not resolve its object type")
+		}
+		return nil
+	}
+	first := waitStarted()
+
+	// Removing the controller withdraws its directive value and stops the process.
+	release()
+	select {
+	case <-first.Done():
+	case <-ctx.Done():
+		t.Fatal("process kept using the withdrawn object type")
+	}
+
+	// Restoring the same type resumes the standing lookup without a keyed retry.
+	register()
+	second := waitStarted()
+	if second == first {
+		t.Fatal("restored object type reused the canceled process")
+	}
+
+	// Cancellation ends the lookup and waits for the active factory to stop.
+	stop()
+	select {
+	case err := <-exited:
+		if err != context.Canceled {
+			t.Fatalf("process exit = %v, want context canceled", err)
+		}
+	case <-ctx.Done():
+		t.Fatal("process did not stop after cancellation")
+	}
+	if second.Err() == nil {
+		t.Fatal("process returned before canceling the restored factory")
 	}
 }
 

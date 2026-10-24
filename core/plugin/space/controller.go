@@ -12,6 +12,7 @@ import (
 	"github.com/aperturerobotics/util/backoff"
 	"github.com/aperturerobotics/util/broadcast"
 	"github.com/aperturerobotics/util/keyed"
+	"github.com/aperturerobotics/util/routine"
 	"github.com/pkg/errors"
 	manifest "github.com/s4wave/spacewave/bldr/manifest"
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
@@ -838,8 +839,8 @@ func (c *Controller) getProcessConfig(objectKey string) processConfig {
 	return cfg
 }
 
-// runProcess resolves the ObjectType, creates an SRPC client, and runs
-// the Execute streaming RPC until the stream closes or an error occurs.
+// runProcess watches the ObjectType and runs its process while the type is present.
+// A withdrawn type stops the process until a replacement resolves.
 func (c *Controller) runProcess(ctx context.Context, ws world.WorldState, objectKey, typeID string) error {
 	// Capture the controller's bus for the object type lookup.
 	b := c.GetBus()
@@ -862,16 +863,43 @@ func (c *Controller) runProcess(ctx context.Context, ws world.WorldState, object
 		engine = busEngine
 	}
 
-	// Resolve the object type and reject a missing one.
-	ot, otRef, err := objecttype.ExLookupObjectType(ctx, b, typeID)
+	// Cancel the previous process and finish its cleanup before using a new type.
+	process := routine.NewStateRoutineContainer[objecttype.ObjectType](nil)
+	process.SetStateRoutine(func(ctx context.Context, ot objecttype.ObjectType) error {
+		return c.executeProcess(ctx, b, engine, ws, objectKey, ot)
+	})
+	process.SetContext(ctx, false)
+	defer func() {
+		if exited, _, _ := process.SetStateRoutine(nil); exited != nil {
+			<-exited
+		}
+	}()
+
+	// Keep the lookup attached through idle periods and plugin rebuilds.
+	_, otRef, err := bus.ExecOneOffWatchRoutine(
+		ctx,
+		process,
+		b,
+		objecttype.NewLookupObjectTypeForEngine(typeID, objecttype.EngineIDFromContext(ctx)),
+	)
 	if err != nil {
 		return errors.Wrap(err, "lookup object type")
 	}
-	if ot == nil {
-		return errors.New("object type not found: " + typeID)
-	}
 	defer otRef.Release()
 
+	// Preserve process completion and failure handling in the keyed routine.
+	return process.WaitExited(ctx, false, nil)
+}
+
+// executeProcess creates an invoker and runs its persistent Execute stream.
+func (c *Controller) executeProcess(
+	ctx context.Context,
+	b bus.Bus,
+	engine world.Engine,
+	ws world.WorldState,
+	objectKey string,
+	ot objecttype.ObjectType,
+) error {
 	// Build the process invoker with the object type's factory.
 	le := c.GetLogger()
 	factory := ot.GetFactory()
