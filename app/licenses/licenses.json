@@ -893,6 +893,13 @@
       "copyrightNotice": "Copyright (c) 2016 Protocol Labs Inc."
     },
     {
+      "name": "github.com/aperturerobotics/go-prometheus-client-lite",
+      "version": "v1.23.3-0.20261024024324-52bb15d6f314",
+      "spdx": "Apache-2.0",
+      "source": "go",
+      "repo": "https://github.com/aperturerobotics/go-prometheus-client-lite"
+    },
+    {
       "name": "github.com/aperturerobotics/go-quickjs-wasi-reactor",
       "version": "v0.15.2-0.20261015001702-f8b5196211d2",
       "spdx": "MIT",
