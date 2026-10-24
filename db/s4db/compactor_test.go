@@ -64,6 +64,10 @@ func fillSlack(t *testing.T, ctx context.Context, db *DB) model {
 			t.Fatal(err)
 		}
 	}
+
+	// Wait until the background punch returns its reserved runs to the free
+	// space that the compactor plans against.
+	w.punches.Wait()
 	return m
 }
 
