@@ -54,7 +54,8 @@ export interface Opts {
    * largest size QUIC allows, which is 1452 bytes.
    *
    * Values above the largest size use the largest size.
-   * If unset, defaults to 1280.
+   * If unset, defaults to 1200, which fits every IP path including tunnels
+   * with a 1280 byte MTU.
    */
   initialPacketSize?: number
 }

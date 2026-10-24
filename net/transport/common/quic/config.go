@@ -10,6 +10,9 @@ import (
 	"github.com/s4wave/spacewave/net/peer"
 )
 
+// minPacketSize is the smallest packet size QUIC allows.
+const minPacketSize = 1200
+
 // BuildQuicConfig constructs the quic config.
 func BuildQuicConfig(opts *Opts) *quic.Config {
 	// Resolve the configured idle timeout.
@@ -38,13 +41,22 @@ func BuildQuicConfig(opts *Opts) *quic.Config {
 		}
 	}
 
+	// Start at the smallest QUIC packet, which fits every IP path, including
+	// tunnels with a 1280 byte MTU such as Tailscale, where quic-go's 1280 byte
+	// default leaves no room for the IP and UDP headers. Path MTU discovery
+	// grows the size from there.
+	initialPacketSize := uint16(min(opts.GetInitialPacketSize(), math.MaxUint16))
+	if initialPacketSize == 0 {
+		initialPacketSize = minPacketSize
+	}
+
 	// Build the QUIC configuration from the resolved limits.
 	return &quic.Config{
 		// We don't use datagrams (yet), but this is necessary for WebTransport
 		EnableDatagrams:         !opts.GetDisableDatagrams(),
 		KeepAlivePeriod:         keepAlivePeriod,
 		DisablePathMTUDiscovery: opts.GetDisablePathMtuDiscovery(),
-		InitialPacketSize:       uint16(min(opts.GetInitialPacketSize(), math.MaxUint16)),
+		InitialPacketSize:       initialPacketSize,
 
 		MaxIdleTimeout:        maxIdleTimeout,
 		MaxIncomingStreams:    int64(maxIncStreams),
