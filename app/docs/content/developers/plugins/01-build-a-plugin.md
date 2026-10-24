@@ -46,6 +46,26 @@ Viewers from plugins are added after the base and product viewers. A viewer
 registered for an exact type wins over one registered for a prefix or for all
 types.
 
+A plugin that only displays objects some other code writes registers viewers
+and nothing else. Its backend entrypoint can be `defineViewerPlugin`, which
+registers each viewer while the backend runs and removes them when it stops:
+
+```ts
+import { defineViewerPlugin } from '@go/github.com/s4wave/spacewave/sdk/plugin/viewer-plugin.js'
+
+export default defineViewerPlugin([
+  {
+    typeId: 'example/*',
+    viewerName: 'Example record',
+    componentId: 'example.record',
+    entry: 'viewer/RecordViewer.tsx',
+  },
+])
+```
+
+List each `entry` as a frontend module in the manifest, so the build includes
+it.
+
 If the plugin's Quickstart creates a Space, return the required plugin IDs and
 the index path from the Quickstart. Spacewave saves them in the Space settings,
 so the Space loads the plugin and opens the right object.
