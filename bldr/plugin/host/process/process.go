@@ -3,6 +3,7 @@
 package plugin_host_process
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -530,7 +531,8 @@ func (h *ProcessHost) syncPluginDist(ctx context.Context, pluginID, manifestRoot
 	return pluginDistDir, nil
 }
 
-// materializeEntrypoint replaces the executable with a complete new inode.
+// materializeEntrypoint installs the executable as a complete new inode, or
+// keeps the installed one when its contents already match.
 // Updating a previously executed inode in place leaves macOS code-signing caches
 // referring to its old contents, even when the replacement signature is valid.
 func materializeEntrypoint(ctx context.Context, dist *unixfs.FSHandle, entrypoint, dir string) error {
@@ -561,11 +563,69 @@ func materializeEntrypoint(ctx context.Context, dist *unixfs.FSHandle, entrypoin
 		return err
 	}
 
-	// Swap the staged file into place as a complete new inode.
+	// Keep an installed entrypoint with the same contents: Windows refuses to
+	// replace an executable that a running process holds, such as one left
+	// from an earlier host, and an identical file needs no new inode.
 	if err := file.Close(); err != nil {
 		return err
 	}
+	if same, err := sameContents(file.Name(), destination); err != nil || same {
+		return err
+	}
+
+	// Swap the staged file into place as a complete new inode.
 	return os.Rename(file.Name(), destination)
+}
+
+// sameContents reports whether the files at a and b hold the same bytes. A
+// missing b differs from a.
+func sameContents(a, b string) (bool, error) {
+	// Open both files, treating a missing destination as different.
+	fa, err := os.Open(a)
+	if err != nil {
+		return false, err
+	}
+	defer fa.Close()
+	fb, err := os.Open(b)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	defer fb.Close()
+
+	// Compare the sizes before reading any contents.
+	sa, err := fa.Stat()
+	if err != nil {
+		return false, err
+	}
+	sb, err := fb.Stat()
+	if err != nil {
+		return false, err
+	}
+	if sa.Size() != sb.Size() {
+		return false, nil
+	}
+
+	// Compare the contents one block at a time.
+	bufA, bufB := make([]byte, 1<<20), make([]byte, 1<<20)
+	for {
+		na, errA := io.ReadFull(fa, bufA)
+		nb, errB := io.ReadFull(fb, bufB)
+		if !bytes.Equal(bufA[:na], bufB[:nb]) {
+			return false, nil
+		}
+		if errA == io.EOF || errA == io.ErrUnexpectedEOF {
+			return errB == io.EOF || errB == io.ErrUnexpectedEOF, nil
+		}
+		if errA != nil {
+			return false, errA
+		}
+		if errB != nil {
+			return false, errB
+		}
+	}
 }
 
 // InvalidatePluginDist clears only the derived native plugin dist checkout.

@@ -78,7 +78,7 @@ func TestProcessHostPrunesUnusedManifestDists(t *testing.T) {
 	releases["new"]()
 }
 
-func TestProcessHostSyncReplacesExecutableInode(t *testing.T) {
+func TestProcessHostSyncExecutableInode(t *testing.T) {
 	// Open the old executable before syncing the new dist.
 	host := newTestProcessHost(t)
 	entrypoint := filepath.Join(host.pluginDistDir("sample"), "entrypoint")
@@ -115,6 +115,19 @@ func TestProcessHostSyncReplacesExecutableInode(t *testing.T) {
 	}
 	if info.Mode().Perm() != 0o755 {
 		t.Fatalf("executable permissions: %v", info.Mode())
+	}
+
+	// A sync of the same executable keeps the installed file, which Windows
+	// cannot replace while a process runs it.
+	if _, err := host.syncPluginDist(t.Context(), "sample", "", "entrypoint", dist); err != nil {
+		t.Fatal(err)
+	}
+	kept, err := os.Stat(entrypoint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(info, kept) {
+		t.Fatal("identical executable replaced")
 	}
 }
 
