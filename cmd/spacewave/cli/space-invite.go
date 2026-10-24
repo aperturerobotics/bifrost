@@ -109,10 +109,16 @@ func newSpaceJoinCommand(statePath *string, sessionIdx *uint) *cli.Command {
 		Name:      "join",
 		Usage:     "join a space with an invite code, link or token",
 		ArgsUsage: "<invite>",
-		Flags: []cli.Flag{&cli.BoolFlag{
-			Name:  "backfill",
-			Usage: "copy the whole space to this device in the background instead of fetching data on demand",
-		}},
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "backfill",
+				Usage: "copy the whole space to this device in the background instead of fetching data on demand",
+			},
+			&cli.StringFlag{
+				Name:  "owner-addr",
+				Usage: "host:port where a local account reaches the space owner over UDP, such as a server on a private network",
+			},
+		},
 		Action: func(c *cli.Context) error {
 			// Require the invite argument.
 			input := strings.TrimSpace(c.Args().First())
@@ -154,7 +160,10 @@ func newSpaceJoinCommand(statePath *string, sessionIdx *uint) *cli.Command {
 			}
 
 			// Join and report the outcome.
-			resp, err := sess.JoinSpaceViaInvite(ctx, &s4wave_session.JoinSpaceViaInviteRequest{InviteMessage: invite})
+			resp, err := sess.JoinSpaceViaInvite(ctx, &s4wave_session.JoinSpaceViaInviteRequest{
+				InviteMessage: invite,
+				OwnerUdpAddr:  strings.TrimSpace(c.String("owner-addr")),
+			})
 			if err != nil {
 				return errors.Wrap(err, "join space")
 			}
