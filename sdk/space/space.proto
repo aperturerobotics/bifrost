@@ -483,6 +483,9 @@ message SpacePluginStatus {
   uint32 retry_count = 7;
   // Revision is reserved for future manifest-version projection.
   string revision = 8;
+  // Account reports that the plugin comes from the account plugin list rather
+  // than the Space settings, so the Space cannot remove it.
+  bool account = 9;
 }
 
 // AddSpacePluginRequest is a request to add a plugin to the space settings.

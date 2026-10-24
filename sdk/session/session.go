@@ -113,6 +113,13 @@ func (s *Session) WatchStorageStats(ctx context.Context) (SRPCSessionResourceSer
 	return s.service.WatchStorageStats(ctx, &WatchStorageStatsRequest{})
 }
 
+// SetAccountPlugin adds a plugin to or removes it from the account plugin
+// list, which every Space of the account loads.
+func (s *Session) SetAccountPlugin(ctx context.Context, pluginID string, enabled bool) error {
+	_, err := s.service.SetAccountPlugin(ctx, &SetAccountPluginRequest{PluginId: pluginID, Enabled: enabled})
+	return err
+}
+
 // MountSharedObject mounts a shared object within the session by ID.
 // Returns the response containing the resource ID and shared object metadata.
 func (s *Session) MountSharedObject(ctx context.Context, sharedObjectID string) (*MountSharedObjectResponse, error) {

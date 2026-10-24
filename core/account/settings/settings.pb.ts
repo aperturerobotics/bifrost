@@ -82,6 +82,11 @@ export interface AccountSettings {
    * first repository is added. Every device of the account uses this Space.
    */
   developerSpaceId?: string
+  /**
+   * PluginIds lists the manifest IDs of plugins the account loads into every
+   * Space it mounts, alongside the plugins the Space lists itself.
+   */
+  pluginIds?: string[]
 }
 
 export const AccountSettings: MessageType<AccountSettings> =
@@ -102,6 +107,7 @@ export const AccountSettings: MessageType<AccountSettings> =
       [12, 'block_store_placements', 11, 1, BlockStorePlacement.codec],
       [13, 'storage_releases', 11, 1, BlockStorePlacement.codec],
       [14, 'developer_space_id', 9],
+      [15, 'plugin_ids', 9, 1],
     ],
   )
 
@@ -431,6 +437,8 @@ export interface AccountSettingsOp {
     | { value: BlockStorePlacement; case: 'setBlockStorePlacement' }
     | { value: BlockStorePlacement; case: 'completeStorageRelease' }
     | { value: SetDeveloperSpaceOp; case: 'setDeveloperSpace' }
+    | { value: AccountPluginOp; case: 'addPlugin' }
+    | { value: AccountPluginOp; case: 'removePlugin' }
 }
 
 export const AccountSettingsOp: MessageType<AccountSettingsOp> =
@@ -483,7 +491,27 @@ export const AccountSettingsOp: MessageType<AccountSettingsOp> =
       [16, 'set_block_store_placement', 11, 0, BlockStorePlacement.codec, 'op'],
       [17, 'complete_storage_release', 11, 0, BlockStorePlacement.codec, 'op'],
       [18, 'set_developer_space', 11, 0, SetDeveloperSpaceOp.codec, 'op'],
+      [19, 'add_plugin', 11, 0, AccountPluginOp.codec, 'op'],
+      [20, 'remove_plugin', 11, 0, AccountPluginOp.codec, 'op'],
     ],
+  )
+
+/**
+ * AccountPluginOp names one plugin of the account plugin list.
+ *
+ * @generated from message account.settings.AccountPluginOp
+ */
+export interface AccountPluginOp {
+  /**
+   * PluginId is the manifest ID of the plugin.
+   */
+  pluginId?: string
+}
+
+export const AccountPluginOp: MessageType<AccountPluginOp> =
+  /* @__PURE__ */ createMessageType<AccountPluginOp>(
+    'account.settings.AccountPluginOp',
+    () => [[1, 'plugin_id', 9]],
   )
 
 /**

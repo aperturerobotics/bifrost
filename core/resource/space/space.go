@@ -45,7 +45,14 @@ type SpaceResource struct {
 	appPluginIDs []string
 	// bindingRegistry carries binding changes from the Resource root.
 	bindingRegistry *process_binding.BindingRegistry
+	// accountPlugins reads the account plugin list, or is nil without an account.
+	accountPlugins AccountPluginSource
 }
+
+// AccountPluginSource calls report with the manifest IDs of the plugins the
+// session's account loads into every Space, then again on each change, until
+// ctx ends or the list cannot be read.
+type AccountPluginSource func(ctx context.Context, report func(ids []string)) error
 
 // NewSpaceResource creates a new SpaceResource.
 func NewSpaceResource(le *logrus.Entry, b bus.Bus, sp space.SpaceSharedObjectBody) *SpaceResource {
@@ -686,7 +693,32 @@ func (r *SpaceResource) AcquireContentsRuntime(ctx context.Context) (
 	if r.bindingRegistry != nil {
 		runtime.SetBindingRegistry(r.bindingRegistry)
 	}
-	return conf, runtime, runtimeRef, nil
+	if r.accountPlugins == nil {
+		return conf, runtime, runtimeRef, nil
+	}
+
+	// Follow the account plugin list while this holder keeps the runtime.
+	followCtx, followCancel := context.WithCancel(context.WithoutCancel(ctx))
+	go func() {
+		err := r.accountPlugins(followCtx, runtime.SetAccountPluginIDs)
+		if err != nil && followCtx.Err() == nil {
+			r.le.WithError(err).Warn("stopped following account plugins")
+		}
+	}()
+	return conf, runtime, &runtimeHold{ref: runtimeRef, cancel: followCancel}, nil
+}
+
+// runtimeHold is a contents runtime reference that also follows the account
+// plugin list.
+type runtimeHold struct {
+	ref    directive.Reference
+	cancel context.CancelFunc
+}
+
+// Release stops following the account plugin list and releases the runtime.
+func (h *runtimeHold) Release() {
+	h.cancel()
+	h.ref.Release()
 }
 
 // contentsRuntimeConfig builds the plugin/space config shared by every contents
@@ -1005,6 +1037,12 @@ func loadSharingParticipantPresentationState(
 // SetAppPluginIDs supplies application composition before the resource is published.
 func (r *SpaceResource) SetAppPluginIDs(ids []string) {
 	r.appPluginIDs = slices.Clone(ids)
+}
+
+// SetAccountPlugins supplies the account plugin list before the resource is
+// published. Each holder of the contents runtime follows it.
+func (r *SpaceResource) SetAccountPlugins(source AccountPluginSource) {
+	r.accountPlugins = source
 }
 
 // SetBindingRegistry supplies the Resource root's binding event source.

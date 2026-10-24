@@ -28,6 +28,7 @@ func main() {
 		args.BuildCommands(),
 		args.BuildForgeCommand(),
 		args.BuildSpaceCommand(),
+		args.BuildAccountCommand(),
 		buildLinebreaksCommand(),
 		buildOrphansCommand(),
 		buildMeasureCommand(),

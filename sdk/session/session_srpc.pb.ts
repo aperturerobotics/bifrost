@@ -71,6 +71,8 @@ import {
   RevokeSpaceInviteResponse,
   SelectPairingAccountRequest,
   SelectPairingAccountResponse,
+  SetAccountPluginRequest,
+  SetAccountPluginResponse,
   SetBackgroundPluginRequest,
   SetBackgroundPluginResponse,
   SetDefaultStorageBackendRequest,
@@ -551,6 +553,18 @@ export const SessionResourceServiceDefinition = {
       name: 'EnsureDeveloperSpace',
       I: EnsureDeveloperSpaceRequest,
       O: EnsureDeveloperSpaceResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * SetAccountPlugin adds a plugin to or removes it from the account plugin
+     * list, which loads into every Space the account mounts afterwards.
+     *
+     * @generated from rpc s4wave.session.SessionResourceService.SetAccountPlugin
+     */
+    SetAccountPlugin: {
+      name: 'SetAccountPlugin',
+      I: SetAccountPluginRequest,
+      O: SetAccountPluginResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -1035,6 +1049,17 @@ export interface SessionResourceService {
     request: EnsureDeveloperSpaceRequest,
     abortSignal?: AbortSignal,
   ): Promise<EnsureDeveloperSpaceResponse>
+
+  /**
+   * SetAccountPlugin adds a plugin to or removes it from the account plugin
+   * list, which loads into every Space the account mounts afterwards.
+   *
+   * @generated from rpc s4wave.session.SessionResourceService.SetAccountPlugin
+   */
+  SetAccountPlugin(
+    request: SetAccountPluginRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SetAccountPluginResponse>
 
   /**
    * WatchStorageBackends streams the account's storage backends and the
@@ -1556,6 +1581,18 @@ export interface SessionResourceServiceHandler {
   ): Promise<EnsureDeveloperSpaceResponse>
 
   /**
+   * SetAccountPlugin adds a plugin to or removes it from the account plugin
+   * list, which loads into every Space the account mounts afterwards.
+   *
+   * @generated from rpc s4wave.session.SessionResourceService.SetAccountPlugin
+   */
+  SetAccountPlugin(
+    request: SetAccountPluginRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<SetAccountPluginResponse>
+
+  /**
    * WatchStorageBackends streams the account's storage backends and the
    * Spaces placed on each.
    *
@@ -1706,6 +1743,7 @@ export class SessionResourceServiceClient implements SessionResourceService {
     this.AcceptLocalPairingOffer = this.AcceptLocalPairingOffer.bind(this)
     this.AcceptLocalPairingAnswer = this.AcceptLocalPairingAnswer.bind(this)
     this.EnsureDeveloperSpace = this.EnsureDeveloperSpace.bind(this)
+    this.SetAccountPlugin = this.SetAccountPlugin.bind(this)
     this.WatchStorageBackends = this.WatchStorageBackends.bind(this)
     this.CheckStorageBackend = this.CheckStorageBackend.bind(this)
     this.AddStorageBackend = this.AddStorageBackend.bind(this)
@@ -2508,6 +2546,26 @@ export class SessionResourceServiceClient implements SessionResourceService {
       abortSignal || undefined,
     )
     return EnsureDeveloperSpaceResponse.fromBinary(result)
+  }
+
+  /**
+   * SetAccountPlugin adds a plugin to or removes it from the account plugin
+   * list, which loads into every Space the account mounts afterwards.
+   *
+   * @generated from rpc s4wave.session.SessionResourceService.SetAccountPlugin
+   */
+  async SetAccountPlugin(
+    request: SetAccountPluginRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<SetAccountPluginResponse> {
+    const requestMsg = SetAccountPluginRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      SessionResourceServiceDefinition.methods.SetAccountPlugin.name,
+      SetAccountPluginRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return SetAccountPluginResponse.fromBinary(result)
   }
 
   /**

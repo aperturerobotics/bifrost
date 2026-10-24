@@ -1089,6 +1089,11 @@ export interface SpacePluginStatus {
    * Revision is reserved for future manifest-version projection.
    */
   revision?: string
+  /**
+   * Account reports that the plugin comes from the account plugin list rather
+   * than the Space settings, so the Space cannot remove it.
+   */
+  account?: boolean
 }
 
 export const SpacePluginStatus: MessageType<SpacePluginStatus> =
@@ -1102,6 +1107,7 @@ export const SpacePluginStatus: MessageType<SpacePluginStatus> =
       [6, 'detail', 9],
       [7, 'retry_count', 13],
       [8, 'revision', 9],
+      [9, 'account', 8],
     ],
   )
 

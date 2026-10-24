@@ -66,6 +66,9 @@ service SessionResourceService {
   // EnsureDeveloperSpace returns the account's developer Space, creating and
   // recording it when the account has none.
   rpc EnsureDeveloperSpace(EnsureDeveloperSpaceRequest) returns (EnsureDeveloperSpaceResponse);
+  // SetAccountPlugin adds a plugin to or removes it from the account plugin
+  // list, which loads into every Space the account mounts afterwards.
+  rpc SetAccountPlugin(SetAccountPluginRequest) returns (SetAccountPluginResponse);
   // WatchStorageBackends streams the account's storage backends and the
   // Spaces placed on each.
   rpc WatchStorageBackends(WatchStorageBackendsRequest) returns (stream WatchStorageBackendsResponse);
@@ -1048,6 +1051,18 @@ message EnsureDeveloperSpaceResponse {
   // SharedObjectId identifies the account's developer Space.
   string shared_object_id = 1;
 }
+
+// SetAccountPluginRequest is the request for SetAccountPlugin.
+message SetAccountPluginRequest {
+  // PluginId is the manifest ID of the plugin.
+  string plugin_id = 1;
+  // Enabled adds the plugin to the account plugin list when true and removes
+  // it when false.
+  bool enabled = 2;
+}
+
+// SetAccountPluginResponse is the response for SetAccountPlugin.
+message SetAccountPluginResponse {}
 
 // WatchStorageBackendsRequest is the request for WatchStorageBackends.
 message WatchStorageBackendsRequest {}

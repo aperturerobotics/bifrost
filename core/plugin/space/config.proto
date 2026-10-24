@@ -7,8 +7,7 @@ package plugin.space;
 message Config {
   // SpaceId is the Space identifier.
   string space_id = 1;
-  // PluginIds lists manifest IDs of plugins to load (from SpaceSettings).
-  repeated string plugin_ids = 2;
+  reserved 2;
   // VolumeId is the volume ID for the PlatformAccount object store.
   // If empty, uses the default bldr plugin volume.
   string volume_id = 3;

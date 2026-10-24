@@ -88,7 +88,7 @@ var processRetryBackoff = &backoff.Backoff{
 // newly listed and demanded plugins and releases the others.
 //
 // For FetchManifest: resolves FetchManifest directives for manifest IDs
-// matching the current SpaceSettings plugin_ids. Uses a shared world watch
+// matching the current SpaceSettings and account plugin IDs. Uses a shared world watch
 // loop with broadcast to handle resolver set changes. With a manifest source,
 // approved requests also resolve from the parent bus.
 //
@@ -109,11 +109,13 @@ type Controller struct {
 	loadTarget bus.Bus
 	// demanded reports whether a listed plugin should stay loaded.
 	demanded func(pluginID string) bool
+	// accountPlugins returns the account plugin list, or is nil without one.
+	accountPlugins func() []string
 	// bindingsChanged is called after the controller deletes a process binding.
 	bindingsChanged func()
 	// resolvers is the set of active FetchManifest resolvers.
 	resolvers map[*resolverEntry]struct{}
-	// pluginIDs is the current set of plugin IDs from SpaceSettings.
+	// pluginIDs is the current set of plugin IDs from SpaceSettings and the account.
 	// Updated each world watch cycle. Protected by bcast.
 	pluginIDs []string
 	// loadedPlugins tracks demanded plugin startup readiness.
@@ -180,6 +182,7 @@ type factoryConfig struct {
 	manifestSource  bus.Bus
 	loadTarget      bus.Bus
 	demanded        func(pluginID string) bool
+	accountPlugins  func() []string
 	bindingsChanged func()
 }
 
@@ -199,6 +202,12 @@ func WithLoadTarget(target bus.Bus) FactoryOption {
 // NotifyChanged after the demand changes.
 func WithPluginDemand(demanded func(pluginID string) bool) FactoryOption {
 	return func(conf *factoryConfig) { conf.demanded = demanded }
+}
+
+// WithAccountPlugins loads the plugins accountPlugins returns alongside the
+// plugins the Space lists. Call NotifyChanged after the list changes.
+func WithAccountPlugins(accountPlugins func() []string) FactoryOption {
+	return func(conf *factoryConfig) { conf.accountPlugins = accountPlugins }
 }
 
 // WithProcessBindingsChanged calls notify after the controller deletes the
@@ -228,6 +237,7 @@ func NewFactory(b bus.Bus, opts ...FactoryOption) controller.Factory {
 				manifestSource:  factoryConf.manifestSource,
 				loadTarget:      factoryConf.loadTarget,
 				demanded:        factoryConf.demanded,
+				accountPlugins:  factoryConf.accountPlugins,
 				bindingsChanged: factoryConf.bindingsChanged,
 				resolvers:       make(map[*resolverEntry]struct{}),
 				bindingsStale:   true,
@@ -475,7 +485,8 @@ func (c *Controller) runWorldWatchLoop(ctx context.Context, engineID string) err
 }
 
 // reconcilePlugins reads SpaceSettings from the world and reconciles
-// LoadPlugin directives for the demanded plugin_ids.
+// LoadPlugin directives for the demanded plugin_ids of the Space and the
+// account. A plugin on both lists keeps the Space's installation pin.
 func (c *Controller) reconcilePlugins(ctx context.Context, ws world.WorldState, refs map[string]pluginReference) {
 	// Read SpaceSettings from the World state.
 	le := c.GetLogger()
@@ -486,10 +497,10 @@ func (c *Controller) reconcilePlugins(ctx context.Context, ws world.WorldState, 
 		return
 	}
 
-	// Filter the configured plugin IDs.
-	var ids []string
-	if settings != nil {
-		ids = pluginids.FilterValid(le, settings.GetPluginIds())
+	// Filter the plugin IDs the Space lists, then the account's.
+	ids := pluginids.FilterValid(le, settings.GetPluginIds())
+	if c.accountPlugins != nil {
+		ids = append(ids, pluginids.Missing(ids, pluginids.FilterValid(le, c.accountPlugins()))...)
 	}
 
 	// Update the stored pluginIDs for FetchManifest filtering.

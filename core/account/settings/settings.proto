@@ -47,6 +47,9 @@ message AccountSettings {
   // repositories the user adds and what is built from them. Empty until the
   // first repository is added. Every device of the account uses this Space.
   string developer_space_id = 14;
+  // PluginIds lists the manifest IDs of plugins the account loads into every
+  // Space it mounts, alongside the plugins the Space lists itself.
+  repeated string plugin_ids = 15;
 }
 
 // StorageBackend is block storage the account's devices share.
@@ -202,7 +205,17 @@ message AccountSettingsOp {
     // recorded Space only when that Space is the one the operation names as
     // previous; otherwise it is rejected.
     SetDeveloperSpaceOp set_developer_space = 18;
+    // AddPlugin adds a plugin manifest ID to the account plugin list.
+    AccountPluginOp add_plugin = 19;
+    // RemovePlugin removes a plugin manifest ID from the account plugin list.
+    AccountPluginOp remove_plugin = 20;
   }
+}
+
+// AccountPluginOp names one plugin of the account plugin list.
+message AccountPluginOp {
+  // PluginId is the manifest ID of the plugin.
+  string plugin_id = 1;
 }
 
 // SetDeveloperSpaceOp records the account's developer Space.

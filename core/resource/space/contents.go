@@ -22,6 +22,7 @@ import (
 	bldr_plugin "github.com/s4wave/spacewave/bldr/plugin"
 	resource_server "github.com/s4wave/spacewave/bldr/resource/server"
 	process_binding "github.com/s4wave/spacewave/core/plugin/process"
+	"github.com/s4wave/spacewave/core/plugin/space/pluginids"
 	plugin_space_runtime "github.com/s4wave/spacewave/core/plugin/space/runtime"
 	space_world "github.com/s4wave/spacewave/core/space/world"
 	"github.com/s4wave/spacewave/db/bucket"
@@ -395,6 +396,7 @@ func (r *SpaceContentsResource) WatchState(
 
 		// Build plugin statuses from the running runtime generation.
 		gen, runtimeCh, runtimeErr := r.runtime.GetGeneration()
+		accountIDs := pluginids.Missing(pluginIDs, r.runtime.GetAccountPluginIDs())
 		loadedIDs := map[string]struct{}{}
 		var loadedCh, requestedCh <-chan struct{}
 		var requestedIDs []string
@@ -413,11 +415,7 @@ func (r *SpaceContentsResource) WatchState(
 			}
 			var requested []string
 			requested, requestedCh = gen.GetSpaceController().GetRequestedPluginIDsAndWaitCh()
-			for _, pid := range requested {
-				if !slices.Contains(pluginIDs, pid) {
-					requestedIDs = append(requestedIDs, pid)
-				}
-			}
+			requestedIDs = pluginids.Missing(slices.Concat(pluginIDs, accountIDs), requested)
 
 			statusCtr := gen.GetScheduler().GetPluginStatusCtr()
 			statusSnapshot := statusCtr.GetValue()
@@ -427,8 +425,8 @@ func (r *SpaceContentsResource) WatchState(
 				return err
 			}
 		}
-		plugins := make([]*s4wave_space.SpacePluginStatus, 0, len(pluginIDs))
-		for _, pid := range pluginIDs {
+		plugins := make([]*s4wave_space.SpacePluginStatus, 0, len(pluginIDs)+len(accountIDs))
+		for i, pid := range slices.Concat(pluginIDs, accountIDs) {
 			_, loaded := loadedIDs[pid]
 			status := buildSpacePluginStatus(
 				pid,
@@ -437,6 +435,7 @@ func (r *SpaceContentsResource) WatchState(
 				gen != nil,
 				schedulerStatuses[pid],
 			)
+			status.Account = i >= len(pluginIDs)
 			if runtimeErr != nil {
 				status.State = s4wave_space.SpacePluginLifecycleState_SpacePluginLifecycleState_FAILED
 				status.Detail = runtimeErr.Error()

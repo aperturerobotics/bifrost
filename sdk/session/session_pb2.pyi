@@ -971,6 +971,18 @@ class EnsureDeveloperSpaceResponse(_message.Message):
     shared_object_id: str
     def __init__(self, shared_object_id: _Optional[str] = ...) -> None: ...
 
+class SetAccountPluginRequest(_message.Message):
+    __slots__ = ("plugin_id", "enabled")
+    PLUGIN_ID_FIELD_NUMBER: _ClassVar[int]
+    ENABLED_FIELD_NUMBER: _ClassVar[int]
+    plugin_id: str
+    enabled: bool
+    def __init__(self, plugin_id: _Optional[str] = ..., enabled: _Optional[bool] = ...) -> None: ...
+
+class SetAccountPluginResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class WatchStorageBackendsRequest(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
