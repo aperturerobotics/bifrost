@@ -4,6 +4,7 @@ package spacewave_cli
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"slices"
@@ -89,6 +90,7 @@ func newPromCommand(_ func() cli_entrypoint.CliBus) *cli.Command {
 				},
 			},
 			buildPromQueryCommand(),
+			buildPromLabelsCommand(),
 		},
 	}
 }
@@ -351,28 +353,15 @@ func (a *promQueryArgs) Run(c *cli.Context) error {
 		req.StartMs, req.EndMs, req.StepMs = end.Add(-a.rng).UnixMilli(), end.UnixMilli(), step.Milliseconds()
 	}
 
-	// Ask the plugin through a target's typed resource; the query reads every
-	// target in the Space.
-	idx, err := sessionIndexFromInt(a.sessionIdx)
-	if err != nil {
-		return err
-	}
-
-	// Mount a target's typed resource, discovering one when none is named.
-	var discover func(context.Context, *sdk_engine.SDKEngine) (string, error)
-	if a.target == "" {
-		discover = discoverPromTarget
-	}
-	mount, cleanup, err := mountObjectChain(c, a.statePath, fsURI{sessionIdx: idx, spaceID: a.spaceID, objectKey: a.target}, discover)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
 	// Evaluate the expression.
-	resp, err := s4wave_prom.NewSRPCPromQueryResourceServiceClient(mount.typedClient).Query(c.Context, req)
-	if err != nil {
+	var resp *s4wave_prom.QueryResponse
+	err := a.withQueryService(c, a.target, func(svc s4wave_prom.SRPCPromQueryResourceServiceClient) error {
+		var err error
+		resp, err = svc.Query(c.Context, req)
 		return errors.Wrap(err, "query")
+	})
+	if err != nil {
+		return err
 	}
 
 	// Print the result.
@@ -387,6 +376,29 @@ func (a *promQueryArgs) Run(c *cli.Context) error {
 	return nil
 }
 
+// withQueryService calls cb with the PromQL service on a target's typed
+// resource, discovering a target when none is named. The service reads every
+// target in the Space, so any target answers.
+func (a *promArgs) withQueryService(c *cli.Context, target string, cb func(s4wave_prom.SRPCPromQueryResourceServiceClient) error) error {
+	// Resolve the session.
+	idx, err := sessionIndexFromInt(a.sessionIdx)
+	if err != nil {
+		return err
+	}
+
+	// Mount the target's typed resource.
+	var discover func(context.Context, *sdk_engine.SDKEngine) (string, error)
+	if target == "" {
+		discover = discoverPromTarget
+	}
+	mount, cleanup, err := mountObjectChain(c, a.statePath, fsURI{sessionIdx: idx, spaceID: a.spaceID, objectKey: target}, discover)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+	return cb(s4wave_prom.NewSRPCPromQueryResourceServiceClient(mount.typedClient))
+}
+
 // buildPromQueryCommand builds the query subcommand.
 func buildPromQueryCommand() *cli.Command {
 	args := &promQueryArgs{}
@@ -394,6 +406,71 @@ func buildPromQueryCommand() *cli.Command {
 		Name:      "query",
 		Usage:     "evaluate a PromQL expression over every target in the Space",
 		ArgsUsage: "<expr>",
+		Flags:     args.BuildFlags(),
+		Action:    args.Run,
+	}
+}
+
+// promLabelsArgs lists label names, or one label's values, over the Space's
+// targets.
+type promLabelsArgs struct {
+	promArgs
+	target string
+	match  cli.StringSlice
+}
+
+// BuildFlags returns the labels flags.
+func (a *promLabelsArgs) BuildFlags() []cli.Flag {
+	return append(a.promArgs.BuildFlags(),
+		&cli.StringFlag{Name: "target", Usage: "target whose plugin resource answers (default: any target)", Destination: &a.target},
+		&cli.StringSliceFlag{Name: "match", Usage: "series selector to limit the lookup to, repeatable", Destination: &a.match},
+	)
+}
+
+// Run prints the label names, or the values of the named label.
+func (a *promLabelsArgs) Run(c *cli.Context) error {
+	// Read the optional label name.
+	if c.NArg() > 1 {
+		return errors.New("at most one label name is allowed")
+	}
+	name, match := c.Args().First(), a.match.Value()
+
+	// Look up the names or the values.
+	var resp *s4wave_prom.LabelsResponse
+	err := a.withQueryService(c, a.target, func(svc s4wave_prom.SRPCPromQueryResourceServiceClient) error {
+		var err error
+		if name == "" {
+			resp, err = svc.LabelNames(c.Context, &s4wave_prom.LabelNamesRequest{Match: match})
+		} else {
+			resp, err = svc.LabelValues(c.Context, &s4wave_prom.LabelValuesRequest{Name: name, Match: match})
+		}
+		return errors.Wrap(err, "label lookup")
+	})
+	if err != nil {
+		return err
+	}
+
+	// Print one per line, or the response as JSON or YAML.
+	if a.output == "json" || a.output == "yaml" {
+		data, err := resp.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		return formatOutput(data, a.output)
+	}
+	for _, v := range resp.GetValues() {
+		fmt.Println(v)
+	}
+	return nil
+}
+
+// buildPromLabelsCommand builds the labels subcommand.
+func buildPromLabelsCommand() *cli.Command {
+	args := &promLabelsArgs{}
+	return &cli.Command{
+		Name:      "labels",
+		Usage:     "list label names, or one label's values, over every target in the Space",
+		ArgsUsage: "[label-name]",
 		Flags:     args.BuildFlags(),
 		Action:    args.Run,
 	}

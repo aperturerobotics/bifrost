@@ -2,7 +2,13 @@
 // @generated from file github.com/s4wave/spacewave/sdk/prom/prom.proto (package s4wave.prom, syntax proto3)
 /* eslint-disable */
 
-import { QueryRequest, QueryResponse } from './prom.pb.js'
+import {
+  LabelNamesRequest,
+  LabelsResponse,
+  LabelValuesRequest,
+  QueryRequest,
+  QueryResponse,
+} from './prom.pb.js'
 import { MethodKind } from '@aptre/protobuf-es-lite'
 import { ProtoRpc, ServerContext } from 'starpc'
 
@@ -25,6 +31,28 @@ export const PromQueryResourceServiceDefinition = {
       O: QueryResponse,
       kind: MethodKind.Unary,
     },
+    /**
+     * LabelNames lists the label names of the matching series.
+     *
+     * @generated from rpc s4wave.prom.PromQueryResourceService.LabelNames
+     */
+    LabelNames: {
+      name: 'LabelNames',
+      I: LabelNamesRequest,
+      O: LabelsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * LabelValues lists the values of one label among the matching series.
+     *
+     * @generated from rpc s4wave.prom.PromQueryResourceService.LabelValues
+     */
+    LabelValues: {
+      name: 'LabelValues',
+      I: LabelValuesRequest,
+      O: LabelsResponse,
+      kind: MethodKind.Unary,
+    },
   },
 } as const
 
@@ -43,6 +71,26 @@ export interface PromQueryResourceService {
     request: QueryRequest,
     abortSignal?: AbortSignal,
   ): Promise<QueryResponse>
+
+  /**
+   * LabelNames lists the label names of the matching series.
+   *
+   * @generated from rpc s4wave.prom.PromQueryResourceService.LabelNames
+   */
+  LabelNames(
+    request: LabelNamesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<LabelsResponse>
+
+  /**
+   * LabelValues lists the values of one label among the matching series.
+   *
+   * @generated from rpc s4wave.prom.PromQueryResourceService.LabelValues
+   */
+  LabelValues(
+    request: LabelValuesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<LabelsResponse>
 }
 
 /**
@@ -61,6 +109,28 @@ export interface PromQueryResourceServiceHandler {
     abortSignal: AbortSignal,
     context: ServerContext,
   ): Promise<QueryResponse>
+
+  /**
+   * LabelNames lists the label names of the matching series.
+   *
+   * @generated from rpc s4wave.prom.PromQueryResourceService.LabelNames
+   */
+  LabelNames(
+    request: LabelNamesRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<LabelsResponse>
+
+  /**
+   * LabelValues lists the values of one label among the matching series.
+   *
+   * @generated from rpc s4wave.prom.PromQueryResourceService.LabelValues
+   */
+  LabelValues(
+    request: LabelValuesRequest,
+    abortSignal: AbortSignal,
+    context: ServerContext,
+  ): Promise<LabelsResponse>
 }
 
 export const PromQueryResourceServiceServiceName =
@@ -73,6 +143,8 @@ export class PromQueryResourceServiceClient implements PromQueryResourceService 
     this.service = opts?.service || PromQueryResourceServiceServiceName
     this.rpc = rpc
     this.Query = this.Query.bind(this)
+    this.LabelNames = this.LabelNames.bind(this)
+    this.LabelValues = this.LabelValues.bind(this)
   }
   /**
    * Query evaluates one PromQL expression.
@@ -91,5 +163,43 @@ export class PromQueryResourceServiceClient implements PromQueryResourceService 
       abortSignal || undefined,
     )
     return QueryResponse.fromBinary(result)
+  }
+
+  /**
+   * LabelNames lists the label names of the matching series.
+   *
+   * @generated from rpc s4wave.prom.PromQueryResourceService.LabelNames
+   */
+  async LabelNames(
+    request: LabelNamesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<LabelsResponse> {
+    const requestMsg = LabelNamesRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      PromQueryResourceServiceDefinition.methods.LabelNames.name,
+      LabelNamesRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return LabelsResponse.fromBinary(result)
+  }
+
+  /**
+   * LabelValues lists the values of one label among the matching series.
+   *
+   * @generated from rpc s4wave.prom.PromQueryResourceService.LabelValues
+   */
+  async LabelValues(
+    request: LabelValuesRequest,
+    abortSignal?: AbortSignal,
+  ): Promise<LabelsResponse> {
+    const requestMsg = LabelValuesRequest.create(request)
+    const result = await this.rpc.request(
+      this.service,
+      PromQueryResourceServiceDefinition.methods.LabelValues.name,
+      LabelValuesRequest.toBinary(requestMsg),
+      abortSignal || undefined,
+    )
+    return LabelsResponse.fromBinary(result)
   }
 }

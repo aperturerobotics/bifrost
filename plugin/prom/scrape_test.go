@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -177,6 +178,39 @@ func TestScrapeRunThrough(t *testing.T) {
 		if v := singleValue(t, query(expr, t2)); v != want {
 			t.Fatalf("%s = %v, want %v", expr, v, want)
 		}
+	}
+
+	// Label values span both targets.
+	jobs, err := svc.LabelValues(ctx, &s4wave_prom.LabelValuesRequest{Name: "job"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(jobs.GetValues(), []string{"node", "spacewave"}) {
+		t.Fatalf("job values = %v", jobs.GetValues())
+	}
+
+	// Several selectors union their matches.
+	names, err := svc.LabelValues(ctx, &s4wave_prom.LabelValuesRequest{
+		Name:  "__name__",
+		Match: []string{`node_load1`, `{__name__=~"op_seconds_.*",le!="+Inf"}`},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"node_load1", "op_seconds_bucket", "op_seconds_count", "op_seconds_sum"}; !slices.Equal(names.GetValues(), want) {
+		t.Fatalf("metric names = %v, want %v", names.GetValues(), want)
+	}
+
+	// Label names follow the selector, and a bad selector fails.
+	labelNames, err := svc.LabelNames(ctx, &s4wave_prom.LabelNamesRequest{Match: []string{`node_load1`}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"__name__", "exported_job", "instance", "job"}; !slices.Equal(labelNames.GetValues(), want) {
+		t.Fatalf("node_load1 label names = %v, want %v", labelNames.GetValues(), want)
+	}
+	if _, err := svc.LabelNames(ctx, &s4wave_prom.LabelNamesRequest{Match: []string{`up{`}}); err == nil {
+		t.Fatal("bad selector accepted")
 	}
 }
 

@@ -3917,7 +3917,7 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/prom": {
-      "hash": "55bc7fda4e809d5a7fa1ae1a48f3467b0e9c64748a92b880c7e7aaabfb36930b",
+      "hash": "f31f6495d646d46fcf1eb9133db560b35458759bbbbbebf26b65364e0f7871e1",
       "generatedFiles": [
         "sdk/prom/prom.pb.go",
         "sdk/prom/prom.pb.ts",

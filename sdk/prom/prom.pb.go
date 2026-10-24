@@ -260,6 +260,77 @@ func (x *TargetStatus) GetDevicePeerId() string {
 	return ""
 }
 
+// LabelNamesRequest lists label names. Label lookups ignore time: they read
+// every committed series of every target.
+type LabelNamesRequest struct {
+	unknownFields []byte
+	// Match holds series selectors such as up{job="node"}. A series matches
+	// when any selector matches it; none matches every series.
+	Match []string `protobuf:"bytes,1,rep,name=match,proto3" json:"match,omitempty"`
+}
+
+func (x *LabelNamesRequest) Reset() {
+	*x = LabelNamesRequest{}
+}
+
+func (*LabelNamesRequest) ProtoMessage() {}
+
+func (x *LabelNamesRequest) GetMatch() []string {
+	if x != nil {
+		return x.Match
+	}
+	return nil
+}
+
+// LabelValuesRequest lists the values of one label.
+type LabelValuesRequest struct {
+	unknownFields []byte
+	// Name is the label name, such as job or __name__.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Match holds series selectors as in LabelNamesRequest.
+	Match []string `protobuf:"bytes,2,rep,name=match,proto3" json:"match,omitempty"`
+}
+
+func (x *LabelValuesRequest) Reset() {
+	*x = LabelValuesRequest{}
+}
+
+func (*LabelValuesRequest) ProtoMessage() {}
+
+func (x *LabelValuesRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *LabelValuesRequest) GetMatch() []string {
+	if x != nil {
+		return x.Match
+	}
+	return nil
+}
+
+// LabelsResponse is a sorted list of label names or values without repeats.
+type LabelsResponse struct {
+	unknownFields []byte
+	// Values holds the names or values.
+	Values []string `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
+}
+
+func (x *LabelsResponse) Reset() {
+	*x = LabelsResponse{}
+}
+
+func (*LabelsResponse) ProtoMessage() {}
+
+func (x *LabelsResponse) GetValues() []string {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
 // QueryRequest evaluates an expression at one instant or over a range.
 type QueryRequest struct {
 	unknownFields []byte
@@ -512,6 +583,55 @@ func (m *TargetStatus) CloneMessageVT() protobuf_go_lite.CloneMessage {
 	return m.CloneVT()
 }
 
+func (m *LabelNamesRequest) CloneVT() *LabelNamesRequest {
+	if m == nil {
+		return (*LabelNamesRequest)(nil)
+	}
+	r := new(LabelNamesRequest)
+	r.Match = protobuf_go_lite.CloneSlice(m.Match)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *LabelNamesRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *LabelValuesRequest) CloneVT() *LabelValuesRequest {
+	if m == nil {
+		return (*LabelValuesRequest)(nil)
+	}
+	r := new(LabelValuesRequest)
+	r.Name = m.Name
+	r.Match = protobuf_go_lite.CloneSlice(m.Match)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *LabelValuesRequest) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
+func (m *LabelsResponse) CloneVT() *LabelsResponse {
+	if m == nil {
+		return (*LabelsResponse)(nil)
+	}
+	r := new(LabelsResponse)
+	r.Values = protobuf_go_lite.CloneSlice(m.Values)
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = slices.Clone(m.unknownFields)
+	}
+	return r
+}
+
+func (m *LabelsResponse) CloneMessageVT() protobuf_go_lite.CloneMessage {
+	return m.CloneVT()
+}
+
 func (m *QueryRequest) CloneVT() *QueryRequest {
 	if m == nil {
 		return (*QueryRequest)(nil)
@@ -709,6 +829,69 @@ func (this *TargetStatus) EqualVT(that *TargetStatus) bool {
 
 func (this *TargetStatus) EqualMessageVT(thatMsg any) bool {
 	that, ok := thatMsg.(*TargetStatus)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *LabelNamesRequest) EqualVT(that *LabelNamesRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Match, that.Match) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *LabelNamesRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*LabelNamesRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *LabelValuesRequest) EqualVT(that *LabelValuesRequest) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.Name != that.Name {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Match, that.Match) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *LabelValuesRequest) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*LabelValuesRequest)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+
+func (this *LabelsResponse) EqualVT(that *LabelsResponse) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if !protobuf_go_lite.EqualSlice(this.Values, that.Values) {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *LabelsResponse) EqualMessageVT(thatMsg any) bool {
+	that, ok := thatMsg.(*LabelsResponse)
 	if !ok {
 		return false
 	}
@@ -1178,6 +1361,152 @@ func (x *TargetStatus) UnmarshalProtoJSON(s *json.UnmarshalState) {
 
 // UnmarshalJSON unmarshals the TargetStatus from JSON.
 func (x *TargetStatus) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the LabelNamesRequest message to JSON.
+func (x *LabelNamesRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Match) > 0 || s.HasField("match") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("match")
+		s.WriteStringArray(x.Match)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the LabelNamesRequest to JSON.
+func (x *LabelNamesRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the LabelNamesRequest message from JSON.
+func (x *LabelNamesRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "match":
+			s.AddField("match")
+			if s.ReadNil() {
+				x.Match = nil
+				return
+			}
+			x.Match = s.ReadStringArray()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the LabelNamesRequest from JSON.
+func (x *LabelNamesRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the LabelValuesRequest message to JSON.
+func (x *LabelValuesRequest) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if x.Name != "" || s.HasField("name") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("name")
+		s.WriteString(x.Name)
+	}
+	if len(x.Match) > 0 || s.HasField("match") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("match")
+		s.WriteStringArray(x.Match)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the LabelValuesRequest to JSON.
+func (x *LabelValuesRequest) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the LabelValuesRequest message from JSON.
+func (x *LabelValuesRequest) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "name":
+			s.AddField("name")
+			x.Name = s.ReadString()
+		case "match":
+			s.AddField("match")
+			if s.ReadNil() {
+				x.Match = nil
+				return
+			}
+			x.Match = s.ReadStringArray()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the LabelValuesRequest from JSON.
+func (x *LabelValuesRequest) UnmarshalJSON(b []byte) error {
+	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
+}
+
+// MarshalProtoJSON marshals the LabelsResponse message to JSON.
+func (x *LabelsResponse) MarshalProtoJSON(s *json.MarshalState) {
+	if x == nil {
+		s.WriteNil()
+		return
+	}
+	s.WriteObjectStart()
+	var wroteField bool
+	if len(x.Values) > 0 || s.HasField("values") {
+		s.WriteMoreIf(&wroteField)
+		s.WriteObjectField("values")
+		s.WriteStringArray(x.Values)
+	}
+	s.WriteObjectEnd()
+}
+
+// MarshalJSON marshals the LabelsResponse to JSON.
+func (x *LabelsResponse) MarshalJSON() ([]byte, error) {
+	return json.DefaultMarshalerConfig.Marshal(x)
+}
+
+// UnmarshalProtoJSON unmarshals the LabelsResponse message from JSON.
+func (x *LabelsResponse) UnmarshalProtoJSON(s *json.UnmarshalState) {
+	if s.ReadNil() {
+		return
+	}
+	s.ReadObject(func(key string) {
+		switch key {
+		default:
+			s.Skip() // ignore unknown field
+		case "values":
+			s.AddField("values")
+			if s.ReadNil() {
+				x.Values = nil
+				return
+			}
+			x.Values = s.ReadStringArray()
+		}
+	})
+}
+
+// UnmarshalJSON unmarshals the LabelsResponse from JSON.
+func (x *LabelsResponse) UnmarshalJSON(b []byte) error {
 	return json.DefaultUnmarshalerConfig.Unmarshal(b, x)
 }
 
@@ -1723,6 +2052,128 @@ func (m *TargetStatus) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *LabelNamesRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LabelNamesRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *LabelNamesRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Match) > 0 {
+		for iNdEx := len(m.Match) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Match[iNdEx])
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *LabelValuesRequest) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LabelValuesRequest) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *LabelValuesRequest) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Match) > 0 {
+		for iNdEx := len(m.Match) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Match[iNdEx])
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Name) > 0 {
+		i = protobuf_go_lite.EncodeString(dAtA, i, m.Name)
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *LabelsResponse) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LabelsResponse) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *LabelsResponse) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i = protobuf_go_lite.EncodeRawBytes(dAtA, i, m.unknownFields)
+	}
+	if len(m.Values) > 0 {
+		for iNdEx := len(m.Values) - 1; iNdEx >= 0; iNdEx-- {
+			i = protobuf_go_lite.EncodeString(dAtA, i, m.Values[iNdEx])
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *QueryRequest) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -2011,6 +2462,40 @@ func (m *TargetStatus) SizeVT() (n int) {
 	return n
 }
 
+func (m *LabelNamesRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringSlice(1, m.Match)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *LabelValuesRequest) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringNonEmpty(1, m.Name)
+	n += protobuf_go_lite.SizeStringSlice(1, m.Match)
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *LabelsResponse) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += protobuf_go_lite.SizeStringSlice(1, m.Values)
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *QueryRequest) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -2192,6 +2677,64 @@ func (x *TargetStatus) MarshalProtoText() string {
 }
 
 func (x *TargetStatus) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *LabelNamesRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "LabelNamesRequest")
+	if len(x.Match) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "match")
+		for i, v := range x.Match {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *LabelNamesRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *LabelValuesRequest) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "LabelValuesRequest")
+	if x.Name != "" {
+		protobuf_go_lite.TextWriteFieldPrefix(&sb, initialLen, "name")
+		protobuf_go_lite.TextWriteString(&sb, x.Name)
+	}
+	if len(x.Match) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "match")
+		for i, v := range x.Match {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *LabelValuesRequest) String() string {
+	return x.MarshalProtoText()
+}
+
+func (x *LabelsResponse) MarshalProtoText() string {
+	var sb protobuf_go_lite.TextBuilder
+	initialLen := protobuf_go_lite.TextStartMessage(&sb, "LabelsResponse")
+	if len(x.Values) > 0 {
+		protobuf_go_lite.TextWriteListStart(&sb, initialLen, "values")
+		for i, v := range x.Values {
+			protobuf_go_lite.TextWriteListSeparator(&sb, i)
+			protobuf_go_lite.TextWriteString(&sb, v)
+		}
+		protobuf_go_lite.TextWriteListEnd(&sb)
+	}
+	return protobuf_go_lite.TextFinishMessage(&sb)
+}
+
+func (x *LabelsResponse) String() string {
 	return x.MarshalProtoText()
 }
 
@@ -2656,6 +3199,175 @@ func (m *TargetStatus) UnmarshalVT(dAtA []byte) error {
 				return err
 			}
 			m.DevicePeerId = v
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *LabelNamesRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LabelNamesRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LabelNamesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Match", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Match = append(m.Match, v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *LabelValuesRequest) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LabelValuesRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LabelValuesRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Name = v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Match", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Match = append(m.Match, v)
+		default:
+			iNdEx = preIndex
+			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protobuf_go_lite.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+func (m *LabelsResponse) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	var err error
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		wire, iNdEx, err = protobuf_go_lite.DecodeVarint(dAtA, iNdEx)
+		if err != nil {
+			return err
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LabelsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LabelsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Values", wireType)
+			}
+			var v string
+			v, iNdEx, err = protobuf_go_lite.DecodeString(dAtA, iNdEx)
+			if err != nil {
+				return err
+			}
+			m.Values = append(m.Values, v)
 		default:
 			iNdEx = preIndex
 			skippy, err := protobuf_go_lite.Skip(dAtA[iNdEx:])
