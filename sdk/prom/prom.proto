@@ -1,6 +1,8 @@
 syntax = "proto3";
 package s4wave.prom;
 
+import "github.com/aperturerobotics/common/typeid/typeid.proto";
+
 option go_package = "github.com/s4wave/spacewave/sdk/prom;s4wave_prom";
 
 // Label is one name and value of a series.
@@ -58,6 +60,8 @@ message TargetStatus {
   uint64 series = 5;
   // DevicePeerId is the peer of the Device whose process scrapes the target.
   string device_peer_id = 6;
+  // CommitWindowMs is how often that Device commits the target's samples.
+  uint32 commit_window_ms = 7;
 }
 
 // PromQueryResourceService answers PromQL over every target in the Space.
@@ -68,6 +72,33 @@ service PromQueryResourceService {
   rpc LabelNames(LabelNamesRequest) returns (LabelsResponse);
   // LabelValues lists the values of one label among the matching series.
   rpc LabelValues(LabelValuesRequest) returns (LabelsResponse);
+  // WatchTargets sends every target, then each target that changed or was
+  // removed. A target changes on each scrape commit, so the stream also tells
+  // a reader when query answers may have changed. Changes are sent at most
+  // once per second.
+  rpc WatchTargets(WatchTargetsRequest) returns (stream WatchTargetsResponse);
+}
+
+// WatchTargetsRequest watches the targets of the World.
+message WatchTargetsRequest {}
+
+// WatchTargetsResponse is one change to the World's targets. The first
+// response lists every target.
+message WatchTargetsResponse {
+  // Changed holds each target that appeared or changed, by object key order.
+  repeated TargetInfo changed = 1;
+  // Removed holds the object keys of targets that no longer exist.
+  repeated string removed = 2;
+}
+
+// TargetInfo is one target's configuration and latest status.
+message TargetInfo {
+  // ObjectKey is the target's World object key.
+  string object_key = 1;
+  // Meta is the target's identity and scrape configuration.
+  TargetMeta meta = 2;
+  // Status is the latest scrape's report, unset until the first commit.
+  TargetStatus status = 3;
 }
 
 // LabelNamesRequest lists label names. Label lookups ignore time: they read
@@ -148,3 +179,118 @@ message QueryResponse {
   // Warnings are the query's annotations.
   repeated string warnings = 4;
 }
+
+// PanelKind is how a panel shows its expression.
+enum PanelKind {
+  // PANEL_KIND_UNKNOWN is the zero value, shown as a chart.
+  PANEL_KIND_UNKNOWN = 0;
+  // PANEL_KIND_CHART draws a range query as lines over time.
+  PANEL_KIND_CHART = 1;
+  // PANEL_KIND_VALUE shows an instant query's value for each series.
+  PANEL_KIND_VALUE = 2;
+}
+
+// PanelUnit is the unit of a panel's values.
+enum PanelUnit {
+  // PANEL_UNIT_UNKNOWN shows plain numbers.
+  PANEL_UNIT_UNKNOWN = 0;
+  // PANEL_UNIT_PERCENT shows values from 0 to 100 as percentages.
+  PANEL_UNIT_PERCENT = 1;
+  // PANEL_UNIT_BYTES shows sizes in bytes.
+  PANEL_UNIT_BYTES = 2;
+  // PANEL_UNIT_BYTES_PER_SECOND shows rates in bytes per second.
+  PANEL_UNIT_BYTES_PER_SECOND = 3;
+  // PANEL_UNIT_SECONDS shows durations in seconds.
+  PANEL_UNIT_SECONDS = 4;
+  // PANEL_UNIT_CELSIUS shows temperatures in degrees Celsius.
+  PANEL_UNIT_CELSIUS = 5;
+}
+
+// Panel is one PromQL expression on a Dashboard.
+message Panel {
+  // Id identifies the panel within its Dashboard.
+  string id = 1;
+  // Title names the panel. A panel always has one.
+  string title = 2;
+  // Expr is the PromQL expression, stored as typed even when it does not
+  // parse.
+  string expr = 3;
+  // Unit is the unit of the expression's values.
+  PanelUnit unit = 4;
+  // Kind is how the panel shows the expression.
+  PanelKind kind = 5;
+}
+
+// Dashboard is the root of a prom/dashboard object: its panels in display
+// order. Every panel queries every target in the World.
+message Dashboard {
+  option (typeid.id) = "prom/dashboard";
+
+  // Panels holds the panels in display order.
+  repeated Panel panels = 1;
+}
+
+// PromDashboardResourceService reads and edits one Dashboard. Edits apply to
+// the Dashboard as it is when they commit, so concurrent edits to different
+// panels all land.
+service PromDashboardResourceService {
+  // WatchDashboard sends the Dashboard, then the Dashboard after each commit
+  // that changes it.
+  rpc WatchDashboard(WatchDashboardRequest) returns (stream Dashboard);
+  // PutPanel adds a panel or replaces one by its id.
+  rpc PutPanel(PutPanelRequest) returns (PutPanelResponse);
+  // RemovePanel removes a panel by its id.
+  rpc RemovePanel(RemovePanelRequest) returns (RemovePanelResponse);
+  // MovePanel moves a panel to a new position.
+  rpc MovePanel(MovePanelRequest) returns (MovePanelResponse);
+  // CreateTarget creates a target in the Dashboard's World.
+  rpc CreateTarget(CreateTargetRequest) returns (CreateTargetResponse);
+}
+
+// WatchDashboardRequest watches the Dashboard.
+message WatchDashboardRequest {}
+
+// PutPanelRequest adds or replaces a panel.
+message PutPanelRequest {
+  // Panel is the panel to store. An empty id adds it at the end under a new
+  // id; any other id replaces that panel, and fails with ErrPanelRemoved when
+  // another writer removed it.
+  Panel panel = 1;
+}
+
+// PutPanelResponse is the stored panel's id.
+message PutPanelResponse {
+  // Id identifies the stored panel.
+  string id = 1;
+}
+
+// RemovePanelRequest removes a panel. Removing a missing panel succeeds.
+message RemovePanelRequest {
+  // Id identifies the panel.
+  string id = 1;
+}
+
+// RemovePanelResponse is the response to RemovePanel.
+message RemovePanelResponse {}
+
+// MovePanelRequest moves a panel.
+message MovePanelRequest {
+  // Id identifies the panel.
+  string id = 1;
+  // Index is the panel's new position, clamped to the last one.
+  uint32 index = 2;
+}
+
+// MovePanelResponse is the response to MovePanel.
+message MovePanelResponse {}
+
+// CreateTargetRequest creates a target.
+message CreateTargetRequest {
+  // ObjectKey is the new target's World object key.
+  string object_key = 1;
+  // Meta is the target's identity and scrape configuration.
+  TargetMeta meta = 2;
+}
+
+// CreateTargetResponse is the response to CreateTarget.
+message CreateTargetResponse {}

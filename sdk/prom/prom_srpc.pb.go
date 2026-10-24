@@ -20,6 +20,11 @@ type SRPCPromQueryResourceServiceClient interface {
 	LabelNames(ctx context.Context, in *LabelNamesRequest) (*LabelsResponse, error)
 	// LabelValues lists the values of one label among the matching series.
 	LabelValues(ctx context.Context, in *LabelValuesRequest) (*LabelsResponse, error)
+	// WatchTargets sends every target, then each target that changed or was
+	// removed. A target changes on each scrape commit, so the stream also tells
+	// a reader when query answers may have changed. Changes are sent at most
+	// once per second.
+	WatchTargets(ctx context.Context, in *WatchTargetsRequest) (SRPCPromQueryResourceService_WatchTargetsClient, error)
 }
 
 type srpcPromQueryResourceServiceClient struct {
@@ -67,6 +72,39 @@ func (c *srpcPromQueryResourceServiceClient) LabelValues(ctx context.Context, in
 	return out, nil
 }
 
+func (c *srpcPromQueryResourceServiceClient) WatchTargets(ctx context.Context, in *WatchTargetsRequest) (SRPCPromQueryResourceService_WatchTargetsClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "WatchTargets", in)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcPromQueryResourceService_WatchTargetsClient{stream}
+	// A failed half-close means the call ended; MsgRecv reports its outcome.
+	_ = strm.CloseSend()
+	return strm, nil
+}
+
+type SRPCPromQueryResourceService_WatchTargetsClient interface {
+	srpc.Stream
+	Recv() (*WatchTargetsResponse, error)
+	RecvTo(*WatchTargetsResponse) error
+}
+
+type srpcPromQueryResourceService_WatchTargetsClient struct {
+	srpc.Stream
+}
+
+func (x *srpcPromQueryResourceService_WatchTargetsClient) Recv() (*WatchTargetsResponse, error) {
+	m := new(WatchTargetsResponse)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcPromQueryResourceService_WatchTargetsClient) RecvTo(m *WatchTargetsResponse) error {
+	return x.MsgRecv(m)
+}
+
 type SRPCPromQueryResourceServiceServer interface {
 	// Query evaluates one PromQL expression.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
@@ -74,6 +112,11 @@ type SRPCPromQueryResourceServiceServer interface {
 	LabelNames(context.Context, *LabelNamesRequest) (*LabelsResponse, error)
 	// LabelValues lists the values of one label among the matching series.
 	LabelValues(context.Context, *LabelValuesRequest) (*LabelsResponse, error)
+	// WatchTargets sends every target, then each target that changed or was
+	// removed. A target changes on each scrape commit, so the stream also tells
+	// a reader when query answers may have changed. Changes are sent at most
+	// once per second.
+	WatchTargets(*WatchTargetsRequest, SRPCPromQueryResourceService_WatchTargetsStream) error
 }
 
 const SRPCPromQueryResourceServiceServiceID = "s4wave.prom.PromQueryResourceService"
@@ -105,6 +148,7 @@ func (SRPCPromQueryResourceServiceHandler) GetMethodIDs() []string {
 		"Query",
 		"LabelNames",
 		"LabelValues",
+		"WatchTargets",
 	}
 }
 
@@ -123,6 +167,8 @@ func (d *SRPCPromQueryResourceServiceHandler) InvokeMethod(
 		return true, d.InvokeMethod_LabelNames(d.impl, strm)
 	case "LabelValues":
 		return true, d.InvokeMethod_LabelValues(d.impl, strm)
+	case "WatchTargets":
+		return true, d.InvokeMethod_WatchTargets(d.impl, strm)
 	default:
 		return false, nil
 	}
@@ -164,6 +210,15 @@ func (SRPCPromQueryResourceServiceHandler) InvokeMethod_LabelValues(impl SRPCPro
 	return strm.MsgSend(out)
 }
 
+func (SRPCPromQueryResourceServiceHandler) InvokeMethod_WatchTargets(impl SRPCPromQueryResourceServiceServer, strm srpc.Stream) error {
+	req := new(WatchTargetsRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	serverStrm := &srpcPromQueryResourceService_WatchTargetsStream{strm}
+	return impl.WatchTargets(req, serverStrm)
+}
+
 type SRPCPromQueryResourceService_QueryStream interface {
 	srpc.Stream
 }
@@ -185,5 +240,316 @@ type SRPCPromQueryResourceService_LabelValuesStream interface {
 }
 
 type srpcPromQueryResourceService_LabelValuesStream struct {
+	srpc.Stream
+}
+
+type SRPCPromQueryResourceService_WatchTargetsStream interface {
+	srpc.Stream
+	Send(*WatchTargetsResponse) error
+	SendAndClose(*WatchTargetsResponse) error
+}
+
+type srpcPromQueryResourceService_WatchTargetsStream struct {
+	srpc.Stream
+}
+
+func (x *srpcPromQueryResourceService_WatchTargetsStream) Send(m *WatchTargetsResponse) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcPromQueryResourceService_WatchTargetsStream) SendAndClose(m *WatchTargetsResponse) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
+}
+
+type SRPCPromDashboardResourceServiceClient interface {
+	// SRPCClient returns the underlying SRPC client.
+	SRPCClient() srpc.Client
+
+	// WatchDashboard sends the Dashboard, then the Dashboard after each commit
+	// that changes it.
+	WatchDashboard(ctx context.Context, in *WatchDashboardRequest) (SRPCPromDashboardResourceService_WatchDashboardClient, error)
+	// PutPanel adds a panel or replaces one by its id.
+	PutPanel(ctx context.Context, in *PutPanelRequest) (*PutPanelResponse, error)
+	// RemovePanel removes a panel by its id.
+	RemovePanel(ctx context.Context, in *RemovePanelRequest) (*RemovePanelResponse, error)
+	// MovePanel moves a panel to a new position.
+	MovePanel(ctx context.Context, in *MovePanelRequest) (*MovePanelResponse, error)
+	// CreateTarget creates a target in the Dashboard's World.
+	CreateTarget(ctx context.Context, in *CreateTargetRequest) (*CreateTargetResponse, error)
+}
+
+type srpcPromDashboardResourceServiceClient struct {
+	cc        srpc.Client
+	serviceID string
+}
+
+func NewSRPCPromDashboardResourceServiceClient(cc srpc.Client) SRPCPromDashboardResourceServiceClient {
+	return &srpcPromDashboardResourceServiceClient{cc: cc, serviceID: SRPCPromDashboardResourceServiceServiceID}
+}
+
+func NewSRPCPromDashboardResourceServiceClientWithServiceID(cc srpc.Client, serviceID string) SRPCPromDashboardResourceServiceClient {
+	if serviceID == "" {
+		serviceID = SRPCPromDashboardResourceServiceServiceID
+	}
+	return &srpcPromDashboardResourceServiceClient{cc: cc, serviceID: serviceID}
+}
+
+func (c *srpcPromDashboardResourceServiceClient) SRPCClient() srpc.Client { return c.cc }
+
+func (c *srpcPromDashboardResourceServiceClient) WatchDashboard(ctx context.Context, in *WatchDashboardRequest) (SRPCPromDashboardResourceService_WatchDashboardClient, error) {
+	stream, err := c.cc.NewStream(ctx, c.serviceID, "WatchDashboard", in)
+	if err != nil {
+		return nil, err
+	}
+	strm := &srpcPromDashboardResourceService_WatchDashboardClient{stream}
+	// A failed half-close means the call ended; MsgRecv reports its outcome.
+	_ = strm.CloseSend()
+	return strm, nil
+}
+
+type SRPCPromDashboardResourceService_WatchDashboardClient interface {
+	srpc.Stream
+	Recv() (*Dashboard, error)
+	RecvTo(*Dashboard) error
+}
+
+type srpcPromDashboardResourceService_WatchDashboardClient struct {
+	srpc.Stream
+}
+
+func (x *srpcPromDashboardResourceService_WatchDashboardClient) Recv() (*Dashboard, error) {
+	m := new(Dashboard)
+	if err := x.MsgRecv(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (x *srpcPromDashboardResourceService_WatchDashboardClient) RecvTo(m *Dashboard) error {
+	return x.MsgRecv(m)
+}
+
+func (c *srpcPromDashboardResourceServiceClient) PutPanel(ctx context.Context, in *PutPanelRequest) (*PutPanelResponse, error) {
+	out := new(PutPanelResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "PutPanel", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcPromDashboardResourceServiceClient) RemovePanel(ctx context.Context, in *RemovePanelRequest) (*RemovePanelResponse, error) {
+	out := new(RemovePanelResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "RemovePanel", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcPromDashboardResourceServiceClient) MovePanel(ctx context.Context, in *MovePanelRequest) (*MovePanelResponse, error) {
+	out := new(MovePanelResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "MovePanel", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *srpcPromDashboardResourceServiceClient) CreateTarget(ctx context.Context, in *CreateTargetRequest) (*CreateTargetResponse, error) {
+	out := new(CreateTargetResponse)
+	err := c.cc.ExecCall(ctx, c.serviceID, "CreateTarget", in, out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+type SRPCPromDashboardResourceServiceServer interface {
+	// WatchDashboard sends the Dashboard, then the Dashboard after each commit
+	// that changes it.
+	WatchDashboard(*WatchDashboardRequest, SRPCPromDashboardResourceService_WatchDashboardStream) error
+	// PutPanel adds a panel or replaces one by its id.
+	PutPanel(context.Context, *PutPanelRequest) (*PutPanelResponse, error)
+	// RemovePanel removes a panel by its id.
+	RemovePanel(context.Context, *RemovePanelRequest) (*RemovePanelResponse, error)
+	// MovePanel moves a panel to a new position.
+	MovePanel(context.Context, *MovePanelRequest) (*MovePanelResponse, error)
+	// CreateTarget creates a target in the Dashboard's World.
+	CreateTarget(context.Context, *CreateTargetRequest) (*CreateTargetResponse, error)
+}
+
+const SRPCPromDashboardResourceServiceServiceID = "s4wave.prom.PromDashboardResourceService"
+
+type SRPCPromDashboardResourceServiceHandler struct {
+	serviceID string
+	impl      SRPCPromDashboardResourceServiceServer
+}
+
+// NewSRPCPromDashboardResourceServiceHandler constructs a new RPC handler.
+// serviceID: if empty, uses default: s4wave.prom.PromDashboardResourceService
+func NewSRPCPromDashboardResourceServiceHandler(impl SRPCPromDashboardResourceServiceServer, serviceID string) srpc.Handler {
+	if serviceID == "" {
+		serviceID = SRPCPromDashboardResourceServiceServiceID
+	}
+	return &SRPCPromDashboardResourceServiceHandler{impl: impl, serviceID: serviceID}
+}
+
+// SRPCRegisterPromDashboardResourceService registers the implementation with the mux.
+// Uses the default serviceID: s4wave.prom.PromDashboardResourceService
+func SRPCRegisterPromDashboardResourceService(mux srpc.Mux, impl SRPCPromDashboardResourceServiceServer) error {
+	return mux.Register(NewSRPCPromDashboardResourceServiceHandler(impl, ""))
+}
+
+func (d *SRPCPromDashboardResourceServiceHandler) GetServiceID() string { return d.serviceID }
+
+func (SRPCPromDashboardResourceServiceHandler) GetMethodIDs() []string {
+	return []string{
+		"WatchDashboard",
+		"PutPanel",
+		"RemovePanel",
+		"MovePanel",
+		"CreateTarget",
+	}
+}
+
+func (d *SRPCPromDashboardResourceServiceHandler) InvokeMethod(
+	serviceID, methodID string,
+	strm srpc.Stream,
+) (bool, error) {
+	if serviceID != "" && serviceID != d.GetServiceID() {
+		return false, nil
+	}
+
+	switch methodID {
+	case "WatchDashboard":
+		return true, d.InvokeMethod_WatchDashboard(d.impl, strm)
+	case "PutPanel":
+		return true, d.InvokeMethod_PutPanel(d.impl, strm)
+	case "RemovePanel":
+		return true, d.InvokeMethod_RemovePanel(d.impl, strm)
+	case "MovePanel":
+		return true, d.InvokeMethod_MovePanel(d.impl, strm)
+	case "CreateTarget":
+		return true, d.InvokeMethod_CreateTarget(d.impl, strm)
+	default:
+		return false, nil
+	}
+}
+
+func (SRPCPromDashboardResourceServiceHandler) InvokeMethod_WatchDashboard(impl SRPCPromDashboardResourceServiceServer, strm srpc.Stream) error {
+	req := new(WatchDashboardRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	serverStrm := &srpcPromDashboardResourceService_WatchDashboardStream{strm}
+	return impl.WatchDashboard(req, serverStrm)
+}
+
+func (SRPCPromDashboardResourceServiceHandler) InvokeMethod_PutPanel(impl SRPCPromDashboardResourceServiceServer, strm srpc.Stream) error {
+	req := new(PutPanelRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.PutPanel(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCPromDashboardResourceServiceHandler) InvokeMethod_RemovePanel(impl SRPCPromDashboardResourceServiceServer, strm srpc.Stream) error {
+	req := new(RemovePanelRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.RemovePanel(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCPromDashboardResourceServiceHandler) InvokeMethod_MovePanel(impl SRPCPromDashboardResourceServiceServer, strm srpc.Stream) error {
+	req := new(MovePanelRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.MovePanel(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+func (SRPCPromDashboardResourceServiceHandler) InvokeMethod_CreateTarget(impl SRPCPromDashboardResourceServiceServer, strm srpc.Stream) error {
+	req := new(CreateTargetRequest)
+	if err := strm.MsgRecv(req); err != nil {
+		return err
+	}
+	out, err := impl.CreateTarget(strm.Context(), req)
+	if err != nil {
+		return err
+	}
+	return strm.MsgSend(out)
+}
+
+type SRPCPromDashboardResourceService_WatchDashboardStream interface {
+	srpc.Stream
+	Send(*Dashboard) error
+	SendAndClose(*Dashboard) error
+}
+
+type srpcPromDashboardResourceService_WatchDashboardStream struct {
+	srpc.Stream
+}
+
+func (x *srpcPromDashboardResourceService_WatchDashboardStream) Send(m *Dashboard) error {
+	return x.MsgSend(m)
+}
+
+func (x *srpcPromDashboardResourceService_WatchDashboardStream) SendAndClose(m *Dashboard) error {
+	if m != nil {
+		if err := x.MsgSend(m); err != nil {
+			return err
+		}
+	}
+	return x.CloseSend()
+}
+
+type SRPCPromDashboardResourceService_PutPanelStream interface {
+	srpc.Stream
+}
+
+type srpcPromDashboardResourceService_PutPanelStream struct {
+	srpc.Stream
+}
+
+type SRPCPromDashboardResourceService_RemovePanelStream interface {
+	srpc.Stream
+}
+
+type srpcPromDashboardResourceService_RemovePanelStream struct {
+	srpc.Stream
+}
+
+type SRPCPromDashboardResourceService_MovePanelStream interface {
+	srpc.Stream
+}
+
+type srpcPromDashboardResourceService_MovePanelStream struct {
+	srpc.Stream
+}
+
+type SRPCPromDashboardResourceService_CreateTargetStream interface {
+	srpc.Stream
+}
+
+type srpcPromDashboardResourceService_CreateTargetStream struct {
 	srpc.Stream
 }

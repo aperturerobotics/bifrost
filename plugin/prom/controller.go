@@ -27,7 +27,7 @@ const PluginID = "spacewave-prom"
 // Version is the component version.
 var Version = controller.MustParseVersion("0.0.1")
 
-// Controller registers prom/target with the core plugin and serves its
+// Controller registers prom/target and prom/dashboard with the core plugin and serves its
 // resources.
 type Controller struct {
 	*bus.BusController[*Config]
@@ -50,7 +50,7 @@ func NewFactory(b bus.Bus) controller.Factory {
 			return &Config{}
 		},
 		func(base *bus.BusController[*Config]) (*Controller, error) {
-			// Serve the target ObjectType through the resource server.
+			// Serve the ObjectTypes through the resource server.
 			h := newHandler(base.GetLogger(), base.GetBus(), base.GetConfig().CommitWindow())
 			rootMux := resource_server.NewResourceMux(func(mux srpc.Mux) error {
 				return s4wave_objecttype_registry.SRPCRegisterObjectTypeHandlerService(mux, h)
@@ -68,7 +68,8 @@ func NewFactory(b bus.Bus) controller.Factory {
 	)
 }
 
-// Execute registers prom/target with the core plugin until ctx ends.
+// Execute registers the plugin's ObjectTypes with the core plugin until ctx
+// ends.
 func (c *Controller) Execute(ctx context.Context) error {
 	return c.Hold(ctx, c.GetBus())
 }
@@ -81,29 +82,39 @@ func (c *Controller) HandleDirective(ctx context.Context, di directive.Instance)
 	return nil, nil
 }
 
-// register registers the prom/target ObjectType through scope. It returns the
+// objectTypes are the ObjectTypes the plugin serves, with their metadata.
+var objectTypes = []struct {
+	typeID string
+	meta   *s4wave_objecttype_registry.ObjectTypeMetadata
+}{
+	{s4wave_prom.TargetTypeID, &s4wave_objecttype_registry.ObjectTypeMetadata{DisplayName: "Scrape target", IconName: "activity"}},
+	{s4wave_prom.DashboardTypeID, &s4wave_objecttype_registry.ObjectTypeMetadata{DisplayName: "Dashboard", IconName: "chart-line"}},
+}
+
+// register registers the plugin's ObjectTypes through scope. It returns the
 // registrations made, even on error.
 func register(
 	ctx context.Context,
 	client *resource_client.Client,
 	scope srpc.Client,
 ) ([]resource_client.ResourceRef, error) {
-	ot, err := s4wave_objecttype_registry.NewSRPCObjectTypeRegistryResourceServiceClient(scope).
-		RegisterObjectType(ctx, &s4wave_objecttype_registry.RegisterObjectTypeRequest{
-			TypeId:   s4wave_prom.TargetTypeID,
+	registry := s4wave_objecttype_registry.NewSRPCObjectTypeRegistryResourceServiceClient(scope)
+	refs := make([]resource_client.ResourceRef, 0, len(objectTypes))
+	for _, ot := range objectTypes {
+		resp, err := registry.RegisterObjectType(ctx, &s4wave_objecttype_registry.RegisterObjectTypeRequest{
+			TypeId:   ot.typeID,
 			PluginId: PluginID,
-			Metadata: &s4wave_objecttype_registry.ObjectTypeMetadata{
-				DisplayName: "Scrape target",
-				IconName:    "LuActivity",
-			},
+			Metadata: ot.meta,
 		})
-	if err != nil {
-		return nil, errors.Wrap(err, "register object type")
+		if err != nil {
+			return refs, errors.Wrapf(err, "register object type %s", ot.typeID)
+		}
+		if resp.GetResourceId() == 0 {
+			return refs, errors.Errorf("register object type %s: no registration returned", ot.typeID)
+		}
+		refs = append(refs, client.CreateResourceReference(resp.GetResourceId()))
 	}
-	if ot.GetResourceId() == 0 {
-		return nil, errors.New("register object type: no registration returned")
-	}
-	return []resource_client.ResourceRef{client.CreateResourceReference(ot.GetResourceId())}, nil
+	return refs, nil
 }
 
 // _ is a type assertion.

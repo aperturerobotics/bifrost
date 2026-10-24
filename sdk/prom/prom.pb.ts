@@ -50,6 +50,86 @@ export const ResultType_Enum = /* @__PURE__ */ createEnumType(
 )
 
 /**
+ * PanelKind is how a panel shows its expression.
+ *
+ * @generated from enum s4wave.prom.PanelKind
+ */
+export enum PanelKind {
+  /**
+   * PANEL_KIND_UNKNOWN is the zero value, shown as a chart.
+   */
+  UNKNOWN = 0,
+
+  /**
+   * PANEL_KIND_CHART draws a range query as lines over time.
+   */
+  CHART = 1,
+
+  /**
+   * PANEL_KIND_VALUE shows an instant query's value for each series.
+   */
+  VALUE = 2,
+}
+
+export const PanelKind_Enum = /* @__PURE__ */ createEnumType(
+  's4wave.prom.PanelKind',
+  [
+    [0, 'PANEL_KIND_UNKNOWN'],
+    [1, 'PANEL_KIND_CHART'],
+    [2, 'PANEL_KIND_VALUE'],
+  ],
+)
+
+/**
+ * PanelUnit is the unit of a panel's values.
+ *
+ * @generated from enum s4wave.prom.PanelUnit
+ */
+export enum PanelUnit {
+  /**
+   * PANEL_UNIT_UNKNOWN shows plain numbers.
+   */
+  UNKNOWN = 0,
+
+  /**
+   * PANEL_UNIT_PERCENT shows values from 0 to 100 as percentages.
+   */
+  PERCENT = 1,
+
+  /**
+   * PANEL_UNIT_BYTES shows sizes in bytes.
+   */
+  BYTES = 2,
+
+  /**
+   * PANEL_UNIT_BYTES_PER_SECOND shows rates in bytes per second.
+   */
+  BYTES_PER_SECOND = 3,
+
+  /**
+   * PANEL_UNIT_SECONDS shows durations in seconds.
+   */
+  SECONDS = 4,
+
+  /**
+   * PANEL_UNIT_CELSIUS shows temperatures in degrees Celsius.
+   */
+  CELSIUS = 5,
+}
+
+export const PanelUnit_Enum = /* @__PURE__ */ createEnumType(
+  's4wave.prom.PanelUnit',
+  [
+    [0, 'PANEL_UNIT_UNKNOWN'],
+    [1, 'PANEL_UNIT_PERCENT'],
+    [2, 'PANEL_UNIT_BYTES'],
+    [3, 'PANEL_UNIT_BYTES_PER_SECOND'],
+    [4, 'PANEL_UNIT_SECONDS'],
+    [5, 'PANEL_UNIT_CELSIUS'],
+  ],
+)
+
+/**
  * Label is one name and value of a series.
  *
  * @generated from message s4wave.prom.Label
@@ -185,6 +265,10 @@ export interface TargetStatus {
    * DevicePeerId is the peer of the Device whose process scrapes the target.
    */
   devicePeerId?: string
+  /**
+   * CommitWindowMs is how often that Device commits the target's samples.
+   */
+  commitWindowMs?: number
 }
 
 export const TargetStatus: MessageType<TargetStatus> =
@@ -197,6 +281,76 @@ export const TargetStatus: MessageType<TargetStatus> =
       [4, 'last_error', 9],
       [5, 'series', 4],
       [6, 'device_peer_id', 9],
+      [7, 'commit_window_ms', 13],
+    ],
+  )
+
+/**
+ * WatchTargetsRequest watches the targets of the World.
+ *
+ * @generated from message s4wave.prom.WatchTargetsRequest
+ */
+export interface WatchTargetsRequest {}
+
+export const WatchTargetsRequest: MessageType<WatchTargetsRequest> =
+  /* @__PURE__ */ createMessageType<WatchTargetsRequest>(
+    's4wave.prom.WatchTargetsRequest',
+    () => [],
+  )
+
+/**
+ * WatchTargetsResponse is one change to the World's targets. The first
+ * response lists every target.
+ *
+ * @generated from message s4wave.prom.WatchTargetsResponse
+ */
+export interface WatchTargetsResponse {
+  /**
+   * Changed holds each target that appeared or changed, by object key order.
+   */
+  changed?: TargetInfo[]
+  /**
+   * Removed holds the object keys of targets that no longer exist.
+   */
+  removed?: string[]
+}
+
+export const WatchTargetsResponse: MessageType<WatchTargetsResponse> =
+  /* @__PURE__ */ createMessageType<WatchTargetsResponse>(
+    's4wave.prom.WatchTargetsResponse',
+    () => [
+      [1, 'changed', 11, 1, TargetInfo.codec],
+      [2, 'removed', 9, 1],
+    ],
+  )
+
+/**
+ * TargetInfo is one target's configuration and latest status.
+ *
+ * @generated from message s4wave.prom.TargetInfo
+ */
+export interface TargetInfo {
+  /**
+   * ObjectKey is the target's World object key.
+   */
+  objectKey?: string
+  /**
+   * Meta is the target's identity and scrape configuration.
+   */
+  meta?: TargetMeta
+  /**
+   * Status is the latest scrape's report, unset until the first commit.
+   */
+  status?: TargetStatus
+}
+
+export const TargetInfo: MessageType<TargetInfo> =
+  /* @__PURE__ */ createMessageType<TargetInfo>(
+    's4wave.prom.TargetInfo',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'meta', 11, 0, TargetMeta.codec],
+      [3, 'status', 11, 0, TargetStatus.codec],
     ],
   )
 
@@ -381,4 +535,218 @@ export const QueryResponse: MessageType<QueryResponse> =
       [3, 'string_value', 9],
       [4, 'warnings', 9, 1],
     ],
+  )
+
+/**
+ * Panel is one PromQL expression on a Dashboard.
+ *
+ * @generated from message s4wave.prom.Panel
+ */
+export interface Panel {
+  /**
+   * Id identifies the panel within its Dashboard.
+   */
+  id?: string
+  /**
+   * Title names the panel. A panel always has one.
+   */
+  title?: string
+  /**
+   * Expr is the PromQL expression, stored as typed even when it does not
+   * parse.
+   */
+  expr?: string
+  /**
+   * Unit is the unit of the expression's values.
+   */
+  unit?: PanelUnit
+  /**
+   * Kind is how the panel shows the expression.
+   */
+  kind?: PanelKind
+}
+
+export const Panel: MessageType<Panel> =
+  /* @__PURE__ */ createMessageType<Panel>('s4wave.prom.Panel', () => [
+    [1, 'id', 9],
+    [2, 'title', 9],
+    [3, 'expr', 9],
+    [4, 'unit', 14, 0, PanelUnit_Enum],
+    [5, 'kind', 14, 0, PanelKind_Enum],
+  ])
+
+/**
+ * Dashboard is the root of a prom/dashboard object: its panels in display
+ * order. Every panel queries every target in the World.
+ *
+ * @generated from message s4wave.prom.Dashboard
+ */
+export interface Dashboard {
+  /**
+   * Panels holds the panels in display order.
+   */
+  panels?: Panel[]
+}
+
+export const Dashboard: MessageType<Dashboard> =
+  /* @__PURE__ */ createMessageType<Dashboard>('s4wave.prom.Dashboard', () => [
+    [1, 'panels', 11, 1, Panel.codec],
+  ])
+
+/**
+ * WatchDashboardRequest watches the Dashboard.
+ *
+ * @generated from message s4wave.prom.WatchDashboardRequest
+ */
+export interface WatchDashboardRequest {}
+
+export const WatchDashboardRequest: MessageType<WatchDashboardRequest> =
+  /* @__PURE__ */ createMessageType<WatchDashboardRequest>(
+    's4wave.prom.WatchDashboardRequest',
+    () => [],
+  )
+
+/**
+ * PutPanelRequest adds or replaces a panel.
+ *
+ * @generated from message s4wave.prom.PutPanelRequest
+ */
+export interface PutPanelRequest {
+  /**
+   * Panel is the panel to store. An empty id adds it at the end under a new
+   * id; any other id replaces that panel, and fails with ErrPanelRemoved when
+   * another writer removed it.
+   */
+  panel?: Panel
+}
+
+export const PutPanelRequest: MessageType<PutPanelRequest> =
+  /* @__PURE__ */ createMessageType<PutPanelRequest>(
+    's4wave.prom.PutPanelRequest',
+    () => [[1, 'panel', 11, 0, Panel.codec]],
+  )
+
+/**
+ * PutPanelResponse is the stored panel's id.
+ *
+ * @generated from message s4wave.prom.PutPanelResponse
+ */
+export interface PutPanelResponse {
+  /**
+   * Id identifies the stored panel.
+   */
+  id?: string
+}
+
+export const PutPanelResponse: MessageType<PutPanelResponse> =
+  /* @__PURE__ */ createMessageType<PutPanelResponse>(
+    's4wave.prom.PutPanelResponse',
+    () => [[1, 'id', 9]],
+  )
+
+/**
+ * RemovePanelRequest removes a panel. Removing a missing panel succeeds.
+ *
+ * @generated from message s4wave.prom.RemovePanelRequest
+ */
+export interface RemovePanelRequest {
+  /**
+   * Id identifies the panel.
+   */
+  id?: string
+}
+
+export const RemovePanelRequest: MessageType<RemovePanelRequest> =
+  /* @__PURE__ */ createMessageType<RemovePanelRequest>(
+    's4wave.prom.RemovePanelRequest',
+    () => [[1, 'id', 9]],
+  )
+
+/**
+ * RemovePanelResponse is the response to RemovePanel.
+ *
+ * @generated from message s4wave.prom.RemovePanelResponse
+ */
+export interface RemovePanelResponse {}
+
+export const RemovePanelResponse: MessageType<RemovePanelResponse> =
+  /* @__PURE__ */ createMessageType<RemovePanelResponse>(
+    's4wave.prom.RemovePanelResponse',
+    () => [],
+  )
+
+/**
+ * MovePanelRequest moves a panel.
+ *
+ * @generated from message s4wave.prom.MovePanelRequest
+ */
+export interface MovePanelRequest {
+  /**
+   * Id identifies the panel.
+   */
+  id?: string
+  /**
+   * Index is the panel's new position, clamped to the last one.
+   */
+  index?: number
+}
+
+export const MovePanelRequest: MessageType<MovePanelRequest> =
+  /* @__PURE__ */ createMessageType<MovePanelRequest>(
+    's4wave.prom.MovePanelRequest',
+    () => [
+      [1, 'id', 9],
+      [2, 'index', 13],
+    ],
+  )
+
+/**
+ * MovePanelResponse is the response to MovePanel.
+ *
+ * @generated from message s4wave.prom.MovePanelResponse
+ */
+export interface MovePanelResponse {}
+
+export const MovePanelResponse: MessageType<MovePanelResponse> =
+  /* @__PURE__ */ createMessageType<MovePanelResponse>(
+    's4wave.prom.MovePanelResponse',
+    () => [],
+  )
+
+/**
+ * CreateTargetRequest creates a target.
+ *
+ * @generated from message s4wave.prom.CreateTargetRequest
+ */
+export interface CreateTargetRequest {
+  /**
+   * ObjectKey is the new target's World object key.
+   */
+  objectKey?: string
+  /**
+   * Meta is the target's identity and scrape configuration.
+   */
+  meta?: TargetMeta
+}
+
+export const CreateTargetRequest: MessageType<CreateTargetRequest> =
+  /* @__PURE__ */ createMessageType<CreateTargetRequest>(
+    's4wave.prom.CreateTargetRequest',
+    () => [
+      [1, 'object_key', 9],
+      [2, 'meta', 11, 0, TargetMeta.codec],
+    ],
+  )
+
+/**
+ * CreateTargetResponse is the response to CreateTarget.
+ *
+ * @generated from message s4wave.prom.CreateTargetResponse
+ */
+export interface CreateTargetResponse {}
+
+export const CreateTargetResponse: MessageType<CreateTargetResponse> =
+  /* @__PURE__ */ createMessageType<CreateTargetResponse>(
+    's4wave.prom.CreateTargetResponse',
+    () => [],
   )

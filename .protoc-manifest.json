@@ -3927,12 +3927,13 @@
       ]
     },
     "github.com/s4wave/spacewave/sdk/prom": {
-      "hash": "f31f6495d646d46fcf1eb9133db560b35458759bbbbbebf26b65364e0f7871e1",
+      "hash": "e5c6e9d26ac6808f7d5913c446e89e2c47b985821ab8d9ccc82e83651d642224",
       "generatedFiles": [
         "sdk/prom/prom.pb.go",
         "sdk/prom/prom.pb.ts",
         "sdk/prom/prom_srpc.pb.go",
-        "sdk/prom/prom_srpc.pb.ts"
+        "sdk/prom/prom_srpc.pb.ts",
+        "sdk/prom/prom_typeid.pb.go"
       ],
       "protoFiles": [
         "sdk/prom/prom.proto"

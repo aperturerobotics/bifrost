@@ -33,6 +33,8 @@ type scraper struct {
 	cfg *s4wave_prom.ScrapeConfig
 	// peerID is the Device peer reported in the status.
 	peerID string
+	// window is the commit window reported in the status.
+	window time.Duration
 	// source reads each scrape.
 	source scrapeSource
 	// last holds the series the previous successful scrape returned, by hash.
@@ -40,19 +42,21 @@ type scraper struct {
 }
 
 // newScraper constructs a scraper that reads source into the target store
-// writes.
-func newScraper(le *logrus.Entry, store *Store, cfg *s4wave_prom.ScrapeConfig, peerID string, source scrapeSource) *scraper {
+// writes, reporting the Device peerID that commits every window.
+func newScraper(le *logrus.Entry, store *Store, cfg *s4wave_prom.ScrapeConfig, peerID string, window time.Duration, source scrapeSource) *scraper {
 	return &scraper{
 		le:     le,
 		store:  store,
 		cfg:    cfg,
 		peerID: peerID,
+		window: window,
 		source: source,
 		last:   make(map[uint64]labels.Labels),
 	}
 }
 
-// run scrapes now and then once per interval until ctx ends.
+// run scrapes now and then once per interval until ctx ends or the store is
+// stood down, which returns ErrStoodDown.
 func (s *scraper) run(ctx context.Context) error {
 	t := time.NewTicker(s.cfg.Interval())
 	defer t.Stop()
@@ -61,6 +65,8 @@ func (s *scraper) run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return context.Cause(ctx)
+		case <-s.store.Lost():
+			return ErrStoodDown
 		case <-t.C:
 		}
 	}
@@ -115,6 +121,7 @@ func (s *scraper) scrape(ctx context.Context, start time.Time) {
 		LastDurationMs: uint32(min(duration.Milliseconds(), int64(^uint32(0)))), //nolint:gosec // clamped above.
 		Series:         uint64(len(seen)),
 		DevicePeerId:   s.peerID,
+		CommitWindowMs: uint32(s.window.Milliseconds()), //nolint:gosec // a window past 49 days wraps.
 	}
 	if err != nil {
 		up = 0

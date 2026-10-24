@@ -24,6 +24,11 @@ type commitBatch struct {
 	maintain bool
 	// samples is the number of samples in the segment.
 	samples int
+	// expect is the encoded status the target must hold for the batch to be
+	// written, or nil when it must hold none.
+	expect []byte
+	// status is the encoded status the batch writes, or nil.
+	status []byte
 }
 
 // batchEntry is one key-value pair of a commitBatch.
@@ -76,7 +81,9 @@ func newCommitBatch(w *Window, table *SeriesTable) (*commitBatch, error) {
 // path to the new keys, so its size follows the window, not the target's
 // history. If the transaction fails, no store changes: the next commit retries
 // the same windows first. A store whose commit is still running makes
-// CommitStores return ErrCommitInProgress without writing.
+// CommitStores return ErrCommitInProgress without writing. A store whose
+// target another writer has taken over writes nothing and stands down, as
+// Store.Lost reports; the others commit.
 func CommitStores(ctx context.Context, eng world.Engine, stores ...*Store) (CommitStats, error) {
 	// Freeze each store's window; release the ones already frozen on failure.
 	var stats CommitStats
@@ -106,9 +113,12 @@ func CommitStores(ctx context.Context, eng world.Engine, stores ...*Store) (Comm
 
 	// Write every batch in one transaction, counting the blocks it submits.
 	wctx, counter := block.WithWriteCounter(ctx)
+	lost := make([]bool, len(jobs))
 	err := world.ExecTransaction(wctx, eng, true, func(ctx context.Context, wtx world.WorldState) error {
-		for _, j := range jobs {
-			if err := j.store.write(ctx, wtx, j.batch); err != nil {
+		for i, j := range jobs {
+			err := j.store.write(ctx, wtx, j.batch)
+			lost[i] = errors.Is(err, ErrStoodDown)
+			if err != nil && !lost[i] {
 				return err
 			}
 		}
@@ -120,7 +130,11 @@ func CommitStores(ctx context.Context, eng world.Engine, stores ...*Store) (Comm
 	}
 
 	// Publish the written batches as committed state.
-	for _, j := range jobs {
+	for i, j := range jobs {
+		if lost[i] {
+			j.store.standDown()
+			continue
+		}
 		j.store.finish(j.batch, true)
 		stats.Segments++
 		stats.Samples += j.batch.samples

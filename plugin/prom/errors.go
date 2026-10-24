@@ -9,6 +9,8 @@ var (
 	// ErrCommitInProgress is returned when a store is committed while another
 	// commit of the same store has not finished.
 	ErrCommitInProgress = errors.New("prom: commit already in progress")
+	// ErrStoodDown is returned when another writer took over a store's target.
+	ErrStoodDown = errors.New("prom: another Device took over the target")
 	// ErrCorruptStore is returned when a target's stored keys do not follow the
 	// store layout.
 	ErrCorruptStore = errors.New("prom: corrupt store")

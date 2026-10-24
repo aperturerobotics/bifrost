@@ -1,9 +1,11 @@
 import React from 'react'
 import {
+  LuActivity,
   LuBookOpen,
   LuBox,
   LuBot,
   LuBrainCircuit,
+  LuChartLine,
   LuCheck,
   LuClipboardList,
   LuDatabase,
@@ -92,9 +94,11 @@ const metadataIcons: Record<
   string,
   React.ComponentType<{ className?: string }>
 > = {
+  activity: LuActivity,
   'book-open': LuBookOpen,
   bot: LuBot,
   'brain-circuit': LuBrainCircuit,
+  'chart-line': LuChartLine,
   check: LuCheck,
   'clipboard-list': LuClipboardList,
   file: LuFile,
