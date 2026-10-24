@@ -96,12 +96,13 @@ func newPromCommand(_ func() cli_entrypoint.CliBus) *cli.Command {
 // promTargetCreateArgs creates a scrape target.
 type promTargetCreateArgs struct {
 	promArgs
-	url      string
-	job      string
-	instance string
-	labels   cli.StringSlice
-	interval time.Duration
-	timeout  time.Duration
+	url       string
+	job       string
+	instance  string
+	labels    cli.StringSlice
+	interval  time.Duration
+	timeout   time.Duration
+	retention time.Duration
 }
 
 // BuildFlags returns the create flags.
@@ -113,6 +114,7 @@ func (a *promTargetCreateArgs) BuildFlags() []cli.Flag {
 		&cli.StringSliceFlag{Name: "label", Usage: "extra NAME=VALUE label of every series", Destination: &a.labels},
 		&cli.DurationFlag{Name: "interval", Usage: "time between scrapes", Value: s4wave_prom.DefaultScrapeInterval, Destination: &a.interval},
 		&cli.DurationFlag{Name: "timeout", Usage: "bound of one scrape (default: the interval)", Destination: &a.timeout},
+		&cli.DurationFlag{Name: "retention", Usage: "how long the target keeps samples", Value: s4wave_prom.DefaultRetention, Destination: &a.retention},
 	)
 }
 
@@ -179,7 +181,7 @@ func (a *promTargetCreateArgs) buildMeta() (*s4wave_prom.TargetMeta, error) {
 	for _, k := range names {
 		set.Labels = append(set.Labels, &s4wave_prom.Label{Name: k, Value: byName[k]})
 	}
-	return &s4wave_prom.TargetMeta{Labels: set, Scrape: scrape}, nil
+	return &s4wave_prom.TargetMeta{Labels: set, Scrape: scrape, RetentionMs: uint64(max(a.retention.Milliseconds(), 0))}, nil
 }
 
 // buildPromTargetCreateCommand builds the target create subcommand.

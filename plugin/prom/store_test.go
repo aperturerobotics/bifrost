@@ -11,6 +11,8 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
+	"github.com/s4wave/spacewave/db/world"
+	s4wave_prom "github.com/s4wave/spacewave/sdk/prom"
 )
 
 // TestStoreCommitAndReopen checks that committed samples survive a reopen and
@@ -331,4 +333,82 @@ func meanBytes(v []uint64) float64 {
 		sum += float64(b)
 	}
 	return sum / float64(len(v))
+}
+
+// TestStoreCompactionAndRetention scrapes seven hours into a target that keeps
+// three, committing once a minute. Each closed two-hour bucket ends as one
+// segment, segments past the retention and its bucket are gone, and queries
+// over the kept range match the reference.
+func TestStoreCompactionAndRetention(t *testing.T) {
+	// Create a target that keeps three hours.
+	ctx := t.Context()
+	f := newFixture(t)
+	key := "prom/target/kept"
+	retention := 3 * time.Hour
+	meta := &s4wave_prom.TargetMeta{Labels: NewLabelSet(testTargets[0]), RetentionMs: uint64(retention.Milliseconds())}
+
+	// Write it as the CLI does, then open its writer.
+	err := world.ExecTransaction(ctx, f.eng, true, func(ctx context.Context, wtx world.WorldState) error {
+		return s4wave_prom.CreateTarget(ctx, wtx, key, meta)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err := OpenStore(ctx, f.eng, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.stores[key], f.keys = st, []string{key}
+
+	// Scrape every 15 seconds for seven hours, committing every minute.
+	const scrapes = 7 * 60 * 4
+	for from := 0; from < scrapes; from += 4 {
+		f.appendSamples(key, testSeries, from, from+4)
+		f.commit(ctx)
+	}
+	end := testBaseTime + (scrapes-1)*testStep
+
+	// Read the segments' ranges.
+	type span struct{ minTime, maxTime int64 }
+	var spans []span
+	err = f.queryable().forEachTarget(ctx, func(r *StoreReader) error {
+		return r.ForEachSegment(ctx, math.MinInt64, math.MaxInt64, func(seg *Segment) error {
+			spans = append(spans, span{seg.GetMinTime(), seg.GetMaxTime()})
+			return nil
+		})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// No kept segment ends a bucket before the retention, and each closed
+	// bucket has one.
+	open := compactBucket(end)
+	perBucket := make(map[int64]int)
+	for _, s := range spans {
+		if s.maxTime < end-(retention+CompactSpan).Milliseconds() {
+			t.Fatalf("segment %v outlived the retention", s)
+		}
+		perBucket[compactBucket(s.minTime)]++
+	}
+	for bucket, n := range perBucket {
+		if bucket < open && n != 1 {
+			t.Fatalf("closed bucket %d holds %d segments", bucket, n)
+		}
+	}
+	if perBucket[open] < 2 || len(perBucket) != 3 {
+		t.Fatalf("segments per bucket = %v, want merged closed buckets and an open run", perBucket)
+	}
+
+	// The kept range answers as the reference does; the dropped range is empty.
+	q := f.queryable()
+	start := spans[0].minTime + 10*time.Minute.Milliseconds()
+	for _, qs := range []string{`http_requests_total`, `rate(http_requests_total[5m])`, `max_over_time(temperature[10m])`} {
+		got := rangeQuery(ctx, t, q, qs, start, end, time.Minute)
+		want := rangeQuery(ctx, t, f.ref, qs, start, end, time.Minute)
+		requireSameResult(t, qs, got, want)
+	}
+	if vec, err := instantQuery(ctx, t, q, `http_requests_total`, testBaseTime+time.Hour.Milliseconds()).Vector(); err != nil || len(vec) != 0 {
+		t.Fatalf("expired range answered %v, %v", vec, err)
+	}
 }

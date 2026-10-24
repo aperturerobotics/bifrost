@@ -24,19 +24,28 @@ func NewStoreReader(kv kvtx.Tx) *StoreReader {
 	return &StoreReader{kv: kv}
 }
 
-// Meta returns the labels every series of the target carries.
-func (r *StoreReader) Meta(ctx context.Context) (labels.Labels, error) {
-	// Read the target's TargetMeta.
+// Meta returns the target's TargetMeta.
+func (r *StoreReader) Meta(ctx context.Context) (*s4wave_prom.TargetMeta, error) {
+	// Read and decode the target's TargetMeta.
 	data, found, err := r.kv.Get(ctx, s4wave_prom.MetaKey())
 	if err != nil {
-		return labels.EmptyLabels(), err
+		return nil, err
 	}
 	if !found {
-		return labels.EmptyLabels(), errors.Wrap(ErrCorruptStore, "missing target meta")
+		return nil, errors.Wrap(ErrCorruptStore, "missing target meta")
 	}
 	meta := &s4wave_prom.TargetMeta{}
 	if err := meta.UnmarshalVT(data); err != nil {
-		return labels.EmptyLabels(), errors.Wrap(err, "decode target meta")
+		return nil, errors.Wrap(err, "decode target meta")
+	}
+	return meta, nil
+}
+
+// TargetLabels returns the labels every series of the target carries.
+func (r *StoreReader) TargetLabels(ctx context.Context) (labels.Labels, error) {
+	meta, err := r.Meta(ctx)
+	if err != nil {
+		return labels.EmptyLabels(), err
 	}
 	return ToLabels(meta.GetLabels()), nil
 }
@@ -123,7 +132,7 @@ func (r *StoreReader) ForEachSegment(ctx context.Context, mint, maxt int64, fn f
 // not sorted.
 func (r *StoreReader) Select(ctx context.Context, mint, maxt int64, matchers []*labels.Matcher) ([]storage.Series, error) {
 	// Match the target and its series table against the selector.
-	meta, err := r.Meta(ctx)
+	meta, err := r.TargetLabels(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +187,7 @@ func (r *StoreReader) Select(ctx context.Context, mint, maxt int64, matchers []*
 // matchers, ignoring time.
 func (r *StoreReader) Labels(ctx context.Context, matchers []*labels.Matcher) ([]labels.Labels, error) {
 	// Match the target and its series table against the selector.
-	meta, err := r.Meta(ctx)
+	meta, err := r.TargetLabels(ctx)
 	if err != nil {
 		return nil, err
 	}

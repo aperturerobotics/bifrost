@@ -31,6 +31,9 @@ const (
 // DefaultScrapeInterval is the scrape interval of a config that sets none.
 const DefaultScrapeInterval = 15 * time.Second
 
+// DefaultRetention is the retention of a target that sets none.
+const DefaultRetention = 15 * 24 * time.Hour
+
 // MetaKey returns the key of the target's TargetMeta.
 func MetaKey() []byte {
 	return []byte{MetaKeyPrefix}
@@ -68,6 +71,14 @@ func (c *ScrapeConfig) Timeout() time.Duration {
 		return interval
 	}
 	return timeout
+}
+
+// Retention returns how long the target keeps samples.
+func (m *TargetMeta) Retention() time.Duration {
+	if ms := m.GetRetentionMs(); ms != 0 {
+		return time.Duration(ms) * time.Millisecond //nolint:gosec // a retention past 292 years wraps.
+	}
+	return DefaultRetention
 }
 
 // CreateTarget creates the World object key as an empty prom/target holding
