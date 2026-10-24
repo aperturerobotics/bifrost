@@ -5,7 +5,7 @@ import {
   handleRpcStream,
   Server,
 } from 'starpc'
-import type { BackendAPI, BackendEntrypointFunc } from '@aptre/bldr-sdk'
+import type { BackendEntrypointFunc } from '@aptre/bldr-sdk'
 import {
   Client,
   type ClientResourceRef,
@@ -23,10 +23,7 @@ import {
   createActivationHandler,
   prepareRegistrations,
 } from '../plugin/registration/generation.js'
-import { frontendBindingPath } from '../../bldr/frontend/binding.js'
-import type { Binding } from '../../bldr/frontend/frontend.pb.js'
-import { FSCursorServiceClient } from '../../db/unixfs/rpc/rpc_srpc.pb.js'
-import { buildFSHandle } from '../../db/unixfs/rpc/client/fs-handle.js'
+import { resolveViewerPath, waitForAbort } from '../plugin/viewer-plugin.js'
 import {
   ObjectTypeHandlerServiceDefinition,
   ObjectTypeRegistryResourceServiceClient,
@@ -217,7 +214,7 @@ export function definePlugin<S extends Schema>(
                   typeId: appObjectTypeID(definition.app.schema),
                   viewerName: definition.displayName,
                   componentId: definition.viewer.componentId,
-                  scriptPath: await appViewerPath(
+                  scriptPath: await resolveViewerPath(
                     api,
                     definition.viewer.entry,
                     executable.manifestRoot,
@@ -272,41 +269,4 @@ export function definePlugin<S extends Schema>(
       })
     return { startup, done }
   }
-}
-
-/** appViewerPath resolves the frontend service binding or immutable build asset. */
-async function appViewerPath(
-  api: BackendAPI,
-  entry: string,
-  manifestRoot: string,
-  signal: AbortSignal,
-): Promise<string> {
-  const service = new FSCursorServiceClient(api.client, {
-    service: 'plugin-assets/unixfs.rpc.FSCursorService',
-  })
-  using root = await buildFSHandle(service, signal)
-  const result = await root.lookupPath(signal, 'v/b/fe/.vite/manifest.json')
-  using manifest = result.handle
-  const size = await manifest.getSize(signal)
-  const { data } = await manifest.readAt(signal, 0n, size)
-  const entries = JSON.parse(new TextDecoder().decode(data)) as Record<
-    string,
-    { frontendBinding?: Binding; file?: string }
-  >
-  const asset = entries[entry.replace(/^\.\//, '')]
-  if (asset?.frontendBinding) return frontendBindingPath(asset.frontendBinding)
-  if (!asset?.file)
-    throw new Error('Application viewer is absent from the build manifest')
-  return api.utils.pluginAssetHttpPath(
-    `${api.startInfo.pluginId!}/manifest/${manifestRoot}`,
-    `v/b/fe/${asset.file}`,
-  )
-}
-
-/** waitForAbort joins the worker lifetime without holding a transaction. */
-function waitForAbort(signal: AbortSignal): Promise<void> {
-  if (signal.aborted) return Promise.resolve()
-  return new Promise((resolve) =>
-    signal.addEventListener('abort', () => resolve(), { once: true }),
-  )
 }
