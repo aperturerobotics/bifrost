@@ -1,6 +1,6 @@
 //go:build !js && unix
 
-package entrypoint_browser_bundle
+package bldr_util_buildcache
 
 import (
 	stderrors "errors"
@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func (lock *bundleCacheLock) lock() error {
+func (lock *Lock) lock() error {
 	for {
 		err := unix.Flock(int(lock.file.Fd()), unix.LOCK_EX)
 		if stderrors.Is(err, unix.EINTR) {
@@ -18,6 +18,6 @@ func (lock *bundleCacheLock) lock() error {
 	}
 }
 
-func (lock *bundleCacheLock) unlock() error {
+func (lock *Lock) unlock() error {
 	return unix.Flock(int(lock.file.Fd()), unix.LOCK_UN)
 }

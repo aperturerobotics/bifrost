@@ -21,14 +21,16 @@ const (
 	GoScriptCompileWeight int64 = 5
 
 	// GoScriptBundleWeight is the estimated memory cost of one Rolldown bundle
-	// of a GoScript plugin package tree.
-	GoScriptBundleWeight int64 = 4
+	// of a GoScript plugin package tree, which peaks near 3 GiB for the largest
+	// Spacewave plugin.
+	GoScriptBundleWeight int64 = 3
 
 	// GoAnalysisWeight is the estimated memory cost of one plugin package analysis.
 	GoAnalysisWeight int64 = 2
 
-	// ViteBuildWeight is the estimated memory cost of one Vite build.
-	ViteBuildWeight int64 = 2
+	// ViteBuildWeight is the estimated memory cost of one Vite build, which
+	// peaks under 1 GiB for Spacewave's plugins.
+	ViteBuildWeight int64 = 1
 
 	// defaultBudgetFractionDenominator divides available host memory to
 	// derive the default budget capacity.

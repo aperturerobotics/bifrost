@@ -83,7 +83,6 @@ func NewControllerWithBusController(base *bus.BusController[*Config]) (*Controll
 // NewController constructs a new plugin compiler controller.
 func NewController(le *logrus.Entry, b bus.Bus, conf *Config) (*Controller, error) {
 	if err := conf.Validate(); err != nil {
-
 		// Return no supported platforms.
 		return nil, err
 	}
@@ -195,7 +194,6 @@ func (c *Controller) BuildManifest(
 	args *bldr_manifest_builder.BuildManifestArgs,
 	host bldr_manifest_builder.BuildManifestHost,
 ) (*bldr_manifest_builder.BuilderResult, error) {
-
 	// Resolve the build configuration and manifest metadata.
 	conf := c.GetConfig()
 	builderConf := args.GetBuilderConfig()
@@ -373,7 +371,6 @@ func (c *Controller) buildViteBundles(
 	jsMinification bool,
 	jsSourcemaps bool,
 ) (*viteBuildResult, error) {
-
 	// Return an empty result when no bundles are configured.
 	if len(bundleList) == 0 {
 		return &viteBuildResult{}, nil
@@ -405,15 +402,20 @@ func (c *Controller) buildViteBundles(
 			var bundleSrcFiles []string
 			var err error
 
+			// Start Vite only when the build cache misses.
+			build := func(ctx context.Context, req *bldr_web_bundler_vite.BuildRequest) (*bldr_web_bundler_vite.BuildResponse, error) {
+				// Hold the bundle's Vite process for this build.
+				ref, bundlerTkr, _ := c.viteBundlers.AddKeyRef(key)
+				defer ref.Release()
+				bundler, err := bundlerTkr.instancePromiseCtr.Await(ctx)
+				if err != nil {
+					return nil, err
+				}
+				return bundler.Build(ctx, req)
+			}
+
 			// Retry up to 3 times if we get "stream reset" errors.
 			for attempt := range 3 {
-				ref, bundlerTkr, _ := c.viteBundlers.AddKeyRef(key)
-				bundler, awaitErr := bundlerTkr.instancePromiseCtr.Await(egCtx)
-				if awaitErr != nil {
-					ref.Release()
-					return awaitErr
-				}
-
 				bundleWebPkgRefs, bundleOutputMeta, bundleSrcFiles, err = BuildViteBundle(
 					egCtx,
 					le.WithField("bundle", bundleID),
@@ -422,7 +424,8 @@ func (c *Controller) buildViteBundles(
 					workingPath,
 					viteConfigPaths,
 					bundle,
-					bundler,
+					build,
+					sqlSchema,
 					webPkgs,
 					outAssetsPath,
 					manifestID,
@@ -430,7 +433,6 @@ func (c *Controller) buildViteBundles(
 					jsMinification,
 					jsSourcemaps,
 				)
-				ref.Release()
 
 				if err == nil {
 					break
@@ -509,7 +511,6 @@ func (c *Controller) cleanupOldViteOutputs(
 	oldOutputs []*bldr_web_bundler_vite.ViteOutputMeta,
 	newOutputs []*bldr_web_bundler_vite.ViteOutputMeta,
 ) error {
-
 	// Index the new output paths.
 	newOutputPaths := make(map[string]struct{}, len(newOutputs))
 	for _, output := range newOutputs {
@@ -552,7 +553,6 @@ func (c *Controller) buildInputManifest(
 	sqlSchemaPaths []string,
 	sqlSchemaFiles []string,
 ) (*bldr_manifest_builder.InputManifest, error) {
-
 	// Marshal the input manifest metadata.
 	inputManifestMeta := &InputManifestMeta{
 		WebPkgRefs:      viteBuildResult.webPkgRefs,
@@ -787,7 +787,6 @@ func (c *Controller) tryFastRebuild(
 
 	// Remove all vite files from the file set.
 	updatedInputManifest.Files = slices.DeleteFunc(updatedInputManifest.Files, func(f *bldr_manifest_builder.InputManifest_File) bool {
-
 		// Drop the vite files from the manifest file set.
 		meta.Reset()
 		err := meta.UnmarshalVT(f.GetMetadata())
@@ -847,7 +846,6 @@ func (c *Controller) tryFastRebuild(
 // filterSourceRelativePaths normalizes input paths relative to sourcePath and
 // drops inputs that escape the source tree.
 func filterSourceRelativePaths(sourcePath string, srcPaths []string) ([]string, error) {
-
 	// Normalize each source path relative to the source root.
 	relPaths := make([]string, 0, len(srcPaths))
 	for _, srcPath := range srcPaths {
@@ -1084,7 +1082,6 @@ func (c *Controller) stopViteBundlers(
 	sqlSchema string,
 	bundleList []*ViteBundleMeta,
 ) {
-
 	// Remove each bundle's vite bundler instance.
 	for _, bundle := range bundleList {
 		if bundle == nil {
@@ -1117,7 +1114,6 @@ func resolveBldrDistWebPkgRefs(
 	configs []*bldr_web_bundler.WebPkgRefConfig,
 	excludedIDs map[string]struct{},
 ) ([]*web_pkg.WebPkgRef, error) {
-
 	// Return no refs when no configured IDs resolve to bldr dist packages.
 	configuredIDs := configuredBldrDistWebPkgIDs(configs, excludedIDs)
 	if len(configuredIDs) == 0 {
@@ -1151,7 +1147,6 @@ func configuredBldrDistWebPkgIDs(
 	configs []*bldr_web_bundler.WebPkgRefConfig,
 	excludedIDs map[string]struct{},
 ) map[string]struct{} {
-
 	// Index the known bldr external package IDs.
 	externalIDs := make(map[string]struct{}, len(web_pkg_external.BldrExternal))
 	for _, id := range web_pkg_external.BldrExternal {

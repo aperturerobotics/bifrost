@@ -1,0 +1,23 @@
+syntax = "proto3";
+package bldr.util.buildcache;
+option go_package = "github.com/s4wave/spacewave/bldr/util/buildcache";
+
+// Entry records one completed build step: the files it read and the files it
+// wrote. The written files are stored beside the entry.
+message Entry {
+  // Inputs are the files the step read, ordered by path.
+  repeated File inputs = 1;
+  // Outputs are the slash separated paths of the files the step wrote,
+  // relative to its output root.
+  repeated string outputs = 2;
+  // Value is the step's own encoding of its result.
+  bytes value = 3;
+}
+
+// File identifies one input file by its path and content.
+message File {
+  // Path is absolute.
+  string path = 1;
+  int64 size = 2;
+  bytes sha256 = 3;
+}

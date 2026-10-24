@@ -11,6 +11,7 @@ import (
 	srpc "github.com/aperturerobotics/starpc/srpc"
 	"github.com/aperturerobotics/util/keyed"
 	bldr "github.com/s4wave/spacewave/bldr"
+	bldr_util_buildcache "github.com/s4wave/spacewave/bldr/util/buildcache"
 	bldr_web_bundler "github.com/s4wave/spacewave/bldr/web/bundler"
 	bldr_web_bundler_vite "github.com/s4wave/spacewave/bldr/web/bundler/vite"
 	unixfs_sync "github.com/s4wave/spacewave/db/unixfs/sync"
@@ -36,7 +37,6 @@ func (f *fakeViteBundlerClient) BuildWebPkg(context.Context, *bldr_web_bundler_v
 // TestViteCompilerBootstrapBuild verifies the vite compiler bootstrap resolves
 // vendored @go imports from the generated dist source tree, not the app root.
 func TestViteCompilerBootstrapBuild(t *testing.T) {
-
 	// Set up the test context and dist source tree.
 	ctx := context.Background()
 
@@ -102,7 +102,6 @@ export function startSocketSender() { return undefined }`),
 }
 
 func TestResolveViteBaseConfigPathMonorepo(t *testing.T) {
-
 	// Create the nested vite base config in a temp dir.
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "bldr/web/bundler/vite/vite-base.config.ts")
@@ -121,7 +120,6 @@ func TestResolveViteBaseConfigPathMonorepo(t *testing.T) {
 }
 
 func TestBuildViteBundleMetaMergesDuplicateBundleMetadata(t *testing.T) {
-
 	// Merge two duplicate bundle declarations.
 	got, err := BuildViteBundleMeta([]*ViteBundleMeta{
 		{
@@ -182,13 +180,13 @@ func TestBuildViteBundleMetaMergesDuplicateBundleMetadata(t *testing.T) {
 }
 
 func TestBuildViteBundlePreservesWorkerPolicy(t *testing.T) {
-
 	// Set up the temp dirs and the fake bundler client.
 	codeRoot := t.TempDir()
 	distRoot := t.TempDir()
 	outAssets := t.TempDir()
 	workingPath := t.TempDir()
 	client := &fakeViteBundlerClient{}
+	t.Setenv(bldr_util_buildcache.RootEnv, t.TempDir())
 
 	// Build the bundle and check the request policy fields.
 	_, _, _, err := BuildViteBundle(
@@ -206,7 +204,8 @@ func TestBuildViteBundlePreservesWorkerPolicy(t *testing.T) {
 			DisableProjectConfig: true,
 			BundleWebPkgs:        true,
 		},
-		client,
+		client.Build,
+		"",
 		[]*bldr_web_bundler.WebPkgRefConfig{
 			{Id: "@aptre/protobuf-es-lite", Imports: []string{"message.js"}},
 			{Id: "@spacewave/shared", Exclude: true},
@@ -238,13 +237,13 @@ func TestBuildViteBundlePreservesWorkerPolicy(t *testing.T) {
 }
 
 func TestBuildViteBundlePreservesExcludedWebPackageImports(t *testing.T) {
-
 	// Set up the temp dirs and the fake bundler client.
 	codeRoot := t.TempDir()
 	distRoot := t.TempDir()
 	outAssets := t.TempDir()
 	workingPath := t.TempDir()
 	client := &fakeViteBundlerClient{}
+	t.Setenv(bldr_util_buildcache.RootEnv, t.TempDir())
 
 	// Build the bundle with excluded web packages.
 	_, _, _, err := BuildViteBundle(
@@ -261,7 +260,8 @@ func TestBuildViteBundlePreservesExcludedWebPackageImports(t *testing.T) {
 			}},
 			DisableProjectConfig: true,
 		},
-		client,
+		client.Build,
+		"",
 		[]*bldr_web_bundler.WebPkgRefConfig{
 			{Id: "sonner", Exclude: true, Imports: []string{"toast"}},
 			{Id: "@spacewave/ui", Imports: []string{"Button"}},
@@ -301,7 +301,6 @@ func TestBuildViteBundlePreservesExcludedWebPackageImports(t *testing.T) {
 }
 
 func TestBuildInputManifestFileKinds(t *testing.T) {
-
 	// Build an input manifest with shared vite and web pkg sources and a
 	// SQL schema directory holding one file.
 	sourcePath := t.TempDir()
@@ -362,7 +361,6 @@ func TestBuildInputManifestFileKinds(t *testing.T) {
 }
 
 func TestStopViteBundlersRemovesReleaseKeys(t *testing.T) {
-
 	// Register a release bundle key and stop the bundlers.
 	controller := &Controller{}
 	controller.viteBundlers = keyed.NewKeyedRefCount(
