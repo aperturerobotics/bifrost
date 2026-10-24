@@ -24,13 +24,16 @@ var ErrDirectInviteOwnerMustBeOnline = errors.New("space owner must be online to
 
 // JoinViaInvite executes the full invite join flow.
 //
-//  1. Ensures a session transport is running (starts one if needed)
+//  1. Ensures a session transport is running (starts one if needed), and
+//     dials the owner over UDP when ownerUDPAddr names its address
 //  2. Holds a link to the owner until the join returns
 //  3. Opens an SRPC stream to the owner and sends AcceptInviteRequest
 //  4. Receives the SOGrant from the owner, or returns early when the owner
 //     queued the redemption for approval
 //  5. Mounts the shared object with the grant
-//  6. Starts P2P sync so SolicitSync delivers state
+//  6. Records ownerUDPAddr on the listed object, so every later P2P sync
+//     generation dials the owner there
+//  7. Starts P2P sync so SolicitSync delivers state
 //
 // Only the wait for the owner's link is bounded. The owner consumes the
 // invite when it answers, so the handshake and the local install that follows
@@ -38,18 +41,29 @@ var ErrDirectInviteOwnerMustBeOnline = errors.New("space owner must be online to
 // once the grant arrived.
 //
 // The inviteMsg is the out-of-band SOInviteMessage from the owner.
-// sessionKey is the invitee's session private key.
-// signalingURL is the cloud API base URL for signaling (can be empty for local).
+// sessionKey is the invitee's session private key. ownerUDPAddr is the
+// owner's static UDP host:port, or empty to reach it through signaling.
 func (a *ProviderAccount) JoinViaInvite(
 	ctx context.Context,
 	sessionKey crypto.PrivKey,
 	inviteMsg *sobject.SOInviteMessage,
-	signalingURL string,
+	ownerUDPAddr string,
 ) (*sobject_invite.JoinResult, error) {
 	// Reach the owner the invite names.
-	st, ownerPeerID, err := a.reachInviteOwner(ctx, sessionKey, inviteMsg, signalingURL)
+	st, ownerPeerID, err := a.reachInviteOwner(ctx, sessionKey, inviteMsg)
 	if err != nil {
 		return nil, err
+	}
+
+	// Dial the owner at its static address on the P2P sync generation, whose
+	// link the sync that follows the join keeps using.
+	if ownerUDPAddr != "" {
+		if err := a.StartPersistentP2PSync(ctx, st); err != nil {
+			return nil, errors.Wrap(err, "start P2P sync")
+		}
+		if err := a.dialJoiningOwner(ownerPeerID, ownerUDPAddr); err != nil {
+			return nil, errors.Wrap(err, "dial invite owner over udp")
+		}
 	}
 
 	// Hold the owner's link for the whole join. Releasing it at once leaves
@@ -98,6 +112,11 @@ func (a *ProviderAccount) JoinViaInvite(
 	if err := a.mountInvitedSO(context.WithoutCancel(ctx), result); err != nil {
 		return nil, errors.Wrap(err, "mount invited shared object")
 	}
+	if ownerUDPAddr != "" {
+		if err := a.setSharedObjectUDPPeer(context.WithoutCancel(ctx), result.SharedObjectID, ownerPeerID, ownerUDPAddr); err != nil {
+			return nil, errors.Wrap(err, "record invite owner udp address")
+		}
+	}
 
 	// P2P sync belongs to the account and stops with the account, not with the
 	// enrollment request.
@@ -124,7 +143,7 @@ func (a *ProviderAccount) WithdrawJoinRequest(
 	inviteMsg *sobject.SOInviteMessage,
 ) error {
 	// Reach the owner the invite names.
-	st, ownerPeerID, err := a.reachInviteOwner(ctx, sessionKey, inviteMsg, "")
+	st, ownerPeerID, err := a.reachInviteOwner(ctx, sessionKey, inviteMsg)
 	if err != nil {
 		return err
 	}
@@ -157,7 +176,6 @@ func (a *ProviderAccount) reachInviteOwner(
 	ctx context.Context,
 	sessionKey crypto.PrivKey,
 	inviteMsg *sobject.SOInviteMessage,
-	signalingURL string,
 ) (*transport.SessionTransport, peer.ID, error) {
 	// Verify the owner peer the invite names.
 	if inviteMsg == nil {
@@ -168,14 +186,9 @@ func (a *ProviderAccount) reachInviteOwner(
 		return nil, "", errors.Wrap(err, "parse invite owner peer id")
 	}
 
-	// A local account with no explicit signaling URL rendezvouses through the
-	// configured trusted cloud endpoint so WebRTC reconnects after restarts.
-	signingEnvPrefix := ""
-	if signalingURL == "" {
-		relay := a.fallbackSignalingEndpoint()
-		signalingURL = relay.url
-		signingEnvPrefix = relay.signingEnvPrefix
-	}
+	// A local account rendezvouses through the configured trusted cloud
+	// endpoint so WebRTC reconnects after restarts.
+	relay := a.fallbackSignalingEndpoint()
 
 	// Enrollment outlives this RPC. Bind its transport to the mounted account
 	// rather than to the invite request that happened to create it.
@@ -184,7 +197,7 @@ func (a *ProviderAccount) reachInviteOwner(
 		ownerCtx = ctx
 	}
 	if _, _, err := a.ensureSessionTransportWithOwner(
-		ctx, ownerCtx, sessionKey, signalingURL, signingEnvPrefix, true,
+		ctx, ownerCtx, sessionKey, relay.url, relay.signingEnvPrefix, true,
 	); err != nil {
 		return nil, "", errors.Wrap(err, "start session transport")
 	}
@@ -350,4 +363,50 @@ func listsSharedObject(list *sobject.SharedObjectList, soID string) bool {
 	return slices.ContainsFunc(list.GetSharedObjects(), func(entry *sobject.SharedObjectListEntry) bool {
 		return entry.GetRef().GetProviderResourceRef().GetId() == soID
 	})
+}
+
+// setSharedObjectUDPPeer records the static UDP address of a peer on the
+// listed object, so every P2P sync generation dials it while the object stays
+// listed.
+func (a *ProviderAccount) setSharedObjectUDPPeer(ctx context.Context, soID string, remote peer.ID, addr string) error {
+	return a.editListedSharedObject(ctx, soID, func(entry *sobject.SharedObjectListEntry) bool {
+		if entry.GetUdpPeerAddrs()[remote.String()] == addr {
+			return false
+		}
+		if entry.UdpPeerAddrs == nil {
+			entry.UdpPeerAddrs = make(map[string]string, 1)
+		}
+		entry.UdpPeerAddrs[remote.String()] = addr
+		return true
+	})
+}
+
+// editListedSharedObject applies edit to the object's list entry, and
+// persists and publishes the list when edit reports a change.
+func (a *ProviderAccount) editListedSharedObject(ctx context.Context, soID string, edit func(*sobject.SharedObjectListEntry) bool) error {
+	// Hold the account lock while editing its object list.
+	relMtx, err := a.mtx.Lock(ctx)
+	if err != nil {
+		return errors.Wrap(err, "lock account mutex")
+	}
+	defer relMtx()
+
+	// Edit a copy of the listed entry.
+	soList := a.soListCtr.GetValue().CloneVT()
+	idx := slices.IndexFunc(soList.GetSharedObjects(), func(entry *sobject.SharedObjectListEntry) bool {
+		return entry.GetRef().GetProviderResourceRef().GetId() == soID
+	})
+	if idx < 0 {
+		return errors.Errorf("shared object %s is not listed", soID)
+	}
+	if !edit(soList.SharedObjects[idx]) {
+		return nil
+	}
+
+	// Persist the list and publish it.
+	if err := a.writeSharedObjectList(ctx, soList); err != nil {
+		return errors.Wrap(err, "persist SO list")
+	}
+	a.soListCtr.SetValue(soList)
+	return nil
 }

@@ -878,12 +878,14 @@ class WithdrawSpaceJoinRequestResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class JoinSpaceViaInviteRequest(_message.Message):
-    __slots__ = ("invite_message", "targeted_invitation_envelope")
+    __slots__ = ("invite_message", "targeted_invitation_envelope", "owner_udp_addr")
     INVITE_MESSAGE_FIELD_NUMBER: _ClassVar[int]
     TARGETED_INVITATION_ENVELOPE_FIELD_NUMBER: _ClassVar[int]
+    OWNER_UDP_ADDR_FIELD_NUMBER: _ClassVar[int]
     invite_message: _sobject_pb2.SOInviteMessage
     targeted_invitation_envelope: bytes
-    def __init__(self, invite_message: _Optional[_Union[_sobject_pb2.SOInviteMessage, _Mapping]] = ..., targeted_invitation_envelope: _Optional[bytes] = ...) -> None: ...
+    owner_udp_addr: str
+    def __init__(self, invite_message: _Optional[_Union[_sobject_pb2.SOInviteMessage, _Mapping]] = ..., targeted_invitation_envelope: _Optional[bytes] = ..., owner_udp_addr: _Optional[str] = ...) -> None: ...
 
 class JoinSpaceViaInviteResponse(_message.Message):
     __slots__ = ("shared_object_id", "result")

@@ -34,6 +34,10 @@ message SharedObjectListEntry {
   // UpdatedAt is when the provider last changed the object's metadata, in
   // Unix milliseconds, or zero when the provider does not track it.
   int64 updated_at = 5;
+  // UdpPeerAddrs maps a peer ID to the static UDP host:port it listens on,
+  // for an owner reached outside signaling, such as over a private network.
+  // The account dials each one while the object stays listed.
+  map<string, string> udp_peer_addrs = 6;
 }
 
 // SharedObjectMeta is the contents of the provider_feature_meta field for a SharedObject.

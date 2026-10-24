@@ -45,16 +45,19 @@ func (a *ProviderAccount) LeaveSharedObject(ctx context.Context, sessionKey cryp
 	}
 
 	// Each participating key consents separately; no caller-supplied peer label grants authority.
+	participants := participantSet(state.GetConfig().GetParticipants())
 	var keys []crypto.PrivKey
-	var departing []string
+	departing := make(map[string]struct{}, 2)
 	for _, key := range []crypto.PrivKey{local.localPriv, sessionKey} {
 		id, err := peer.IDFromPrivateKey(key)
 		if err != nil {
 			return err
 		}
-		if !slices.Contains(departing, id.String()) && slices.ContainsFunc(state.GetConfig().GetParticipants(), func(p *sobject.SOParticipantConfig) bool { return p.GetPeerId() == id.String() }) {
+		_, participates := participants[id.String()]
+		_, consented := departing[id.String()]
+		if participates && !consented {
 			keys = append(keys, key)
-			departing = append(departing, id.String())
+			departing[id.String()] = struct{}{}
 		}
 	}
 
@@ -70,10 +73,8 @@ func (a *ProviderAccount) LeaveSharedObject(ctx context.Context, sessionKey cryp
 	// A hosted object commits a final departure locally and hands others to a successor.
 	owners := state.GetConfig().Owners()
 	if slices.Contains(owners, local.localPid.String()) {
-		remains := slices.ContainsFunc(state.GetConfig().GetParticipants(), func(p *sobject.SOParticipantConfig) bool {
-			return !slices.Contains(departing, p.GetPeerId())
-		})
-		if !remains {
+		// Departing keys are a subset of the participants.
+		if len(participants) == len(departing) {
 			_, err := sobject.LeaveSOParticipants(ctx, local.soHost, local.localPriv, request)
 			return err
 		}
@@ -105,14 +106,29 @@ func (a *ProviderAccount) LeaveSharedObject(ctx context.Context, sessionKey cryp
 			return err
 		}
 	}
-	if len(response.GetChanges()) == 0 || slices.ContainsFunc(current.GetParticipants(), func(p *sobject.SOParticipantConfig) bool { return slices.Contains(departing, p.GetPeerId()) }) {
+	remaining := participantSet(current.GetParticipants())
+	removed := len(response.GetChanges()) != 0
+	for id := range departing {
+		if _, ok := remaining[id]; ok {
+			removed = false
+		}
+	}
+	if !removed {
 		return errors.New("leave response does not prove participant removal")
 	}
 	err = local.soHost.ImportPeerSnapshot(ctx, &sobject.SOState{Config: current}, response.GetChanges(), local.GetPeerID(), nil)
-	if errors.Is(err, sobject.ErrParticipantRevoked) {
-		return nil
+	if err != nil && !errors.Is(err, sobject.ErrParticipantRevoked) {
+		return err
 	}
-	return err
+
+	// A departed member no longer dials the owner's static address.
+	return a.editListedSharedObject(ctx, id, func(entry *sobject.SharedObjectListEntry) bool {
+		if len(entry.GetUdpPeerAddrs()) == 0 {
+			return false
+		}
+		entry.UdpPeerAddrs = nil
+		return true
+	})
 }
 
 // waitLinkedOwner returns an owner with a live link, waiting until one links.
@@ -153,4 +169,13 @@ func (a *ProviderAccount) acceptSharedObjectLeave(ctx context.Context, request *
 
 	// Configuration validation independently requires this provider to hold owner authority.
 	return sobject.LeaveSOParticipants(ctx, local.soHost, local.localPriv, request)
+}
+
+// participantSet indexes participants by peer ID.
+func participantSet(participants []*sobject.SOParticipantConfig) map[string]struct{} {
+	set := make(map[string]struct{}, len(participants))
+	for _, p := range participants {
+		set[p.GetPeerId()] = struct{}{}
+	}
+	return set
 }

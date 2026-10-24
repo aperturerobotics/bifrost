@@ -1798,7 +1798,7 @@ func (r *SessionResource) JoinSpaceViaInvite(
 	// Join through the session's provider.
 	switch acc := r.session.GetProviderAccount().(type) {
 	case *provider_local.ProviderAccount:
-		result, err := acc.JoinViaInvite(ctx, sessionKey, inviteMsg, "")
+		result, err := acc.JoinViaInvite(ctx, sessionKey, inviteMsg, req.GetOwnerUdpAddr())
 		if err != nil {
 			if errors.Is(err, provider_local.ErrDirectInviteOwnerMustBeOnline) {
 				return &s4wave_session.JoinSpaceViaInviteResponse{

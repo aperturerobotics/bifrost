@@ -2606,6 +2606,12 @@ export interface JoinSpaceViaInviteRequest {
    * username-addressed invites.
    */
   targetedInvitationEnvelope?: Uint8Array
+  /**
+   * OwnerUdpAddr is the host:port where a local account reaches the owner
+   * over UDP, such as a server on a private network. The account keeps
+   * dialing it while the Space stays joined.
+   */
+  ownerUdpAddr?: string
 }
 
 export const JoinSpaceViaInviteRequest: MessageType<JoinSpaceViaInviteRequest> =
@@ -2614,6 +2620,7 @@ export const JoinSpaceViaInviteRequest: MessageType<JoinSpaceViaInviteRequest> =
     () => [
       [1, 'invite_message', 11, 0, SOInviteMessage.codec],
       [2, 'targeted_invitation_envelope', 12],
+      [3, 'owner_udp_addr', 9],
     ],
   )
 
